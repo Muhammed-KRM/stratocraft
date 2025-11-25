@@ -20,7 +20,16 @@ public class ItemManager {
     public static ItemStack TITANIUM_INGOT;
     public static ItemStack DARK_MATTER;
     public static ItemStack RED_DIAMOND;
+    public static ItemStack RUBY;
+    public static ItemStack ADAMANTITE;
+    public static ItemStack STAR_CORE;
+    public static ItemStack FLAME_AMPLIFIER;
+    public static ItemStack DEVIL_HORN;
+    public static ItemStack DEVIL_SNAKE_EYE;
     public static ItemStack RECIPE_BOOK_TECTONIC;
+    public static ItemStack WAR_FAN;
+    public static ItemStack TOWER_SHIELD;
+    public static ItemStack HELL_FRUIT;
 
     public void init() {
         BLUEPRINT_PAPER = create(Material.PAPER, "BLUEPRINT", "§bMühendis Şeması");
@@ -29,7 +38,16 @@ public class ItemManager {
         TITANIUM_INGOT = create(Material.IRON_INGOT, "TITANIUM_INGOT", "§fTitanyum Külçesi");
         DARK_MATTER = create(Material.COAL, "DARK_MATTER", "§0Karanlık Madde");
         RED_DIAMOND = create(Material.DIAMOND, "RED_DIAMOND", "§cKızıl Elmas");
+        RUBY = create(Material.REDSTONE, "RUBY", "§cYakut");
+        ADAMANTITE = create(Material.NETHERITE_INGOT, "ADAMANTITE", "§5Adamantite");
+        STAR_CORE = create(Material.NETHER_STAR, "STAR_CORE", "§bYıldız Çekirdeği");
+        FLAME_AMPLIFIER = create(Material.BLAZE_ROD, "FLAME_AMPLIFIER", "§6Alev Amplifikatörü");
+        DEVIL_HORN = create(Material.GOAT_HORN, "DEVIL_HORN", "§4Şeytan Boynuzu");
+        DEVIL_SNAKE_EYE = create(Material.ENDER_EYE, "DEVIL_SNAKE_EYE", "§5İblis Yılanın Gözü");
         RECIPE_BOOK_TECTONIC = create(Material.BOOK, "RECIPE_TECTONIC", "§dTarif: Tektonik Sabitleyici");
+        WAR_FAN = create(Material.FEATHER, "WAR_FAN", "§eSavaş Yelpazesi");
+        TOWER_SHIELD = create(Material.SHIELD, "TOWER_SHIELD", "§7Kule Kalkanı");
+        HELL_FRUIT = create(Material.APPLE, "HELL_FRUIT", "§cCehennem Meyvesi");
 
         registerRecipes();
     }

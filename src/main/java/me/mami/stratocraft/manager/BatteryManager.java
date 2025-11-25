@@ -8,15 +8,32 @@ import org.bukkit.util.Vector;
 
 public class BatteryManager {
 
-    // 1. ATEŞ TOPU
-    public void fireMagmaBattery(Player p, Material fuel, boolean boosted) {
-        int count = fuel == Material.DIAMOND ? 5 : 2;
+    // 1. ATEŞ TOPU (Geliştirilmiş)
+    public void fireMagmaBattery(Player p, Material fuel, boolean boosted, boolean hasAmplifier) {
+        int count;
+        if (fuel == Material.DIAMOND) count = 5;
+        else if (me.mami.stratocraft.manager.ItemManager.RED_DIAMOND != null && 
+                 p.getInventory().getItemInMainHand().equals(me.mami.stratocraft.manager.ItemManager.RED_DIAMOND)) {
+            count = 20;
+        } else if (me.mami.stratocraft.manager.ItemManager.DARK_MATTER != null && 
+                   p.getInventory().getItemInMainHand().equals(me.mami.stratocraft.manager.ItemManager.DARK_MATTER)) {
+            count = 50;
+        } else {
+            count = 2;
+        }
+        
         if (boosted) count *= 2;
+        
+        float size = hasAmplifier ? 2.0f : 1.0f;
+        
         for (int i = 0; i < count; i++) {
             Fireball fb = p.launchProjectile(Fireball.class);
             fb.setVelocity(p.getLocation().getDirection().multiply(1.5));
+            if (hasAmplifier) {
+                fb.setYield(fb.getYield() * size);
+            }
         }
-        p.sendMessage("§6Ateş topları fırlatıldı!");
+        p.sendMessage("§6Ateş topları fırlatıldı! (" + count + " adet)");
     }
 
     // 2. YILDIRIM
@@ -81,6 +98,91 @@ public class BatteryManager {
                 e.sendMessage("§c§lYERÇEKİMİ ÇAPASINA YAKALANDIN!");
             }
         }
+    }
+
+    // 7. TOPRAK SURU (Savunma)
+    public void createEarthWall(Player p, Material material) {
+        Location start = p.getLocation().add(p.getLocation().getDirection().setY(0).normalize().multiply(2));
+        int height = material == Material.TITANIUM_INGOT ? 5 : 3;
+        Material wallMat = material == Material.TITANIUM_INGOT ? Material.IRON_BLOCK : Material.COBBLESTONE;
+        
+        for (int y = 0; y < height; y++) {
+            for (int x = -1; x <= 1; x++) {
+                Location blockLoc = start.clone().add(x, y, 0);
+                if (blockLoc.getBlock().getType() == Material.AIR) {
+                    blockLoc.getBlock().setType(wallMat);
+                }
+            }
+        }
+        p.sendMessage("§7Toprak Suru oluşturuldu!");
+    }
+
+    // 8. MANYETİK BOZUCU (Utility)
+    public void fireMagneticDisruptor(Player p) {
+        p.sendMessage("§5Manyetik Bozucu Aktif!");
+        for (Entity e : p.getNearbyEntities(20, 20, 20)) {
+            if (e instanceof Player && e != p) {
+                Player target = (Player) e;
+                ItemStack mainHand = target.getInventory().getItemInMainHand();
+                if (mainHand != null && mainHand.getType() != Material.AIR) {
+                    target.getWorld().dropItemNaturally(target.getLocation(), mainHand.clone());
+                    target.getInventory().setItemInMainHand(null);
+                    target.sendMessage("§c§lSİLAHIN DÜŞTÜ!");
+                }
+            }
+        }
+    }
+
+    // 9. SİSMİK ÇEKİÇ (Felaket Mücadele)
+    public void fireSeismicHammer(Player p) {
+        Location target = p.getTargetBlock(null, 30).getLocation();
+        p.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, target, 5);
+        p.sendMessage("§6Sismik Çekiç Aktif! Yer altı titreşimleri gönderildi!");
+        // Hiçlik Solucanı için titreşim sinyali
+    }
+
+    // 10. OZON KALKANI (Güneş Fırtınası Koruma)
+    public void activateOzoneShield(Player p, Location center) {
+        int radius = 15;
+        for (int x = -radius; x <= radius; x++) {
+            for (int z = -radius; z <= radius; z++) {
+                if (x*x + z*z <= radius*radius) {
+                    Location loc = center.clone().add(x, 0, z);
+                    if (loc.getBlock().getType() == Material.AIR) {
+                        loc.getBlock().setType(Material.BARRIER);
+                        p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, loc, 1);
+                    }
+                }
+            }
+        }
+        p.sendMessage("§bOzon Kalkanı aktif! Güneş Fırtınası koruması sağlandı.");
+    }
+
+    // 11. ENERJİ DUVARI (Gelişmiş Savunma)
+    public void createEnergyWall(Player p) {
+        Location start = p.getLocation().add(p.getLocation().getDirection().setY(0).normalize().multiply(2));
+        for (int y = 0; y < 5; y++) {
+            for (int x = -2; x <= 2; x++) {
+                Location loc = start.clone().add(x, y, 0);
+                if (loc.getBlock().getType() == Material.AIR) {
+                    loc.getBlock().setType(Material.BARRIER);
+                    p.getWorld().spawnParticle(org.bukkit.Particle.ELECTRIC_SPARK, loc, 3);
+                }
+            }
+        }
+        p.sendMessage("§bEnerji Duvarı oluşturuldu!");
+    }
+
+    // 12. LAV HENDEKÇİSİ (Alan Savunması)
+    public void createLavaTrench(Player p) {
+        Location start = p.getLocation().add(p.getLocation().getDirection().setY(0).normalize().multiply(3));
+        for (int i = 0; i < 10; i++) {
+            Location loc = start.clone().add(i, -1, 0);
+            if (loc.getBlock().getType() != Material.LAVA) {
+                loc.getBlock().setType(Material.LAVA);
+            }
+        }
+        p.sendMessage("§cLav Hendekçisi kuruldu!");
     }
 }
 

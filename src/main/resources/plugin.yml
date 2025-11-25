@@ -10,3 +10,4 @@ commands:
     usage: /klan <kur|kristal|davet|ayril>
   kontrat:
     description: Kontrat panosu islemleri.
+    usage: /kontrat <list|olustur|teslim>

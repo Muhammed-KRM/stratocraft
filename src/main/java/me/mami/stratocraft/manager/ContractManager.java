@@ -15,11 +15,49 @@ public class ContractManager {
 
     public ContractManager(ClanManager cm) { this.clanManager = cm; }
 
-    public void createContract(UUID issuer, Material mat, int amount, double reward) {
-        activeContracts.add(new Contract(issuer, mat, amount, reward));
+    public void createContract(UUID issuer, Material mat, int amount, double reward, long days) {
+        activeContracts.add(new Contract(issuer, mat, amount, reward, days));
     }
 
     public List<Contract> getContracts() { return activeContracts; }
+
+    public Contract getContract(UUID id) {
+        return activeContracts.stream().filter(c -> c.getId().equals(id)).findFirst().orElse(null);
+    }
+
+    public void acceptContract(UUID contractId, UUID acceptor) {
+        Contract contract = getContract(contractId);
+        if (contract != null && contract.getAcceptor() == null) {
+            contract.setAcceptor(acceptor);
+        }
+    }
+
+    public void deliverContract(UUID contractId, int amount) {
+        Contract contract = getContract(contractId);
+        if (contract != null && !contract.isCompleted()) {
+            contract.addDelivered(amount);
+            if (contract.isCompleted()) {
+                Player acceptor = Bukkit.getPlayer(contract.getAcceptor());
+                if (acceptor != null) {
+                    Clan clan = clanManager.getClanByPlayer(contract.getIssuer());
+                    if (clan != null) {
+                        clan.withdraw(contract.getReward());
+                        // Ödülü acceptor'a ver (basit versiyon)
+                        acceptor.sendMessage("§aSözleşme tamamlandı! " + contract.getReward() + " altın kazandın!");
+                    }
+                }
+            }
+        }
+    }
+
+    public void checkExpiredContracts() {
+        for (Contract contract : new ArrayList<>(activeContracts)) {
+            if (contract.isExpired() && contract.getAcceptor() != null) {
+                punishBreach(contract.getAcceptor());
+                activeContracts.remove(contract);
+            }
+        }
+    }
 
     public void punishBreach(UUID criminalId) {
         Player p = Bukkit.getPlayer(criminalId);

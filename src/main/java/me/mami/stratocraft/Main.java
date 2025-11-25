@@ -108,8 +108,25 @@ public class Main extends JavaPlugin {
                         } else {
                             p.sendMessage("§cBir klana üye değilsiniz!");
                         }
+                    } else if (args.length > 0 && args[0].equalsIgnoreCase("kristal")) {
+                        Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
+                        if (clan == null) {
+                            p.sendMessage("§cBir klana üye değilsiniz!");
+                            return true;
+                        }
+                        if (clan.getRank(p.getUniqueId()) != Clan.Rank.LEADER && clan.getRank(p.getUniqueId()) != Clan.Rank.GENERAL) {
+                            p.sendMessage("§cBu işlem için yetkiniz yok!");
+                            return true;
+                        }
+                        if (clan.getTerritory() == null) {
+                            Territory newTerritory = new Territory(clan.getId(), p.getLocation());
+                            clan.setTerritory(newTerritory);
+                            p.sendMessage("§aKristal dikildi! Bölgeniz aktif.");
+                        } else {
+                            p.sendMessage("§eZaten bir bölgeniz var. Yeni kristal dikmek için mevcut bölgeyi kaldırın.");
+                        }
                     } else {
-                        p.sendMessage("§eKullanım: /klan <kur|ayril>");
+                        p.sendMessage("§eKullanım: /klan <kur|ayril|kristal>");
                     }
                 }
                 return true;
@@ -123,11 +140,89 @@ public class Main extends JavaPlugin {
                     Player p = (Player) sender;
                     if (args.length > 0 && args[0].equalsIgnoreCase("list")) {
                         p.sendMessage("§eAktif Sözleşmeler:");
+                        int i = 1;
                         for (me.mami.stratocraft.model.Contract contract : contractManager.getContracts()) {
-                            p.sendMessage("§7- " + contract.getMaterial() + " x" + contract.getAmount() + " → " + contract.getReward() + " altın");
+                            p.sendMessage("§7" + i + ". " + contract.getMaterial() + " x" + contract.getAmount() + 
+                                " → " + contract.getReward() + " altın (ID: " + contract.getId().toString().substring(0, 8) + ")");
+                            i++;
+                        }
+                    } else if (args.length > 0 && args[0].equalsIgnoreCase("olustur")) {
+                        Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
+                        if (clan == null) {
+                            p.sendMessage("§cBir klana üye değilsiniz!");
+                            return true;
+                        }
+                        if (args.length < 4) {
+                            p.sendMessage("§cKullanım: /kontrat olustur <malzeme> <miktar> <ödül> <gün>");
+                            p.sendMessage("§7Örnek: /kontrat olustur IRON_INGOT 100 5000 2");
+                            return true;
+                        }
+                        try {
+                            org.bukkit.Material mat = org.bukkit.Material.valueOf(args[1].toUpperCase());
+                            int amount = Integer.parseInt(args[2]);
+                            double reward = Double.parseDouble(args[3]);
+                            long days = args.length > 4 ? Long.parseLong(args[4]) : 2;
+                            
+                            if (clan.getBalance() < reward) {
+                                p.sendMessage("§cKlanınızın kasasında yeterli para yok!");
+                                return true;
+                            }
+                            
+                            contractManager.createContract(clan.getId(), mat, amount, reward, days);
+                            p.sendMessage("§aSözleşme oluşturuldu!");
+                        } catch (Exception e) {
+                            p.sendMessage("§cHatalı parametre! Malzeme adını doğru yazın (örn: IRON_INGOT)");
+                        }
+                    } else if (args.length > 0 && args[0].equalsIgnoreCase("teslim")) {
+                        if (args.length < 2) {
+                            p.sendMessage("§cKullanım: /kontrat teslim <sözleşme_id> <miktar>");
+                            return true;
+                        }
+                        try {
+                            java.util.UUID contractId = java.util.UUID.fromString(args[1]);
+                            int amount = args.length > 2 ? Integer.parseInt(args[2]) : 1;
+                            
+                            me.mami.stratocraft.model.Contract contract = contractManager.getContract(contractId);
+                            if (contract == null) {
+                                p.sendMessage("§cSözleşme bulunamadı!");
+                                return true;
+                            }
+                            
+                            if (contract.getAcceptor() == null) {
+                                contractManager.acceptContract(contractId, p.getUniqueId());
+                                p.sendMessage("§aSözleşmeyi kabul ettiniz!");
+                            }
+                            
+                            // Envanterden malzeme kontrolü
+                            int playerAmount = 0;
+                            for (org.bukkit.inventory.ItemStack item : p.getInventory().getContents()) {
+                                if (item != null && item.getType() == contract.getMaterial()) {
+                                    playerAmount += item.getAmount();
+                                }
+                            }
+                            
+                            if (playerAmount < amount) {
+                                p.sendMessage("§cYeterli malzemeniz yok! (" + playerAmount + "/" + amount + ")");
+                                return true;
+                            }
+                            
+                            // Malzemeyi kaldır
+                            int remaining = amount;
+                            for (org.bukkit.inventory.ItemStack item : p.getInventory().getContents()) {
+                                if (item != null && item.getType() == contract.getMaterial() && remaining > 0) {
+                                    int remove = Math.min(item.getAmount(), remaining);
+                                    item.setAmount(item.getAmount() - remove);
+                                    remaining -= remove;
+                                }
+                            }
+                            
+                            contractManager.deliverContract(contractId, amount);
+                            p.sendMessage("§a" + amount + " " + contract.getMaterial() + " teslim edildi!");
+                        } catch (Exception e) {
+                            p.sendMessage("§cHatalı sözleşme ID!");
                         }
                     } else {
-                        p.sendMessage("§eKullanım: /kontrat list");
+                        p.sendMessage("§eKullanım: /kontrat <list|olustur|teslim>");
                     }
                 }
                 return true;

@@ -42,11 +42,17 @@ public class BatteryListener implements Listener {
         Block b = event.getClickedBlock();
         ItemStack hand = p.getInventory().getItemInMainHand();
 
-        // 1. MAGMA BATARYASI
+        // 1. MAGMA BATARYASI (Geliştirilmiş)
         if (b.getType() == Material.MAGMA_BLOCK && b.getRelative(BlockFace.DOWN).getType() == Material.MAGMA_BLOCK) {
-            if (hand.getType() == Material.DIAMOND || hand.getType() == Material.IRON_INGOT) {
-                boolean boosted = hasAlchemyTower(p); // Simya Kulesi varsa güçlendirilmiş
-                batteryManager.fireMagmaBattery(p, hand.getType(), boosted);
+            Material fuel = hand.getType();
+            boolean isRedDiamond = ItemManager.isCustomItem(hand, "RED_DIAMOND");
+            boolean isDarkMatter = ItemManager.isCustomItem(hand, "DARK_MATTER");
+            
+            if (fuel == Material.DIAMOND || fuel == Material.IRON_INGOT || isRedDiamond || isDarkMatter) {
+                boolean boosted = hasAlchemyTower(p);
+                ItemStack offHand = p.getInventory().getItemInOffHand();
+                boolean hasAmplifier = ItemManager.isCustomItem(offHand, "FLAME_AMPLIFIER");
+                batteryManager.fireMagmaBattery(p, fuel, boosted, hasAmplifier);
             }
         }
 
@@ -85,6 +91,57 @@ public class BatteryListener implements Listener {
         if (b.getType() == Material.ANVIL && b.getRelative(BlockFace.DOWN).getType() == Material.SLIME_BLOCK) {
             if (hand.getType() == Material.IRON_INGOT) {
                 batteryManager.fireGravityAnchor(p);
+            }
+        }
+
+        // 7. TOPRAK SURU (3 Toprak Bloğu yanyana)
+        if (b.getType() == Material.DIRT && b.getRelative(BlockFace.EAST).getType() == Material.DIRT 
+            && b.getRelative(BlockFace.WEST).getType() == Material.DIRT) {
+            if (hand.getType() == Material.COBBLESTONE || ItemManager.isCustomItem(hand, "TITANIUM_INGOT")) {
+                batteryManager.createEarthWall(p, hand.getType());
+                hand.setAmount(hand.getAmount() - 1);
+            }
+        }
+
+        // 8. MANYETİK BOZUCU (3 Demir + 1 Lapis üstte)
+        if (b.getType() == Material.LAPIS_BLOCK && b.getRelative(BlockFace.DOWN).getType() == Material.IRON_BLOCK
+            && b.getRelative(BlockFace.DOWN).getRelative(BlockFace.DOWN).getType() == Material.IRON_BLOCK) {
+            if (hand.getType() == Material.IRON_INGOT) {
+                batteryManager.fireMagneticDisruptor(p);
+                hand.setAmount(hand.getAmount() - 1);
+            }
+        }
+
+        // 9. SİSMİK ÇEKİÇ (Felaket Mücadele)
+        if (b.getType() == Material.ANVIL && b.getRelative(BlockFace.DOWN).getType() == Material.IRON_BLOCK
+            && b.getRelative(BlockFace.DOWN).getRelative(BlockFace.DOWN).getType() == Material.IRON_BLOCK) {
+            if (ItemManager.isCustomItem(hand, "STAR_CORE")) {
+                batteryManager.fireSeismicHammer(p);
+                hand.setAmount(hand.getAmount() - 1);
+            }
+        }
+
+        // 10. OZON KALKANI (Güneş Fırtınası Koruma)
+        if (b.getType() == Material.BEACON && b.getRelative(BlockFace.DOWN).getType() == Material.GLASS) {
+            if (ItemManager.isCustomItem(hand, "RUBY")) {
+                batteryManager.activateOzoneShield(p, b.getLocation());
+                hand.setAmount(hand.getAmount() - 1);
+            }
+        }
+
+        // 11. ENERJİ DUVARI (Adamantite ile)
+        if (b.getType() == Material.IRON_BLOCK && b.getRelative(BlockFace.DOWN).getType() == Material.IRON_BLOCK
+            && b.getRelative(BlockFace.DOWN).getRelative(BlockFace.DOWN).getType() == Material.IRON_BLOCK) {
+            if (ItemManager.isCustomItem(hand, "ADAMANTITE")) {
+                batteryManager.createEnergyWall(p);
+                hand.setAmount(hand.getAmount() - 1);
+            }
+        }
+
+        // 12. LAV HENDEKÇİSİ (Alan Savunması)
+        if (b.getType() == Material.LAVA && b.getRelative(BlockFace.DOWN).getType() == Material.LAVA) {
+            if (hand.getType() == Material.BUCKET && hand.getType() == Material.LAVA_BUCKET) {
+                batteryManager.createLavaTrench(p);
             }
         }
     }

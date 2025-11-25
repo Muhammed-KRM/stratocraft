@@ -28,14 +28,31 @@ public class MissionManager {
 
     private void assignNewMission(Player p, Material tier) {
         Mission mission;
+        // Totem seviye sistemi
         if (tier == Material.COBBLESTONE || tier == Material.STONE) {
+            // Taş Totem - Basit görevler
+            if (random.nextBoolean()) {
+                mission = new Mission(p.getUniqueId(), Mission.Type.KILL_MOB, EntityType.ZOMBIE, 10, new ItemStack(Material.IRON_INGOT, 5));
+                p.sendMessage("§e[LONCA] §7Yeni Görev: 10 Zombi Öldür.");
+            } else {
+                mission = new Mission(p.getUniqueId(), Mission.Type.GATHER_ITEM, Material.OAK_LOG, 64, new ItemStack(Material.GOLD_INGOT, 3));
+                p.sendMessage("§e[LONCA] §7Yeni Görev: 64 Odun Topla.");
+            }
+        } else if (tier == Material.DIAMOND_BLOCK || tier == Material.DIAMOND) {
+            // Elmas Totem - Zor görevler
+            if (random.nextBoolean()) {
+                ItemStack reward = random.nextBoolean() ? ItemManager.RECIPE_BOOK_TECTONIC : ItemManager.DEVIL_HORN;
+                mission = new Mission(p.getUniqueId(), Mission.Type.KILL_MOB, EntityType.ENDERMAN, 20, reward);
+                p.sendMessage("§6[LONCA] §cZorlu Görev: 20 Enderman Avla.");
+            } else {
+                ItemStack reward = ItemManager.TITANIUM_INGOT != null ? ItemManager.TITANIUM_INGOT : new ItemStack(Material.DIAMOND, 5);
+                mission = new Mission(p.getUniqueId(), Mission.Type.GATHER_ITEM, Material.DEEPSLATE_DIAMOND_ORE, 10, reward);
+                p.sendMessage("§6[LONCA] §cZorlu Görev: 10 Derin Elmas Madeni Topla.");
+            }
+        } else {
+            // Varsayılan
             mission = new Mission(p.getUniqueId(), Mission.Type.KILL_MOB, EntityType.ZOMBIE, 10, new ItemStack(Material.IRON_INGOT, 5));
             p.sendMessage("§e[LONCA] §7Yeni Görev: 10 Zombi Öldür.");
-        } 
-        else {
-            ItemStack reward = random.nextBoolean() ? ItemManager.RECIPE_BOOK_TECTONIC : ItemManager.TITANIUM_INGOT;
-            mission = new Mission(p.getUniqueId(), Mission.Type.KILL_MOB, EntityType.ENDERMAN, 20, reward);
-            p.sendMessage("§6[LONCA] §cZorlu Görev: 20 Enderman Avla.");
         }
         activeMissions.put(p.getUniqueId(), mission);
     }

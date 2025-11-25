@@ -36,12 +36,24 @@ public class ShopManager {
         }
 
         buyer.getInventory().removeItem(shop.getPriceItem()); 
-        chest.getInventory().addItem(shop.getPriceItem()); 
+        
+        // Vergi hesaplama (%5)
+        if (shop.isProtectedZone()) {
+            ItemStack taxItem = shop.getPriceItem().clone();
+            taxItem.setAmount((int) Math.ceil(taxItem.getAmount() * 0.05));
+            chest.getInventory().addItem(taxItem);
+            
+            ItemStack ownerPayment = shop.getPriceItem().clone();
+            ownerPayment.setAmount(ownerPayment.getAmount() - taxItem.getAmount());
+            chest.getInventory().addItem(ownerPayment);
+        } else {
+            chest.getInventory().addItem(shop.getPriceItem());
+        }
         
         chest.getInventory().removeItem(shop.getSellingItem());
         buyer.getInventory().addItem(shop.getSellingItem());    
         
-        buyer.sendMessage("§aSatın alma başarılı!");
+        buyer.sendMessage("§aSatın alma başarılı!" + (shop.isProtectedZone() ? " §7(%5 vergi alındı)" : ""));
     }
 }
 

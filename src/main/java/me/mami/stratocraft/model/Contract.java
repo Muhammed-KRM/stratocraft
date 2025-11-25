@@ -9,12 +9,17 @@ public class Contract {
     private final Material material;
     private final int amount;
     private final double reward;
+    private final long deadline; // Süre (milisaniye)
+    private UUID acceptor = null;
+    private int delivered = 0;
+    private boolean completed = false;
 
-    public Contract(UUID issuer, Material material, int amount, double reward) {
+    public Contract(UUID issuer, Material material, int amount, double reward, long deadlineDays) {
         this.issuer = issuer;
         this.material = material;
         this.amount = amount;
         this.reward = reward;
+        this.deadline = System.currentTimeMillis() + (deadlineDays * 24 * 60 * 60 * 1000);
     }
 
     public UUID getId() { return id; }
@@ -22,5 +27,13 @@ public class Contract {
     public Material getMaterial() { return material; }
     public int getAmount() { return amount; }
     public double getReward() { return reward; }
+    public long getDeadline() { return deadline; }
+    public UUID getAcceptor() { return acceptor; }
+    public void setAcceptor(UUID acceptor) { this.acceptor = acceptor; }
+    public int getDelivered() { return delivered; }
+    public void addDelivered(int amount) { this.delivered += amount; }
+    public boolean isCompleted() { return completed || delivered >= amount; }
+    public void setCompleted(boolean completed) { this.completed = completed; }
+    public boolean isExpired() { return System.currentTimeMillis() > deadline && !isCompleted(); }
 }
 

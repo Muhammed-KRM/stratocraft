@@ -40,6 +40,27 @@ public class BuffTask extends BukkitRunnable {
                     p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 40, 1));
                 }
 
+                // ZEHİR REAKTÖRÜ - Düşmanlara zehir ver
+                if (s.getType() == Structure.Type.POISON_REACTOR && !isFriendly && p.getGameMode() != GameMode.CREATIVE) {
+                    p.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 40, 0));
+                    if (s.getLevel() >= 3) {
+                        p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 40, 0));
+                        p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 40, 1));
+                    }
+                }
+
+                // ERKEN UYARI RADARI - Düşman yaklaşımı uyarısı
+                if (s.getType() == Structure.Type.WATCHTOWER && isFriendly) {
+                    // 200 blok yarıçapında düşman kontrolü
+                    for (Player nearby : Bukkit.getOnlinePlayers()) {
+                        if (nearby.getLocation().distance(p.getLocation()) <= 200 && 
+                            !territoryClan.getMembers().containsKey(nearby.getUniqueId())) {
+                            p.sendMessage("§c§lDİKKAT! §7" + nearby.getName() + " bölgenize yaklaşıyor! (" + 
+                                (int)nearby.getLocation().distance(p.getLocation()) + " blok)");
+                        }
+                    }
+                }
+
                 if (s.getType() == Structure.Type.CORE) {
                     boolean anyOnline = clanManager.getAllClans().stream()
                             .filter(clan -> clan.equals(territoryClan))
