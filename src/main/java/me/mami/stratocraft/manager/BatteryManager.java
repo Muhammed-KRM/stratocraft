@@ -1,6 +1,5 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.manager.ItemManager;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
