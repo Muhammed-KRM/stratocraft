@@ -49,5 +49,15 @@ public class MissionManager {
             }
         }
     }
+    
+    public void handleGather(Player p, Material material) {
+        if (activeMissions.containsKey(p.getUniqueId())) {
+            Mission m = activeMissions.get(p.getUniqueId());
+            if (m.getType() == Mission.Type.GATHER_ITEM && m.getTargetMaterial() == material) {
+                m.addProgress(1);
+                if (m.isCompleted()) p.sendMessage("§aGörev hedefine ulaşıldı! Toteme dön.");
+            }
+        }
+    }
 }
 

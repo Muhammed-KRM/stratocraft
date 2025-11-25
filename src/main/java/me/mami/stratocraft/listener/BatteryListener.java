@@ -2,6 +2,9 @@ package me.mami.stratocraft.listener;
 
 import me.mami.stratocraft.manager.BatteryManager;
 import me.mami.stratocraft.manager.ItemManager;
+import me.mami.stratocraft.manager.TerritoryManager;
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.Structure;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -15,8 +18,19 @@ import org.bukkit.inventory.ItemStack;
 
 public class BatteryListener implements Listener {
     private final BatteryManager batteryManager;
+    private final TerritoryManager territoryManager;
 
-    public BatteryListener(BatteryManager bm) { this.batteryManager = bm; }
+    public BatteryListener(BatteryManager bm, TerritoryManager tm) { 
+        this.batteryManager = bm;
+        this.territoryManager = tm;
+    }
+    
+    private boolean hasAlchemyTower(Player p) {
+        Clan clan = territoryManager.getClanManager().getClanByPlayer(p.getUniqueId());
+        if (clan == null) return false;
+        return clan.getStructures().stream()
+                .anyMatch(s -> s.getType() == Structure.Type.ALCHEMY_TOWER);
+    }
 
     @EventHandler
     public void onInteract(PlayerInteractEvent event) {
@@ -31,7 +45,8 @@ public class BatteryListener implements Listener {
         // 1. MAGMA BATARYASI
         if (b.getType() == Material.MAGMA_BLOCK && b.getRelative(BlockFace.DOWN).getType() == Material.MAGMA_BLOCK) {
             if (hand.getType() == Material.DIAMOND || hand.getType() == Material.IRON_INGOT) {
-                batteryManager.fireMagmaBattery(p, hand.getType(), false);
+                boolean boosted = hasAlchemyTower(p); // Simya Kulesi varsa güçlendirilmiş
+                batteryManager.fireMagmaBattery(p, hand.getType(), boosted);
             }
         }
 

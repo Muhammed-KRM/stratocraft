@@ -16,15 +16,19 @@ import java.util.List;
 public class ItemManager {
     public static ItemStack BLUEPRINT_PAPER;
     public static ItemStack LIGHTNING_CORE;
+    public static ItemStack TITANIUM_ORE;
     public static ItemStack TITANIUM_INGOT;
     public static ItemStack DARK_MATTER;
+    public static ItemStack RED_DIAMOND;
     public static ItemStack RECIPE_BOOK_TECTONIC;
 
     public void init() {
         BLUEPRINT_PAPER = create(Material.PAPER, "BLUEPRINT", "§bMühendis Şeması");
         LIGHTNING_CORE = create(Material.END_ROD, "LIGHTNING_CORE", "§eYıldırım Çekirdeği");
+        TITANIUM_ORE = create(Material.FLINT, "TITANIUM", "§7Titanyum Parçası");
         TITANIUM_INGOT = create(Material.IRON_INGOT, "TITANIUM_INGOT", "§fTitanyum Külçesi");
         DARK_MATTER = create(Material.COAL, "DARK_MATTER", "§0Karanlık Madde");
+        RED_DIAMOND = create(Material.DIAMOND, "RED_DIAMOND", "§cKızıl Elmas");
         RECIPE_BOOK_TECTONIC = create(Material.BOOK, "RECIPE_TECTONIC", "§dTarif: Tektonik Sabitleyici");
 
         registerRecipes();

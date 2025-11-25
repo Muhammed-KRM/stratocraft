@@ -80,7 +80,9 @@ public class StructureListener implements Listener {
              }
         }
 
-        // ... Dökümandaki diğer 16 yapı buraya eklenir ...
+        // NOT: Diğer yapılar (POISON_REACTOR, SIEGE_FACTORY, WALL_GENERATOR, vb.) 
+        // için şema dosyaları (.schem) oluşturulduktan sonra buraya eklenebilir.
+        // Şu an için temel 4 yapı aktif: Simya Kulesi, Tektonik Sabitleyici, Şifa Kulesi, Global Pazar
     }
 
     private boolean checkRecipe(Player p, String recipeId) {

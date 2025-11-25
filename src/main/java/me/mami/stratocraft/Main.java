@@ -59,9 +59,9 @@ public class Main extends JavaPlugin {
         missionManager = new MissionManager();
 
         // 2. Dinleyicileri Kaydet
-        Bukkit.getPluginManager().registerEvents(new BatteryListener(batteryManager), this);
+        Bukkit.getPluginManager().registerEvents(new BatteryListener(batteryManager, territoryManager), this);
         Bukkit.getPluginManager().registerEvents(new CombatListener(clanManager), this);
-        Bukkit.getPluginManager().registerEvents(new SurvivalListener(), this);
+        Bukkit.getPluginManager().registerEvents(new SurvivalListener(missionManager), this);
         Bukkit.getPluginManager().registerEvents(new TerritoryListener(territoryManager, siegeManager), this);
         Bukkit.getPluginManager().registerEvents(new SiegeListener(siegeManager, territoryManager), this);
         Bukkit.getPluginManager().registerEvents(new ScavengerListener(scavengerManager), this);
@@ -69,7 +69,7 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new RitualListener(clanManager), this);
         Bukkit.getPluginManager().registerEvents(new ShopListener(shopManager), this);
         Bukkit.getPluginManager().registerEvents(new MissionListener(missionManager), this);
-        Bukkit.getPluginManager().registerEvents(new ResearchListener(), this);
+        Bukkit.getPluginManager().registerEvents(new ResearchListener(researchManager), this);
         Bukkit.getPluginManager().registerEvents(new StructureListener(clanManager, researchManager), this);
 
         // 3. Zamanlayıcıları Başlat
@@ -88,9 +88,46 @@ public class Main extends JavaPlugin {
                             Clan newClan = clanManager.createClan(args[1], p.getUniqueId());
                             if (newClan != null) {
                                 newClan.setTerritory(new Territory(newClan.getId(), p.getLocation()));
+                                p.sendMessage("§aKlan kuruldu: " + args[1]);
+                            } else {
+                                p.sendMessage("§cZaten bir klana üyesin!");
                             }
-                            p.sendMessage("Klan kuruldu: " + args[1]);
+                        } else {
+                            p.sendMessage("§cKullanım: /klan kur <isim>");
                         }
+                    } else if (args.length > 0 && args[0].equalsIgnoreCase("ayril")) {
+                        Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
+                        if (clan != null) {
+                            if (clan.getRank(p.getUniqueId()) == Clan.Rank.LEADER) {
+                                clanManager.disbandClan(clan);
+                                p.sendMessage("§cKlanınız dağıtıldı.");
+                            } else {
+                                clan.getMembers().remove(p.getUniqueId());
+                                p.sendMessage("§eKlandan ayrıldınız.");
+                            }
+                        } else {
+                            p.sendMessage("§cBir klana üye değilsiniz!");
+                        }
+                    } else {
+                        p.sendMessage("§eKullanım: /klan <kur|ayril>");
+                    }
+                }
+                return true;
+            }
+        });
+        
+        getCommand("kontrat").setExecutor(new CommandExecutor() {
+            @Override
+            public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+                if (sender instanceof Player) {
+                    Player p = (Player) sender;
+                    if (args.length > 0 && args[0].equalsIgnoreCase("list")) {
+                        p.sendMessage("§eAktif Sözleşmeler:");
+                        for (me.mami.stratocraft.model.Contract contract : contractManager.getContracts()) {
+                            p.sendMessage("§7- " + contract.getMaterial() + " x" + contract.getAmount() + " → " + contract.getReward() + " altın");
+                        }
+                    } else {
+                        p.sendMessage("§eKullanım: /kontrat list");
                     }
                 }
                 return true;
