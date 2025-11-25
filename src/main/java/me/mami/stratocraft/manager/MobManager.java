@@ -31,8 +31,7 @@ public class MobManager {
         bear.setCustomName("§7Savaş Ayısı");
         bear.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(150.0);
         bear.setHealth(150.0);
-        bear.setTamed(true);
-        bear.setOwner(owner);
+        // PolarBear tamed edilemez, sadece custom name ile işaretliyoruz
     }
 
     public void spawnShadowPanther(Location loc, Player owner) {

@@ -1,9 +1,11 @@
 package me.mami.stratocraft.manager;
 
+import me.mami.stratocraft.manager.ItemManager;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.*;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 public class BatteryManager {
@@ -12,11 +14,11 @@ public class BatteryManager {
     public void fireMagmaBattery(Player p, Material fuel, boolean boosted, boolean hasAmplifier) {
         int count;
         if (fuel == Material.DIAMOND) count = 5;
-        else if (me.mami.stratocraft.manager.ItemManager.RED_DIAMOND != null && 
-                 p.getInventory().getItemInMainHand().equals(me.mami.stratocraft.manager.ItemManager.RED_DIAMOND)) {
+        else if (ItemManager.RED_DIAMOND != null && 
+                 p.getInventory().getItemInMainHand().equals(ItemManager.RED_DIAMOND)) {
             count = 20;
-        } else if (me.mami.stratocraft.manager.ItemManager.DARK_MATTER != null && 
-                   p.getInventory().getItemInMainHand().equals(me.mami.stratocraft.manager.ItemManager.DARK_MATTER)) {
+        } else if (ItemManager.DARK_MATTER != null && 
+                   p.getInventory().getItemInMainHand().equals(ItemManager.DARK_MATTER)) {
             count = 50;
         } else {
             count = 2;
@@ -103,8 +105,10 @@ public class BatteryManager {
     // 7. TOPRAK SURU (Savunma)
     public void createEarthWall(Player p, Material material) {
         Location start = p.getLocation().add(p.getLocation().getDirection().setY(0).normalize().multiply(2));
-        int height = material == Material.TITANIUM_INGOT ? 5 : 3;
-        Material wallMat = material == Material.TITANIUM_INGOT ? Material.IRON_BLOCK : Material.COBBLESTONE;
+        boolean isTitanium = ItemManager.TITANIUM_INGOT != null && 
+                             ItemManager.isCustomItem(p.getInventory().getItemInMainHand(), "TITANIUM_INGOT");
+        int height = isTitanium ? 5 : 3;
+        Material wallMat = isTitanium ? Material.IRON_BLOCK : Material.COBBLESTONE;
         
         for (int y = 0; y < height; y++) {
             for (int x = -1; x <= 1; x++) {
