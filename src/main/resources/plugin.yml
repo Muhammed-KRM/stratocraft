@@ -4,13 +4,16 @@ main: me.mami.stratocraft.Main
 api-version: 1.20
 authors: [Mami]
 depend: [WorldEdit]
+softdepend: [Vault]
 commands:
   klan:
     description: Klan yonetim komutlari.
-    usage: /klan <kur|kristal|davet|ayril>
+    usage: /klan <kur|kristal|davet|ayril|menü|market>
+    aliases: [klan, clan]
   kontrat:
     description: Kontrat panosu islemleri.
     usage: /kontrat <list|olustur|teslim>
+    aliases: [kontrat, contract]
 permissions:
   stratocraft.*:
     description: Tüm Stratocraft yetkileri
@@ -39,4 +42,10 @@ permissions:
     default: true
   stratocraft.structure.siege:
     description: Kuşatma anıtı kurma yetkisi
+    default: true
+  stratocraft.training:
+    description: Antrenman sistemi yetkisi
+    default: true
+  stratocraft.ghostrecipe:
+    description: Hayalet tarif görüntüleme yetkisi
     default: true

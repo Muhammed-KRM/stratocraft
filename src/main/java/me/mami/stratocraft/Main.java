@@ -43,6 +43,8 @@ public class Main extends JavaPlugin {
     private ConfigManager configManager;
     private me.mami.stratocraft.util.LangManager langManager;
     private me.mami.stratocraft.gui.ClanMenu clanMenu;
+    private me.mami.stratocraft.manager.CombatLogManager combatLogManager;
+    private me.mami.stratocraft.manager.EconomyManager economyManager;
 
     @Override
     public void onEnable() {
@@ -75,6 +77,8 @@ public class Main extends JavaPlugin {
         dataManager = new DataManager(this);
         configManager = new ConfigManager(this);
         langManager = new me.mami.stratocraft.util.LangManager(this);
+        clanMenu = new me.mami.stratocraft.gui.ClanMenu(clanManager);
+        economyManager = new me.mami.stratocraft.manager.EconomyManager();
 
         // Manager bağlantıları
         siegeManager.setBuffManager(buffManager);
@@ -104,6 +108,13 @@ public class Main extends JavaPlugin {
         virtualStorageListener = new VirtualStorageListener(territoryManager);
         Bukkit.getPluginManager().registerEvents(virtualStorageListener, this);
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.ClanChatListener(clanManager), this);
+        // ClanMenu zaten Listener implement ediyor, kaydet
+        Bukkit.getPluginManager().registerEvents(clanMenu, this);
+        
+        // CombatLogManager kaydet (savaştan kaçmayı engellemek için)
+        combatLogManager = new me.mami.stratocraft.manager.CombatLogManager();
+        Bukkit.getPluginManager().registerEvents(combatLogManager, this);
+        combatLogManager.startCleanupTask(this);
         
         // Veri yükleme
         dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener);
@@ -118,15 +129,6 @@ public class Main extends JavaPlugin {
         // 4. Tab Completers
         getCommand("klan").setTabCompleter(new me.mami.stratocraft.command.ClanTabCompleter());
         getCommand("kontrat").setTabCompleter(new me.mami.stratocraft.command.ContractTabCompleter());
-        
-        // 5. GUI Menü Sistemi
-        clanMenu = new me.mami.stratocraft.gui.ClanMenu(clanManager);
-        Bukkit.getPluginManager().registerEvents(clanMenu, this);
-        
-        // 6. Combat Log Manager
-        me.mami.stratocraft.manager.CombatLogManager combatLogManager = new me.mami.stratocraft.manager.CombatLogManager();
-        Bukkit.getPluginManager().registerEvents(combatLogManager, this);
-        combatLogManager.startCleanupTask(this);
         
         // 7. Komutlar (Sadece Admin için - Oyuncular ritüelleri kullanır)
         getCommand("klan").setExecutor(new CommandExecutor() {
