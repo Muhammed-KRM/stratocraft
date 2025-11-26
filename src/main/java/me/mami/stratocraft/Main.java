@@ -134,16 +134,42 @@ public class Main extends JavaPlugin {
         getCommand("klan").setExecutor(new CommandExecutor() {
             @Override
             public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-                // Admin bypass - Sadece adminler komut kullanabilir
-                if (!sender.hasPermission("stratocraft.admin")) {
-                    sender.sendMessage("§cBu komut sadece adminler için! Oyuncular ritüelleri kullanmalı.");
-                    sender.sendMessage("§7Ritüeller: Klan Kurma (3x3 Cobblestone + Crafting Table + Named Paper)");
+                if (!(sender instanceof Player)) {
+                    sender.sendMessage("§cBu komut sadece oyuncular için!");
                     return true;
                 }
                 
-                if (sender instanceof Player) {
-                    Player p = (Player) sender;
-                    if (args.length > 0 && args[0].equalsIgnoreCase("kur")) {
+                Player p = (Player) sender;
+                
+                // HERKESİN KULLANABİLECEĞİ KOMUTLAR (Menü, Bilgi vb.)
+                if (args.length > 0 && args[0].equalsIgnoreCase("menü")) {
+                    clanMenu.openMenu(p);
+                    return true;
+                }
+                
+                if (args.length > 0 && args[0].equalsIgnoreCase("bilgi")) {
+                    Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
+                    if (clan != null) {
+                        p.sendMessage("§6=== Klan Bilgileri ===");
+                        p.sendMessage("§7İsim: §e" + clan.getName());
+                        p.sendMessage("§7Üye Sayısı: §e" + clan.getMembers().size());
+                        p.sendMessage("§7Bakiye: §e" + clan.getBalance() + " altın");
+                        p.sendMessage("§7Teknoloji Seviyesi: §e" + clan.getTechLevel());
+                    } else {
+                        p.sendMessage("§cBir klana üye değilsin!");
+                    }
+                    return true;
+                }
+                
+                // BURADAN SONRASI SADECE ADMİNLER İÇİN
+                if (!p.hasPermission("stratocraft.admin")) {
+                    p.sendMessage("§cDiğer işlemler için Ritüelleri kullanmalısın!");
+                    p.sendMessage("§7Ritüeller: Klan Kurma (3x3 Cobblestone + Crafting Table + Named Paper)");
+                    return true;
+                }
+                
+                // Admin komutları
+                if (args.length > 0 && args[0].equalsIgnoreCase("kur")) {
                         if (args.length > 1) {
                             Clan newClan = clanManager.createClan(args[1], p.getUniqueId());
                             if (newClan != null) {
@@ -155,9 +181,6 @@ public class Main extends JavaPlugin {
                         } else {
                             p.sendMessage("§cKullanım: /klan kur <isim>");
                         }
-                    } else if (args.length > 0 && args[0].equalsIgnoreCase("menü")) {
-                        // GUI Menü aç
-                        clanMenu.openMenu(p);
                     } else if (args.length > 0 && args[0].equalsIgnoreCase("ayril")) {
                         Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
                         if (clan != null) {
@@ -189,9 +212,10 @@ public class Main extends JavaPlugin {
                             p.sendMessage("§eZaten bir bölgeniz var. Yeni kristal dikmek için mevcut bölgeyi kaldırın.");
                         }
                     } else {
-                        p.sendMessage("§eKullanım: /klan <kur|ayril|kristal>");
+                        p.sendMessage("§eKullanım: /klan <menü|bilgi|kur|ayril|kristal>");
+                        p.sendMessage("§7Oyuncular: menü, bilgi");
+                        p.sendMessage("§7Adminler: kur, ayril, kristal");
                     }
-                }
                 return true;
             }
         });
@@ -325,4 +349,15 @@ public class Main extends JavaPlugin {
     public ClanManager getClanManager() { return clanManager; }
     public ScavengerManager getScavengerManager() { return scavengerManager; }
     public BuffManager getBuffManager() { return buffManager; }
+    public me.mami.stratocraft.manager.EconomyManager getEconomyManager() { return economyManager; }
+    public TerritoryManager getTerritoryManager() { return territoryManager; }
+    public ContractManager getContractManager() { return contractManager; }
+    public ShopManager getShopManager() { return shopManager; }
+    public ResearchManager getResearchManager() { return researchManager; }
+    public me.mami.stratocraft.manager.GhostRecipeManager getGhostRecipeManager() { return ghostRecipeManager; }
+    public me.mami.stratocraft.manager.TrainingManager getTrainingManager() { return trainingManager; }
+    public me.mami.stratocraft.gui.ClanMenu getClanMenu() { return clanMenu; }
+    public BatteryManager getBatteryManager() { return batteryManager; }
+    public SiegeManager getSiegeManager() { return siegeManager; }
+    public MissionManager getMissionManager() { return missionManager; }
 }
