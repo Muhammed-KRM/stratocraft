@@ -27,6 +27,7 @@ public class Main extends JavaPlugin {
     private ItemManager itemManager;
     private DisasterManager disasterManager;
     private SiegeManager siegeManager;
+    @SuppressWarnings("unused")
     private CaravanManager caravanManager;
     private ScavengerManager scavengerManager;
     private LogisticsManager logisticsManager;

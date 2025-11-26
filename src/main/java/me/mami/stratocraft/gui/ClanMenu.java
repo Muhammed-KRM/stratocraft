@@ -141,6 +141,9 @@ public class ClanMenu implements Listener {
                 }
                 player.closeInventory();
                 break;
+            default:
+                // Diğer tüm Material'lar için hiçbir şey yapma
+                break;
         }
     }
 }

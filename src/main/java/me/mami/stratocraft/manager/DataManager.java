@@ -11,11 +11,11 @@ import me.mami.stratocraft.model.Structure;
 import me.mami.stratocraft.model.Territory;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
+import me.mami.stratocraft.listener.VirtualStorageListener;
 
 import java.io.*;
 import java.util.*;
@@ -432,6 +432,7 @@ public class DataManager {
     }
     
     private static class ShopData {
+        @SuppressWarnings("unused")
         String id;
         String owner;
         String location;

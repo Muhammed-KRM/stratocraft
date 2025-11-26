@@ -8,6 +8,7 @@ import java.util.UUID;
 public class Mission {
     public enum Type { KILL_MOB, GATHER_ITEM }
 
+    @SuppressWarnings("unused")
     private final UUID playerId;
     private final Type type;
     private final EntityType targetEntity;

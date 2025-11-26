@@ -6,9 +6,11 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Giant;
+import org.bukkit.entity.Entity;
 
 public class DisasterManager {
     private Disaster activeDisaster = null;
+    @SuppressWarnings("unused")
     private long lastDisasterTime = System.currentTimeMillis();
 
     public void triggerDisaster(Disaster.Type type) {
@@ -104,7 +106,7 @@ public class DisasterManager {
                 for (int y = 0; y < 3; y++) {
                     Location blockLoc = surfaceLoc.clone().add(x, y, z);
                     if (blockLoc.getBlock().getType() == org.bukkit.Material.AIR || 
-                        blockLoc.getBlock().getType() == org.bukkit.Material.GRASS ||
+                        blockLoc.getBlock().getType() == org.bukkit.Material.GRASS_BLOCK ||
                         blockLoc.getBlock().getType() == org.bukkit.Material.TALL_GRASS) {
                         blockLoc.getBlock().setType(wreckageMat);
                     }

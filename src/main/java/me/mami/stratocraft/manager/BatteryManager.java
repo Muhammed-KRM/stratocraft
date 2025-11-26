@@ -37,6 +37,7 @@ public class BatteryManager {
         count = (int) (count * trainingMultiplier);
         if (count < 1) count = 1; // En az 1 ateş topu
         
+        @SuppressWarnings("unused")
         float size = hasAmplifier ? 2.0f : 1.0f;
         float yield = hasAmplifier ? 4.0f : 2.0f; // Alev Amplifikatörü ile çap 2 katına çıkar
         yield = (float) (yield * trainingMultiplier); // Mastery çarpanı yield'e de uygulanır

@@ -2,8 +2,6 @@ package me.mami.stratocraft.manager;
 
 import me.mami.stratocraft.model.Clan;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
 

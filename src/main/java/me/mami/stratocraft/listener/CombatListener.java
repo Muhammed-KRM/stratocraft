@@ -3,7 +3,6 @@ package me.mami.stratocraft.listener;
 import me.mami.stratocraft.manager.ClanManager;
 import me.mami.stratocraft.model.Clan;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Giant;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

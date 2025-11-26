@@ -196,6 +196,7 @@ public class GhostRecipeManager {
         public String getRecipeId() { return recipeId; }
         public Location getLocation() { return location; }
         public List<ArmorStand> getGhostBlocks() { return ghostBlocks; }
+        @SuppressWarnings("unused")
         public long getStartTime() { return startTime; }
     }
     

@@ -103,12 +103,12 @@ public class StructureListener implements Listener {
             if (hasAncientGear && hasPiston) {
                 createStructure(p, clan, b, Structure.Type.AUTO_TURRET, "Otomatik Taret");
                 // Malzemeleri tüket
-                if (mainHand.getType() == Material.IRON_NUGGET) {
+                if (mainHand != null && mainHand.getType() == Material.IRON_NUGGET) {
                     mainHand.setAmount(mainHand.getAmount() - 1);
                 } else if (offHand != null && offHand.getType() == Material.IRON_NUGGET) {
                     offHand.setAmount(offHand.getAmount() - 1);
                 }
-                if (mainHand.getType() == Material.PISTON) {
+                if (mainHand != null && mainHand.getType() == Material.PISTON) {
                     mainHand.setAmount(mainHand.getAmount() - 1);
                 } else if (offHand != null && offHand.getType() == Material.PISTON) {
                     offHand.setAmount(offHand.getAmount() - 1);
@@ -269,6 +269,30 @@ public class StructureListener implements Listener {
                 // 32 Altın + 16 Ender Pearl sil
                 removeItems(inv, Material.GOLD_INGOT, 32);
                 removeItems(inv, Material.ENDER_PEARL, 16);
+                break;
+            case TELEPORTER:
+            case INVISIBILITY_CLOAK:
+            case WALL_GENERATOR:
+            case WEATHER_MACHINE:
+            case CORE:
+            case LIBRARY:
+            case MOB_GRINDER:
+            case SIEGE_FACTORY:
+            case XP_BANK:
+            case DRONE_STATION:
+            case POISON_REACTOR:
+            case AUTO_TURRET:
+            case GRAVITY_WELL:
+            case LAVA_TRENCHER:
+            case CROP_ACCELERATOR:
+            case WARNING_SIGN:
+            case MAG_RAIL:
+            case WATCHTOWER:
+            case FOOD_SILO:
+            case OIL_REFINERY:
+            case ARMORY:
+            case AUTO_DRILL:
+                // Bu yapı tipleri için özel maliyet yok veya başka yerden yönetiliyor
                 break;
         }
     }

@@ -15,6 +15,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -351,7 +352,7 @@ public class RitualInteractionListener implements Listener {
         // Efektler
         Location coreLoc = clicked.getLocation().add(0.5, 1, 0.5);
         coreLoc.getWorld().spawnParticle(Particle.CRIT, coreLoc, 30, 0.5, 1, 0.5, 0.3);
-        p.playSound(coreLoc, Sound.ITEM_SHEARS_BREAK, 1f, 1f);
+        p.playSound(coreLoc, Sound.ENTITY_ITEM_BREAK, 1f, 1f);
         
         // Işınlanma (bölgenin dışına)
         Location teleportLoc = territoryManager.getClanManager().getAllClans().stream()
@@ -462,15 +463,15 @@ public class RitualInteractionListener implements Listener {
     // ========== MÜTTEFİKLİK: "Kan Anlaşması" ==========
     
     @EventHandler(priority = EventPriority.HIGH)
-    public void onAllianceRitual(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_ENTITY) return;
+    public void onAllianceRitual(PlayerInteractEntityEvent event) {
         if (event.getHand() != EquipmentSlot.HAND) return;
-        if (!event.getPlayer().isSneaking()) return; // Shift kontrolü
-        
         if (!(event.getRightClicked() instanceof Player)) return;
-        
+
         Player p1 = event.getPlayer();
         Player p2 = (Player) event.getRightClicked();
+
+        // Her iki oyuncu da shift'te olmalı
+        if (!p1.isSneaking() || !p2.isSneaking()) return;
         
         // Elinde Elmas var mı?
         ItemStack handItem = p1.getInventory().getItemInMainHand();

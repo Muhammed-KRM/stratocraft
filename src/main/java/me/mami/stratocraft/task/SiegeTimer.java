@@ -7,6 +7,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class SiegeTimer extends BukkitRunnable {
     private final Clan defender;
     private int countdown;
+    @SuppressWarnings("unused")
     private final me.mami.stratocraft.Main plugin;
 
     public SiegeTimer(Clan defender, me.mami.stratocraft.Main plugin) {

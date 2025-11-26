@@ -2,6 +2,7 @@ package me.mami.stratocraft.listener;
 
 import me.mami.stratocraft.manager.ItemManager;
 import org.bukkit.Material;
+import org.bukkit.entity.AbstractVillager;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -17,18 +18,17 @@ public class VillagerListener implements Listener {
 
     @EventHandler
     public void onVillagerTrade(VillagerAcquireTradeEvent event) {
-        Villager villager = event.getEntity();
-        
-        // Sadece belirli mesleklerde tarif kitapları satılır
-        if (villager.getProfession() == Villager.Profession.CLERIC || 
-            villager.getProfession() == Villager.Profession.LIBRARIAN) {
-            
-            MerchantRecipe recipe = event.getRecipe();
-            
+        AbstractVillager abstractVillager = event.getEntity();
+
+        // Sadece gerçek köylülerde (Wandering Trader hariç) tarif kitapları satılır
+        if (abstractVillager instanceof Villager villager &&
+                (villager.getProfession() == Villager.Profession.CLERIC ||
+                 villager.getProfession() == Villager.Profession.LIBRARIAN)) {
+
             // %30 şansla tarif kitabı ekle
             if (random.nextDouble() < 0.3) {
-                List<MerchantRecipe> newRecipes = new ArrayList<>(villager.getRecipes());
-                
+                List<MerchantRecipe> newRecipes = new ArrayList<>(abstractVillager.getRecipes());
+
                 // Tektonik Sabitleyici tarifi
                 if (ItemManager.RECIPE_BOOK_TECTONIC != null) {
                     MerchantRecipe tectonicRecipe = new MerchantRecipe(
@@ -39,8 +39,8 @@ public class VillagerListener implements Listener {
                     tectonicRecipe.addIngredient(new org.bukkit.inventory.ItemStack(Material.BOOK, 1));
                     newRecipes.add(tectonicRecipe);
                 }
-                
-                villager.setRecipes(newRecipes);
+
+                abstractVillager.setRecipes(newRecipes);
             }
         }
     }

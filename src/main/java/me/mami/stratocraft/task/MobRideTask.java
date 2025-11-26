@@ -4,8 +4,7 @@ import me.mami.stratocraft.manager.ItemManager;
 import me.mami.stratocraft.manager.MobManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Phantom;
 import org.bukkit.inventory.ItemStack;
@@ -83,8 +82,8 @@ public class MobRideTask extends BukkitRunnable {
                                     }
                                     
                                     vehicle.removePassenger(p);
-                                    if (vehicle instanceof LivingEntity) {
-                                        ((LivingEntity) vehicle).setTarget(p);
+                                    if (vehicle instanceof Mob mob) {
+                                        mob.setTarget(p);
                                     }
                                     wyvernFeedTimes.remove(playerId);
                                     wyvernLastCheck.remove(playerId);

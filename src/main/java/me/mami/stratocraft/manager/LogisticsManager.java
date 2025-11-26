@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class LogisticsManager {
+    @SuppressWarnings("unused")
     private final TerritoryManager territoryManager;
     private final Map<Location, Location> railConnections = new HashMap<>(); // Start -> End
 

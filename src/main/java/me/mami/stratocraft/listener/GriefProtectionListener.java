@@ -2,7 +2,6 @@ package me.mami.stratocraft.listener;
 
 import me.mami.stratocraft.manager.TerritoryManager;
 import me.mami.stratocraft.model.Clan;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -28,9 +27,6 @@ public class GriefProtectionListener implements Listener {
     
     @EventHandler(priority = EventPriority.HIGH)
     public void onPistonExtend(BlockPistonExtendEvent event) {
-        // Admin bypass kontrolü (piston bloğunun sahibi admin ise)
-        org.bukkit.block.Block pistonBlock = event.getBlock();
-        org.bukkit.entity.Player player = null;
         // Pistonu koyan oyuncuyu bul (basit versiyon - event'ten direkt alınamaz)
         // Bu durumda bypass kontrolü yapılamaz, ancak genel olarak admin bypass eklenebilir
         // Pistonun ittiği bloklar başka bir klanın bölgesine giriyor mu?

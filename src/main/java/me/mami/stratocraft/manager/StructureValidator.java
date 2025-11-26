@@ -1,6 +1,7 @@
 package me.mami.stratocraft.manager;
 
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -21,7 +22,14 @@ public class StructureValidator {
             return false;
         }
 
-        try (ClipboardReader reader = ClipboardFormats.findByFile(file).getReader(new FileInputStream(file))) {
+        ClipboardFormat format = ClipboardFormats.findByFile(file);
+        if (format == null) {
+            Main.getInstance().getLogger().warning("Şema formatı desteklenmiyor: " + schematicName);
+            return false;
+        }
+        
+        try (FileInputStream fis = new FileInputStream(file);
+             ClipboardReader reader = format.getReader(fis)) {
             Clipboard clipboard = reader.read();
             BlockVector3 origin = clipboard.getOrigin();
 

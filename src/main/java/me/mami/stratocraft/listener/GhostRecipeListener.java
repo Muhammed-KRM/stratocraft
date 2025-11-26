@@ -4,7 +4,6 @@ import me.mami.stratocraft.manager.GhostRecipeManager;
 import me.mami.stratocraft.manager.ItemManager;
 import me.mami.stratocraft.manager.ResearchManager;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
