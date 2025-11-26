@@ -11,3 +11,32 @@ commands:
   kontrat:
     description: Kontrat panosu islemleri.
     usage: /kontrat <list|olustur|teslim>
+permissions:
+  stratocraft.*:
+    description: Tüm Stratocraft yetkileri
+    default: op
+    children:
+      stratocraft.admin: true
+      stratocraft.create: true
+      stratocraft.bypass: true
+  stratocraft.admin:
+    description: Admin komutları
+    default: op
+  stratocraft.create:
+    description: Klan kurma yetkisi
+    default: true
+  stratocraft.bypass:
+    description: Bölge korumalarını bypass etme
+    default: op
+  stratocraft.structure.*:
+    description: Tüm yapı yetkileri
+    default: true
+    children:
+      stratocraft.structure.core: true
+      stratocraft.structure.siege: true
+  stratocraft.structure.core:
+    description: Ana kristal kurma yetkisi
+    default: true
+  stratocraft.structure.siege:
+    description: Kuşatma anıtı kurma yetkisi
+    default: true

@@ -1,0 +1,77 @@
+# ============================================
+# Stratocraft Language File
+# ============================================
+
+# Klan Mesajları
+clan:
+  created: "&aKlan kuruldu: {name}"
+  joined: "&a{player} klana katıldı!"
+  left: "&c{player} klanı terk etti."
+  not-found: "&cKlan bulunamadı."
+  already-in-clan: "&cZaten bir klanda bulunuyorsun."
+  max-members: "&cKlan maksimum üye sayısına ulaştı."
+  no-permission: "&cBu işlem için yetkin yok."
+
+# Kuşatma Mesajları
+siege:
+  started: "&4&lSAVAŞ İLANI! &e{attacker} klani, {defender} klanına savaş açtı!"
+  warmup: "&cKuşatma Başlangıcına Kalan Süre: {time} dakika."
+  active: "&4&lSAVAŞ BAŞLADI! &c{defender} klanının korumaları kalktı! Artık saldırı serbest."
+  victory: "&2&lZAFER! &a{winner} klanı, {loser} klanını fethetti!"
+  already-under-siege: "&eBu klan zaten kuşatma altında."
+  invalid-location: "&cKuşatma Anıtı düşman bölgesinin yakınında olmalı!"
+
+# Felaket Mesajları
+disaster:
+  started: "&4&lFELAKET! &c{type} başladı!"
+  ended: "&aFelaket sona erdi."
+  wreckage-created: "&6Enkaz oluşturuldu: {location}"
+
+# Matkap Mesajları
+drill:
+  chest-full: "&c&l[MATKAP] Sandık dolu! Üretim durdu."
+  no-chest: "&c&l[MATKAP] Sandık bulunamadı!"
+
+# Wyvern Mesajları
+wyvern:
+  hungry: "&c&lWyvern aç! Kızıl Elmas gerekli!"
+  fed: "&aWyvern besledin! 60 saniye daha uçabilirsin."
+
+# Radar Mesajları
+radar:
+  enemy-detected: "&c&l[RADAR] &7Düşman tespit edildi!"
+  enemy-info: "&e  → İsim: &c{name}"
+  enemy-distance: "&e  → Mesafe: &c{distance} blok"
+  enemy-coords: "&e  → Koordinat: &7X:{x} Y:{y} Z:{z}"
+
+# Yapı Mesajları
+structure:
+  created: "&a{name} aktif edildi!"
+  insufficient-materials: "&cYapı inşa etmek için yeterli malzemeniz yok!"
+  core-destroyed: "&4&lKRISTAL YIKILDI! &c{clan} klanının ana kristali parçalandı!"
+
+# Market Mesajları
+market:
+  created: "&aMarket başarıyla kuruldu!"
+  purchased: "&aSatın alındı: {item}"
+  insufficient-funds: "&cYetersiz bakiye!"
+
+# Sözleşme Mesajları
+contract:
+  created: "&aSözleşme oluşturuldu!"
+  completed: "&aSözleşme tamamlandı! {reward} altın kazandın!"
+  breached: "&4&lSÖZLEŞMEYİ İHLAL ETTİN! HAİN DAMGASI YEDİN."
+
+# Grief Protection Mesajları
+grief:
+  piston-blocked: "&cPiston hareketi engellendi: Bölge korumalı!"
+  hopper-blocked: "&cHuni hırsızlığı engellendi!"
+  liquid-blocked: "&cAkışkan hareketi engellendi: Bölge korumalı!"
+  explosion-blocked: "&cPatlama engellendi: Bölge korumalı!"
+
+# Genel Mesajlar
+general:
+  no-permission: "&cBu komut için yetkin yok!"
+  player-not-found: "&cOyuncu bulunamadı."
+  invalid-usage: "&cKullanım: {usage}"
+

@@ -18,8 +18,25 @@ public class BuffManager {
     private final Map<UUID, Long> conquerorBuffs = new HashMap<>(); // Fatih Buff'ı
     private final Map<UUID, Long> heroBuffs = new HashMap<>(); // Kahraman Buff'ı
     
-    private static final long CONQUEROR_DURATION = 24 * 60 * 60 * 1000; // 24 saat
-    private static final long HERO_DURATION = 48 * 60 * 60 * 1000; // 48 saat
+    private me.mami.stratocraft.Main plugin;
+    
+    public void setPlugin(me.mami.stratocraft.Main plugin) {
+        this.plugin = plugin;
+    }
+    
+    private long getConquerorDuration() {
+        if (plugin != null && plugin.getConfigManager() != null) {
+            return plugin.getConfigManager().getConquerorBuffDuration();
+        }
+        return 24 * 60 * 60 * 1000; // Varsayılan 24 saat
+    }
+    
+    private long getHeroDuration() {
+        if (plugin != null && plugin.getConfigManager() != null) {
+            return plugin.getConfigManager().getHeroBuffDuration();
+        }
+        return 48 * 60 * 60 * 1000; // Varsayılan 48 saat
+    }
 
     /**
      * Fatih Buff'ı: Savaş kazanan klana verilir
@@ -27,7 +44,7 @@ public class BuffManager {
      * - %30 daha hızlı üretim
      */
     public void applyConquerorBuff(Clan winner) {
-        conquerorBuffs.put(winner.getId(), System.currentTimeMillis() + CONQUEROR_DURATION);
+        conquerorBuffs.put(winner.getId(), System.currentTimeMillis() + getConquerorDuration());
         Bukkit.broadcastMessage("§6§l" + winner.getName() + " klanı Fatih Buff'ı kazandı! 24 saat sürecek.");
         
         // Tüm klan üyelerine buff uygula (sadece online olanlara)
@@ -46,7 +63,7 @@ public class BuffManager {
      * - %25 daha fazla savunma
      */
     public void applyHeroBuff(Clan victim) {
-        heroBuffs.put(victim.getId(), System.currentTimeMillis() + HERO_DURATION);
+        heroBuffs.put(victim.getId(), System.currentTimeMillis() + getHeroDuration());
         Bukkit.broadcastMessage("§b§l" + victim.getName() + " klanı Kahraman Buff'ı kazandı! 48 saat sürecek.");
         
         for (UUID memberId : victim.getMembers().keySet()) {

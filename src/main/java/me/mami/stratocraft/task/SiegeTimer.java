@@ -6,10 +6,15 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 public class SiegeTimer extends BukkitRunnable {
     private final Clan defender;
-    private int countdown = 5 * 60; // 5 dakika warm-up
+    private int countdown;
+    private final me.mami.stratocraft.Main plugin;
 
-    public SiegeTimer(Clan defender) {
+    public SiegeTimer(Clan defender, me.mami.stratocraft.Main plugin) {
         this.defender = defender;
+        this.plugin = plugin;
+        // Config'den warmup süresini al
+        this.countdown = plugin.getConfigManager() != null ? 
+            plugin.getConfigManager().getSiegeWarmupTime() : 300; // Varsayılan 5 dakika
     }
 
     @Override

@@ -1,0 +1,48 @@
+# ============================================
+# Stratocraft Configuration File
+# ============================================
+
+# Klan Ayarları
+clan:
+  max-members: 10        # Maksimum klan üye sayısı
+  max-guests: 5          # Maksimum misafir sayısı
+
+# Kuşatma Ayarları
+siege:
+  warmup-time: 300       # Hazırlık süresi (saniye) - 5 dakika
+  loot-percentage: 0.5  # Yağma yüzdesi (%50)
+
+# Felaket Ayarları
+disaster:
+  cooldown: 3600000      # Felaket arası bekleme süresi (milisaniye) - 1 saat
+  wreckage-size: 5       # Enkaz boyutu (5x5x3)
+
+# Matkap Ayarları
+drill:
+  interval: 600          # Üretim aralığı (tick) - 30 saniye
+  max-per-chunk: 3       # Chunk başına maksimum matkap sayısı
+
+# Buff Ayarları
+buff:
+  conqueror-duration: 86400000    # Fatih Buff süresi (milisaniye) - 24 saat
+  hero-duration: 172800000        # Kahraman Buff süresi (milisaniye) - 48 saat
+
+# Wyvern Ayarları
+wyvern:
+  feed-interval: 60000   # Beslenme aralığı (milisaniye) - 60 saniye
+  check-interval: 1000   # Kontrol aralığı (milisaniye) - 1 saniye
+
+# Radar Ayarları
+radar:
+  range: 200             # Radar menzili (blok)
+  warning-cooldown: 10000  # Uyarı cooldown (milisaniye) - 10 saniye
+
+# Yapı Ayarları
+structure:
+  max-shield-fuel: 43200 # Maksimum kalkan yakıtı (saniye) - 12 saat
+
+# Performans Ayarları
+performance:
+  async-saving: true     # Async kayıt aktif mi?
+  max-particles-per-tick: 50  # Tick başına maksimum partikül sayısı
+

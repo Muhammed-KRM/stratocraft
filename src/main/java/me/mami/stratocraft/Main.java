@@ -38,6 +38,8 @@ public class Main extends JavaPlugin {
     private BuffManager buffManager;
     private DataManager dataManager;
     private VirtualStorageListener virtualStorageListener;
+    private ConfigManager configManager;
+    private me.mami.stratocraft.util.LangManager langManager;
 
     @Override
     public void onEnable() {
@@ -64,7 +66,10 @@ public class Main extends JavaPlugin {
         researchManager = new ResearchManager();
         missionManager = new MissionManager();
         buffManager = new BuffManager();
+        buffManager.setPlugin(this);
         dataManager = new DataManager(this);
+        configManager = new ConfigManager(this);
+        langManager = new me.mami.stratocraft.util.LangManager(this);
 
         // Manager bağlantıları
         siegeManager.setBuffManager(buffManager);
@@ -86,6 +91,7 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new StructureListener(clanManager, researchManager), this);
         Bukkit.getPluginManager().registerEvents(new ConsumableListener(), this);
         Bukkit.getPluginManager().registerEvents(new VillagerListener(), this);
+        Bukkit.getPluginManager().registerEvents(new GriefProtectionListener(territoryManager), this);
         virtualStorageListener = new VirtualStorageListener(territoryManager);
         Bukkit.getPluginManager().registerEvents(virtualStorageListener, this);
         
@@ -96,7 +102,7 @@ public class Main extends JavaPlugin {
         new BuffTask(territoryManager).runTaskTimer(this, 20L, 20L); 
         new DisasterTask(disasterManager, territoryManager).runTaskTimer(this, 20L, 20L); 
         new MobRideTask(mobManager).runTaskTimer(this, 1L, 1L);
-        new DrillTask(territoryManager).runTaskTimer(this, 600L, 600L); // Her 30 saniye
+        new DrillTask(territoryManager).runTaskTimer(this, configManager.getDrillInterval(), configManager.getDrillInterval());
         new CropTask(territoryManager).runTaskTimer(this, 40L, 40L); // Her 2 saniye 
 
         // 4. Komutlar
@@ -256,13 +262,26 @@ public class Main extends JavaPlugin {
     
     @Override
     public void onDisable() {
-        // Veri kaydetme
+        // Veri kaydetme (Async veya Sync)
         if (dataManager != null && clanManager != null && contractManager != null && 
             shopManager != null && virtualStorageListener != null) {
-            dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener);
+            if (configManager != null && configManager.isAsyncSaving()) {
+                // Async kayıt
+                Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+                    dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener);
+                    getLogger().info("Stratocraft: Veriler asenkron olarak kaydedildi.");
+                });
+            } else {
+                // Sync kayıt
+                dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener);
+                getLogger().info("Stratocraft: Veriler kaydedildi.");
+            }
         }
-        getLogger().info("Stratocraft: Veriler kaydedildi, plugin kapatılıyor.");
+        getLogger().info("Stratocraft: Plugin kapatılıyor.");
     }
+    
+    public ConfigManager getConfigManager() { return configManager; }
+    public me.mami.stratocraft.util.LangManager getLangManager() { return langManager; }
 
     public static Main getInstance() { return instance; }
     

@@ -33,7 +33,8 @@ public class SiegeListener implements Listener {
             if (!siegeManager.isUnderSiege(defender)) {
                 
                 siegeManager.startSiege(attacker, defender);
-                new SiegeTimer(defender).runTaskTimer(me.mami.stratocraft.Main.getInstance(), 20L, 20L); // 1 saniye = 20 tick
+                new SiegeTimer(defender, me.mami.stratocraft.Main.getInstance())
+                    .runTaskTimer(me.mami.stratocraft.Main.getInstance(), 20L, 20L); // 1 saniye = 20 tick
                 event.getPlayer().sendMessage("§6Kuşatma İlan Edildi! Hazırlık süresi başladı.");
             } else {
                 event.getPlayer().sendMessage("§eBu klan zaten kuşatma altında.");

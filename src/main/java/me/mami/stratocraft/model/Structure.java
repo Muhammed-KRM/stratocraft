@@ -42,8 +42,12 @@ public class Structure {
     private final Type type;
     private final Location location;
     private int level;
-    private int shieldFuel = 0; 
-    private final int MAX_FUEL = 12 * 60; // 12 Saat
+    private int shieldFuel = 0;
+    
+    // MAX_FUEL artık ConfigManager'dan gelecek, burada sadece varsayılan değer
+    public static int getDefaultMaxFuel() {
+        return 12 * 60; // 12 Saat (saniye cinsinden)
+    }
 
     public Structure(Type type, Location location, int level) {
         this.type = type;
@@ -56,7 +60,14 @@ public class Structure {
     public int getLevel() { return level; }
     public void setLevel(int level) { this.level = level; }
 
-    public void addFuel(int amount) { this.shieldFuel = Math.min(this.shieldFuel + amount, MAX_FUEL); }
+    public void addFuel(int amount, int maxFuel) { 
+        this.shieldFuel = Math.min(this.shieldFuel + amount, maxFuel); 
+    }
+    
+    // Geriye uyumluluk için eski metod (varsayılan değer kullanır)
+    public void addFuel(int amount) { 
+        this.shieldFuel = Math.min(this.shieldFuel + amount, getDefaultMaxFuel()); 
+    }
     public void consumeFuel() { if (this.shieldFuel > 0) this.shieldFuel--; }
     public boolean isShieldActive() { return this.shieldFuel > 0; }
     public int getShieldFuel() { return shieldFuel; }
