@@ -17,50 +17,65 @@ import java.util.UUID;
 public class MobRideTask extends BukkitRunnable {
     private final MobManager mobManager;
     private final Map<UUID, Long> wyvernFeedTimes = new HashMap<>(); // Wyvern beslenme zamanları
-    private static final long FEED_INTERVAL = 1200L; // 60 saniye = 1200 tick
+    private final Map<UUID, Long> wyvernLastCheck = new HashMap<>(); // Son kontrol zamanı (optimizasyon)
+    private static final long FEED_INTERVAL = 60000L; // 60 saniye (milisaniye)
+    private static final long CHECK_INTERVAL = 1000L; // 1 saniyede bir kontrol et (optimizasyon)
 
     public MobRideTask(MobManager mm) { this.mobManager = mm; }
 
     @Override
     public void run() {
+        long currentTime = System.currentTimeMillis();
+        
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (p.isInsideVehicle()) {
                 mobManager.handleRiding(p);
                 
-                // WYVERN BESLEME KONTROLÜ
+                // WYVERN BESLEME KONTROLÜ (Optimize edilmiş: Her saniye kontrol)
                 Entity vehicle = p.getVehicle();
                 if (vehicle != null && vehicle instanceof Phantom) {
                     Phantom phantom = (Phantom) vehicle;
                     if (phantom.getCustomName() != null && phantom.getCustomName().contains("Wyvern")) {
                         UUID playerId = p.getUniqueId();
-                        long currentTime = System.currentTimeMillis();
                         
-                        // İlk kontrol veya 60 saniye geçti mi?
-                        if (!wyvernFeedTimes.containsKey(playerId) || 
-                            (currentTime - wyvernFeedTimes.get(playerId)) >= 60000) {
+                        // Son kontrol zamanını kontrol et (optimizasyon)
+                        Long lastCheck = wyvernLastCheck.get(playerId);
+                        if (lastCheck == null || (currentTime - lastCheck) >= CHECK_INTERVAL) {
+                            wyvernLastCheck.put(playerId, currentTime);
                             
-                            // Oyuncunun envanterinde Kızıl Elmas var mı?
-                            boolean hasRedDiamond = false;
-                            for (ItemStack item : p.getInventory().getContents()) {
-                                if (item != null && ItemManager.isCustomItem(item, "RED_DIAMOND")) {
-                                    hasRedDiamond = true;
-                                    item.setAmount(item.getAmount() - 1);
-                                    break;
+                            // İlk kontrol veya 60 saniye geçti mi?
+                            if (!wyvernFeedTimes.containsKey(playerId) || 
+                                (currentTime - wyvernFeedTimes.get(playerId)) >= FEED_INTERVAL) {
+                                
+                                // Oyuncunun envanterinde Kızıl Elmas var mı?
+                                boolean hasRedDiamond = false;
+                                for (ItemStack item : p.getInventory().getContents()) {
+                                    if (item != null && ItemManager.isCustomItem(item, "RED_DIAMOND")) {
+                                        hasRedDiamond = true;
+                                        // Eşyayı sil
+                                        if (item.getAmount() > 1) {
+                                            item.setAmount(item.getAmount() - 1);
+                                        } else {
+                                            p.getInventory().removeItem(item);
+                                        }
+                                        break;
+                                    }
                                 }
-                            }
-                            
-                            if (!hasRedDiamond) {
-                                // Kızıl Elmas yok - Wyvern saldırır
-                                p.sendMessage("§c§lWyvern aç! Kızıl Elmas gerekli!");
-                                vehicle.removePassenger(p);
-                                if (vehicle instanceof LivingEntity) {
-                                    ((LivingEntity) vehicle).setTarget(p);
+                                
+                                if (!hasRedDiamond) {
+                                    // Kızıl Elmas yok - Wyvern saldırır
+                                    p.sendMessage("§c§lWyvern aç! Kızıl Elmas gerekli!");
+                                    vehicle.removePassenger(p);
+                                    if (vehicle instanceof LivingEntity) {
+                                        ((LivingEntity) vehicle).setTarget(p);
+                                    }
+                                    wyvernFeedTimes.remove(playerId);
+                                    wyvernLastCheck.remove(playerId);
+                                } else {
+                                    // Beslendi - 60 saniye daha uçabilir
+                                    wyvernFeedTimes.put(playerId, currentTime);
+                                    p.sendMessage("§aWyvern besledin! 60 saniye daha uçabilirsin.");
                                 }
-                                wyvernFeedTimes.remove(playerId);
-                            } else {
-                                // Beslendi
-                                wyvernFeedTimes.put(playerId, currentTime);
-                                p.sendMessage("§aWyvern besledin! 60 saniye daha uçabilirsin.");
                             }
                         }
                     }
@@ -68,6 +83,7 @@ public class MobRideTask extends BukkitRunnable {
             } else {
                 // Araçtan indi, beslenme zamanını temizle
                 wyvernFeedTimes.remove(p.getUniqueId());
+                wyvernLastCheck.remove(p.getUniqueId());
             }
         }
     }

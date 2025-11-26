@@ -212,18 +212,26 @@ public class StructureListener implements Listener {
         switch (type) {
             case ALCHEMY_TOWER:
                 // Simya Kulesi: 32 Altın + 16 Elmas
-                return inv.contains(Material.GOLD_INGOT, 32) && inv.contains(Material.DIAMOND, 16);
+                return inv.containsAtLeast(new org.bukkit.inventory.ItemStack(Material.GOLD_INGOT, 32), 32) &&
+                       inv.containsAtLeast(new org.bukkit.inventory.ItemStack(Material.DIAMOND, 16), 16);
             case TECTONIC_STABILIZER:
                 // Tektonik Sabitleyici: 16 Titanyum + 8 Piston
-                return (ItemManager.TITANIUM_INGOT != null && 
-                        inv.contains(ItemManager.TITANIUM_INGOT, 16)) &&
-                       inv.contains(Material.PISTON, 8);
+                if (ItemManager.TITANIUM_INGOT == null) return false;
+                int titaniumCount = 0;
+                for (org.bukkit.inventory.ItemStack item : inv.getContents()) {
+                    if (item != null && ItemManager.isCustomItem(item, "TITANIUM_INGOT")) {
+                        titaniumCount += item.getAmount();
+                    }
+                }
+                return titaniumCount >= 16 && inv.containsAtLeast(new org.bukkit.inventory.ItemStack(Material.PISTON, 8), 8);
             case HEALING_BEACON:
                 // Şifa Kulesi: 16 Demir + 8 Lapis
-                return inv.contains(Material.IRON_INGOT, 16) && inv.contains(Material.LAPIS_LAZULI, 8);
+                return inv.containsAtLeast(new org.bukkit.inventory.ItemStack(Material.IRON_INGOT, 16), 16) &&
+                       inv.containsAtLeast(new org.bukkit.inventory.ItemStack(Material.LAPIS_LAZULI, 8), 8);
             case GLOBAL_MARKET_GATE:
                 // Global Pazar: 32 Altın + 16 Ender Pearl
-                return inv.contains(Material.GOLD_INGOT, 32) && inv.contains(Material.ENDER_PEARL, 16);
+                return inv.containsAtLeast(new org.bukkit.inventory.ItemStack(Material.GOLD_INGOT, 32), 32) &&
+                       inv.containsAtLeast(new org.bukkit.inventory.ItemStack(Material.ENDER_PEARL, 16), 16);
             default:
                 return true; // Diğer yapılar için maliyet yok (şimdilik)
         }
@@ -234,23 +242,51 @@ public class StructureListener implements Listener {
         
         switch (type) {
             case ALCHEMY_TOWER:
-                inv.removeItem(new org.bukkit.inventory.ItemStack(Material.GOLD_INGOT, 32),
-                              new org.bukkit.inventory.ItemStack(Material.DIAMOND, 16));
+                // 32 Altın + 16 Elmas sil
+                removeItems(inv, Material.GOLD_INGOT, 32);
+                removeItems(inv, Material.DIAMOND, 16);
                 break;
             case TECTONIC_STABILIZER:
+                // 16 Titanyum + 8 Piston sil
                 if (ItemManager.TITANIUM_INGOT != null) {
-                    inv.removeItem(ItemManager.TITANIUM_INGOT.clone().asQuantity(16),
-                                  new org.bukkit.inventory.ItemStack(Material.PISTON, 8));
+                    removeCustomItems(inv, "TITANIUM_INGOT", 16);
                 }
+                removeItems(inv, Material.PISTON, 8);
                 break;
             case HEALING_BEACON:
-                inv.removeItem(new org.bukkit.inventory.ItemStack(Material.IRON_INGOT, 16),
-                              new org.bukkit.inventory.ItemStack(Material.LAPIS_LAZULI, 8));
+                // 16 Demir + 8 Lapis sil
+                removeItems(inv, Material.IRON_INGOT, 16);
+                removeItems(inv, Material.LAPIS_LAZULI, 8);
                 break;
             case GLOBAL_MARKET_GATE:
-                inv.removeItem(new org.bukkit.inventory.ItemStack(Material.GOLD_INGOT, 32),
-                              new org.bukkit.inventory.ItemStack(Material.ENDER_PEARL, 16));
+                // 32 Altın + 16 Ender Pearl sil
+                removeItems(inv, Material.GOLD_INGOT, 32);
+                removeItems(inv, Material.ENDER_PEARL, 16);
                 break;
+        }
+    }
+    
+    // Yardımcı metod: Normal eşyaları sil
+    private void removeItems(org.bukkit.inventory.Inventory inv, Material material, int amount) {
+        int remaining = amount;
+        for (org.bukkit.inventory.ItemStack item : inv.getContents()) {
+            if (item != null && item.getType() == material && remaining > 0) {
+                int remove = Math.min(item.getAmount(), remaining);
+                item.setAmount(item.getAmount() - remove);
+                remaining -= remove;
+            }
+        }
+    }
+    
+    // Yardımcı metod: Özel eşyaları sil
+    private void removeCustomItems(org.bukkit.inventory.Inventory inv, String customId, int amount) {
+        int remaining = amount;
+        for (org.bukkit.inventory.ItemStack item : inv.getContents()) {
+            if (item != null && ItemManager.isCustomItem(item, customId) && remaining > 0) {
+                int remove = Math.min(item.getAmount(), remaining);
+                item.setAmount(item.getAmount() - remove);
+                remaining -= remove;
+            }
         }
     }
 }

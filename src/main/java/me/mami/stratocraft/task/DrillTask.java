@@ -45,8 +45,25 @@ public class DrillTask extends BukkitRunnable {
                                 // Sandığa ekle
                                 org.bukkit.block.Chest chest = (org.bukkit.block.Chest) outputBlock.getState();
                                 ItemStack oreItem = new ItemStack(ore, random.nextInt(3) + 1);
-                                if (chest.getInventory().firstEmpty() != -1) {
-                                    chest.getInventory().addItem(oreItem);
+                                
+                                // Sandık dolu mu kontrol et
+                                if (chest.getInventory().firstEmpty() == -1) {
+                                    // Sandık dolu - üretimi durdur
+                                    // Oyunculara uyarı göndermek için klan üyelerini bul
+                                    for (org.bukkit.entity.Player member : Bukkit.getOnlinePlayers()) {
+                                        if (clan.getMembers().containsKey(member.getUniqueId()) &&
+                                            member.getLocation().distance(drillLoc) <= 50) {
+                                            member.sendMessage("§c§l[MATKAP] Sandık dolu! Üretim durdu.");
+                                        }
+                                    }
+                                    continue; // Bu matkap için üretimi durdur
+                                }
+                                
+                                // Sandığa ekle
+                                Map<Integer, ItemStack> remaining = chest.getInventory().addItem(oreItem);
+                                if (!remaining.isEmpty()) {
+                                    // Eğer eklenemeyen eşya varsa (nadir durum), üretimi durdur
+                                    continue;
                                 }
                             } else {
                                 // Sadece sandık yoksa yere düşür (lag önleme: despawn süresini kısalt)
