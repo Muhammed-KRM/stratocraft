@@ -7,6 +7,8 @@ import me.mami.stratocraft.model.Territory;
 import me.mami.stratocraft.task.BuffTask;
 import me.mami.stratocraft.task.DisasterTask;
 import me.mami.stratocraft.task.MobRideTask;
+import me.mami.stratocraft.task.DrillTask;
+import me.mami.stratocraft.task.CropTask;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -33,6 +35,7 @@ public class Main extends JavaPlugin {
     private ShopManager shopManager;
     private ResearchManager researchManager;
     private MissionManager missionManager;
+    private BuffManager buffManager;
 
     @Override
     public void onEnable() {
@@ -49,6 +52,7 @@ public class Main extends JavaPlugin {
         batteryManager = new BatteryManager();
         siegeManager = new SiegeManager();
         disasterManager = new DisasterManager();
+        batteryManager.setDisasterManager(disasterManager);
         caravanManager = new CaravanManager();
         scavengerManager = new ScavengerManager();
         logisticsManager = new LogisticsManager(territoryManager);
@@ -57,6 +61,12 @@ public class Main extends JavaPlugin {
         shopManager = new ShopManager();
         researchManager = new ResearchManager();
         missionManager = new MissionManager();
+        buffManager = new BuffManager();
+
+        // Manager bağlantıları
+        siegeManager.setBuffManager(buffManager);
+        disasterManager.setBuffManager(buffManager);
+        disasterManager.setTerritoryManager(territoryManager);
 
         // 2. Dinleyicileri Kaydet
         Bukkit.getPluginManager().registerEvents(new BatteryListener(batteryManager, territoryManager), this);
@@ -71,11 +81,16 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new MissionListener(missionManager), this);
         Bukkit.getPluginManager().registerEvents(new ResearchListener(researchManager), this);
         Bukkit.getPluginManager().registerEvents(new StructureListener(clanManager, researchManager), this);
+        Bukkit.getPluginManager().registerEvents(new ConsumableListener(), this);
+        Bukkit.getPluginManager().registerEvents(new VillagerListener(), this);
+        Bukkit.getPluginManager().registerEvents(new VirtualStorageListener(territoryManager), this);
 
         // 3. Zamanlayıcıları Başlat
         new BuffTask(territoryManager).runTaskTimer(this, 20L, 20L); 
         new DisasterTask(disasterManager, territoryManager).runTaskTimer(this, 20L, 20L); 
-        new MobRideTask(mobManager).runTaskTimer(this, 1L, 1L); 
+        new MobRideTask(mobManager).runTaskTimer(this, 1L, 1L);
+        new DrillTask(territoryManager).runTaskTimer(this, 600L, 600L); // Her 30 saniye
+        new CropTask(territoryManager).runTaskTimer(this, 40L, 40L); // Her 2 saniye 
 
         // 4. Komutlar
         getCommand("klan").setExecutor(new CommandExecutor() {
@@ -233,4 +248,10 @@ public class Main extends JavaPlugin {
     }
 
     public static Main getInstance() { return instance; }
+    
+    // Getter metodları
+    public DisasterManager getDisasterManager() { return disasterManager; }
+    public ClanManager getClanManager() { return clanManager; }
+    public ScavengerManager getScavengerManager() { return scavengerManager; }
+    public BuffManager getBuffManager() { return buffManager; }
 }

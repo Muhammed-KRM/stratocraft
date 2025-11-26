@@ -40,23 +40,49 @@ public class BuffTask extends BukkitRunnable {
                     p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 40, 1));
                 }
 
-                // ZEHİR REAKTÖRÜ - Düşmanlara zehir ver
+                // ZEHİR REAKTÖRÜ - Düşmanlara zehir ver (Seviye bazlı hasar)
                 if (s.getType() == Structure.Type.POISON_REACTOR && !isFriendly && p.getGameMode() != GameMode.CREATIVE) {
+                    int level = s.getLevel();
+                    int damage = level; // Seviye 1 = 1 hasar, Seviye 5 = 5 hasar
+                    p.damage(damage);
                     p.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 40, 0));
-                    if (s.getLevel() >= 3) {
+                    if (level >= 3) {
                         p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 40, 0));
                         p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 40, 1));
                     }
                 }
 
-                // ERKEN UYARI RADARI - Düşman yaklaşımı uyarısı
+                // ERKEN UYARI RADARI - Düşman yaklaşımı uyarısı (Geliştirilmiş: Koordinat bilgisi)
                 if (s.getType() == Structure.Type.WATCHTOWER && isFriendly) {
                     // 200 blok yarıçapında düşman kontrolü
                     for (Player nearby : Bukkit.getOnlinePlayers()) {
-                        if (nearby.getLocation().distance(p.getLocation()) <= 200 && 
+                        if (nearby.getLocation().distance(s.getLocation()) <= 200 && 
                             !territoryClan.getMembers().containsKey(nearby.getUniqueId())) {
-                            p.sendMessage("§c§lDİKKAT! §7" + nearby.getName() + " bölgenize yaklaşıyor! (" + 
-                                (int)nearby.getLocation().distance(p.getLocation()) + " blok)");
+                            org.bukkit.Location enemyLoc = nearby.getLocation();
+                            int distance = (int) enemyLoc.distance(s.getLocation());
+                            p.sendMessage("§c§l[RADAR] §7Düşman tespit edildi!");
+                            p.sendMessage("§e  → İsim: §c" + nearby.getName());
+                            p.sendMessage("§e  → Mesafe: §c" + distance + " blok");
+                            p.sendMessage("§e  → Koordinat: §7X:" + (int)enemyLoc.getX() + " Y:" + (int)enemyLoc.getY() + " Z:" + (int)enemyLoc.getZ());
+                        }
+                    }
+                }
+                
+                // MOB ÖĞÜTÜCÜ - Etraftaki moblara hasar ver
+                if (s.getType() == Structure.Type.MOB_GRINDER && isFriendly) {
+                    int radius = 10;
+                    for (org.bukkit.entity.Entity entity : s.getLocation().getWorld()
+                            .getNearbyEntities(s.getLocation(), radius, radius, radius)) {
+                        if (entity instanceof org.bukkit.entity.LivingEntity && 
+                            !(entity instanceof Player) && 
+                            !(entity instanceof org.bukkit.entity.Villager)) {
+                            org.bukkit.entity.LivingEntity mob = (org.bukkit.entity.LivingEntity) entity;
+                            mob.damage(2.0); // Her saniye 2 hasar
+                            s.getLocation().getWorld().spawnParticle(
+                                org.bukkit.Particle.DAMAGE_INDICATOR, 
+                                mob.getLocation().add(0, 1, 0), 
+                                3
+                            );
                         }
                     }
                 }

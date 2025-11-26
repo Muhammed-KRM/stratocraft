@@ -17,6 +17,7 @@ public class Structure {
         LAVA_TRENCHER,        // Lav Hendekçisi
         WATCHTOWER,           // Gözetleme Kulesi
         DRONE_STATION,        // Drone İstasyonu
+        AUTO_TURRET,          // Otomatik Taret (Hurda teknolojisi ile yapılır)
 
         // --- EKONOMİ & LOJİSTİK ---
         GLOBAL_MARKET_GATE,   // Global Pazar Kapısı

@@ -79,10 +79,106 @@ public class StructureListener implements Listener {
                 createStructure(p, clan, b, Structure.Type.GLOBAL_MARKET_GATE, "Global Pazar");
              }
         }
+        
+        // 5. OTOMATİK TARET (Hurda teknolojisi - Antik Dişli + Piston ile yapılır)
+        else if (b.getType() == Material.DISPENSER) {
+            // Oyuncunun elinde Antik Dişli ve Piston var mı kontrol et
+            org.bukkit.inventory.ItemStack mainHand = p.getInventory().getItemInMainHand();
+            org.bukkit.inventory.ItemStack offHand = p.getInventory().getItemInOffHand();
+            
+            boolean hasAncientGear = mainHand != null && mainHand.getType() == Material.IRON_NUGGET && 
+                                     mainHand.getItemMeta() != null && 
+                                     mainHand.getItemMeta().getDisplayName() != null &&
+                                     mainHand.getItemMeta().getDisplayName().contains("Antik Dişli");
+            boolean hasPiston = (mainHand != null && mainHand.getType() == Material.PISTON) ||
+                                (offHand != null && offHand.getType() == Material.PISTON);
+            
+            if (hasAncientGear && hasPiston) {
+                createStructure(p, clan, b, Structure.Type.AUTO_TURRET, "Otomatik Taret");
+                // Malzemeleri tüket
+                if (mainHand.getType() == Material.IRON_NUGGET) {
+                    mainHand.setAmount(mainHand.getAmount() - 1);
+                } else if (offHand != null && offHand.getType() == Material.IRON_NUGGET) {
+                    offHand.setAmount(offHand.getAmount() - 1);
+                }
+                if (mainHand.getType() == Material.PISTON) {
+                    mainHand.setAmount(mainHand.getAmount() - 1);
+                } else if (offHand != null && offHand.getType() == Material.PISTON) {
+                    offHand.setAmount(offHand.getAmount() - 1);
+                }
+            } else {
+                p.sendMessage("§cOtomatik Taret için Antik Dişli ve Piston gerekli!");
+            }
+        }
+        
+        // 6. XP BANKASI - Tecrübe yatır/çek
+        else if (b.getType() == Material.EXPERIENCE_BOTTLE || b.getType() == Material.ENCHANTING_TABLE) {
+            Structure xpBank = clan.getStructures().stream()
+                    .filter(s -> s.getType() == Structure.Type.XP_BANK && 
+                                s.getLocation().distance(b.getLocation()) <= 5)
+                    .findFirst().orElse(null);
+            
+            if (xpBank != null) {
+                if (p.isSneaking()) {
+                    // XP Çek
+                    int storedXP = getStoredXP(clan);
+                    if (storedXP > 0) {
+                        int toGive = Math.min(storedXP, 100);
+                        p.giveExp(toGive);
+                        setStoredXP(clan, storedXP - toGive);
+                        p.sendMessage("§a" + toGive + " XP çektin! Kalan: " + (storedXP - toGive));
+                    } else {
+                        p.sendMessage("§cXP Bankası boş!");
+                    }
+                } else {
+                    // XP Yatır
+                    int playerXP = p.getTotalExperience();
+                    if (playerXP > 0) {
+                        int toStore = Math.min(playerXP, 100);
+                        p.giveExp(-toStore);
+                        int currentStored = getStoredXP(clan);
+                        setStoredXP(clan, currentStored + toStore);
+                        p.sendMessage("§a" + toStore + " XP yatırdın! Toplam: " + (currentStored + toStore));
+                    } else {
+                        p.sendMessage("§cYatıracak XP'n yok!");
+                    }
+                }
+            }
+        }
+        
+        // 7. IŞINLANMA PLATFORMU - Şubeler arası ışınlanma
+        else if (b.getType() == Material.END_PORTAL_FRAME || b.getType() == Material.END_PORTAL) {
+            Structure teleporter = clan.getStructures().stream()
+                    .filter(s -> s.getType() == Structure.Type.TELEPORTER && 
+                                s.getLocation().distance(b.getLocation()) <= 3)
+                    .findFirst().orElse(null);
+            
+            if (teleporter != null) {
+                // Diğer şubeleri listele
+                java.util.List<org.bukkit.Location> outposts = clan.getTerritory().getOutposts();
+                if (outposts.isEmpty()) {
+                    p.sendMessage("§cIşınlanacak şube yok! Önce bir şube kurmalısın.");
+                } else {
+                    // İlk şubeye ışınlan (basit versiyon)
+                    org.bukkit.Location target = outposts.get(0);
+                    p.teleport(target);
+                    p.sendMessage("§bIşınlandın! Şube: " + 
+                        (int)target.getX() + ", " + (int)target.getY() + ", " + (int)target.getZ());
+                }
+            }
+        }
 
         // NOT: Diğer yapılar (POISON_REACTOR, SIEGE_FACTORY, WALL_GENERATOR, vb.) 
         // için şema dosyaları (.schem) oluşturulduktan sonra buraya eklenebilir.
-        // Şu an için temel 4 yapı aktif: Simya Kulesi, Tektonik Sabitleyici, Şifa Kulesi, Global Pazar
+    }
+    
+    // XP Bankası için yardımcı metodlar
+    private int getStoredXP(Clan clan) {
+        return clan.getStoredXP();
+    }
+    
+    private void setStoredXP(Clan clan, int amount) {
+        clan.setStoredXP(amount);
     }
 
     private boolean checkRecipe(Player p, String recipeId) {

@@ -19,6 +19,15 @@ public class SurvivalListener implements Listener {
     public void onMine(BlockBreakEvent event) {
         if (!(event.getPlayer() instanceof Player)) return;
         Player p = (Player) event.getPlayer();
+        
+        org.bukkit.Location blockLoc = event.getBlock().getLocation();
+        org.bukkit.Location spawnLoc = p.getWorld().getSpawnLocation();
+        double distanceFromSpawn = blockLoc.distance(spawnLoc);
+        
+        // UZAK DİYARLAR MANTIĞI: Merkeze uzaklaştıkça madenler zenginleşir
+        boolean isFarLands = distanceFromSpawn > 5000;
+        double distanceMultiplier = isFarLands ? 1.5 : 1.0; // 5000 bloktan sonra %50 daha fazla şans
+        
         // Özel madenler düşürme mantığı
         // Derinlerde Titanyum madeni düşürme
         if (event.getBlock().getType() == Material.DEEPSLATE || 
@@ -26,25 +35,31 @@ public class SurvivalListener implements Listener {
             event.getBlock().getType() == Material.DEEPSLATE_IRON_ORE ||
             event.getBlock().getType() == Material.DEEPSLATE_DIAMOND_ORE) {
             
-            // Y koordinatı -50'den aşağıdaysa %15 şansla Titanyum düşür
-            if (event.getBlock().getY() < -50 && Math.random() < 0.15) {
+            // Y koordinatı -50'den aşağıdaysa %15 şansla Titanyum düşür (uzak diyarlarda %22.5)
+            double titaniumChance = 0.15 * distanceMultiplier;
+            if (event.getBlock().getY() < -50 && Math.random() < titaniumChance) {
                 if (ItemManager.TITANIUM_ORE != null) {
                     event.getBlock().getWorld().dropItemNaturally(
                         event.getBlock().getLocation(),
                         ItemManager.TITANIUM_ORE.clone()
                     );
+                    if (isFarLands) {
+                        p.sendMessage("§6Uzak Diyarların zenginliği! Titanyum buldun!");
+                    }
                 }
             }
         }
         
-        // Kızıl Elmas düşürme (nadir)
+        // Kızıl Elmas düşürme (nadir) - Uzak diyarlarda daha sık
         if (event.getBlock().getType() == Material.DEEPSLATE_DIAMOND_ORE) {
-            if (event.getBlock().getY() < -60 && Math.random() < 0.05) {
+            double redDiamondChance = (isFarLands ? 0.075 : 0.05) * distanceMultiplier;
+            if (event.getBlock().getY() < -60 && Math.random() < redDiamondChance) {
                 if (ItemManager.RED_DIAMOND != null) {
                     event.getBlock().getWorld().dropItemNaturally(
                         event.getBlock().getLocation(),
                         ItemManager.RED_DIAMOND.clone()
                     );
+                    p.sendMessage("§c§lUZAK DİYARLARIN HAZİNESİ! Kızıl Elmas buldun!");
                 }
             }
         }

@@ -10,7 +10,7 @@ import org.bukkit.util.Vector;
 public class BatteryManager {
 
     // 1. ATEŞ TOPU (Geliştirilmiş)
-    public void fireMagmaBattery(Player p, Material fuel, boolean boosted, boolean hasAmplifier) {
+    public void fireMagmaBattery(Player p, Material fuel, int alchemyLevel, boolean hasAmplifier) {
         int count;
         if (fuel == Material.DIAMOND) count = 5;
         else if (ItemManager.RED_DIAMOND != null && 
@@ -23,18 +23,25 @@ public class BatteryManager {
             count = 2;
         }
         
-        if (boosted) count *= 2;
+        // Simya Kulesi seviyesine göre güç artışı: Seviye 1 = %10, Seviye 5 = %50
+        if (alchemyLevel > 0) {
+            double multiplier = 1.0 + (alchemyLevel * 0.1); // Seviye 1: 1.1x, Seviye 5: 1.5x
+            count = (int) (count * multiplier);
+        }
         
         float size = hasAmplifier ? 2.0f : 1.0f;
+        float yield = hasAmplifier ? 4.0f : 2.0f; // Alev Amplifikatörü ile çap 2 katına çıkar
         
         for (int i = 0; i < count; i++) {
             Fireball fb = p.launchProjectile(Fireball.class);
             fb.setVelocity(p.getLocation().getDirection().multiply(1.5));
-            if (hasAmplifier) {
-                fb.setYield(fb.getYield() * size);
+            fb.setYield(yield);
+            // Seviye 5'te yanma etkisi ekle
+            if (alchemyLevel >= 5) {
+                fb.setIsIncendiary(true);
             }
         }
-        p.sendMessage("§6Ateş topları fırlatıldı! (" + count + " adet)");
+        p.sendMessage("§6Ateş topları fırlatıldı! (" + count + " adet)" + (alchemyLevel > 0 ? " [Simya Kulesi Seviye " + alchemyLevel + "]" : ""));
     }
 
     // 2. YILDIRIM
@@ -106,18 +113,36 @@ public class BatteryManager {
         Location start = p.getLocation().add(p.getLocation().getDirection().setY(0).normalize().multiply(2));
         boolean isTitanium = ItemManager.TITANIUM_INGOT != null && 
                              ItemManager.isCustomItem(p.getInventory().getItemInMainHand(), "TITANIUM_INGOT");
+        boolean isAdamantite = ItemManager.ADAMANTITE != null && 
+                               ItemManager.isCustomItem(p.getInventory().getItemInMainHand(), "ADAMANTITE");
+        
         int height = isTitanium ? 5 : 3;
-        Material wallMat = isTitanium ? Material.IRON_BLOCK : Material.COBBLESTONE;
+        Material wallMat = Material.COBBLESTONE;
+        
+        if (isAdamantite) {
+            // Adamantite ile şeffaf, içinden ok geçmeyen enerji kalkanı
+            wallMat = Material.BARRIER;
+            height = 4;
+            p.sendMessage("§5Adamantite Enerji Kalkanı oluşturuldu!");
+        } else if (isTitanium) {
+            wallMat = Material.IRON_BLOCK;
+        }
         
         for (int y = 0; y < height; y++) {
             for (int x = -1; x <= 1; x++) {
                 Location blockLoc = start.clone().add(x, y, 0);
                 if (blockLoc.getBlock().getType() == Material.AIR) {
                     blockLoc.getBlock().setType(wallMat);
+                    if (isAdamantite) {
+                        // Enerji efekti
+                        p.getWorld().spawnParticle(org.bukkit.Particle.ELECTRIC_SPARK, blockLoc.add(0.5, 0.5, 0.5), 3);
+                    }
                 }
             }
         }
-        p.sendMessage("§7Toprak Suru oluşturuldu!");
+        if (!isAdamantite) {
+            p.sendMessage("§7Toprak Suru oluşturuldu!");
+        }
     }
 
     // 8. MANYETİK BOZUCU (Utility)
@@ -137,11 +162,20 @@ public class BatteryManager {
     }
 
     // 9. SİSMİK ÇEKİÇ (Felaket Mücadele)
+    private me.mami.stratocraft.manager.DisasterManager disasterManager;
+    
+    public void setDisasterManager(me.mami.stratocraft.manager.DisasterManager dm) {
+        this.disasterManager = dm;
+    }
+    
     public void fireSeismicHammer(Player p) {
         Location target = p.getTargetBlock(null, 30).getLocation();
         p.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, target, 5);
         p.sendMessage("§6Sismik Çekiç Aktif! Yer altı titreşimleri gönderildi!");
         // Hiçlik Solucanı için titreşim sinyali
+        if (disasterManager != null) {
+            disasterManager.forceWormSurface(target);
+        }
     }
 
     // 10. OZON KALKANI (Güneş Fırtınası Koruma)

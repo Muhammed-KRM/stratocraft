@@ -3,8 +3,12 @@ package me.mami.stratocraft.manager;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Contract;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.ScoreboardManager;
+import org.bukkit.scoreboard.Team;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -12,8 +16,25 @@ import java.util.UUID;
 public class ContractManager {
     private final List<Contract> activeContracts = new ArrayList<>();
     private final ClanManager clanManager;
+    private Team traitorTeam;
 
-    public ContractManager(ClanManager cm) { this.clanManager = cm; }
+    public ContractManager(ClanManager cm) { 
+        this.clanManager = cm;
+        initializeTraitorTeam();
+    }
+    
+    private void initializeTraitorTeam() {
+        ScoreboardManager manager = Bukkit.getScoreboardManager();
+        if (manager != null) {
+            Scoreboard mainBoard = manager.getMainScoreboard();
+            traitorTeam = mainBoard.getTeam("TRAITOR");
+            if (traitorTeam == null) {
+                traitorTeam = mainBoard.registerNewTeam("TRAITOR");
+                traitorTeam.setColor(ChatColor.RED);
+                traitorTeam.setPrefix("§4[HAİN] ");
+            }
+        }
+    }
 
     public void createContract(UUID issuer, Material mat, int amount, double reward, long days) {
         activeContracts.add(new Contract(issuer, mat, amount, reward, days));
@@ -64,6 +85,11 @@ public class ContractManager {
         if (p != null) {
             p.sendMessage("§4§lSÖZLEŞMEYİ İHLAL ETTİN! HAİN DAMGASI YEDİN.");
             p.setDisplayName("§4[HAİN] " + p.getName());
+            
+            // Scoreboard Team'e ekle (kırmızı isim görünür)
+            if (traitorTeam != null) {
+                traitorTeam.addEntry(p.getName());
+            }
         }
         
         Clan clan = clanManager.getClanByPlayer(criminalId);

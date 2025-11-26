@@ -31,6 +31,18 @@ public class RitualListener implements Listener {
         // Kurulum: 3x3 Taş Tuğla, Köşelerde Kızıltaş Meşalesi, Ortada Ateş
         if (b.getType() == Material.FIRE && b.getRelative(BlockFace.DOWN).getType() == Material.STONE_BRICKS) {
             
+            // Köşelerde Kızıltaş Meşalesi kontrolü
+            boolean hasRedstoneTorches = 
+                b.getRelative(BlockFace.NORTH_WEST).getType() == Material.REDSTONE_TORCH &&
+                b.getRelative(BlockFace.NORTH_EAST).getType() == Material.REDSTONE_TORCH &&
+                b.getRelative(BlockFace.SOUTH_WEST).getType() == Material.REDSTONE_TORCH &&
+                b.getRelative(BlockFace.SOUTH_EAST).getType() == Material.REDSTONE_TORCH;
+            
+            if (!hasRedstoneTorches) {
+                leader.sendMessage("§cRitüel için köşelerde 4 Kızıltaş Meşalesi gerekli!");
+                return;
+            }
+            
             // Kolaylık için sadece Altın Külçe kontrolü yapalım
             if (leader.getInventory().getItemInMainHand().getType() == Material.GOLD_INGOT) {
                 

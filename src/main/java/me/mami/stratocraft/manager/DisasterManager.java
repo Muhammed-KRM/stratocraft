@@ -35,10 +35,39 @@ public class DisasterManager {
         }
     }
 
+    public void forceWormSurface(Location seismicLocation) {
+        Disaster disaster = getActiveDisaster();
+        if (disaster == null || disaster.getType() != Disaster.Type.ABYSSAL_WORM) return;
+        
+        Entity worm = disaster.getEntity();
+        if (worm == null) return;
+        
+        // Solucanı yüzeye çıkar
+        Location surfaceLoc = seismicLocation.clone();
+        surfaceLoc.setY(seismicLocation.getWorld().getHighestBlockYAt(seismicLocation) + 1);
+        worm.teleport(surfaceLoc);
+        Bukkit.broadcastMessage("§6§lSİSMİK ÇEKİÇ! Hiçlik Solucanı yüzeye çıkmaya zorlandı!");
+    }
+
+    private me.mami.stratocraft.manager.BuffManager buffManager;
+    private me.mami.stratocraft.manager.TerritoryManager territoryManager;
+    
+    public void setBuffManager(me.mami.stratocraft.manager.BuffManager bm) {
+        this.buffManager = bm;
+    }
+    
+    public void setTerritoryManager(me.mami.stratocraft.manager.TerritoryManager tm) {
+        this.territoryManager = tm;
+    }
+
     public void dropRewards(Disaster disaster) {
         if (disaster == null || disaster.getEntity() == null) return;
         Location loc = disaster.getEntity().getLocation();
         
+        // ENKAZ YIĞINI OLUŞTUR: Boss öldüğünde havada asılı bir yapı
+        createWreckageStructure(loc);
+        
+        // Ödüller düşür
         if (Math.random() < 0.5) {
             if (me.mami.stratocraft.manager.ItemManager.DARK_MATTER != null) {
                 loc.getWorld().dropItemNaturally(loc, me.mami.stratocraft.manager.ItemManager.DARK_MATTER.clone());
@@ -49,7 +78,41 @@ public class DisasterManager {
             }
         }
         
+        // KAHraman Buff'ı: Felaket tarafından yıkılan klanlara ver
+        if (territoryManager != null && buffManager != null) {
+            me.mami.stratocraft.model.Clan affectedClan = territoryManager.getTerritoryOwner(loc);
+            if (affectedClan != null) {
+                buffManager.applyHeroBuff(affectedClan);
+            }
+        }
+        
         Bukkit.broadcastMessage("§a§lFelaket yok edildi! Ödüller düştü!");
+    }
+    
+    private void createWreckageStructure(Location center) {
+        // Enkaz yığını: Havada asılı bir yapı oluştur
+        org.bukkit.Material wreckageMat = org.bukkit.Material.ANCIENT_DEBRIS;
+        
+        // 5x5x3 boyutunda enkaz yığını
+        for (int x = -2; x <= 2; x++) {
+            for (int z = -2; z <= 2; z++) {
+                for (int y = 0; y < 3; y++) {
+                    Location blockLoc = center.clone().add(x, y + 2, z);
+                    if (blockLoc.getBlock().getType() == org.bukkit.Material.AIR) {
+                        blockLoc.getBlock().setType(wreckageMat);
+                    }
+                }
+            }
+        }
+        
+        // Enkazı ScavengerManager'a kaydet
+        if (me.mami.stratocraft.Main.getInstance() != null) {
+            me.mami.stratocraft.manager.ScavengerManager sm = 
+                ((me.mami.stratocraft.Main) me.mami.stratocraft.Main.getInstance()).getScavengerManager();
+            if (sm != null) {
+                sm.markWreckage(center, java.util.UUID.randomUUID());
+            }
+        }
     }
 
     public Disaster getActiveDisaster() { return activeDisaster; }

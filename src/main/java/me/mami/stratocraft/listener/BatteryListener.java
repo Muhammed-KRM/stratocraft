@@ -25,11 +25,14 @@ public class BatteryListener implements Listener {
         this.territoryManager = tm;
     }
     
-    private boolean hasAlchemyTower(Player p) {
+    private int getAlchemyTowerLevel(Player p) {
         Clan clan = territoryManager.getClanManager().getClanByPlayer(p.getUniqueId());
-        if (clan == null) return false;
+        if (clan == null) return 0;
         return clan.getStructures().stream()
-                .anyMatch(s -> s.getType() == Structure.Type.ALCHEMY_TOWER);
+                .filter(s -> s.getType() == Structure.Type.ALCHEMY_TOWER)
+                .mapToInt(Structure::getLevel)
+                .max()
+                .orElse(0);
     }
 
     @EventHandler
@@ -49,10 +52,10 @@ public class BatteryListener implements Listener {
             boolean isDarkMatter = ItemManager.isCustomItem(hand, "DARK_MATTER");
             
             if (fuel == Material.DIAMOND || fuel == Material.IRON_INGOT || isRedDiamond || isDarkMatter) {
-                boolean boosted = hasAlchemyTower(p);
+                int alchemyLevel = getAlchemyTowerLevel(p);
                 ItemStack offHand = p.getInventory().getItemInOffHand();
                 boolean hasAmplifier = ItemManager.isCustomItem(offHand, "FLAME_AMPLIFIER");
-                batteryManager.fireMagmaBattery(p, fuel, boosted, hasAmplifier);
+                batteryManager.fireMagmaBattery(p, fuel, alchemyLevel, hasAmplifier);
             }
         }
 

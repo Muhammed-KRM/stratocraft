@@ -45,6 +45,25 @@ public class TerritoryListener implements Listener {
              return; 
         }
 
+        // --- ENERJİ KALKANI OFFLINE KORUMA ---
+        // Eğer klan üyelerinden hiçbiri online değilse VE kalkan yakıtı > 0 ise hasarı iptal et
+        Structure core = owner.getStructures().stream()
+                .filter(s -> s.getType() == Structure.Type.CORE)
+                .findFirst().orElse(null);
+        
+        if (core != null && core.isShieldActive()) {
+            boolean anyOnline = owner.getMembers().keySet().stream()
+                    .anyMatch(uuid -> org.bukkit.Bukkit.getPlayer(uuid) != null);
+            
+            if (!anyOnline) {
+                // Offline koruma aktif
+                event.setCancelled(true);
+                event.getPlayer().sendMessage("§bEnerji Kalkanı aktif! Offline klan korunuyor. Kalkan Gücü: " + core.getShieldFuel());
+                core.consumeFuel(); // Yakıt tüket
+                return;
+            }
+        }
+
         // --- TAMAMLANMIŞ KUŞATMA KONTROLLERİ ---
         
         // Düşman bölgesi ise: SADECE KUŞATMA VARSA KIRILABİLİR
@@ -52,11 +71,6 @@ public class TerritoryListener implements Listener {
             // Eğer Ana Kristali (Beacon) kırarsa oyunu bitir
             if (event.getBlock().getType() == Material.BEACON) {
                 // Kalkan (Shield) Kontrolü
-                // O bölgedeki CORE yapısını bul
-                Structure core = owner.getStructures().stream()
-                        .filter(s -> s.getType() == Structure.Type.CORE)
-                        .findFirst().orElse(null);
-                
                 if (core != null && core.isShieldActive()) {
                     event.setCancelled(true);
                     event.getPlayer().sendMessage("§bKristal Enerji Kalkanı ile korunuyor! Kalkan Gücü: " + core.getShieldFuel());

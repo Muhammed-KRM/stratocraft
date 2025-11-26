@@ -23,6 +23,7 @@ public class Clan {
     private final Set<UUID> guests = new HashSet<>();
     private Territory territory;
     private double bankBalance = 0;
+    private int storedXP = 0; // XP Bankası için
 
     public Clan(String name, UUID leader) {
         this.name = name;
@@ -51,5 +52,10 @@ public class Clan {
     public int getTechLevel() {
         return structures.stream().mapToInt(Structure::getLevel).max().orElse(1);
     }
+    
+    public int getStoredXP() { return storedXP; }
+    public void setStoredXP(int amount) { this.storedXP = Math.max(0, amount); }
+    public void addXP(int amount) { this.storedXP += amount; }
+    public void removeXP(int amount) { this.storedXP = Math.max(0, this.storedXP - amount); }
 }
 
