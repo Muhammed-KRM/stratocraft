@@ -11,6 +11,10 @@ public class BatteryManager {
 
     // 1. ATEŞ TOPU (Geliştirilmiş)
     public void fireMagmaBattery(Player p, Material fuel, int alchemyLevel, boolean hasAmplifier) {
+        fireMagmaBattery(p, fuel, alchemyLevel, hasAmplifier, 1.0);
+    }
+    
+    public void fireMagmaBattery(Player p, Material fuel, int alchemyLevel, boolean hasAmplifier, double trainingMultiplier) {
         int count;
         if (fuel == Material.DIAMOND) count = 5;
         else if (ItemManager.RED_DIAMOND != null && 
@@ -29,19 +33,33 @@ public class BatteryManager {
             count = (int) (count * multiplier);
         }
         
+        // Mastery çarpanı uygula (0.2 = antrenman, 1.0 = normal, 1.2-1.4 = mastery bonus)
+        count = (int) (count * trainingMultiplier);
+        if (count < 1) count = 1; // En az 1 ateş topu
+        
         float size = hasAmplifier ? 2.0f : 1.0f;
         float yield = hasAmplifier ? 4.0f : 2.0f; // Alev Amplifikatörü ile çap 2 katına çıkar
+        yield = (float) (yield * trainingMultiplier); // Mastery çarpanı yield'e de uygulanır
         
         for (int i = 0; i < count; i++) {
             Fireball fb = p.launchProjectile(Fireball.class);
             fb.setVelocity(p.getLocation().getDirection().multiply(1.5));
             fb.setYield(yield);
-            // Seviye 5'te yanma etkisi ekle
-            if (alchemyLevel >= 5) {
+            // Seviye 5'te yanma etkisi ekle (antrenman modunda yok)
+            if (alchemyLevel >= 5 && trainingMultiplier >= 1.0) {
                 fb.setIsIncendiary(true);
             }
         }
-        p.sendMessage("§6Ateş topları fırlatıldı! (" + count + " adet)" + (alchemyLevel > 0 ? " [Simya Kulesi Seviye " + alchemyLevel + "]" : ""));
+        
+        // Mastery mesajı (antrenman modu veya mastery bonus)
+        String masteryMsg = "";
+        if (trainingMultiplier < 1.0) {
+            masteryMsg = " §7[Antrenman Modu]";
+        } else if (trainingMultiplier > 1.0) {
+            int bonusPercent = (int) ((trainingMultiplier - 1.0) * 100);
+            masteryMsg = " §a[Mastery +%" + bonusPercent + "]";
+        }
+        p.sendMessage("§6Ateş topları fırlatıldı! (" + count + " adet)" + (alchemyLevel > 0 ? " [Simya Kulesi Seviye " + alchemyLevel + "]" : "") + masteryMsg);
     }
 
     // 2. YILDIRIM
@@ -67,7 +85,7 @@ public class BatteryManager {
 
     // 4. ANLIK KÖPRÜ
     public void createInstantBridge(Player p) {
-        Location start = p.getLocation().subtract(0, 1, 0);
+        Location start = p.getLocation().clone().subtract(0, 1, 0);
         Vector dir = p.getLocation().getDirection().setY(0).normalize();
         for (int i = 1; i <= 15; i++) {
             Location point = start.clone().add(dir.clone().multiply(i));
@@ -80,7 +98,7 @@ public class BatteryManager {
 
     // 5. SIĞINAK KÜPÜ
     public void createInstantBunker(Player p) {
-        Location center = p.getLocation();
+        Location center = p.getLocation().clone();
         int r = 2;
         for (int x = -r; x <= r; x++) {
             for (int y = 0; y <= 3; y++) {
@@ -92,7 +110,7 @@ public class BatteryManager {
                 }
             }
         }
-        p.teleport(center.add(0, 1, 0));
+        p.teleport(center.clone().add(0, 1, 0));
         p.sendMessage("§7Sığınak oluşturuldu!");
     }
 
@@ -110,7 +128,7 @@ public class BatteryManager {
 
     // 7. TOPRAK SURU (Savunma)
     public void createEarthWall(Player p, Material material) {
-        Location start = p.getLocation().add(p.getLocation().getDirection().setY(0).normalize().multiply(2));
+        Location start = p.getLocation().clone().add(p.getLocation().getDirection().setY(0).normalize().multiply(2));
         boolean isTitanium = ItemManager.TITANIUM_INGOT != null && 
                              ItemManager.isCustomItem(p.getInventory().getItemInMainHand(), "TITANIUM_INGOT");
         boolean isAdamantite = ItemManager.ADAMANTITE != null && 
@@ -197,7 +215,7 @@ public class BatteryManager {
 
     // 11. ENERJİ DUVARI (Gelişmiş Savunma)
     public void createEnergyWall(Player p) {
-        Location start = p.getLocation().add(p.getLocation().getDirection().setY(0).normalize().multiply(2));
+        Location start = p.getLocation().clone().add(p.getLocation().getDirection().setY(0).normalize().multiply(2));
         for (int y = 0; y < 5; y++) {
             for (int x = -2; x <= 2; x++) {
                 Location loc = start.clone().add(x, y, 0);
@@ -212,7 +230,7 @@ public class BatteryManager {
 
     // 12. LAV HENDEKÇİSİ (Alan Savunması)
     public void createLavaTrench(Player p) {
-        Location start = p.getLocation().add(p.getLocation().getDirection().setY(0).normalize().multiply(3));
+        Location start = p.getLocation().clone().add(p.getLocation().getDirection().setY(0).normalize().multiply(3));
         for (int i = 0; i < 10; i++) {
             Location loc = start.clone().add(i, -1, 0);
             if (loc.getBlock().getType() != Material.LAVA) {

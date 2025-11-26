@@ -2,6 +2,7 @@ package me.mami.stratocraft.listener;
 
 import me.mami.stratocraft.manager.BatteryManager;
 import me.mami.stratocraft.manager.ItemManager;
+import me.mami.stratocraft.manager.ResearchManager;
 import me.mami.stratocraft.manager.TerritoryManager;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Structure;
@@ -19,10 +20,17 @@ import org.bukkit.inventory.ItemStack;
 public class BatteryListener implements Listener {
     private final BatteryManager batteryManager;
     private final TerritoryManager territoryManager;
+    private final ResearchManager researchManager;
+    private me.mami.stratocraft.manager.TrainingManager trainingManager;
 
-    public BatteryListener(BatteryManager bm, TerritoryManager tm) { 
+    public BatteryListener(BatteryManager bm, TerritoryManager tm, ResearchManager rm) { 
         this.batteryManager = bm;
         this.territoryManager = tm;
+        this.researchManager = rm;
+    }
+    
+    public void setTrainingManager(me.mami.stratocraft.manager.TrainingManager tm) {
+        this.trainingManager = tm;
     }
     
     private int getAlchemyTowerLevel(Player p) {
@@ -45,17 +53,86 @@ public class BatteryListener implements Listener {
         Block b = event.getClickedBlock();
         ItemStack hand = p.getInventory().getItemInMainHand();
 
-        // 1. MAGMA BATARYASI (Geliştirilmiş)
+        // 1. MAGMA BATARYASI (Geliştirilmiş) - Tarif kontrolü
         if (b.getType() == Material.MAGMA_BLOCK && b.getRelative(BlockFace.DOWN).getType() == Material.MAGMA_BLOCK) {
+            // Özel "Ateştopu Bataryası" tarifi kontrolü (nadir ve güçlü versiyon için)
+            // Normal versiyon tarif gerektirmez, ama tarifli versiyon daha güçlü
+            boolean hasRecipe = researchManager.hasRecipeBook(p, "MAGMA_BATTERY");
+            
             Material fuel = hand.getType();
             boolean isRedDiamond = ItemManager.isCustomItem(hand, "RED_DIAMOND");
             boolean isDarkMatter = ItemManager.isCustomItem(hand, "DARK_MATTER");
             
             if (fuel == Material.DIAMOND || fuel == Material.IRON_INGOT || isRedDiamond || isDarkMatter) {
+                // Admin bypass kontrolü
+                if (!me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(p)) {
+                    // Eğer tarifli versiyon kullanılıyorsa (Kızıl Elmas veya Karanlık Madde) tarif kontrolü
+                    if ((isRedDiamond || isDarkMatter) && !hasRecipe) {
+                        p.sendMessage("§cAteştopu Bataryası'nın gelişmiş versiyonu için tarif kitabı gerekli!");
+                        return;
+                    }
+                }
+                
                 int alchemyLevel = getAlchemyTowerLevel(p);
                 ItemStack offHand = p.getInventory().getItemInOffHand();
                 boolean hasAmplifier = ItemManager.isCustomItem(offHand, "FLAME_AMPLIFIER");
-                batteryManager.fireMagmaBattery(p, fuel, alchemyLevel, hasAmplifier);
+                
+                // Antrenman/Mastery kontrolü (kayıt ÖNCE yapılmalı ki doğru ilerleme gösterilsin)
+                boolean inTraining = trainingManager != null && trainingManager.isInTraining(p.getUniqueId(), "MAGMA_BATTERY");
+                int previousLevel = trainingManager != null ? trainingManager.getPreviousMasteryLevel(p.getUniqueId(), "MAGMA_BATTERY") : -1;
+                
+                // Antrenman kaydı (batarya kullanılmadan ÖNCE)
+                if (trainingManager != null) {
+                    trainingManager.recordUse(p.getUniqueId(), "MAGMA_BATTERY");
+                }
+                
+                // Güç çarpanı kayıt SONRASI hesaplanmalı (yeni seviyeye göre)
+                double powerMultiplier = trainingManager != null ? trainingManager.getMasteryMultiplier(p.getUniqueId(), "MAGMA_BATTERY") : 1.0;
+                
+                batteryManager.fireMagmaBattery(p, fuel, alchemyLevel, hasAmplifier, powerMultiplier);
+                
+                // Mastery seviye atlama kontrolü ve mesajları
+                if (trainingManager != null) {
+                    int newLevel = trainingManager.getMasteryLevel(p.getUniqueId(), "MAGMA_BATTERY");
+                    int totalUses = trainingManager.getTotalUses(p.getUniqueId(), "MAGMA_BATTERY");
+                    boolean nowTrained = trainingManager.isTrained(p.getUniqueId(), "MAGMA_BATTERY");
+                    
+                    // Seviye atlandı mı?
+                    if (newLevel > previousLevel) {
+                        // Antrenman tamamlandı mı? (özel durum)
+                        if (previousLevel == -1 && newLevel == 0) {
+                            // Antrenman tamamlandı!
+                            p.sendTitle("§a§lANTRENMAN TAMAMLANDI!", "§eArtık tam güçle kullanabilirsin!", 10, 70, 20);
+                            p.sendMessage("§a§l════════════════════════════");
+                            p.sendMessage("§e§l★ ANTRENMAN TAMAMLANDI ★");
+                            p.sendMessage("§7Artık bataryayı tam güçle kullanabilirsin!");
+                            p.sendMessage("§7Mastery seviyesi için 20 kullanım gerekli.");
+                            p.sendMessage("§a§l════════════════════════════");
+                            p.playSound(p.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+                        } else {
+                            // Mastery seviye atlama mesajı
+                            p.sendTitle("§6§lSEVİYE ATLADI!", "§eMastery Seviye " + newLevel + " §7(" + getMasteryBonusText(newLevel) + ")", 10, 70, 20);
+                            p.sendMessage("§6§l════════════════════════════");
+                            p.sendMessage("§e§l★ MASTERY SEVİYE " + newLevel + " ★");
+                            p.sendMessage("§7Güç artışı: §a" + getMasteryBonusText(newLevel));
+                            p.sendMessage("§7Toplam kullanım: §b" + totalUses);
+                            p.sendMessage("§6§l════════════════════════════");
+                            p.playSound(p.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+                        }
+                    } else if (inTraining || !nowTrained) {
+                        // Hala antrenman modunda
+                        int remaining = trainingManager.getRemainingUses(p.getUniqueId(), "MAGMA_BATTERY");
+                        double progress = trainingManager.getTrainingProgress(p.getUniqueId(), "MAGMA_BATTERY");
+                        p.sendMessage("§e[Antrenman] §7Güç: §c" + String.format("%.0f", progress * 100) + "% §7(" + remaining + " kullanım kaldı)");
+                    } else {
+                        // Mastery seviyesi göster
+                        if (newLevel > 0) {
+                            p.sendMessage("§a[Mastery Seviye " + newLevel + "] §7Güç: §e" + getMasteryBonusText(newLevel) + " §7(" + totalUses + " kullanım)");
+                        } else {
+                            p.sendMessage("§a[Uzman] §7Tam güçle kullanılıyor!");
+                        }
+                    }
+                }
             }
         }
 
@@ -146,6 +223,18 @@ public class BatteryListener implements Listener {
             if (hand.getType() == Material.LAVA_BUCKET) {
                 batteryManager.createLavaTrench(p);
             }
+        }
+    }
+    
+    /**
+     * Mastery bonus metnini al
+     */
+    private String getMasteryBonusText(int level) {
+        switch (level) {
+            case 1: return "+%20";
+            case 2: return "+%30";
+            case 3: return "+%40";
+            default: return "+%0";
         }
     }
 }

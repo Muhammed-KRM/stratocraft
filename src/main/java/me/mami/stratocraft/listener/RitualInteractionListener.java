@@ -86,6 +86,8 @@ public class RitualInteractionListener implements Listener {
         Block tableBlock = clicked;
         if (!checkCobblestonePlatform(tableBlock)) {
             p.sendMessage("§cRitüel için 3x3 Kırık Taş (Cobblestone) platform gerekli!");
+            // Görsel geri bildirim: Yanlış blokların üzerinde kırmızı partiküller
+            showPlatformError(tableBlock);
             return;
         }
         
@@ -541,6 +543,26 @@ public class RitualInteractionListener implements Listener {
             }
         }
         return true;
+    }
+    
+    /**
+     * Ritüel platform hatası için görsel geri bildirim
+     * Yanlış blokların üzerinde kırmızı partiküller gösterir
+     */
+    private void showPlatformError(Block center) {
+        Block base = center.getRelative(BlockFace.DOWN);
+        
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                Block check = base.getRelative(x, 0, z);
+                if (check.getType() != Material.COBBLESTONE) {
+                    // Yanlış blok - kırmızı partikül göster
+                    Location loc = check.getLocation().add(0.5, 1.2, 0.5);
+                    loc.getWorld().spawnParticle(Particle.REDSTONE, loc, 10, 
+                        new Particle.DustOptions(org.bukkit.Color.RED, 1.0f));
+                }
+            }
+        }
     }
     
     private boolean checkInviteCircle(Block torch) {

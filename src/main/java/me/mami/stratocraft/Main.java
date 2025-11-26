@@ -35,6 +35,8 @@ public class Main extends JavaPlugin {
     private ShopManager shopManager;
     private ResearchManager researchManager;
     private MissionManager missionManager;
+    private me.mami.stratocraft.manager.GhostRecipeManager ghostRecipeManager;
+    private me.mami.stratocraft.manager.TrainingManager trainingManager;
     private BuffManager buffManager;
     private DataManager dataManager;
     private VirtualStorageListener virtualStorageListener;
@@ -66,6 +68,8 @@ public class Main extends JavaPlugin {
         shopManager = new ShopManager();
         researchManager = new ResearchManager();
         missionManager = new MissionManager();
+        ghostRecipeManager = new me.mami.stratocraft.manager.GhostRecipeManager();
+        trainingManager = new me.mami.stratocraft.manager.TrainingManager();
         buffManager = new BuffManager();
         buffManager.setPlugin(this);
         dataManager = new DataManager(this);
@@ -78,7 +82,9 @@ public class Main extends JavaPlugin {
         disasterManager.setTerritoryManager(territoryManager);
 
         // 2. Dinleyicileri Kaydet
-        Bukkit.getPluginManager().registerEvents(new BatteryListener(batteryManager, territoryManager), this);
+        BatteryListener batteryListener = new BatteryListener(batteryManager, territoryManager, researchManager);
+        batteryListener.setTrainingManager(trainingManager);
+        Bukkit.getPluginManager().registerEvents(batteryListener, this);
         Bukkit.getPluginManager().registerEvents(new CombatListener(clanManager), this);
         Bukkit.getPluginManager().registerEvents(new SurvivalListener(missionManager), this);
         Bukkit.getPluginManager().registerEvents(new TerritoryListener(territoryManager, siegeManager), this);
@@ -91,11 +97,13 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new MissionListener(missionManager), this);
         Bukkit.getPluginManager().registerEvents(new ResearchListener(researchManager), this);
         Bukkit.getPluginManager().registerEvents(new StructureListener(clanManager, researchManager), this);
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.GhostRecipeListener(ghostRecipeManager, researchManager), this);
         Bukkit.getPluginManager().registerEvents(new ConsumableListener(), this);
         Bukkit.getPluginManager().registerEvents(new VillagerListener(), this);
         Bukkit.getPluginManager().registerEvents(new GriefProtectionListener(territoryManager), this);
         virtualStorageListener = new VirtualStorageListener(territoryManager);
         Bukkit.getPluginManager().registerEvents(virtualStorageListener, this);
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.ClanChatListener(clanManager), this);
         
         // Veri yükleme
         dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener);

@@ -79,6 +79,9 @@ public class ClanMenu implements Listener {
         balance.setItemMeta(balanceMeta);
         menu.setItem(7, balance);
 
+        // Menü açılma sesi
+        player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_CHEST_OPEN, 1.0f, 1.0f);
+        
         player.openInventory(menu);
     }
 
@@ -94,17 +97,22 @@ public class ClanMenu implements Listener {
 
         if (clicked == null || clicked.getType() == Material.AIR) return;
 
+        // Tıklama sesi
+        player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
+        
+        Clan clan = clanManager.getClanByPlayer(player.getUniqueId());
+        
         switch (clicked.getType()) {
             case PLAYER_HEAD:
                 // Üyeler menüsü
                 player.sendMessage("§aKlan Üyeleri:");
-                Clan clan = clanManager.getClanByPlayer(player.getUniqueId());
                 if (clan != null) {
                     for (UUID memberId : clan.getMembers().keySet()) {
                         Player member = Bukkit.getPlayer(memberId);
                         String name = member != null ? member.getName() : "Offline";
-                        String rank = clan.getRank(memberId).toString();
-                        player.sendMessage("§7- §e" + name + " §7(" + rank + ")");
+                        me.mami.stratocraft.model.Clan.Rank rank = clan.getRank(memberId);
+                        String rankStr = rank != null ? rank.toString() : "UNKNOWN";
+                        player.sendMessage("§7- §e" + name + " §7(" + rankStr + ")");
                     }
                 }
                 player.closeInventory();
@@ -126,6 +134,10 @@ public class ClanMenu implements Listener {
                 // Bakiye bilgisi
                 if (clan != null) {
                     player.sendMessage("§aKlan Bakiyesi: §e" + clan.getBalance() + " altın");
+                } else {
+                    // Hata sesi
+                    player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                    player.sendMessage("§cBir klana üye değilsin!");
                 }
                 player.closeInventory();
                 break;
