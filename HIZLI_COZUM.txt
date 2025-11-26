@@ -1,0 +1,24 @@
+SORUN: Java RAM hatasi veya Java bulunamadi
+
+HIZLI COZUM:
+============
+
+1. baslat.bat dosyasini guncelle
+   - Bu dosyayi C:\mc\test-server\ klasorune kopyala
+   - Eski baslat.bat dosyasinin uzerine yaz
+
+2. Java kontrol et
+   - Windows + R → cmd → Enter
+   - java -version yaz
+   - "64-Bit" goruyorsan Java var, yoksa kur
+
+3. Java kur (gerekirse)
+   - https://adoptium.net/ → Java 17 LTS → Windows x64 indir
+   - Kur ve bilgisayari yeniden baslat
+
+4. Tekrar dene
+   - baslat.bat dosyasina cift tikla
+   - Artik calismali!
+
+DETAYLI REHBER: JAVA_KURULUM.md dosyasina bak
+
