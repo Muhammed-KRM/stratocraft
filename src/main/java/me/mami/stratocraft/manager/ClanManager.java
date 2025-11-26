@@ -33,12 +33,8 @@ public class ClanManager {
         playerClanMap.put(memberId, clan.getId());
     }
 
-    public boolean hasRecipe(Player p, String recipeId) {
-        for (ItemStack item : p.getInventory().getContents()) {
-            if (item != null && ItemManager.isCustomItem(item, "RECIPE_" + recipeId.toUpperCase())) return true;
-        }
-        return false;
-    }
+    // Not: hasRecipe metodu kaldırıldı - ResearchManager.hasRecipeBook kullanılmalı
+    // Bu metod daha gelişmiş (Lectern kontrolü de var)
 
     public void disbandClan(Clan clan) {
         clan.getMembers().keySet().forEach(playerClanMap::remove);

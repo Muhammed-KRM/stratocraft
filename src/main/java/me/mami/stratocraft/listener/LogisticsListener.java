@@ -12,7 +12,7 @@ public class LogisticsListener implements Listener {
 
     public LogisticsListener(LogisticsManager lm) { this.logisticsManager = lm; }
 
-    @EventHandler
+    @EventHandler(priority = org.bukkit.event.EventPriority.LOW)
     public void onRailInteract(PlayerInteractEvent event) {
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             if (event.getClickedBlock().getType() == Material.POWERED_RAIL) {

@@ -16,7 +16,7 @@ public class ShopListener implements Listener {
 
     public ShopListener(ShopManager sm) { this.shopManager = sm; }
 
-    @EventHandler
+    @EventHandler(priority = org.bukkit.event.EventPriority.NORMAL)
     public void onShopInteract(PlayerInteractEvent event) {
         // MEVCUT MARKETLE ETKİLEŞİM (SATIN ALMA)
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock().getType() == Material.CHEST) {

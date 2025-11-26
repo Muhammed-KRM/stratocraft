@@ -29,6 +29,11 @@ public class CombatListener implements Listener {
             if (damager instanceof Player) {
                 Player attacker = (Player) damager;
                 
+                // Admin bypass kontrolü
+                if (me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(attacker)) {
+                    return; // Admin bypass yetkisi varsa korumaları atla
+                }
+                
                 // Golem'in arkasında mı kontrol et
                 Vector golemDirection = target.getLocation().getDirection();
                 Vector toAttacker = attacker.getLocation().toVector().subtract(target.getLocation().toVector()).normalize();
@@ -46,6 +51,11 @@ public class CombatListener implements Listener {
         // OYUNCU VS OYUNCU KONTROLÜ
         if (!(event.getDamager() instanceof Player attacker
                 && event.getEntity() instanceof Player defender)) return;
+
+        // Admin bypass kontrolü
+        if (me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(attacker)) {
+            return; // Admin bypass yetkisi varsa korumaları atla
+        }
 
         Clan clanA = clanManager.getClanByPlayer(attacker.getUniqueId());
         Clan clanD = clanManager.getClanByPlayer(defender.getUniqueId());

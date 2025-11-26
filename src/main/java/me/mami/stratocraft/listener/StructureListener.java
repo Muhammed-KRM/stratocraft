@@ -28,18 +28,25 @@ public class StructureListener implements Listener {
         this.validator = new StructureValidator();
     }
 
-    @EventHandler
+    @EventHandler(priority = org.bukkit.event.EventPriority.NORMAL)
     public void onBuild(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
 
         Player p = event.getPlayer();
+        
+        // Admin bypass kontrolü - Yapı kurma kısıtlamalarını atla
+        // Not: Admin'ler yine de klan üyesi olmalı veya bu kontrol kaldırılabilir
+        // Şimdilik admin bypass sadece koruma kısıtlamalarında çalışıyor
+        
         Block b = event.getClickedBlock();
         Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
         
         if (!ItemManager.isCustomItem(p.getInventory().getItemInMainHand(), "BLUEPRINT")) return;
 
         if (clan == null) {
+            // Admin bypass: Admin'ler klan olmadan da yapı kurabilir (opsiyonel)
+            // Şimdilik normal kontrolü koruyoruz
             p.sendMessage("§cKlanın yok!");
             return;
         }

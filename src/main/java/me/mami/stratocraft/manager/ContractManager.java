@@ -91,8 +91,10 @@ public class ContractManager {
             p.setDisplayName("§4[HAİN] " + p.getName());
             
             // Scoreboard Team'e ekle (kırmızı isim görünür)
+            // UUID yerine isim kullanılıyor çünkü Scoreboard API isim gerektiriyor
+            // Ancak veri kaydında UUID kullanılıyor (doğru)
             if (traitorTeam != null) {
-                traitorTeam.addEntry(p.getName());
+                traitorTeam.addEntry(p.getName()); // Scoreboard için isim gerekli
             }
         } else {
             // Oyuncu offline - veriyi kaydet, giriş yaptığında cezayı ver

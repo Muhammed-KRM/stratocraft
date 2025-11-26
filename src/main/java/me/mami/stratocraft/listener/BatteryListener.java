@@ -35,7 +35,7 @@ public class BatteryListener implements Listener {
                 .orElse(0);
     }
 
-    @EventHandler
+    @EventHandler(priority = org.bukkit.event.EventPriority.NORMAL)
     public void onInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
@@ -143,7 +143,7 @@ public class BatteryListener implements Listener {
 
         // 12. LAV HENDEKÇİSİ (Alan Savunması)
         if (b.getType() == Material.LAVA && b.getRelative(BlockFace.DOWN).getType() == Material.LAVA) {
-            if (hand.getType() == Material.BUCKET && hand.getType() == Material.LAVA_BUCKET) {
+            if (hand.getType() == Material.LAVA_BUCKET) {
                 batteryManager.createLavaTrench(p);
             }
         }

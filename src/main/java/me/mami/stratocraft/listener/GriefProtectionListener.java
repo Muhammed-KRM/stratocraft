@@ -28,6 +28,11 @@ public class GriefProtectionListener implements Listener {
     
     @EventHandler(priority = EventPriority.HIGH)
     public void onPistonExtend(BlockPistonExtendEvent event) {
+        // Admin bypass kontrolü (piston bloğunun sahibi admin ise)
+        org.bukkit.block.Block pistonBlock = event.getBlock();
+        org.bukkit.entity.Player player = null;
+        // Pistonu koyan oyuncuyu bul (basit versiyon - event'ten direkt alınamaz)
+        // Bu durumda bypass kontrolü yapılamaz, ancak genel olarak admin bypass eklenebilir
         // Pistonun ittiği bloklar başka bir klanın bölgesine giriyor mu?
         for (Block block : event.getBlocks()) {
             Block targetBlock = block.getRelative(event.getDirection());
@@ -74,6 +79,9 @@ public class GriefProtectionListener implements Listener {
         
         if (sourceLoc == null || destinationLoc == null) return;
         
+        // Not: InventoryMoveItemEvent'te oyuncu bilgisi yok
+        // Bu durumda bypass kontrolü yapılamaz, ancak genel koruma aktif kalır
+        
         Clan sourceOwner = territoryManager.getTerritoryOwner(sourceLoc);
         Clan destOwner = territoryManager.getTerritoryOwner(destinationLoc);
         
@@ -91,6 +99,9 @@ public class GriefProtectionListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onLiquidFlow(BlockFromToEvent event) {
         // Akışkanın gideceği blok bir klan bölgesindeyse iptal et
+        // Not: BlockFromToEvent'te oyuncu bilgisi yok
+        // Bu durumda bypass kontrolü yapılamaz, ancak genel koruma aktif kalır
+        
         Block toBlock = event.getToBlock();
         Block fromBlock = event.getBlock();
         
@@ -111,6 +122,17 @@ public class GriefProtectionListener implements Listener {
     
     @EventHandler(priority = EventPriority.HIGH)
     public void onExplosion(EntityExplodeEvent event) {
+        // Admin bypass kontrolü - Patlamayı yapan entity kontrol et
+        if (event.getEntity() != null) {
+            org.bukkit.entity.Entity exploder = event.getEntity();
+            if (exploder instanceof org.bukkit.entity.Player) {
+                org.bukkit.entity.Player player = (org.bukkit.entity.Player) exploder;
+                if (me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(player)) {
+                    return; // Admin bypass yetkisi varsa korumaları atla
+                }
+            }
+        }
+        
         // Patlamadan etkilenen bloklar listesini kontrol et
         java.util.List<Block> blocksToRemove = new java.util.ArrayList<>();
         

@@ -27,7 +27,7 @@ public class VirtualStorageListener implements Listener {
         this.territoryManager = tm;
     }
 
-    @EventHandler
+    @EventHandler(priority = org.bukkit.event.EventPriority.NORMAL)
     public void onVirtualStorageAccess(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         if (event.getHand() != EquipmentSlot.HAND) return;

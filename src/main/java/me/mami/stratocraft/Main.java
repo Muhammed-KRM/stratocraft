@@ -40,6 +40,7 @@ public class Main extends JavaPlugin {
     private VirtualStorageListener virtualStorageListener;
     private ConfigManager configManager;
     private me.mami.stratocraft.util.LangManager langManager;
+    private me.mami.stratocraft.gui.ClanMenu clanMenu;
 
     @Override
     public void onEnable() {
@@ -84,7 +85,8 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new SiegeListener(siegeManager, territoryManager), this);
         Bukkit.getPluginManager().registerEvents(new ScavengerListener(scavengerManager), this);
         Bukkit.getPluginManager().registerEvents(new LogisticsListener(logisticsManager), this);
-        Bukkit.getPluginManager().registerEvents(new RitualListener(clanManager), this);
+        // RitualListener artık RitualInteractionListener içinde birleştirildi
+        Bukkit.getPluginManager().registerEvents(new RitualInteractionListener(clanManager, territoryManager), this);
         Bukkit.getPluginManager().registerEvents(new ShopListener(shopManager), this);
         Bukkit.getPluginManager().registerEvents(new MissionListener(missionManager), this);
         Bukkit.getPluginManager().registerEvents(new ResearchListener(researchManager), this);
@@ -105,10 +107,30 @@ public class Main extends JavaPlugin {
         new DrillTask(territoryManager).runTaskTimer(this, configManager.getDrillInterval(), configManager.getDrillInterval());
         new CropTask(territoryManager).runTaskTimer(this, 40L, 40L); // Her 2 saniye 
 
-        // 4. Komutlar
+        // 4. Tab Completers
+        getCommand("klan").setTabCompleter(new me.mami.stratocraft.command.ClanTabCompleter());
+        getCommand("kontrat").setTabCompleter(new me.mami.stratocraft.command.ContractTabCompleter());
+        
+        // 5. GUI Menü Sistemi
+        clanMenu = new me.mami.stratocraft.gui.ClanMenu(clanManager);
+        Bukkit.getPluginManager().registerEvents(clanMenu, this);
+        
+        // 6. Combat Log Manager
+        me.mami.stratocraft.manager.CombatLogManager combatLogManager = new me.mami.stratocraft.manager.CombatLogManager();
+        Bukkit.getPluginManager().registerEvents(combatLogManager, this);
+        combatLogManager.startCleanupTask(this);
+        
+        // 7. Komutlar (Sadece Admin için - Oyuncular ritüelleri kullanır)
         getCommand("klan").setExecutor(new CommandExecutor() {
             @Override
             public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+                // Admin bypass - Sadece adminler komut kullanabilir
+                if (!sender.hasPermission("stratocraft.admin")) {
+                    sender.sendMessage("§cBu komut sadece adminler için! Oyuncular ritüelleri kullanmalı.");
+                    sender.sendMessage("§7Ritüeller: Klan Kurma (3x3 Cobblestone + Crafting Table + Named Paper)");
+                    return true;
+                }
+                
                 if (sender instanceof Player) {
                     Player p = (Player) sender;
                     if (args.length > 0 && args[0].equalsIgnoreCase("kur")) {
@@ -123,6 +145,9 @@ public class Main extends JavaPlugin {
                         } else {
                             p.sendMessage("§cKullanım: /klan kur <isim>");
                         }
+                    } else if (args.length > 0 && args[0].equalsIgnoreCase("menü")) {
+                        // GUI Menü aç
+                        clanMenu.openMenu(p);
                     } else if (args.length > 0 && args[0].equalsIgnoreCase("ayril")) {
                         Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
                         if (clan != null) {

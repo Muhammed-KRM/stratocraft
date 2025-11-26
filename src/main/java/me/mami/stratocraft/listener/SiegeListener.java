@@ -23,6 +23,11 @@ public class SiegeListener implements Listener {
         // Kuşatma Anıtı, DOKUMANDAN alınan örneğe göre End Crystal olarak varsayalım.
         if (event.getBlock().getType() != Material.END_CRYSTAL) return;
 
+        // Admin bypass kontrolü
+        if (me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(event.getPlayer())) {
+            return; // Admin bypass yetkisi varsa korumaları atla
+        }
+
         Clan attacker = territoryManager.getClanManager().getClanByPlayer(event.getPlayer().getUniqueId());
         if (attacker == null) return;
 

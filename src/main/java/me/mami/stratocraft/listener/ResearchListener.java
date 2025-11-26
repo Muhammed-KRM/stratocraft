@@ -20,6 +20,11 @@ public class ResearchListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player p = (Player) event.getWhoClicked();
         
+        // Admin bypass kontrolü
+        if (me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(p)) {
+            return; // Admin bypass yetkisi varsa tarif kısıtlamalarını atla
+        }
+        
         ItemStack result = event.getRecipe().getResult();
         
         // Özel eşyalar için tarif kontrolü

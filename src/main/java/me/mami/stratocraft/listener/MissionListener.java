@@ -21,7 +21,7 @@ public class MissionListener implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = org.bukkit.event.EventPriority.LOW)
     public void onTotemInteract(PlayerInteractEvent event) {
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock().getType() == Material.LODESTONE) {
             Block base = event.getClickedBlock().getRelative(0, -1, 0);

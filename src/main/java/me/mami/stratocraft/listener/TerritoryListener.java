@@ -22,6 +22,11 @@ public class TerritoryListener implements Listener {
 
     @EventHandler
     public void onBreak(BlockBreakEvent event) {
+        // Admin bypass kontrolü
+        if (me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(event.getPlayer())) {
+            return; // Admin bypass yetkisi varsa korumaları atla
+        }
+        
         Clan owner = territoryManager.getTerritoryOwner(event.getBlock().getLocation());
         
         // Sahipsiz yerse kırılabilir
@@ -91,7 +96,7 @@ public class TerritoryListener implements Listener {
         event.getPlayer().sendMessage("§cBu bölge " + owner.getName() + " klanına ait! Önce kuşatma başlatmalısın.");
     }
 
-    @EventHandler
+    @EventHandler(priority = org.bukkit.event.EventPriority.NORMAL)
     public void onFuelAdd(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         if (event.getClickedBlock() == null) return;

@@ -45,6 +45,29 @@ public class LangManager {
         if (message == null) {
             return ChatColor.RED + "Missing translation: " + path;
         }
+        return colorize(message);
+    }
+    
+    /**
+     * Hex renk desteği ile mesajı renklendir
+     */
+    private String colorize(String message) {
+        // Hex renk kodu desteği (Örn: &#FF0000 veya #FF0000)
+        java.util.regex.Pattern hexPattern = java.util.regex.Pattern.compile("&#([a-fA-F0-9]{6})");
+        java.util.regex.Matcher hexMatcher = hexPattern.matcher(message);
+        
+        while (hexMatcher.find()) {
+            String hexColor = hexMatcher.group(1);
+            try {
+                // Bungee ChatColor kullanarak hex renk uygula
+                net.md_5.bungee.api.ChatColor color = net.md_5.bungee.api.ChatColor.of("#" + hexColor);
+                message = message.replace("&#" + hexColor, color.toString());
+            } catch (Exception e) {
+                // Hex renk parse edilemezse eski halini bırak
+            }
+        }
+        
+        // Standart Minecraft renk kodlarını çevir (&c, &a, vb.)
         return ChatColor.translateAlternateColorCodes('&', message);
     }
 
