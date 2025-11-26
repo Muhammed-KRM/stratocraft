@@ -98,5 +98,10 @@ public class ContractManager {
             clan.withdraw(penalty);
         }
     }
+    
+    // DataManager için
+    public void loadContract(Contract contract) {
+        activeContracts.add(contract);
+    }
 }
 

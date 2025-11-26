@@ -45,5 +45,13 @@ public class ClanManager {
         clans.remove(clan.getId());
         Bukkit.broadcastMessage("§c" + clan.getName() + " klanı dağıtıldı.");
     }
+    
+    // DataManager için
+    public void loadClan(Clan clan) {
+        clans.put(clan.getId(), clan);
+        for (UUID memberId : clan.getMembers().keySet()) {
+            playerClanMap.put(memberId, clan.getId());
+        }
+    }
 }
 

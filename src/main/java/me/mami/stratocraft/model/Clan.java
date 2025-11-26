@@ -16,7 +16,7 @@ public class Clan {
         }
     }
 
-    private final UUID id = UUID.randomUUID();
+    private UUID id = UUID.randomUUID();
     private final String name;
     private final Map<UUID, Rank> members = new HashMap<>();
     private final List<Structure> structures = new ArrayList<>();
@@ -31,6 +31,7 @@ public class Clan {
     }
 
     public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; } // DataManager için
     public String getName() { return name; }
     public Map<UUID, Rank> getMembers() { return members; }
     public void addMember(UUID uuid, Rank rank) { members.put(uuid, rank); }

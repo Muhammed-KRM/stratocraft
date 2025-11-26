@@ -90,27 +90,34 @@ public class DisasterManager {
     }
     
     private void createWreckageStructure(Location center) {
-        // Enkaz yığını: Havada asılı bir yapı oluştur
+        // Enkaz yığını: Yere düşür (yüzeye)
         org.bukkit.Material wreckageMat = org.bukkit.Material.ANCIENT_DEBRIS;
         
-        // 5x5x3 boyutunda enkaz yığını
+        // Yüzey Y koordinatını bul
+        int surfaceY = center.getWorld().getHighestBlockYAt(center);
+        Location surfaceLoc = center.clone();
+        surfaceLoc.setY(surfaceY);
+        
+        // 5x5x3 boyutunda enkaz yığını (yüzeyde)
         for (int x = -2; x <= 2; x++) {
             for (int z = -2; z <= 2; z++) {
                 for (int y = 0; y < 3; y++) {
-                    Location blockLoc = center.clone().add(x, y + 2, z);
-                    if (blockLoc.getBlock().getType() == org.bukkit.Material.AIR) {
+                    Location blockLoc = surfaceLoc.clone().add(x, y, z);
+                    if (blockLoc.getBlock().getType() == org.bukkit.Material.AIR || 
+                        blockLoc.getBlock().getType() == org.bukkit.Material.GRASS ||
+                        blockLoc.getBlock().getType() == org.bukkit.Material.TALL_GRASS) {
                         blockLoc.getBlock().setType(wreckageMat);
                     }
                 }
             }
         }
         
-        // Enkazı ScavengerManager'a kaydet
+        // Enkazı ScavengerManager'a kaydet (yüzey konumuna göre)
         if (me.mami.stratocraft.Main.getInstance() != null) {
             me.mami.stratocraft.manager.ScavengerManager sm = 
                 ((me.mami.stratocraft.Main) me.mami.stratocraft.Main.getInstance()).getScavengerManager();
             if (sm != null) {
-                sm.markWreckage(center, java.util.UUID.randomUUID());
+                sm.markWreckage(surfaceLoc, java.util.UUID.randomUUID());
             }
         }
     }

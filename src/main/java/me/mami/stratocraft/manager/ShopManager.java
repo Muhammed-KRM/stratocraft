@@ -55,5 +55,14 @@ public class ShopManager {
         
         buyer.sendMessage("§aSatın alma başarılı!" + (shop.isProtectedZone() ? " §7(%5 vergi alındı)" : ""));
     }
+    
+    // DataManager için
+    public List<Shop> getAllShops() {
+        return new ArrayList<>(shops.values());
+    }
+    
+    public void loadShop(Shop shop) {
+        shops.put(shop.getLocation(), shop);
+    }
 }
 

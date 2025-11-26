@@ -32,6 +32,11 @@ public class DrillTask extends BukkitRunnable {
                     // Madenci bloğunun altına maden düşür
                     Block outputBlock = drillLoc.clone().add(0, -1, 0).getBlock();
                     
+                    // CHUNK YÜKLEME KONTROLÜ - Sadece chunk yüklüyse çalış
+                    if (!drillLoc.getChunk().isLoaded()) {
+                        continue; // Chunk yüklü değilse atla
+                    }
+                    
                     // Eğer çıktı bloğu hava ise, rastgele maden düşür
                     if (outputBlock.getType() == Material.AIR || outputBlock.getType() == Material.CHEST) {
                         Material ore = getRandomOre(s.getLevel());
@@ -39,12 +44,22 @@ public class DrillTask extends BukkitRunnable {
                             if (outputBlock.getType() == Material.CHEST) {
                                 // Sandığa ekle
                                 org.bukkit.block.Chest chest = (org.bukkit.block.Chest) outputBlock.getState();
-                                chest.getInventory().addItem(new ItemStack(ore, random.nextInt(3) + 1));
+                                ItemStack oreItem = new ItemStack(ore, random.nextInt(3) + 1);
+                                if (chest.getInventory().firstEmpty() != -1) {
+                                    chest.getInventory().addItem(oreItem);
+                                }
                             } else {
-                                // Yere düşür
-                                drillLoc.getWorld().dropItemNaturally(
+                                // Sadece sandık yoksa yere düşür (lag önleme: despawn süresini kısalt)
+                                org.bukkit.entity.Item item = drillLoc.getWorld().dropItemNaturally(
                                     drillLoc.clone().add(0, -1, 0),
                                     new ItemStack(ore, random.nextInt(3) + 1)
+                                );
+                                // Despawn süresini 2 dakikaya düşür (normal 5 dakika)
+                                item.setPickupDelay(20);
+                                org.bukkit.Bukkit.getScheduler().runTaskLater(
+                                    org.bukkit.Bukkit.getPluginManager().getPlugin("Stratocraft"),
+                                    () -> { if (item.isValid() && !item.isDead()) item.remove(); },
+                                    2400L // 2 dakika
                                 );
                             }
                         }

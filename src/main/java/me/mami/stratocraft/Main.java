@@ -36,6 +36,8 @@ public class Main extends JavaPlugin {
     private ResearchManager researchManager;
     private MissionManager missionManager;
     private BuffManager buffManager;
+    private DataManager dataManager;
+    private VirtualStorageListener virtualStorageListener;
 
     @Override
     public void onEnable() {
@@ -62,6 +64,7 @@ public class Main extends JavaPlugin {
         researchManager = new ResearchManager();
         missionManager = new MissionManager();
         buffManager = new BuffManager();
+        dataManager = new DataManager(this);
 
         // Manager bağlantıları
         siegeManager.setBuffManager(buffManager);
@@ -83,7 +86,11 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new StructureListener(clanManager, researchManager), this);
         Bukkit.getPluginManager().registerEvents(new ConsumableListener(), this);
         Bukkit.getPluginManager().registerEvents(new VillagerListener(), this);
-        Bukkit.getPluginManager().registerEvents(new VirtualStorageListener(territoryManager), this);
+        virtualStorageListener = new VirtualStorageListener(territoryManager);
+        Bukkit.getPluginManager().registerEvents(virtualStorageListener, this);
+        
+        // Veri yükleme
+        dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener);
 
         // 3. Zamanlayıcıları Başlat
         new BuffTask(territoryManager).runTaskTimer(this, 20L, 20L); 
@@ -245,6 +252,16 @@ public class Main extends JavaPlugin {
         });
 
         getLogger().info("Stratocraft v10.0: Eksiksiz Sistem Aktif!");
+    }
+    
+    @Override
+    public void onDisable() {
+        // Veri kaydetme
+        if (dataManager != null && clanManager != null && contractManager != null && 
+            shopManager != null && virtualStorageListener != null) {
+            dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener);
+        }
+        getLogger().info("Stratocraft: Veriler kaydedildi, plugin kapatılıyor.");
     }
 
     public static Main getInstance() { return instance; }

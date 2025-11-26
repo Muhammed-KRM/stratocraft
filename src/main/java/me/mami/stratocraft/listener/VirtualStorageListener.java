@@ -63,5 +63,14 @@ public class VirtualStorageListener implements Listener {
         }
         return virtualInventories.get(clanId);
     }
+    
+    // DataManager için
+    public Map<UUID, Inventory> getVirtualInventories() {
+        return virtualInventories;
+    }
+    
+    public void setVirtualInventory(UUID clanId, Inventory inv) {
+        virtualInventories.put(clanId, inv);
+    }
 }
 

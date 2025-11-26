@@ -60,6 +60,18 @@ public class ShopListener implements Listener {
                 // protectedZone parametresi basitlik için false, klan bölgesi kontrolü eklenebilir.
                 shopManager.createShop(event.getPlayer(), attached.getLocation(), sellItem, priceItem, true);
                 
+                // HAVADA DÖNEN EŞYA OLUŞTUR
+                org.bukkit.Location displayLoc = attached.getLocation().add(0.5, 1.5, 0.5);
+                org.bukkit.entity.ArmorStand stand = (org.bukkit.entity.ArmorStand) 
+                    displayLoc.getWorld().spawnEntity(displayLoc, org.bukkit.entity.EntityType.ARMOR_STAND);
+                stand.setVisible(false);
+                stand.setGravity(false);
+                stand.setInvulnerable(true);
+                stand.setSmall(true);
+                stand.setCustomNameVisible(false);
+                stand.setMarker(true);
+                stand.getEquipment().setHelmet(sellItem.clone());
+                
                 // Tabelayı Güncelle
                 event.setLine(0, "§a[MARKET]");
                 event.setLine(1, sellItem.getAmount() + "x " + sellItem.getType().toString());

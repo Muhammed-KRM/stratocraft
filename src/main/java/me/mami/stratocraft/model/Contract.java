@@ -4,7 +4,7 @@ import org.bukkit.Material;
 import java.util.UUID;
 
 public class Contract {
-    private final UUID id = UUID.randomUUID();
+    private UUID id = UUID.randomUUID();
     private final UUID issuer;
     private final Material material;
     private final int amount;
@@ -23,6 +23,7 @@ public class Contract {
     }
 
     public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; } // DataManager için
     public UUID getIssuer() { return issuer; }
     public Material getMaterial() { return material; }
     public int getAmount() { return amount; }
@@ -31,6 +32,7 @@ public class Contract {
     public UUID getAcceptor() { return acceptor; }
     public void setAcceptor(UUID acceptor) { this.acceptor = acceptor; }
     public int getDelivered() { return delivered; }
+    public void setDelivered(int delivered) { this.delivered = delivered; } // DataManager için
     public void addDelivered(int amount) { this.delivered += amount; }
     public boolean isCompleted() { return completed || delivered >= amount; }
     public void setCompleted(boolean completed) { this.completed = completed; }

@@ -191,10 +191,67 @@ public class StructureListener implements Listener {
     }
 
     private void createStructure(Player p, Clan c, Block b, Structure.Type type, String name) {
+        // Yapı inşa maliyetleri kontrolü
+        if (!checkStructureCost(p, type)) {
+            p.sendMessage("§cYapı inşa etmek için yeterli malzemeniz yok!");
+            return;
+        }
+        
+        // Malzemeleri tüket
+        consumeStructureCost(p, type);
+        
         c.addStructure(new Structure(type, b.getLocation(), 1));
         p.sendMessage("§a" + name + " aktif edildi!");
         p.playSound(b.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1, 1);
         b.getWorld().spawnParticle(Particle.END_ROD, b.getLocation().add(0.5, 1, 0.5), 50);
+    }
+    
+    private boolean checkStructureCost(Player p, Structure.Type type) {
+        org.bukkit.inventory.Inventory inv = p.getInventory();
+        
+        switch (type) {
+            case ALCHEMY_TOWER:
+                // Simya Kulesi: 32 Altın + 16 Elmas
+                return inv.contains(Material.GOLD_INGOT, 32) && inv.contains(Material.DIAMOND, 16);
+            case TECTONIC_STABILIZER:
+                // Tektonik Sabitleyici: 16 Titanyum + 8 Piston
+                return (ItemManager.TITANIUM_INGOT != null && 
+                        inv.contains(ItemManager.TITANIUM_INGOT, 16)) &&
+                       inv.contains(Material.PISTON, 8);
+            case HEALING_BEACON:
+                // Şifa Kulesi: 16 Demir + 8 Lapis
+                return inv.contains(Material.IRON_INGOT, 16) && inv.contains(Material.LAPIS_LAZULI, 8);
+            case GLOBAL_MARKET_GATE:
+                // Global Pazar: 32 Altın + 16 Ender Pearl
+                return inv.contains(Material.GOLD_INGOT, 32) && inv.contains(Material.ENDER_PEARL, 16);
+            default:
+                return true; // Diğer yapılar için maliyet yok (şimdilik)
+        }
+    }
+    
+    private void consumeStructureCost(Player p, Structure.Type type) {
+        org.bukkit.inventory.Inventory inv = p.getInventory();
+        
+        switch (type) {
+            case ALCHEMY_TOWER:
+                inv.removeItem(new org.bukkit.inventory.ItemStack(Material.GOLD_INGOT, 32),
+                              new org.bukkit.inventory.ItemStack(Material.DIAMOND, 16));
+                break;
+            case TECTONIC_STABILIZER:
+                if (ItemManager.TITANIUM_INGOT != null) {
+                    inv.removeItem(ItemManager.TITANIUM_INGOT.clone().asQuantity(16),
+                                  new org.bukkit.inventory.ItemStack(Material.PISTON, 8));
+                }
+                break;
+            case HEALING_BEACON:
+                inv.removeItem(new org.bukkit.inventory.ItemStack(Material.IRON_INGOT, 16),
+                              new org.bukkit.inventory.ItemStack(Material.LAPIS_LAZULI, 8));
+                break;
+            case GLOBAL_MARKET_GATE:
+                inv.removeItem(new org.bukkit.inventory.ItemStack(Material.GOLD_INGOT, 32),
+                              new org.bukkit.inventory.ItemStack(Material.ENDER_PEARL, 16));
+                break;
+        }
     }
 }
 
