@@ -18,8 +18,10 @@ public class MobRideTask extends BukkitRunnable {
     private final MobManager mobManager;
     private final Map<UUID, Long> wyvernFeedTimes = new HashMap<>(); // Wyvern beslenme zamanları
     private final Map<UUID, Long> wyvernLastCheck = new HashMap<>(); // Son kontrol zamanı (optimizasyon)
+    private final Map<UUID, Long> wyvernLastMessage = new HashMap<>(); // Son mesaj zamanı (chat spam önleme)
     private static final long FEED_INTERVAL = 60000L; // 60 saniye (milisaniye)
     private static final long CHECK_INTERVAL = 1000L; // 1 saniyede bir kontrol et (optimizasyon)
+    private static final long MESSAGE_COOLDOWN = 3000L; // 3 saniyede bir mesaj gönder (chat spam önleme)
 
     public MobRideTask(MobManager mm) { this.mobManager = mm; }
 
@@ -64,7 +66,22 @@ public class MobRideTask extends BukkitRunnable {
                                 
                                 if (!hasRedDiamond) {
                                     // Kızıl Elmas yok - Wyvern saldırır
-                                    p.sendMessage("§c§lWyvern aç! Kızıl Elmas gerekli!");
+                                    // Chat spam önleme: Son mesajdan 3 saniye geçtiyse gönder
+                                    Long lastMsg = wyvernLastMessage.get(playerId);
+                                    if (lastMsg == null || (currentTime - lastMsg) >= MESSAGE_COOLDOWN) {
+                                        // ActionBar kullan (chat spam önleme) - try-catch ile güvenli
+                                        try {
+                                            p.spigot().sendMessage(
+                                                net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                                                new net.md_5.bungee.api.chat.TextComponent("§c§lWyvern aç! Kızıl Elmas gerekli!")
+                                            );
+                                        } catch (Exception e) {
+                                            // Spigot API yoksa normal mesaj gönder
+                                            p.sendMessage("§c§lWyvern aç! Kızıl Elmas gerekli!");
+                                        }
+                                        wyvernLastMessage.put(playerId, currentTime);
+                                    }
+                                    
                                     vehicle.removePassenger(p);
                                     if (vehicle instanceof LivingEntity) {
                                         ((LivingEntity) vehicle).setTarget(p);
@@ -74,7 +91,16 @@ public class MobRideTask extends BukkitRunnable {
                                 } else {
                                     // Beslendi - 60 saniye daha uçabilir
                                     wyvernFeedTimes.put(playerId, currentTime);
-                                    p.sendMessage("§aWyvern besledin! 60 saniye daha uçabilirsin.");
+                                    // ActionBar kullan (chat spam önleme) - try-catch ile güvenli
+                                    try {
+                                        p.spigot().sendMessage(
+                                            net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                                            new net.md_5.bungee.api.chat.TextComponent("§aWyvern besledin! 60 saniye daha uçabilirsin.")
+                                        );
+                                    } catch (Exception e) {
+                                        // Spigot API yoksa normal mesaj gönder
+                                        p.sendMessage("§aWyvern besledin! 60 saniye daha uçabilirsin.");
+                                    }
                                 }
                             }
                         }
@@ -84,6 +110,7 @@ public class MobRideTask extends BukkitRunnable {
                 // Araçtan indi, beslenme zamanını temizle
                 wyvernFeedTimes.remove(p.getUniqueId());
                 wyvernLastCheck.remove(p.getUniqueId());
+                wyvernLastMessage.remove(p.getUniqueId());
             }
         }
     }

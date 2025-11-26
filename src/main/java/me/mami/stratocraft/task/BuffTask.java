@@ -10,14 +10,26 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class BuffTask extends BukkitRunnable {
     private final TerritoryManager territoryManager;
     private final ClanManager clanManager;
+    private final Map<UUID, Long> lastRadarWarnings = new HashMap<>(); // Chat spam önleme
 
     public BuffTask(TerritoryManager tm) {
         this.territoryManager = tm;
         this.clanManager = tm.getClanManager();
+    }
+    
+    private Long getLastRadarWarning(UUID playerId) {
+        return lastRadarWarnings.get(playerId);
+    }
+    
+    private void setLastRadarWarning(UUID playerId, long time) {
+        lastRadarWarnings.put(playerId, time);
     }
 
     @Override
@@ -52,18 +64,43 @@ public class BuffTask extends BukkitRunnable {
                     }
                 }
 
-                // ERKEN UYARI RADARI - Düşman yaklaşımı uyarısı (Geliştirilmiş: Koordinat bilgisi)
+                // ERKEN UYARI RADARI - Düşman yaklaşımı uyarısı (Geliştirilmiş: Koordinat bilgisi + Chat Spam Önleme)
                 if (s.getType() == Structure.Type.WATCHTOWER && isFriendly) {
                     // 200 blok yarıçapında düşman kontrolü
-                    for (Player nearby : Bukkit.getOnlinePlayers()) {
-                        if (nearby.getLocation().distance(s.getLocation()) <= 200 && 
-                            !territoryClan.getMembers().containsKey(nearby.getUniqueId())) {
-                            org.bukkit.Location enemyLoc = nearby.getLocation();
-                            int distance = (int) enemyLoc.distance(s.getLocation());
-                            p.sendMessage("§c§l[RADAR] §7Düşman tespit edildi!");
-                            p.sendMessage("§e  → İsim: §c" + nearby.getName());
-                            p.sendMessage("§e  → Mesafe: §c" + distance + " blok");
-                            p.sendMessage("§e  → Koordinat: §7X:" + (int)enemyLoc.getX() + " Y:" + (int)enemyLoc.getY() + " Z:" + (int)enemyLoc.getZ());
+                    // Chat spam önleme: Her oyuncu için son uyarı zamanını tut
+                    UUID playerId = p.getUniqueId();
+                    Long lastRadarWarning = getLastRadarWarning(playerId);
+                    long currentTime = System.currentTimeMillis();
+                    
+                    // 10 saniyede bir uyarı gönder (chat spam önleme)
+                    if (lastRadarWarning == null || (currentTime - lastRadarWarning) >= 10000) {
+                        for (Player nearby : Bukkit.getOnlinePlayers()) {
+                            if (nearby.getLocation().distance(s.getLocation()) <= 200 && 
+                                !territoryClan.getMembers().containsKey(nearby.getUniqueId())) {
+                                org.bukkit.Location enemyLoc = nearby.getLocation();
+                                int distance = (int) enemyLoc.distance(s.getLocation());
+                                
+                                // ActionBar kullan (chat spam önleme)
+                                try {
+                                    p.spigot().sendMessage(
+                                        net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                                        new net.md_5.bungee.api.chat.TextComponent(
+                                            "§c§l[RADAR] §7" + nearby.getName() + " - " + distance + " blok"
+                                        )
+                                    );
+                                } catch (Exception e) {
+                                    // Spigot API yoksa normal mesaj gönder
+                                    p.sendMessage("§c§l[RADAR] §7" + nearby.getName() + " - " + distance + " blok");
+                                }
+                                
+                                // Chat'e sadece önemli bilgileri yaz (10 saniyede bir)
+                                p.sendMessage("§c§l[RADAR] §7Düşman: §c" + nearby.getName() + 
+                                    " §7(" + distance + " blok) - X:" + (int)enemyLoc.getX() + 
+                                    " Y:" + (int)enemyLoc.getY() + " Z:" + (int)enemyLoc.getZ());
+                                
+                                setLastRadarWarning(playerId, currentTime);
+                                break; // Bir düşman bulundu, döngüyü kır
+                            }
                         }
                     }
                 }

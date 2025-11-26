@@ -45,6 +45,7 @@ public class ConsumableListener implements Listener {
                 6000, // 5 dakika
                 0
             ));
+            return; // Event iptal edildi, devam etme
         }
         
         // Kızıl Elmas Otu kontrolü (eğer ItemManager'da tanımlıysa)
@@ -63,6 +64,7 @@ public class ConsumableListener implements Listener {
             
             p.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).addModifier(damageMod);
             p.sendMessage("§c§lKızıl Elmas Otu tüketildi! +%10 kalıcı hasar kazandın!");
+            return; // Event iptal edildi, devam etme
         }
     }
 }

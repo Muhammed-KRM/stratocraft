@@ -38,6 +38,7 @@ public class ResearchListener implements Listener {
             if (!recipeId.isEmpty() && !researchManager.hasRecipeBook(p, recipeId)) {
                 event.setCancelled(true);
                 p.sendMessage("§cBu eşyayı yapmak için gerekli tarif kitabına sahip değilsin!");
+                return; // Event iptal edildi, devam etme
             }
         }
     }

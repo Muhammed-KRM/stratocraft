@@ -30,12 +30,13 @@ public class BuffManager {
         conquerorBuffs.put(winner.getId(), System.currentTimeMillis() + CONQUEROR_DURATION);
         Bukkit.broadcastMessage("§6§l" + winner.getName() + " klanı Fatih Buff'ı kazandı! 24 saat sürecek.");
         
-        // Tüm klan üyelerine buff uygula
+        // Tüm klan üyelerine buff uygula (sadece online olanlara)
         for (UUID memberId : winner.getMembers().keySet()) {
             Player p = Bukkit.getPlayer(memberId);
             if (p != null && p.isOnline()) {
                 applyConquerorBuffToPlayer(p);
             }
+            // Offline oyuncular için buff, giriş yaptıklarında checkBuffsOnJoin ile uygulanacak
         }
     }
 
@@ -53,6 +54,7 @@ public class BuffManager {
             if (p != null && p.isOnline()) {
                 applyHeroBuffToPlayer(p);
             }
+            // Offline oyuncular için buff, giriş yaptıklarında checkBuffsOnJoin ile uygulanacak
         }
     }
 

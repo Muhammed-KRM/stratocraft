@@ -59,13 +59,17 @@ public class ContractManager {
             contract.addDelivered(amount);
             if (contract.isCompleted()) {
                 Player acceptor = Bukkit.getPlayer(contract.getAcceptor());
-                if (acceptor != null) {
+                if (acceptor != null && acceptor.isOnline()) {
                     Clan clan = clanManager.getClanByPlayer(contract.getIssuer());
                     if (clan != null) {
                         clan.withdraw(contract.getReward());
                         // Ödülü acceptor'a ver (basit versiyon)
                         acceptor.sendMessage("§aSözleşme tamamlandı! " + contract.getReward() + " altın kazandın!");
                     }
+                } else {
+                    // Oyuncu offline - veriyi kaydet, giriş yaptığında ödülü ver
+                    // (Basit versiyon: Sadece log)
+                    Bukkit.getLogger().info("Sözleşme tamamlandı ama oyuncu offline: " + contract.getAcceptor());
                 }
             }
         }
@@ -82,7 +86,7 @@ public class ContractManager {
 
     public void punishBreach(UUID criminalId) {
         Player p = Bukkit.getPlayer(criminalId);
-        if (p != null) {
+        if (p != null && p.isOnline()) {
             p.sendMessage("§4§lSÖZLEŞMEYİ İHLAL ETTİN! HAİN DAMGASI YEDİN.");
             p.setDisplayName("§4[HAİN] " + p.getName());
             
@@ -90,6 +94,10 @@ public class ContractManager {
             if (traitorTeam != null) {
                 traitorTeam.addEntry(p.getName());
             }
+        } else {
+            // Oyuncu offline - veriyi kaydet, giriş yaptığında cezayı ver
+            // (Basit versiyon: Sadece log, gerçekte bir "pendingPunishments" listesi olmalı)
+            Bukkit.getLogger().info("Hain damgası verilecek ama oyuncu offline: " + criminalId);
         }
         
         Clan clan = clanManager.getClanByPlayer(criminalId);

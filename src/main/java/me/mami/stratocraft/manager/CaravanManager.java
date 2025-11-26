@@ -76,7 +76,7 @@ public class CaravanManager {
                         caravanClans.remove(playerId);
                         
                         Player owner = Main.getInstance().getServer().getPlayer(playerId);
-                        if (owner != null) {
+                        if (owner != null && owner.isOnline()) {
                             owner.sendMessage("§a§lKervan hedefe ulaştı! " + reward + " altın kazandınız (x1.5 bonus)!");
                         }
                     }
