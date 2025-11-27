@@ -12,6 +12,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.EnderCrystal;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -276,8 +277,9 @@ public class TerritoryListener implements Listener {
         Clan owner = findClanByCrystal(crystal);
         if (owner == null) return; // Normal end crystal
         
-        // Kristal kırılıyor mu?
-        if (crystal.getHealth() - event.getFinalDamage() <= 0) {
+        // Kristal kırılıyor mu? (EnderCrystal'ın sağlığı 1.0, yeterli hasar aldığında kırılır)
+        // EnderCrystal'da getHealth() yok ama hasar >= 1.0 olduğunda kırılır
+        if (event.getFinalDamage() >= 1.0 && !event.isCancelled()) {
             // Kırılma nedenini kontrol et
             Player breaker = null;
             if (event instanceof EntityDamageByEntityEvent) {

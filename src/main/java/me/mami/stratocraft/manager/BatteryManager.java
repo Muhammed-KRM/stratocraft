@@ -1,6 +1,7 @@
 package me.mami.stratocraft.manager;
 
 import me.mami.stratocraft.Main;
+import me.mami.stratocraft.model.Clan;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
@@ -26,6 +27,8 @@ public class BatteryManager {
     private final Map<UUID, Map<Integer, BatteryData>> loadedBatteries;
     // Barrier bloklarını takip etmek için (Location -> Material) - Ozon Kalkanı ve Enerji Duvarı için
     private final Map<Location, Material> temporaryBarriers;
+    // Batarya aktivasyon zamanı takibi (UUID -> (Slot -> ActivationTime)) - İptal edilemez süre için
+    private final Map<UUID, Map<Integer, Long>> batteryActivationTimes;
     
     /**
      * Batarya veri sınıfı - tip ve ek bilgileri tutar
@@ -63,6 +66,7 @@ public class BatteryManager {
         this.plugin = plugin;
         this.loadedBatteries = new HashMap<>();
         this.temporaryBarriers = new HashMap<>();
+        this.batteryActivationTimes = new HashMap<>();
         if (plugin != null) {
             startInfoTask(); // Bilgi mesajı döngüsünü başlat
         }
@@ -75,8 +79,25 @@ public class BatteryManager {
         loadedBatteries.putIfAbsent(player.getUniqueId(), new HashMap<>());
         loadedBatteries.get(player.getUniqueId()).put(slot, data);
         
+        // Aktivasyon zamanını kaydet (yükleme = aktivasyon)
+        batteryActivationTimes.putIfAbsent(player.getUniqueId(), new HashMap<>());
+        batteryActivationTimes.get(player.getUniqueId()).put(slot, System.currentTimeMillis());
+        
         player.sendMessage(ChatColor.GREEN + "⚡ " + data.getType() + " " + (slot + 1) + ". slota yüklendi!");
         player.sendMessage(ChatColor.GRAY + "Ateşlemek için SOL, iptal için SAĞ tıkla.");
+    }
+    
+    /**
+     * Batarya yeni aktif edildi mi? (2 saniye içinde)
+     */
+    public boolean isBatteryRecentlyActivated(Player player, int slot) {
+        if (!batteryActivationTimes.containsKey(player.getUniqueId())) return false;
+        Map<Integer, Long> slotTimes = batteryActivationTimes.get(player.getUniqueId());
+        if (!slotTimes.containsKey(slot)) return false;
+        
+        long activationTime = slotTimes.get(slot);
+        long currentTime = System.currentTimeMillis();
+        return (currentTime - activationTime) < 2000; // 2 saniye
     }
     
     /**
@@ -104,6 +125,13 @@ public class BatteryManager {
             // Eğer oyuncunun başka bataryası kalmadıysa map'ten temizle
             if (loadedBatteries.get(player.getUniqueId()).isEmpty()) {
                 loadedBatteries.remove(player.getUniqueId());
+            }
+        }
+        // Aktivasyon zamanını da temizle
+        if (batteryActivationTimes.containsKey(player.getUniqueId())) {
+            batteryActivationTimes.get(player.getUniqueId()).remove(slot);
+            if (batteryActivationTimes.get(player.getUniqueId()).isEmpty()) {
+                batteryActivationTimes.remove(player.getUniqueId());
             }
         }
     }
@@ -175,15 +203,40 @@ public class BatteryManager {
         float yield = hasAmplifier ? 4.0f : 2.0f; // Alev Amplifikatörü ile çap 2 katına çıkar
         yield = (float) (yield * trainingMultiplier); // Mastery çarpanı yield'e de uygulanır
         
-        for (int i = 0; i < count; i++) {
-            Fireball fb = p.launchProjectile(Fireball.class);
-            fb.setVelocity(p.getLocation().getDirection().multiply(1.5));
-            fb.setYield(yield);
-            // Seviye 5'te yanma etkisi ekle (antrenman modunda yok)
-            if (alchemyLevel >= 5 && trainingMultiplier >= 1.0) {
-                fb.setIsIncendiary(true);
+        // Ateş toplarını sırayla at (aynı anda değil, delay ile)
+        final int finalCount = count;
+        final float finalYield = yield;
+        final boolean finalIsIncendiary = (alchemyLevel >= 5 && trainingMultiplier >= 1.0);
+        
+        new BukkitRunnable() {
+            int fired = 0;
+            
+            @Override
+            public void run() {
+                if (fired >= finalCount || !p.isOnline()) {
+                    cancel();
+                    return;
+                }
+                
+                // Oyuncunun 1 blok önünden başlat (içinde patlamasın)
+                Location spawnLoc = p.getEyeLocation().clone();
+                Vector direction = p.getLocation().getDirection().normalize(); // Normalize et
+                spawnLoc.add(direction.multiply(1.5)); // 1.5 blok önünden başlat (daha güvenli)
+                
+                // Ateş topunu spawn et
+                Fireball fb = spawnLoc.getWorld().spawn(spawnLoc, Fireball.class);
+                fb.setVelocity(direction.multiply(1.5));
+                fb.setYield(finalYield);
+                fb.setShooter(p);
+                
+                // Seviye 5'te yanma etkisi ekle (antrenman modunda yok)
+                if (finalIsIncendiary) {
+                    fb.setIsIncendiary(true);
+                }
+                
+                fired++;
             }
-        }
+        }.runTaskTimer(plugin, 0L, 2L); // Her 2 tick'te bir ateş topu (0.1 saniye aralık)
         
         // Mastery mesajı (antrenman modu veya mastery bonus)
         String masteryMsg = "";

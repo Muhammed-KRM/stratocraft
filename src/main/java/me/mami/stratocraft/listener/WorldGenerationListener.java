@@ -3,7 +3,7 @@ package me.mami.stratocraft.listener;
 import me.mami.stratocraft.manager.ItemManager;
 import me.mami.stratocraft.manager.MobManager;
 import me.mami.stratocraft.manager.TerritoryManager;
-import org.bukkit.Biome;
+import org.bukkit.block.Biome;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;

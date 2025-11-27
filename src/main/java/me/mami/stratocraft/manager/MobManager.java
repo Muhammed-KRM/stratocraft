@@ -250,9 +250,7 @@ public class MobManager {
             cyclops.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(12.0);
         }
         cyclops.setHealth(300.0);
-        if (cyclops.getAttribute(Attribute.GENERIC_SCALE) != null) {
-            cyclops.getAttribute(Attribute.GENERIC_SCALE).setBaseValue(2.0);
-        }
+        // GENERIC_SCALE 1.20.4'te mevcut değil, 1.21+ için gerekli
     }
     
     public void spawnGriffin(Location loc) {

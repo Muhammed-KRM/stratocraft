@@ -69,8 +69,48 @@ public class BatteryListener implements Listener {
         // --- DURUM 2: İPTAL ETME VEYA YÜKLEME (SAĞ TIK) ---
         if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
             
-            // Eğer bu slotta zaten yüklü bir batarya varsa -> İPTAL ET
+            // Eğer bu slotta zaten yüklü bir batarya varsa
             if (batteryManager.hasLoadedBattery(player, slot)) {
+                ItemStack handItem = player.getInventory().getItemInMainHand();
+                Block clickedBlock = action == Action.RIGHT_CLICK_BLOCK ? event.getClickedBlock() : null;
+                
+                // AKTİF ETME vs İPTAL ETME AYIRIMI:
+                // - Aktif etme: Batarya yüklü + elinde yakıt + bloğa sağ tık (shift yok) → Yeni batarya yükleme
+                // - İptal etme: Batarya yüklü + (shift var VEYA elinde yakıt yok VEYA havaya tık) → İptal et
+                
+                boolean isBatteryFuel = false;
+                if (handItem != null) {
+                    Material fuel = handItem.getType();
+                    isBatteryFuel = fuel == Material.DIAMOND || fuel == Material.IRON_INGOT || 
+                                  ItemManager.isCustomItem(handItem, "RED_DIAMOND") ||
+                                  ItemManager.isCustomItem(handItem, "DARK_MATTER") ||
+                                  ItemManager.isCustomItem(handItem, "LIGHTNING_CORE") ||
+                                  ItemManager.isCustomItem(handItem, "STAR_CORE") ||
+                                  ItemManager.isCustomItem(handItem, "RUBY") ||
+                                  ItemManager.isCustomItem(handItem, "ADAMANTITE") ||
+                                  fuel == Material.COBBLESTONE ||
+                                  fuel == Material.LAVA_BUCKET;
+                }
+                
+                // AKTİF ETME: Batarya yüklü + elinde yakıt + bloğa sağ tık (shift yok) → Yeni batarya yükleme
+                if (isBatteryFuel && clickedBlock != null && !player.isSneaking()) {
+                    // Eski bataryayı otomatik iptal et (aktif etme = yeni batarya yükleme)
+                    batteryManager.removeBattery(player, slot);
+                    // Yeni batarya yükleme işlemi (aktif etme)
+                    checkAndLoadBattery(player, clickedBlock, slot, event);
+                    return;
+                }
+                
+                // İPTAL ETME: Diğer durumlarda iptal et
+                // ÖN KONTROL 1: Batarya yeni aktif edildi mi? (2 saniye içinde iptal edilemez)
+                if (batteryManager.isBatteryRecentlyActivated(player, slot)) {
+                    event.setCancelled(true);
+                    player.sendMessage("§cBatarya yeni aktif edildi! 2 saniye sonra iptal edebilirsin.");
+                    return;
+                }
+                
+                // ÖN KONTROL 2: Shift basılı değilse iptal edilebilir (zaten yukarıda kontrol edildi)
+                // Normal iptal etme işlemi
                 event.setCancelled(true); // Başka bir şeyle etkileşimi engelle
                 dischargeBattery(player, slot);
                 return;
