@@ -5,6 +5,7 @@ import me.mami.stratocraft.manager.ItemManager;
 import me.mami.stratocraft.manager.MobManager;
 import me.mami.stratocraft.manager.DisasterManager;
 import me.mami.stratocraft.model.Disaster;
+import me.mami.stratocraft.util.LangManager;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -21,15 +22,17 @@ import java.util.stream.Collectors;
 public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     
     private final Main plugin;
+    private final LangManager langManager;
     
     public AdminCommandExecutor(Main plugin) {
         this.plugin = plugin;
+        this.langManager = plugin.getLangManager();
     }
     
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("stratocraft.admin")) {
-            sender.sendMessage("§cBu komutu kullanmak için yetkiniz yok!");
+            sender.sendMessage(langManager.getMessage("admin.no-permission"));
             return true;
         }
         
@@ -38,8 +41,18 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             return true;
         }
         
+        // List komutu oyuncu olmayanlar için de çalışabilir
+        if (args[0].equalsIgnoreCase("list")) {
+            if (sender instanceof Player) {
+                return handleList((Player) sender, args);
+            } else {
+                sender.sendMessage(langManager.getMessage("admin.player-only"));
+                return true;
+            }
+        }
+        
         if (!(sender instanceof Player)) {
-            sender.sendMessage("§cBu komut sadece oyuncular tarafından kullanılabilir!");
+            sender.sendMessage(langManager.getMessage("admin.player-only"));
             return true;
         }
         
@@ -52,8 +65,6 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return handleSpawn(p, args);
             case "disaster":
                 return handleDisaster(p, args);
-            case "list":
-                return handleList(p, args);
             default:
                 showHelp(sender);
                 return true;
@@ -62,17 +73,26 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     
     private boolean handleGive(Player p, String[] args) {
         if (args.length < 2) {
-            p.sendMessage("§cKullanım: /stratocraft give <item> [miktar]");
-            p.sendMessage("§7Örnek: /stratocraft give blueprint 64");
+            p.sendMessage(langManager.getMessage("admin.give-usage"));
+            p.sendMessage(langManager.getMessage("admin.give-example"));
             return true;
         }
         
         String itemName = args[1].toLowerCase();
         int amount = args.length > 2 ? parseInt(args[2], 1) : 1;
         
+        // Miktar kontrolü
+        if (amount < 1) {
+            amount = 1;
+        }
+        if (amount > 2304) { // Max stack size * 36 slots
+            p.sendMessage("§cMiktar çok yüksek! Maksimum 2304.");
+            return true;
+        }
+        
         ItemStack item = getItemByName(itemName);
         if (item == null) {
-            p.sendMessage("§cGeçersiz item! /stratocraft list items komutu ile listeyi görebilirsiniz.");
+            p.sendMessage(langManager.getMessage("admin.give-invalid-item"));
             return true;
         }
         
@@ -84,64 +104,70 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             for (ItemStack drop : overflow.values()) {
                 p.getWorld().dropItemNaturally(p.getLocation(), drop);
             }
-            p.sendMessage("§a" + amount + "x " + getItemDisplayName(itemName) + " envanterinize eklendi! (Envanter dolu, bazıları yere düştü)");
+            p.sendMessage(langManager.getMessage("admin.give-success-overflow", 
+                "amount", String.valueOf(amount),
+                "item", getItemDisplayName(itemName)));
         } else {
-            p.sendMessage("§a" + amount + "x " + getItemDisplayName(itemName) + " envanterinize eklendi!");
+            p.sendMessage(langManager.getMessage("admin.give-success",
+                "amount", String.valueOf(amount),
+                "item", getItemDisplayName(itemName)));
         }
         return true;
     }
     
     private boolean handleSpawn(Player p, String[] args) {
         if (args.length < 2) {
-            p.sendMessage("§cKullanım: /stratocraft spawn <mob>");
-            p.sendMessage("§7Örnek: /stratocraft spawn hell_dragon");
+            p.sendMessage(langManager.getMessage("admin.spawn-usage"));
+            p.sendMessage(langManager.getMessage("admin.spawn-example"));
             return true;
         }
         
         String mobName = args[1].toLowerCase();
         MobManager mobManager = plugin.getMobManager();
+        String mobDisplayName = "";
         
         switch (mobName) {
             case "hell_dragon":
             case "ejder":
             case "cehennem_ejderi":
                 mobManager.spawnHellDragon(p.getLocation(), p);
-                p.sendMessage("§aCehennem Ejderi çağrıldı!");
+                mobDisplayName = "Cehennem Ejderi";
                 break;
             case "terror_worm":
             case "solucan":
             case "toprak_solucani":
                 mobManager.spawnTerrorWorm(p.getLocation(), p);
-                p.sendMessage("§aToprak Solucanı çağrıldı!");
+                mobDisplayName = "Toprak Solucanı";
                 break;
             case "war_bear":
             case "ayi":
             case "savas_ayisi":
                 mobManager.spawnWarBear(p.getLocation(), p);
-                p.sendMessage("§aSavaş Ayısı çağrıldı!");
+                mobDisplayName = "Savaş Ayısı";
                 break;
             case "shadow_panther":
             case "panter":
             case "golge_panteri":
                 mobManager.spawnShadowPanther(p.getLocation(), p);
-                p.sendMessage("§aGölge Panteri çağrıldı!");
+                mobDisplayName = "Gölge Panteri";
                 break;
-            case "wyvern":
             case "wyvern":
                 mobManager.spawnWyvern(p.getLocation(), p);
-                p.sendMessage("§aWyvern çağrıldı!");
+                mobDisplayName = "Wyvern";
                 break;
             default:
-                p.sendMessage("§cGeçersiz mob! /stratocraft list mobs komutu ile listeyi görebilirsiniz.");
+                p.sendMessage(langManager.getMessage("admin.spawn-invalid-mob"));
                 return true;
         }
+        
+        p.sendMessage(langManager.getMessage("admin.spawn-success", "name", mobDisplayName));
         return true;
     }
     
     private boolean handleDisaster(Player p, String[] args) {
         if (args.length < 2) {
-            p.sendMessage("§cKullanım: /stratocraft disaster <type>");
-            p.sendMessage("§7Örnek: /stratocraft disaster titan_golem");
+            p.sendMessage(langManager.getMessage("admin.disaster-usage"));
+            p.sendMessage(langManager.getMessage("admin.disaster-example"));
             return true;
         }
         
@@ -151,17 +177,18 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         try {
             Disaster.Type type = Disaster.Type.valueOf(disasterName);
             disasterManager.triggerDisaster(type);
-            p.sendMessage("§aFelaket tetiklendi: " + getDisasterDisplayName(disasterName));
+            p.sendMessage(langManager.getMessage("admin.disaster-success", 
+                "name", getDisasterDisplayName(disasterName)));
             return true;
         } catch (IllegalArgumentException e) {
-            p.sendMessage("§cGeçersiz felaket tipi! /stratocraft list disasters komutu ile listeyi görebilirsiniz.");
+            p.sendMessage(langManager.getMessage("admin.disaster-invalid"));
             return true;
         }
     }
     
     private boolean handleList(Player p, String[] args) {
         if (args.length < 2) {
-            p.sendMessage("§cKullanım: /stratocraft list <items|mobs|disasters|all>");
+            p.sendMessage(langManager.getMessage("admin.list-usage"));
             return true;
         }
         
@@ -183,21 +210,21 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 showDisastersList(p);
                 break;
             default:
-                p.sendMessage("§cGeçersiz liste tipi! <items|mobs|disasters|all>");
+                p.sendMessage(langManager.getMessage("admin.list-invalid-type"));
                 return true;
         }
         return true;
     }
     
     private void showHelp(CommandSender sender) {
-        sender.sendMessage("§6§l=== STRATOCRAFT ADMIN KOMUTLARI ===");
-        sender.sendMessage("§e/stratocraft help §7- Bu yardım menüsünü gösterir");
-        sender.sendMessage("§e/stratocraft give <item> [miktar] §7- Özel item verir");
-        sender.sendMessage("§e/stratocraft spawn <mob> §7- Özel canlı çağırır");
-        sender.sendMessage("§e/stratocraft disaster <type> §7- Felaket tetikler");
-        sender.sendMessage("§e/stratocraft list <items|mobs|disasters|all> §7- Listeleri gösterir");
+        sender.sendMessage(langManager.getMessage("admin.help-title"));
+        sender.sendMessage(langManager.getMessage("admin.help-command", "command", "help", "description", "Bu yardım menüsünü gösterir"));
+        sender.sendMessage(langManager.getMessage("admin.help-command", "command", "give <item> [miktar]", "description", "Özel item verir"));
+        sender.sendMessage(langManager.getMessage("admin.help-command", "command", "spawn <mob>", "description", "Özel canlı çağırır"));
+        sender.sendMessage(langManager.getMessage("admin.help-command", "command", "disaster <type>", "description", "Felaket tetikler"));
+        sender.sendMessage(langManager.getMessage("admin.help-command", "command", "list <items|mobs|disasters|all>", "description", "Listeleri gösterir"));
         sender.sendMessage("");
-        sender.sendMessage("§7Örnekler:");
+        sender.sendMessage(langManager.getMessage("admin.help-examples"));
         sender.sendMessage("§7  /stratocraft give blueprint 64");
         sender.sendMessage("§7  /stratocraft spawn hell_dragon");
         sender.sendMessage("§7  /stratocraft disaster titan_golem");
@@ -409,42 +436,100 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
     }
     
+    /**
+     * Tab Completion - Komut tamamlama desteği
+     * /stratocraft [TAB] -> give, spawn, disaster, list, help
+     * /stratocraft give [TAB] -> blueprint, lightning_core, ...
+     * /stratocraft spawn [TAB] -> hell_dragon, terror_worm, ...
+     * /stratocraft disaster [TAB] -> titan_golem, abyssal_worm, ...
+     * /stratocraft list [TAB] -> items, mobs, disasters, all
+     */
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        // Permission kontrolü
         if (!sender.hasPermission("stratocraft.admin")) {
             return new ArrayList<>();
         }
         
+        // İlk argüman (komut seçimi)
         if (args.length == 1) {
-            return Arrays.asList("give", "spawn", "disaster", "list", "help").stream()
-                    .filter(s -> s.toLowerCase().startsWith(args[0].toLowerCase()))
+            List<String> commands = Arrays.asList("give", "spawn", "disaster", "list", "help");
+            String input = args[0].toLowerCase();
+            
+            // Eğer boşsa veya başlangıç eşleşiyorsa filtrele
+            if (input.isEmpty()) {
+                return commands;
+            }
+            
+            return commands.stream()
+                    .filter(s -> s.toLowerCase().startsWith(input))
                     .collect(Collectors.toList());
         }
         
+        // İkinci argüman (komut parametreleri)
         if (args.length == 2) {
-            switch (args[0].toLowerCase()) {
+            String commandName = args[0].toLowerCase();
+            String input = args[1].toLowerCase();
+            
+            switch (commandName) {
                 case "give":
-                    return Arrays.asList("blueprint", "lightning_core", "titanium_ore", "titanium_ingot", 
-                            "dark_matter", "red_diamond", "ruby", "adamantite", "star_core", 
-                            "flame_amplifier", "devil_horn", "devil_snake_eye", "recipe_tectonic", 
-                            "war_fan", "tower_shield", "hell_fruit", "clan_crystal", "clan_fence").stream()
-                            .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
+                    // Tüm item isimlerini listele
+                    List<String> items = Arrays.asList(
+                        "blueprint", "lightning_core", "titanium_ore", "titanium_ingot", 
+                        "dark_matter", "red_diamond", "ruby", "adamantite", "star_core", 
+                        "flame_amplifier", "devil_horn", "devil_snake_eye", "recipe_tectonic", 
+                        "war_fan", "tower_shield", "hell_fruit", "clan_crystal", "clan_fence"
+                    );
+                    if (input.isEmpty()) {
+                        return items;
+                    }
+                    return items.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
+                    
                 case "spawn":
-                    return Arrays.asList("hell_dragon", "terror_worm", "war_bear", "shadow_panther", "wyvern").stream()
-                            .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
+                    // Tüm mob isimlerini listele
+                    List<String> mobs = Arrays.asList(
+                        "hell_dragon", "terror_worm", "war_bear", "shadow_panther", "wyvern"
+                    );
+                    if (input.isEmpty()) {
+                        return mobs;
+                    }
+                    return mobs.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
+                    
                 case "disaster":
-                    return Arrays.asList("titan_golem", "abyssal_worm", "solar_flare").stream()
-                            .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
+                    // Tüm felaket tiplerini listele
+                    List<String> disasters = Arrays.asList(
+                        "titan_golem", "abyssal_worm", "solar_flare"
+                    );
+                    if (input.isEmpty()) {
+                        return disasters;
+                    }
+                    return disasters.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
+                    
                 case "list":
-                    return Arrays.asList("items", "mobs", "disasters", "all").stream()
-                            .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
+                    // Liste tiplerini listele
+                    List<String> listTypes = Arrays.asList("items", "mobs", "disasters", "all");
+                    if (input.isEmpty()) {
+                        return listTypes;
+                    }
+                    return listTypes.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
             }
         }
         
+        // Üçüncü argüman (sadece give komutu için miktar)
+        if (args.length == 3 && args[0].equalsIgnoreCase("give")) {
+            // Miktar için tab completion gerekmez, boş liste döndür
+            return new ArrayList<>();
+        }
+        
+        // Diğer durumlar için boş liste
         return new ArrayList<>();
     }
 }

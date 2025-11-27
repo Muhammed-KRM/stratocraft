@@ -108,7 +108,7 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new GriefProtectionListener(territoryManager), this);
         virtualStorageListener = new VirtualStorageListener(territoryManager);
         Bukkit.getPluginManager().registerEvents(virtualStorageListener, this);
-        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.ClanChatListener(clanManager), this);
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.ClanChatListener(clanManager, langManager), this);
         // ClanMenu zaten Listener implement ediyor, kaydet
         Bukkit.getPluginManager().registerEvents(clanMenu, this);
         

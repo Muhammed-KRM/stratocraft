@@ -75,3 +75,33 @@ general:
   player-not-found: "&cOyuncu bulunamadı."
   invalid-usage: "&cKullanım: {usage}"
 
+# Admin Komut Mesajları
+admin:
+  no-permission: "&cBu komutu kullanmak için yetkiniz yok!"
+  player-only: "&cBu komut sadece oyuncular tarafından kullanılabilir!"
+  help-title: "&6&l=== STRATOCRAFT ADMIN KOMUTLARI ==="
+  help-command: "&e/stratocraft {command} &7- {description}"
+  help-examples: "&7Örnekler:"
+  give-usage: "&cKullanım: /stratocraft give <item> [miktar]"
+  give-example: "&7Örnek: /stratocraft give blueprint 64"
+  give-invalid-item: "&cGeçersiz item! /stratocraft list items komutu ile listeyi görebilirsiniz."
+  give-success: "&a{amount}x {item} envanterinize eklendi!"
+  give-success-overflow: "&a{amount}x {item} envanterinize eklendi! (Envanter dolu, bazıları yere düştü)"
+  spawn-usage: "&cKullanım: /stratocraft spawn <mob>"
+  spawn-example: "&7Örnek: /stratocraft spawn hell_dragon"
+  spawn-invalid-mob: "&cGeçersiz mob! /stratocraft list mobs komutu ile listeyi görebilirsiniz."
+  spawn-success: "&a{name} çağrıldı!"
+  disaster-usage: "&cKullanım: /stratocraft disaster <type>"
+  disaster-example: "&7Örnek: /stratocraft disaster titan_golem"
+  disaster-invalid: "&cGeçersiz felaket tipi! /stratocraft list disasters komutu ile listeyi görebilirsiniz."
+  disaster-success: "&aFelaket tetiklendi: {name}"
+  list-usage: "&cKullanım: /stratocraft list <items|mobs|disasters|all>"
+  list-invalid-type: "&cGeçersiz liste tipi! <items|mobs|disasters|all>"
+
+# Klan Sohbet Mesajları
+clan-chat:
+  not-in-clan: "&cBir klana üye değilsin! Klan sohbeti kullanamazsın."
+  empty-message: "&cBoş mesaj gönderemezsin!"
+  format: "&b[Klan] &e{player}&7: &f{message}"
+  console-format: "&b[Klan:{clan}] &e{player}&7: &f{message}"
+
