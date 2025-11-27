@@ -1,13 +1,146 @@
 package me.mami.stratocraft.manager;
 
+import me.mami.stratocraft.Main;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 public class BatteryManager {
+    
+    private final Main plugin;
+    // Oyuncu UUID -> (Slot Numarası -> Batarya Bilgisi)
+    private final Map<UUID, Map<Integer, BatteryData>> loadedBatteries;
+    
+    /**
+     * Batarya veri sınıfı - tip ve ek bilgileri tutar
+     */
+    public static class BatteryData {
+        private final String type;
+        private final Material fuel;
+        private final int alchemyLevel;
+        private final boolean hasAmplifier;
+        private final double trainingMultiplier;
+        private final boolean isRedDiamond;
+        private final boolean isDarkMatter;
+        
+        public BatteryData(String type, Material fuel, int alchemyLevel, boolean hasAmplifier, 
+                          double trainingMultiplier, boolean isRedDiamond, boolean isDarkMatter) {
+            this.type = type;
+            this.fuel = fuel;
+            this.alchemyLevel = alchemyLevel;
+            this.hasAmplifier = hasAmplifier;
+            this.trainingMultiplier = trainingMultiplier;
+            this.isRedDiamond = isRedDiamond;
+            this.isDarkMatter = isDarkMatter;
+        }
+        
+        public String getType() { return type; }
+        public Material getFuel() { return fuel; }
+        public int getAlchemyLevel() { return alchemyLevel; }
+        public boolean hasAmplifier() { return hasAmplifier; }
+        public double getTrainingMultiplier() { return trainingMultiplier; }
+        public boolean isRedDiamond() { return isRedDiamond; }
+        public boolean isDarkMatter() { return isDarkMatter; }
+    }
+    
+    public BatteryManager() {
+        this.plugin = null;
+        this.loadedBatteries = new HashMap<>();
+    }
+    
+    public BatteryManager(Main plugin) {
+        this.plugin = plugin;
+        this.loadedBatteries = new HashMap<>();
+        if (plugin != null) {
+            startInfoTask(); // Bilgi mesajı döngüsünü başlat
+        }
+    }
+    
+    /**
+     * Bataryayı slota yükle
+     */
+    public void loadBattery(Player player, int slot, BatteryData data) {
+        loadedBatteries.putIfAbsent(player.getUniqueId(), new HashMap<>());
+        loadedBatteries.get(player.getUniqueId()).put(slot, data);
+        
+        player.sendMessage(ChatColor.GREEN + "⚡ " + data.getType() + " " + (slot + 1) + ". slota yüklendi!");
+        player.sendMessage(ChatColor.GRAY + "Ateşlemek için SOL, iptal için SAĞ tıkla.");
+    }
+    
+    /**
+     * Slotta yüklü batarya var mı?
+     */
+    public boolean hasLoadedBattery(Player player, int slot) {
+        return loadedBatteries.containsKey(player.getUniqueId()) && 
+               loadedBatteries.get(player.getUniqueId()).containsKey(slot);
+    }
+    
+    /**
+     * Yüklü bataryanın verisini al
+     */
+    public BatteryData getLoadedBattery(Player player, int slot) {
+        if (!hasLoadedBattery(player, slot)) return null;
+        return loadedBatteries.get(player.getUniqueId()).get(slot);
+    }
+    
+    /**
+     * Bataryayı kullan/sil
+     */
+    public void removeBattery(Player player, int slot) {
+        if (loadedBatteries.containsKey(player.getUniqueId())) {
+            loadedBatteries.get(player.getUniqueId()).remove(slot);
+            // Eğer oyuncunun başka bataryası kalmadıysa map'ten temizle
+            if (loadedBatteries.get(player.getUniqueId()).isEmpty()) {
+                loadedBatteries.remove(player.getUniqueId());
+            }
+        }
+    }
+    
+    /**
+     * Oyuncunun tüm yüklü bataryalarını temizle (logout vb. durumlar için)
+     */
+    public void clearBatteries(Player player) {
+        loadedBatteries.remove(player.getUniqueId());
+    }
+    
+    /**
+     * Sürekli çalışan ve oyuncuya görsel bildirim veren görev
+     */
+    private void startInfoTask() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (UUID uuid : loadedBatteries.keySet()) {
+                    Player player = Bukkit.getPlayer(uuid);
+                    if (player != null && player.isOnline()) {
+                        int currentSlot = player.getInventory().getHeldItemSlot();
+                        
+                        if (hasLoadedBattery(player, currentSlot)) {
+                            BatteryData data = getLoadedBattery(player, currentSlot);
+                            if (data != null) {
+                                // Ekranın üstünde (Action Bar) uyarı mesajı
+                                String message = ChatColor.RED + "🔴 YÜKLÜ: " + ChatColor.GOLD + data.getType() + 
+                                               ChatColor.GRAY + " [Slot: " + (currentSlot + 1) + "]";
+                                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(message));
+                            }
+                        }
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 20L); // Her saniye (20 tick) çalışır
+    }
 
     // 1. ATEŞ TOPU (Geliştirilmiş)
     public void fireMagmaBattery(Player p, Material fuel, int alchemyLevel, boolean hasAmplifier) {

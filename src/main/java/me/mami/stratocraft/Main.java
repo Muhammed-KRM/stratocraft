@@ -59,7 +59,7 @@ public class Main extends JavaPlugin {
         itemManager = new ItemManager(); itemManager.init(); 
         clanManager = new ClanManager();
         territoryManager = new TerritoryManager(clanManager);
-        batteryManager = new BatteryManager();
+        batteryManager = new BatteryManager(this);
         siegeManager = new SiegeManager();
         disasterManager = new DisasterManager();
         batteryManager.setDisasterManager(disasterManager);
