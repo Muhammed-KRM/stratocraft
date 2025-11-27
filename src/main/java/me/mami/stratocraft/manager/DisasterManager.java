@@ -21,6 +21,18 @@ public class DisasterManager {
             Giant golem = (Giant) spawnLoc.getWorld().spawnEntity(spawnLoc, EntityType.GIANT);
             golem.setCustomName("§4§lTITAN GOLEM");
             golem.setHealth(500.0);
+            
+            // Dev boyut: 4-5 kat büyüt (Attribute.GENERIC_SCALE kullanarak)
+            if (golem.getAttribute(org.bukkit.attribute.Attribute.GENERIC_SCALE) != null) {
+                golem.getAttribute(org.bukkit.attribute.Attribute.GENERIC_SCALE).setBaseValue(4.5);
+            }
+            
+            // Maksimum sağlık artır
+            if (golem.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH) != null) {
+                golem.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(500.0);
+            }
+            golem.setHealth(500.0);
+            
             activeDisaster = new Disaster(type, golem, world.getSpawnLocation());
             Bukkit.broadcastMessage("§c§lUYARI! §4Titan Golem haritanın ucunda doğdu ve merkeze yürüyor!");
         } else if (type == Disaster.Type.ABYSSAL_WORM) {

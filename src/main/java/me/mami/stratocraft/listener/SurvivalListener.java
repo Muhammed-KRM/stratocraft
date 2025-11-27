@@ -29,7 +29,20 @@ public class SurvivalListener implements Listener {
         double distanceMultiplier = isFarLands ? 1.5 : 1.0; // 5000 bloktan sonra %50 daha fazla şans
         
         // Özel madenler düşürme mantığı
-        // Derinlerde Titanyum madeni düşürme
+        // ANCIENT_DEBRIS = Titanyum Cevheri (WorldGenerationListener tarafından oluşturulmuş)
+        if (event.getBlock().getType() == Material.ANCIENT_DEBRIS) {
+            // ANCIENT_DEBRIS kırıldığında Titanyum düşür
+            if (ItemManager.TITANIUM_ORE != null) {
+                event.getBlock().getWorld().dropItemNaturally(
+                    event.getBlock().getLocation(),
+                    ItemManager.TITANIUM_ORE.clone()
+                );
+                p.sendMessage("§6Titanyum Cevheri buldun!");
+            }
+            return; // Normal drop mantığına devam etme
+        }
+        
+        // Derinlerde Titanyum madeni düşürme (eski sistem - geriye dönük uyumluluk)
         if (event.getBlock().getType() == Material.DEEPSLATE || 
             event.getBlock().getType() == Material.DEEPSLATE_COAL_ORE ||
             event.getBlock().getType() == Material.DEEPSLATE_IRON_ORE ||
@@ -51,6 +64,7 @@ public class SurvivalListener implements Listener {
         }
         
         // Kızıl Elmas düşürme (nadir) - Uzak diyarlarda daha sık
+        // DEEPSLATE_DIAMOND_ORE kırıldığında özel kontrol
         if (event.getBlock().getType() == Material.DEEPSLATE_DIAMOND_ORE) {
             double redDiamondChance = (isFarLands ? 0.075 : 0.05) * distanceMultiplier;
             if (event.getBlock().getY() < -60 && Math.random() < redDiamondChance) {

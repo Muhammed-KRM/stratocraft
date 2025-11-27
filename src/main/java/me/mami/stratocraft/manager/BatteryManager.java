@@ -531,5 +531,36 @@ public class BatteryManager {
             }
         }.runTaskLater(plugin, delayTicks);
     }
+    
+    /**
+     * Sunucu kapanırken (onDisable) çağırılmalı.
+     * Aktif olan tüm geçici blokları temizler.
+     * Bu, sunucu restart durumunda barrier bloklarının kalıcı kalmasını önler.
+     */
+    public void shutdown() {
+        // Hafızadaki tüm geçici bariyerleri kaldır
+        for (Map.Entry<Location, Material> entry : temporaryBarriers.entrySet()) {
+            Location loc = entry.getKey();
+            Material original = entry.getValue();
+            
+            // Null kontrolü ve world kontrolü
+            if (loc != null && loc.getWorld() != null) {
+                try {
+                    // Eğer hala barrier ise, orijinal haline döndür
+                    if (loc.getBlock().getType() == Material.BARRIER) {
+                        loc.getBlock().setType(original);
+                    }
+                } catch (Exception e) {
+                    // World yüklenmemiş olabilir veya chunk yüklenmemiş olabilir
+                    // Bu durumda sessizce geç (loglama yapılabilir ama şimdilik skip)
+                }
+            }
+        }
+        
+        temporaryBarriers.clear();
+        
+        // Yüklü batarya verilerini temizle (sunucu kapanırken zaten gereksiz)
+        loadedBatteries.clear();
+    }
 }
 

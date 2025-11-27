@@ -109,6 +109,8 @@ public class Main extends JavaPlugin {
         virtualStorageListener = new VirtualStorageListener(territoryManager);
         Bukkit.getPluginManager().registerEvents(virtualStorageListener, this);
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.ClanChatListener(clanManager, langManager), this);
+        // Dünya oluşturma ve doğal spawn listener'ı
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.WorldGenerationListener(territoryManager, mobManager), this);
         // ClanMenu zaten Listener implement ediyor, kaydet
         Bukkit.getPluginManager().registerEvents(clanMenu, this);
         
@@ -326,6 +328,12 @@ public class Main extends JavaPlugin {
     
     @Override
     public void onDisable() {
+        // Batarya sistemini temizle (geçici barrier bloklarını kaldır)
+        if (batteryManager != null) {
+            batteryManager.shutdown();
+            getLogger().info("Stratocraft: Batarya sistemi temizlendi (geçici bloklar kaldırıldı).");
+        }
+        
         // Veri kaydetme (Async veya Sync)
         if (dataManager != null && clanManager != null && contractManager != null && 
             shopManager != null && virtualStorageListener != null) {

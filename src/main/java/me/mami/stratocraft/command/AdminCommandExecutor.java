@@ -127,6 +127,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         String mobDisplayName = "";
         
         switch (mobName) {
+            // Eski moblar
             case "hell_dragon":
             case "ejder":
             case "cehennem_ejderi":
@@ -154,6 +155,98 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "wyvern":
                 mobManager.spawnWyvern(p.getLocation(), p);
                 mobDisplayName = "Wyvern";
+                break;
+            // Sık gelen canavarlar
+            case "goblin":
+                mobManager.spawnGoblin(p.getLocation());
+                mobDisplayName = "Goblin";
+                break;
+            case "ork":
+                mobManager.spawnOrk(p.getLocation());
+                mobDisplayName = "Ork";
+                break;
+            case "troll":
+                mobManager.spawnTroll(p.getLocation());
+                mobDisplayName = "Troll";
+                break;
+            case "skeleton_knight":
+            case "iskelet_sovalyesi":
+                mobManager.spawnSkeletonKnight(p.getLocation());
+                mobDisplayName = "İskelet Şövalye";
+                break;
+            case "dark_mage":
+            case "karanlik_buyucu":
+                mobManager.spawnDarkMage(p.getLocation());
+                mobDisplayName = "Karanlık Büyücü";
+                break;
+            case "werewolf":
+            case "kurt_adam":
+                mobManager.spawnWerewolf(p.getLocation());
+                mobDisplayName = "Kurt Adam";
+                break;
+            case "giant_spider":
+            case "dev_orumcek":
+                mobManager.spawnGiantSpider(p.getLocation());
+                mobDisplayName = "Dev Örümcek";
+                break;
+            case "minotaur":
+                mobManager.spawnMinotaur(p.getLocation());
+                mobDisplayName = "Minotaur";
+                break;
+            case "harpy":
+                mobManager.spawnHarpy(p.getLocation());
+                mobDisplayName = "Harpy";
+                break;
+            case "basilisk":
+                mobManager.spawnBasilisk(p.getLocation());
+                mobDisplayName = "Basilisk";
+                break;
+            // Nadir canavarlar
+            case "dragon":
+            case "ejderha":
+                mobManager.spawnDragon(p.getLocation());
+                mobDisplayName = "Ejderha";
+                break;
+            case "trex":
+            case "t_rex":
+            case "tiranosaur":
+                mobManager.spawnTRex(p.getLocation());
+                mobDisplayName = "T-Rex";
+                break;
+            case "cyclops":
+            case "tek_gozlu_dev":
+                mobManager.spawnCyclops(p.getLocation());
+                mobDisplayName = "Tek Gözlü Dev";
+                break;
+            case "griffin":
+                mobManager.spawnGriffin(p.getLocation());
+                mobDisplayName = "Griffin";
+                break;
+            case "wraith":
+            case "hayalet":
+                mobManager.spawnWraith(p.getLocation());
+                mobDisplayName = "Hayalet";
+                break;
+            case "lich":
+                mobManager.spawnLich(p.getLocation());
+                mobDisplayName = "Lich";
+                break;
+            case "kraken":
+                mobManager.spawnKraken(p.getLocation());
+                mobDisplayName = "Kraken";
+                break;
+            case "phoenix":
+            case "anka":
+                mobManager.spawnPhoenix(p.getLocation());
+                mobDisplayName = "Phoenix";
+                break;
+            case "hydra":
+                mobManager.spawnHydra(p.getLocation());
+                mobDisplayName = "Hydra";
+                break;
+            case "behemoth":
+                mobManager.spawnBehemoth(p.getLocation());
+                mobDisplayName = "Behemoth";
                 break;
             default:
                 p.sendMessage(langManager.getMessage("admin.spawn-invalid-mob"));
@@ -255,11 +348,34 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     
     private void showMobsList(Player p) {
         p.sendMessage("§6§l=== ÖZEL CANLILAR ===");
+        p.sendMessage("§7--- Eski Moblar ---");
         p.sendMessage("§e1. §7hell_dragon §7- Cehennem Ejderi");
         p.sendMessage("§e2. §7terror_worm §7- Toprak Solucanı");
         p.sendMessage("§e3. §7war_bear §7- Savaş Ayısı");
         p.sendMessage("§e4. §7shadow_panther §7- Gölge Panteri");
         p.sendMessage("§e5. §7wyvern §7- Wyvern");
+        p.sendMessage("§7--- Sık Gelen Canavarlar (10 tane) ---");
+        p.sendMessage("§e6. §7goblin §7- Goblin");
+        p.sendMessage("§e7. §7ork §7- Ork");
+        p.sendMessage("§e8. §7troll §7- Troll");
+        p.sendMessage("§e9. §7skeleton_knight §7- İskelet Şövalye");
+        p.sendMessage("§e10. §7dark_mage §7- Karanlık Büyücü");
+        p.sendMessage("§e11. §7werewolf §7- Kurt Adam");
+        p.sendMessage("§e12. §7giant_spider §7- Dev Örümcek");
+        p.sendMessage("§e13. §7minotaur §7- Minotaur");
+        p.sendMessage("§e14. §7harpy §7- Harpy");
+        p.sendMessage("§e15. §7basilisk §7- Basilisk");
+        p.sendMessage("§7--- Nadir Canavarlar (10 tane) ---");
+        p.sendMessage("§c16. §7dragon §7- Ejderha (ÇOK NADİR)");
+        p.sendMessage("§c17. §7trex §7- T-Rex (NADİR)");
+        p.sendMessage("§c18. §7cyclops §7- Tek Gözlü Dev (NADİR)");
+        p.sendMessage("§c19. §7griffin §7- Griffin (NADİR)");
+        p.sendMessage("§c20. §7wraith §7- Hayalet (NADİR)");
+        p.sendMessage("§c21. §7lich §7- Lich (NADİR)");
+        p.sendMessage("§c22. §7kraken §7- Kraken (NADİR)");
+        p.sendMessage("§c23. §7phoenix §7- Phoenix (NADİR)");
+        p.sendMessage("§c24. §7hydra §7- Hydra (ÇOK NADİR)");
+        p.sendMessage("§c25. §7behemoth §7- Behemoth (NADİR)");
     }
     
     private void showDisastersList(Player p) {
@@ -488,9 +604,16 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                             .collect(Collectors.toList());
                     
                 case "spawn":
-                    // Tüm mob isimlerini listele
+                    // Tüm mob isimlerini listele (25 mob)
                     List<String> mobs = Arrays.asList(
-                        "hell_dragon", "terror_worm", "war_bear", "shadow_panther", "wyvern"
+                        // Eski moblar
+                        "hell_dragon", "terror_worm", "war_bear", "shadow_panther", "wyvern",
+                        // Sık gelen canavarlar
+                        "goblin", "ork", "troll", "skeleton_knight", "dark_mage",
+                        "werewolf", "giant_spider", "minotaur", "harpy", "basilisk",
+                        // Nadir canavarlar
+                        "dragon", "trex", "cyclops", "griffin", "wraith",
+                        "lich", "kraken", "phoenix", "hydra", "behemoth"
                     );
                     if (input.isEmpty()) {
                         return mobs;
