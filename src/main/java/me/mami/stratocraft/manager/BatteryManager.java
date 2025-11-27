@@ -13,7 +13,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -22,6 +24,8 @@ public class BatteryManager {
     private final Main plugin;
     // Oyuncu UUID -> (Slot Numarası -> Batarya Bilgisi)
     private final Map<UUID, Map<Integer, BatteryData>> loadedBatteries;
+    // Barrier bloklarını takip etmek için (Location -> Material) - Ozon Kalkanı ve Enerji Duvarı için
+    private final Map<Location, Material> temporaryBarriers;
     
     /**
      * Batarya veri sınıfı - tip ve ek bilgileri tutar
@@ -55,14 +59,10 @@ public class BatteryManager {
         public boolean isDarkMatter() { return isDarkMatter; }
     }
     
-    public BatteryManager() {
-        this.plugin = null;
-        this.loadedBatteries = new HashMap<>();
-    }
-    
     public BatteryManager(Main plugin) {
         this.plugin = plugin;
         this.loadedBatteries = new HashMap<>();
+        this.temporaryBarriers = new HashMap<>();
         if (plugin != null) {
             startInfoTask(); // Bilgi mesajı döngüsünü başlat
         }
@@ -221,31 +221,61 @@ public class BatteryManager {
     public void createInstantBridge(Player p) {
         Location start = p.getLocation().clone().subtract(0, 1, 0);
         Vector dir = p.getLocation().getDirection().setY(0).normalize();
+        int placedBlocks = 0;
+        
         for (int i = 1; i <= 15; i++) {
             Location point = start.clone().add(dir.clone().multiply(i));
+            // Yükseklik sınırı kontrolü
+            if (point.getY() < -64 || point.getY() > 319) continue;
+            
+            // Eğer önünde blok varsa (AIR değilse), o bloğu yok etme, es geç
             if (point.getBlock().getType() == Material.AIR) {
                 point.getBlock().setType(Material.PACKED_ICE);
+                placedBlocks++;
             }
+            // Eğer blok varsa, continue ile es geç (yok etme)
         }
-        p.sendMessage("§bBuz Köprüsü kuruldu!");
+        
+        if (placedBlocks > 0) {
+            p.sendMessage("§bBuz Köprüsü kuruldu! (" + placedBlocks + " blok)");
+        } else {
+            p.sendMessage("§cKöprü kurulamadı! Önünde engel var.");
+        }
     }
 
     // 5. SIĞINAK KÜPÜ
     public void createInstantBunker(Player p) {
         Location center = p.getLocation().clone();
         int r = 2;
+        int placedBlocks = 0;
+        
         for (int x = -r; x <= r; x++) {
             for (int y = 0; y <= 3; y++) {
                 for (int z = -r; z <= r; z++) {
                     if (Math.abs(x) == r || Math.abs(z) == r || y == 3 || y == 0) {
-                        Block b = center.clone().add(x, y, z).getBlock();
-                        if (b.getType() == Material.AIR) b.setType(Material.COBBLESTONE);
+                        Location blockLoc = center.clone().add(x, y, z);
+                        // Yükseklik sınırı kontrolü
+                        if (blockLoc.getY() < -64 || blockLoc.getY() > 319) continue;
+                        
+                        Block b = blockLoc.getBlock();
+                        // Eğer önünde blok varsa (AIR değilse), o bloğu yok etme, es geç
+                        if (b.getType() == Material.AIR) {
+                            b.setType(Material.COBBLESTONE);
+                            placedBlocks++;
+                        }
+                        // Eğer blok varsa, continue ile es geç (yok etme)
                     }
                 }
             }
         }
-        p.teleport(center.clone().add(0, 1, 0));
-        p.sendMessage("§7Sığınak oluşturuldu!");
+        
+        // Sadece yeterli blok yerleştirildiyse teleport et
+        if (placedBlocks > 0) {
+            p.teleport(center.clone().add(0, 1, 0));
+            p.sendMessage("§7Sığınak oluşturuldu! (" + placedBlocks + " blok)");
+        } else {
+            p.sendMessage("§cSığınak oluşturulamadı! Yeterli boş alan yok.");
+        }
     }
 
     // 6. YERÇEKİMİ ÇAPASI (ANTI-AIR)
@@ -271,6 +301,8 @@ public class BatteryManager {
         int height = isTitanium ? 5 : 3;
         Material wallMat = Material.COBBLESTONE;
         
+        List<Location> barrierLocations = new ArrayList<>();
+        
         if (isAdamantite) {
             // Adamantite ile şeffaf, içinden ok geçmeyen enerji kalkanı
             wallMat = Material.BARRIER;
@@ -280,20 +312,42 @@ public class BatteryManager {
             wallMat = Material.IRON_BLOCK;
         }
         
+        int placedBlocks = 0;
+        
         for (int y = 0; y < height; y++) {
             for (int x = -1; x <= 1; x++) {
                 Location blockLoc = start.clone().add(x, y, 0);
+                // Yükseklik sınırı kontrolü
+                if (blockLoc.getY() < -64 || blockLoc.getY() > 319) continue;
+                
+                // Eğer önünde blok varsa (AIR değilse), o bloğu yok etme, es geç
                 if (blockLoc.getBlock().getType() == Material.AIR) {
+                    Material originalType = blockLoc.getBlock().getType();
                     blockLoc.getBlock().setType(wallMat);
+                    placedBlocks++;
+                    
                     if (isAdamantite) {
+                        // Barrier bloklarını kaydet (otomatik silme için)
+                        temporaryBarriers.put(blockLoc.clone(), originalType);
+                        barrierLocations.add(blockLoc.clone());
                         // Enerji efekti
                         p.getWorld().spawnParticle(org.bukkit.Particle.ELECTRIC_SPARK, blockLoc.add(0.5, 0.5, 0.5), 3);
                     }
                 }
+                // Eğer blok varsa, continue ile es geç (yok etme)
             }
         }
+        
+        // Adamantite kullanıldıysa 15 saniye sonra barrier bloklarını sil
+        if (isAdamantite && !barrierLocations.isEmpty()) {
+            scheduleBarrierRemoval(barrierLocations, 15 * 20); // 15 saniye = 300 tick
+        }
         if (!isAdamantite) {
-            p.sendMessage("§7Toprak Suru oluşturuldu!");
+            if (placedBlocks > 0) {
+                p.sendMessage("§7Toprak Suru oluşturuldu! (" + placedBlocks + " blok)");
+            } else {
+                p.sendMessage("§cToprak Suru oluşturulamadı! Önünde engel var.");
+            }
         }
     }
 
@@ -333,45 +387,149 @@ public class BatteryManager {
     // 10. OZON KALKANI (Güneş Fırtınası Koruma)
     public void activateOzoneShield(Player p, Location center) {
         int radius = 15;
+        List<Location> barrierLocations = new ArrayList<>();
+        int placedBlocks = 0;
+        
         for (int x = -radius; x <= radius; x++) {
             for (int z = -radius; z <= radius; z++) {
                 if (x*x + z*z <= radius*radius) {
                     Location loc = center.clone().add(x, 0, z);
+                    // Yükseklik sınırı kontrolü
+                    if (loc.getY() < -64 || loc.getY() > 319) continue;
+                    
+                    // Eğer önünde blok varsa (AIR değilse), o bloğu yok etme, es geç
                     if (loc.getBlock().getType() == Material.AIR) {
+                        Material originalType = loc.getBlock().getType();
                         loc.getBlock().setType(Material.BARRIER);
+                        temporaryBarriers.put(loc.clone(), originalType);
+                        barrierLocations.add(loc.clone());
                         p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, loc, 1);
+                        placedBlocks++;
                     }
+                    // Eğer blok varsa, continue ile es geç (yok etme)
                 }
             }
         }
-        p.sendMessage("§bOzon Kalkanı aktif! Güneş Fırtınası koruması sağlandı.");
+        
+        // 20 saniye sonra barrier bloklarını sil
+        if (!barrierLocations.isEmpty()) {
+            scheduleBarrierRemoval(barrierLocations, 20 * 20); // 20 saniye = 400 tick
+        }
+        
+        if (placedBlocks > 0) {
+            p.sendMessage("§bOzon Kalkanı aktif! Güneş Fırtınası koruması sağlandı. (" + placedBlocks + " blok, 20 saniye)");
+        } else {
+            p.sendMessage("§cOzon Kalkanı oluşturulamadı! Yeterli boş alan yok.");
+        }
     }
 
     // 11. ENERJİ DUVARI (Gelişmiş Savunma)
     public void createEnergyWall(Player p) {
         Location start = p.getLocation().clone().add(p.getLocation().getDirection().setY(0).normalize().multiply(2));
+        List<Location> barrierLocations = new ArrayList<>();
+        int placedBlocks = 0;
+        
         for (int y = 0; y < 5; y++) {
             for (int x = -2; x <= 2; x++) {
                 Location loc = start.clone().add(x, y, 0);
+                // Yükseklik sınırı kontrolü
+                if (loc.getY() < -64 || loc.getY() > 319) continue;
+                
+                // Eğer önünde blok varsa (AIR değilse), o bloğu yok etme, es geç
                 if (loc.getBlock().getType() == Material.AIR) {
+                    Material originalType = loc.getBlock().getType();
                     loc.getBlock().setType(Material.BARRIER);
+                    temporaryBarriers.put(loc.clone(), originalType);
+                    barrierLocations.add(loc.clone());
                     p.getWorld().spawnParticle(org.bukkit.Particle.ELECTRIC_SPARK, loc, 3);
+                    placedBlocks++;
                 }
+                // Eğer blok varsa, continue ile es geç (yok etme)
             }
         }
-        p.sendMessage("§bEnerji Duvarı oluşturuldu!");
+        
+        // 15 saniye sonra barrier bloklarını sil
+        if (!barrierLocations.isEmpty()) {
+            scheduleBarrierRemoval(barrierLocations, 15 * 20); // 15 saniye = 300 tick
+        }
+        
+        if (placedBlocks > 0) {
+            p.sendMessage("§bEnerji Duvarı oluşturuldu! (" + placedBlocks + " blok, 15 saniye)");
+        } else {
+            p.sendMessage("§cEnerji Duvarı oluşturulamadı! Önünde engel var.");
+        }
     }
 
     // 12. LAV HENDEKÇİSİ (Alan Savunması)
-    public void createLavaTrench(Player p) {
+    public void createLavaTrench(Player p, TerritoryManager territoryManager) {
         Location start = p.getLocation().clone().add(p.getLocation().getDirection().setY(0).normalize().multiply(3));
-        for (int i = 0; i < 10; i++) {
-            Location loc = start.clone().add(i, -1, 0);
-            if (loc.getBlock().getType() != Material.LAVA) {
-                loc.getBlock().setType(Material.LAVA);
+        
+        // Territory kontrolü
+        Clan owner = territoryManager.getTerritoryOwner(start);
+        Clan playerClan = territoryManager.getClanManager().getClanByPlayer(p.getUniqueId());
+        
+        // Eğer başkasının bölgesindeyse ve savaş durumunda değilse engelle
+        if (owner != null && playerClan != null && !owner.equals(playerClan)) {
+            // Savaş kontrolü - SiegeManager'dan kontrol et
+            me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+            if (plugin != null && plugin.getSiegeManager() != null) {
+                me.mami.stratocraft.manager.SiegeManager siegeManager = plugin.getSiegeManager();
+                // Savaş durumunda değilse engelle
+                if (!siegeManager.isUnderSiege(owner)) {
+                    p.sendMessage("§cLav Hendekçisi sadece kendi bölgende veya savaş durumunda kullanılabilir!");
+                    return;
+                }
+            } else {
+                // SiegeManager yoksa engelle
+                p.sendMessage("§cLav Hendekçisi sadece kendi bölgende kullanılabilir!");
+                return;
             }
         }
-        p.sendMessage("§cLav Hendekçisi kuruldu!");
+        
+        int placedBlocks = 0;
+        
+        for (int i = 0; i < 10; i++) {
+            Location loc = start.clone().add(i, -1, 0);
+            // Yükseklik sınırı kontrolü
+            if (loc.getY() < -64 || loc.getY() > 319) continue;
+            
+            // Eğer önünde blok varsa (LAVA değilse ve AIR değilse), o bloğu yok etme, es geç
+            // Sadece AIR veya su gibi sıvı blokların üzerine lav koyabilir
+            Material currentType = loc.getBlock().getType();
+            if (currentType == Material.AIR || currentType == Material.WATER || currentType == Material.LAVA) {
+                if (currentType != Material.LAVA) {
+                    loc.getBlock().setType(Material.LAVA);
+                    placedBlocks++;
+                }
+            }
+            // Eğer solid blok varsa, continue ile es geç (yok etme)
+        }
+        
+        if (placedBlocks > 0) {
+            p.sendMessage("§cLav Hendekçisi kuruldu! (" + placedBlocks + " blok)");
+        } else {
+            p.sendMessage("§cLav Hendekçisi kurulamadı! Önünde engel var.");
+        }
+    }
+    
+    /**
+     * Barrier bloklarını belirli bir süre sonra otomatik olarak sil
+     */
+    private void scheduleBarrierRemoval(List<Location> locations, long delayTicks) {
+        if (plugin == null || locations.isEmpty()) return;
+        
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Location loc : locations) {
+                    if (loc.getBlock().getType() == Material.BARRIER) {
+                        Material originalType = temporaryBarriers.getOrDefault(loc, Material.AIR);
+                        loc.getBlock().setType(originalType);
+                        temporaryBarriers.remove(loc);
+                    }
+                }
+            }
+        }.runTaskLater(plugin, delayTicks);
     }
 }
 

@@ -12,7 +12,6 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -22,7 +21,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.util.Vector;
 
 public class BatteryListener implements Listener {
     private final BatteryManager batteryManager;
@@ -452,30 +450,42 @@ public class BatteryListener implements Listener {
         
         String type = data.getType();
         
+        // BatteryManager metodlarını çağır (kod tekrarını önlemek için)
         if (type.equals("Ateş Topu")) {
-            fireMagmaBattery(player, data);
+            // Mastery kaydı (ateşleme sırasında yapılır)
+            if (trainingManager != null) {
+                trainingManager.recordUse(player.getUniqueId(), "MAGMA_BATTERY");
+            }
+            
+            // BatteryManager metodunu çağır
+            batteryManager.fireMagmaBattery(player, data.getFuel(), data.getAlchemyLevel(), 
+                                          data.hasAmplifier(), data.getTrainingMultiplier());
+            
+            // Mastery mesajları ve seviye atlama kontrolü (Listener'a özel)
+            handleMasteryMessages(player, "MAGMA_BATTERY", data);
+            
         } else if (type.equals("Yıldırım")) {
-            fireLightningBattery(player);
+            batteryManager.fireLightningBattery(player);
         } else if (type.equals("Kara Delik")) {
-            fireBlackHole(player);
+            batteryManager.fireBlackHole(player);
         } else if (type.equals("Anlık Köprü")) {
-            createInstantBridge(player);
+            batteryManager.createInstantBridge(player);
         } else if (type.equals("Sığınak Küpü")) {
-            createInstantBunker(player);
+            batteryManager.createInstantBunker(player);
         } else if (type.equals("Yerçekimi Çapası")) {
-            fireGravityAnchor(player);
+            batteryManager.fireGravityAnchor(player);
         } else if (type.equals("Toprak Suru")) {
-            createEarthWall(player, data.getFuel());
+            batteryManager.createEarthWall(player, data.getFuel());
         } else if (type.equals("Manyetik Bozucu")) {
-            fireMagneticDisruptor(player);
+            batteryManager.fireMagneticDisruptor(player);
         } else if (type.equals("Sismik Çekiç")) {
-            fireSeismicHammer(player);
+            batteryManager.fireSeismicHammer(player);
         } else if (type.equals("Ozon Kalkanı")) {
-            activateOzoneShield(player, player.getLocation());
+            batteryManager.activateOzoneShield(player, player.getLocation());
         } else if (type.equals("Enerji Duvarı")) {
-            createEnergyWall(player);
+            batteryManager.createEnergyWall(player);
         } else if (type.equals("Lav Hendekçisi")) {
-            createLavaTrench(player);
+            batteryManager.createLavaTrench(player, territoryManager);
         }
         
         // Ateşlendikten sonra bataryayı sil
@@ -483,282 +493,52 @@ public class BatteryListener implements Listener {
     }
     
     /**
-     * Ateş Topu bataryası
+     * Mastery mesajlarını ve seviye atlama kontrolünü yönet (Listener'a özel)
      */
-    private void fireMagmaBattery(Player p, BatteryData data) {
-        int count;
-        Material fuel = data.getFuel();
-        if (fuel == Material.DIAMOND) count = 5;
-        else if (data.isRedDiamond()) count = 20;
-        else if (data.isDarkMatter()) count = 50;
-        else count = 2;
+    private void handleMasteryMessages(Player p, String trainingKey, BatteryData data) {
+        if (trainingManager == null) return;
         
-        // Simya Kulesi seviyesine göre güç artışı
-        if (data.getAlchemyLevel() > 0) {
-            double multiplier = 1.0 + (data.getAlchemyLevel() * 0.1);
-            count = (int) (count * multiplier);
-        }
+        int previousLevel = trainingManager.getPreviousMasteryLevel(p.getUniqueId(), trainingKey);
+        int newLevel = trainingManager.getMasteryLevel(p.getUniqueId(), trainingKey);
+        int totalUses = trainingManager.getTotalUses(p.getUniqueId(), trainingKey);
+        boolean nowTrained = trainingManager.isTrained(p.getUniqueId(), trainingKey);
         
-        // Mastery çarpanı uygula
-        count = (int) (count * data.getTrainingMultiplier());
-        if (count < 1) count = 1;
-        
-        float yield = data.hasAmplifier() ? 4.0f : 2.0f;
-        yield = (float) (yield * data.getTrainingMultiplier());
-        
-        for (int i = 0; i < count; i++) {
-            Fireball fb = p.launchProjectile(Fireball.class);
-            fb.setVelocity(p.getLocation().getDirection().multiply(1.5));
-            fb.setYield(yield);
-            if (data.getAlchemyLevel() >= 5 && data.getTrainingMultiplier() >= 1.0) {
-                fb.setIsIncendiary(true);
+        if (newLevel > previousLevel) {
+            if (previousLevel == -1 && newLevel == 0) {
+                p.sendTitle("§a§lANTRENMAN TAMAMLANDI!", "§eArtık tam güçle kullanabilirsin!", 10, 70, 20);
+                p.sendMessage("§a§l════════════════════════════");
+                p.sendMessage("§e§l★ ANTRENMAN TAMAMLANDI ★");
+                p.sendMessage("§7Artık bataryayı tam güçle kullanabilirsin!");
+                p.sendMessage("§7Mastery seviyesi için 20 kullanım gerekli.");
+                p.sendMessage("§a§l════════════════════════════");
+                p.playSound(p.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+            } else {
+                p.sendTitle("§6§lSEVİYE ATLADI!", "§eMastery Seviye " + newLevel + " §7(" + getMasteryBonusText(newLevel) + ")", 10, 70, 20);
+                p.sendMessage("§6§l════════════════════════════");
+                p.sendMessage("§e§l★ MASTERY SEVİYE " + newLevel + " ★");
+                p.sendMessage("§7Güç artışı: §a" + getMasteryBonusText(newLevel));
+                p.sendMessage("§7Toplam kullanım: §b" + totalUses);
+                p.sendMessage("§6§l════════════════════════════");
+                p.playSound(p.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
             }
-        }
-        
-        // Mastery kaydı (ateşleme sırasında yapılır)
-        if (trainingManager != null) {
-            trainingManager.recordUse(p.getUniqueId(), "MAGMA_BATTERY");
-        }
-        
-        // Mastery mesajları ve seviye atlama kontrolü
-        String masteryMsg = "";
-        if (data.getTrainingMultiplier() < 1.0) {
-            masteryMsg = " §7[Antrenman Modu]";
-        } else if (data.getTrainingMultiplier() > 1.0) {
-            int bonusPercent = (int) ((data.getTrainingMultiplier() - 1.0) * 100);
-            masteryMsg = " §a[Mastery +%" + bonusPercent + "]";
-        }
-        
-        // Mastery seviye atlama kontrolü
-        if (trainingManager != null) {
-            int previousLevel = trainingManager.getPreviousMasteryLevel(p.getUniqueId(), "MAGMA_BATTERY");
-            int newLevel = trainingManager.getMasteryLevel(p.getUniqueId(), "MAGMA_BATTERY");
-            int totalUses = trainingManager.getTotalUses(p.getUniqueId(), "MAGMA_BATTERY");
-            boolean nowTrained = trainingManager.isTrained(p.getUniqueId(), "MAGMA_BATTERY");
-            
-            if (newLevel > previousLevel) {
-                if (previousLevel == -1 && newLevel == 0) {
-                    p.sendTitle("§a§lANTRENMAN TAMAMLANDI!", "§eArtık tam güçle kullanabilirsin!", 10, 70, 20);
-                    p.sendMessage("§a§l════════════════════════════");
-                    p.sendMessage("§e§l★ ANTRENMAN TAMAMLANDI ★");
-                    p.sendMessage("§7Artık bataryayı tam güçle kullanabilirsin!");
-                    p.sendMessage("§7Mastery seviyesi için 20 kullanım gerekli.");
-                    p.sendMessage("§a§l════════════════════════════");
-                    p.playSound(p.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
-                } else {
-                    p.sendTitle("§6§lSEVİYE ATLADI!", "§eMastery Seviye " + newLevel + " §7(" + getMasteryBonusText(newLevel) + ")", 10, 70, 20);
-                    p.sendMessage("§6§l════════════════════════════");
-                    p.sendMessage("§e§l★ MASTERY SEVİYE " + newLevel + " ★");
-                    p.sendMessage("§7Güç artışı: §a" + getMasteryBonusText(newLevel));
-                    p.sendMessage("§7Toplam kullanım: §b" + totalUses);
-                    p.sendMessage("§6§l════════════════════════════");
-                    p.playSound(p.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
-                }
-            } else if (!nowTrained) {
-                int remaining = trainingManager.getRemainingUses(p.getUniqueId(), "MAGMA_BATTERY");
-                double progress = trainingManager.getTrainingProgress(p.getUniqueId(), "MAGMA_BATTERY");
-                p.sendMessage("§e[Antrenman] §7Güç: §c" + String.format("%.0f", progress * 100) + "% §7(" + remaining + " kullanım kaldı)");
-            } else if (newLevel > 0) {
-                p.sendMessage("§a[Mastery Seviye " + newLevel + "] §7Güç: §e" + getMasteryBonusText(newLevel) + " §7(" + totalUses + " kullanım)");
-            }
-        }
-        
-        p.sendMessage("§6Ateş topları fırlatıldı! (" + count + " adet)" + 
-                     (data.getAlchemyLevel() > 0 ? " [Simya Kulesi Seviye " + data.getAlchemyLevel() + "]" : "") + masteryMsg);
-        p.playSound(p.getLocation(), Sound.ENTITY_GHAST_SHOOT, 1f, 1f);
-    }
-    
-    /**
-     * Yıldırım bataryası
-     */
-    private void fireLightningBattery(Player p) {
-        org.bukkit.Location target = p.getTargetBlock(null, 50).getLocation();
-        p.getWorld().strikeLightning(target);
-        p.sendMessage("§eYıldırım düştü!");
-    }
-    
-    /**
-     * Kara Delik bataryası
-     */
-    private void fireBlackHole(Player p) {
-        org.bukkit.Location target = p.getTargetBlock(null, 30).getLocation();
-        p.getWorld().createExplosion(target, 0F);
-        p.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_HUGE, target, 1);
-        for (org.bukkit.entity.Entity e : target.getWorld().getNearbyEntities(target, 15, 15, 15)) {
-            if (e instanceof org.bukkit.entity.LivingEntity && e != p) {
-                Vector dir = target.toVector().subtract(e.getLocation().toVector()).normalize().multiply(1.5);
-                e.setVelocity(dir);
-            }
-        }
-        p.sendMessage("§5Kara Delik aktif!");
-    }
-    
-    /**
-     * Anlık Köprü bataryası
-     */
-    private void createInstantBridge(Player p) {
-        org.bukkit.Location start = p.getLocation().clone().subtract(0, 1, 0);
-        Vector dir = p.getLocation().getDirection().setY(0).normalize();
-        for (int i = 1; i <= 15; i++) {
-            org.bukkit.Location point = start.clone().add(dir.clone().multiply(i));
-            if (point.getBlock().getType() == Material.AIR) {
-                point.getBlock().setType(Material.PACKED_ICE);
-            }
-        }
-        p.sendMessage("§bBuz Köprüsü kuruldu!");
-    }
-    
-    /**
-     * Sığınak Küpü bataryası
-     */
-    private void createInstantBunker(Player p) {
-        org.bukkit.Location center = p.getLocation().clone();
-        int r = 2;
-        for (int x = -r; x <= r; x++) {
-            for (int y = 0; y <= 3; y++) {
-                for (int z = -r; z <= r; z++) {
-                    if (Math.abs(x) == r || Math.abs(z) == r || y == 3 || y == 0) {
-                        org.bukkit.block.Block b = center.clone().add(x, y, z).getBlock();
-                        if (b.getType() == Material.AIR) b.setType(Material.COBBLESTONE);
-                    }
-                }
-            }
-        }
-        p.teleport(center.clone().add(0, 1, 0));
-        p.sendMessage("§7Sığınak oluşturuldu!");
-    }
-    
-    /**
-     * Yerçekimi Çapası bataryası
-     */
-    private void fireGravityAnchor(Player p) {
-        p.sendMessage("§5Yerçekimi Çapası Aktif!");
-        for (org.bukkit.entity.Entity e : p.getNearbyEntities(50, 100, 50)) {
-            if (e instanceof Player && ((Player) e).isGliding()) {
-                e.setVelocity(new Vector(0, -3, 0));
-                ((Player) e).setGliding(false);
-                e.sendMessage("§c§lYERÇEKİMİ ÇAPASINA YAKALANDIN!");
-            }
+        } else if (!nowTrained) {
+            int remaining = trainingManager.getRemainingUses(p.getUniqueId(), trainingKey);
+            double progress = trainingManager.getTrainingProgress(p.getUniqueId(), trainingKey);
+            p.sendMessage("§e[Antrenman] §7Güç: §c" + String.format("%.0f", progress * 100) + "% §7(" + remaining + " kullanım kaldı)");
+        } else if (newLevel > 0) {
+            p.sendMessage("§a[Mastery Seviye " + newLevel + "] §7Güç: §e" + getMasteryBonusText(newLevel) + " §7(" + totalUses + " kullanım)");
         }
     }
     
     /**
-     * Toprak Suru bataryası
+     * Mastery bonus metnini al
      */
-    private void createEarthWall(Player p, Material material) {
-        org.bukkit.Location start = p.getLocation().clone().add(p.getLocation().getDirection().setY(0).normalize().multiply(2));
-        boolean isTitanium = ItemManager.TITANIUM_INGOT != null && material == Material.IRON_INGOT && 
-                             ItemManager.isCustomItem(p.getInventory().getItemInMainHand(), "TITANIUM_INGOT");
-        boolean isAdamantite = ItemManager.ADAMANTITE != null && 
-                               ItemManager.isCustomItem(p.getInventory().getItemInMainHand(), "ADAMANTITE");
-        
-        int height = isTitanium ? 5 : 3;
-        Material wallMat = Material.COBBLESTONE;
-        
-        if (isAdamantite) {
-            wallMat = Material.BARRIER;
-            height = 4;
-            p.sendMessage("§5Adamantite Enerji Kalkanı oluşturuldu!");
-        } else if (isTitanium) {
-            wallMat = Material.IRON_BLOCK;
-        }
-        
-        for (int y = 0; y < height; y++) {
-            for (int x = -1; x <= 1; x++) {
-                org.bukkit.Location blockLoc = start.clone().add(x, y, 0);
-                if (blockLoc.getBlock().getType() == Material.AIR) {
-                    blockLoc.getBlock().setType(wallMat);
-                    if (isAdamantite) {
-                        p.getWorld().spawnParticle(org.bukkit.Particle.ELECTRIC_SPARK, blockLoc.add(0.5, 0.5, 0.5), 3);
-                    }
-                }
-            }
-        }
-        if (!isAdamantite) {
-            p.sendMessage("§7Toprak Suru oluşturuldu!");
-        }
-    }
-    
-    /**
-     * Manyetik Bozucu bataryası
-     */
-    private void fireMagneticDisruptor(Player p) {
-        p.sendMessage("§5Manyetik Bozucu Aktif!");
-        for (org.bukkit.entity.Entity e : p.getNearbyEntities(20, 20, 20)) {
-            if (e instanceof Player && e != p) {
-                Player target = (Player) e;
-                ItemStack mainHand = target.getInventory().getItemInMainHand();
-                if (mainHand != null && mainHand.getType() != Material.AIR) {
-                    target.getWorld().dropItemNaturally(target.getLocation(), mainHand.clone());
-                    target.getInventory().setItemInMainHand(null);
-                    target.sendMessage("§c§lSİLAHIN DÜŞTÜ!");
-                }
-            }
-        }
-    }
-    
-    /**
-     * Sismik Çekiç bataryası
-     */
-    private void fireSeismicHammer(Player p) {
-        org.bukkit.Location target = p.getTargetBlock(null, 30).getLocation();
-        p.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, target, 5);
-        p.sendMessage("§6Sismik Çekiç Aktif! Yer altı titreşimleri gönderildi!");
-        // Hiçlik Solucanı için titreşim sinyali
-        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
-        if (plugin != null && plugin.getDisasterManager() != null) {
-            plugin.getDisasterManager().forceWormSurface(target);
-        }
-    }
-    
-    /**
-     * Ozon Kalkanı bataryası
-     */
-    private void activateOzoneShield(Player p, org.bukkit.Location center) {
-        int radius = 15;
-        for (int x = -radius; x <= radius; x++) {
-            for (int z = -radius; z <= radius; z++) {
-                if (x*x + z*z <= radius*radius) {
-                    org.bukkit.Location loc = center.clone().add(x, 0, z);
-                    if (loc.getBlock().getType() == Material.AIR) {
-                        loc.getBlock().setType(Material.BARRIER);
-                        p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, loc, 1);
-                    }
-                }
-            }
-        }
-        p.sendMessage("§bOzon Kalkanı aktif! Güneş Fırtınası koruması sağlandı.");
-    }
-    
-    /**
-     * Enerji Duvarı bataryası
-     */
-    private void createEnergyWall(Player p) {
-        org.bukkit.Location start = p.getLocation().clone().add(p.getLocation().getDirection().setY(0).normalize().multiply(2));
-        for (int y = 0; y < 5; y++) {
-            for (int x = -2; x <= 2; x++) {
-                org.bukkit.Location loc = start.clone().add(x, y, 0);
-                if (loc.getBlock().getType() == Material.AIR) {
-                    loc.getBlock().setType(Material.BARRIER);
-                    p.getWorld().spawnParticle(org.bukkit.Particle.ELECTRIC_SPARK, loc, 3);
-                }
-            }
-        }
-        p.sendMessage("§bEnerji Duvarı oluşturuldu!");
-    }
-    
-    /**
-     * Lav Hendekçisi bataryası
-     */
-    private void createLavaTrench(Player p) {
-        org.bukkit.Location start = p.getLocation().clone().add(p.getLocation().getDirection().setY(0).normalize().multiply(3));
-        for (int i = 0; i < 10; i++) {
-            org.bukkit.Location loc = start.clone().add(i, -1, 0);
-            if (loc.getBlock().getType() != Material.LAVA) {
-                loc.getBlock().setType(Material.LAVA);
-            }
-        }
-        p.sendMessage("§cLav Hendekçisi kuruldu!");
+    private String getMasteryBonusText(int level) {
+        if (level <= 0) return "Yok";
+        if (level == 1) return "+20%";
+        if (level == 2) return "+30%";
+        if (level == 3) return "+40%";
+        return "+" + (20 + (level * 10)) + "%";
     }
     
     /**
