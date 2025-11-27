@@ -1,5 +1,8 @@
 package me.mami.stratocraft.model;
 
+import org.bukkit.Location;
+import org.bukkit.entity.EnderCrystal;
+
 import java.util.*;
 
 public class Clan {
@@ -17,13 +20,15 @@ public class Clan {
     }
 
     private UUID id = UUID.randomUUID();
-    private final String name;
+    private String name;
     private final Map<UUID, Rank> members = new HashMap<>();
     private final List<Structure> structures = new ArrayList<>();
     private final Set<UUID> guests = new HashSet<>();
     private Territory territory;
     private double bankBalance = 0;
     private int storedXP = 0; // XP Bankası için
+    private Location crystalLocation; // Klan Kristali lokasyonu
+    private EnderCrystal crystalEntity; // Kristal entity referansı
 
     public Clan(String name, UUID leader) {
         this.name = name;
@@ -33,6 +38,7 @@ public class Clan {
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; } // DataManager için
     public String getName() { return name; }
+    public void setName(String newName) { this.name = newName; } // Klan ismi değiştirme için
     public Map<UUID, Rank> getMembers() { return members; }
     public void addMember(UUID uuid, Rank rank) { members.put(uuid, rank); }
     public Rank getRank(UUID uuid) { return members.get(uuid); }
@@ -49,6 +55,7 @@ public class Clan {
 
     public void addGuest(UUID uuid) { guests.add(uuid); }
     public boolean isGuest(UUID uuid) { return guests.contains(uuid); }
+    public Set<UUID> getGuests() { return guests; }
 
     public int getTechLevel() {
         return structures.stream().mapToInt(Structure::getLevel).max().orElse(1);
@@ -58,5 +65,23 @@ public class Clan {
     public void setStoredXP(int amount) { this.storedXP = Math.max(0, amount); }
     public void addXP(int amount) { this.storedXP += amount; }
     public void removeXP(int amount) { this.storedXP = Math.max(0, this.storedXP - amount); }
+    
+    public Location getCrystalLocation() { return crystalLocation; }
+    public void setCrystalLocation(Location loc) { this.crystalLocation = loc; }
+    public EnderCrystal getCrystalEntity() { return crystalEntity; }
+    public void setCrystalEntity(EnderCrystal crystal) { this.crystalEntity = crystal; }
+    
+    public boolean isGeneral(UUID uuid) {
+        Rank rank = getRank(uuid);
+        return rank == Rank.GENERAL || rank == Rank.LEADER;
+    }
+    
+    public UUID getLeader() {
+        return members.entrySet().stream()
+                .filter(entry -> entry.getValue() == Rank.LEADER)
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
+    }
 }
 

@@ -316,6 +316,10 @@ public class Main extends JavaPlugin {
                 return true;
             }
         });
+        
+        // Admin test komutları
+        getCommand("stratocraft").setExecutor(new me.mami.stratocraft.command.AdminCommandExecutor(this));
+        getCommand("stratocraft").setTabCompleter(new me.mami.stratocraft.command.AdminCommandExecutor(this));
 
         getLogger().info("Stratocraft v10.0: Eksiksiz Sistem Aktif!");
     }
@@ -361,4 +365,5 @@ public class Main extends JavaPlugin {
     public BatteryManager getBatteryManager() { return batteryManager; }
     public SiegeManager getSiegeManager() { return siegeManager; }
     public MissionManager getMissionManager() { return missionManager; }
+    public MobManager getMobManager() { return mobManager; }
 }

@@ -64,6 +64,59 @@ public class ItemManager {
         lightning.setIngredient('E', Material.ENDER_PEARL);
         lightning.setIngredient('D', Material.DIAMOND);
         Bukkit.addRecipe(lightning);
+        
+        // Klan Kristali ve Klan Çiti tarifleri
+        registerClanCrystalRecipe();
+        registerClanFenceRecipe();
+    }
+    
+    private void registerClanCrystalRecipe() {
+        // Klan Kristali (End Crystal görünümünde)
+        ItemStack crystal = new ItemStack(Material.END_CRYSTAL);
+        ItemMeta meta = crystal.getItemMeta();
+        meta.setDisplayName("§b§lKlan Kristali");
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Klan kurmak için kullanılır.");
+        lore.add("§7Etrafı Klan Çiti ile çevrili");
+        lore.add("§7bir alana koyulmalıdır.");
+        meta.setLore(lore);
+        
+        NamespacedKey key = new NamespacedKey(Main.getInstance(), "clan_item");
+        meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, "CRYSTAL");
+        crystal.setItemMeta(meta);
+        
+        ShapedRecipe recipe = new ShapedRecipe(new NamespacedKey(Main.getInstance(), "clan_crystal"), crystal);
+        // Tarif: Boş - Elmas Blok - Boş
+        //        Elmas Blok - Ender İncisi - Elmas Blok
+        //        Boş - Obsidyen - Boş
+        recipe.shape(" B ", "BEB", " O ");
+        recipe.setIngredient('B', Material.DIAMOND_BLOCK); // Elmas Blok
+        recipe.setIngredient('E', Material.ENDER_PEARL);  // Ender İncisi
+        recipe.setIngredient('O', Material.OBSIDIAN);    // Obsidyen
+        
+        Bukkit.addRecipe(recipe);
+    }
+    
+    private void registerClanFenceRecipe() {
+        // Klan Çiti (Normal çit ama ortası demir)
+        ItemStack fence = new ItemStack(Material.OAK_FENCE);
+        ItemMeta meta = fence.getItemMeta();
+        meta.setDisplayName("§6§lKlan Çiti");
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Klan bölgesi sınırlarını belirler.");
+        meta.setLore(lore);
+        
+        NamespacedKey key = new NamespacedKey(Main.getInstance(), "clan_item");
+        meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, "FENCE");
+        fence.setItemMeta(meta);
+        
+        ShapedRecipe recipe = new ShapedRecipe(new NamespacedKey(Main.getInstance(), "clan_fence"), fence);
+        // Tarif: Tahta - Demir - Tahta (2 satır)
+        recipe.shape("WIW", "WIW");
+        recipe.setIngredient('W', Material.OAK_PLANKS);
+        recipe.setIngredient('I', Material.IRON_INGOT);
+        
+        Bukkit.addRecipe(recipe);
     }
 
     private ItemStack create(Material mat, String id, String name) {
@@ -84,6 +137,16 @@ public class ItemManager {
         String data = item.getItemMeta().getPersistentDataContainer()
                 .get(new NamespacedKey(Main.getInstance(), "custom_id"), PersistentDataType.STRING);
         return id != null && id.equals(data);
+    }
+    
+    /**
+     * Bir eşyanın Klan Kristali veya Klan Çiti olup olmadığını kontrol eder
+     */
+    public static boolean isClanItem(ItemStack item, String type) {
+        if (item == null || !item.hasItemMeta()) return false;
+        NamespacedKey key = new NamespacedKey(Main.getInstance(), "clan_item");
+        String data = item.getItemMeta().getPersistentDataContainer().get(key, PersistentDataType.STRING);
+        return data != null && data.equals(type);
     }
 }
 

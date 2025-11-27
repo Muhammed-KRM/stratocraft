@@ -14,6 +14,10 @@ commands:
     description: Kontrat panosu islemleri.
     usage: /kontrat <list|olustur|teslim>
     aliases: [kontrat, contract]
+  stratocraft:
+    description: Admin test komutları (item, mob, disaster çağırma)
+    usage: /stratocraft <give|spawn|disaster|list|help>
+    aliases: [sc, stratocraft]
 permissions:
   stratocraft.*:
     description: Tüm Stratocraft yetkileri

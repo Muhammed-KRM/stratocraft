@@ -19,8 +19,13 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.entity.Entity;
 
+import org.bukkit.Bukkit;
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -131,7 +136,105 @@ public class RitualInteractionListener implements Listener {
         }
     }
 
-    // ========== KLAN DAVET: "Yemin Çemberi" ==========
+    // ========== KLAN ÜYE ALMA: "Ateş Ritüeli" (3x3 Soyulmuş Odun) ==========
+    
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onRecruitmentRitual(PlayerInteractEvent event) {
+        // Şartlar: Shift + Sağ Tık + Elde Çakmak
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (!event.getPlayer().isSneaking()) return;
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        
+        ItemStack handItem = event.getItem();
+        if (handItem == null || handItem.getType() != Material.FLINT_AND_STEEL) return;
+        
+        Block centerBlock = event.getClickedBlock();
+        if (centerBlock == null) return;
+        
+        // Merkez blok "Soyulmuş Odun" (Stripped Log) olmalı
+        if (!isStrippedLog(centerBlock.getType())) return;
+        
+        Player leader = event.getPlayer();
+        Clan clan = clanManager.getClanByPlayer(leader.getUniqueId());
+        
+        // Yetki Kontrolü
+        if (clan == null) return;
+        UUID leaderId = clan.getLeader();
+        if (leaderId == null || (!leaderId.equals(leader.getUniqueId()) && !clan.isGeneral(leader.getUniqueId()))) {
+            leader.sendMessage("§cBu ritüeli sadece Lider veya Generaller yapabilir!");
+            event.setCancelled(true); // Ateş yakmasını engelle
+            return;
+        }
+        
+        // 3x3 Alan Kontrolü
+        if (!checkRitualStructure(centerBlock)) {
+            // Yapı bozuksa ateş yakar geçer, ritüel tetiklenmez
+            return;
+        }
+        
+        event.setCancelled(true); // Normal ateş yakmayı engelle, büyülü ateş yakıcaz
+        
+        // --- RİTÜEL BAŞARILI ---
+        // Karenin içindeki oyuncuları bul (centerBlock'un 1 blok yukarısındaki 3x3 alan)
+        Location centerLoc = centerBlock.getLocation().add(0.5, 1, 0.5);
+        
+        List<Player> recruitedPlayers = new ArrayList<>();
+        // 3x3 alan içindeki oyuncuları bul (1.5 blok yarıçap, 2 blok yükseklik)
+        for (Entity entity : centerBlock.getWorld().getNearbyEntities(centerLoc, 1.5, 2, 1.5)) {
+            if (entity instanceof Player) {
+                Player target = (Player) entity;
+                // Kendisi değilse ve klanı yoksa
+                if (!target.equals(leader) && clanManager.getClanByPlayer(target.getUniqueId()) == null) {
+                    recruitedPlayers.add(target);
+                }
+            }
+        }
+        
+        if (recruitedPlayers.isEmpty()) {
+            leader.sendMessage("§eRitüel alanında klansız kimse yok.");
+            return;
+        }
+        
+        // Oyuncuları Klana Ekle
+        for (Player newMember : recruitedPlayers) {
+            clanManager.addMember(clan, newMember.getUniqueId(), Clan.Rank.RECRUIT);
+            newMember.sendMessage("§6§l" + clan.getName() + " §eklanına ruhun bağlandı!");
+            newMember.getWorld().spawnParticle(Particle.FLAME, newMember.getLocation(), 50, 0.5, 1, 0.5, 0.1);
+            newMember.playSound(newMember.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 1f, 1f);
+            newMember.sendTitle("§a§lKLANA KATILDI", "§e" + clan.getName(), 10, 70, 20);
+        }
+        
+        // Ateş efekti
+        centerBlock.getWorld().spawnParticle(Particle.FLAME, centerLoc, 100, 1, 0.5, 1, 0.1);
+        centerBlock.getWorld().playSound(centerLoc, Sound.BLOCK_BEACON_ACTIVATE, 1f, 0.5f);
+        
+        leader.sendMessage("§aRitüel tamamlandı! " + recruitedPlayers.size() + " kişi katıldı.");
+        
+        // Çakmağı tüket (dayanıklılık azalt)
+        if (handItem.getDurability() >= handItem.getType().getMaxDurability() - 1) {
+            handItem.setAmount(0);
+        } else {
+            handItem.setDurability((short) (handItem.getDurability() + 1));
+        }
+    }
+    
+    // 3x3 Kare Kontrolü
+    private boolean checkRitualStructure(Block center) {
+        // Merkez zaten kontrol edildi. Etrafındaki 8 bloğa bak.
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                Block rel = center.getRelative(x, 0, z);
+                if (!isStrippedLog(rel.getType())) return false;
+            }
+        }
+        return true;
+    }
+    
+    private boolean isStrippedLog(Material mat) {
+        return mat.toString().contains("STRIPPED") && mat.toString().contains("LOG");
+    }
+    
+    // ========== KLAN DAVET: "Yemin Çemberi" (ESKİ SİSTEM - KALDIRILABİLİR) ==========
     
     @EventHandler(priority = EventPriority.HIGH)
     public void onInviteRitual(BlockBreakEvent event) {
@@ -268,7 +371,7 @@ public class RitualInteractionListener implements Listener {
         }
         
         // Klandan at
-        targetClan.getMembers().remove(target.getUniqueId());
+        clanManager.removeMember(targetClan, target.getUniqueId());
         
         // Efektler
         Location fireLoc = fireBlock.getLocation().add(0.5, 0.5, 0.5);
@@ -292,7 +395,9 @@ public class RitualInteractionListener implements Listener {
         setCooldown(p.getUniqueId());
     }
 
-    // ========== KLANDAN AYRILMA: "Bağ Kesme" ==========
+    // ========== KLANDAN AYRILMA: "Yemin Kağıdı Yakma" ==========
+    // Oyuncu elinde isimlendirilmiş bir kağıt ile normal ateşe shift+sağ tık yaparak klandan ayrılabilir
+    // Her yerden yapılabilir, sadece ateş gerekir
     
     @EventHandler(priority = EventPriority.HIGH)
     public void onLeaveRitual(PlayerInteractEvent event) {
@@ -303,12 +408,18 @@ public class RitualInteractionListener implements Listener {
         Player p = event.getPlayer();
         Block clicked = event.getClickedBlock();
         
-        // Beacon (Core) kontrolü
-        if (clicked.getType() != Material.BEACON) return;
+        // Normal ateş kontrolü (FIRE veya SOUL_FIRE)
+        if (clicked.getType() != Material.FIRE && clicked.getType() != Material.SOUL_FIRE) return;
         
-        // Elinde Makas var mı?
+        // Elinde isimlendirilmiş kağıt var mı?
         ItemStack handItem = p.getInventory().getItemInMainHand();
-        if (handItem == null || handItem.getType() != Material.SHEARS) return;
+        if (handItem == null || handItem.getType() != Material.PAPER) return;
+        
+        ItemMeta meta = handItem.getItemMeta();
+        if (meta == null || !meta.hasDisplayName()) {
+            p.sendMessage("§cRitüel için isimlendirilmiş bir kağıt gerekli! (Örs'te isim yaz)");
+            return;
+        }
         
         Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
         if (clan == null) {
@@ -316,33 +427,34 @@ public class RitualInteractionListener implements Listener {
             return;
         }
         
-        // Bu klanın Core'u mu?
-        Structure core = clan.getStructures().stream()
-                .filter(s -> s.getType() == Structure.Type.CORE)
-                .filter(s -> s.getLocation().getBlock().equals(clicked))
-                .findFirst().orElse(null);
-        
-        if (core == null) {
-            p.sendMessage("§cBu senin klanının Ana Kristali değil!");
+        // Kağıttaki isim klan ismi veya oyuncu ismi olmalı (doğrulama için)
+        String paperName = meta.getDisplayName().replace("§r", "").trim();
+        if (!paperName.equalsIgnoreCase(clan.getName()) && !paperName.equalsIgnoreCase(p.getName())) {
+            p.sendMessage("§cKağıttaki isim klan ismin veya kendi ismin olmalı!");
             return;
         }
         
         // Lider ayrılamaz
         if (clan.getRank(p.getUniqueId()) == Clan.Rank.LEADER) {
             p.sendMessage("§cLider klandan ayrılamaz! Önce liderliği devret.");
+            event.setCancelled(true);
             return;
         }
         
         // Cooldown kontrolü
         if (isOnCooldown(p.getUniqueId())) {
             p.sendMessage("§cRitüel henüz hazır değil! Lütfen bekleyin.");
+            event.setCancelled(true);
             return;
         }
         
-        // Klandan ayrıl
-        clan.getMembers().remove(p.getUniqueId());
+        // Ateş yakmayı engelle, ritüel yapacağız
+        event.setCancelled(true);
         
-        // Makası kır
+        // Klandan ayrıl
+        clanManager.removeMember(clan, p.getUniqueId());
+        
+        // Kağıdı tüket
         if (handItem.getAmount() > 1) {
             handItem.setAmount(handItem.getAmount() - 1);
         } else {
@@ -350,22 +462,33 @@ public class RitualInteractionListener implements Listener {
         }
         
         // Efektler
-        Location coreLoc = clicked.getLocation().add(0.5, 1, 0.5);
-        coreLoc.getWorld().spawnParticle(Particle.CRIT, coreLoc, 30, 0.5, 1, 0.5, 0.3);
-        p.playSound(coreLoc, Sound.ENTITY_ITEM_BREAK, 1f, 1f);
+        Location fireLoc = clicked.getLocation().add(0.5, 0.5, 0.5);
         
-        // Işınlanma (bölgenin dışına)
-        Location teleportLoc = territoryManager.getClanManager().getAllClans().stream()
-                .filter(c -> c.getTerritory() != null)
-                .filter(c -> c.getTerritory().getCenter().distance(p.getLocation()) < 100)
-                .map(c -> c.getTerritory().getCenter())
-                .findFirst()
-                .map(loc -> loc.clone().add(50, 10, 50)) // Güvenli mesafe
-                .orElse(p.getWorld().getSpawnLocation());
+        // Ateş partikülleri
+        fireLoc.getWorld().spawnParticle(Particle.FLAME, fireLoc, 50, 0.3, 0.3, 0.3, 0.1);
+        fireLoc.getWorld().spawnParticle(Particle.SMOKE_NORMAL, fireLoc, 30, 0.5, 0.5, 0.5, 0.05);
         
-        p.teleport(teleportLoc);
-        p.sendTitle("§e§lBAĞ KESİLDİ", "§7Klandan ayrıldın", 10, 70, 20);
-        p.sendMessage("§eKlandan ayrıldın!");
+        // Oyuncu etrafında efektler
+        p.getWorld().spawnParticle(Particle.CLOUD, p.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.1);
+        p.getWorld().spawnParticle(Particle.CRIT, p.getLocation().add(0, 1, 0), 20, 0.5, 1, 0.5, 0.2);
+        
+        // Sesler
+        p.playSound(fireLoc, Sound.ITEM_FIRECHARGE_USE, 1f, 0.8f);
+        p.playSound(p.getLocation(), Sound.ENTITY_ITEM_BREAK, 1f, 1f);
+        p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+        
+        // Title
+        p.sendTitle("§e§lYEMİN KIRILDI", "§7" + clan.getName() + " klanından ayrıldın", 10, 70, 20);
+        p.sendMessage("§e§l" + clan.getName() + " §7klanından ayrıldın!");
+        
+        // Klan üyelerine bildir (isteğe bağlı)
+        String playerName = p.getName();
+        for (UUID memberId : clan.getMembers().keySet()) {
+            Player member = Bukkit.getPlayer(memberId);
+            if (member != null && member.isOnline()) {
+                member.sendMessage("§7" + playerName + " klanından ayrıldı.");
+            }
+        }
         
         // Cooldown ekle
         setCooldown(p.getUniqueId());
@@ -406,6 +529,9 @@ public class RitualInteractionListener implements Listener {
                 leader.sendMessage("§cRitüel için köşelerde 4 Kızıltaş Meşalesi gerekli!");
                 return;
             }
+            
+            // Ateş yakmayı engelle
+            event.setCancelled(true);
             
             // Altın Külçe ile General terfisi
             if (leader.getInventory().getItemInMainHand().getType() == Material.GOLD_INGOT) {
@@ -503,6 +629,12 @@ public class RitualInteractionListener implements Listener {
             return;
         }
         
+        // Zaten müttefik mi?
+        if (clan1.isGuest(p2.getUniqueId()) && clan2.isGuest(p1.getUniqueId())) {
+            p1.sendMessage("§eBu klanlar zaten müttefik!");
+            return;
+        }
+        
         // Müttefiklik (basit versiyon - guests olarak ekle)
         clan1.addGuest(p2.getUniqueId());
         clan2.addGuest(p1.getUniqueId());
@@ -527,6 +659,617 @@ public class RitualInteractionListener implements Listener {
         // Cooldown ekle
         setCooldown(p1.getUniqueId());
         setCooldown(p2.getUniqueId());
+    }
+
+    // ========== LİDERLİK DEVRİ: "Taç Geçişi" (ZOR) ==========
+    // Lider elinde Altın Taç (Golden Helmet) ile Klan Kristali yakınında hedef oyuncuya shift+sağ tık yapar
+    
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onLeadershipTransfer(PlayerInteractEntityEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (!(event.getRightClicked() instanceof Player)) return;
+        
+        Player leader = event.getPlayer();
+        Player target = (Player) event.getRightClicked();
+        
+        if (!leader.isSneaking()) return;
+        
+        // Elinde Altın Taç var mı?
+        ItemStack handItem = leader.getInventory().getItemInMainHand();
+        if (handItem == null || handItem.getType() != Material.GOLDEN_HELMET) return;
+        
+        Clan clan = clanManager.getClanByPlayer(leader.getUniqueId());
+        if (clan == null) return;
+        
+        // Lider kontrolü
+        if (clan.getRank(leader.getUniqueId()) != Clan.Rank.LEADER) {
+            leader.sendMessage("§cBu ritüeli sadece klan lideri yapabilir!");
+            return;
+        }
+        
+        // Hedef oyuncu aynı klanda mı?
+        Clan targetClan = clanManager.getClanByPlayer(target.getUniqueId());
+        if (targetClan == null || !targetClan.equals(clan)) {
+            leader.sendMessage("§cHedef oyuncu senin klanında değil!");
+            return;
+        }
+        
+        // Klan Kristali yakınında mı? (10 blok mesafe)
+        if (clan.getCrystalLocation() == null) {
+            leader.sendMessage("§cKlan Kristali bulunamadı!");
+            return;
+        }
+        
+        double distanceToCrystal = leader.getLocation().distance(clan.getCrystalLocation());
+        if (distanceToCrystal > 10) {
+            leader.sendMessage("§cLiderlik devri için Klan Kristali yakınında olmalısın! (10 blok)");
+            return;
+        }
+        
+        // Cooldown kontrolü
+        if (isOnCooldown(leader.getUniqueId())) {
+            leader.sendMessage("§cRitüel henüz hazır değil! Lütfen bekleyin.");
+            return;
+        }
+        
+        // Liderliği devret
+        clan.getMembers().put(leader.getUniqueId(), Clan.Rank.GENERAL);
+        clan.getMembers().put(target.getUniqueId(), Clan.Rank.LEADER);
+        
+        // playerClanMap'i güncelle (liderlik değiştiği için gerekli değil ama tutarlılık için)
+        // Not: playerClanMap zaten doğru klan ID'sini gösteriyor, sadece rütbe değişti
+        
+        // Altın Tacı tüket
+        if (handItem.getAmount() > 1) {
+            handItem.setAmount(handItem.getAmount() - 1);
+        } else {
+            leader.getInventory().setItemInMainHand(null);
+        }
+        
+        // Efektler
+        Location crystalLoc = clan.getCrystalLocation();
+        crystalLoc.getWorld().spawnParticle(Particle.TOTEM, crystalLoc, 100, 1, 1, 1, 0.5);
+        crystalLoc.getWorld().spawnParticle(Particle.END_ROD, crystalLoc, 50, 1, 1, 1, 0.3);
+        leader.getWorld().strikeLightningEffect(crystalLoc);
+        
+        leader.playSound(crystalLoc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
+        target.playSound(crystalLoc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
+        
+        leader.sendTitle("§6§lLİDERLİK DEVREDİLDİ", "§e" + target.getName(), 10, 70, 20);
+        target.sendTitle("§6§lYENİ LİDER", "§e" + clan.getName(), 10, 70, 20);
+        
+        // Klan üyelerine bildir
+        String leaderName = leader.getName();
+        String targetName = target.getName();
+        for (UUID memberId : clan.getMembers().keySet()) {
+            Player member = Bukkit.getPlayer(memberId);
+            if (member != null && member.isOnline()) {
+                member.sendMessage("§6§l" + leaderName + " liderliği " + targetName + " devretti!");
+            }
+        }
+        
+        setCooldown(leader.getUniqueId());
+    }
+
+    // ========== KLAN İSMİ DEĞİŞTİRME: "Yeniden Adlandırma" (ORTA) ==========
+    // Lider elinde yeni isimli kağıt ile Klan Kristali yakınında shift+sağ tık yapar
+    
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onClanRename(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (!event.getPlayer().isSneaking()) return;
+        
+        Player leader = event.getPlayer();
+        Block clicked = event.getClickedBlock();
+        
+        // Klan Kristali yakınında mı? (Kristal entity'sine tıklama veya yakınında)
+        if (clicked == null) return;
+        
+        Clan clan = clanManager.getClanByPlayer(leader.getUniqueId());
+        if (clan == null) return;
+        
+        if (clan.getRank(leader.getUniqueId()) != Clan.Rank.LEADER) {
+            return; // Sadece lider
+        }
+        
+        // Klan Kristali yakınında mı? (5 blok mesafe)
+        if (clan.getCrystalLocation() == null) return;
+        if (leader.getLocation().distance(clan.getCrystalLocation()) > 5) {
+            leader.sendMessage("§cKlan ismini değiştirmek için Klan Kristali yakınında olmalısın!");
+            return;
+        }
+        
+        // Elinde isimlendirilmiş kağıt var mı?
+        ItemStack handItem = leader.getInventory().getItemInMainHand();
+        if (handItem == null || handItem.getType() != Material.PAPER) return;
+        
+        ItemMeta meta = handItem.getItemMeta();
+        if (meta == null || !meta.hasDisplayName()) {
+            leader.sendMessage("§cRitüel için isimlendirilmiş bir kağıt gerekli! (Örs'te yeni isim yaz)");
+            return;
+        }
+        
+        String newName = meta.getDisplayName().replace("§r", "").trim();
+        if (newName.isEmpty() || newName.equals(clan.getName())) {
+            leader.sendMessage("§cYeni isim eski isimden farklı olmalı!");
+            return;
+        }
+        
+        // Cooldown kontrolü
+        if (isOnCooldown(leader.getUniqueId())) {
+            leader.sendMessage("§cRitüel henüz hazır değil! Lütfen bekleyin.");
+            return;
+        }
+        
+        event.setCancelled(true); // Blok etkileşimini engelle
+        
+        // Klan ismini değiştir
+        String oldName = clan.getName();
+        clan.setName(newName);
+        
+        // Klan üyelerine bildir
+        for (UUID memberId : clan.getMembers().keySet()) {
+            Player member = Bukkit.getPlayer(memberId);
+            if (member != null && member.isOnline()) {
+                member.sendMessage("§eKlan ismi değiştirildi: §7" + oldName + " §e→ §a" + newName);
+            }
+        }
+        
+        leader.sendMessage("§aKlan ismi başarıyla değiştirildi: §7" + oldName + " §a→ §e" + newName);
+        
+        // Kağıdı tüket
+        if (handItem.getAmount() > 1) {
+            handItem.setAmount(handItem.getAmount() - 1);
+        } else {
+            leader.getInventory().setItemInMainHand(null);
+        }
+        
+        // Efektler
+        Location crystalLoc = clan.getCrystalLocation();
+        crystalLoc.getWorld().spawnParticle(Particle.ENCHANTMENT_TABLE, crystalLoc, 50, 1, 1, 1, 0.3);
+        leader.playSound(crystalLoc, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1f, 1f);
+        
+        setCooldown(leader.getUniqueId());
+    }
+
+    // ========== MÜTTEFİKLİK İPTALİ: "Anlaşma Kırma" (KOLAY) ==========
+    // Lider elinde Kırmızı Çiçek (Rose/Red Tulip) ile müttefik liderine shift+sağ tık yapar
+    
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onAllianceBreak(PlayerInteractEntityEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (!(event.getRightClicked() instanceof Player)) return;
+        
+        Player p1 = event.getPlayer();
+        Player p2 = (Player) event.getRightClicked();
+        
+        if (!p1.isSneaking()) return;
+        
+        // Elinde Kırmızı Çiçek var mı?
+        ItemStack handItem = p1.getInventory().getItemInMainHand();
+        if (handItem == null || (handItem.getType() != Material.RED_TULIP && 
+            handItem.getType() != Material.ROSE_BUSH && handItem.getType() != Material.POPPY)) return;
+        
+        Clan clan1 = clanManager.getClanByPlayer(p1.getUniqueId());
+        Clan clan2 = clanManager.getClanByPlayer(p2.getUniqueId());
+        
+        if (clan1 == null || clan2 == null) return;
+        if (clan1.equals(clan2)) return; // Aynı klan
+        
+        // İkisi de lider mi?
+        if (clan1.getRank(p1.getUniqueId()) != Clan.Rank.LEADER ||
+            clan2.getRank(p2.getUniqueId()) != Clan.Rank.LEADER) {
+            return; // Sadece liderler iptal edebilir
+        }
+        
+        // Müttefik mi?
+        if (!clan1.isGuest(p2.getUniqueId()) || !clan2.isGuest(p1.getUniqueId())) {
+            p1.sendMessage("§cBu klanlar müttefik değil!");
+            return;
+        }
+        
+        // Cooldown kontrolü
+        if (isOnCooldown(p1.getUniqueId())) {
+            p1.sendMessage("§cRitüel henüz hazır değil! Lütfen bekleyin.");
+            return;
+        }
+        
+        // Müttefikliği iptal et
+        clan1.getGuests().remove(p2.getUniqueId());
+        clan2.getGuests().remove(p1.getUniqueId());
+        
+        // Çiçeği tüket
+        if (handItem.getAmount() > 1) {
+            handItem.setAmount(handItem.getAmount() - 1);
+        } else {
+            p1.getInventory().setItemInMainHand(null);
+        }
+        
+        // Efektler
+        Location midLoc = p1.getLocation().add(p2.getLocation()).multiply(0.5);
+        midLoc.getWorld().spawnParticle(Particle.SMOKE_LARGE, midLoc, 30, 1, 1, 1, 0.1);
+        midLoc.getWorld().spawnParticle(Particle.CRIT, midLoc, 20, 1, 1, 1, 0.2);
+        
+        p1.playSound(midLoc, Sound.ENTITY_ITEM_BREAK, 1f, 1f);
+        p2.playSound(midLoc, Sound.ENTITY_ITEM_BREAK, 1f, 1f);
+        
+        p1.sendTitle("§c§lMÜTTEFİKLİK İPTAL", "§7" + clan2.getName(), 10, 70, 20);
+        p2.sendTitle("§c§lMÜTTEFİKLİK İPTAL", "§7" + clan1.getName(), 10, 70, 20);
+        
+        Bukkit.broadcastMessage("§c§l" + clan1.getName() + " §7ve §c" + clan2.getName() + " §7klanları arasındaki müttefiklik sona erdi!");
+        
+        setCooldown(p1.getUniqueId());
+    }
+
+    // ========== GUEST EKLEME: "Misafir Daveti" (KOLAY) ==========
+    // Lider elinde Yeşil Çiçek (Green Dye veya Cactus) ile oyuncuya shift+sağ tık yapar
+    
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onGuestAdd(PlayerInteractEntityEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (!(event.getRightClicked() instanceof Player)) return;
+        
+        Player leader = event.getPlayer();
+        Player target = (Player) event.getRightClicked();
+        
+        if (!leader.isSneaking()) return;
+        
+        // Elinde Yeşil Çiçek var mı? (Cactus veya Green Dye)
+        ItemStack handItem = leader.getInventory().getItemInMainHand();
+        if (handItem == null || (handItem.getType() != Material.CACTUS && 
+            handItem.getType() != Material.GREEN_DYE)) return;
+        
+        Clan clan = clanManager.getClanByPlayer(leader.getUniqueId());
+        if (clan == null) return;
+        
+        // Lider kontrolü
+        if (clan.getRank(leader.getUniqueId()) != Clan.Rank.LEADER) {
+            leader.sendMessage("§cBu ritüeli sadece klan lideri yapabilir!");
+            return;
+        }
+        
+        // Hedef oyuncu başka bir klanda mı?
+        Clan targetClan = clanManager.getClanByPlayer(target.getUniqueId());
+        if (targetClan != null && !targetClan.equals(clan)) {
+            leader.sendMessage("§cBu oyuncu başka bir klana üye!");
+            return;
+        }
+        
+        // Zaten guest mi?
+        if (clan.isGuest(target.getUniqueId())) {
+            leader.sendMessage("§eBu oyuncu zaten misafir!");
+            return;
+        }
+        
+        // Cooldown kontrolü
+        if (isOnCooldown(leader.getUniqueId())) {
+            leader.sendMessage("§cRitüel henüz hazır değil! Lütfen bekleyin.");
+            return;
+        }
+        
+        // Guest ekle
+        clan.addGuest(target.getUniqueId());
+        
+        // Çiçeği tüket
+        if (handItem.getAmount() > 1) {
+            handItem.setAmount(handItem.getAmount() - 1);
+        } else {
+            leader.getInventory().setItemInMainHand(null);
+        }
+        
+        // Efektler
+        Location targetLoc = target.getLocation();
+        targetLoc.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, targetLoc, 30, 0.5, 1, 0.5, 0.1);
+        leader.playSound(targetLoc, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+        
+        leader.sendMessage("§a" + target.getName() + " misafir olarak eklendi!");
+        target.sendMessage("§a" + clan.getName() + " klanına misafir olarak eklendin!");
+        target.sendTitle("§a§lMİSAFİR", "§e" + clan.getName(), 10, 70, 20);
+        
+        setCooldown(leader.getUniqueId());
+    }
+
+    // ========== GUEST ÇIKARMA: "Misafir Kovma" (KOLAY) ==========
+    // Lider elinde Kırmızı Çiçek ile guest oyuncuya shift+sağ tık yapar
+    
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onGuestRemove(PlayerInteractEntityEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (!(event.getRightClicked() instanceof Player)) return;
+        
+        Player leader = event.getPlayer();
+        Player target = (Player) event.getRightClicked();
+        
+        if (!leader.isSneaking()) return;
+        
+        // Elinde Kırmızı Çiçek var mı?
+        ItemStack handItem = leader.getInventory().getItemInMainHand();
+        if (handItem == null || (handItem.getType() != Material.RED_TULIP && 
+            handItem.getType() != Material.ROSE_BUSH && handItem.getType() != Material.POPPY)) return;
+        
+        Clan clan = clanManager.getClanByPlayer(leader.getUniqueId());
+        if (clan == null) return;
+        
+        // Lider kontrolü
+        if (clan.getRank(leader.getUniqueId()) != Clan.Rank.LEADER) {
+            return; // Sadece lider
+        }
+        
+        // Guest mi?
+        if (!clan.isGuest(target.getUniqueId())) {
+            return; // Guest değil
+        }
+        
+        // Cooldown kontrolü
+        if (isOnCooldown(leader.getUniqueId())) {
+            leader.sendMessage("§cRitüel henüz hazır değil! Lütfen bekleyin.");
+            return;
+        }
+        
+        // Guest çıkar
+        clan.getGuests().remove(target.getUniqueId());
+        
+        // Çiçeği tüket
+        if (handItem.getAmount() > 1) {
+            handItem.setAmount(handItem.getAmount() - 1);
+        } else {
+            leader.getInventory().setItemInMainHand(null);
+        }
+        
+        // Efektler
+        Location targetLoc = target.getLocation();
+        targetLoc.getWorld().spawnParticle(Particle.SMOKE_NORMAL, targetLoc, 20, 0.5, 1, 0.5, 0.1);
+        leader.playSound(targetLoc, Sound.ENTITY_ITEM_BREAK, 1f, 1f);
+        
+        leader.sendMessage("§c" + target.getName() + " misafir listesinden çıkarıldı!");
+        target.sendMessage("§c" + clan.getName() + " klanından misafirliğin sona erdi!");
+        
+        setCooldown(leader.getUniqueId());
+    }
+
+    // ========== RÜTBE DÜŞÜRME: "Geri Alma" (ORTA) ==========
+    // Lider elinde Kömür ile terfi ritüeli yapısında hedef oyuncuya shift+sağ tık yapar
+    
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onDemotionRitual(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (!event.getPlayer().isSneaking()) return;
+        
+        Block b = event.getClickedBlock();
+        if (b == null) return;
+        Player leader = event.getPlayer();
+        Clan clan = clanManager.getClanByPlayer(leader.getUniqueId());
+        
+        if (clan == null || clan.getRank(leader.getUniqueId()) != Clan.Rank.LEADER) return;
+        
+        // Cooldown kontrolü
+        if (isOnCooldown(leader.getUniqueId())) {
+            leader.sendMessage("§cRitüel henüz hazır değil! Lütfen bekleyin.");
+            return;
+        }
+        
+        // Terfi ritüeli yapısı kontrolü (3x3 Taş Tuğla, Köşelerde Kızıltaş Meşalesi, Ortada Ateş)
+        if (b.getType() == Material.FIRE && b.getRelative(BlockFace.DOWN).getType() == Material.STONE_BRICKS) {
+            
+            // Köşelerde Kızıltaş Meşalesi kontrolü
+            boolean hasRedstoneTorches = 
+                b.getRelative(BlockFace.NORTH_WEST).getType() == Material.REDSTONE_TORCH &&
+                b.getRelative(BlockFace.NORTH_EAST).getType() == Material.REDSTONE_TORCH &&
+                b.getRelative(BlockFace.SOUTH_WEST).getType() == Material.REDSTONE_TORCH &&
+                b.getRelative(BlockFace.SOUTH_EAST).getType() == Material.REDSTONE_TORCH;
+            
+            if (!hasRedstoneTorches) {
+                return; // Yapı yok
+            }
+            
+            // Elinde Kömür var mı?
+            if (leader.getInventory().getItemInMainHand().getType() == Material.COAL || 
+                leader.getInventory().getItemInMainHand().getType() == Material.CHARCOAL) {
+                
+                leader.getNearbyEntities(2, 2, 2).stream()
+                    .filter(e -> e instanceof Player && e != leader)
+                    .map(e -> (Player)e)
+                    .findFirst()
+                    .ifPresent(target -> {
+                        Clan.Rank currentRank = clan.getRank(target.getUniqueId());
+                        if (currentRank == null) return;
+                        
+                        // Rütbe düşürme
+                        Clan.Rank newRank = null;
+                        if (currentRank == Clan.Rank.GENERAL) {
+                            newRank = Clan.Rank.MEMBER;
+                        } else if (currentRank == Clan.Rank.MEMBER) {
+                            newRank = Clan.Rank.RECRUIT;
+                        } else {
+                            leader.sendMessage("§eBu kişi zaten en düşük rütbede!");
+                            return;
+                        }
+                        
+                        clanManager.addMember(clan, target.getUniqueId(), newRank);
+                        
+                        // Ateş yakmayı engelle
+                        event.setCancelled(true);
+                        
+                        // Efektler
+                        Location loc = target.getLocation();
+                        loc.getWorld().spawnParticle(Particle.SMOKE_NORMAL, loc, 30, 0.5, 1, 0.5, 0.3);
+                        leader.playSound(loc, Sound.ENTITY_ITEM_BREAK, 1f, 1f);
+                        
+                        leader.sendMessage("§c" + target.getName() + " " + newRank.name() + " rütbesine düşürüldü!");
+                        target.sendTitle("§c§lRÜTBE DÜŞÜRÜLDÜ", "§7" + newRank.name(), 10, 70, 20);
+                        leader.getInventory().getItemInMainHand().setAmount(leader.getInventory().getItemInMainHand().getAmount() - 1);
+                        
+                        setCooldown(leader.getUniqueId());
+                    });
+            }
+        }
+    }
+
+    // ========== KLAN BANKASI: "Hazine Kutusu" (ORTA) ==========
+    // Lider/General elinde Altın ile Chest'e shift+sağ tık yaparak para yatırır
+    // Lider/General elinde Boş el ile Chest'e shift+sağ tık yaparak para çeker
+    
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onClanBankAccess(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (!event.getPlayer().isSneaking()) return;
+        
+        Player p = event.getPlayer();
+        Block clicked = event.getClickedBlock();
+        
+        // Chest kontrolü
+        if (clicked == null || (clicked.getType() != Material.CHEST && 
+            clicked.getType() != Material.TRAPPED_CHEST)) return;
+        
+        Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
+        if (clan == null) {
+            p.sendMessage("§cBir klana üye değilsin!");
+            return;
+        }
+        
+        // Yetki kontrolü (Lider veya General)
+        Clan.Rank rank = clan.getRank(p.getUniqueId());
+        if (rank != Clan.Rank.LEADER && rank != Clan.Rank.GENERAL) {
+            p.sendMessage("§cBu işlem için Lider veya General rütbesi gerekli!");
+            return;
+        }
+        
+        event.setCancelled(true); // Chest açılmasını engelle
+        
+        ItemStack handItem = p.getInventory().getItemInMainHand();
+        
+        // Para yatırma (Altın ile)
+        if (handItem != null && handItem.getType() == Material.GOLD_INGOT) {
+            int amount = handItem.getAmount();
+            
+            if (amount <= 0) return;
+            
+            // Para yatırma
+            clan.deposit(amount);
+            handItem.setAmount(0);
+            
+            // Efektler
+            Location chestLoc = clicked.getLocation().add(0.5, 0.5, 0.5);
+            chestLoc.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, chestLoc, 20, 0.3, 0.3, 0.3, 0.1);
+            p.playSound(chestLoc, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+            
+            p.sendMessage("§a" + amount + " altın klan kasasına yatırıldı!");
+            p.sendMessage("§eKlan Bakiyesi: §6" + clan.getBalance() + " altın");
+        }
+        // Para çekme (Boş el ile - maksimum 64 altın)
+        else if (handItem == null || handItem.getType() == Material.AIR) {
+            if (clan.getBalance() <= 0) {
+                p.sendMessage("§cKlan kasasında para yok!");
+                return;
+            }
+            
+            // Maksimum 64 altın çek
+            int withdrawAmount = (int) Math.min(64, clan.getBalance());
+            
+            // Para çekme
+            clan.withdraw(withdrawAmount);
+            
+            // Altın ver
+            ItemStack gold = new ItemStack(Material.GOLD_INGOT, withdrawAmount);
+            if (p.getInventory().firstEmpty() == -1) {
+                // Envanter dolu, yere bırak
+                p.getWorld().dropItemNaturally(p.getLocation(), gold);
+                p.sendMessage("§eEnvanterin dolu! Altınlar yere düştü.");
+            } else {
+                p.getInventory().addItem(gold);
+            }
+            
+            // Efektler
+            Location chestLoc = clicked.getLocation().add(0.5, 0.5, 0.5);
+            chestLoc.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, chestLoc, 20, 0.3, 0.3, 0.3, 0.1);
+            p.playSound(chestLoc, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+            
+            p.sendMessage("§a" + withdrawAmount + " altın klan kasasından çekildi!");
+            p.sendMessage("§eKalan Bakiye: §6" + clan.getBalance() + " altın");
+        }
+    }
+    
+    // ========== KLAN İSTATİSTİKLERİ: "Bilgi Taşı" (KOLAY) ==========
+    // Oyuncu elinde Kompas ile herhangi bir yerde shift+sağ tık yapar (Kristal yakınında olmasına gerek yok)
+    
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onClanStatsView(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (!event.getPlayer().isSneaking()) return;
+        
+        Player p = event.getPlayer();
+        
+        // Elinde Kompas var mı?
+        ItemStack handItem = p.getInventory().getItemInMainHand();
+        if (handItem == null || handItem.getType() != Material.COMPASS) return;
+        
+        // Oyuncunun klanını bul (kendi klanı veya yakındaki bir klan)
+        Clan targetClan = clanManager.getClanByPlayer(p.getUniqueId());
+        
+        // Eğer klanı yoksa, yakındaki klan kristalini bul
+        if (targetClan == null) {
+            double minDistance = Double.MAX_VALUE;
+            for (Clan clan : clanManager.getAllClans()) {
+                if (clan.getCrystalLocation() != null) {
+                    double distance = p.getLocation().distance(clan.getCrystalLocation());
+                    if (distance <= 20 && distance < minDistance) {
+                        minDistance = distance;
+                        targetClan = clan;
+                    }
+                }
+            }
+        }
+        
+        if (targetClan == null) {
+            p.sendMessage("§cYakında bir Klan Kristali yok veya bir klana üye değilsin!");
+            return;
+        }
+        
+        event.setCancelled(true); // Blok etkileşimini engelle
+        
+        // Klan bilgilerini göster
+        p.sendMessage("§6=== " + targetClan.getName() + " Klanı ===");
+        p.sendMessage("§7Üye Sayısı: §e" + targetClan.getMembers().size());
+        p.sendMessage("§7Bakiye: §6" + targetClan.getBalance() + " altın");
+        p.sendMessage("§7Teknoloji Seviyesi: §b" + targetClan.getTechLevel());
+        p.sendMessage("§7XP Bankası: §a" + targetClan.getStoredXP() + " XP");
+        
+        // Lider bilgisi
+        UUID leaderId = targetClan.getLeader();
+        if (leaderId != null) {
+            Player leader = Bukkit.getPlayer(leaderId);
+            if (leader != null && leader.isOnline()) {
+                p.sendMessage("§7Lider: §e" + leader.getName() + " §7(Online)");
+            } else {
+                p.sendMessage("§7Lider: §7" + Bukkit.getOfflinePlayer(leaderId).getName() + " §7(Offline)");
+            }
+        }
+        
+        // Üye listesi (ilk 5)
+        p.sendMessage("§7Üyeler:");
+        int count = 0;
+        for (Map.Entry<UUID, Clan.Rank> entry : targetClan.getMembers().entrySet()) {
+            if (count >= 5) {
+                p.sendMessage("§7... ve " + (targetClan.getMembers().size() - 5) + " kişi daha");
+                break;
+            }
+            Player member = Bukkit.getPlayer(entry.getKey());
+            String memberName = member != null ? member.getName() : Bukkit.getOfflinePlayer(entry.getKey()).getName();
+            String rankName = entry.getValue().name();
+            p.sendMessage("§7  - §e" + memberName + " §7(" + rankName + ")");
+            count++;
+        }
+        
+        // Efektler
+        Location crystalLoc = targetClan.getCrystalLocation();
+        if (crystalLoc != null) {
+            crystalLoc.getWorld().spawnParticle(Particle.ENCHANTMENT_TABLE, crystalLoc, 30, 0.5, 0.5, 0.5, 0.1);
+            p.playSound(crystalLoc, Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.5f);
+        }
     }
 
     // ========== YARDIMCI METODLAR ==========

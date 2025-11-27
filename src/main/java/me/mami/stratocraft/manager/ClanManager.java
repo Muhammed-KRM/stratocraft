@@ -30,6 +30,11 @@ public class ClanManager {
         clan.addMember(memberId, rank);
         playerClanMap.put(memberId, clan.getId());
     }
+    
+    public void removeMember(Clan clan, UUID memberId) {
+        clan.getMembers().remove(memberId);
+        playerClanMap.remove(memberId);
+    }
 
     // Not: hasRecipe metodu kaldırıldı - ResearchManager.hasRecipeBook kullanılmalı
     // Bu metod daha gelişmiş (Lectern kontrolü de var)
