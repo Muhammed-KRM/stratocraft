@@ -335,6 +335,62 @@ public class MobManager {
         behemoth.setHealth(500.0);
     }
 
+    // TİTAN GOLEM (Yürüyen Dağ) - Dev boyutlu, etrafına toprak fırlatan golem
+    public void spawnTitanGolem(Location loc, Player owner) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.IronGolem golem = (org.bukkit.entity.IronGolem) loc.getWorld().spawnEntity(loc, EntityType.IRON_GOLEM);
+        golem.setCustomName("§6§lTitan Golem");
+        
+        // 4 kat büyüt (GENERIC_SCALE 1.20.4'te mevcut değil, bu yüzden görsel olarak büyük görünmesi için health ve damage artırıyoruz)
+        if (golem.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            golem.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(400.0); // Çok dayanıklı
+        }
+        if (golem.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) != null) {
+            golem.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(25.0); // Çok güçlü
+        }
+        golem.setHealth(400.0);
+        
+        // Her 10 saniyede bir etrafına toprak fırlatma görevi
+        org.bukkit.scheduler.BukkitRunnable throwTask = new org.bukkit.scheduler.BukkitRunnable() {
+            @Override
+            public void run() {
+                // Golem hala hayattaysa ve dünyada varsa
+                if (golem == null || !golem.isValid() || golem.isDead()) {
+                    cancel();
+                    return;
+                }
+                
+                // Etrafındaki düşmanları bul
+                for (org.bukkit.entity.Entity nearby : golem.getNearbyEntities(15, 15, 15)) {
+                    if (nearby instanceof org.bukkit.entity.LivingEntity && nearby != golem) {
+                        // Toprak bloğu fırlat (FallingBlock)
+                        org.bukkit.Location throwLoc = golem.getLocation().add(0, 2, 0);
+                        org.bukkit.entity.FallingBlock fallingBlock = golem.getWorld().spawnFallingBlock(
+                            throwLoc, 
+                            org.bukkit.Material.DIRT.createBlockData()
+                        );
+                        
+                        // Düşmana doğru fırlat
+                        org.bukkit.util.Vector direction = nearby.getLocation().toVector()
+                            .subtract(throwLoc.toVector()).normalize().multiply(1.5);
+                        fallingBlock.setVelocity(direction);
+                        fallingBlock.setHurtEntities(true);
+                        fallingBlock.setDropItem(false); // Düşürme, sadece hasar ver
+                        
+                        // Sadece bir düşmana fırlat (her 10 saniyede bir)
+                        break;
+                    }
+                }
+            }
+        };
+        
+        // Her 10 saniyede bir çalıştır (200 tick = 10 saniye)
+        org.bukkit.plugin.Plugin plugin = org.bukkit.Bukkit.getPluginManager().getPlugin("Stratocraft");
+        if (plugin != null && plugin instanceof org.bukkit.plugin.java.JavaPlugin) {
+            throwTask.runTaskTimer((org.bukkit.plugin.java.JavaPlugin) plugin, 0L, 200L);
+        }
+    }
+
     public void handleRiding(Player p) {
         Entity vehicle = p.getVehicle();
         if (vehicle == null) return;

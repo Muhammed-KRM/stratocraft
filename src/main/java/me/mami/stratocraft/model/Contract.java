@@ -13,6 +13,7 @@ public class Contract {
     private UUID acceptor = null;
     private int delivered = 0;
     private boolean completed = false;
+    private UUID targetPlayer = null; // Bounty hunting için hedef oyuncu
 
     public Contract(UUID issuer, Material material, int amount, double reward, long deadlineDays) {
         this.issuer = issuer;
@@ -37,5 +38,9 @@ public class Contract {
     public boolean isCompleted() { return completed || delivered >= amount; }
     public void setCompleted(boolean completed) { this.completed = completed; }
     public boolean isExpired() { return System.currentTimeMillis() > deadline && !isCompleted(); }
+    
+    // Bounty hunting için
+    public UUID getTargetPlayer() { return targetPlayer; }
+    public void setTargetPlayer(UUID targetPlayer) { this.targetPlayer = targetPlayer; }
 }
 

@@ -122,6 +122,10 @@ public class BatteryListener implements Listener {
                 if (clickedBlock != null) {
                     // Her batarya tipi için kontrol
                     checkAndLoadBattery(player, clickedBlock, slot, event);
+                    // Yükleme başarılı olduysa (event iptal edildiyse), kodun devam etmemesi için return
+                    if (event.isCancelled()) {
+                        return;
+                    }
                 }
             }
         }

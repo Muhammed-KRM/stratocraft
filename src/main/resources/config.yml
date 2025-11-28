@@ -41,6 +41,13 @@ radar:
 structure:
   max-shield-fuel: 43200 # Maksimum kalkan yakıtı (saniye) - 12 saat
 
+# Kervan Ayarları
+caravan:
+  min-distance: 1000     # Minimum mesafe (blok) - Anti-abuse
+  min-value: 5000        # Minimum kervan değeri (altın) - Anti-abuse
+  min-stacks: 20         # Minimum stack sayısı - Anti-abuse (20 stack = 1280 item)
+  arrival-radius: 5     # Hedefe ulaşma yarıçapı (blok)
+
 # Performans Ayarları
 performance:
   async-saving: true     # Async kayıt aktif mi?

@@ -113,5 +113,63 @@ public class ContractManager {
     public void loadContract(Contract contract) {
         activeContracts.add(contract);
     }
+    
+    // ========== BOUNTY HUNTING (SUİKAST KONTRATLARI) ==========
+    
+    /**
+     * Bir oyuncunun başına ödül koy (Bounty Contract)
+     */
+    public void createBountyContract(UUID issuer, UUID target, double reward) {
+        // Bounty kontratı için özel bir Contract oluştur
+        // Material = AIR (suikast kontratı için özel işaret), amount = 1 (tek hedef)
+        Contract bounty = new Contract(issuer, org.bukkit.Material.AIR, 1, reward, 7); // 7 gün süre
+        bounty.setTargetPlayer(target); // Hedef oyuncu UUID'si
+        activeContracts.add(bounty);
+    }
+    
+    /**
+     * Hedef oyuncunun başındaki ödülü al
+     */
+    public Contract getBountyContract(UUID targetPlayer) {
+        return activeContracts.stream()
+            .filter(c -> c.getTargetPlayer() != null && c.getTargetPlayer().equals(targetPlayer))
+            .filter(c -> !c.isCompleted())
+            .findFirst()
+            .orElse(null);
+    }
+    
+    /**
+     * Kontratı tamamla ve ödülü ver
+     */
+    public void completeBountyContract(Contract contract, UUID killer) {
+        if (contract == null || contract.isCompleted()) return;
+        
+        contract.setCompleted(true);
+        
+        // Ödülü öde (EconomyManager kullan)
+        Main plugin = Main.getInstance();
+        if (plugin != null && plugin.getEconomyManager() != null) {
+            plugin.getEconomyManager().depositPlayer(
+                org.bukkit.Bukkit.getPlayer(killer), 
+                contract.getReward()
+            );
+        }
+        
+        // Mesaj gönder
+        Player killerPlayer = org.bukkit.Bukkit.getPlayer(killer);
+        if (killerPlayer != null && killerPlayer.isOnline()) {
+            Player targetPlayer = org.bukkit.Bukkit.getPlayer(contract.getTargetPlayer());
+            String targetName = targetPlayer != null ? targetPlayer.getName() : "Bilinmeyen";
+            
+            killerPlayer.sendMessage("§a§l════════════════════════════");
+            killerPlayer.sendMessage("§a§lKONTRAKT TAMAMLANDI!");
+            killerPlayer.sendMessage("§eHedef: §c" + targetName);
+            killerPlayer.sendMessage("§6Ödül: §a" + contract.getReward() + " Altın");
+            killerPlayer.sendMessage("§a§l════════════════════════════");
+        }
+        
+        // Kontratı listeden kaldır
+        activeContracts.remove(contract);
+    }
 }
 

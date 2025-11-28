@@ -21,19 +21,30 @@ public class EconomyManager {
      */
     private boolean setupEconomy() {
         if (Bukkit.getServer().getPluginManager().getPlugin("Vault") == null) {
-            Bukkit.getLogger().warning("[Stratocraft] Vault bulunamadı! Kendi ekonomi sistemi kullanılacak.");
+            Bukkit.getLogger().warning("§c[Stratocraft] Vault bulunamadı!");
+            Bukkit.getLogger().warning("§e[Stratocraft] Vault yüklemek için:");
+            Bukkit.getLogger().warning("§71. Vault.jar dosyasını plugins klasörüne koyun");
+            Bukkit.getLogger().warning("§72. Bir ekonomi plugini kurun (EssentialsX, CMI, vb.)");
+            Bukkit.getLogger().warning("§7   Vault tek başına çalışmaz, bir ekonomi sağlayıcısı gerekir!");
+            Bukkit.getLogger().warning("§7[Stratocraft] Kendi ekonomi sistemi kullanılacak.");
             return false;
         }
         
         RegisteredServiceProvider<Economy> rsp = Bukkit.getServer().getServicesManager().getRegistration(Economy.class);
         if (rsp == null) {
-            Bukkit.getLogger().warning("[Stratocraft] Vault ekonomi servisi bulunamadı! Kendi ekonomi sistemi kullanılacak.");
+            Bukkit.getLogger().warning("§c[Stratocraft] Vault yüklü ama ekonomi servisi bulunamadı!");
+            Bukkit.getLogger().warning("§e[Stratocraft] Lütfen bir ekonomi plugini kurun:");
+            Bukkit.getLogger().warning("§7- EssentialsX (önerilen)");
+            Bukkit.getLogger().warning("§7- CMI");
+            Bukkit.getLogger().warning("§7- veya başka bir Vault uyumlu ekonomi plugini");
+            Bukkit.getLogger().warning("§7[Stratocraft] Kendi ekonomi sistemi kullanılacak.");
             return false;
         }
         
         economy = rsp.getProvider();
         vaultEnabled = true;
-        Bukkit.getLogger().info("[Stratocraft] Vault entegrasyonu başarıyla yüklendi!");
+        Bukkit.getLogger().info("§a[Stratocraft] Vault entegrasyonu başarıyla yüklendi!");
+        Bukkit.getLogger().info("§7[Stratocraft] Ekonomi sağlayıcısı: " + economy.getName());
         return true;
     }
     

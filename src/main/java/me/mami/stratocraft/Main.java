@@ -46,6 +46,7 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.gui.ClanMenu clanMenu;
     private me.mami.stratocraft.manager.CombatLogManager combatLogManager;
     private me.mami.stratocraft.manager.EconomyManager economyManager;
+    private me.mami.stratocraft.manager.SiegeWeaponManager siegeWeaponManager;
 
     @Override
     public void onEnable() {
@@ -119,11 +120,17 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(combatLogManager, this);
         combatLogManager.startCleanupTask(this);
         
+        // Yeni mekanikler: Kervan, Savaş Mühendisliği, Kontratlar
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.CaravanListener(caravanManager), this);
+        siegeWeaponManager = new me.mami.stratocraft.manager.SiegeWeaponManager(this);
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.SiegeWeaponListener(siegeWeaponManager), this);
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.ContractListener(contractManager), this);
+        
         // Veri yükleme
         dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener);
 
         // 3. Zamanlayıcıları Başlat
-        new BuffTask(territoryManager).runTaskTimer(this, 20L, 20L); 
+        new BuffTask(territoryManager, siegeWeaponManager).runTaskTimer(this, 20L, 20L); 
         new DisasterTask(disasterManager, territoryManager).runTaskTimer(this, 20L, 20L); 
         new MobRideTask(mobManager).runTaskTimer(this, 1L, 1L);
         new DrillTask(territoryManager).runTaskTimer(this, configManager.getDrillInterval(), configManager.getDrillInterval());
@@ -374,4 +381,6 @@ public class Main extends JavaPlugin {
     public SiegeManager getSiegeManager() { return siegeManager; }
     public MissionManager getMissionManager() { return missionManager; }
     public MobManager getMobManager() { return mobManager; }
+    public me.mami.stratocraft.manager.SiegeWeaponManager getSiegeWeaponManager() { return siegeWeaponManager; }
+    public CaravanManager getCaravanManager() { return caravanManager; }
 }

@@ -251,14 +251,28 @@ public class BatteryManager {
 
     // 2. YILDIRIM
     public void fireLightningBattery(Player p) {
-        Location target = p.getTargetBlock(null, 50).getLocation();
+        Block targetBlock = p.getTargetBlock(null, 50);
+        // Hedef bulunamadıysa (gökyüzüne bakıyorsa veya çok uzaksa) iptal et
+        if (targetBlock == null || targetBlock.getType() == Material.AIR) {
+            p.sendMessage("§cHata: Hedef çok uzak veya boşluğa bakıyorsun!");
+            p.playSound(p.getLocation(), org.bukkit.Sound.BLOCK_DISPENSER_FAIL, 1, 1);
+            return; // Bataryayı harcatma, işlemi iptal et
+        }
+        Location target = targetBlock.getLocation();
         p.getWorld().strikeLightning(target);
         p.sendMessage("§eYıldırım düştü!");
     }
 
     // 3. KARA DELİK
     public void fireBlackHole(Player p) {
-        Location target = p.getTargetBlock(null, 30).getLocation();
+        Block targetBlock = p.getTargetBlock(null, 30);
+        // Hedef bulunamadıysa iptal et
+        if (targetBlock == null || targetBlock.getType() == Material.AIR) {
+            p.sendMessage("§cHata: Hedef çok uzak veya boşluğa bakıyorsun!");
+            p.playSound(p.getLocation(), org.bukkit.Sound.BLOCK_DISPENSER_FAIL, 1, 1);
+            return;
+        }
+        Location target = targetBlock.getLocation();
         p.getWorld().createExplosion(target, 0F);
         p.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_HUGE, target, 1);
         for (Entity e : target.getWorld().getNearbyEntities(target, 15, 15, 15)) {
@@ -428,7 +442,14 @@ public class BatteryManager {
     }
     
     public void fireSeismicHammer(Player p) {
-        Location target = p.getTargetBlock(null, 30).getLocation();
+        Block targetBlock = p.getTargetBlock(null, 30);
+        // Hedef bulunamadıysa iptal et
+        if (targetBlock == null || targetBlock.getType() == Material.AIR) {
+            p.sendMessage("§cHata: Hedef çok uzak veya boşluğa bakıyorsun!");
+            p.playSound(p.getLocation(), org.bukkit.Sound.BLOCK_DISPENSER_FAIL, 1, 1);
+            return;
+        }
+        Location target = targetBlock.getLocation();
         p.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, target, 5);
         p.sendMessage("§6Sismik Çekiç Aktif! Yer altı titreşimleri gönderildi!");
         // Hiçlik Solucanı için titreşim sinyali
