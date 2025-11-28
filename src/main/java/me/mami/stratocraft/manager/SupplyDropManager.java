@@ -195,6 +195,33 @@ public class SupplyDropManager {
                 plugin.getServer().broadcastMessage("§7Konum: §e" + finalLoc.getBlockX() + 
                     "§7, §e" + finalLoc.getBlockY() + "§7, §e" + finalLoc.getBlockZ());
                 plugin.getServer().broadcastMessage("§6§l════════════════════════════");
+                
+                // HAVAI FİŞEK İŞARETİ (Görsel işaret - haritanın öbür ucundan görülebilir)
+                // Null kontrolü ile
+                if (finalLoc.getWorld() != null) {
+                    try {
+                        org.bukkit.entity.Firework firework = finalLoc.getWorld().spawnEntity(
+                            finalLoc.clone().add(0, 5, 0), 
+                            org.bukkit.entity.EntityType.FIREWORK
+                        );
+                        org.bukkit.entity.FireworkMeta fireworkMeta = ((org.bukkit.entity.Firework) firework).getFireworkMeta();
+                        fireworkMeta.addEffect(org.bukkit.FireworkEffect.builder()
+                            .with(org.bukkit.FireworkEffect.Type.BURST)
+                            .withColor(org.bukkit.Color.ORANGE, org.bukkit.Color.YELLOW, org.bukkit.Color.RED)
+                            .withFade(org.bukkit.Color.WHITE)
+                            .flicker(true)
+                            .trail(true)
+                            .build());
+                        fireworkMeta.setPower(2);
+                        ((org.bukkit.entity.Firework) firework).setFireworkMeta(fireworkMeta);
+                        
+                        // Yıldırım efekti (hasarsız - sadece görsel)
+                        finalLoc.getWorld().strikeLightningEffect(finalLoc.clone().add(0, 10, 0));
+                    } catch (Exception e) {
+                        // Firework spawn hatası - sessizce atla
+                        plugin.getLogger().warning("Supply Drop firework spawn hatası: " + e.getMessage());
+                    }
+                }
             }
         }.runTaskLater(plugin, 1L); // 1 tick sonra çalıştır
     }

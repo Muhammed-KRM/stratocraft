@@ -43,8 +43,8 @@ public class SiegeWeaponManager {
     
     // KATEGORİ 1: Herkesin kullanabildiği yapılar
     private final Map<Location, List<Block>> activeShields = new HashMap<>(); // Jeneratör -> Kalkan blokları
-    private final Map<Player, Long> catapultCooldowns = new HashMap<>(); // Oyuncu -> Son ateşleme zamanı
-    private final Map<Player, Long> ballistaCooldowns = new HashMap<>(); // Balista cooldown
+    private final Map<UUID, Long> catapultCooldowns = new HashMap<>(); // Oyuncu UUID -> Son ateşleme zamanı (Memory leak önleme)
+    private final Map<UUID, Long> ballistaCooldowns = new HashMap<>(); // Balista cooldown (Memory leak önleme)
     private final Map<Location, Long> lavaFountains = new HashMap<>(); // Lav fıskiyesi lokasyonları -> Son aktivasyon
     private final Map<Location, Long> poisonDispensers = new HashMap<>(); // Zehir yayıcı lokasyonları -> Son aktivasyon
     private static final long CATAPULT_COOLDOWN = 10000; // 10 saniye (milisaniye)
@@ -69,7 +69,7 @@ public class SiegeWeaponManager {
      * Mancınık cooldown kontrolü
      */
     public boolean canFireCatapult(Player player) {
-        Long lastFire = catapultCooldowns.get(player);
+        Long lastFire = catapultCooldowns.get(player.getUniqueId());
         return lastFire == null || (System.currentTimeMillis() - lastFire) >= CATAPULT_COOLDOWN;
     }
     
@@ -77,7 +77,7 @@ public class SiegeWeaponManager {
      * Mancınık kalan cooldown süresi (saniye)
      */
     public long getCatapultCooldownRemaining(Player player) {
-        Long lastFire = catapultCooldowns.get(player);
+        Long lastFire = catapultCooldowns.get(player.getUniqueId());
         if (lastFire == null) return 0;
         long remaining = CATAPULT_COOLDOWN - (System.currentTimeMillis() - lastFire);
         return Math.max(0, remaining / 1000);
@@ -119,8 +119,8 @@ public class SiegeWeaponManager {
         user.getWorld().playSound(spawnLoc, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.5f);
         user.sendMessage("§6§lMANCINIK ATEŞLENDİ!");
         
-        // Cooldown kaydet
-        catapultCooldowns.put(user, System.currentTimeMillis());
+        // Cooldown kaydet (UUID kullan - memory leak önleme)
+        catapultCooldowns.put(user.getUniqueId(), System.currentTimeMillis());
     }
     
     // ========== BALİSTA (BALLISTA) ==========
@@ -162,8 +162,8 @@ public class SiegeWeaponManager {
         user.getWorld().playSound(spawnLoc, Sound.ENTITY_ARROW_SHOOT, 1.0f, 0.5f);
         user.sendMessage("§e§lBALİSTA ATEŞLENDİ!");
         
-        // Cooldown kaydet
-        ballistaCooldowns.put(user, System.currentTimeMillis());
+        // Cooldown kaydet (UUID kullan - memory leak önleme)
+        ballistaCooldowns.put(user.getUniqueId(), System.currentTimeMillis());
     }
     
     // ========== LAV FISKIYESI (LAVA FOUNTAIN) ==========
@@ -449,5 +449,13 @@ public class SiegeWeaponManager {
     public boolean isHealingShrine(Location loc) {
         Block block = loc.getBlock();
         return block.hasMetadata("HealingShrine");
+    }
+    
+    /**
+     * Oyuncu çıkışında cooldown'ları temizle (Memory leak önleme)
+     */
+    public void clearPlayerCooldowns(UUID playerId) {
+        catapultCooldowns.remove(playerId);
+        ballistaCooldowns.remove(playerId);
     }
 }

@@ -104,6 +104,23 @@ public class ItemManager {
         // Klan Kristali ve Klan Çiti tarifleri
         registerClanCrystalRecipe();
         registerClanFenceRecipe();
+        
+        // Tuzak Çekirdeği (TRAP_CORE) tarifi
+        registerTrapCoreRecipe();
+    }
+    
+    private void registerTrapCoreRecipe() {
+        // Tuzak Çekirdeği: 4 Obsidyen + 1 Ender İncisi + 4 Demir
+        ShapedRecipe trapCoreRecipe = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "trap_core"), 
+            TRAP_CORE
+        );
+        trapCoreRecipe.shape("OEO", "IDI", "OEO");
+        trapCoreRecipe.setIngredient('O', Material.OBSIDIAN);      // Obsidyen
+        trapCoreRecipe.setIngredient('E', Material.ENDER_PEARL);   // Ender İncisi
+        trapCoreRecipe.setIngredient('I', Material.IRON_INGOT);     // Demir
+        trapCoreRecipe.setIngredient('D', Material.DIAMOND);        // Elmas (ortada)
+        Bukkit.addRecipe(trapCoreRecipe);
     }
     
     private void registerClanCrystalRecipe() {

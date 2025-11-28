@@ -14,6 +14,7 @@ import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
 /**
@@ -163,6 +164,13 @@ public class SiegeWeaponListener implements Listener {
     
     @EventHandler
     public void onPlayerMoveIntoShield(PlayerMoveEvent event) {
+        // PERFORMANS FİLTRESİ: Sadece blok değiştiyse çalış (X, Y, Z kontrolü)
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
+            event.getFrom().getBlockY() == event.getTo().getBlockY() &&
+            event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
+            return; // Oyuncu sadece kafasını çevirmiş, işlem yapma
+        }
+        
         org.bukkit.Location to = event.getTo();
         if (to == null) return;
         
@@ -408,6 +416,14 @@ public class SiegeWeaponListener implements Listener {
             manager.removeDefenseWall(loc);
             event.getPlayer().sendMessage("§eSavunma Duvarı kırıldı!");
         }
+    }
+    
+    /**
+     * Oyuncu çıkışında cooldown'ları temizle (Memory leak önleme)
+     */
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        manager.clearPlayerCooldowns(event.getPlayer().getUniqueId());
     }
 }
 

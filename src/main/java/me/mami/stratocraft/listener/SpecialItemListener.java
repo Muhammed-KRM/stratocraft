@@ -60,6 +60,14 @@ public class SpecialItemListener implements Listener {
     
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
+        // PERFORMANS FİLTRESİ: Sadece blok değiştiyse çalış (X, Y, Z kontrolü)
+        // Spyglass için rayTraceEntities çok maliyetli, her fare hareketinde çalışmamalı
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
+            event.getFrom().getBlockY() == event.getTo().getBlockY() &&
+            event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
+            return; // Oyuncu sadece kafasını çevirmiş, işlem yapma
+        }
+        
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
         

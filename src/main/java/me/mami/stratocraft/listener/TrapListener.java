@@ -202,9 +202,11 @@ public class TrapListener implements Listener {
     
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerMove(PlayerMoveEvent event) {
-        // Sadece blok değişikliğinde kontrol et (performans)
-        if (event.getFrom().getBlock().equals(event.getTo().getBlock())) {
-            return;
+        // PERFORMANS FİLTRESİ: Sadece blok değiştiyse çalış (X, Y, Z kontrolü)
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
+            event.getFrom().getBlockY() == event.getTo().getBlockY() &&
+            event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
+            return; // Oyuncu sadece kafasını çevirmiş, işlem yapma
         }
         
         Player player = event.getPlayer();

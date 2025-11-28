@@ -27,6 +27,10 @@ public class SpecialItemManager {
     private final Map<Player, Long> spyStartTimes = new HashMap<>();
     private final Map<Player, Player> spyTargets = new HashMap<>();
     
+    // Kanca Cooldown sistemi (Fly hack önleme)
+    private final Map<java.util.UUID, Long> hookCooldowns = new HashMap<>();
+    private static final long HOOK_COOLDOWN = 2000; // 2 saniye (milisaniye)
+    
     /**
      * Kanca kullanımını işle
      */
@@ -37,6 +41,20 @@ public class SpecialItemManager {
         }
         
         Player player = event.getPlayer();
+        
+        // COOLDOWN KONTROLÜ (Fly hack önleme)
+        if (hookCooldowns.containsKey(player.getUniqueId())) {
+            long timeLeft = (hookCooldowns.get(player.getUniqueId()) + HOOK_COOLDOWN) - System.currentTimeMillis();
+            if (timeLeft > 0) {
+                player.sendMessage("§cKanca soğumadı! Bekle: §e" + String.format("%.1f", timeLeft / 1000.0) + "§c sn");
+                event.setCancelled(true);
+                return;
+            }
+        }
+        
+        // Cooldown kaydet
+        hookCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
+        
         FishHook hook = event.getHook();
         
         // Paslı Kanca kontrolü
@@ -241,6 +259,7 @@ public class SpecialItemManager {
     public void clearSpyData(Player player) {
         spyStartTimes.remove(player);
         spyTargets.remove(player);
+        hookCooldowns.remove(player.getUniqueId()); // Cooldown'u da temizle
     }
 }
 

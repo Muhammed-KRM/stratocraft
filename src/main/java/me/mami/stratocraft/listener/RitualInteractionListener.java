@@ -1354,5 +1354,13 @@ public class RitualInteractionListener implements Listener {
     private void setCooldown(UUID playerId) {
         ritualCooldowns.put(playerId, System.currentTimeMillis());
     }
+    
+    /**
+     * Oyuncu çıkışında cooldown'u temizle (Memory leak önleme)
+     */
+    @EventHandler
+    public void onPlayerQuit(org.bukkit.event.player.PlayerQuitEvent event) {
+        ritualCooldowns.remove(event.getPlayer().getUniqueId());
+    }
 }
 

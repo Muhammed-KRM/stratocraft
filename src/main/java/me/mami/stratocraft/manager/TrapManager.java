@@ -26,6 +26,7 @@ public class TrapManager {
     private final Main plugin;
     private final ClanManager clanManager;
     private final Map<Location, TrapData> activeTraps = new HashMap<>();
+    private final Map<UUID, me.mami.stratocraft.model.Clan> clanCache = new HashMap<>(); // Performans optimizasyonu
     private File trapsFile;
     private FileConfiguration trapsConfig;
     
@@ -424,11 +425,34 @@ public class TrapManager {
     }
     
     /**
-     * Clan ID'ye göre Clan bul
+     * Clan ID'ye göre Clan bul (Performans optimizasyonu - Cache kullan)
      */
     private me.mami.stratocraft.model.Clan getClanById(UUID clanId) {
+        if (clanId == null) return null;
+        
+        // Cache'den kontrol et
+        if (clanCache.containsKey(clanId)) {
+            me.mami.stratocraft.model.Clan cached = clanCache.get(clanId);
+            if (cached != null) {
+                // Cache'deki klan hala geçerli mi kontrol et
+                // Eğer klan üyelerinden biri hala bu klana aitse, cache geçerli
+                if (!cached.getMembers().isEmpty()) {
+                    UUID firstMember = cached.getMembers().keySet().iterator().next();
+                    me.mami.stratocraft.model.Clan current = clanManager.getClanByPlayer(firstMember);
+                    if (current != null && current.getId().equals(clanId)) {
+                        return cached;
+                    }
+                }
+                // Geçersiz cache, temizle
+                clanCache.remove(clanId);
+            }
+        }
+        
+        // Cache'de yoksa, tüm klanlardan bul (sadece ilk sefer)
         for (me.mami.stratocraft.model.Clan clan : clanManager.getAllClans()) {
             if (clan.getId().equals(clanId)) {
+                // Cache'e ekle
+                clanCache.put(clanId, clan);
                 return clan;
             }
         }
@@ -492,6 +516,18 @@ public class TrapManager {
         
         if (trap == null || !trap.isCovered()) return;
         
+        // GİZLEME KONTROLÜ: Tuzağın üstü açıksa (Hava ise) çalışma
+        Block trapBlock = trapCore.getBlock();
+        Block coverBlock = trapBlock.getRelative(0, 1, 0); // Tuzağın üstündeki blok
+        
+        // Eğer tuzağın üstü açıksa (Hava ise) veya Yarım Blok vb. değilse çalışma
+        // Yani oyuncu tuzağı gizlememiş
+        if (coverBlock.getType() == Material.AIR || 
+            coverBlock.getType() == Material.CAVE_AIR ||
+            coverBlock.getType() == Material.VOID_AIR) {
+            return; // Tuzak gizlenmemiş, çalışma
+        }
+        
         // Klan kontrolü - Dostlar korunur
         if (trap.getOwnerClanId() != null && victim != null) {
             if (clanManager.getClanByPlayer(victim.getUniqueId()) != null) {
@@ -507,6 +543,9 @@ public class TrapManager {
             removeTrap(trapCore);
             return;
         }
+        
+        // Tuzak tetiklenmeden önce CLICK sesi (0.5 saniye önce korku efekti)
+        victim.playSound(triggerLocation, org.bukkit.Sound.BLOCK_TRIPWIRE_CLICK_ON, 1.0f, 1.0f);
         
         // Tuzak tipine göre etki
         executeTrap(trap, triggerLocation, victim);
