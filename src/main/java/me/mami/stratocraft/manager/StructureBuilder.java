@@ -50,12 +50,22 @@ public class StructureBuilder {
              ClipboardReader reader = format.getReader(fis)) {
             
             Clipboard clipboard = reader.read();
-            com.sk89q.worldedit.world.World weWorld = BukkitAdapter.asBlockWorld(location.getWorld());
             
             // WorldEdit API null kontrolü
             WorldEdit worldEdit = WorldEdit.getInstance();
             if (worldEdit == null) {
                 Main.getInstance().getLogger().warning("WorldEdit API bulunamadı! Şema yüklenemedi: " + schematicName);
+                return false;
+            }
+            
+            // Bukkit World'ü WorldEdit World'e çevir (WorldEdit 7.2.9 için)
+            com.sk89q.worldedit.world.World weWorld;
+            try {
+                // WorldEdit 7.x'te adapt() metodu kullanılır
+                weWorld = BukkitAdapter.adapt(location.getWorld());
+            } catch (Exception e) {
+                // Eğer adapt() yoksa, alternatif yöntem dene
+                Main.getInstance().getLogger().warning("WorldEdit adaptasyonu başarısız: " + e.getMessage());
                 return false;
             }
             

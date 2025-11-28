@@ -110,7 +110,7 @@ public class SiegeWeaponListener implements Listener {
         
         // Partikül efekti
         arrow.getWorld().spawnParticle(
-            org.bukkit.Particle.EXPLOSION,
+            org.bukkit.Particle.EXPLOSION_LARGE,
             hitLoc,
             3
         );

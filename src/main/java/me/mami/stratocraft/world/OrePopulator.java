@@ -5,7 +5,6 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.generator.BlockPopulator;
-import org.bukkit.generator.LimitedRegion;
 
 import java.util.Random;
 
@@ -47,14 +46,14 @@ public class OrePopulator extends BlockPopulator {
                 if (ItemManager.TITANIUM_ORE != null) {
                     // Custom item'ı blok olarak yerleştiremeyiz, bu yüzden özel bir blok kullanmalıyız
                     // Alternatif: ANCIENT_DEBRIS kullan ve kırıldığında Titanyum düşür
+                    // NOT: Normal bloklara NBT eklenemez, bu yüzden sadece Material kontrolü yapılacak
                     block.setType(Material.ANCIENT_DEBRIS);
-                    // NBT ile işaretle (kırıldığında SurvivalListener'da kontrol edilecek)
                 }
             } else {
                 // Kızıl Elmas - Çok nadir, sadece -60 ve altında
                 if (y <= -60 && ItemManager.RED_DIAMOND != null) {
                     block.setType(Material.DEEPSLATE_DIAMOND_ORE);
-                    // NBT ile işaretle (kırıldığında SurvivalListener'da kontrol edilecek)
+                    // NOT: Normal bloklara NBT eklenemez, bu yüzden sadece Material ve konum kontrolü yapılacak
                 }
             }
         }

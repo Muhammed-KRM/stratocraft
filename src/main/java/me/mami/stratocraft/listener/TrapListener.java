@@ -51,10 +51,10 @@ public class TrapListener implements Listener {
             } else if (below2.hasMetadata("TrapCore")) {
                 trapCore = below2.getLocation();
             }
-            // Eğer aktif tuzak yoksa, "TrapCoreItem" metadata'sını kontrol et (henüz aktifleştirilmemiş)
-            else if (below.hasMetadata("TrapCoreItem")) {
+            // Eğer aktif tuzak yoksa, "TrapCoreItem" metadata'sını veya dosyadan yüklenen veriyi kontrol et
+            else if (below.hasMetadata("TrapCoreItem") || trapManager.isInactiveTrapCore(below.getLocation())) {
                 trapCore = below.getLocation();
-            } else if (below2.hasMetadata("TrapCoreItem")) {
+            } else if (below2.hasMetadata("TrapCoreItem") || trapManager.isInactiveTrapCore(below2.getLocation())) {
                 trapCore = below2.getLocation();
             }
             
@@ -91,6 +91,10 @@ public class TrapListener implements Listener {
             placeBlock.setType(Material.LODESTONE);
             placeBlock.setMetadata("TrapCoreItem", new org.bukkit.metadata.FixedMetadataValue(
                 me.mami.stratocraft.Main.getInstance(), true));
+            
+            // Metadata kalıcı olmadığı için dosyaya kaydet (sunucu restart sonrası için)
+            trapManager.registerInactiveTrapCore(placeBlock.getLocation(), player.getUniqueId());
+            
             player.sendMessage("§a§lTuzak çekirdeği yerleştirildi!");
             player.sendMessage("§7Şimdi etrafına Magma Block çerçevesi yap (3x3, 3x6, 5x5, vb.).");
             
@@ -108,7 +112,9 @@ public class TrapListener implements Listener {
         Block block = event.getClickedBlock();
         if (block == null) return;
         
-        if (block.getType() == Material.LODESTONE && block.hasMetadata("TrapCoreItem")) {
+        // TrapCoreItem metadata'sı veya dosyadan yüklenen veri kontrolü
+        if (block.getType() == Material.LODESTONE && 
+            (block.hasMetadata("TrapCoreItem") || trapManager.isInactiveTrapCore(block.getLocation()))) {
             // Tuzak yapısı kontrolü (çerçeve tamamlanmış mı?)
             if (!trapManager.isTrapStructure(block)) {
                 player.sendMessage("§cTuzak çerçevesi tamamlanmamış! Magma Block çerçevesi yap (3x3, 3x6, 5x5, vb.).");

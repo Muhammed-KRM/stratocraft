@@ -260,7 +260,6 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 break;
             // Yeni Moblar
             case "titan_golem":
-            case "titan_golem":
                 mobManager.spawnTitanGolem(p.getLocation(), p);
                 mobDisplayName = "Titan Golem";
                 break;
@@ -563,7 +562,6 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return ItemManager.MITHRIL_ORE != null ? ItemManager.MITHRIL_ORE.clone() : null;
             case "mithril_string":
             case "mithril_ipi":
-            case "mithril_ipi":
                 return ItemManager.MITHRIL_STRING != null ? ItemManager.MITHRIL_STRING.clone() : null;
             case "astral_crystal":
             case "astral_kristali":
@@ -846,17 +844,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                             
                 case "trap":
                     // Trap komutları
-                    List<String> trapCommands = Arrays.asList("list", "give");
-                    if (input.isEmpty()) {
-                        return trapCommands;
-                    }
-                    return trapCommands.stream()
-                            .filter(s -> s.toLowerCase().startsWith(input))
-                            .collect(Collectors.toList());
-                            
-                case "trap":
-                    // Trap give için tuzak tipleri
                     if (args.length == 2 && args[1].equalsIgnoreCase("give")) {
+                        // Trap give için tuzak tipleri
                         List<String> trapTypes = Arrays.asList("hell_trap", "shock_trap", "black_hole", "mine", "poison_trap");
                         if (input.isEmpty()) {
                             return trapTypes;
@@ -864,8 +853,16 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         return trapTypes.stream()
                                 .filter(s -> s.toLowerCase().startsWith(input))
                                 .collect(Collectors.toList());
+                    } else {
+                        // Trap list komutları
+                        List<String> trapCommands = Arrays.asList("list", "give");
+                        if (input.isEmpty()) {
+                            return trapCommands;
+                        }
+                        return trapCommands.stream()
+                                .filter(s -> s.toLowerCase().startsWith(input))
+                                .collect(Collectors.toList());
                     }
-                    break;
                             
                 case "build":
                     // Build komutları - Tüm yapı tipleri
@@ -1117,12 +1114,12 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayer(contract.getTargetPlayer());
                 String targetName = target != null ? target.getName() : "Offline";
                 p.sendMessage("§e" + index + ". §7Bounty: §c" + targetName + 
-                    " §7- Ödül: §6" + String.format("%.2f", contract.getRewardAmount()) + " Altın" +
+                    " §7- Ödül: §6" + String.format("%.2f", contract.getReward()) + " Altın" +
                     " §7- Veren: §a" + issuerName);
             } else {
                 // Normal kontrat
                 p.sendMessage("§e" + index + ". §7" + contract.getMaterial() + " x" + contract.getAmount() + 
-                    " §7- Ödül: §6" + String.format("%.2f", contract.getRewardAmount()) + " Altın" +
+                    " §7- Ödül: §6" + String.format("%.2f", contract.getReward()) + " Altın" +
                     " §7- Veren: §a" + issuerName);
             }
             index++;
@@ -1177,7 +1174,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      * Savaş yapıları oluşturma
      */
     private boolean buildSiegeWeapon(Player p, String type) {
-        Location loc = p.getLocation();
+        org.bukkit.Location loc = p.getLocation();
         
         // Yerinde blok varsa temizle
         me.mami.stratocraft.manager.StructureBuilder.clearArea(loc, 5, 5, 5);
@@ -1329,7 +1326,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      * Batarya oluşturma
      */
     private boolean buildBattery(Player p, String type) {
-        Location loc = p.getLocation();
+        org.bukkit.Location loc = p.getLocation();
         
         // Yerinde blok varsa temizle
         me.mami.stratocraft.manager.StructureBuilder.clearArea(loc, 3, 3, 3);
@@ -1536,7 +1533,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      * Klan yapıları oluşturma (şema ile)
      */
     private boolean buildClanStructure(Player p, String type, int level) {
-        Location loc = p.getLocation();
+        org.bukkit.Location loc = p.getLocation();
         
         // Yerinde blok varsa temizle
         me.mami.stratocraft.manager.StructureBuilder.clearArea(loc, 10, 10, 10);

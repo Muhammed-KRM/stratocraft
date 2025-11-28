@@ -9,6 +9,7 @@ import me.mami.stratocraft.task.DisasterTask;
 import me.mami.stratocraft.task.MobRideTask;
 import me.mami.stratocraft.task.DrillTask;
 import me.mami.stratocraft.task.CropTask;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -146,7 +147,24 @@ public class Main extends JavaPlugin {
 
         // 3. Zamanlayıcıları Başlat
         new BuffTask(territoryManager, siegeWeaponManager).runTaskTimer(this, 20L, 20L); 
-        new DisasterTask(disasterManager, territoryManager).runTaskTimer(this, 20L, 20L); 
+        new DisasterTask(disasterManager, territoryManager).runTaskTimer(this, 20L, 20L);
+        
+        // Casusluk Dürbünü için Scheduler (her 5 tickte bir çalışır - performans için)
+        // Bu sayede oyuncu durup kafasını çevirdiğinde de dürbün çalışır
+        new org.bukkit.scheduler.BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    ItemStack item = player.getInventory().getItemInMainHand();
+                    if (item != null && item.getType() == org.bukkit.Material.SPYGLASS) {
+                        org.bukkit.util.RayTraceResult result = player.rayTraceEntities(50);
+                        specialItemManager.handleSpyglass(player, result);
+                    } else {
+                        specialItemManager.clearSpyData(player);
+                    }
+                }
+            }
+        }.runTaskTimer(this, 0L, 5L); // Her 5 tickte bir (0.25 saniye) 
         new MobRideTask(mobManager).runTaskTimer(this, 1L, 1L);
         new DrillTask(territoryManager).runTaskTimer(this, configManager.getDrillInterval(), configManager.getDrillInterval());
         new CropTask(territoryManager).runTaskTimer(this, 40L, 40L); // Her 2 saniye 
@@ -300,9 +318,23 @@ public class Main extends JavaPlugin {
                                 return true;
                             }
                             
+                            // Güvenlik kontrolü: Kontratı kabul eden kişi kontrolü
                             if (contract.getAcceptor() == null) {
+                                // Henüz kabul edilmemiş, önce kabul et
                                 contractManager.acceptContract(contractId, p.getUniqueId());
                                 p.sendMessage("§aSözleşmeyi kabul ettiniz!");
+                            } else {
+                                // Kontrat zaten kabul edilmiş, sadece kabul eden kişi teslim edebilir
+                                if (!contract.getAcceptor().equals(p.getUniqueId())) {
+                                    // Klan kontrolü: Aynı klan üyesi olabilir
+                                    me.mami.stratocraft.model.Clan acceptorClan = clanManager.getClanByPlayer(contract.getAcceptor());
+                                    me.mami.stratocraft.model.Clan playerClan = clanManager.getClanByPlayer(p.getUniqueId());
+                                    
+                                    if (acceptorClan == null || playerClan == null || !acceptorClan.getId().equals(playerClan.getId())) {
+                                        p.sendMessage("§cBu kontratı siz kabul etmediniz! Sadece kabul eden kişi teslim edebilir.");
+                                        return true;
+                                    }
+                                }
                             }
                             
                             // Envanterden malzeme kontrolü
@@ -362,20 +394,18 @@ public class Main extends JavaPlugin {
             getLogger().info("Stratocraft: Tuzaklar kaydedildi.");
         }
         
-        // Veri kaydetme (Async veya Sync)
+        // Veri kaydetme (onDisable'da her zaman senkron kayıt yapılmalı - veri kaybı riski)
+        // NOT: Sunucu kapanırken thread havuzları kapatılır, asenkron işlemler tamamlanmayabilir
         if (dataManager != null && clanManager != null && contractManager != null && 
             shopManager != null && virtualStorageListener != null) {
-            if (configManager != null && configManager.isAsyncSaving()) {
-                // Async kayıt
-                Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
-                    dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener);
-                    getLogger().info("Stratocraft: Veriler asenkron olarak kaydedildi.");
-                });
-            } else {
-                // Sync kayıt
-                dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener);
-                getLogger().info("Stratocraft: Veriler kaydedildi.");
-            }
+            // Kapanış işlemlerinde her zaman senkron kayıt
+            dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener);
+            getLogger().info("Stratocraft: Veriler kaydedildi.");
+        }
+        
+        // Tuzakları da kaydet (eğer trapManager varsa)
+        if (trapManager != null) {
+            trapManager.saveTraps();
         }
         getLogger().info("Stratocraft: Plugin kapatılıyor.");
     }

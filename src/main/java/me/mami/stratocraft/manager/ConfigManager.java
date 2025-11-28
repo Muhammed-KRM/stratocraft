@@ -114,5 +114,8 @@ public class ConfigManager {
     public int getMaxShieldFuel() { return maxShieldFuel; }
     public boolean isAsyncSaving() { return asyncSaving; }
     public int getMaxParticlesPerTick() { return maxParticlesPerTick; }
+    
+    // Config erişimi için (CaravanManager gibi yerler için)
+    public FileConfiguration getConfig() { return config; }
 }
 

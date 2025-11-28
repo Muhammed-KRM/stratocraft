@@ -7,7 +7,9 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Chest;
 import org.bukkit.entity.FallingBlock;
+import org.bukkit.entity.Firework;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
@@ -200,20 +202,23 @@ public class SupplyDropManager {
                 // Null kontrolü ile
                 if (finalLoc.getWorld() != null) {
                     try {
-                        org.bukkit.entity.Firework firework = finalLoc.getWorld().spawnEntity(
+                        org.bukkit.entity.Entity fireworkEntity = finalLoc.getWorld().spawnEntity(
                             finalLoc.clone().add(0, 5, 0), 
                             org.bukkit.entity.EntityType.FIREWORK
                         );
-                        org.bukkit.entity.FireworkMeta fireworkMeta = ((org.bukkit.entity.Firework) firework).getFireworkMeta();
-                        fireworkMeta.addEffect(org.bukkit.FireworkEffect.builder()
-                            .with(org.bukkit.FireworkEffect.Type.BURST)
-                            .withColor(org.bukkit.Color.ORANGE, org.bukkit.Color.YELLOW, org.bukkit.Color.RED)
-                            .withFade(org.bukkit.Color.WHITE)
-                            .flicker(true)
-                            .trail(true)
-                            .build());
-                        fireworkMeta.setPower(2);
-                        ((org.bukkit.entity.Firework) firework).setFireworkMeta(fireworkMeta);
+                        if (fireworkEntity instanceof Firework) {
+                            Firework firework = (Firework) fireworkEntity;
+                            FireworkMeta fireworkMeta = firework.getFireworkMeta();
+                            fireworkMeta.addEffect(org.bukkit.FireworkEffect.builder()
+                                .with(org.bukkit.FireworkEffect.Type.BURST)
+                                .withColor(org.bukkit.Color.ORANGE, org.bukkit.Color.YELLOW, org.bukkit.Color.RED)
+                                .withFade(org.bukkit.Color.WHITE)
+                                .flicker(true)
+                                .trail(true)
+                                .build());
+                            fireworkMeta.setPower(2);
+                            firework.setFireworkMeta(fireworkMeta);
+                        }
                         
                         // Yıldırım efekti (hasarsız - sadece görsel)
                         finalLoc.getWorld().strikeLightningEffect(finalLoc.clone().add(0, 10, 0));

@@ -102,7 +102,7 @@ public class BuffTask extends BukkitRunnable {
                         Clan playerClan = clanManager.getClanByPlayer(p.getUniqueId());
                         if (playerClan != null && playerClan.getId().equals(ownerClanId)) {
                             p.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 40, 0, false, false));
-                            p.spawnParticle(org.bukkit.Particle.BARRIER, wallLoc.clone().add(0, 0.5, 0), 1);
+                            p.spawnParticle(org.bukkit.Particle.BLOCK_CRACK, wallLoc.clone().add(0, 0.5, 0), 1, 0.1, 0.1, 0.1, 0.1, org.bukkit.Material.BARRIER.createBlockData());
                         }
                     }
                 }

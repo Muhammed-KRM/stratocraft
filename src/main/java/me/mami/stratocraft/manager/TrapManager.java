@@ -1,13 +1,13 @@
 package me.mami.stratocraft.manager;
 
 import me.mami.stratocraft.Main;
-import me.mami.stratocraft.manager.ItemManager;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 
 import java.io.File;
@@ -26,6 +26,9 @@ public class TrapManager {
     private final Main plugin;
     private final ClanManager clanManager;
     private final Map<Location, TrapData> activeTraps = new HashMap<>();
+    // Henüz aktifleştirilmemiş tuzak çekirdekleri (TrapCoreItem metadata'sı olanlar)
+    // Metadata kalıcı olmadığı için dosyaya kaydedilmeli
+    private final Map<Location, UUID> inactiveTrapCores = new HashMap<>(); // Location -> Owner UUID
     private final Map<UUID, me.mami.stratocraft.model.Clan> clanCache = new HashMap<>(); // Performans optimizasyonu
     private File trapsFile;
     private FileConfiguration trapsConfig;
@@ -229,6 +232,9 @@ public class TrapManager {
         coreBlock.setMetadata("TrapCore", new FixedMetadataValue(plugin, true));
         coreBlock.setMetadata("TrapOwner", new FixedMetadataValue(plugin, ownerId.toString()));
         
+        // Eğer bu konumda henüz aktifleştirilmemiş tuzak çekirdeği varsa, onu kaldır
+        removeInactiveTrapCore(coreBlock.getLocation());
+        
         activeTraps.put(coreBlock.getLocation(), trap);
         saveTraps();
         
@@ -241,6 +247,30 @@ public class TrapManager {
     }
     
     /**
+     * Henüz aktifleştirilmemiş tuzak çekirdeğini kaydet (TrapCoreItem metadata'sı olan)
+     * Metadata kalıcı olmadığı için dosyaya kaydedilmeli
+     */
+    public void registerInactiveTrapCore(Location location, UUID ownerId) {
+        inactiveTrapCores.put(location, ownerId);
+        saveTraps(); // Dosyaya kaydet
+    }
+    
+    /**
+     * Henüz aktifleştirilmemiş tuzak çekirdeğini kontrol et
+     */
+    public boolean isInactiveTrapCore(Location location) {
+        return inactiveTrapCores.containsKey(location);
+    }
+    
+    /**
+     * Henüz aktifleştirilmemiş tuzak çekirdeğini kaldır (aktifleştirildiğinde)
+     */
+    public void removeInactiveTrapCore(Location location) {
+        inactiveTrapCores.remove(location);
+        saveTraps(); // Dosyaya kaydet
+    }
+    
+    /**
      * Tuzak aktifleştirme (Shift + Sağ Tık ile üstteki kapatma bloklarına tıklama)
      */
     public boolean activateTrap(Player player, Location trapCore, ItemStack fuelItem) {
@@ -249,21 +279,46 @@ public class TrapManager {
             return false;
         }
         
+        // Önce aktif tuzakları kontrol et
         TrapData trap = activeTraps.get(trapCore);
+        UUID ownerId = null;
+        
         if (trap == null) {
-            player.sendMessage("§cBu tuzak bulunamadı!");
-            return false;
+            // Aktif tuzak yoksa, henüz aktifleştirilmemiş tuzak çekirdeği var mı kontrol et
+            if (!isInactiveTrapCore(trapCore)) {
+                player.sendMessage("§cBu tuzak bulunamadı!");
+                return false;
+            }
+            // Henüz aktifleştirilmemiş tuzak çekirdeği var, sahiplik kontrolü için ownerId'yi al
+            ownerId = inactiveTrapCores.get(trapCore);
+        } else {
+            // Aktif tuzak var, sahiplik kontrolü için ownerId'yi al
+            ownerId = trap.getOwnerId();
         }
         
         // Sahiplik kontrolü
-        if (!trap.getOwnerId().equals(player.getUniqueId())) {
+        if (ownerId == null || !ownerId.equals(player.getUniqueId())) {
             // Klan kontrolü
-            if (trap.getOwnerClanId() == null || 
-                clanManager.getClanByPlayer(player.getUniqueId()) == null ||
-                !clanManager.getClanByPlayer(player.getUniqueId()).getId().equals(trap.getOwnerClanId())) {
+            UUID ownerClanId = null;
+            if (trap != null) {
+                ownerClanId = trap.getOwnerClanId();
+            } else {
+                // Henüz aktifleştirilmemiş tuzak çekirdeği için klan kontrolü
+                me.mami.stratocraft.model.Clan ownerClan = clanManager.getClanByPlayer(ownerId);
+                ownerClanId = ownerClan != null ? ownerClan.getId() : null;
+            }
+            
+            me.mami.stratocraft.model.Clan playerClan = clanManager.getClanByPlayer(player.getUniqueId());
+            if (ownerClanId == null || playerClan == null || !playerClan.getId().equals(ownerClanId)) {
                 player.sendMessage("§cBu tuzak sana ait değil!");
                 return false;
             }
+        }
+        
+        // Eğer trap null ise (henüz aktifleştirilmemiş tuzak çekirdeği), false döndür
+        // TrapListener'da createTrap çağrılmalı
+        if (trap == null) {
+            return false; // Henüz aktifleştirilmemiş tuzak çekirdeği, createTrap ile aktifleştirilmeli
         }
         
         // Üstü kapatılmış mı kontrol et
@@ -496,6 +551,11 @@ public class TrapManager {
      * Tuzak tetikleme (PlayerMoveEvent'ten çağrılır)
      */
     public void triggerTrap(Location triggerLocation, Player victim) {
+        // Null kontrolleri
+        if (triggerLocation == null || victim == null) {
+            return;
+        }
+        
         // Trigger bloğunun altında tuzak var mı?
         Block below = triggerLocation.getBlock().getRelative(0, -1, 0);
         Block below2 = below.getRelative(0, -1, 0);
@@ -515,6 +575,11 @@ public class TrapManager {
         }
         
         if (trap == null || !trap.isCovered()) return;
+        
+        // Null kontrolleri
+        if (trapCore == null || trap == null) {
+            return;
+        }
         
         // GİZLEME KONTROLÜ: Tuzağın üstü açıksa (Hava ise) çalışma
         Block trapBlock = trapCore.getBlock();
@@ -593,7 +658,7 @@ public class TrapManager {
                     victim.addPotionEffect(new org.bukkit.potion.PotionEffect(
                         org.bukkit.potion.PotionEffectType.BLINDNESS, 100, 2, false, false));
                     victim.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                        org.bukkit.potion.PotionEffectType.SLOWNESS, 100, 3, false, false));
+                        org.bukkit.potion.PotionEffectType.SLOW, 100, 3, false, false));
                     victim.sendMessage("§5§lKARA DELİK TUZAĞINA YAKALANDIN!");
                 }
                 break;
@@ -658,6 +723,9 @@ public class TrapManager {
         if (trapsConfig == null) return;
         
         trapsConfig.set("traps", null);
+        trapsConfig.set("inactive_cores", null);
+        
+        // Aktif tuzakları kaydet
         for (Map.Entry<Location, TrapData> entry : activeTraps.entrySet()) {
             Location loc = entry.getKey();
             TrapData trap = entry.getValue();
@@ -669,6 +737,17 @@ public class TrapManager {
             trapsConfig.set(path + ".clan", trap.getOwnerClanId() != null ? trap.getOwnerClanId().toString() : null);
             trapsConfig.set(path + ".type", trap.getType().name());
             trapsConfig.set(path + ".fuel", trap.getFuel());
+        }
+        
+        // Henüz aktifleştirilmemiş tuzak çekirdeklerini kaydet
+        for (Map.Entry<Location, UUID> entry : inactiveTrapCores.entrySet()) {
+            Location loc = entry.getKey();
+            UUID ownerId = entry.getValue();
+            
+            String path = "inactive_cores." + loc.getWorld().getName() + "." + 
+                         loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
+            
+            trapsConfig.set(path + ".owner", ownerId.toString());
         }
         
         try {
@@ -726,6 +805,38 @@ public class TrapManager {
                     }
                 } catch (Exception e) {
                     plugin.getLogger().warning("Tuzak yüklenemedi: " + locStr + " - " + e.getMessage());
+                }
+            }
+        }
+        
+        // Henüz aktifleştirilmemiş tuzak çekirdeklerini yükle
+        if (trapsConfig.getConfigurationSection("inactive_cores") != null) {
+            for (String worldName : trapsConfig.getConfigurationSection("inactive_cores").getKeys(false)) {
+                org.bukkit.World world = plugin.getServer().getWorld(worldName);
+                if (world == null) continue;
+                
+                for (String locStr : trapsConfig.getConfigurationSection("inactive_cores." + worldName).getKeys(false)) {
+                    String[] coords = locStr.split(",");
+                    if (coords.length != 3) continue;
+                    
+                    try {
+                        Location loc = new Location(world, 
+                            Integer.parseInt(coords[0]),
+                            Integer.parseInt(coords[1]),
+                            Integer.parseInt(coords[2]));
+                        
+                        UUID ownerId = UUID.fromString(trapsConfig.getString("inactive_cores." + worldName + "." + locStr + ".owner"));
+                        
+                        inactiveTrapCores.put(loc, ownerId);
+                        
+                        // Metadata'yı geri yükle (sunucu restart sonrası)
+                        Block block = loc.getBlock();
+                        if (block.getType() == Material.LODESTONE) {
+                            block.setMetadata("TrapCoreItem", new FixedMetadataValue(plugin, true));
+                        }
+                    } catch (Exception e) {
+                        plugin.getLogger().warning("Aktifleştirilmemiş tuzak çekirdeği yüklenemedi: " + locStr + " - " + e.getMessage());
+                    }
                 }
             }
         }

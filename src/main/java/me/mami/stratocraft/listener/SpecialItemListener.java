@@ -8,7 +8,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -58,29 +57,9 @@ public class SpecialItemListener implements Listener {
         specialItemManager.handleSpyglass(player, result);
     }
     
-    @EventHandler
-    public void onPlayerMove(PlayerMoveEvent event) {
-        // PERFORMANS FİLTRESİ: Sadece blok değiştiyse çalış (X, Y, Z kontrolü)
-        // Spyglass için rayTraceEntities çok maliyetli, her fare hareketinde çalışmamalı
-        if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
-            event.getFrom().getBlockY() == event.getTo().getBlockY() &&
-            event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
-            return; // Oyuncu sadece kafasını çevirmiş, işlem yapma
-        }
-        
-        Player player = event.getPlayer();
-        ItemStack item = player.getInventory().getItemInMainHand();
-        
-        // Dürbün kullanıyor mu?
-        if (item == null || item.getType() != org.bukkit.Material.SPYGLASS) {
-            specialItemManager.clearSpyData(player);
-            return;
-        }
-        
-        // Ray trace ile hedef oyuncuyu bul
-        org.bukkit.util.RayTraceResult result = player.rayTraceEntities(50);
-        specialItemManager.handleSpyglass(player, result);
-    }
+    // NOT: Casusluk Dürbünü için PlayerMoveEvent kullanılmıyor
+    // Bunun yerine Main.java'da başlatılan bir Scheduler task kullanılıyor
+    // Bu sayede oyuncu durup kafasını çevirdiğinde de dürbün çalışır
     
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {

@@ -68,9 +68,9 @@ public class ContractManager {
                         if (issuerClan.getBalance() >= contract.getReward()) {
                             issuerClan.withdraw(contract.getReward());
                             
-                            // Acceptor'a ödülü ver (Vault ekonomi sistemi)
-                            if (plugin.getEconomy() != null) {
-                                plugin.getEconomy().depositPlayer(acceptor, contract.getReward());
+                            // Acceptor'a ödülü ver (EconomyManager)
+                            if (plugin.getEconomyManager() != null) {
+                                plugin.getEconomyManager().depositPlayer(acceptor, contract.getReward());
                                 acceptor.sendMessage("§a§lSÖZLEŞME TAMAMLANDI!");
                                 acceptor.sendMessage("§7Ödül: §e" + contract.getReward() + " altın");
                             } else {
@@ -88,9 +88,9 @@ public class ContractManager {
                             acceptor.sendMessage("§cSözleşme tamamlandı ama klan bankasında yeterli para yok!");
                         }
                     } else {
-                        // İssuer'ın klanı yok, direkt ödül ver (Vault)
-                        if (plugin.getEconomy() != null) {
-                            plugin.getEconomy().depositPlayer(acceptor, contract.getReward());
+                        // İssuer'ın klanı yok, direkt ödül ver (EconomyManager)
+                        if (plugin.getEconomyManager() != null) {
+                            plugin.getEconomyManager().depositPlayer(acceptor, contract.getReward());
                             acceptor.sendMessage("§a§lSÖZLEŞME TAMAMLANDI!");
                             acceptor.sendMessage("§7Ödül: §e" + contract.getReward() + " altın");
                         }
@@ -175,7 +175,7 @@ public class ContractManager {
         contract.setCompleted(true);
         
         // Ödülü öde (EconomyManager kullan)
-        Main plugin = Main.getInstance();
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
         if (plugin != null && plugin.getEconomyManager() != null) {
             plugin.getEconomyManager().depositPlayer(
                 org.bukkit.Bukkit.getPlayer(killer), 
