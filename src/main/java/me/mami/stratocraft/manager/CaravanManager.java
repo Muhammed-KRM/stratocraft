@@ -33,7 +33,13 @@ public class CaravanManager {
         ConfigManager configManager = plugin.getConfigManager();
         if (configManager == null) return false;
         
-        // 1. MESAFE KONTROLÜ (Anti-abuse)
+        // 1. DÜNYA KONTROLÜ (Farklı dünyalar arası mesafe ölçülemez)
+        if (!start.getWorld().equals(end.getWorld())) {
+            owner.sendMessage("§cKervanlar şimdilik sadece aynı dünya içinde seyahat edebilir!");
+            return false;
+        }
+        
+        // 2. MESAFE KONTROLÜ (Anti-abuse)
         double minDistance = configManager.getConfig().getInt("caravan.min-distance", 1000);
         double distance = start.distance(end);
         if (distance < minDistance) {
@@ -41,7 +47,7 @@ public class CaravanManager {
             return false;
         }
         
-        // 2. MALZEME SAYISI KONTROLÜ (Anti-abuse)
+        // 3. MALZEME SAYISI KONTROLÜ (Anti-abuse)
         int totalItems = 0;
         for (ItemStack item : cargo) {
             if (item != null && item.getType() != Material.AIR) {
@@ -55,7 +61,7 @@ public class CaravanManager {
             return false;
         }
         
-        // 3. YÜK DEĞERİ KONTROLÜ (Anti-abuse)
+        // 4. YÜK DEĞERİ KONTROLÜ (Anti-abuse)
         double totalValue = calculateCargoValue(cargo);
         double minValue = configManager.getConfig().getDouble("caravan.min-value", 5000.0);
         if (totalValue < minValue) {
@@ -63,7 +69,7 @@ public class CaravanManager {
             return false;
         }
         
-        // 4. Kervanı oluştur (Mule kullan - daha fazla envanter)
+        // 5. Kervanı oluştur (Mule kullan - daha fazla envanter)
         Mule mule = start.getWorld().spawn(start, Mule.class);
         mule.setTamed(true);
         mule.setOwner(owner);
@@ -182,6 +188,12 @@ public class CaravanManager {
                 Location target = caravanTargets.get(playerId);
                 
                 if (caravan == null || !caravan.isValid() || target == null) {
+                    cancel();
+                    return;
+                }
+                
+                // Dünya kontrolü (farklı dünyalar arası mesafe ölçülemez)
+                if (!caravan.getLocation().getWorld().equals(target.getWorld())) {
                     cancel();
                     return;
                 }

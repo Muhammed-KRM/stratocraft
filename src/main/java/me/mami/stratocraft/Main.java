@@ -47,6 +47,9 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.CombatLogManager combatLogManager;
     private me.mami.stratocraft.manager.EconomyManager economyManager;
     private me.mami.stratocraft.manager.SiegeWeaponManager siegeWeaponManager;
+    private me.mami.stratocraft.manager.SupplyDropManager supplyDropManager;
+    private me.mami.stratocraft.manager.TrapManager trapManager;
+    private me.mami.stratocraft.manager.SpecialItemManager specialItemManager;
 
     @Override
     public void onEnable() {
@@ -125,6 +128,18 @@ public class Main extends JavaPlugin {
         siegeWeaponManager = new me.mami.stratocraft.manager.SiegeWeaponManager(this);
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.SiegeWeaponListener(siegeWeaponManager), this);
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.ContractListener(contractManager), this);
+        
+        // Yeni sistemler: Tuzaklar, Kancalar, Casusluk, Hava Drop
+        trapManager = new me.mami.stratocraft.manager.TrapManager(this);
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.TrapListener(trapManager), this);
+        
+        // Özel Eşyalar (Kanca, Casusluk Dürbünü)
+        specialItemManager = new me.mami.stratocraft.manager.SpecialItemManager();
+        specialItemManager.registerRecipes(); // Yapım tariflerini kaydet
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.SpecialItemListener(specialItemManager), this);
+        
+        supplyDropManager = new me.mami.stratocraft.manager.SupplyDropManager(this);
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.SupplyDropListener(supplyDropManager), this);
         
         // Veri yükleme
         dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener);
@@ -341,6 +356,12 @@ public class Main extends JavaPlugin {
             getLogger().info("Stratocraft: Batarya sistemi temizlendi (geçici bloklar kaldırıldı).");
         }
         
+        // Tuzakları kaydet
+        if (trapManager != null) {
+            trapManager.saveTraps();
+            getLogger().info("Stratocraft: Tuzaklar kaydedildi.");
+        }
+        
         // Veri kaydetme (Async veya Sync)
         if (dataManager != null && clanManager != null && contractManager != null && 
             shopManager != null && virtualStorageListener != null) {
@@ -374,6 +395,7 @@ public class Main extends JavaPlugin {
     public ContractManager getContractManager() { return contractManager; }
     public ShopManager getShopManager() { return shopManager; }
     public ResearchManager getResearchManager() { return researchManager; }
+    public me.mami.stratocraft.manager.SupplyDropManager getSupplyDropManager() { return supplyDropManager; }
     public me.mami.stratocraft.manager.GhostRecipeManager getGhostRecipeManager() { return ghostRecipeManager; }
     public me.mami.stratocraft.manager.TrainingManager getTrainingManager() { return trainingManager; }
     public me.mami.stratocraft.gui.ClanMenu getClanMenu() { return clanMenu; }
@@ -383,4 +405,6 @@ public class Main extends JavaPlugin {
     public MobManager getMobManager() { return mobManager; }
     public me.mami.stratocraft.manager.SiegeWeaponManager getSiegeWeaponManager() { return siegeWeaponManager; }
     public CaravanManager getCaravanManager() { return caravanManager; }
+    public me.mami.stratocraft.manager.TrapManager getTrapManager() { return trapManager; }
+    public me.mami.stratocraft.manager.SpecialItemManager getSpecialItemManager() { return specialItemManager; }
 }

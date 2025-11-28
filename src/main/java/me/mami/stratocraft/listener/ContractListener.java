@@ -25,8 +25,11 @@ public class ContractListener implements Listener {
         Player victim = event.getEntity();
         Player killer = victim.getKiller();
         
-        // Eğer kurban bir oyuncu tarafından öldürüldüyse
+        // KRİTİK KONTROL: Eğer kurban bir oyuncu tarafından öldürülmediyse (doğal ölüm, intihar, mob öldürdü)
         if (killer == null) return;
+        
+        // KRİTİK KONTROL: Oyuncu kendine suikast düzenleyip para kasmasın
+        if (killer.equals(victim)) return;
         
         // ContractManager'dan kurbanın başına ödül olup olmadığını sor
         Contract bounty = contractManager.getBountyContract(victim.getUniqueId());

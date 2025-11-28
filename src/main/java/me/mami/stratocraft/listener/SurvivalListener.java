@@ -28,10 +28,92 @@ public class SurvivalListener implements Listener {
         boolean isFarLands = distanceFromSpawn > 5000;
         double distanceMultiplier = isFarLands ? 1.5 : 1.0; // 5000 bloktan sonra %50 daha fazla şans
         
-        // Özel madenler düşürme mantığı
-        // ANCIENT_DEBRIS = Titanyum Cevheri (WorldGenerationListener tarafından oluşturulmuş)
+        // Özel madenler düşürme mantığı - Metadata kontrolü
+        if (event.getBlock().hasMetadata("OreType")) {
+            String oreType = event.getBlock().getMetadata("OreType").get(0).asString();
+            
+            switch (oreType) {
+                case "SULFUR":
+                    if (ItemManager.SULFUR != null) {
+                        event.getBlock().getWorld().dropItemNaturally(
+                            event.getBlock().getLocation(),
+                            ItemManager.SULFUR.clone()
+                        );
+                        p.sendMessage("§eKükürt buldun!");
+                    }
+                    event.setDropItems(false);
+                    return;
+                    
+                case "BAUXITE":
+                    if (ItemManager.BAUXITE_INGOT != null) {
+                        event.getBlock().getWorld().dropItemNaturally(
+                            event.getBlock().getLocation(),
+                            ItemManager.BAUXITE_INGOT.clone()
+                        );
+                        p.sendMessage("§6Boksit buldun!");
+                    }
+                    event.setDropItems(false);
+                    return;
+                    
+                case "ROCK_SALT":
+                    if (ItemManager.ROCK_SALT != null) {
+                        event.getBlock().getWorld().dropItemNaturally(
+                            event.getBlock().getLocation(),
+                            ItemManager.ROCK_SALT.clone()
+                        );
+                        p.sendMessage("§fTuz Kayası buldun!");
+                    }
+                    event.setDropItems(false);
+                    return;
+                    
+                case "TITANIUM":
+                    if (ItemManager.TITANIUM_ORE != null) {
+                        event.getBlock().getWorld().dropItemNaturally(
+                            event.getBlock().getLocation(),
+                            ItemManager.TITANIUM_ORE.clone()
+                        );
+                        p.sendMessage("§6Titanyum Cevheri buldun!");
+                    }
+                    event.setDropItems(false);
+                    return;
+                    
+                case "MITHRIL":
+                    if (ItemManager.MITHRIL_INGOT != null) {
+                        event.getBlock().getWorld().dropItemNaturally(
+                            event.getBlock().getLocation(),
+                            ItemManager.MITHRIL_INGOT.clone()
+                        );
+                        p.sendMessage("§b§lMithril buldun!");
+                    }
+                    event.setDropItems(false);
+                    return;
+                    
+                case "ASTRAL":
+                    if (ItemManager.ASTRAL_CRYSTAL != null) {
+                        event.getBlock().getWorld().dropItemNaturally(
+                            event.getBlock().getLocation(),
+                            ItemManager.ASTRAL_CRYSTAL.clone()
+                        );
+                        p.sendMessage("§5§lAstral Cevheri buldun!");
+                    }
+                    event.setDropItems(false);
+                    return;
+                    
+                case "RED_DIAMOND":
+                    if (ItemManager.RED_DIAMOND != null) {
+                        event.getBlock().getWorld().dropItemNaturally(
+                            event.getBlock().getLocation(),
+                            ItemManager.RED_DIAMOND.clone()
+                        );
+                        p.sendMessage("§c§lKızıl Elmas buldun!");
+                    }
+                    event.setDropItems(false);
+                    return;
+            }
+        }
+        
+        // Geriye dönük uyumluluk: ANCIENT_DEBRIS = Titanyum Cevheri
         if (event.getBlock().getType() == Material.ANCIENT_DEBRIS) {
-            // ANCIENT_DEBRIS kırıldığında Titanyum düşür
             if (ItemManager.TITANIUM_ORE != null) {
                 event.getBlock().getWorld().dropItemNaturally(
                     event.getBlock().getLocation(),
@@ -39,7 +121,8 @@ public class SurvivalListener implements Listener {
                 );
                 p.sendMessage("§6Titanyum Cevheri buldun!");
             }
-            return; // Normal drop mantığına devam etme
+            event.setDropItems(false);
+            return;
         }
         
         // Derinlerde Titanyum madeni düşürme (eski sistem - geriye dönük uyumluluk)

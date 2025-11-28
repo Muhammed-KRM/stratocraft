@@ -87,14 +87,58 @@ public class WorldGenerationListener implements Listener {
                 continue;
             }
             
-            // Titanyum Cevheri (%70) - ANCIENT_DEBRIS olarak işaretle
-            if (random.nextDouble() < 0.7) {
-                block.setType(Material.ANCIENT_DEBRIS);
-                // NBT ile işaretle (SurvivalListener'da kontrol edilecek)
-            } else if (y <= -60) {
-                // Kızıl Elmas (%30, sadece -60 altında)
-                block.setType(Material.DEEPSLATE_DIAMOND_ORE);
-                // NBT ile işaretle (SurvivalListener'da kontrol edilecek)
+            // Yeni maden sistemi - Hiyerarşik dağılım
+            double rand = random.nextDouble();
+            Biome biome = block.getBiome();
+            
+            // SIK BULUNAN MADENLER (Common - Demir/Kömür seviyesi)
+            if (rand < 0.25) {
+                // Kükürt (Sulfur) - %25 şans, her yerde
+                block.setType(Material.YELLOW_CONCRETE_POWDER);
+                block.setMetadata("OreType", new org.bukkit.metadata.FixedMetadataValue(
+                    me.mami.stratocraft.Main.getInstance(), "SULFUR"));
+            } else if (rand < 0.45) {
+                // Boksit (Bauxite) - %20 şans, her yerde
+                block.setType(Material.ORANGE_CONCRETE_POWDER);
+                block.setMetadata("OreType", new org.bukkit.metadata.FixedMetadataValue(
+                    me.mami.stratocraft.Main.getInstance(), "BAUXITE"));
+            } else if (rand < 0.60) {
+                // Tuz Kayası (Rock Salt) - %15 şans, her yerde
+                block.setType(Material.QUARTZ_BLOCK);
+                block.setMetadata("OreType", new org.bukkit.metadata.FixedMetadataValue(
+                    me.mami.stratocraft.Main.getInstance(), "ROCK_SALT"));
+            }
+            // NADİR MADENLER (Rare - Elmas/Netherite seviyesi)
+            else if (rand < 0.70) {
+                // Titanyum - %10 şans, sadece -40 ve altında
+                if (y <= -40) {
+                    block.setType(Material.ANCIENT_DEBRIS);
+                    block.setMetadata("OreType", new org.bukkit.metadata.FixedMetadataValue(
+                        me.mami.stratocraft.Main.getInstance(), "TITANIUM"));
+                }
+            } else if (rand < 0.85) {
+                // Mithril - %15 şans, sadece Dağ biyomlarında
+                if (biome == org.bukkit.block.Biome.JAGGED_PEAKS || 
+                    biome == org.bukkit.block.Biome.FROZEN_PEAKS ||
+                    biome == org.bukkit.block.Biome.STONY_PEAKS) {
+                    block.setType(Material.LIGHT_BLUE_CONCRETE_POWDER);
+                    block.setMetadata("OreType", new org.bukkit.metadata.FixedMetadataValue(
+                        me.mami.stratocraft.Main.getInstance(), "MITHRIL"));
+                }
+            } else if (rand < 0.95) {
+                // Astral Cevheri - %10 şans, sadece -60 ve altında (Bedrock'a yakın)
+                if (y <= -60) {
+                    block.setType(Material.AMETHYST_BLOCK);
+                    block.setMetadata("OreType", new org.bukkit.metadata.FixedMetadataValue(
+                        me.mami.stratocraft.Main.getInstance(), "ASTRAL"));
+                }
+            } else {
+                // Kızıl Elmas - %5 şans, sadece -60 altında (en nadir)
+                if (y <= -60) {
+                    block.setType(Material.DEEPSLATE_DIAMOND_ORE);
+                    block.setMetadata("OreType", new org.bukkit.metadata.FixedMetadataValue(
+                        me.mami.stratocraft.Main.getInstance(), "RED_DIAMOND"));
+                }
             }
         }
     }

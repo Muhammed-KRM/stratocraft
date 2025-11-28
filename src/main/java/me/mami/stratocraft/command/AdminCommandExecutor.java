@@ -73,6 +73,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return handleContract(p, args);
             case "build":
                 return handleBuild(p, args);
+            case "trap":
+                return handleTrap(p, args);
             default:
                 showHelp(sender);
                 return true;
@@ -256,6 +258,37 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 mobManager.spawnBehemoth(p.getLocation());
                 mobDisplayName = "Behemoth";
                 break;
+            // Yeni Moblar
+            case "titan_golem":
+            case "titan_golem":
+                mobManager.spawnTitanGolem(p.getLocation(), p);
+                mobDisplayName = "Titan Golem";
+                break;
+            case "void_worm":
+            case "hiclik_solucani":
+            case "hiçlik_solucanı":
+                // Void Worm için spawn metodu var mı kontrol et
+                p.sendMessage("§cVoid Worm spawn metodu henüz eklenmedi!");
+                return true;
+            // Hava Drop
+            case "supply_drop":
+            case "supplydrop":
+            case "hava_drop":
+            case "havadrop":
+                // SupplyDropManager'ı çağır - Oyuncunun konumuna düşür
+                // Main.java'da zaten oluşturulmuş supplyDropManager'ı kullan
+                // Ama eğer yoksa yeni oluştur
+                me.mami.stratocraft.manager.SupplyDropManager supplyDropManager = 
+                    plugin.getSupplyDropManager();
+                if (supplyDropManager == null) {
+                    supplyDropManager = new me.mami.stratocraft.manager.SupplyDropManager(plugin);
+                }
+                // Oyuncunun baktığı yöne veya konumuna düşür
+                org.bukkit.Location targetLoc = p.getLocation();
+                supplyDropManager.spawnSupplyDropAtLocation(targetLoc, null);
+                mobDisplayName = "Hava Drop";
+                p.sendMessage("§a§lHava Drop oyuncunun konumuna düşürülüyor!");
+                break;
             default:
                 p.sendMessage(langManager.getMessage("admin.spawn-invalid-mob"));
                 return true;
@@ -321,18 +354,26 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         sender.sendMessage(langManager.getMessage("admin.help-title"));
         sender.sendMessage(langManager.getMessage("admin.help-command", "command", "help", "description", "Bu yardım menüsünü gösterir"));
         sender.sendMessage(langManager.getMessage("admin.help-command", "command", "give <item> [miktar]", "description", "Özel item verir"));
-        sender.sendMessage(langManager.getMessage("admin.help-command", "command", "spawn <mob>", "description", "Özel canlı çağırır"));
+        sender.sendMessage(langManager.getMessage("admin.help-command", "command", "spawn <mob>", "description", "Özel canlı çağırır (titan_golem, supply_drop dahil)"));
         sender.sendMessage(langManager.getMessage("admin.help-command", "command", "disaster <type>", "description", "Felaket tetikler"));
         sender.sendMessage(langManager.getMessage("admin.help-command", "command", "list <items|mobs|disasters|all>", "description", "Listeleri gösterir"));
         sender.sendMessage("§eYeni Komutlar:");
+        sender.sendMessage("§7  Özel Eşyalar: /stratocraft give rusty_hook, titan_grapple, trap_core, spyglass");
+        sender.sendMessage("§7  Yeni Madenler: /stratocraft give sulfur, bauxite, rock_salt, mithril, astral_crystal");
+        sender.sendMessage("§7  Yeni Moblar: /stratocraft spawn titan_golem, supply_drop");
         sender.sendMessage("§7  /stratocraft siege <clear|list> §7- Savaş yapılarını yönet");
         sender.sendMessage("§7  /stratocraft caravan <list|clear> §7- Kervanları yönet");
         sender.sendMessage("§7  /stratocraft contract <list|clear> §7- Kontratları yönet");
         sender.sendMessage("§7  /stratocraft build <type> [level] §7- Yapı oluştur");
+        sender.sendMessage("§7  /stratocraft trap <list|give> §7- Tuzak sistemi");
         sender.sendMessage("");
         sender.sendMessage(langManager.getMessage("admin.help-examples"));
         sender.sendMessage("§7  /stratocraft give blueprint 64");
+        sender.sendMessage("§7  /stratocraft give rusty_hook");
+        sender.sendMessage("§7  /stratocraft give trap_core");
         sender.sendMessage("§7  /stratocraft spawn hell_dragon");
+        sender.sendMessage("§7  /stratocraft spawn titan_golem");
+        sender.sendMessage("§7  /stratocraft spawn supply_drop");
         sender.sendMessage("§7  /stratocraft disaster titan_golem");
         sender.sendMessage("§7  /stratocraft list all");
         sender.sendMessage("§7  /stratocraft siege list");
@@ -344,6 +385,18 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     
     private void showItemsList(Player p) {
         p.sendMessage("§6§l=== ÖZEL İTEMLAR ===");
+        p.sendMessage("§7--- Özel Eşyalar ---");
+        p.sendMessage("§e- rusty_hook §7- Paslı Kanca");
+        p.sendMessage("§e- titan_grapple §7- Titan Kancası");
+        p.sendMessage("§e- trap_core §7- Tuzak Çekirdeği");
+        p.sendMessage("§e- spyglass §7- Casusluk Dürbünü");
+        p.sendMessage("§7--- Yeni Madenler ---");
+        p.sendMessage("§e- sulfur, sulfur_ore §7- Kükürt");
+        p.sendMessage("§e- bauxite, bauxite_ore §7- Boksit");
+        p.sendMessage("§e- rock_salt, rock_salt_ore §7- Tuz Kayası");
+        p.sendMessage("§e- mithril, mithril_ore, mithril_string §7- Mithril");
+        p.sendMessage("§e- astral_crystal, astral_ore §7- Astral");
+        p.sendMessage("§7--- Diğer Özel İtemler ---");
         p.sendMessage("§e1. §7blueprint §7- Mühendis Şeması");
         p.sendMessage("§e2. §7lightning_core §7- Yıldırım Çekirdeği");
         p.sendMessage("§e3. §7titanium_ore §7- Titanyum Parçası");
@@ -394,6 +447,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§c23. §7phoenix §7- Phoenix (NADİR)");
         p.sendMessage("§c24. §7hydra §7- Hydra (ÇOK NADİR)");
         p.sendMessage("§c25. §7behemoth §7- Behemoth (NADİR)");
+        p.sendMessage("§7--- Yeni Moblar ---");
+        p.sendMessage("§e26. §7titan_golem §7- Titan Golem");
+        p.sendMessage("§7--- Özel Spawnlar ---");
+        p.sendMessage("§e27. §7supply_drop §7- Hava Drop");
     }
     
     private void showDisastersList(Player p) {
@@ -462,6 +519,64 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "klan_çiti":
             case "klan_citi":
                 return createClanFence();
+            // Özel Eşyalar
+            case "rusty_hook":
+            case "pasli_kanca":
+            case "paslı_kanca":
+                return ItemManager.RUSTY_HOOK != null ? ItemManager.RUSTY_HOOK.clone() : null;
+            case "titan_grapple":
+            case "titan_kancasi":
+            case "titan_kancası":
+                return ItemManager.TITAN_GRAPPLE != null ? ItemManager.TITAN_GRAPPLE.clone() : null;
+            case "trap_core":
+            case "tuzak_cekirdegi":
+            case "tuzak_çekirdeği":
+                return ItemManager.TRAP_CORE != null ? ItemManager.TRAP_CORE.clone() : null;
+            // Yeni Madenler
+            case "sulfur":
+            case "kukurt":
+            case "kükürt":
+                return ItemManager.SULFUR != null ? ItemManager.SULFUR.clone() : null;
+            case "sulfur_ore":
+            case "kukurt_cevheri":
+            case "kükürt_cevheri":
+                return ItemManager.SULFUR_ORE != null ? ItemManager.SULFUR_ORE.clone() : null;
+            case "bauxite":
+            case "boksit":
+                return ItemManager.BAUXITE_INGOT != null ? ItemManager.BAUXITE_INGOT.clone() : null;
+            case "bauxite_ore":
+            case "boksit_cevheri":
+                return ItemManager.BAUXITE_ORE != null ? ItemManager.BAUXITE_ORE.clone() : null;
+            case "rock_salt":
+            case "tuz_kayasi":
+            case "tuz_kayası":
+                return ItemManager.ROCK_SALT != null ? ItemManager.ROCK_SALT.clone() : null;
+            case "rock_salt_ore":
+            case "tuz_kayasi_cevheri":
+            case "tuz_kayası_cevheri":
+                return ItemManager.ROCK_SALT_ORE != null ? ItemManager.ROCK_SALT_ORE.clone() : null;
+            case "mithril":
+            case "mithril_ingot":
+                return ItemManager.MITHRIL_INGOT != null ? ItemManager.MITHRIL_INGOT.clone() : null;
+            case "mithril_ore":
+            case "mithril_cevheri":
+                return ItemManager.MITHRIL_ORE != null ? ItemManager.MITHRIL_ORE.clone() : null;
+            case "mithril_string":
+            case "mithril_ipi":
+            case "mithril_ipi":
+                return ItemManager.MITHRIL_STRING != null ? ItemManager.MITHRIL_STRING.clone() : null;
+            case "astral_crystal":
+            case "astral_kristali":
+            case "astral_kristal":
+                return ItemManager.ASTRAL_CRYSTAL != null ? ItemManager.ASTRAL_CRYSTAL.clone() : null;
+            case "astral_ore":
+            case "astral_cevheri":
+                return ItemManager.ASTRAL_ORE != null ? ItemManager.ASTRAL_ORE.clone() : null;
+            // Spyglass (normal Material ama özel kullanım)
+            case "spyglass":
+            case "durbun":
+            case "dürbün":
+                return new ItemStack(Material.SPYGLASS);
             default:
                 return null;
         }
@@ -550,6 +665,33 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         if (lowerName.contains("clan_fence") || lowerName.contains("klan_çiti") || lowerName.contains("klan_citi")) {
             return "Klan Çiti";
         }
+        if (lowerName.contains("rusty_hook") || lowerName.contains("pasli_kanca") || lowerName.contains("paslı_kanca")) {
+            return "Paslı Kanca";
+        }
+        if (lowerName.contains("titan_grapple") || lowerName.contains("titan_kancasi") || lowerName.contains("titan_kancası")) {
+            return "Titan Kancası";
+        }
+        if (lowerName.contains("trap_core") || lowerName.contains("tuzak_cekirdegi") || lowerName.contains("tuzak_çekirdeği")) {
+            return "Tuzak Çekirdeği";
+        }
+        if (lowerName.contains("sulfur") || lowerName.contains("kukurt") || lowerName.contains("kükürt")) {
+            return "Kükürt";
+        }
+        if (lowerName.contains("bauxite") || lowerName.contains("boksit")) {
+            return "Boksit";
+        }
+        if (lowerName.contains("rock_salt") || lowerName.contains("tuz_kayasi") || lowerName.contains("tuz_kayası")) {
+            return "Tuz Kayası";
+        }
+        if (lowerName.contains("mithril")) {
+            return "Mithril";
+        }
+        if (lowerName.contains("astral")) {
+            return "Astral";
+        }
+        if (lowerName.contains("spyglass") || lowerName.contains("durbun") || lowerName.contains("dürbün")) {
+            return "Casusluk Dürbünü";
+        }
         return name;
     }
     
@@ -587,7 +729,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         
         // İlk argüman (komut seçimi)
         if (args.length == 1) {
-            List<String> commands = Arrays.asList("give", "spawn", "disaster", "list", "help", "siege", "caravan", "contract", "build");
+            List<String> commands = Arrays.asList("give", "spawn", "disaster", "list", "help", "siege", "caravan", "contract", "build", "trap");
             String input = args[0].toLowerCase();
             
             // Eğer boşsa veya başlangıç eşleşiyorsa filtrele
@@ -612,7 +754,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         "blueprint", "lightning_core", "titanium_ore", "titanium_ingot", 
                         "dark_matter", "red_diamond", "ruby", "adamantite", "star_core", 
                         "flame_amplifier", "devil_horn", "devil_snake_eye", "recipe_tectonic", 
-                        "war_fan", "tower_shield", "hell_fruit", "clan_crystal", "clan_fence"
+                        "war_fan", "tower_shield", "hell_fruit", "clan_crystal", "clan_fence",
+                        // Özel Eşyalar
+                        "rusty_hook", "titan_grapple", "trap_core", "spyglass",
+                        // Yeni Madenler
+                        "sulfur", "sulfur_ore", "bauxite", "bauxite_ore", 
+                        "rock_salt", "rock_salt_ore", "mithril", "mithril_ore", "mithril_string",
+                        "astral_crystal", "astral_ore"
                     );
                     if (input.isEmpty()) {
                         return items;
@@ -622,7 +770,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                             .collect(Collectors.toList());
                     
                 case "spawn":
-                    // Tüm mob isimlerini listele (25 mob)
+                    // Tüm mob isimlerini listele (27 mob + supply drop)
                     List<String> mobs = Arrays.asList(
                         // Eski moblar
                         "hell_dragon", "terror_worm", "war_bear", "shadow_panther", "wyvern",
@@ -631,7 +779,11 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         "werewolf", "giant_spider", "minotaur", "harpy", "basilisk",
                         // Nadir canavarlar
                         "dragon", "trex", "cyclops", "griffin", "wraith",
-                        "lich", "kraken", "phoenix", "hydra", "behemoth"
+                        "lich", "kraken", "phoenix", "hydra", "behemoth",
+                        // Yeni moblar
+                        "titan_golem",
+                        // Özel spawnlar
+                        "supply_drop"
                     );
                     if (input.isEmpty()) {
                         return mobs;
@@ -692,6 +844,29 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
                             
+                case "trap":
+                    // Trap komutları
+                    List<String> trapCommands = Arrays.asList("list", "give");
+                    if (input.isEmpty()) {
+                        return trapCommands;
+                    }
+                    return trapCommands.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
+                            .collect(Collectors.toList());
+                            
+                case "trap":
+                    // Trap give için tuzak tipleri
+                    if (args.length == 2 && args[1].equalsIgnoreCase("give")) {
+                        List<String> trapTypes = Arrays.asList("hell_trap", "shock_trap", "black_hole", "mine", "poison_trap");
+                        if (input.isEmpty()) {
+                            return trapTypes;
+                        }
+                        return trapTypes.stream()
+                                .filter(s -> s.toLowerCase().startsWith(input))
+                                .collect(Collectors.toList());
+                    }
+                    break;
+                            
                 case "build":
                     // Build komutları - Tüm yapı tipleri
                     List<String> buildTypes = Arrays.asList(
@@ -729,6 +904,18 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             }
             return levels.stream()
                     .filter(s -> s.startsWith(input))
+                    .collect(Collectors.toList());
+        }
+        
+        // Trap give komutu için tuzak tipleri
+        if (args.length == 3 && args[0].equalsIgnoreCase("trap") && args[1].equalsIgnoreCase("give")) {
+            List<String> trapTypes = Arrays.asList("hell_trap", "shock_trap", "black_hole", "mine", "poison_trap");
+            String input = args[2].toLowerCase();
+            if (input.isEmpty()) {
+                return trapTypes;
+            }
+            return trapTypes.stream()
+                    .filter(s -> s.toLowerCase().startsWith(input))
                     .collect(Collectors.toList());
         }
         
@@ -1503,6 +1690,97 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     /**
      * Oyuncuya eşya ver (envanter doluysa yere düşür)
      */
+    // ========== TUZAK YÖNETİMİ ==========
+    
+    private boolean handleTrap(Player p, String[] args) {
+        if (args.length < 2) {
+            p.sendMessage("§cKullanım: /stratocraft trap <list|give>");
+            return true;
+        }
+        
+        String subCommand = args[1].toLowerCase();
+        
+        switch (subCommand) {
+            case "list":
+                showTrapsList(p);
+                return true;
+            case "give":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft trap give <type>");
+                    p.sendMessage("§7Tuzak tipleri: hell_trap, shock_trap, black_hole, mine, poison_trap");
+                    return true;
+                }
+                String trapType = args[2].toLowerCase();
+                giveTrapItems(p, trapType);
+                return true;
+            default:
+                p.sendMessage("§cGeçersiz komut! /stratocraft trap <list|give>");
+                return true;
+        }
+    }
+    
+    private void showTrapsList(Player p) {
+        p.sendMessage("§6§l=== TUZAK SİSTEMİ ===");
+        p.sendMessage("§7Tuzak kurulumu için:");
+        p.sendMessage("§e1. §7/stratocraft give trap_core §7- Tuzak çekirdeği al");
+        p.sendMessage("§e2. §7Yere bakıp sağ tıkla (LODESTONE oluştur)");
+        p.sendMessage("§e3. §7Etrafına Magma Block çerçevesi yap (3x3, 3x6, 5x5, vb.)");
+        p.sendMessage("§e4. §7Üstünü blokla kapat");
+        p.sendMessage("§e5. §7LODESTONE'a yakıt (Elmas/Zümrüt/Titanyum) + tuzak tipi item ile sağ tık");
+        p.sendMessage("");
+        p.sendMessage("§7--- Tuzak Tipleri ---");
+        p.sendMessage("§e- hell_trap §7- Cehennem Tuzağı (Magma Cream)");
+        p.sendMessage("§e- shock_trap §7- Şok Tuzağı (Lightning Core)");
+        p.sendMessage("§e- black_hole §7- Kara Delik (Ender Pearl)");
+        p.sendMessage("§e- mine §7- Mayın (TNT)");
+        p.sendMessage("§e- poison_trap §7- Zehir Tuzağı (Spider Eye)");
+        p.sendMessage("");
+        p.sendMessage("§7Yakıt: Elmas (5 kullanım), Zümrüt (10 kullanım), Titanyum (20 kullanım)");
+    }
+    
+    private void giveTrapItems(Player p, String trapType) {
+        // Tuzak çekirdeği
+        if (ItemManager.TRAP_CORE != null) {
+            giveItemSafely(p, ItemManager.TRAP_CORE.clone());
+        }
+        
+        // Yakıt (Elmas, Zümrüt, Titanyum)
+        giveItemSafely(p, new ItemStack(Material.DIAMOND, 5));
+        giveItemSafely(p, new ItemStack(Material.EMERALD, 5));
+        if (ItemManager.TITANIUM_INGOT != null) {
+            giveItemSafely(p, ItemManager.TITANIUM_INGOT.clone());
+        }
+        
+        // Tuzak tipi itemi
+        switch (trapType) {
+            case "hell_trap":
+                giveItemSafely(p, new ItemStack(Material.MAGMA_CREAM, 1));
+                p.sendMessage("§aCehennem Tuzağı itemleri verildi!");
+                break;
+            case "shock_trap":
+                if (ItemManager.LIGHTNING_CORE != null) {
+                    giveItemSafely(p, ItemManager.LIGHTNING_CORE.clone());
+                }
+                p.sendMessage("§aŞok Tuzağı itemleri verildi!");
+                break;
+            case "black_hole":
+                giveItemSafely(p, new ItemStack(Material.ENDER_PEARL, 1));
+                p.sendMessage("§aKara Delik Tuzağı itemleri verildi!");
+                break;
+            case "mine":
+                giveItemSafely(p, new ItemStack(Material.TNT, 1));
+                p.sendMessage("§aMayın Tuzağı itemleri verildi!");
+                break;
+            case "poison_trap":
+                giveItemSafely(p, new ItemStack(Material.SPIDER_EYE, 1));
+                p.sendMessage("§aZehir Tuzağı itemleri verildi!");
+                break;
+            default:
+                p.sendMessage("§cGeçersiz tuzak tipi! hell_trap, shock_trap, black_hole, mine, poison_trap");
+                return;
+        }
+    }
+    
     private void giveItemSafely(Player p, org.bukkit.inventory.ItemStack item) {
         if (item == null) return;
         

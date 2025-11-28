@@ -16,10 +16,12 @@ import java.util.UUID;
 public class ContractManager {
     private final List<Contract> activeContracts = new ArrayList<>();
     private final ClanManager clanManager;
+    private final me.mami.stratocraft.Main plugin;
     private Team traitorTeam;
 
     public ContractManager(ClanManager cm) { 
         this.clanManager = cm;
+        this.plugin = me.mami.stratocraft.Main.getInstance();
         initializeTraitorTeam();
     }
     
@@ -60,15 +62,41 @@ public class ContractManager {
             if (contract.isCompleted()) {
                 Player acceptor = Bukkit.getPlayer(contract.getAcceptor());
                 if (acceptor != null && acceptor.isOnline()) {
-                    Clan clan = clanManager.getClanByPlayer(contract.getIssuer());
-                    if (clan != null) {
-                        clan.withdraw(contract.getReward());
-                        // Ödülü acceptor'a ver (basit versiyon)
-                        acceptor.sendMessage("§aSözleşme tamamlandı! " + contract.getReward() + " altın kazandın!");
+                    Clan issuerClan = clanManager.getClanByPlayer(contract.getIssuer());
+                    if (issuerClan != null) {
+                        // Klan bankasından ödülü çek
+                        if (issuerClan.getBalance() >= contract.getReward()) {
+                            issuerClan.withdraw(contract.getReward());
+                            
+                            // Acceptor'a ödülü ver (Vault ekonomi sistemi)
+                            if (plugin.getEconomy() != null) {
+                                plugin.getEconomy().depositPlayer(acceptor, contract.getReward());
+                                acceptor.sendMessage("§a§lSÖZLEŞME TAMAMLANDI!");
+                                acceptor.sendMessage("§7Ödül: §e" + contract.getReward() + " altın");
+                            } else {
+                                // Vault yoksa mesaj gönder
+                                acceptor.sendMessage("§a§lSÖZLEŞME TAMAMLANDI!");
+                                acceptor.sendMessage("§7Ödül: §e" + contract.getReward() + " altın (Vault eksik, manuel ödeme gerekli)");
+                            }
+                            
+                            // İssuer'a bildir
+                            Player issuer = Bukkit.getPlayer(contract.getIssuer());
+                            if (issuer != null && issuer.isOnline()) {
+                                issuer.sendMessage("§7Sözleşmeniz tamamlandı! " + contract.getReward() + " altın ödendi.");
+                            }
+                        } else {
+                            acceptor.sendMessage("§cSözleşme tamamlandı ama klan bankasında yeterli para yok!");
+                        }
+                    } else {
+                        // İssuer'ın klanı yok, direkt ödül ver (Vault)
+                        if (plugin.getEconomy() != null) {
+                            plugin.getEconomy().depositPlayer(acceptor, contract.getReward());
+                            acceptor.sendMessage("§a§lSÖZLEŞME TAMAMLANDI!");
+                            acceptor.sendMessage("§7Ödül: §e" + contract.getReward() + " altın");
+                        }
                     }
                 } else {
                     // Oyuncu offline - veriyi kaydet, giriş yaptığında ödülü ver
-                    // (Basit versiyon: Sadece log)
                     Bukkit.getLogger().info("Sözleşme tamamlandı ama oyuncu offline: " + contract.getAcceptor());
                 }
             }

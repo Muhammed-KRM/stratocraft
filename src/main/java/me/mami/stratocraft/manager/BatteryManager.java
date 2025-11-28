@@ -62,6 +62,9 @@ public class BatteryManager {
         public boolean isDarkMatter() { return isDarkMatter; }
     }
     
+    // Partikül animasyon açıları (her oyuncu için ayrı)
+    private final Map<UUID, Double> particleAngles = new HashMap<>();
+    
     public BatteryManager(Main plugin) {
         this.plugin = plugin;
         this.loadedBatteries = new HashMap<>();
@@ -69,6 +72,7 @@ public class BatteryManager {
         this.batteryActivationTimes = new HashMap<>();
         if (plugin != null) {
             startInfoTask(); // Bilgi mesajı döngüsünü başlat
+            startParticleTask(); // Partikül döngüsünü başlat
         }
     }
     
@@ -141,6 +145,7 @@ public class BatteryManager {
      */
     public void clearBatteries(Player player) {
         loadedBatteries.remove(player.getUniqueId());
+        particleAngles.remove(player.getUniqueId()); // Partikül açısını da temizle
     }
     
     /**
@@ -168,6 +173,153 @@ public class BatteryManager {
                 }
             }
         }.runTaskTimer(plugin, 0L, 20L); // Her saniye (20 tick) çalışır
+    }
+    
+    /**
+     * Aktif bataryalar için partikül gösterimi (diğer oyunculara görünür)
+     */
+    private void startParticleTask() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (UUID uuid : loadedBatteries.keySet()) {
+                    Player player = Bukkit.getPlayer(uuid);
+                    if (player == null || !player.isOnline()) continue;
+                    
+                    Map<Integer, BatteryData> playerBatteries = loadedBatteries.get(uuid);
+                    if (playerBatteries == null || playerBatteries.isEmpty()) continue;
+                    
+                    // Açıyı güncelle (yavaş dönüş için)
+                    double currentAngle = particleAngles.getOrDefault(uuid, 0.0);
+                    currentAngle += 0.1; // Her tick'te 0.1 radyan artır (yavaş dönüş)
+                    if (currentAngle >= 2 * Math.PI) {
+                        currentAngle = 0.0; // 360 derece = 0
+                    }
+                    particleAngles.put(uuid, currentAngle);
+                    
+                    Location playerLoc = player.getLocation();
+                    if (playerLoc == null || playerLoc.getWorld() == null) continue; // Güvenlik kontrolü
+                    
+                    double radius = 1.5; // Oyuncunun etrafında 1.5 blok yarıçap
+                    
+                    // Her slot için partikül göster
+                    int slotIndex = 0;
+                    int batteryCount = playerBatteries.size();
+                    if (batteryCount == 0) continue; // Güvenlik kontrolü
+                    
+                    for (Map.Entry<Integer, BatteryData> entry : playerBatteries.entrySet()) {
+                        int slot = entry.getKey();
+                        BatteryData battery = entry.getValue();
+                        
+                        // Null kontrolü
+                        if (battery == null) {
+                            slotIndex++;
+                            continue;
+                        }
+                        
+                        // Slot'a göre renk belirle
+                        org.bukkit.Color particleColor = getSlotColor(slotIndex);
+                        
+                        // Yakıt tipine göre partikül miktarı (custom item desteği ile)
+                        int particleCount = getParticleCountByBatteryData(battery);
+                        
+                        // Partikül pozisyonu (oyuncunun etrafında dönen)
+                        double angle = currentAngle + (slotIndex * (2 * Math.PI / batteryCount));
+                        double x = Math.cos(angle) * radius;
+                        double z = Math.sin(angle) * radius;
+                        double y = 0.5 + (slotIndex * 0.3); // Her slot için biraz yukarı
+                        
+                        Location particleLoc = playerLoc.clone().add(x, y, z);
+                        
+                        // Tüm oyunculara partikül göster
+                        for (Player viewer : Bukkit.getOnlinePlayers()) {
+                            if (viewer == null || !viewer.isOnline()) continue;
+                            if (viewer.getWorld() == null || viewer.getWorld() != player.getWorld()) continue;
+                            
+                            Location viewerLoc = viewer.getLocation();
+                            if (viewerLoc == null) continue;
+                            if (viewerLoc.distance(playerLoc) > 32) continue; // 32 blok mesafe limiti
+                            
+                            try {
+                                viewer.spawnParticle(
+                                    org.bukkit.Particle.REDSTONE,
+                                    particleLoc,
+                                    particleCount,
+                                    0.1, 0.1, 0.1, 0,
+                                    new org.bukkit.Particle.DustOptions(particleColor, 1.0f)
+                                );
+                            } catch (Exception e) {
+                                // Partikül spawn hatası (oyuncu çok uzakta veya dünya yüklenmemiş)
+                                // Sessizce atla
+                            }
+                        }
+                        
+                        slotIndex++;
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 2L); // Her 2 tick'te bir (çok hızlı dönüş için)
+    }
+    
+    /**
+     * Slot numarasına göre renk döndür
+     */
+    private org.bukkit.Color getSlotColor(int slotIndex) {
+        switch (slotIndex % 9) {
+            case 0: return org.bukkit.Color.RED; // Kırmızı
+            case 1: return org.bukkit.Color.fromRGB(255, 165, 0); // Turuncu
+            case 2: return org.bukkit.Color.YELLOW; // Sarı
+            case 3: return org.bukkit.Color.LIME; // Yeşil
+            case 4: return org.bukkit.Color.BLUE; // Mavi
+            case 5: return org.bukkit.Color.PURPLE; // Mor
+            case 6: return org.bukkit.Color.fromRGB(255, 192, 203); // Pembe
+            case 7: return org.bukkit.Color.WHITE; // Beyaz
+            case 8: return org.bukkit.Color.AQUA; // Cyan
+            default: return org.bukkit.Color.RED;
+        }
+    }
+    
+    /**
+     * Yakıt tipine göre partikül miktarı döndür
+     */
+    private int getParticleCountByFuel(Material fuel) {
+        if (fuel == null) return 12; // Varsayılan
+        
+        switch (fuel) {
+            case DIAMOND:
+                return 20; // Elmas = çok partikül
+            case EMERALD:
+                return 15; // Zümrüt = orta
+            case IRON_INGOT:
+                return 10; // Demir = az
+            default:
+                // Material ismi kontrolü (custom item'lar için)
+                String fuelName = fuel.name();
+                if (fuelName.contains("TITANIUM") || fuelName.contains("ANCIENT_DEBRIS")) {
+                    return 25; // Titanyum = en çok
+                }
+                return 12; // Varsayılan
+        }
+    }
+    
+    /**
+     * BatteryData'dan yakıt tipine göre partikül miktarı (custom item desteği ile)
+     */
+    private int getParticleCountByBatteryData(BatteryData battery) {
+        if (battery == null) return 12;
+        
+        Material fuel = battery.getFuel();
+        if (fuel == null) return 12;
+        
+        // Custom item kontrolü (Titanyum, Kızıl Elmas, Karanlık Madde)
+        if (battery.isRedDiamond()) {
+            return 30; // Kızıl Elmas = çok fazla
+        }
+        if (battery.isDarkMatter()) {
+            return 35; // Karanlık Madde = en fazla
+        }
+        
+        return getParticleCountByFuel(fuel);
     }
 
     // 1. ATEŞ TOPU (Geliştirilmiş)

@@ -30,6 +30,24 @@ public class ItemManager {
     public static ItemStack WAR_FAN;
     public static ItemStack TOWER_SHIELD;
     public static ItemStack HELL_FRUIT;
+    
+    // Yeni Madenler
+    public static ItemStack SULFUR_ORE;
+    public static ItemStack SULFUR;
+    public static ItemStack BAUXITE_ORE;
+    public static ItemStack BAUXITE_INGOT;
+    public static ItemStack ROCK_SALT_ORE;
+    public static ItemStack ROCK_SALT;
+    public static ItemStack MITHRIL_ORE;
+    public static ItemStack MITHRIL_INGOT;
+    public static ItemStack MITHRIL_STRING;
+    public static ItemStack ASTRAL_ORE;
+    public static ItemStack ASTRAL_CRYSTAL;
+    
+    // Yeni Eşyalar
+    public static ItemStack RUSTY_HOOK;
+    public static ItemStack TITAN_GRAPPLE;
+    public static ItemStack TRAP_CORE;
 
     public void init() {
         BLUEPRINT_PAPER = create(Material.PAPER, "BLUEPRINT", "§bMühendis Şeması");
@@ -48,6 +66,24 @@ public class ItemManager {
         WAR_FAN = create(Material.FEATHER, "WAR_FAN", "§eSavaş Yelpazesi");
         TOWER_SHIELD = create(Material.SHIELD, "TOWER_SHIELD", "§7Kule Kalkanı");
         HELL_FRUIT = create(Material.APPLE, "HELL_FRUIT", "§cCehennem Meyvesi");
+        
+        // Yeni Madenler
+        SULFUR_ORE = create(Material.YELLOW_CONCRETE_POWDER, "SULFUR_ORE", "§eKükürt Cevheri");
+        SULFUR = create(Material.GUNPOWDER, "SULFUR", "§eKükürt");
+        BAUXITE_ORE = create(Material.ORANGE_CONCRETE_POWDER, "BAUXITE_ORE", "§6Boksit Cevheri");
+        BAUXITE_INGOT = create(Material.COPPER_INGOT, "BAUXITE_INGOT", "§6Boksit Külçesi");
+        ROCK_SALT_ORE = create(Material.QUARTZ_BLOCK, "ROCK_SALT_ORE", "§fTuz Kayası");
+        ROCK_SALT = create(Material.SUGAR, "ROCK_SALT", "§fTuz");
+        MITHRIL_ORE = create(Material.LIGHT_BLUE_CONCRETE_POWDER, "MITHRIL_ORE", "§bMithril Cevheri");
+        MITHRIL_INGOT = create(Material.IRON_INGOT, "MITHRIL_INGOT", "§bMithril Külçesi");
+        MITHRIL_STRING = create(Material.STRING, "MITHRIL_STRING", "§bMithril İpi");
+        ASTRAL_ORE = create(Material.AMETHYST_BLOCK, "ASTRAL_ORE", "§5Astral Cevheri");
+        ASTRAL_CRYSTAL = create(Material.ECHO_SHARD, "ASTRAL_CRYSTAL", "§5Astral Kristali");
+        
+        // Yeni Eşyalar
+        RUSTY_HOOK = create(Material.FISHING_ROD, "RUSTY_HOOK", "§7Paslı Kanca");
+        TITAN_GRAPPLE = create(Material.FISHING_ROD, "TITAN_GRAPPLE", "§6§lTitan Kancası");
+        TRAP_CORE = create(Material.LODESTONE, "TRAP_CORE", "§cTuzak Çekirdeği");
 
         registerRecipes();
     }

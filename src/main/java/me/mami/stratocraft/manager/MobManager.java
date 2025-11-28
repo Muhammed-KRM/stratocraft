@@ -350,8 +350,10 @@ public class MobManager {
         }
         golem.setHealth(400.0);
         
-        // Her 10 saniyede bir etrafına toprak fırlatma görevi
-        org.bukkit.scheduler.BukkitRunnable throwTask = new org.bukkit.scheduler.BukkitRunnable() {
+        // Her 5 saniyede bir özel yetenekler kullanma görevi
+        org.bukkit.scheduler.BukkitRunnable abilityTask = new org.bukkit.scheduler.BukkitRunnable() {
+            private int abilityCounter = 0; // Hangi yeteneği kullanacağını belirle
+            
             @Override
             public void run() {
                 // Golem hala hayattaysa ve dünyada varsa
@@ -360,34 +362,117 @@ public class MobManager {
                     return;
                 }
                 
-                // Etrafındaki düşmanları bul
-                for (org.bukkit.entity.Entity nearby : golem.getNearbyEntities(15, 15, 15)) {
-                    if (nearby instanceof org.bukkit.entity.LivingEntity && nearby != golem) {
-                        // Toprak bloğu fırlat (FallingBlock)
-                        org.bukkit.Location throwLoc = golem.getLocation().add(0, 2, 0);
-                        org.bukkit.entity.FallingBlock fallingBlock = golem.getWorld().spawnFallingBlock(
-                            throwLoc, 
-                            org.bukkit.Material.DIRT.createBlockData()
-                        );
-                        
-                        // Düşmana doğru fırlat
-                        org.bukkit.util.Vector direction = nearby.getLocation().toVector()
-                            .subtract(throwLoc.toVector()).normalize().multiply(1.5);
-                        fallingBlock.setVelocity(direction);
-                        fallingBlock.setHurtEntities(true);
-                        fallingBlock.setDropItem(false); // Düşürme, sadece hasar ver
-                        
-                        // Sadece bir düşmana fırlat (her 10 saniyede bir)
+                abilityCounter++;
+                int abilityType = abilityCounter % 3; // 3 yetenek: 0=Toprak Fırlatma, 1=Zıplama, 2=Şok Dalgası
+                
+                switch (abilityType) {
+                    case 0: // Toprak Fırlatma
+                        // Etrafındaki düşmanları bul
+                        for (org.bukkit.entity.Entity nearby : golem.getNearbyEntities(15, 15, 15)) {
+                            if (nearby instanceof org.bukkit.entity.LivingEntity && nearby != golem) {
+                                // Toprak bloğu fırlat (FallingBlock)
+                                org.bukkit.Location throwLoc = golem.getLocation().add(0, 2, 0);
+                                org.bukkit.entity.FallingBlock fallingBlock = golem.getWorld().spawnFallingBlock(
+                                    throwLoc, 
+                                    org.bukkit.Material.DIRT.createBlockData()
+                                );
+                                
+                                // Düşmana doğru fırlat
+                                org.bukkit.util.Vector direction = nearby.getLocation().toVector()
+                                    .subtract(throwLoc.toVector()).normalize().multiply(1.5);
+                                fallingBlock.setVelocity(direction);
+                                fallingBlock.setHurtEntities(true);
+                                fallingBlock.setDropItem(false);
+                                
+                                // Sadece bir düşmana fırlat
+                                break;
+                            }
+                        }
                         break;
-                    }
+                        
+                    case 1: // Zıplama
+                        // En yakın düşmanı bul
+                        org.bukkit.entity.LivingEntity nearest = null;
+                        double nearestDist = Double.MAX_VALUE;
+                        for (org.bukkit.entity.Entity nearby : golem.getNearbyEntities(10, 10, 10)) {
+                            if (nearby instanceof org.bukkit.entity.LivingEntity && nearby != golem) {
+                                double dist = golem.getLocation().distance(nearby.getLocation());
+                                if (dist < nearestDist) {
+                                    nearestDist = dist;
+                                    nearest = (org.bukkit.entity.LivingEntity) nearby;
+                                }
+                            }
+                        }
+                        
+                        if (nearest != null) {
+                            // Düşmana doğru zıpla
+                            org.bukkit.util.Vector jumpDir = nearest.getLocation().toVector()
+                                .subtract(golem.getLocation().toVector()).normalize();
+                            jumpDir.setY(0.8); // Yüksek zıplama
+                            jumpDir.multiply(1.2);
+                            golem.setVelocity(jumpDir);
+                            
+                            // Zıplama efekti
+                            golem.getWorld().spawnParticle(
+                                org.bukkit.Particle.EXPLOSION_LARGE,
+                                golem.getLocation(),
+                                3
+                            );
+                            golem.getWorld().playSound(
+                                golem.getLocation(),
+                                org.bukkit.Sound.ENTITY_IRON_GOLEM_ATTACK,
+                                1.0f,
+                                0.5f
+                            );
+                        }
+                        break;
+                        
+                    case 2: // Şok Dalgası
+                        // Etrafındaki tüm düşmanlara hasar ver
+                        for (org.bukkit.entity.Entity nearby : golem.getNearbyEntities(8, 8, 8)) {
+                            if (nearby instanceof org.bukkit.entity.LivingEntity && nearby != golem) {
+                                org.bukkit.entity.LivingEntity target = (org.bukkit.entity.LivingEntity) nearby;
+                                
+                                // Hasar ver (5 kalp)
+                                target.damage(10.0, golem);
+                                
+                                // Geriye it
+                                org.bukkit.util.Vector knockback = target.getLocation().toVector()
+                                    .subtract(golem.getLocation().toVector()).normalize();
+                                knockback.setY(0.3);
+                                knockback.multiply(1.5);
+                                target.setVelocity(knockback);
+                                
+                                // Şok efekti
+                                target.getWorld().spawnParticle(
+                                    org.bukkit.Particle.ELECTRIC_SPARK,
+                                    target.getLocation().add(0, 1, 0),
+                                    10
+                                );
+                            }
+                        }
+                        
+                        // Şok dalgası görsel efekti
+                        golem.getWorld().spawnParticle(
+                            org.bukkit.Particle.EXPLOSION_LARGE,
+                            golem.getLocation(),
+                            5
+                        );
+                        golem.getWorld().playSound(
+                            golem.getLocation(),
+                            org.bukkit.Sound.ENTITY_LIGHTNING_BOLT_THUNDER,
+                            1.0f,
+                            0.8f
+                        );
+                        break;
                 }
             }
         };
         
-        // Her 10 saniyede bir çalıştır (200 tick = 10 saniye)
+        // Her 5 saniyede bir çalıştır (100 tick = 5 saniye)
         org.bukkit.plugin.Plugin plugin = org.bukkit.Bukkit.getPluginManager().getPlugin("Stratocraft");
         if (plugin != null && plugin instanceof org.bukkit.plugin.java.JavaPlugin) {
-            throwTask.runTaskTimer((org.bukkit.plugin.java.JavaPlugin) plugin, 0L, 200L);
+            abilityTask.runTaskTimer((org.bukkit.plugin.java.JavaPlugin) plugin, 0L, 100L);
         }
     }
 
