@@ -327,23 +327,33 @@ public class SiegeWeaponListener implements Listener {
         event.setCancelled(true); // Bloğa dönüşmesini engelle
 
         org.bukkit.Location hitLoc = fallingBlock.getLocation();
-
-        // Patlama Yarat (Güç: 4.0 = TNT)
-        fallingBlock.getWorld().createExplosion(hitLoc, 4.0f, true);
-
-        // Partikül efekti
-        fallingBlock.getWorld().spawnParticle(
-                org.bukkit.Particle.EXPLOSION_LARGE,
-                hitLoc,
-                5);
+        manager.triggerExplosion(hitLoc); // Merkezi patlama metodu
 
         fallingBlock.remove(); // Entity'i sil
+    }
 
-        // Yakındaki oyunculara mesaj
-        for (org.bukkit.entity.Entity nearby : hitLoc.getWorld().getNearbyEntities(hitLoc, 5, 5, 5)) {
-            if (nearby instanceof Player) {
-                Player target = (Player) nearby;
-                target.sendMessage("§c§lMANCINIK MERMİSİNE YAKALANDIN!");
+    @EventHandler
+    public void onEntityDropItem(org.bukkit.event.entity.EntityDropItemEvent event) {
+        // FallingBlock duvara çarpıp item'a dönüşürse (dropItem false olsa bile bazen
+        // tetiklenir)
+        if (event.getEntity() instanceof org.bukkit.entity.FallingBlock) {
+            org.bukkit.entity.FallingBlock fb = (org.bukkit.entity.FallingBlock) event.getEntity();
+            if (fb.hasMetadata("SiegeAmmo")) {
+                event.setCancelled(true); // Item düşmesini engelle
+                manager.triggerExplosion(fb.getLocation()); // Patlat
+            }
+        }
+    }
+
+    @EventHandler
+    public void onBlockPlace(BlockPlaceEvent event) {
+        Block block = event.getBlock();
+        // Mancınık yapımı kontrolü (Stone Brick Stairs)
+        if (block.getType() == Material.STONE_BRICK_STAIRS || block.getType() == Material.COBBLESTONE_STAIRS) {
+            // Eğer bu blok bir mancınık yapısını tamamlıyorsa
+            if (manager.isCatapultStructure(block)) {
+                manager.playConstructionEffect(block.getLocation());
+                event.getPlayer().sendMessage("§a§lMANCINIK İNŞA EDİLDİ!");
             }
         }
     }

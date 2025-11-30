@@ -13,6 +13,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Player;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
@@ -339,9 +340,7 @@ public class SiegeWeaponManager {
             player.sendMessage("§7Mancınıktan indin.");
         }
 
-        if (catapultMounts.isEmpty()) {
-            stopAimingTask();
-        }
+        stopAimingTask();
     }
 
     private void startAimingTask() {
@@ -356,15 +355,31 @@ public class SiegeWeaponManager {
                     Location start = player.getEyeLocation();
                     Vector dir = start.getDirection().normalize();
 
-                    for (double i = 0.5; i <= 20; i += 0.5) {
-                        Location point = start.clone().add(dir.clone().multiply(i));
-                        // Parabolik kavis efekti (basitçe aşağı eğim ekle)
-                        point.add(0, -0.02 * i * i, 0);
+                    // Fizik simülasyonu için değişkenler
+                    Location current = start.clone().add(dir.clone().multiply(1.0)); // 1 blok önden başla
+                    Vector velocity = dir.clone().multiply(2.5); // Fırlatma hızı
+                    Vector gravity = new Vector(0, -0.04, 0); // FallingBlock yerçekimi (yaklaşık)
 
-                        player.spawnParticle(org.bukkit.Particle.REDSTONE, point, 1,
-                                new org.bukkit.Particle.DustOptions(org.bukkit.Color.RED, 0.5f));
+                    for (int i = 0; i < 40; i++) { // 40 nokta (yaklaşık 2-3 saniyelik uçuş)
+                        current.add(velocity);
+                        velocity.add(gravity); // Yerçekimi uygula
 
-                        if (point.getBlock().getType().isSolid())
+                        // Deadzone kontrolü (Çok yakın mesafe)
+                        boolean isTooClose = i < 5; // İlk 5 nokta (yaklaşık 2-3 blok) çok yakın sayılır
+
+                        org.bukkit.Particle.DustOptions dustOptions;
+                        if (isTooClose) {
+                            // Çok yakınsa KIRMIZI (Ateş edilemez bölge)
+                            dustOptions = new org.bukkit.Particle.DustOptions(org.bukkit.Color.RED, 0.5f);
+                        } else {
+                            // Uzaksa BEYAZ (Nişangah)
+                            dustOptions = new org.bukkit.Particle.DustOptions(org.bukkit.Color.WHITE, 0.5f);
+                        }
+
+                        // Sadece binen oyuncuya göster
+                        player.spawnParticle(org.bukkit.Particle.REDSTONE, current, 1, dustOptions);
+
+                        if (current.getBlock().getType().isSolid())
                             break;
                     }
                 }
@@ -409,6 +424,12 @@ public class SiegeWeaponManager {
         if (isMounted(player)) {
             // Biniliyse oyuncunun baktığı yöne
             directionVector = player.getLocation().getDirection().normalize().multiply(2.5);
+
+            // Deadzone kontrolü (Çok aşağı bakıyorsa ateş etme)
+            if (player.getLocation().getPitch() > 60) { // 90 = tam aşağı
+                player.sendMessage("§cÇok yakına ateş edemezsin!");
+                return;
+            }
         } else {
             // Dışarıdansa mancınığın baktığı yöne
             if (!(catapult.getBlockData() instanceof org.bukkit.block.data.Directional)) {
@@ -433,6 +454,29 @@ public class SiegeWeaponManager {
         // 4. Mermiyi işaretle (Patlama için - EntityChangeBlockEvent'te yakalanacak)
         ammo.setMetadata("SiegeAmmo", new org.bukkit.metadata.FixedMetadataValue(plugin, true));
 
+        // Duvar çarpışma kontrolü için task başlat
+        new BukkitRunnable() {
+            int ticks = 0;
+
+            @Override
+            public void run() {
+                if (!ammo.isValid() || ammo.isDead() || ticks > 100) {
+                    cancel();
+                    return;
+                }
+
+                // Hız kontrolü - aniden durduysa duvara çarpmıştır
+                if (ammo.getVelocity().length() < 0.1 && !ammo.isOnGround()) {
+                    // Duvara çarptı
+                    triggerExplosion(ammo.getLocation());
+                    ammo.remove();
+                    cancel();
+                }
+
+                ticks++;
+            }
+        }.runTaskTimer(plugin, 5L, 2L);
+
         // Efekt ve ses
         player.getWorld().playSound(spawnLoc, org.bukkit.Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.5f);
         player.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, spawnLoc, 1);
@@ -440,6 +484,38 @@ public class SiegeWeaponManager {
 
         // Cooldown kaydet (UUID kullan)
         catapultCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
+    }
+
+    public void triggerExplosion(Location loc) {
+        loc.getWorld().createExplosion(loc, 4.0f, true);
+        loc.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, loc, 5);
+
+        // Yakındaki oyunculara mesaj
+        for (org.bukkit.entity.Entity nearby : loc.getWorld().getNearbyEntities(loc, 5, 5, 5)) {
+            if (nearby instanceof Player) {
+                Player target = (Player) nearby;
+                target.sendMessage("§c§lMANCINIK MERMİSİNE YAKALANDIN!");
+            }
+        }
+    }
+
+    public void playConstructionEffect(Location loc) {
+        loc.getWorld().playSound(loc, org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+
+        new BukkitRunnable() {
+            int count = 0;
+
+            @Override
+            public void run() {
+                if (count >= 20) { // 1 saniye (20 tick)
+                    cancel();
+                    return;
+                }
+                loc.getWorld().spawnParticle(org.bukkit.Particle.FLAME, loc.clone().add(0.5, 0.5, 0.5), 10, 0.5, 0.5,
+                        0.5, 0.05);
+                count += 2;
+            }
+        }.runTaskTimer(plugin, 0L, 2L);
     }
 
     public boolean isShieldActive(Location location) {
