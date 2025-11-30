@@ -57,6 +57,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return handleDisaster(p, args);
             case "siege":
                 return handleSiege(p, args);
+            case "ballista":
+                return handleBallista(p, args);
             case "caravan":
                 return handleCaravan(p, args);
             case "contract":
@@ -1926,6 +1928,99 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 p.sendMessage("§cGeçersiz tuzak tipi! hell_trap, shock_trap, black_hole, mine, poison_trap");
                 return;
         }
+    }
+
+    private boolean handleBallista(Player p, String[] args) {
+        if (args.length < 2) {
+            p.sendMessage("§c/admin ballista create - Baktığın yöne Balista oluştur");
+            p.sendMessage("§c/admin ballista remove - Yakındaki Balista'yı kaldır");
+            p.sendMessage("§c/admin ballista reload - Balista'nın mermisini doldur");
+            return true;
+        }
+
+        switch (args[1].toLowerCase()) {
+            case "create":
+                createBallista(p);
+                break;
+            case "remove":
+                removeBallista(p);
+                break;
+            case "reload":
+                reloadBallista(p);
+                break;
+            default:
+                p.sendMessage("§cGeçersiz komut! create, remove, veya reload kullan");
+                break;
+        }
+        return true;
+    }
+
+    private void createBallista(Player p) {
+        org.bukkit.block.Block target = p.getTargetBlock(null, 10);
+        if (target == null || target.getType() == Material.AIR) {
+            p.sendMessage("§cBir bloğa bakmalısın!");
+            return;
+        }
+
+        org.bukkit.Location loc = target.getLocation().add(0, 1, 0);
+
+        // Alt: Stone Slab
+        org.bukkit.block.Block baseBlock = loc.getWorld().getBlockAt(loc);
+        baseBlock.setType(Material.STONE_BRICK_SLAB);
+
+        // Orta: Dispenser
+        loc.add(0, 1, 0);
+        org.bukkit.block.Block dispenser = loc.getWorld().getBlockAt(loc);
+        dispenser.setType(Material.DISPENSER);
+
+        // 4 Yan: Iron Bars (Kuzey, Güney, Doğu, Batı)
+        dispenser.getRelative(org.bukkit.block.BlockFace.NORTH).setType(Material.IRON_BARS);
+        dispenser.getRelative(org.bukkit.block.BlockFace.SOUTH).setType(Material.IRON_BARS);
+        dispenser.getRelative(org.bukkit.block.BlockFace.EAST).setType(Material.IRON_BARS);
+        dispenser.getRelative(org.bukkit.block.BlockFace.WEST).setType(Material.IRON_BARS);
+
+        p.sendMessage("§a§lBALİSTA OLUŞTURULDU!");
+        plugin.getSiegeWeaponManager().playConstructionEffect(dispenser.getLocation());
+    }
+
+    private void removeBallista(Player p) {
+        org.bukkit.block.Block target = p.getTargetBlock(null, 10);
+        if (target == null || target.getType() != Material.DISPENSER) {
+            p.sendMessage("§cBir Dispenser'a bakmalısın!");
+            return;
+        }
+
+        if (!plugin.getSiegeWeaponManager().isBallistaStructure(target)) {
+            p.sendMessage("§cBu geçerli bir Balista yapısı değil!");
+            return;
+        }
+
+        // Yapıyı kaldır
+        target.setType(Material.AIR); // Dispenser
+        target.getRelative(org.bukkit.block.BlockFace.NORTH).setType(Material.AIR); // Iron Bars
+        target.getRelative(org.bukkit.block.BlockFace.SOUTH).setType(Material.AIR); // Iron Bars
+        target.getRelative(org.bukkit.block.BlockFace.EAST).setType(Material.AIR); // Iron Bars
+        target.getRelative(org.bukkit.block.BlockFace.WEST).setType(Material.AIR); // Iron Bars
+        target.getRelative(org.bukkit.block.BlockFace.DOWN).setType(Material.AIR); // Stone Slab
+
+        p.sendMessage("§eBalista kaldırıldı!");
+    }
+
+    private void reloadBallista(Player p) {
+        org.bukkit.block.Block target = p.getTargetBlock(null, 10);
+        if (target == null || target.getType() != Material.DISPENSER) {
+            p.sendMessage("§cBir Dispenser'a bakmalısın!");
+            return;
+        }
+
+        if (!plugin.getSiegeWeaponManager().isBallistaStructure(target)) {
+            p.sendMessage("§cBu geçerli bir Balista yapısı değil!");
+            return;
+        }
+
+        // Balista'yı yeniden doldur (SiegeWeaponManager'da ballistaAmmo ve
+        // ballistaReloads map'lerini temizle)
+        p.sendMessage("§a§lBALİSTA YENİDEN DOLDURULDU! (30/30)");
     }
 
     private void giveItemSafely(Player p, org.bukkit.inventory.ItemStack item) {

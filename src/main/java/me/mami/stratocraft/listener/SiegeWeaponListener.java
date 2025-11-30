@@ -3,6 +3,7 @@ package me.mami.stratocraft.listener;
 import me.mami.stratocraft.manager.SiegeWeaponManager;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -141,13 +142,14 @@ public class SiegeWeaponListener implements Listener {
             org.bukkit.entity.ArmorStand stand = (org.bukkit.entity.ArmorStand) event.getDismounted();
 
             // Bu ArmorStand mancınık mount'u mu kontrol et
-            if (manager.isMounted(player) && stand.equals(manager.getCatapultMount(player))) {
+            if (manager.isMounted(player) && stand.equals(manager.getMount(player))) {
                 // İnmeyi engelle eğer player sneak yapıyorsa (mount işlemi sırasında)
                 // Sneak olmadan inmeye izin ver (örn: ArmorStand kırıldı, player öldü, vb)
 
                 // NOT: Dismount olayı Shift+RightClick'ten SONRA tetikleniyor
                 // Bu yüzden burada sadece cleanup yapıyoruz
                 manager.dismountCatapult(player);
+                manager.dismountBallista(player);
             }
         }
     }
@@ -348,12 +350,43 @@ public class SiegeWeaponListener implements Listener {
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
         Block block = event.getBlock();
+
         // Mancınık yapımı kontrolü (Stone Brick Stairs)
         if (block.getType() == Material.STONE_BRICK_STAIRS || block.getType() == Material.COBBLESTONE_STAIRS) {
             // Eğer bu blok bir mancınık yapısını tamamlıyorsa
             if (manager.isCatapultStructure(block)) {
                 manager.playConstructionEffect(block.getLocation());
                 event.getPlayer().sendMessage("§a§lMANCINIK İNŞA EDİLDİ!");
+            }
+        }
+
+        // Balista yapımı kontrolü (Iron Bars, Dispenser, veya Stone Slab)
+        if (block.getType() == Material.IRON_BARS || block.getType() == Material.DISPENSER ||
+                block.getType() == Material.STONE_BRICK_SLAB || block.getType() == Material.STONE_SLAB) {
+
+            // Dispenser'ı bul (orta blok)
+            Block dispenser = null;
+            if (block.getType() == Material.DISPENSER) {
+                dispenser = block;
+            } else if (block.getType() == Material.IRON_BARS) {
+                // Iron Bars yanlardan birinde olabilir, etrafındaki Dispenser'ı ara
+                for (BlockFace face : new BlockFace[] { BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST,
+                        BlockFace.WEST }) {
+                    Block relative = block.getRelative(face);
+                    if (relative.getType() == Material.DISPENSER) {
+                        dispenser = relative;
+                        break;
+                    }
+                }
+            } else {
+                // Stone Slab altında, üstteki Dispenser'ı kontrol et
+                dispenser = block.getRelative(BlockFace.UP);
+            }
+
+            // Yapı kontrolü
+            if (dispenser != null && manager.isBallistaStructure(dispenser)) {
+                manager.playConstructionEffect(dispenser.getLocation());
+                event.getPlayer().sendMessage("§a§lBALİSTA İNŞA EDİLDİ!");
             }
         }
     }
@@ -522,21 +555,71 @@ public class SiegeWeaponListener implements Listener {
             return;
 
         // Balista kontrolü: Dispenser bloğu
-        if (block.getType() != Material.DISPENSER)
+        if (block.getType() == Material.DISPENSER) {
+            Player player = event.getPlayer();
+
+            // BİNEK SİSTEMİ: Sağ tık ile bin
+            if (player.isSneaking()) {
+                // Shift + Sağ tık ile inme işlemi SiegeWeaponManager.dismountBallista ile
+                // yapılacak
+                return;
+            }
+
+            manager.mountBallista(player, block);
+            event.setCancelled(true); // Dispenser menüsünü açmayı engelle
+        }
+    }
+
+    // BİNEK ÜZERİNDEYKEN İNME (Shift + Sağ Tık - Havaya veya Bloğa)
+    @EventHandler
+    public void onDismountInteract(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK)
             return;
 
         Player player = event.getPlayer();
-
-        // Cooldown kontrolü (Lokasyon bazlı)
-        if (!manager.canFireBallista(block.getLocation())) {
-            long remaining = manager.getBallistaCooldownRemaining(block.getLocation());
-            player.sendMessage("§cBalista hazır değil! " + remaining + " saniye kaldı.");
-            event.setCancelled(true);
+        if (!player.isSneaking())
             return;
+
+        if (manager.isMounted(player)) {
+            manager.dismountCatapult(player);
+            manager.dismountBallista(player);
+            event.setCancelled(true);
+        }
+    }
+
+    // BİNEK ÜZERİNDEYKEN ATEŞ ETME (Sol Tık)
+    @EventHandler
+    public void onMountedFire(PlayerInteractEvent event) {
+        if (event.getAction() != Action.LEFT_CLICK_AIR && event.getAction() != Action.LEFT_CLICK_BLOCK)
+            return;
+
+        Player player = event.getPlayer();
+        if (!manager.isMounted(player))
+            return;
+
+        org.bukkit.entity.ArmorStand mount = manager.getMount(player);
+        if (mount == null)
+            return;
+
+        // Hangi silahta olduğunu tespit et
+        Block mountBlock = mount.getLocation().getBlock();
+
+        // Dispenser = Balista
+        if (mountBlock.getType() == Material.DISPENSER) {
+            manager.fireBallista(player, mountBlock);
+        }
+        // Stone Brick Stairs = Mancınık
+        else if (mountBlock.getType() == Material.STONE_BRICK_STAIRS
+                || mountBlock.getType() == Material.COBBLESTONE_STAIRS) {
+            Block catapultBase = mountBlock;
+            // Mount 0.5 yukarıda, aşağıdaki bloğu bul
+            if (mountBlock.getType() == Material.AIR) {
+                catapultBase = mount.getLocation().subtract(0, 0.5, 0).getBlock();
+            }
+            manager.fireCatapult(player, catapultBase);
         }
 
-        manager.fireBallista(player, block);
-        event.setCancelled(true); // Dispenser menüsünü açmayı engelle
+        event.setCancelled(true);
     }
 
     // 4. LAV FISKIYESI (Lava Fountain)
