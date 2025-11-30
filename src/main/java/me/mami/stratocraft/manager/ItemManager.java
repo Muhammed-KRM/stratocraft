@@ -30,7 +30,7 @@ public class ItemManager {
     public static ItemStack WAR_FAN;
     public static ItemStack TOWER_SHIELD;
     public static ItemStack HELL_FRUIT;
-    
+
     // Yeni Madenler
     public static ItemStack SULFUR_ORE;
     public static ItemStack SULFUR;
@@ -43,9 +43,10 @@ public class ItemManager {
     public static ItemStack MITHRIL_STRING;
     public static ItemStack ASTRAL_ORE;
     public static ItemStack ASTRAL_CRYSTAL;
-    
+
     // Yeni Eşyalar
     public static ItemStack RUSTY_HOOK;
+    public static ItemStack GOLDEN_HOOK; // YENİ: Orta kademe kanca
     public static ItemStack TITAN_GRAPPLE;
     public static ItemStack TRAP_CORE;
 
@@ -66,7 +67,7 @@ public class ItemManager {
         WAR_FAN = create(Material.FEATHER, "WAR_FAN", "§eSavaş Yelpazesi");
         TOWER_SHIELD = create(Material.SHIELD, "TOWER_SHIELD", "§7Kule Kalkanı");
         HELL_FRUIT = create(Material.APPLE, "HELL_FRUIT", "§cCehennem Meyvesi");
-        
+
         // Yeni Madenler
         SULFUR_ORE = create(Material.YELLOW_CONCRETE_POWDER, "SULFUR_ORE", "§eKükürt Cevheri");
         SULFUR = create(Material.GUNPOWDER, "SULFUR", "§eKükürt");
@@ -79,9 +80,10 @@ public class ItemManager {
         MITHRIL_STRING = create(Material.STRING, "MITHRIL_STRING", "§bMithril İpi");
         ASTRAL_ORE = create(Material.AMETHYST_BLOCK, "ASTRAL_ORE", "§5Astral Cevheri");
         ASTRAL_CRYSTAL = create(Material.ECHO_SHARD, "ASTRAL_CRYSTAL", "§5Astral Kristali");
-        
-        // Yeni Eşyalar
+
+        // Yeni Eşyalar - 3 Kademeli Kanca Sistemi
         RUSTY_HOOK = create(Material.FISHING_ROD, "RUSTY_HOOK", "§7Paslı Kanca");
+        GOLDEN_HOOK = create(Material.FISHING_ROD, "GOLDEN_HOOK", "§6Altın Kanca");
         TITAN_GRAPPLE = create(Material.FISHING_ROD, "TITAN_GRAPPLE", "§6§lTitan Kancası");
         TRAP_CORE = create(Material.LODESTONE, "TRAP_CORE", "§cTuzak Çekirdeği");
 
@@ -89,40 +91,41 @@ public class ItemManager {
     }
 
     private void registerRecipes() {
-        ShapelessRecipe blueprint = new ShapelessRecipe(new NamespacedKey(Main.getInstance(), "craft_blueprint"), BLUEPRINT_PAPER);
+        ShapelessRecipe blueprint = new ShapelessRecipe(new NamespacedKey(Main.getInstance(), "craft_blueprint"),
+                BLUEPRINT_PAPER);
         blueprint.addIngredient(Material.PAPER);
         blueprint.addIngredient(Material.LAPIS_LAZULI);
         Bukkit.addRecipe(blueprint);
 
-        ShapedRecipe lightning = new ShapedRecipe(new NamespacedKey(Main.getInstance(), "craft_lightning_core"), LIGHTNING_CORE);
+        ShapedRecipe lightning = new ShapedRecipe(new NamespacedKey(Main.getInstance(), "craft_lightning_core"),
+                LIGHTNING_CORE);
         lightning.shape("GEG", "EDE", "GEG");
         lightning.setIngredient('G', Material.GOLD_INGOT);
         lightning.setIngredient('E', Material.ENDER_PEARL);
         lightning.setIngredient('D', Material.DIAMOND);
         Bukkit.addRecipe(lightning);
-        
+
         // Klan Kristali ve Klan Çiti tarifleri
         registerClanCrystalRecipe();
         registerClanFenceRecipe();
-        
+
         // Tuzak Çekirdeği (TRAP_CORE) tarifi
         registerTrapCoreRecipe();
     }
-    
+
     private void registerTrapCoreRecipe() {
         // Tuzak Çekirdeği: 4 Obsidyen + 1 Ender İncisi + 4 Demir
         ShapedRecipe trapCoreRecipe = new ShapedRecipe(
-            new NamespacedKey(Main.getInstance(), "trap_core"), 
-            TRAP_CORE
-        );
+                new NamespacedKey(Main.getInstance(), "trap_core"),
+                TRAP_CORE);
         trapCoreRecipe.shape("OEO", "IDI", "OEO");
-        trapCoreRecipe.setIngredient('O', Material.OBSIDIAN);      // Obsidyen
-        trapCoreRecipe.setIngredient('E', Material.ENDER_PEARL);   // Ender İncisi
-        trapCoreRecipe.setIngredient('I', Material.IRON_INGOT);     // Demir
-        trapCoreRecipe.setIngredient('D', Material.DIAMOND);        // Elmas (ortada)
+        trapCoreRecipe.setIngredient('O', Material.OBSIDIAN); // Obsidyen
+        trapCoreRecipe.setIngredient('E', Material.ENDER_PEARL); // Ender İncisi
+        trapCoreRecipe.setIngredient('I', Material.IRON_INGOT); // Demir
+        trapCoreRecipe.setIngredient('D', Material.DIAMOND); // Elmas (ortada)
         Bukkit.addRecipe(trapCoreRecipe);
     }
-    
+
     private void registerClanCrystalRecipe() {
         // Klan Kristali (End Crystal görünümünde)
         ItemStack crystal = new ItemStack(Material.END_CRYSTAL);
@@ -133,23 +136,23 @@ public class ItemManager {
         lore.add("§7Etrafı Klan Çiti ile çevrili");
         lore.add("§7bir alana koyulmalıdır.");
         meta.setLore(lore);
-        
+
         NamespacedKey key = new NamespacedKey(Main.getInstance(), "clan_item");
         meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, "CRYSTAL");
         crystal.setItemMeta(meta);
-        
+
         ShapedRecipe recipe = new ShapedRecipe(new NamespacedKey(Main.getInstance(), "clan_crystal"), crystal);
         // Tarif: Boş - Elmas Blok - Boş
-        //        Elmas Blok - Ender İncisi - Elmas Blok
-        //        Boş - Obsidyen - Boş
+        // Elmas Blok - Ender İncisi - Elmas Blok
+        // Boş - Obsidyen - Boş
         recipe.shape(" B ", "BEB", " O ");
         recipe.setIngredient('B', Material.DIAMOND_BLOCK); // Elmas Blok
-        recipe.setIngredient('E', Material.ENDER_PEARL);  // Ender İncisi
-        recipe.setIngredient('O', Material.OBSIDIAN);    // Obsidyen
-        
+        recipe.setIngredient('E', Material.ENDER_PEARL); // Ender İncisi
+        recipe.setIngredient('O', Material.OBSIDIAN); // Obsidyen
+
         Bukkit.addRecipe(recipe);
     }
-    
+
     private void registerClanFenceRecipe() {
         // Klan Çiti (Normal çit ama ortası demir)
         ItemStack fence = new ItemStack(Material.OAK_FENCE);
@@ -158,17 +161,17 @@ public class ItemManager {
         List<String> lore = new ArrayList<>();
         lore.add("§7Klan bölgesi sınırlarını belirler.");
         meta.setLore(lore);
-        
+
         NamespacedKey key = new NamespacedKey(Main.getInstance(), "clan_item");
         meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, "FENCE");
         fence.setItemMeta(meta);
-        
+
         ShapedRecipe recipe = new ShapedRecipe(new NamespacedKey(Main.getInstance(), "clan_fence"), fence);
         // Tarif: Tahta - Demir - Tahta (2 satır)
         recipe.shape("WIW", "WIW");
         recipe.setIngredient('W', Material.OAK_PLANKS);
         recipe.setIngredient('I', Material.IRON_INGOT);
-        
+
         Bukkit.addRecipe(recipe);
     }
 
@@ -186,20 +189,21 @@ public class ItemManager {
     }
 
     public static boolean isCustomItem(ItemStack item, String id) {
-        if (item == null || item.getItemMeta() == null) return false;
+        if (item == null || item.getItemMeta() == null)
+            return false;
         String data = item.getItemMeta().getPersistentDataContainer()
                 .get(new NamespacedKey(Main.getInstance(), "custom_id"), PersistentDataType.STRING);
         return id != null && id.equals(data);
     }
-    
+
     /**
      * Bir eşyanın Klan Kristali veya Klan Çiti olup olmadığını kontrol eder
      */
     public static boolean isClanItem(ItemStack item, String type) {
-        if (item == null || !item.hasItemMeta()) return false;
+        if (item == null || !item.hasItemMeta())
+            return false;
         NamespacedKey key = new NamespacedKey(Main.getInstance(), "clan_item");
         String data = item.getItemMeta().getPersistentDataContainer().get(key, PersistentDataType.STRING);
         return data != null && data.equals(type);
     }
 }
-

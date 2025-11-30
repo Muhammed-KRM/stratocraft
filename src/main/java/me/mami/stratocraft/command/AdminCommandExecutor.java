@@ -20,44 +20,34 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
-    
+
     private final Main plugin;
     private final LangManager langManager;
-    
+
     public AdminCommandExecutor(Main plugin) {
         this.plugin = plugin;
         this.langManager = plugin.getLangManager();
     }
-    
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("stratocraft.admin")) {
             sender.sendMessage(langManager.getMessage("admin.no-permission"));
             return true;
         }
-        
+
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
             showHelp(sender);
             return true;
         }
-        
-        // List komutu oyuncu olmayanlar için de çalışabilir
-        if (args[0].equalsIgnoreCase("list")) {
-            if (sender instanceof Player) {
-                return handleList((Player) sender, args);
-            } else {
-                sender.sendMessage(langManager.getMessage("admin.player-only"));
-                return true;
-            }
-        }
-        
+
         if (!(sender instanceof Player)) {
             sender.sendMessage(langManager.getMessage("admin.player-only"));
             return true;
         }
-        
+
         Player p = (Player) sender;
-        
+
         switch (args[0].toLowerCase()) {
             case "give":
                 return handleGive(p, args);
@@ -80,17 +70,17 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return true;
         }
     }
-    
+
     private boolean handleGive(Player p, String[] args) {
         if (args.length < 2) {
             p.sendMessage(langManager.getMessage("admin.give-usage"));
             p.sendMessage(langManager.getMessage("admin.give-example"));
             return true;
         }
-        
+
         String itemName = args[1].toLowerCase();
         int amount = args.length > 2 ? parseInt(args[2], 1) : 1;
-        
+
         // Miktar kontrolü
         if (amount < 1) {
             amount = 1;
@@ -99,43 +89,43 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§cMiktar çok yüksek! Maksimum 2304.");
             return true;
         }
-        
+
         ItemStack item = getItemByName(itemName);
         if (item == null) {
             p.sendMessage(langManager.getMessage("admin.give-invalid-item"));
             return true;
         }
-        
+
         item.setAmount(amount);
-        
+
         // Envanter doluysa yere düşür
         java.util.HashMap<Integer, ItemStack> overflow = p.getInventory().addItem(item);
         if (!overflow.isEmpty()) {
             for (ItemStack drop : overflow.values()) {
                 p.getWorld().dropItemNaturally(p.getLocation(), drop);
             }
-            p.sendMessage(langManager.getMessage("admin.give-success-overflow", 
-                "amount", String.valueOf(amount),
-                "item", getItemDisplayName(itemName)));
+            p.sendMessage(langManager.getMessage("admin.give-success-overflow",
+                    "amount", String.valueOf(amount),
+                    "item", getItemDisplayName(itemName)));
         } else {
             p.sendMessage(langManager.getMessage("admin.give-success",
-                "amount", String.valueOf(amount),
-                "item", getItemDisplayName(itemName)));
+                    "amount", String.valueOf(amount),
+                    "item", getItemDisplayName(itemName)));
         }
         return true;
     }
-    
+
     private boolean handleSpawn(Player p, String[] args) {
         if (args.length < 2) {
             p.sendMessage(langManager.getMessage("admin.spawn-usage"));
             p.sendMessage(langManager.getMessage("admin.spawn-example"));
             return true;
         }
-        
+
         String mobName = args[1].toLowerCase();
         MobManager mobManager = plugin.getMobManager();
         String mobDisplayName = "";
-        
+
         switch (mobName) {
             // Eski moblar
             case "hell_dragon":
@@ -277,8 +267,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 // SupplyDropManager'ı çağır - Oyuncunun konumuna düşür
                 // Main.java'da zaten oluşturulmuş supplyDropManager'ı kullan
                 // Ama eğer yoksa yeni oluştur
-                me.mami.stratocraft.manager.SupplyDropManager supplyDropManager = 
-                    plugin.getSupplyDropManager();
+                me.mami.stratocraft.manager.SupplyDropManager supplyDropManager = plugin.getSupplyDropManager();
                 if (supplyDropManager == null) {
                     supplyDropManager = new me.mami.stratocraft.manager.SupplyDropManager(plugin);
                 }
@@ -292,41 +281,110 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 p.sendMessage(langManager.getMessage("admin.spawn-invalid-mob"));
                 return true;
         }
-        
+
         p.sendMessage(langManager.getMessage("admin.spawn-success", "name", mobDisplayName));
         return true;
     }
-    
+
     private boolean handleDisaster(Player p, String[] args) {
         if (args.length < 2) {
-            p.sendMessage(langManager.getMessage("admin.disaster-usage"));
-            p.sendMessage(langManager.getMessage("admin.disaster-example"));
+            p.sendMessage("§cKullanım: /stratocraft disaster <type> [konum]");
+            p.sendMessage("§7Felaket Tipleri: titan_golem, abyssal_worm, solar_flare");
+            p.sendMessage("§7Konum: (boş) = uzak, 'ben' = yanında, 'X Y Z' = koordinat");
+            p.sendMessage("§7Yok etme: /stratocraft disaster clear");
+            p.sendMessage("§eÖrnek:");
+            p.sendMessage("§7  /stratocraft disaster titan_golem");
+            p.sendMessage("§7  /stratocraft disaster titan_golem ben");
+            p.sendMessage("§7  /stratocraft disaster titan_golem 100 64 200");
+            p.sendMessage("§7  /stratocraft disaster clear");
             return true;
         }
-        
-        String disasterName = args[1].toUpperCase();
+
         DisasterManager disasterManager = plugin.getDisasterManager();
-        
-        try {
-            Disaster.Type type = Disaster.Type.valueOf(disasterName);
-            disasterManager.triggerDisaster(type);
-            p.sendMessage(langManager.getMessage("admin.disaster-success", 
-                "name", getDisasterDisplayName(disasterName)));
-            return true;
-        } catch (IllegalArgumentException e) {
-            p.sendMessage(langManager.getMessage("admin.disaster-invalid"));
+
+        // CLEAR komutu
+        if (args[1].equalsIgnoreCase("clear") || args[1].equalsIgnoreCase("yok") ||
+                args[1].equalsIgnoreCase("temizle")) {
+            Disaster activeDisaster = disasterManager.getActiveDisaster();
+            if (activeDisaster == null) {
+                p.sendMessage("§cAktif felaket yok!");
+                return true;
+            }
+
+            // Felaketi yok et
+            activeDisaster.kill();
+            disasterManager.setActiveDisaster(null);
+
+            org.bukkit.Bukkit.broadcastMessage("§a§lFELAKET YOK EDİLDİ!");
+            p.sendMessage("§aFelaket admin tarafından yok edildi.");
             return true;
         }
+
+        String disasterName = args[1].toUpperCase(java.util.Locale.ENGLISH);
+
+        // Felaket tipini bul
+        Disaster.Type type;
+        try {
+            type = Disaster.Type.valueOf(disasterName);
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz felaket tipi: §e" + args[1]);
+            p.sendMessage("§7Geçerli tipler: §etitan_golem§7, §eabyssal_worm§7, §esolar_flare");
+            return true;
+        }
+
+        // Konum belirleme
+        org.bukkit.Location spawnLoc;
+
+        if (args.length >= 3) {
+            // Konum belirtilmiş
+            if (args[2].equalsIgnoreCase("ben") || args[2].equalsIgnoreCase("me") ||
+                    args[2].equalsIgnoreCase("self")) {
+                // Oyuncunun yanına spawn et
+                spawnLoc = p.getLocation().clone();
+                p.sendMessage("§eFelaket yanınıza spawn ediliyor...");
+            } else if (args.length >= 5) {
+                // X Y Z koordinatları
+                try {
+                    double x = Double.parseDouble(args[2]);
+                    double y = Double.parseDouble(args[3]);
+                    double z = Double.parseDouble(args[4]);
+                    spawnLoc = new org.bukkit.Location(p.getWorld(), x, y, z);
+                    p.sendMessage("§eFelaket belirtilen koordinata spawn ediliyor: §7" +
+                            (int) x + " " + (int) y + " " + (int) z);
+                } catch (NumberFormatException ex) {
+                    p.sendMessage("§cGeçersiz koordinatlar! Örnek: /stratocraft disaster titan_golem 100 64 200");
+                    return true;
+                }
+            } else {
+                p.sendMessage("§cEksik koordinat! 3 değer gerekli: X Y Z");
+                return true;
+            }
+        } else {
+            // Konum belirtilmemiş - uzak rastgele konum (varsayılan)
+            spawnLoc = null;
+        }
+
+        // Felaketi tetikle
+        if (spawnLoc != null) {
+            disasterManager.triggerDisaster(type, spawnLoc);
+        } else {
+            disasterManager.triggerDisaster(type);
+        }
+
+        p.sendMessage("§a§lFELAKET TETİKLENDİ!");
+        p.sendMessage("§7Tip: §e" + getDisasterDisplayName(disasterName));
+
+        return true;
     }
-    
+
     private boolean handleList(Player p, String[] args) {
         if (args.length < 2) {
             p.sendMessage(langManager.getMessage("admin.list-usage"));
             return true;
         }
-        
+
         String listType = args[1].toLowerCase();
-        
+
         switch (listType) {
             case "items":
                 showItemsList(p);
@@ -348,14 +406,22 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
         return true;
     }
-    
+
     private void showHelp(CommandSender sender) {
         sender.sendMessage(langManager.getMessage("admin.help-title"));
-        sender.sendMessage(langManager.getMessage("admin.help-command", "command", "help", "description", "Bu yardım menüsünü gösterir"));
-        sender.sendMessage(langManager.getMessage("admin.help-command", "command", "give <item> [miktar]", "description", "Özel item verir"));
-        sender.sendMessage(langManager.getMessage("admin.help-command", "command", "spawn <mob>", "description", "Özel canlı çağırır (titan_golem, supply_drop dahil)"));
-        sender.sendMessage(langManager.getMessage("admin.help-command", "command", "disaster <type>", "description", "Felaket tetikler"));
-        sender.sendMessage(langManager.getMessage("admin.help-command", "command", "list <items|mobs|disasters|all>", "description", "Listeleri gösterir"));
+        sender.sendMessage(langManager.getMessage("admin.help-command", "command", "help", "description",
+                "Bu yardım menüsünü gösterir"));
+        sender.sendMessage(langManager.getMessage("admin.help-command", "command", "give <item> [miktar]",
+                "description", "Özel item verir"));
+        sender.sendMessage(langManager.getMessage("admin.help-command", "command", "spawn <mob>", "description",
+                "Özel canlı çağırır (titan_golem, supply_drop dahil)"));
+        sender.sendMessage(
+                langManager.getMessage("admin.help-command", "command", "disaster <type> [konum]", "description",
+                        "Felaket tetikler"));
+        sender.sendMessage("§e  - §7Konum: boş = uzak, 'ben' = yanında, 'X Y Z' = koordinat");
+        sender.sendMessage("§e  - §7/stratocraft disaster clear §7- Felaketi yok et");
+        sender.sendMessage(langManager.getMessage("admin.help-command", "command", "list <items|mobs|disasters|all>",
+                "description", "Listeleri gösterir"));
         sender.sendMessage("§eYeni Komutlar:");
         sender.sendMessage("§7  Özel Eşyalar: /stratocraft give rusty_hook, titan_grapple, trap_core, spyglass");
         sender.sendMessage("§7  Yeni Madenler: /stratocraft give sulfur, bauxite, rock_salt, mithril, astral_crystal");
@@ -381,7 +447,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7  /stratocraft build alchemy_tower 3");
         sender.sendMessage("§7  /stratocraft build magma_battery");
     }
-    
+
     private void showItemsList(Player p) {
         p.sendMessage("§6§l=== ÖZEL İTEMLAR ===");
         p.sendMessage("§7--- Özel Eşyalar ---");
@@ -415,7 +481,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§e17. §7clan_crystal §7- Klan Kristali (YENİ)");
         p.sendMessage("§e18. §7clan_fence §7- Klan Çiti (YENİ)");
     }
-    
+
     private void showMobsList(Player p) {
         p.sendMessage("§6§l=== ÖZEL CANLILAR ===");
         p.sendMessage("§7--- Eski Moblar ---");
@@ -451,14 +517,14 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§7--- Özel Spawnlar ---");
         p.sendMessage("§e27. §7supply_drop §7- Hava Drop");
     }
-    
+
     private void showDisastersList(Player p) {
         p.sendMessage("§6§l=== FELAKETLER ===");
         p.sendMessage("§e1. §7titan_golem §7- Titan Golem");
         p.sendMessage("§e2. §7abyssal_worm §7- Hiçlik Solucanı");
         p.sendMessage("§e3. §7solar_flare §7- Güneş Fırtınası");
     }
-    
+
     private ItemStack getItemByName(String name) {
         switch (name.toLowerCase()) {
             case "blueprint":
@@ -518,15 +584,22 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "klan_çiti":
             case "klan_citi":
                 return createClanFence();
-            // Özel Eşyalar
+            // Kancalar - 3 Kademeli Sistem
             case "rusty_hook":
             case "pasli_kanca":
             case "paslı_kanca":
                 return ItemManager.RUSTY_HOOK != null ? ItemManager.RUSTY_HOOK.clone() : null;
+
+            case "golden_hook":
+            case "altin_kanca":
+            case "altın_kanca":
+                return ItemManager.GOLDEN_HOOK != null ? ItemManager.GOLDEN_HOOK.clone() : null;
+
             case "titan_grapple":
             case "titan_kancasi":
             case "titan_kancası":
                 return ItemManager.TITAN_GRAPPLE != null ? ItemManager.TITAN_GRAPPLE.clone() : null;
+
             case "trap_core":
             case "tuzak_cekirdegi":
             case "tuzak_çekirdeği":
@@ -579,20 +652,21 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return null;
         }
     }
-    
+
     private ItemStack createClanCrystal() {
         ItemStack crystal = new ItemStack(Material.END_CRYSTAL);
         org.bukkit.inventory.meta.ItemMeta meta = crystal.getItemMeta();
         if (meta != null) {
             meta.setDisplayName("§b§lKlan Kristali");
-            meta.setLore(Arrays.asList("§7Klan kurmak için kullanılır.", "§7Etrafı Klan Çiti ile çevrili", "§7bir alana koyulmalıdır."));
+            meta.setLore(Arrays.asList("§7Klan kurmak için kullanılır.", "§7Etrafı Klan Çiti ile çevrili",
+                    "§7bir alana koyulmalıdır."));
             org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey(plugin, "clan_item");
             meta.getPersistentDataContainer().set(key, org.bukkit.persistence.PersistentDataType.STRING, "CRYSTAL");
             crystal.setItemMeta(meta);
         }
         return crystal;
     }
-    
+
     private ItemStack createClanFence() {
         ItemStack fence = new ItemStack(Material.OAK_FENCE);
         org.bukkit.inventory.meta.ItemMeta meta = fence.getItemMeta();
@@ -605,7 +679,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
         return fence;
     }
-    
+
     private String getItemDisplayName(String name) {
         String lowerName = name.toLowerCase();
         // Alternatif isimleri de kontrol et
@@ -663,13 +737,16 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         if (lowerName.contains("clan_fence") || lowerName.contains("klan_çiti") || lowerName.contains("klan_citi")) {
             return "Klan Çiti";
         }
-        if (lowerName.contains("rusty_hook") || lowerName.contains("pasli_kanca") || lowerName.contains("paslı_kanca")) {
+        if (lowerName.contains("rusty_hook") || lowerName.contains("pasli_kanca")
+                || lowerName.contains("paslı_kanca")) {
             return "Paslı Kanca";
         }
-        if (lowerName.contains("titan_grapple") || lowerName.contains("titan_kancasi") || lowerName.contains("titan_kancası")) {
+        if (lowerName.contains("titan_grapple") || lowerName.contains("titan_kancasi")
+                || lowerName.contains("titan_kancası")) {
             return "Titan Kancası";
         }
-        if (lowerName.contains("trap_core") || lowerName.contains("tuzak_cekirdegi") || lowerName.contains("tuzak_çekirdeği")) {
+        if (lowerName.contains("trap_core") || lowerName.contains("tuzak_cekirdegi")
+                || lowerName.contains("tuzak_çekirdeği")) {
             return "Tuzak Çekirdeği";
         }
         if (lowerName.contains("sulfur") || lowerName.contains("kukurt") || lowerName.contains("kükürt")) {
@@ -692,16 +769,20 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
         return name;
     }
-    
+
     private String getDisasterDisplayName(String name) {
         switch (name.toUpperCase()) {
-            case "TITAN_GOLEM": return "Titan Golem";
-            case "ABYSSAL_WORM": return "Hiçlik Solucanı";
-            case "SOLAR_FLARE": return "Güneş Fırtınası";
-            default: return name;
+            case "TITAN_GOLEM":
+                return "Titan Golem";
+            case "ABYSSAL_WORM":
+                return "Hiçlik Solucanı";
+            case "SOLAR_FLARE":
+                return "Güneş Fırtınası";
+            default:
+                return name;
         }
     }
-    
+
     private int parseInt(String str, int defaultValue) {
         try {
             return Integer.parseInt(str);
@@ -709,7 +790,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             return defaultValue;
         }
     }
-    
+
     /**
      * Tab Completion - Komut tamamlama desteği
      * /stratocraft [TAB] -> give, spawn, disaster, list, help
@@ -724,84 +805,82 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         if (!sender.hasPermission("stratocraft.admin")) {
             return new ArrayList<>();
         }
-        
+
         // İlk argüman (komut seçimi)
         if (args.length == 1) {
-            List<String> commands = Arrays.asList("give", "spawn", "disaster", "list", "help", "siege", "caravan", "contract", "build", "trap");
+            List<String> commands = Arrays.asList("give", "spawn", "disaster", "list", "help", "siege", "caravan",
+                    "contract", "build", "trap");
             String input = args[0].toLowerCase();
-            
+
             // Eğer boşsa veya başlangıç eşleşiyorsa filtrele
             if (input.isEmpty()) {
                 return commands;
             }
-            
+
             return commands.stream()
                     .filter(s -> s.toLowerCase().startsWith(input))
                     .collect(Collectors.toList());
         }
-        
+
         // İkinci argüman (komut parametreleri)
         if (args.length == 2) {
             String commandName = args[0].toLowerCase();
             String input = args[1].toLowerCase();
-            
+
             switch (commandName) {
                 case "give":
                     // Tüm item isimlerini listele
                     List<String> items = Arrays.asList(
-                        "blueprint", "lightning_core", "titanium_ore", "titanium_ingot", 
-                        "dark_matter", "red_diamond", "ruby", "adamantite", "star_core", 
-                        "flame_amplifier", "devil_horn", "devil_snake_eye", "recipe_tectonic", 
-                        "war_fan", "tower_shield", "hell_fruit", "clan_crystal", "clan_fence",
-                        // Özel Eşyalar
-                        "rusty_hook", "titan_grapple", "trap_core", "spyglass",
-                        // Yeni Madenler
-                        "sulfur", "sulfur_ore", "bauxite", "bauxite_ore", 
-                        "rock_salt", "rock_salt_ore", "mithril", "mithril_ore", "mithril_string",
-                        "astral_crystal", "astral_ore"
-                    );
+                            "blueprint", "lightning_core", "titanium_ore", "titanium_ingot",
+                            "dark_matter", "red_diamond", "ruby", "adamantite", "star_core",
+                            "flame_amplifier", "devil_horn", "devil_snake_eye", "recipe_tectonic",
+                            "war_fan", "tower_shield", "hell_fruit", "clan_crystal", "clan_fence",
+                            // Özel Eşyalar
+                            "rusty_hook", "titan_grapple", "trap_core", "spyglass",
+                            // Yeni Madenler
+                            "sulfur", "sulfur_ore", "bauxite", "bauxite_ore",
+                            "rock_salt", "rock_salt_ore", "mithril", "mithril_ore", "mithril_string",
+                            "astral_crystal", "astral_ore");
                     if (input.isEmpty()) {
                         return items;
                     }
                     return items.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
-                    
+
                 case "spawn":
                     // Tüm mob isimlerini listele (27 mob + supply drop)
                     List<String> mobs = Arrays.asList(
-                        // Eski moblar
-                        "hell_dragon", "terror_worm", "war_bear", "shadow_panther", "wyvern",
-                        // Sık gelen canavarlar
-                        "goblin", "ork", "troll", "skeleton_knight", "dark_mage",
-                        "werewolf", "giant_spider", "minotaur", "harpy", "basilisk",
-                        // Nadir canavarlar
-                        "dragon", "trex", "cyclops", "griffin", "wraith",
-                        "lich", "kraken", "phoenix", "hydra", "behemoth",
-                        // Yeni moblar
-                        "titan_golem",
-                        // Özel spawnlar
-                        "supply_drop"
-                    );
+                            // Eski moblar
+                            "hell_dragon", "terror_worm", "war_bear", "shadow_panther", "wyvern",
+                            // Sık gelen canavarlar
+                            "goblin", "ork", "troll", "skeleton_knight", "dark_mage",
+                            "werewolf", "giant_spider", "minotaur", "harpy", "basilisk",
+                            // Nadir canavarlar
+                            "dragon", "trex", "cyclops", "griffin", "wraith",
+                            "lich", "kraken", "phoenix", "hydra", "behemoth",
+                            // Yeni moblar
+                            "titan_golem",
+                            // Özel spawnlar
+                            "supply_drop");
                     if (input.isEmpty()) {
                         return mobs;
                     }
                     return mobs.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
-                    
+
                 case "disaster":
                     // Tüm felaket tiplerini listele
                     List<String> disasters = Arrays.asList(
-                        "titan_golem", "abyssal_worm", "solar_flare"
-                    );
+                            "titan_golem", "abyssal_worm", "solar_flare");
                     if (input.isEmpty()) {
                         return disasters;
                     }
                     return disasters.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
-                    
+
                 case "list":
                     // Liste tiplerini listele
                     List<String> listTypes = Arrays.asList("items", "mobs", "disasters", "all");
@@ -811,7 +890,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return listTypes.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
-                            
+
                 case "siege":
                     // Siege komutları
                     List<String> siegeCommands = Arrays.asList("clear", "list");
@@ -821,7 +900,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return siegeCommands.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
-                            
+
                 case "caravan":
                     // Caravan komutları
                     List<String> caravanCommands = Arrays.asList("clear", "list");
@@ -831,7 +910,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return caravanCommands.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
-                            
+
                 case "contract":
                     // Contract komutları
                     List<String> contractCommands = Arrays.asList("clear", "list");
@@ -841,12 +920,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return contractCommands.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
-                            
+
                 case "trap":
                     // Trap komutları
                     if (args.length == 2 && args[1].equalsIgnoreCase("give")) {
                         // Trap give için tuzak tipleri
-                        List<String> trapTypes = Arrays.asList("hell_trap", "shock_trap", "black_hole", "mine", "poison_trap");
+                        List<String> trapTypes = Arrays.asList("hell_trap", "shock_trap", "black_hole", "mine",
+                                "poison_trap");
                         if (input.isEmpty()) {
                             return trapTypes;
                         }
@@ -863,25 +943,24 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                                 .filter(s -> s.toLowerCase().startsWith(input))
                                 .collect(Collectors.toList());
                     }
-                            
+
                 case "build":
                     // Build komutları - Tüm yapı tipleri
                     List<String> buildTypes = Arrays.asList(
-                        // Savaş yapıları
-                        "catapult", "ballista", "lava_fountain", "poison_dispenser",
-                        "force_field", "healing_shrine", "power_totem", "speed_circle", "defense_wall",
-                        // Bataryalar
-                        "magma_battery", "lightning_battery", "black_hole", "bridge",
-                        "shelter", "gravity_anchor", "seismic_hammer", "magnetic_disruptor", "ozone_shield",
-                        "earth_wall", "energy_wall", "lava_trencher_battery",
-                        // Klan yapıları
-                        "alchemy_tower", "tectonic_stabilizer", "healing_beacon", "global_market_gate",
-                        "auto_turret", "poison_reactor", "siege_factory", "wall_generator",
-                        "gravity_well", "lava_trencher", "watchtower", "drone_station",
-                        "xp_bank", "mag_rail", "teleporter", "food_silo", "oil_refinery",
-                        "weather_machine", "crop_accelerator", "mob_grinder", "invisibility_cloak",
-                        "armory", "library", "warning_sign", "auto_drill", "core"
-                    );
+                            // Savaş yapıları
+                            "catapult", "ballista", "lava_fountain", "poison_dispenser",
+                            "force_field", "healing_shrine", "power_totem", "speed_circle", "defense_wall",
+                            // Bataryalar
+                            "magma_battery", "lightning_battery", "black_hole", "bridge",
+                            "shelter", "gravity_anchor", "seismic_hammer", "magnetic_disruptor", "ozone_shield",
+                            "earth_wall", "energy_wall", "lava_trencher_battery",
+                            // Klan yapıları
+                            "alchemy_tower", "tectonic_stabilizer", "healing_beacon", "global_market_gate",
+                            "auto_turret", "poison_reactor", "siege_factory", "wall_generator",
+                            "gravity_well", "lava_trencher", "watchtower", "drone_station",
+                            "xp_bank", "mag_rail", "teleporter", "food_silo", "oil_refinery",
+                            "weather_machine", "crop_accelerator", "mob_grinder", "invisibility_cloak",
+                            "armory", "library", "warning_sign", "auto_drill", "core");
                     if (input.isEmpty()) {
                         return buildTypes;
                     }
@@ -890,7 +969,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                             .collect(Collectors.toList());
             }
         }
-        
+
         // Build komutu için seviye argümanı
         if (args.length == 3 && args[0].equalsIgnoreCase("build")) {
             // Seviye için 1-5 arası öner
@@ -903,7 +982,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     .filter(s -> s.startsWith(input))
                     .collect(Collectors.toList());
         }
-        
+
         // Trap give komutu için tuzak tipleri
         if (args.length == 3 && args[0].equalsIgnoreCase("trap") && args[1].equalsIgnoreCase("give")) {
             List<String> trapTypes = Arrays.asList("hell_trap", "shock_trap", "black_hole", "mine", "poison_trap");
@@ -915,19 +994,19 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     .filter(s -> s.toLowerCase().startsWith(input))
                     .collect(Collectors.toList());
         }
-        
+
         // Üçüncü argüman (sadece give komutu için miktar)
         if (args.length == 3 && args[0].equalsIgnoreCase("give")) {
             // Miktar için tab completion gerekmez, boş liste döndür
             return new ArrayList<>();
         }
-        
+
         // Diğer durumlar için boş liste
         return new ArrayList<>();
     }
-    
+
     // ========== YENİ ADMIN KOMUTLARI ==========
-    
+
     /**
      * Savaş yapıları yönetimi
      * /stratocraft siege clear - Tüm savaş yapılarını temizle
@@ -938,13 +1017,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§cKullanım: /stratocraft siege <clear|list>");
             return true;
         }
-        
+
         me.mami.stratocraft.manager.SiegeWeaponManager siegeManager = plugin.getSiegeWeaponManager();
         if (siegeManager == null) {
             p.sendMessage("§cSiegeWeaponManager bulunamadı!");
             return true;
         }
-        
+
         switch (args[1].toLowerCase()) {
             case "clear":
                 // Tüm aktif yapıları temizle
@@ -959,52 +1038,52 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return true;
         }
     }
-    
+
     private int clearAllSiegeStructures(me.mami.stratocraft.manager.SiegeWeaponManager manager) {
         int count = 0;
-        
+
         // Can Tapınaklarını temizle
         for (org.bukkit.Location loc : new java.util.ArrayList<>(manager.getAllHealingShrines().keySet())) {
             manager.removeHealingShrine(loc);
             count++;
         }
-        
+
         // Güç Totemlerini temizle
         for (org.bukkit.Location loc : new java.util.ArrayList<>(manager.getAllPowerTotems().keySet())) {
             manager.removePowerTotem(loc);
             count++;
         }
-        
+
         // Hız Çemberlerini temizle
         for (org.bukkit.Location loc : new java.util.ArrayList<>(manager.getAllSpeedCircles().keySet())) {
             manager.removeSpeedCircle(loc);
             count++;
         }
-        
+
         // Savunma Duvarlarını temizle
         for (org.bukkit.Location loc : new java.util.ArrayList<>(manager.getAllDefenseWalls().keySet())) {
             manager.removeDefenseWall(loc);
             count++;
         }
-        
+
         return count;
     }
-    
+
     private void showSiegeStructuresList(Player p, me.mami.stratocraft.manager.SiegeWeaponManager manager) {
         p.sendMessage("§6§l=== AKTİF SAVAŞ YAPILARI ===");
-        
+
         int shrineCount = manager.getAllHealingShrines().size();
         int totemCount = manager.getAllPowerTotems().size();
         int circleCount = manager.getAllSpeedCircles().size();
         int wallCount = manager.getAllDefenseWalls().size();
-        
+
         p.sendMessage("§eCan Tapınağı: §7" + shrineCount);
         p.sendMessage("§eGüç Totemi: §7" + totemCount);
         p.sendMessage("§eHız Çemberi: §7" + circleCount);
         p.sendMessage("§eSavunma Duvarı: §7" + wallCount);
         p.sendMessage("§7Toplam: §a" + (shrineCount + totemCount + circleCount + wallCount));
     }
-    
+
     /**
      * Kervan yönetimi
      * /stratocraft caravan list - Aktif kervanları listele
@@ -1015,13 +1094,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§cKullanım: /stratocraft caravan <list|clear>");
             return true;
         }
-        
+
         me.mami.stratocraft.manager.CaravanManager caravanManager = plugin.getCaravanManager();
         if (caravanManager == null) {
             p.sendMessage("§cCaravanManager bulunamadı!");
             return true;
         }
-        
+
         switch (args[1].toLowerCase()) {
             case "list":
                 showCaravansList(p, caravanManager);
@@ -1035,34 +1114,35 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return true;
         }
     }
-    
+
     private void showCaravansList(Player p, me.mami.stratocraft.manager.CaravanManager manager) {
         int count = manager.getActiveCaravanCount();
         p.sendMessage("§6§l=== AKTİF KERVANLAR ===");
         p.sendMessage("§7Toplam: §a" + count);
-        
+
         if (count == 0) {
             p.sendMessage("§7Aktif kervan yok.");
             return;
         }
-        
+
         int index = 1;
-        for (java.util.Map.Entry<java.util.UUID, org.bukkit.entity.Entity> entry : manager.getActiveCaravans().entrySet()) {
+        for (java.util.Map.Entry<java.util.UUID, org.bukkit.entity.Entity> entry : manager.getActiveCaravans()
+                .entrySet()) {
             org.bukkit.entity.Player owner = org.bukkit.Bukkit.getPlayer(entry.getKey());
             String ownerName = owner != null ? owner.getName() : "Offline";
             org.bukkit.entity.Entity caravan = entry.getValue();
-            
+
             if (caravan != null && caravan.isValid()) {
                 org.bukkit.Location loc = caravan.getLocation();
-                p.sendMessage("§e" + index + ". §7Sahip: §a" + ownerName + 
-                    " §7- Konum: §7X:" + (int)loc.getX() + " Y:" + (int)loc.getY() + " Z:" + (int)loc.getZ());
+                p.sendMessage("§e" + index + ". §7Sahip: §a" + ownerName +
+                        " §7- Konum: §7X:" + (int) loc.getX() + " Y:" + (int) loc.getY() + " Z:" + (int) loc.getZ());
             } else {
                 p.sendMessage("§e" + index + ". §7Sahip: §a" + ownerName + " §c(Geçersiz)");
             }
             index++;
         }
     }
-    
+
     /**
      * Kontrat yönetimi
      * /stratocraft contract list - Aktif kontratları listele
@@ -1073,13 +1153,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§cKullanım: /stratocraft contract <list|clear>");
             return true;
         }
-        
+
         me.mami.stratocraft.manager.ContractManager contractManager = plugin.getContractManager();
         if (contractManager == null) {
             p.sendMessage("§cContractManager bulunamadı!");
             return true;
         }
-        
+
         switch (args[1].toLowerCase()) {
             case "list":
                 showContractsList(p, contractManager);
@@ -1093,50 +1173,51 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return true;
         }
     }
-    
+
     private void showContractsList(Player p, me.mami.stratocraft.manager.ContractManager manager) {
         java.util.List<me.mami.stratocraft.model.Contract> contracts = manager.getContracts();
         p.sendMessage("§6§l=== AKTİF KONTRATLAR ===");
         p.sendMessage("§7Toplam: §a" + contracts.size());
-        
+
         if (contracts.isEmpty()) {
             p.sendMessage("§7Aktif kontrat yok.");
             return;
         }
-        
+
         int index = 1;
         for (me.mami.stratocraft.model.Contract contract : contracts) {
             org.bukkit.entity.Player issuer = org.bukkit.Bukkit.getPlayer(contract.getIssuer());
             String issuerName = issuer != null ? issuer.getName() : "Offline";
-            
+
             if (contract.getTargetPlayer() != null) {
                 // Bounty kontratı
                 org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayer(contract.getTargetPlayer());
                 String targetName = target != null ? target.getName() : "Offline";
-                p.sendMessage("§e" + index + ". §7Bounty: §c" + targetName + 
-                    " §7- Ödül: §6" + String.format("%.2f", contract.getReward()) + " Altın" +
-                    " §7- Veren: §a" + issuerName);
+                p.sendMessage("§e" + index + ". §7Bounty: §c" + targetName +
+                        " §7- Ödül: §6" + String.format("%.2f", contract.getReward()) + " Altın" +
+                        " §7- Veren: §a" + issuerName);
             } else {
                 // Normal kontrat
-                p.sendMessage("§e" + index + ". §7" + contract.getMaterial() + " x" + contract.getAmount() + 
-                    " §7- Ödül: §6" + String.format("%.2f", contract.getReward()) + " Altın" +
-                    " §7- Veren: §a" + issuerName);
+                p.sendMessage("§e" + index + ". §7" + contract.getMaterial() + " x" + contract.getAmount() +
+                        " §7- Ödül: §6" + String.format("%.2f", contract.getReward()) + " Altın" +
+                        " §7- Veren: §a" + issuerName);
             }
             index++;
         }
     }
-    
+
     private int clearAllContracts(me.mami.stratocraft.manager.ContractManager manager) {
         int count = manager.getContracts().size();
         manager.getContracts().clear();
         return count;
     }
-    
+
     // ========== YAPI OLUŞTURMA KOMUTLARI ==========
-    
+
     /**
      * Yapı oluşturma komutu
-     * /stratocraft build <type> [level] - Yapı oluşturur ve aktifleştirme malzemelerini verir
+     * /stratocraft build <type> [level] - Yapı oluşturur ve aktifleştirme
+     * malzemelerini verir
      */
     private boolean handleBuild(Player p, String[] args) {
         if (args.length < 2) {
@@ -1146,200 +1227,242 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§7Yapı tipleri: siege, structure, battery");
             return true;
         }
-        
+
         String buildType = args[1].toLowerCase();
         int level = args.length > 2 ? parseInt(args[2], 1) : 1;
-        
+
         // Yapı kategorisine göre yönlendir
-        if (buildType.startsWith("catapult") || buildType.startsWith("ballista") || 
-            buildType.startsWith("lava_fountain") || buildType.startsWith("poison_dispenser") ||
-            buildType.startsWith("force_field") || buildType.startsWith("healing_shrine") ||
-            buildType.startsWith("power_totem") || buildType.startsWith("speed_circle") ||
-            buildType.startsWith("defense_wall")) {
+        if (buildType.startsWith("catapult") || buildType.startsWith("ballista") ||
+                buildType.startsWith("lava_fountain") || buildType.startsWith("poison_dispenser") ||
+                buildType.startsWith("force_field") || buildType.startsWith("healing_shrine") ||
+                buildType.startsWith("power_totem") || buildType.startsWith("speed_circle") ||
+                buildType.startsWith("defense_wall")) {
             return buildSiegeWeapon(p, buildType);
         } else if (buildType.startsWith("magma") || buildType.startsWith("lightning") ||
-                   buildType.startsWith("black_hole") || buildType.startsWith("bridge") ||
-                   buildType.startsWith("shelter") || buildType.startsWith("gravity") ||
-                   buildType.startsWith("seismic") || buildType.startsWith("ozone") ||
-                   buildType.startsWith("magnetic") || buildType.startsWith("earth_wall") ||
-                   buildType.startsWith("energy_wall") || buildType.startsWith("lava_trencher_battery")) {
+                buildType.startsWith("black_hole") || buildType.startsWith("bridge") ||
+                buildType.startsWith("shelter") || buildType.startsWith("gravity") ||
+                buildType.startsWith("seismic") || buildType.startsWith("ozone") ||
+                buildType.startsWith("magnetic") || buildType.startsWith("earth_wall") ||
+                buildType.startsWith("energy_wall") || buildType.startsWith("lava_trencher_battery")) {
             return buildBattery(p, buildType);
         } else {
             // Klan yapıları (Structure.Type)
             return buildClanStructure(p, buildType, level);
         }
     }
-    
+
     /**
      * Savaş yapıları oluşturma
      */
     private boolean buildSiegeWeapon(Player p, String type) {
         org.bukkit.Location loc = p.getLocation();
-        
+
         // Yerinde blok varsa temizle
         me.mami.stratocraft.manager.StructureBuilder.clearArea(loc, 5, 5, 5);
-        
+
         switch (type.toLowerCase()) {
             case "catapult":
             case "mancinik":
-                // Mancınık: Basamak bloğu oluştur
-                loc.getBlock().setType(Material.STONE_BRICK_STAIRS);
-                org.bukkit.block.data.type.Stairs stairs = (org.bukkit.block.data.type.Stairs) 
-                    loc.getBlock().getBlockData();
-                stairs.setFacing(p.getFacing());
-                loc.getBlock().setBlockData(stairs);
-                
-                // Aktifleştirme malzemesi yok (sadece sağ tık)
-                p.sendMessage("§a§lMANCINIK OLUŞTURULDU!");
-                p.sendMessage("§7Sağ tıkla ateş edebilirsin.");
+                // Mancınık: 3x3 Taş Tuğla Merdiven Tabanı Oluştur
+                org.bukkit.block.BlockFace facing = p.getFacing();
+
+                // 3x3 taban oluştur (merkez oyuncunun bulunduğu yer)
+                for (int x = -1; x <= 1; x++) {
+                    for (int z = -1; z <= 1; z++) {
+                        org.bukkit.Location stairLoc = loc.clone().add(x, 0, z);
+                        stairLoc.getBlock().setType(Material.STONE_BRICK_STAIRS);
+
+                        org.bukkit.block.data.type.Stairs stairs = (org.bukkit.block.data.type.Stairs) stairLoc
+                                .getBlock()
+                                .getBlockData();
+                        stairs.setFacing(facing);
+                        stairLoc.getBlock().setBlockData(stairs);
+                    }
+                }
+
+                // Ortaya kontrol koltuğu (merdivenler) ekle
+                org.bukkit.Location centerLoc = loc.clone().add(0, 1, 0);
+                centerLoc.getBlock().setType(Material.STONE_BRICK_STAIRS);
+                org.bukkit.block.data.type.Stairs centerStairs = (org.bukkit.block.data.type.Stairs) centerLoc
+                        .getBlock()
+                        .getBlockData();
+                centerStairs.setFacing(facing);
+                centerLoc.getBlock().setBlockData(centerStairs);
+
+                // YAPILDI EFEKTLERİ
+                org.bukkit.Location effectLoc = loc.clone().add(0, 1, 0);
+                p.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, effectLoc, 3);
+                p.getWorld().spawnParticle(org.bukkit.Particle.SMOKE_LARGE, effectLoc, 20, 1, 1, 1);
+                p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_ANVIL_USE, 1.0f, 1.0f);
+                p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.5f);
+
+                // Havai fişek efekti
+                org.bukkit.entity.Firework firework = (org.bukkit.entity.Firework) p.getWorld().spawnEntity(
+                        effectLoc, org.bukkit.entity.EntityType.FIREWORK);
+                org.bukkit.inventory.meta.FireworkMeta fireworkMeta = firework.getFireworkMeta();
+                fireworkMeta.addEffect(org.bukkit.FireworkEffect.builder()
+                        .with(org.bukkit.FireworkEffect.Type.BURST)
+                        .withColor(org.bukkit.Color.RED, org.bukkit.Color.ORANGE)
+                        .flicker(true).build());
+                fireworkMeta.setPower(0);
+                firework.setFireworkMeta(fireworkMeta);
+
+                // Kullanım talimatları
+                p.sendMessage("§a§l3x3 MANCINIK OLUŞTURULDU!");
+                p.sendMessage("§7Kullanım:");
+                p.sendMessage("§e  1. §7Boş El + Sağ Tık = Bin");
+                p.sendMessage("§e  2. §7Sol Tık = Ateş Et!");
+                p.sendMessage("§e  3. §7Shift + Sağ Tık = İn");
+                p.sendMessage("§7Cooldown: 10 saniye");
+                p.sendMessage("§7Yapı: 3x3 taş tuğla merdiven tabanı");
                 return true;
-                
+
             case "ballista":
             case "balista":
                 // Balista: Dispenser oluştur
                 loc.getBlock().setType(Material.DISPENSER);
-                org.bukkit.block.data.Directional dispenser = (org.bukkit.block.data.Directional)
-                    loc.getBlock().getBlockData();
+                org.bukkit.block.data.Directional dispenser = (org.bukkit.block.data.Directional) loc.getBlock()
+                        .getBlockData();
                 dispenser.setFacing(p.getFacing());
                 loc.getBlock().setBlockData(dispenser);
-                
+
                 p.sendMessage("§a§lBALİSTA OLUŞTURULDU!");
                 p.sendMessage("§7Sağ tıkla ateş edebilirsin.");
                 return true;
-                
+
             case "lava_fountain":
             case "lav_fiskiyesi":
                 // Lav Fıskiyesi: Cauldron oluştur ve doldur
                 loc.getBlock().setType(Material.CAULDRON);
-                org.bukkit.block.data.Levelled cauldron = (org.bukkit.block.data.Levelled)
-                    loc.getBlock().getBlockData();
+                org.bukkit.block.data.Levelled cauldron = (org.bukkit.block.data.Levelled) loc.getBlock()
+                        .getBlockData();
                 cauldron.setLevel(3); // Tam dolu
                 loc.getBlock().setBlockData(cauldron);
-                
+
                 // Lava bucket ver
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.LAVA_BUCKET, 1));
-                
+
                 p.sendMessage("§a§lLAV FISKIYESI OLUŞTURULDU!");
                 p.sendMessage("§7Lava ile doldur ve sağ tıkla.");
                 return true;
-                
+
             case "poison_dispenser":
             case "zehir_yayici":
                 // Zehir Yayıcı: Dropper oluştur
                 loc.getBlock().setType(Material.DROPPER);
-                org.bukkit.block.data.Directional dropper = (org.bukkit.block.data.Directional)
-                    loc.getBlock().getBlockData();
+                org.bukkit.block.data.Directional dropper = (org.bukkit.block.data.Directional) loc.getBlock()
+                        .getBlockData();
                 dropper.setFacing(p.getFacing());
                 loc.getBlock().setBlockData(dropper);
-                
+
                 // Spider Eye ver (aktifleştirme için)
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.SPIDER_EYE, 1));
-                
+
                 p.sendMessage("§a§lZEHİR GAZI YAYICI OLUŞTURULDU!");
                 p.sendMessage("§7Spider Eye ile sağ tıkla.");
                 return true;
-                
+
             case "force_field":
             case "enerji_kalkani":
                 // Enerji Kalkanı: Beacon oluştur
                 loc.getBlock().setType(Material.BEACON);
-                
+
                 p.sendMessage("§a§lENERJİ KALKANI OLUŞTURULDU!");
                 p.sendMessage("§7Sağ tıkla aktifleştir.");
                 return true;
-                
+
             case "healing_shrine":
             case "can_tapinagi":
                 // Can Tapınağı: 3x3 Altın Bloğu + Ortada Beacon
                 for (int x = -1; x <= 1; x++) {
                     for (int z = -1; z <= 1; z++) {
                         if (x == 0 && z == 0) {
-                            loc.clone().add(x, 0, z).getBlock().setType(Material.BEACON);
+                            loc.clone().add(x, 1, z).getBlock().setType(Material.BEACON);
                         } else {
-                            loc.clone().add(x, -1, z).getBlock().setType(Material.GOLD_BLOCK);
+                            loc.clone().add(x, 0, z).getBlock().setType(Material.GOLD_BLOCK);
                         }
                     }
                 }
-                
+
                 p.sendMessage("§a§lCAN TAPINAĞI OLUŞTURULDU!");
                 p.sendMessage("§7Klan üyeleriniz buradan faydalanabilir.");
                 return true;
-                
+
             case "power_totem":
             case "guc_totemi":
                 // Güç Totemi: 2x2 Obsidyen + Ortada Enchanting Table
                 for (int x = -1; x <= 1; x++) {
                     for (int z = -1; z <= 1; z++) {
                         if (x == 0 && z == 0) {
-                            loc.clone().add(x, 0, z).getBlock().setType(Material.ENCHANTING_TABLE);
+                            loc.clone().add(x, 1, z).getBlock().setType(Material.ENCHANTING_TABLE);
                         } else {
-                            loc.clone().add(x, -1, z).getBlock().setType(Material.OBSIDIAN);
+                            loc.clone().add(x, 0, z).getBlock().setType(Material.OBSIDIAN);
                         }
                     }
                 }
-                
+
                 p.sendMessage("§a§lGÜÇ TOTEMİ OLUŞTURULDU!");
                 p.sendMessage("§7Sağ tıkla aktifleştir.");
                 return true;
-                
+
             case "speed_circle":
             case "hiz_cemberi":
                 // Hız Çemberi: 2x2 Lapis Bloğu + Ortada Ender Chest
                 for (int x = -1; x <= 1; x++) {
                     for (int z = -1; z <= 1; z++) {
                         if (x == 0 && z == 0) {
-                            loc.clone().add(x, 0, z).getBlock().setType(Material.ENDER_CHEST);
+                            loc.clone().add(x, 1, z).getBlock().setType(Material.ENDER_CHEST);
                         } else {
-                            loc.clone().add(x, -1, z).getBlock().setType(Material.LAPIS_BLOCK);
+                            loc.clone().add(x, 0, z).getBlock().setType(Material.LAPIS_BLOCK);
                         }
                     }
                 }
-                
+
                 p.sendMessage("§a§lHIZ ÇEMBERİ OLUŞTURULDU!");
                 p.sendMessage("§7Sağ tıkla aktifleştir.");
                 return true;
-                
+
             case "defense_wall":
             case "savunma_duvari":
                 // Savunma Duvarı: 2x2 Demir Bloğu + Ortada Anvil
                 for (int x = -1; x <= 1; x++) {
                     for (int z = -1; z <= 1; z++) {
                         if (x == 0 && z == 0) {
-                            loc.clone().add(x, 0, z).getBlock().setType(Material.ANVIL);
+                            loc.clone().add(x, 1, z).getBlock().setType(Material.ANVIL);
                         } else {
-                            loc.clone().add(x, -1, z).getBlock().setType(Material.IRON_BLOCK);
+                            loc.clone().add(x, 0, z).getBlock().setType(Material.IRON_BLOCK);
                         }
                     }
                 }
-                
+
                 p.sendMessage("§a§lSAVUNMA DUVARI OLUŞTURULDU!");
                 p.sendMessage("§7Sağ tıkla aktifleştir.");
                 return true;
-                
+
             default:
                 p.sendMessage("§cBilinmeyen savaş yapısı: " + type);
                 return true;
         }
     }
-    
+
     /**
      * Batarya oluşturma
      */
     private boolean buildBattery(Player p, String type) {
         org.bukkit.Location loc = p.getLocation();
-        
+
         // Yerinde blok varsa temizle
         me.mami.stratocraft.manager.StructureBuilder.clearArea(loc, 3, 3, 3);
-        
+
         switch (type.toLowerCase()) {
             case "magma":
             case "magma_battery":
             case "ates_topu":
                 // Magma Bataryası: 3 Magma Bloğu üst üste
                 loc.getBlock().setType(Material.MAGMA_BLOCK);
-                loc.clone().add(0, -1, 0).getBlock().setType(Material.MAGMA_BLOCK);
                 loc.clone().add(0, 1, 0).getBlock().setType(Material.MAGMA_BLOCK);
-                
+                loc.clone().add(0, 2, 0).getBlock().setType(Material.MAGMA_BLOCK);
+
                 // Aktifleştirme malzemeleri ver
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.DIAMOND, 1));
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.IRON_INGOT, 1));
@@ -1349,199 +1472,199 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 if (ItemManager.DARK_MATTER != null) {
                     giveItemSafely(p, ItemManager.DARK_MATTER.clone());
                 }
-                
+
                 p.sendMessage("§a§lMAGMA BATARYASI OLUŞTURULDU!");
                 p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
                 return true;
-                
+
             case "lightning":
             case "lightning_battery":
             case "yildirim":
                 // Yıldırım Bataryası: 3 Demir Bloğu üst üste
                 loc.getBlock().setType(Material.IRON_BLOCK);
-                loc.clone().add(0, -1, 0).getBlock().setType(Material.IRON_BLOCK);
                 loc.clone().add(0, 1, 0).getBlock().setType(Material.IRON_BLOCK);
-                
+                loc.clone().add(0, 2, 0).getBlock().setType(Material.IRON_BLOCK);
+
                 // Lightning Core ver
                 if (ItemManager.LIGHTNING_CORE != null) {
                     giveItemSafely(p, ItemManager.LIGHTNING_CORE.clone());
                 }
-                
+
                 p.sendMessage("§a§lYILDIRIM BATARYASI OLUŞTURULDU!");
                 p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
                 return true;
-                
+
             case "black_hole":
             case "kara_delik":
                 // Kara Delik: 3 Obsidyen üst üste
                 loc.getBlock().setType(Material.OBSIDIAN);
-                loc.clone().add(0, -1, 0).getBlock().setType(Material.OBSIDIAN);
                 loc.clone().add(0, 1, 0).getBlock().setType(Material.OBSIDIAN);
-                
+                loc.clone().add(0, 2, 0).getBlock().setType(Material.OBSIDIAN);
+
                 // Dark Matter ver
                 if (ItemManager.DARK_MATTER != null) {
                     giveItemSafely(p, ItemManager.DARK_MATTER.clone());
                 }
-                
+
                 p.sendMessage("§a§lKARA DELİK BATARYASI OLUŞTURULDU!");
                 p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
                 return true;
-                
+
             case "bridge":
             case "anlik_kopru":
                 // Anlık Köprü: 3 Buz üst üste
                 loc.getBlock().setType(Material.PACKED_ICE);
-                loc.clone().add(0, -1, 0).getBlock().setType(Material.PACKED_ICE);
                 loc.clone().add(0, 1, 0).getBlock().setType(Material.PACKED_ICE);
-                
+                loc.clone().add(0, 2, 0).getBlock().setType(Material.PACKED_ICE);
+
                 // Feather ver (BatteryListener'da FEATHER kullanılıyor)
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.FEATHER, 1));
-                
+
                 p.sendMessage("§a§lANLIK KÖPRÜ BATARYASI OLUŞTURULDU!");
                 p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
                 return true;
-                
+
             case "shelter":
             case "siginak":
                 // Sığınak Küpü: 3 Cobblestone üst üste
                 loc.getBlock().setType(Material.COBBLESTONE);
-                loc.clone().add(0, -1, 0).getBlock().setType(Material.COBBLESTONE);
                 loc.clone().add(0, 1, 0).getBlock().setType(Material.COBBLESTONE);
-                
+                loc.clone().add(0, 2, 0).getBlock().setType(Material.COBBLESTONE);
+
                 // Iron Ingot ver
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.IRON_INGOT, 1));
-                
+
                 p.sendMessage("§a§lSIĞINAK KÜPÜ BATARYASI OLUŞTURULDU!");
                 p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
                 return true;
-                
+
             case "gravity":
             case "gravity_anchor":
             case "yercekim_capasi":
                 // Yerçekimi Çapası: Anvil + Slime Block altında
-                loc.getBlock().setType(Material.ANVIL);
-                loc.clone().add(0, -1, 0).getBlock().setType(Material.SLIME_BLOCK);
-                
+                loc.clone().add(0, 1, 0).getBlock().setType(Material.ANVIL);
+                loc.getBlock().setType(Material.SLIME_BLOCK);
+
                 // Iron Ingot ver
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.IRON_INGOT, 1));
-                
+
                 p.sendMessage("§a§lYERÇEKİMİ ÇAPASI BATARYASI OLUŞTURULDU!");
                 p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
                 return true;
-                
+
             case "seismic":
             case "seismic_hammer":
             case "sismik_cekich":
                 // Sismik Çekiç: Anvil + 2 Demir Bloğu altında
-                loc.getBlock().setType(Material.ANVIL);
-                loc.clone().add(0, -1, 0).getBlock().setType(Material.IRON_BLOCK);
-                loc.clone().add(0, -2, 0).getBlock().setType(Material.IRON_BLOCK);
-                
+                loc.clone().add(0, 2, 0).getBlock().setType(Material.ANVIL);
+                loc.clone().add(0, 1, 0).getBlock().setType(Material.IRON_BLOCK);
+                loc.getBlock().setType(Material.IRON_BLOCK);
+
                 // Star Core ver (BatteryListener'da STAR_CORE kullanılıyor)
                 if (ItemManager.STAR_CORE != null) {
                     giveItemSafely(p, ItemManager.STAR_CORE.clone());
                 }
-                
+
                 p.sendMessage("§a§lSİSMİK ÇEKİÇ BATARYASI OLUŞTURULDU!");
                 p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
                 return true;
-                
+
             case "magnetic":
             case "magnetic_disruptor":
             case "manyetik_bozucu":
                 // Manyetik Bozucu: Lapis Bloğu + 2 Demir Bloğu altında
-                loc.getBlock().setType(Material.LAPIS_BLOCK);
-                loc.clone().add(0, -1, 0).getBlock().setType(Material.IRON_BLOCK);
-                loc.clone().add(0, -2, 0).getBlock().setType(Material.IRON_BLOCK);
-                
+                loc.clone().add(0, 2, 0).getBlock().setType(Material.LAPIS_BLOCK);
+                loc.clone().add(0, 1, 0).getBlock().setType(Material.IRON_BLOCK);
+                loc.getBlock().setType(Material.IRON_BLOCK);
+
                 // Iron Ingot ver
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.IRON_INGOT, 1));
-                
+
                 p.sendMessage("§a§lMANYETİK BOZUCU BATARYASI OLUŞTURULDU!");
                 p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
                 return true;
-                
+
             case "ozone":
             case "ozone_shield":
             case "ozon_kalkani":
                 // Ozon Kalkanı: Beacon + Cam altında
-                loc.getBlock().setType(Material.BEACON);
-                loc.clone().add(0, -1, 0).getBlock().setType(Material.GLASS);
-                
+                loc.clone().add(0, 1, 0).getBlock().setType(Material.BEACON);
+                loc.getBlock().setType(Material.GLASS);
+
                 // Ruby ver (BatteryListener'da RUBY kullanılıyor)
                 if (ItemManager.RUBY != null) {
                     giveItemSafely(p, ItemManager.RUBY.clone());
                 }
-                
+
                 p.sendMessage("§a§lOZON KALKANI BATARYASI OLUŞTURULDU!");
                 p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
                 return true;
-                
+
             case "earth_wall":
             case "toprak_suru":
                 // Toprak Suru: 3 Toprak Bloğu yanyana
                 loc.getBlock().setType(Material.DIRT);
                 loc.clone().add(1, 0, 0).getBlock().setType(Material.DIRT);
                 loc.clone().add(-1, 0, 0).getBlock().setType(Material.DIRT);
-                
+
                 // Cobblestone veya Titanium Ingot ver
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.COBBLESTONE, 1));
                 if (ItemManager.TITANIUM_INGOT != null) {
                     giveItemSafely(p, ItemManager.TITANIUM_INGOT.clone());
                 }
-                
+
                 p.sendMessage("§a§lTOPRAK SURU BATARYASI OLUŞTURULDU!");
                 p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
                 return true;
-                
+
             case "energy_wall":
             case "enerji_duvari":
                 // Enerji Duvarı: 3 Demir Bloğu üst üste
+                loc.clone().add(0, 2, 0).getBlock().setType(Material.IRON_BLOCK);
+                loc.clone().add(0, 1, 0).getBlock().setType(Material.IRON_BLOCK);
                 loc.getBlock().setType(Material.IRON_BLOCK);
-                loc.clone().add(0, -1, 0).getBlock().setType(Material.IRON_BLOCK);
-                loc.clone().add(0, -2, 0).getBlock().setType(Material.IRON_BLOCK);
-                
+
                 // Adamantite ver (BatteryListener'da ADAMANTITE kullanılıyor)
                 if (ItemManager.ADAMANTITE != null) {
                     giveItemSafely(p, ItemManager.ADAMANTITE.clone());
                 }
-                
+
                 p.sendMessage("§a§lENERJİ DUVARI BATARYASI OLUŞTURULDU!");
                 p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
                 return true;
-                
+
             case "lava_trencher_battery":
             case "lav_hendekcisi_battery":
                 // Lav Hendekçisi: 2 Lav üst üste
+                loc.clone().add(0, 1, 0).getBlock().setType(Material.LAVA);
                 loc.getBlock().setType(Material.LAVA);
-                loc.clone().add(0, -1, 0).getBlock().setType(Material.LAVA);
-                
+
                 // Lava Bucket ver
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.LAVA_BUCKET, 1));
-                
+
                 p.sendMessage("§a§lLAV HENDEKÇİSİ BATARYASI OLUŞTURULDU!");
                 p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
                 return true;
-                
+
             default:
                 p.sendMessage("§cBilinmeyen batarya tipi: " + type);
                 return true;
         }
     }
-    
+
     /**
      * Klan yapıları oluşturma (şema ile)
      */
     private boolean buildClanStructure(Player p, String type, int level) {
         org.bukkit.Location loc = p.getLocation();
-        
+
         // Yerinde blok varsa temizle
         me.mami.stratocraft.manager.StructureBuilder.clearArea(loc, 10, 10, 10);
-        
+
         // Şema dosya adını belirle
         String schematicName = getSchematicName(type, level);
         boolean schematicExists = me.mami.stratocraft.manager.StructureBuilder.schematicExists(schematicName);
-        
+
         if (schematicExists) {
             // Şema varsa yükle
             boolean success = me.mami.stratocraft.manager.StructureBuilder.pasteSchematic(loc, schematicName);
@@ -1561,19 +1684,19 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§7Yer tutucu yapı oluşturuldu (3 kırmızı yün).");
             me.mami.stratocraft.manager.StructureBuilder.createPlaceholderStructure(loc);
         }
-        
+
         // Aktifleştirme malzemelerini ver
         giveStructureActivationMaterials(p, type, level);
-        
+
         return true;
     }
-    
+
     /**
      * Şema dosya adını belirle
      */
     private String getSchematicName(String type, int level) {
         String baseName = type.toLowerCase();
-        
+
         // Özel durumlar: StructureListener'da kullanılan şema adları
         switch (baseName) {
             case "healing_beacon":
@@ -1584,50 +1707,77 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 break;
             // Diğerleri aynı kalıyor: alchemy_tower, tectonic_stabilizer, vb.
         }
-        
+
         // Seviyeli yapılar için seviye ekle
         if (level > 1) {
             return baseName + "_level" + level;
         }
-        
+
         return baseName;
     }
-    
+
     /**
      * Yapı görünen adını al
      */
     private String getStructureDisplayName(String type) {
         switch (type.toLowerCase()) {
-            case "alchemy_tower": return "Simya Kulesi";
-            case "tectonic_stabilizer": return "Tektonik Sabitleyici";
-            case "healing_beacon": return "Şifa Kulesi";
-            case "global_market_gate": return "Global Pazar Kapısı";
-            case "auto_turret": return "Otomatik Taret";
-            case "poison_reactor": return "Zehir Reaktörü";
-            case "siege_factory": return "Kuşatma Fabrikası";
-            case "wall_generator": return "Sur Jeneratörü";
-            case "gravity_well": return "Yerçekimi Kuyusu";
-            case "lava_trencher": return "Lav Hendekçisi";
-            case "watchtower": return "Gözetleme Kulesi";
-            case "drone_station": return "Drone İstasyonu";
-            case "xp_bank": return "Tecrübe Bankası";
-            case "mag_rail": return "Manyetik Ray";
-            case "teleporter": return "Işınlanma Platformu";
-            case "food_silo": return "Buzdolabı";
-            case "oil_refinery": return "Petrol Rafinerisi";
-            case "weather_machine": return "Hava Kontrolcüsü";
-            case "crop_accelerator": return "Tarım Hızlandırıcı";
-            case "mob_grinder": return "Mob Öğütücü";
-            case "invisibility_cloak": return "Görünmezlik Perdesi";
-            case "armory": return "Cephanelik";
-            case "library": return "Kütüphane";
-            case "warning_sign": return "Yasaklı Bölge Tabelası";
-            case "auto_drill": return "Otomatik Madenci";
-            case "core": return "Ana Kristal";
-            default: return type;
+            case "alchemy_tower":
+                return "Simya Kulesi";
+            case "tectonic_stabilizer":
+                return "Tektonik Sabitleyici";
+            case "healing_beacon":
+                return "Şifa Kulesi";
+            case "global_market_gate":
+                return "Global Pazar Kapısı";
+            case "auto_turret":
+                return "Otomatik Taret";
+            case "poison_reactor":
+                return "Zehir Reaktörü";
+            case "siege_factory":
+                return "Kuşatma Fabrikası";
+            case "wall_generator":
+                return "Sur Jeneratörü";
+            case "gravity_well":
+                return "Yerçekimi Kuyusu";
+            case "lava_trencher":
+                return "Lav Hendekçisi";
+            case "watchtower":
+                return "Gözetleme Kulesi";
+            case "drone_station":
+                return "Drone İstasyonu";
+            case "xp_bank":
+                return "Tecrübe Bankası";
+            case "mag_rail":
+                return "Manyetik Ray";
+            case "teleporter":
+                return "Işınlanma Platformu";
+            case "food_silo":
+                return "Buzdolabı";
+            case "oil_refinery":
+                return "Petrol Rafinerisi";
+            case "weather_machine":
+                return "Hava Kontrolcüsü";
+            case "crop_accelerator":
+                return "Tarım Hızlandırıcı";
+            case "mob_grinder":
+                return "Mob Öğütücü";
+            case "invisibility_cloak":
+                return "Görünmezlik Perdesi";
+            case "armory":
+                return "Cephanelik";
+            case "library":
+                return "Kütüphane";
+            case "warning_sign":
+                return "Yasaklı Bölge Tabelası";
+            case "auto_drill":
+                return "Otomatik Madenci";
+            case "core":
+                return "Ana Kristal";
+            default:
+                return type;
         }
     }
-    
+
     /**
      * Yapı aktifleştirme malzemelerini ver
      */
@@ -1638,7 +1788,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.DIAMOND, 16));
                 p.sendMessage("§7Aktifleştirme: §e32 Altın + 16 Elmas");
                 break;
-                
+
             case "tectonic_stabilizer":
                 if (ItemManager.TITANIUM_INGOT != null) {
                     org.bukkit.inventory.ItemStack titanium = ItemManager.TITANIUM_INGOT.clone();
@@ -1648,19 +1798,19 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.PISTON, 8));
                 p.sendMessage("§7Aktifleştirme: §e16 Titanyum + 8 Piston");
                 break;
-                
+
             case "healing_beacon":
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.IRON_INGOT, 16));
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.LAPIS_LAZULI, 8));
                 p.sendMessage("§7Aktifleştirme: §e16 Demir + 8 Lapis");
                 break;
-                
+
             case "global_market_gate":
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.GOLD_INGOT, 32));
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.ENDER_PEARL, 16));
                 p.sendMessage("§7Aktifleştirme: §e32 Altın + 16 Ender Pearl");
                 break;
-                
+
             case "auto_turret":
                 // Antik Dişli (Iron Nugget) + Piston
                 org.bukkit.inventory.ItemStack gear = new org.bukkit.inventory.ItemStack(Material.IRON_NUGGET, 1);
@@ -1673,7 +1823,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.PISTON, 1));
                 p.sendMessage("§7Aktifleştirme: §eAntik Dişli + Piston");
                 break;
-                
+
             default:
                 // Diğer yapılar için Blueprint ver
                 if (ItemManager.BLUEPRINT_PAPER != null) {
@@ -1683,20 +1833,20 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 break;
         }
     }
-    
+
     /**
      * Oyuncuya eşya ver (envanter doluysa yere düşür)
      */
     // ========== TUZAK YÖNETİMİ ==========
-    
+
     private boolean handleTrap(Player p, String[] args) {
         if (args.length < 2) {
             p.sendMessage("§cKullanım: /stratocraft trap <list|give>");
             return true;
         }
-        
+
         String subCommand = args[1].toLowerCase();
-        
+
         switch (subCommand) {
             case "list":
                 showTrapsList(p);
@@ -1715,7 +1865,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return true;
         }
     }
-    
+
     private void showTrapsList(Player p) {
         p.sendMessage("§6§l=== TUZAK SİSTEMİ ===");
         p.sendMessage("§7Tuzak kurulumu için:");
@@ -1734,20 +1884,20 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("");
         p.sendMessage("§7Yakıt: Elmas (5 kullanım), Zümrüt (10 kullanım), Titanyum (20 kullanım)");
     }
-    
+
     private void giveTrapItems(Player p, String trapType) {
         // Tuzak çekirdeği
         if (ItemManager.TRAP_CORE != null) {
             giveItemSafely(p, ItemManager.TRAP_CORE.clone());
         }
-        
+
         // Yakıt (Elmas, Zümrüt, Titanyum)
         giveItemSafely(p, new ItemStack(Material.DIAMOND, 5));
         giveItemSafely(p, new ItemStack(Material.EMERALD, 5));
         if (ItemManager.TITANIUM_INGOT != null) {
             giveItemSafely(p, ItemManager.TITANIUM_INGOT.clone());
         }
-        
+
         // Tuzak tipi itemi
         switch (trapType) {
             case "hell_trap":
@@ -1777,10 +1927,11 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return;
         }
     }
-    
+
     private void giveItemSafely(Player p, org.bukkit.inventory.ItemStack item) {
-        if (item == null) return;
-        
+        if (item == null)
+            return;
+
         java.util.HashMap<Integer, org.bukkit.inventory.ItemStack> overflow = p.getInventory().addItem(item);
         if (!overflow.isEmpty()) {
             for (org.bukkit.inventory.ItemStack drop : overflow.values()) {
@@ -1789,4 +1940,3 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
     }
 }
-

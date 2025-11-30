@@ -13,24 +13,26 @@ import org.bukkit.event.entity.EntityChangeBlockEvent;
  */
 public class SupplyDropListener implements Listener {
     private final SupplyDropManager supplyDropManager;
-    
+
     public SupplyDropListener(SupplyDropManager supplyDropManager) {
         this.supplyDropManager = supplyDropManager;
     }
-    
+
     @EventHandler(priority = org.bukkit.event.EventPriority.HIGH)
     public void onSupplyDropLand(EntityChangeBlockEvent event) {
-        if (event == null || event.getEntity() == null) return;
-        if (!(event.getEntity() instanceof FallingBlock)) return;
+        if (event == null || event.getEntity() == null)
+            return;
+        if (!(event.getEntity() instanceof FallingBlock))
+            return;
         FallingBlock fallingBlock = (FallingBlock) event.getEntity();
-        
-        if (!fallingBlock.hasMetadata("SupplyDrop")) return;
-        
+
+        if (!fallingBlock.hasMetadata("SupplyDrop"))
+            return;
+
         // SupplyDropManager'a bildir
         supplyDropManager.onSupplyDropLand(event);
-        
-        // Event'i iptal et (FallingBlock'un normal blok oluşturmasını engelle)
-        event.setCancelled(true);
+
+        // Event'i iptal ETME, doğal olarak blok oluşsun
+        // event.setCancelled(true);
     }
 }
-

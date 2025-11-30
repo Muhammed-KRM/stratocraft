@@ -25,22 +25,44 @@ import java.util.*;
 public class TrapManager {
     private final Main plugin;
     private final ClanManager clanManager;
+
+    public TrapManager(Main plugin) {
+        this.plugin = plugin;
+        this.clanManager = plugin.getClanManager();
+        loadTraps();
+        startParticleTask();
+    }
+
+    private void startParticleTask() {
+        new org.bukkit.scheduler.BukkitRunnable() {
+            @Override
+            public void run() {
+                for (TrapData trap : activeTraps.values()) {
+                    if (trap.getLocation().getWorld() == null)
+                        continue;
+                    showTrapActivationParticles(trap);
+                }
+            }
+        }.runTaskTimer(plugin, 20L, 20L);
+    }
+
     private final Map<Location, TrapData> activeTraps = new HashMap<>();
-    // Henüz aktifleştirilmemiş tuzak çekirdekleri (TrapCoreItem metadata'sı olanlar)
+    // Henüz aktifleştirilmemiş tuzak çekirdekleri (TrapCoreItem metadata'sı
+    // olanlar)
     // Metadata kalıcı olmadığı için dosyaya kaydedilmeli
     private final Map<Location, UUID> inactiveTrapCores = new HashMap<>(); // Location -> Owner UUID
     private final Map<UUID, me.mami.stratocraft.model.Clan> clanCache = new HashMap<>(); // Performans optimizasyonu
     private File trapsFile;
     private FileConfiguration trapsConfig;
-    
+
     public enum TrapType {
-        HELL_TRAP,      // Cehennem Tuzağı (Magma Cream) - 3x3 lava
-        SHOCK_TRAP,     // Şok Tuzağı (Lightning Core) - Yıldırım
-        BLACK_HOLE,     // Kara Delik (Ender Pearl) - Körlük + Yavaşlık
-        MINE,           // Mayın (TNT) - Yüksek hasarlı patlama
-        POISON_TRAP     // Zehir Tuzağı (Spider Eye) - Zehir efekti
+        HELL_TRAP, // Cehennem Tuzağı (Magma Cream) - 3x3 lava
+        SHOCK_TRAP, // Şok Tuzağı (Lightning Core) - Yıldırım
+        BLACK_HOLE, // Kara Delik (Ender Pearl) - Körlük + Yavaşlık
+        MINE, // Mayın (TNT) - Yüksek hasarlı patlama
+        POISON_TRAP // Zehir Tuzağı (Spider Eye) - Zehir efekti
     }
-    
+
     public static class TrapData {
         private final UUID ownerId;
         private final UUID ownerClanId;
@@ -49,7 +71,7 @@ public class TrapManager {
         private final Location coreLocation;
         private final List<Location> frameBlocks; // Magma Block çerçevesi
         private boolean isCovered; // Üstü kapatılmış mı?
-        
+
         public TrapData(UUID ownerId, UUID ownerClanId, TrapType type, int fuel, Location coreLocation) {
             this.ownerId = ownerId;
             this.ownerClanId = ownerClanId;
@@ -59,432 +81,151 @@ public class TrapManager {
             this.frameBlocks = new ArrayList<>();
             this.isCovered = false;
         }
-        
-        public UUID getOwnerId() { return ownerId; }
-        public UUID getOwnerClanId() { return ownerClanId; }
-        public TrapType getType() { return type; }
-        public int getFuel() { return fuel; }
-        public void consumeFuel() { if (fuel > 0) fuel--; }
-        public void addFuel(int amount) { fuel += amount; }
-        public Location getCoreLocation() { return coreLocation; }
-        public List<Location> getFrameBlocks() { return frameBlocks; }
-        public boolean isCovered() { return isCovered; }
-        public void setCovered(boolean covered) { this.isCovered = covered; }
-    }
-    
-    public TrapManager(Main plugin) {
-        this.plugin = plugin;
-        this.clanManager = plugin.getClanManager();
-        loadTraps();
-    }
-    
-    /**
-     * Tuzak yapısını kontrol et (Magma Block çerçeve + TRAP_CORE çekirdek)
-     * Esnek boyut desteği: 3x3, 3x6, 5x5, vb. (End Portal mantığı)
-     */
-    public boolean isTrapStructure(Block centerBlock) {
-        // Tuzak çekirdeği kontrolü (LODESTONE + TRAP_CORE metadata)
-        if (centerBlock.getType() != Material.LODESTONE) return false;
-        if (!centerBlock.hasMetadata("TrapCoreItem")) return false;
-        
-        // Esnek boyut kontrolü - End Portal mantığı
-        // Çerçeve boyutunu tespit et (3x3, 3x6, 5x5, vb.)
-        int minX = 0, maxX = 0, minZ = 0, maxZ = 0;
-        boolean foundFrameX = false;
-        boolean foundFrameZ = false;
-        
-        // X ekseninde çerçeve genişliğini bul
-        for (int x = -6; x <= 6; x++) {
-            Block block = centerBlock.getRelative(x, 0, 0);
-            if (block.getType() == Material.MAGMA_BLOCK) {
-                if (!foundFrameX) {
-                    minX = x;
-                    foundFrameX = true;
-                }
-                maxX = x;
-            }
+
+        public UUID getOwnerId() {
+            return ownerId;
         }
-        
-        // Z ekseninde çerçeve genişliğini bul
-        for (int z = -6; z <= 6; z++) {
-            Block block = centerBlock.getRelative(0, 0, z);
-            if (block.getType() == Material.MAGMA_BLOCK) {
-                if (!foundFrameZ) {
-                    minZ = z;
-                    foundFrameZ = true;
-                }
-                maxZ = z;
-            }
+
+        public UUID getOwnerClanId() {
+            return ownerClanId;
         }
-        
-        // Çerçeve bulunamadıysa geçersiz
-        if (!foundFrameX || !foundFrameZ) return false;
-        
-        // Çerçeve boyutları geçerli mi? (En az 3x3 olmalı)
-        int widthX = maxX - minX + 1;
-        int widthZ = maxZ - minZ + 1;
-        
-        if (widthX < 3 || widthZ < 3) return false;
-        
-        // Çerçevenin tamamı Magma Block mu kontrol et
-        int magmaCount = 0;
-        int expectedCount = (widthX * widthZ) - 1; // Merkez hariç
-        
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                if (x == 0 && z == 0) continue; // Merkez hariç
-                Block block = centerBlock.getRelative(x, 0, z);
-                if (block.getType() == Material.MAGMA_BLOCK) {
-                    magmaCount++;
-                }
-            }
+
+        public TrapType getType() {
+            return type;
         }
-        
-        // Çerçevenin en az %80'i Magma Block olmalı (esnek kontrol)
-        return magmaCount >= (expectedCount * 0.8);
-    }
-    
-    /**
-     * Tuzak çerçeve boyutlarını al (genişlik x uzunluk)
-     */
-    public int[] getTrapDimensions(Block centerBlock) {
-        int minX = 0, maxX = 0, minZ = 0, maxZ = 0;
-        boolean foundFrameX = false;
-        boolean foundFrameZ = false;
-        
-        for (int x = -6; x <= 6; x++) {
-            Block block = centerBlock.getRelative(x, 0, 0);
-            if (block.getType() == Material.MAGMA_BLOCK) {
-                if (!foundFrameX) {
-                    minX = x;
-                    foundFrameX = true;
-                }
-                maxX = x;
-            }
+
+        public int getFuel() {
+            return fuel;
         }
-        
-        for (int z = -6; z <= 6; z++) {
-            Block block = centerBlock.getRelative(0, 0, z);
-            if (block.getType() == Material.MAGMA_BLOCK) {
-                if (!foundFrameZ) {
-                    minZ = z;
-                    foundFrameZ = true;
-                }
-                maxZ = z;
-            }
+
+        public void consumeFuel() {
+            if (fuel > 0)
+                fuel--;
         }
-        
-        if (!foundFrameX || !foundFrameZ) {
-            return new int[]{0, 0};
+
+        public Location getLocation() {
+            return coreLocation;
         }
-        
-        return new int[]{maxX - minX + 1, maxZ - minZ + 1};
-    }
-    
-    /**
-     * Tuzak oluştur
-     */
-    public boolean createTrap(Player player, Block coreBlock, TrapType type, Material fuelMaterial) {
-        if (!isTrapStructure(coreBlock)) return false;
-        
-        // Yakıt miktarını belirle
-        int fuel = 0;
-        if (fuelMaterial == Material.DIAMOND) {
-            fuel = 5;
-        } else if (fuelMaterial == Material.EMERALD) {
-            fuel = 10;
-        } else if (ItemManager.isCustomItem(new org.bukkit.inventory.ItemStack(fuelMaterial), "TITANIUM_INGOT")) {
-            fuel = 20;
-        } else {
-            return false;
+
+        public boolean isCovered() {
+            return isCovered;
         }
-        
-        UUID ownerId = player.getUniqueId();
-        UUID clanId = null;
-        if (clanManager.getClanByPlayer(ownerId) != null) {
-            clanId = clanManager.getClanByPlayer(ownerId).getId();
+
+        public void setCovered(boolean covered) {
+            this.isCovered = covered;
         }
-        
-        TrapData trap = new TrapData(ownerId, clanId, type, fuel, coreBlock.getLocation());
-        
-        // Çerçeve boyutlarını al
-        int[] dimensions = getTrapDimensions(coreBlock);
-        int widthX = dimensions[0];
-        int widthZ = dimensions[1];
-        
-        // Çerçeve bloklarını kaydet (esnek boyut)
-        int minX = -(widthX / 2);
-        int maxX = widthX / 2;
-        int minZ = -(widthZ / 2);
-        int maxZ = widthZ / 2;
-        
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                if (x == 0 && z == 0) continue; // Merkez hariç
-                Block block = coreBlock.getRelative(x, 0, z);
-                if (block.getType() == Material.MAGMA_BLOCK) {
-                    trap.getFrameBlocks().add(block.getLocation());
-                }
-            }
+
+        public void addFuel(int amount) {
+            fuel += amount;
         }
-        
-        // Metadata ile işaretle
-        coreBlock.setMetadata("TrapCore", new FixedMetadataValue(plugin, true));
-        coreBlock.setMetadata("TrapOwner", new FixedMetadataValue(plugin, ownerId.toString()));
-        
-        // Eğer bu konumda henüz aktifleştirilmemiş tuzak çekirdeği varsa, onu kaldır
-        removeInactiveTrapCore(coreBlock.getLocation());
-        
-        activeTraps.put(coreBlock.getLocation(), trap);
-        saveTraps();
-        
-        player.sendMessage("§a§lTUZAK OLUŞTURULDU!");
-        player.sendMessage("§7Yakıt: §e" + fuel + " patlama hakkı");
-        player.sendMessage("§7Önemli: Üstünü kapatmadan aktifleşmez!");
-        player.sendMessage("§7Aktifleştirme: Üstteki bloklara Shift + Sağ Tık yap (yakıt elinde olmalı)!");
-        
-        return true;
-    }
-    
-    /**
-     * Henüz aktifleştirilmemiş tuzak çekirdeğini kaydet (TrapCoreItem metadata'sı olan)
-     * Metadata kalıcı olmadığı için dosyaya kaydedilmeli
-     */
-    public void registerInactiveTrapCore(Location location, UUID ownerId) {
-        inactiveTrapCores.put(location, ownerId);
-        saveTraps(); // Dosyaya kaydet
-    }
-    
-    /**
-     * Henüz aktifleştirilmemiş tuzak çekirdeğini kontrol et
-     */
-    public boolean isInactiveTrapCore(Location location) {
-        return inactiveTrapCores.containsKey(location);
-    }
-    
-    /**
-     * Henüz aktifleştirilmemiş tuzak çekirdeğini kaldır (aktifleştirildiğinde)
-     */
-    public void removeInactiveTrapCore(Location location) {
-        inactiveTrapCores.remove(location);
-        saveTraps(); // Dosyaya kaydet
-    }
-    
-    /**
-     * Tuzak aktifleştirme (Shift + Sağ Tık ile üstteki kapatma bloklarına tıklama)
-     */
-    public boolean activateTrap(Player player, Location trapCore, ItemStack fuelItem) {
-        // Null kontrolleri
-        if (player == null || trapCore == null || fuelItem == null) {
-            return false;
+
+        public Location getCoreLocation() {
+            return coreLocation;
         }
-        
-        // Önce aktif tuzakları kontrol et
-        TrapData trap = activeTraps.get(trapCore);
-        UUID ownerId = null;
-        
-        if (trap == null) {
-            // Aktif tuzak yoksa, henüz aktifleştirilmemiş tuzak çekirdeği var mı kontrol et
-            if (!isInactiveTrapCore(trapCore)) {
-                player.sendMessage("§cBu tuzak bulunamadı!");
-                return false;
-            }
-            // Henüz aktifleştirilmemiş tuzak çekirdeği var, sahiplik kontrolü için ownerId'yi al
-            ownerId = inactiveTrapCores.get(trapCore);
-        } else {
-            // Aktif tuzak var, sahiplik kontrolü için ownerId'yi al
-            ownerId = trap.getOwnerId();
-        }
-        
-        // Sahiplik kontrolü
-        if (ownerId == null || !ownerId.equals(player.getUniqueId())) {
-            // Klan kontrolü
-            UUID ownerClanId = null;
-            if (trap != null) {
-                ownerClanId = trap.getOwnerClanId();
-            } else {
-                // Henüz aktifleştirilmemiş tuzak çekirdeği için klan kontrolü
-                me.mami.stratocraft.model.Clan ownerClan = clanManager.getClanByPlayer(ownerId);
-                ownerClanId = ownerClan != null ? ownerClan.getId() : null;
-            }
-            
-            me.mami.stratocraft.model.Clan playerClan = clanManager.getClanByPlayer(player.getUniqueId());
-            if (ownerClanId == null || playerClan == null || !playerClan.getId().equals(ownerClanId)) {
-                player.sendMessage("§cBu tuzak sana ait değil!");
-                return false;
-            }
-        }
-        
-        // Eğer trap null ise (henüz aktifleştirilmemiş tuzak çekirdeği), false döndür
-        // TrapListener'da createTrap çağrılmalı
-        if (trap == null) {
-            return false; // Henüz aktifleştirilmemiş tuzak çekirdeği, createTrap ile aktifleştirilmeli
-        }
-        
-        // Üstü kapatılmış mı kontrol et
-        checkTrapCoverage(trapCore);
-        if (!trap.isCovered()) {
-            player.sendMessage("§cTuzak üstü tamamen kapatılmamış! Tüm çerçeve bloklarının üstü kapatılmalı.");
-            return false;
-        }
-        
-        // Yakıt kontrolü
-        if (fuelItem == null || fuelItem.getType() == Material.AIR) {
-            player.sendMessage("§cElinde yakıt olmalı!");
-            return false;
-        }
-        
-        Material fuelMaterial = fuelItem.getType();
-        int fuelToAdd = 0;
-        
-        // Elmas, Zümrüt, Titanyum
-        if (fuelMaterial == Material.DIAMOND) {
-            fuelToAdd = 5;
-        } else if (fuelMaterial == Material.EMERALD) {
-            fuelToAdd = 10;
-        } else if (ItemManager.isCustomItem(fuelItem, "TITANIUM_INGOT")) {
-            fuelToAdd = 20;
-        } else if (fuelMaterial == Material.IRON_INGOT) {
-            fuelToAdd = 3; // Demir için düşük yakıt
-        } else if (ItemManager.isCustomItem(fuelItem, "SULFUR")) {
-            fuelToAdd = 2;
-        } else if (ItemManager.isCustomItem(fuelItem, "BAUXITE_INGOT")) {
-            fuelToAdd = 4;
-        } else if (ItemManager.isCustomItem(fuelItem, "ROCK_SALT")) {
-            fuelToAdd = 2;
-        } else if (ItemManager.isCustomItem(fuelItem, "MITHRIL_INGOT")) {
-            fuelToAdd = 15;
-        } else if (ItemManager.isCustomItem(fuelItem, "ASTRAL_CRYSTAL")) {
-            fuelToAdd = 25;
-        } else {
-            player.sendMessage("§cGeçersiz yakıt! Elmas, Zümrüt, Titanyum, Demir veya diğer madenler kullan.");
-            return false;
-        }
-        
-        // Yakıt ekle
-        trap.addFuel(fuelToAdd);
-        
-        // Yakıt item'ını tüket (miktar kontrolü ile)
-        int currentAmount = fuelItem.getAmount();
-        if (currentAmount > 0) {
-            fuelItem.setAmount(currentAmount - 1);
-        }
-        
-        saveTraps();
-        
-        // Bildirim (sadece sahip ve klan üyelerine)
-        sendTrapActivationNotification(trap, player);
-        
-        // Kırmızı partiküller (sadece sahip ve klan üyelerine görünür)
-        showTrapActivationParticles(trap);
-        
-        return true;
-    }
-    
-    /**
-     * Tuzak aktifleştirme bildirimi (sadece sahip ve klan üyelerine)
-     */
-    private void sendTrapActivationNotification(TrapData trap, Player activator) {
-        String message = "§a§lTUZAK AKTİFLEŞTİRİLDİ!";
-        String fuelMessage = "§7Yakıt: §e" + trap.getFuel() + " patlama hakkı";
-        
-        // Sahibe bildir
-        Player owner = plugin.getServer().getPlayer(trap.getOwnerId());
-        if (owner != null && owner.isOnline()) {
-            owner.sendMessage(message);
-            owner.sendMessage(fuelMessage);
-        }
-        
-        // Aktifleştiren kişiye bildir (sahip değilse)
-        if (!activator.getUniqueId().equals(trap.getOwnerId())) {
-            activator.sendMessage(message);
-            activator.sendMessage(fuelMessage);
-        }
-        
-        // Klan üyelerine bildir
-        if (trap.getOwnerClanId() != null) {
-            me.mami.stratocraft.model.Clan clan = getClanById(trap.getOwnerClanId());
-            if (clan != null) {
-                for (UUID memberId : clan.getMembers().keySet()) {
-                    Player member = plugin.getServer().getPlayer(memberId);
-                    if (member != null && member.isOnline() && 
-                        !member.getUniqueId().equals(trap.getOwnerId()) &&
-                        !member.getUniqueId().equals(activator.getUniqueId())) {
-                        member.sendMessage(message);
-                        member.sendMessage(fuelMessage);
-                    }
-                }
-            }
+
+        public List<Location> getFrameBlocks() {
+            return frameBlocks;
         }
     }
-    
+
     /**
      * Tuzak aktifleştirme partikülleri (sadece sahip ve klan üyelerine görünür)
      */
     private void showTrapActivationParticles(TrapData trap) {
         Location coreLoc = trap.getCoreLocation();
-        
+
         // Tüm çerçeve bloklarının üstünde kırmızı partikül göster
         for (Location frameLoc : trap.getFrameBlocks()) {
             Location particleLoc = frameLoc.clone().add(0.5, 1.5, 0.5);
-            
+
             // Sahibe göster
             Player owner = plugin.getServer().getPlayer(trap.getOwnerId());
             if (owner != null && owner.isOnline()) {
-                owner.spawnParticle(org.bukkit.Particle.REDSTONE, particleLoc, 5, 
-                    0.3, 0.3, 0.3, 0, 
-                    new org.bukkit.Particle.DustOptions(org.bukkit.Color.RED, 1.0f));
+                owner.spawnParticle(org.bukkit.Particle.REDSTONE, particleLoc, 5,
+                        0.3, 0.3, 0.3, 0,
+                        new org.bukkit.Particle.DustOptions(org.bukkit.Color.RED, 1.0f));
             }
-            
+
             // Klan üyelerine göster
             if (trap.getOwnerClanId() != null) {
                 me.mami.stratocraft.model.Clan clan = getClanById(trap.getOwnerClanId());
                 if (clan != null) {
                     for (UUID memberId : clan.getMembers().keySet()) {
                         Player member = plugin.getServer().getPlayer(memberId);
-                        if (member != null && member.isOnline() && 
-                            !member.getUniqueId().equals(trap.getOwnerId())) {
-                            member.spawnParticle(org.bukkit.Particle.REDSTONE, particleLoc, 5, 
-                                0.3, 0.3, 0.3, 0, 
-                                new org.bukkit.Particle.DustOptions(org.bukkit.Color.RED, 1.0f));
+                        if (member != null && member.isOnline() &&
+                                !member.getUniqueId().equals(trap.getOwnerId())) {
+                            member.spawnParticle(org.bukkit.Particle.REDSTONE, particleLoc, 5,
+                                    0.3, 0.3, 0.3, 0,
+                                    new org.bukkit.Particle.DustOptions(org.bukkit.Color.RED, 1.0f));
                         }
                     }
                 }
             }
         }
-        
+
         // Çekirdek bloğunun üstünde de partikül göster
         Location coreParticleLoc = coreLoc.clone().add(0.5, 1.5, 0.5);
-        
+
         Player owner = plugin.getServer().getPlayer(trap.getOwnerId());
         if (owner != null && owner.isOnline()) {
-            owner.spawnParticle(org.bukkit.Particle.REDSTONE, coreParticleLoc, 10, 
-                0.5, 0.5, 0.5, 0, 
-                new org.bukkit.Particle.DustOptions(org.bukkit.Color.RED, 1.5f));
+            owner.spawnParticle(org.bukkit.Particle.REDSTONE, coreParticleLoc, 10,
+                    0.5, 0.5, 0.5, 0,
+                    new org.bukkit.Particle.DustOptions(org.bukkit.Color.RED, 1.5f));
         }
-        
+
         if (trap.getOwnerClanId() != null) {
             me.mami.stratocraft.model.Clan clan = getClanById(trap.getOwnerClanId());
             if (clan != null) {
                 for (UUID memberId : clan.getMembers().keySet()) {
                     Player member = plugin.getServer().getPlayer(memberId);
-                    if (member != null && member.isOnline() && 
-                        !member.getUniqueId().equals(trap.getOwnerId())) {
-                        member.spawnParticle(org.bukkit.Particle.REDSTONE, coreParticleLoc, 10, 
-                            0.5, 0.5, 0.5, 0, 
-                            new org.bukkit.Particle.DustOptions(org.bukkit.Color.RED, 1.5f));
+                    if (member != null && member.isOnline() &&
+                            !member.getUniqueId().equals(trap.getOwnerId())) {
+                        member.spawnParticle(org.bukkit.Particle.REDSTONE, coreParticleLoc, 10,
+                                0.5, 0.5, 0.5, 0,
+                                new org.bukkit.Particle.DustOptions(org.bukkit.Color.RED, 1.5f));
                     }
                 }
             }
         }
     }
-    
+
+    /**
+     * Sürekli partikül efekti (Task tarafından çağrılır)
+     */
+    public void showTrapActivationParticles(Location loc, TrapType type) {
+        org.bukkit.Particle particle = org.bukkit.Particle.SPELL_WITCH;
+
+        switch (type) {
+            case HELL_TRAP:
+                particle = org.bukkit.Particle.FLAME;
+                break;
+            case SHOCK_TRAP:
+                particle = org.bukkit.Particle.ELECTRIC_SPARK;
+                break;
+            case BLACK_HOLE:
+                particle = org.bukkit.Particle.PORTAL;
+                break;
+            case MINE:
+                particle = org.bukkit.Particle.SMOKE_LARGE;
+                break;
+            case POISON_TRAP:
+                particle = org.bukkit.Particle.VILLAGER_HAPPY;
+                break;
+        }
+
+        // Çerçeve boyunca partikül oluştur (3x3 varsayalım görsel için)
+        if (loc.getWorld() != null) {
+            loc.getWorld().spawnParticle(particle, loc.clone().add(0.5, 1, 0.5), 5, 0.5, 0.5, 0.5, 0.05);
+        }
+    }
+
     /**
      * Clan ID'ye göre Clan bul (Performans optimizasyonu - Cache kullan)
      */
     private me.mami.stratocraft.model.Clan getClanById(UUID clanId) {
-        if (clanId == null) return null;
-        
+        if (clanId == null)
+            return null;
+
         // Cache'den kontrol et
         if (clanCache.containsKey(clanId)) {
             me.mami.stratocraft.model.Clan cached = clanCache.get(clanId);
@@ -502,7 +243,7 @@ public class TrapManager {
                 clanCache.remove(clanId);
             }
         }
-        
+
         // Cache'de yoksa, tüm klanlardan bul (sadece ilk sefer)
         for (me.mami.stratocraft.model.Clan clan : clanManager.getAllClans()) {
             if (clan.getId().equals(clanId)) {
@@ -513,40 +254,43 @@ public class TrapManager {
         }
         return null;
     }
-    
+
     /**
      * Tuzak üstünün kapatılıp kapatılmadığını kontrol et
      */
     public void checkTrapCoverage(Location coreLocation) {
         TrapData trap = activeTraps.get(coreLocation);
-        if (trap == null) return;
-        
+        if (trap == null)
+            return;
+
         Block coreBlock = coreLocation.getBlock();
-        if (coreBlock.getType() != Material.LODESTONE) return;
-        
+        if (coreBlock.getType() != Material.LODESTONE)
+            return;
+
         // Üstteki blok kontrolü
         Block above = coreBlock.getRelative(0, 1, 0);
-        boolean covered = above.getType() != Material.AIR && 
-                         above.getType() != Material.CAVE_AIR &&
-                         above.getType() != Material.VOID_AIR;
-        
+        boolean covered = above.getType() != Material.AIR &&
+                above.getType() != Material.CAVE_AIR &&
+                above.getType() != Material.VOID_AIR;
+
         // Çerçeve bloklarının üstünü de kontrol et (tüm çerçeve kapatılmalı)
         for (Location frameLoc : trap.getFrameBlocks()) {
             Block frameBlock = frameLoc.getBlock();
-            if (frameBlock.getType() != Material.MAGMA_BLOCK) continue; // Çerçeve bozulmuş olabilir
-            
+            if (frameBlock.getType() != Material.MAGMA_BLOCK)
+                continue; // Çerçeve bozulmuş olabilir
+
             Block frameAbove = frameBlock.getRelative(0, 1, 0);
-            if (frameAbove.getType() == Material.AIR || 
-                frameAbove.getType() == Material.CAVE_AIR ||
-                frameAbove.getType() == Material.VOID_AIR) {
+            if (frameAbove.getType() == Material.AIR ||
+                    frameAbove.getType() == Material.CAVE_AIR ||
+                    frameAbove.getType() == Material.VOID_AIR) {
                 covered = false;
                 break;
             }
         }
-        
+
         trap.setCovered(covered);
     }
-    
+
     /**
      * Tuzak tetikleme (PlayerMoveEvent'ten çağrılır)
      */
@@ -555,14 +299,14 @@ public class TrapManager {
         if (triggerLocation == null || victim == null) {
             return;
         }
-        
+
         // Trigger bloğunun altında tuzak var mı?
         Block below = triggerLocation.getBlock().getRelative(0, -1, 0);
         Block below2 = below.getRelative(0, -1, 0);
-        
+
         TrapData trap = null;
         Location trapCore = null;
-        
+
         // 1 blok altında kontrol
         if (below.hasMetadata("TrapCore")) {
             trapCore = below.getLocation();
@@ -573,26 +317,27 @@ public class TrapManager {
             trapCore = below2.getLocation();
             trap = activeTraps.get(trapCore);
         }
-        
-        if (trap == null || !trap.isCovered()) return;
-        
+
+        if (trap == null || !trap.isCovered())
+            return;
+
         // Null kontrolleri
         if (trapCore == null || trap == null) {
             return;
         }
-        
+
         // GİZLEME KONTROLÜ: Tuzağın üstü açıksa (Hava ise) çalışma
         Block trapBlock = trapCore.getBlock();
         Block coverBlock = trapBlock.getRelative(0, 1, 0); // Tuzağın üstündeki blok
-        
+
         // Eğer tuzağın üstü açıksa (Hava ise) veya Yarım Blok vb. değilse çalışma
         // Yani oyuncu tuzağı gizlememiş
-        if (coverBlock.getType() == Material.AIR || 
-            coverBlock.getType() == Material.CAVE_AIR ||
-            coverBlock.getType() == Material.VOID_AIR) {
+        if (coverBlock.getType() == Material.AIR ||
+                coverBlock.getType() == Material.CAVE_AIR ||
+                coverBlock.getType() == Material.VOID_AIR) {
             return; // Tuzak gizlenmemiş, çalışma
         }
-        
+
         // Klan kontrolü - Dostlar korunur
         if (trap.getOwnerClanId() != null && victim != null) {
             if (clanManager.getClanByPlayer(victim.getUniqueId()) != null) {
@@ -602,19 +347,19 @@ public class TrapManager {
                 }
             }
         }
-        
+
         // Yakıt kontrolü
         if (trap.getFuel() <= 0) {
             removeTrap(trapCore);
             return;
         }
-        
+
         // Tuzak tetiklenmeden önce CLICK sesi (0.5 saniye önce korku efekti)
         victim.playSound(triggerLocation, org.bukkit.Sound.BLOCK_TRIPWIRE_CLICK_ON, 1.0f, 1.0f);
-        
+
         // Tuzak tipine göre etki
         executeTrap(trap, triggerLocation, victim);
-        
+
         // Yakıt tüket
         trap.consumeFuel();
         if (trap.getFuel() <= 0) {
@@ -623,7 +368,7 @@ public class TrapManager {
             saveTraps();
         }
     }
-    
+
     /**
      * Tuzak etkisini uygula
      */
@@ -639,11 +384,13 @@ public class TrapManager {
                         }
                     }
                 }
+                triggerLoc.getWorld().spawnParticle(org.bukkit.Particle.FLAME, triggerLoc.clone().add(0.5, 1, 0.5), 50,
+                        1, 1, 1, 0.1);
                 if (victim != null) {
                     victim.sendMessage("§c§lCEHENNEM TUZAĞINA YAKALANDIN!");
                 }
                 break;
-                
+
             case SHOCK_TRAP:
                 // Yıldırım çarptır
                 triggerLoc.getWorld().strikeLightning(triggerLoc);
@@ -651,18 +398,22 @@ public class TrapManager {
                     victim.sendMessage("§e§lŞOK TUZAĞINA YAKALANDIN!");
                 }
                 break;
-                
+
             case BLACK_HOLE:
                 // Körlük ve Yavaşlık ver
+                triggerLoc.getWorld().spawnParticle(org.bukkit.Particle.PORTAL, triggerLoc.clone().add(0.5, 1, 0.5),
+                        100, 1, 1, 1, 0.5);
+                triggerLoc.getWorld().spawnParticle(org.bukkit.Particle.SQUID_INK, triggerLoc.clone().add(0.5, 1, 0.5),
+                        50, 1, 1, 1, 0.1);
                 if (victim != null) {
                     victim.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                        org.bukkit.potion.PotionEffectType.BLINDNESS, 100, 2, false, false));
+                            org.bukkit.potion.PotionEffectType.BLINDNESS, 100, 2, false, false));
                     victim.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                        org.bukkit.potion.PotionEffectType.SLOW, 100, 3, false, false));
+                            org.bukkit.potion.PotionEffectType.SLOW, 100, 3, false, false));
                     victim.sendMessage("§5§lKARA DELİK TUZAĞINA YAKALANDIN!");
                 }
                 break;
-                
+
             case MINE:
                 // Yüksek hasarlı patlama (blok kırmaz)
                 triggerLoc.getWorld().createExplosion(triggerLoc, 5.0f, false, false);
@@ -670,16 +421,18 @@ public class TrapManager {
                     victim.sendMessage("§c§lMAYINA BASDIN!");
                 }
                 break;
-                
+
             case POISON_TRAP:
                 // Zehir efekti (10 blok yarıçap)
+                triggerLoc.getWorld().spawnParticle(org.bukkit.Particle.SPELL_MOB, triggerLoc.clone().add(0.5, 1, 0.5),
+                        100, 2, 2, 2, 0);
                 if (victim != null) {
                     victim.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                        org.bukkit.potion.PotionEffectType.POISON, 100, 1, false, false));
+                            org.bukkit.potion.PotionEffectType.POISON, 100, 1, false, false));
                     victim.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                        org.bukkit.potion.PotionEffectType.BLINDNESS, 60, 0, false, false));
+                            org.bukkit.potion.PotionEffectType.BLINDNESS, 60, 0, false, false));
                     victim.sendMessage("§2§lZEHİR TUZAĞINA YAKALANDIN!");
-                    
+
                     // Etrafındaki diğer oyunculara da zehir ver
                     for (org.bukkit.entity.Entity nearby : triggerLoc.getWorld()
                             .getNearbyEntities(triggerLoc, 10, 10, 10)) {
@@ -695,14 +448,14 @@ public class TrapManager {
                                 }
                             }
                             nearbyPlayer.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                                org.bukkit.potion.PotionEffectType.POISON, 80, 0, false, false));
+                                    org.bukkit.potion.PotionEffectType.POISON, 80, 0, false, false));
                         }
                     }
                 }
                 break;
         }
     }
-    
+
     /**
      * Tuzak kaldır
      */
@@ -715,48 +468,49 @@ public class TrapManager {
             saveTraps();
         }
     }
-    
+
     /**
      * Tuzakları kaydet (public - Main.java'dan çağrılabilir)
      */
     public void saveTraps() {
-        if (trapsConfig == null) return;
-        
+        if (trapsConfig == null)
+            return;
+
         trapsConfig.set("traps", null);
         trapsConfig.set("inactive_cores", null);
-        
+
         // Aktif tuzakları kaydet
         for (Map.Entry<Location, TrapData> entry : activeTraps.entrySet()) {
             Location loc = entry.getKey();
             TrapData trap = entry.getValue();
-            
-            String path = "traps." + loc.getWorld().getName() + "." + 
-                         loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
-            
+
+            String path = "traps." + loc.getWorld().getName() + "." +
+                    loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
+
             trapsConfig.set(path + ".owner", trap.getOwnerId().toString());
             trapsConfig.set(path + ".clan", trap.getOwnerClanId() != null ? trap.getOwnerClanId().toString() : null);
             trapsConfig.set(path + ".type", trap.getType().name());
             trapsConfig.set(path + ".fuel", trap.getFuel());
         }
-        
+
         // Henüz aktifleştirilmemiş tuzak çekirdeklerini kaydet
         for (Map.Entry<Location, UUID> entry : inactiveTrapCores.entrySet()) {
             Location loc = entry.getKey();
             UUID ownerId = entry.getValue();
-            
-            String path = "inactive_cores." + loc.getWorld().getName() + "." + 
-                         loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
-            
+
+            String path = "inactive_cores." + loc.getWorld().getName() + "." +
+                    loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
+
             trapsConfig.set(path + ".owner", ownerId.toString());
         }
-        
+
         try {
             trapsConfig.save(trapsFile);
         } catch (IOException e) {
             plugin.getLogger().warning("Tuzaklar kaydedilemedi: " + e.getMessage());
         }
     }
-    
+
     /**
      * Tuzakları yükle
      */
@@ -769,34 +523,39 @@ public class TrapManager {
                 plugin.getLogger().warning("traps.yml oluşturulamadı: " + e.getMessage());
             }
         }
-        
+
         trapsConfig = YamlConfiguration.loadConfiguration(trapsFile);
-        
-        if (trapsConfig.getConfigurationSection("traps") == null) return;
-        
+
+        if (trapsConfig.getConfigurationSection("traps") == null)
+            return;
+
         for (String worldName : trapsConfig.getConfigurationSection("traps").getKeys(false)) {
             org.bukkit.World world = plugin.getServer().getWorld(worldName);
-            if (world == null) continue;
-            
+            if (world == null)
+                continue;
+
             for (String locStr : trapsConfig.getConfigurationSection("traps." + worldName).getKeys(false)) {
                 String[] coords = locStr.split(",");
-                if (coords.length != 3) continue;
-                
+                if (coords.length != 3)
+                    continue;
+
                 try {
-                    Location loc = new Location(world, 
-                        Integer.parseInt(coords[0]),
-                        Integer.parseInt(coords[1]),
-                        Integer.parseInt(coords[2]));
-                    
-                    UUID ownerId = UUID.fromString(trapsConfig.getString("traps." + worldName + "." + locStr + ".owner"));
+                    Location loc = new Location(world,
+                            Integer.parseInt(coords[0]),
+                            Integer.parseInt(coords[1]),
+                            Integer.parseInt(coords[2]));
+
+                    UUID ownerId = UUID
+                            .fromString(trapsConfig.getString("traps." + worldName + "." + locStr + ".owner"));
                     String clanStr = trapsConfig.getString("traps." + worldName + "." + locStr + ".clan");
                     UUID clanId = clanStr != null ? UUID.fromString(clanStr) : null;
-                    TrapType type = TrapType.valueOf(trapsConfig.getString("traps." + worldName + "." + locStr + ".type"));
+                    TrapType type = TrapType
+                            .valueOf(trapsConfig.getString("traps." + worldName + "." + locStr + ".type"));
                     int fuel = trapsConfig.getInt("traps." + worldName + "." + locStr + ".fuel");
-                    
+
                     TrapData trap = new TrapData(ownerId, clanId, type, fuel, loc);
                     activeTraps.put(loc, trap);
-                    
+
                     // Metadata'yı geri yükle
                     Block block = loc.getBlock();
                     if (block.getType() == Material.LODESTONE) {
@@ -808,42 +567,148 @@ public class TrapManager {
                 }
             }
         }
-        
+
         // Henüz aktifleştirilmemiş tuzak çekirdeklerini yükle
         if (trapsConfig.getConfigurationSection("inactive_cores") != null) {
             for (String worldName : trapsConfig.getConfigurationSection("inactive_cores").getKeys(false)) {
                 org.bukkit.World world = plugin.getServer().getWorld(worldName);
-                if (world == null) continue;
-                
-                for (String locStr : trapsConfig.getConfigurationSection("inactive_cores." + worldName).getKeys(false)) {
+                if (world == null)
+                    continue;
+
+                for (String locStr : trapsConfig.getConfigurationSection("inactive_cores." + worldName)
+                        .getKeys(false)) {
                     String[] coords = locStr.split(",");
-                    if (coords.length != 3) continue;
-                    
+                    if (coords.length != 3)
+                        continue;
+
                     try {
-                        Location loc = new Location(world, 
-                            Integer.parseInt(coords[0]),
-                            Integer.parseInt(coords[1]),
-                            Integer.parseInt(coords[2]));
-                        
-                        UUID ownerId = UUID.fromString(trapsConfig.getString("inactive_cores." + worldName + "." + locStr + ".owner"));
-                        
+                        Location loc = new Location(world,
+                                Integer.parseInt(coords[0]),
+                                Integer.parseInt(coords[1]),
+                                Integer.parseInt(coords[2]));
+
+                        UUID ownerId = UUID.fromString(
+                                trapsConfig.getString("inactive_cores." + worldName + "." + locStr + ".owner"));
+
                         inactiveTrapCores.put(loc, ownerId);
-                        
+
                         // Metadata'yı geri yükle (sunucu restart sonrası)
                         Block block = loc.getBlock();
                         if (block.getType() == Material.LODESTONE) {
                             block.setMetadata("TrapCoreItem", new FixedMetadataValue(plugin, true));
                         }
                     } catch (Exception e) {
-                        plugin.getLogger().warning("Aktifleştirilmemiş tuzak çekirdeği yüklenemedi: " + locStr + " - " + e.getMessage());
+                        plugin.getLogger().warning(
+                                "Aktifleştirilmemiş tuzak çekirdeği yüklenemedi: " + locStr + " - " + e.getMessage());
                     }
                 }
             }
         }
     }
-    
+
+    public boolean isInactiveTrapCore(Location loc) {
+        return inactiveTrapCores.containsKey(loc);
+    }
+
+    /**
+     * Henüz aktifleştirilmemiş tuzak çekirdeğini kaydet
+     */
+    public void registerInactiveTrapCore(Location loc, UUID ownerId) {
+        inactiveTrapCores.put(loc, ownerId);
+        saveTraps();
+    }
+
+    /**
+     * Tuzak yapısını kontrol et (LODESTONE çekirdeği etrafında MAGMA_BLOCK
+     * çerçevesi)
+     */
+    public boolean isTrapStructure(Block core) {
+        if (core.getType() != Material.LODESTONE)
+            return false;
+
+        Location coreLoc = core.getLocation();
+        int magmaCount = 0;
+
+        // 3x3 çerçeve kontrolü (ortadaki çekirdek hariç)
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                if (x == 0 && z == 0)
+                    continue; // Çekirdek blok
+
+                Block frameBlock = coreLoc.clone().add(x, 0, z).getBlock();
+                if (frameBlock.getType() == Material.MAGMA_BLOCK) {
+                    magmaCount++;
+                }
+            }
+        }
+
+        // En az 6 magma bloğu olmalı (3x3'ün en az %75'i)
+        return magmaCount >= 6;
+    }
+
+    /**
+     * Tuzak oluştur (yakıt ve tip ile)
+     */
+    public boolean createTrap(Player player, Block coreBlock, TrapType type, Material fuelMaterial) {
+        Location coreLoc = coreBlock.getLocation();
+
+        // Çerçeve bloklarını tespit et
+        List<Location> frameBlocks = new ArrayList<>();
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                if (x == 0 && z == 0)
+                    continue;
+
+                Location frameLoc = coreLoc.clone().add(x, 0, z);
+                Block frameBlock = frameLoc.getBlock();
+                if (frameBlock.getType() == Material.MAGMA_BLOCK) {
+                    frameBlocks.add(frameLoc);
+                }
+            }
+        }
+
+        // Yakıt miktarını hesapla
+        int fuel = 0;
+        if (fuelMaterial == Material.DIAMOND)
+            fuel = 5;
+        else if (fuelMaterial == Material.EMERALD)
+            fuel = 10;
+        // ItemManager.isCustomItem kontrolü listener'da yapılıyor, buraya geldiğinde
+        // Titanyum ise 20 verilir
+        else
+            fuel = 20; // Titanyum veya diğer
+
+        // Klan ID'sini al
+        UUID clanId = null;
+        if (clanManager.getClanByPlayer(player.getUniqueId()) != null) {
+            clanId = clanManager.getClanByPlayer(player.getUniqueId()).getId();
+        }
+
+        // TrapData oluştur
+        TrapData trap = new TrapData(player.getUniqueId(), clanId, type, fuel, coreLoc);
+        trap.getFrameBlocks().addAll(frameBlocks);
+
+        // Aktif tuzaklar listesine ekle
+        activeTraps.put(coreLoc, trap);
+
+        // Metadata ekle
+        coreBlock.setMetadata("TrapCore", new FixedMetadataValue(plugin, true));
+        coreBlock.setMetadata("TrapOwner", new FixedMetadataValue(plugin, player.getUniqueId().toString()));
+
+        // Metadata'yı kaldır (artık aktif tuzak)
+        coreBlock.removeMetadata("TrapCoreItem", plugin);
+        inactiveTrapCores.remove(coreLoc);
+
+        // Kaydet
+        saveTraps();
+
+        player.sendMessage("§a§lTuzak başarıyla kuruldu!");
+        player.sendMessage("§7Tip: " + type.name() + ", Yakıt: " + fuel);
+
+        return true;
+    }
+
     public Map<Location, TrapData> getActiveTraps() {
         return new HashMap<>(activeTraps);
     }
 }
-

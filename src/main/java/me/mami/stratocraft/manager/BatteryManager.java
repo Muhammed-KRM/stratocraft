@@ -21,15 +21,17 @@ import java.util.Map;
 import java.util.UUID;
 
 public class BatteryManager {
-    
+
     private final Main plugin;
     // Oyuncu UUID -> (Slot Numarası -> Batarya Bilgisi)
     private final Map<UUID, Map<Integer, BatteryData>> loadedBatteries;
-    // Barrier bloklarını takip etmek için (Location -> Material) - Ozon Kalkanı ve Enerji Duvarı için
+    // Barrier bloklarını takip etmek için (Location -> Material) - Ozon Kalkanı ve
+    // Enerji Duvarı için
     private final Map<Location, Material> temporaryBarriers;
-    // Batarya aktivasyon zamanı takibi (UUID -> (Slot -> ActivationTime)) - İptal edilemez süre için
+    // Batarya aktivasyon zamanı takibi (UUID -> (Slot -> ActivationTime)) - İptal
+    // edilemez süre için
     private final Map<UUID, Map<Integer, Long>> batteryActivationTimes;
-    
+
     /**
      * Batarya veri sınıfı - tip ve ek bilgileri tutar
      */
@@ -41,9 +43,9 @@ public class BatteryManager {
         private final double trainingMultiplier;
         private final boolean isRedDiamond;
         private final boolean isDarkMatter;
-        
-        public BatteryData(String type, Material fuel, int alchemyLevel, boolean hasAmplifier, 
-                          double trainingMultiplier, boolean isRedDiamond, boolean isDarkMatter) {
+
+        public BatteryData(String type, Material fuel, int alchemyLevel, boolean hasAmplifier,
+                double trainingMultiplier, boolean isRedDiamond, boolean isDarkMatter) {
             this.type = type;
             this.fuel = fuel;
             this.alchemyLevel = alchemyLevel;
@@ -52,19 +54,39 @@ public class BatteryManager {
             this.isRedDiamond = isRedDiamond;
             this.isDarkMatter = isDarkMatter;
         }
-        
-        public String getType() { return type; }
-        public Material getFuel() { return fuel; }
-        public int getAlchemyLevel() { return alchemyLevel; }
-        public boolean hasAmplifier() { return hasAmplifier; }
-        public double getTrainingMultiplier() { return trainingMultiplier; }
-        public boolean isRedDiamond() { return isRedDiamond; }
-        public boolean isDarkMatter() { return isDarkMatter; }
+
+        public String getType() {
+            return type;
+        }
+
+        public Material getFuel() {
+            return fuel;
+        }
+
+        public int getAlchemyLevel() {
+            return alchemyLevel;
+        }
+
+        public boolean hasAmplifier() {
+            return hasAmplifier;
+        }
+
+        public double getTrainingMultiplier() {
+            return trainingMultiplier;
+        }
+
+        public boolean isRedDiamond() {
+            return isRedDiamond;
+        }
+
+        public boolean isDarkMatter() {
+            return isDarkMatter;
+        }
     }
-    
+
     // Partikül animasyon açıları (her oyuncu için ayrı)
     private final Map<UUID, Double> particleAngles = new HashMap<>();
-    
+
     public BatteryManager(Main plugin) {
         this.plugin = plugin;
         this.loadedBatteries = new HashMap<>();
@@ -75,51 +97,54 @@ public class BatteryManager {
             startParticleTask(); // Partikül döngüsünü başlat
         }
     }
-    
+
     /**
      * Bataryayı slota yükle
      */
     public void loadBattery(Player player, int slot, BatteryData data) {
         loadedBatteries.putIfAbsent(player.getUniqueId(), new HashMap<>());
         loadedBatteries.get(player.getUniqueId()).put(slot, data);
-        
+
         // Aktivasyon zamanını kaydet (yükleme = aktivasyon)
         batteryActivationTimes.putIfAbsent(player.getUniqueId(), new HashMap<>());
         batteryActivationTimes.get(player.getUniqueId()).put(slot, System.currentTimeMillis());
-        
+
         player.sendMessage(ChatColor.GREEN + "⚡ " + data.getType() + " " + (slot + 1) + ". slota yüklendi!");
         player.sendMessage(ChatColor.GRAY + "Ateşlemek için SOL, iptal için SAĞ tıkla.");
     }
-    
+
     /**
      * Batarya yeni aktif edildi mi? (2 saniye içinde)
      */
     public boolean isBatteryRecentlyActivated(Player player, int slot) {
-        if (!batteryActivationTimes.containsKey(player.getUniqueId())) return false;
+        if (!batteryActivationTimes.containsKey(player.getUniqueId()))
+            return false;
         Map<Integer, Long> slotTimes = batteryActivationTimes.get(player.getUniqueId());
-        if (!slotTimes.containsKey(slot)) return false;
-        
+        if (!slotTimes.containsKey(slot))
+            return false;
+
         long activationTime = slotTimes.get(slot);
         long currentTime = System.currentTimeMillis();
         return (currentTime - activationTime) < 2000; // 2 saniye
     }
-    
+
     /**
      * Slotta yüklü batarya var mı?
      */
     public boolean hasLoadedBattery(Player player, int slot) {
-        return loadedBatteries.containsKey(player.getUniqueId()) && 
-               loadedBatteries.get(player.getUniqueId()).containsKey(slot);
+        return loadedBatteries.containsKey(player.getUniqueId()) &&
+                loadedBatteries.get(player.getUniqueId()).containsKey(slot);
     }
-    
+
     /**
      * Yüklü bataryanın verisini al
      */
     public BatteryData getLoadedBattery(Player player, int slot) {
-        if (!hasLoadedBattery(player, slot)) return null;
+        if (!hasLoadedBattery(player, slot))
+            return null;
         return loadedBatteries.get(player.getUniqueId()).get(slot);
     }
-    
+
     /**
      * Bataryayı kullan/sil
      */
@@ -139,7 +164,7 @@ public class BatteryManager {
             }
         }
     }
-    
+
     /**
      * Oyuncunun tüm yüklü bataryalarını temizle (logout vb. durumlar için)
      */
@@ -147,7 +172,7 @@ public class BatteryManager {
         loadedBatteries.remove(player.getUniqueId());
         particleAngles.remove(player.getUniqueId()); // Partikül açısını da temizle
     }
-    
+
     /**
      * Sürekli çalışan ve oyuncuya görsel bildirim veren görev
      */
@@ -159,14 +184,15 @@ public class BatteryManager {
                     Player player = Bukkit.getPlayer(uuid);
                     if (player != null && player.isOnline()) {
                         int currentSlot = player.getInventory().getHeldItemSlot();
-                        
+
                         if (hasLoadedBattery(player, currentSlot)) {
                             BatteryData data = getLoadedBattery(player, currentSlot);
                             if (data != null) {
                                 // Ekranın üstünde (Action Bar) uyarı mesajı
-                                String message = ChatColor.RED + "🔴 YÜKLÜ: " + ChatColor.GOLD + data.getType() + 
-                                               ChatColor.GRAY + " [Slot: " + (currentSlot + 1) + "]";
-                                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(message));
+                                String message = ChatColor.RED + "🔴 YÜKLÜ: " + ChatColor.GOLD + data.getType() +
+                                        ChatColor.GRAY + " [Slot: " + (currentSlot + 1) + "]";
+                                player.spigot().sendMessage(ChatMessageType.ACTION_BAR,
+                                        TextComponent.fromLegacyText(message));
                             }
                         }
                     }
@@ -174,7 +200,7 @@ public class BatteryManager {
             }
         }.runTaskTimer(plugin, 0L, 20L); // Her saniye (20 tick) çalışır
     }
-    
+
     /**
      * Aktif bataryalar için partikül gösterimi (diğer oyunculara görünür)
      */
@@ -184,11 +210,13 @@ public class BatteryManager {
             public void run() {
                 for (UUID uuid : loadedBatteries.keySet()) {
                     Player player = Bukkit.getPlayer(uuid);
-                    if (player == null || !player.isOnline()) continue;
-                    
+                    if (player == null || !player.isOnline())
+                        continue;
+
                     Map<Integer, BatteryData> playerBatteries = loadedBatteries.get(uuid);
-                    if (playerBatteries == null || playerBatteries.isEmpty()) continue;
-                    
+                    if (playerBatteries == null || playerBatteries.isEmpty())
+                        continue;
+
                     // Açıyı güncelle (yavaş dönüş için)
                     double currentAngle = particleAngles.getOrDefault(uuid, 0.0);
                     currentAngle += 0.1; // Her tick'te 0.1 radyan artır (yavaş dönüş)
@@ -196,95 +224,111 @@ public class BatteryManager {
                         currentAngle = 0.0; // 360 derece = 0
                     }
                     particleAngles.put(uuid, currentAngle);
-                    
+
                     Location playerLoc = player.getLocation();
-                    if (playerLoc == null || playerLoc.getWorld() == null) continue; // Güvenlik kontrolü
-                    
+                    if (playerLoc == null || playerLoc.getWorld() == null)
+                        continue; // Güvenlik kontrolü
+
                     double radius = 1.5; // Oyuncunun etrafında 1.5 blok yarıçap
-                    
+
                     // Her slot için partikül göster
                     int slotIndex = 0;
                     int batteryCount = playerBatteries.size();
-                    if (batteryCount == 0) continue; // Güvenlik kontrolü
-                    
+                    if (batteryCount == 0)
+                        continue; // Güvenlik kontrolü
+
                     for (Map.Entry<Integer, BatteryData> entry : playerBatteries.entrySet()) {
                         int slot = entry.getKey();
                         BatteryData battery = entry.getValue();
-                        
+
                         // Null kontrolü
                         if (battery == null) {
                             slotIndex++;
                             continue;
                         }
-                        
+
                         // Slot'a göre renk belirle
                         org.bukkit.Color particleColor = getSlotColor(slotIndex);
-                        
+
                         // Yakıt tipine göre partikül miktarı (custom item desteği ile)
                         int particleCount = getParticleCountByBatteryData(battery);
-                        
+
                         // Partikül pozisyonu (oyuncunun etrafında dönen)
                         double angle = currentAngle + (slotIndex * (2 * Math.PI / batteryCount));
                         double x = Math.cos(angle) * radius;
                         double z = Math.sin(angle) * radius;
                         double y = 0.5 + (slotIndex * 0.3); // Her slot için biraz yukarı
-                        
+
                         Location particleLoc = playerLoc.clone().add(x, y, z);
-                        
+
                         // Tüm oyunculara partikül göster
                         for (Player viewer : Bukkit.getOnlinePlayers()) {
-                            if (viewer == null || !viewer.isOnline()) continue;
-                            if (viewer.getWorld() == null || viewer.getWorld() != player.getWorld()) continue;
-                            
+                            if (viewer == null || !viewer.isOnline())
+                                continue;
+                            if (viewer.getWorld() == null || viewer.getWorld() != player.getWorld())
+                                continue;
+
                             Location viewerLoc = viewer.getLocation();
-                            if (viewerLoc == null) continue;
-                            if (viewerLoc.distance(playerLoc) > 32) continue; // 32 blok mesafe limiti
-                            
+                            if (viewerLoc == null)
+                                continue;
+                            if (viewerLoc.distance(playerLoc) > 32)
+                                continue; // 32 blok mesafe limiti
+
                             try {
                                 viewer.spawnParticle(
-                                    org.bukkit.Particle.REDSTONE,
-                                    particleLoc,
-                                    particleCount,
-                                    0.1, 0.1, 0.1, 0,
-                                    new org.bukkit.Particle.DustOptions(particleColor, 1.0f)
-                                );
+                                        org.bukkit.Particle.REDSTONE,
+                                        particleLoc,
+                                        particleCount,
+                                        0.1, 0.1, 0.1, 0,
+                                        new org.bukkit.Particle.DustOptions(particleColor, 1.0f));
                             } catch (Exception e) {
                                 // Partikül spawn hatası (oyuncu çok uzakta veya dünya yüklenmemiş)
                                 // Sessizce atla
                             }
                         }
-                        
+
                         slotIndex++;
                     }
                 }
             }
         }.runTaskTimer(plugin, 0L, 2L); // Her 2 tick'te bir (çok hızlı dönüş için)
     }
-    
+
     /**
      * Slot numarasına göre renk döndür
      */
     private org.bukkit.Color getSlotColor(int slotIndex) {
         switch (slotIndex % 9) {
-            case 0: return org.bukkit.Color.RED; // Kırmızı
-            case 1: return org.bukkit.Color.fromRGB(255, 165, 0); // Turuncu
-            case 2: return org.bukkit.Color.YELLOW; // Sarı
-            case 3: return org.bukkit.Color.LIME; // Yeşil
-            case 4: return org.bukkit.Color.BLUE; // Mavi
-            case 5: return org.bukkit.Color.PURPLE; // Mor
-            case 6: return org.bukkit.Color.fromRGB(255, 192, 203); // Pembe
-            case 7: return org.bukkit.Color.WHITE; // Beyaz
-            case 8: return org.bukkit.Color.AQUA; // Cyan
-            default: return org.bukkit.Color.RED;
+            case 0:
+                return org.bukkit.Color.RED; // Kırmızı
+            case 1:
+                return org.bukkit.Color.fromRGB(255, 165, 0); // Turuncu
+            case 2:
+                return org.bukkit.Color.YELLOW; // Sarı
+            case 3:
+                return org.bukkit.Color.LIME; // Yeşil
+            case 4:
+                return org.bukkit.Color.BLUE; // Mavi
+            case 5:
+                return org.bukkit.Color.PURPLE; // Mor
+            case 6:
+                return org.bukkit.Color.fromRGB(255, 192, 203); // Pembe
+            case 7:
+                return org.bukkit.Color.WHITE; // Beyaz
+            case 8:
+                return org.bukkit.Color.AQUA; // Cyan
+            default:
+                return org.bukkit.Color.RED;
         }
     }
-    
+
     /**
      * Yakıt tipine göre partikül miktarı döndür
      */
     private int getParticleCountByFuel(Material fuel) {
-        if (fuel == null) return 12; // Varsayılan
-        
+        if (fuel == null)
+            return 12; // Varsayılan
+
         switch (fuel) {
             case DIAMOND:
                 return 20; // Elmas = çok partikül
@@ -301,16 +345,18 @@ public class BatteryManager {
                 return 12; // Varsayılan
         }
     }
-    
+
     /**
      * BatteryData'dan yakıt tipine göre partikül miktarı (custom item desteği ile)
      */
     private int getParticleCountByBatteryData(BatteryData battery) {
-        if (battery == null) return 12;
-        
+        if (battery == null)
+            return 12;
+
         Material fuel = battery.getFuel();
-        if (fuel == null) return 12;
-        
+        if (fuel == null)
+            return 12;
+
         // Custom item kontrolü (Titanyum, Kızıl Elmas, Karanlık Madde)
         if (battery.isRedDiamond()) {
             return 30; // Kızıl Elmas = çok fazla
@@ -318,7 +364,7 @@ public class BatteryManager {
         if (battery.isDarkMatter()) {
             return 35; // Karanlık Madde = en fazla
         }
-        
+
         return getParticleCountByFuel(fuel);
     }
 
@@ -326,70 +372,74 @@ public class BatteryManager {
     public void fireMagmaBattery(Player p, Material fuel, int alchemyLevel, boolean hasAmplifier) {
         fireMagmaBattery(p, fuel, alchemyLevel, hasAmplifier, 1.0);
     }
-    
-    public void fireMagmaBattery(Player p, Material fuel, int alchemyLevel, boolean hasAmplifier, double trainingMultiplier) {
+
+    public void fireMagmaBattery(Player p, Material fuel, int alchemyLevel, boolean hasAmplifier,
+            double trainingMultiplier) {
         int count;
-        if (fuel == Material.DIAMOND) count = 5;
-        else if (ItemManager.RED_DIAMOND != null && 
-                 p.getInventory().getItemInMainHand().equals(ItemManager.RED_DIAMOND)) {
+        if (fuel == Material.DIAMOND)
+            count = 5;
+        else if (ItemManager.RED_DIAMOND != null &&
+                p.getInventory().getItemInMainHand().equals(ItemManager.RED_DIAMOND)) {
             count = 20;
-        } else if (ItemManager.DARK_MATTER != null && 
-                   p.getInventory().getItemInMainHand().equals(ItemManager.DARK_MATTER)) {
+        } else if (ItemManager.DARK_MATTER != null &&
+                p.getInventory().getItemInMainHand().equals(ItemManager.DARK_MATTER)) {
             count = 50;
         } else {
             count = 2;
         }
-        
+
         // Simya Kulesi seviyesine göre güç artışı: Seviye 1 = %10, Seviye 5 = %50
         if (alchemyLevel > 0) {
             double multiplier = 1.0 + (alchemyLevel * 0.1); // Seviye 1: 1.1x, Seviye 5: 1.5x
             count = (int) (count * multiplier);
         }
-        
-        // Mastery çarpanı uygula (0.2 = antrenman, 1.0 = normal, 1.2-1.4 = mastery bonus)
+
+        // Mastery çarpanı uygula (0.2 = antrenman, 1.0 = normal, 1.2-1.4 = mastery
+        // bonus)
         count = (int) (count * trainingMultiplier);
-        if (count < 1) count = 1; // En az 1 ateş topu
-        
+        if (count < 1)
+            count = 1; // En az 1 ateş topu
+
         @SuppressWarnings("unused")
         float size = hasAmplifier ? 2.0f : 1.0f;
         float yield = hasAmplifier ? 4.0f : 2.0f; // Alev Amplifikatörü ile çap 2 katına çıkar
         yield = (float) (yield * trainingMultiplier); // Mastery çarpanı yield'e de uygulanır
-        
+
         // Ateş toplarını sırayla at (aynı anda değil, delay ile)
         final int finalCount = count;
         final float finalYield = yield;
         final boolean finalIsIncendiary = (alchemyLevel >= 5 && trainingMultiplier >= 1.0);
-        
+
         new BukkitRunnable() {
             int fired = 0;
-            
+
             @Override
             public void run() {
                 if (fired >= finalCount || !p.isOnline()) {
                     cancel();
                     return;
                 }
-                
+
                 // Oyuncunun 1 blok önünden başlat (içinde patlamasın)
                 Location spawnLoc = p.getEyeLocation().clone();
                 Vector direction = p.getLocation().getDirection().normalize(); // Normalize et
                 spawnLoc.add(direction.multiply(1.5)); // 1.5 blok önünden başlat (daha güvenli)
-                
+
                 // Ateş topunu spawn et
                 Fireball fb = spawnLoc.getWorld().spawn(spawnLoc, Fireball.class);
                 fb.setVelocity(direction.multiply(1.5));
                 fb.setYield(finalYield);
                 fb.setShooter(p);
-                
+
                 // Seviye 5'te yanma etkisi ekle (antrenman modunda yok)
                 if (finalIsIncendiary) {
                     fb.setIsIncendiary(true);
                 }
-                
+
                 fired++;
             }
         }.runTaskTimer(plugin, 0L, 2L); // Her 2 tick'te bir ateş topu (0.1 saniye aralık)
-        
+
         // Mastery mesajı (antrenman modu veya mastery bonus)
         String masteryMsg = "";
         if (trainingMultiplier < 1.0) {
@@ -398,7 +448,12 @@ public class BatteryManager {
             int bonusPercent = (int) ((trainingMultiplier - 1.0) * 100);
             masteryMsg = " §a[Mastery +%" + bonusPercent + "]";
         }
-        p.sendMessage("§6Ateş topları fırlatıldı! (" + count + " adet)" + (alchemyLevel > 0 ? " [Simya Kulesi Seviye " + alchemyLevel + "]" : "") + masteryMsg);
+
+        String ampMsg = hasAmplifier ? " §c§l[ALEV AMPLİFİKATÖRÜ AKTİF!]" : "";
+
+        p.sendMessage("§6Ateş topları fırlatıldı! (" + count + " adet)" +
+                (alchemyLevel > 0 ? " [Simya Kulesi Seviye " + alchemyLevel + "]" : "") +
+                masteryMsg + ampMsg);
     }
 
     // 2. YILDIRIM
@@ -441,12 +496,13 @@ public class BatteryManager {
         Location start = p.getLocation().clone().subtract(0, 1, 0);
         Vector dir = p.getLocation().getDirection().setY(0).normalize();
         int placedBlocks = 0;
-        
+
         for (int i = 1; i <= 15; i++) {
             Location point = start.clone().add(dir.clone().multiply(i));
             // Yükseklik sınırı kontrolü
-            if (point.getY() < -64 || point.getY() > 319) continue;
-            
+            if (point.getY() < -64 || point.getY() > 319)
+                continue;
+
             // Eğer önünde blok varsa (AIR değilse), o bloğu yok etme, es geç
             if (point.getBlock().getType() == Material.AIR) {
                 point.getBlock().setType(Material.PACKED_ICE);
@@ -454,7 +510,7 @@ public class BatteryManager {
             }
             // Eğer blok varsa, continue ile es geç (yok etme)
         }
-        
+
         if (placedBlocks > 0) {
             p.sendMessage("§bBuz Köprüsü kuruldu! (" + placedBlocks + " blok)");
         } else {
@@ -467,15 +523,16 @@ public class BatteryManager {
         Location center = p.getLocation().clone();
         int r = 2;
         int placedBlocks = 0;
-        
+
         for (int x = -r; x <= r; x++) {
             for (int y = 0; y <= 3; y++) {
                 for (int z = -r; z <= r; z++) {
                     if (Math.abs(x) == r || Math.abs(z) == r || y == 3 || y == 0) {
                         Location blockLoc = center.clone().add(x, y, z);
                         // Yükseklik sınırı kontrolü
-                        if (blockLoc.getY() < -64 || blockLoc.getY() > 319) continue;
-                        
+                        if (blockLoc.getY() < -64 || blockLoc.getY() > 319)
+                            continue;
+
                         Block b = blockLoc.getBlock();
                         // Eğer önünde blok varsa (AIR değilse), o bloğu yok etme, es geç
                         if (b.getType() == Material.AIR) {
@@ -487,7 +544,7 @@ public class BatteryManager {
                 }
             }
         }
-        
+
         // Sadece yeterli blok yerleştirildiyse teleport et
         if (placedBlocks > 0) {
             p.teleport(center.clone().add(0, 1, 0));
@@ -512,16 +569,16 @@ public class BatteryManager {
     // 7. TOPRAK SURU (Savunma)
     public void createEarthWall(Player p, Material material) {
         Location start = p.getLocation().clone().add(p.getLocation().getDirection().setY(0).normalize().multiply(2));
-        boolean isTitanium = ItemManager.TITANIUM_INGOT != null && 
-                             ItemManager.isCustomItem(p.getInventory().getItemInMainHand(), "TITANIUM_INGOT");
-        boolean isAdamantite = ItemManager.ADAMANTITE != null && 
-                               ItemManager.isCustomItem(p.getInventory().getItemInMainHand(), "ADAMANTITE");
-        
+        boolean isTitanium = ItemManager.TITANIUM_INGOT != null &&
+                ItemManager.isCustomItem(p.getInventory().getItemInMainHand(), "TITANIUM_INGOT");
+        boolean isAdamantite = ItemManager.ADAMANTITE != null &&
+                ItemManager.isCustomItem(p.getInventory().getItemInMainHand(), "ADAMANTITE");
+
         int height = isTitanium ? 5 : 3;
         Material wallMat = Material.COBBLESTONE;
-        
+
         List<Location> barrierLocations = new ArrayList<>();
-        
+
         if (isAdamantite) {
             // Adamantite ile şeffaf, içinden ok geçmeyen enerji kalkanı
             wallMat = Material.BARRIER;
@@ -530,21 +587,22 @@ public class BatteryManager {
         } else if (isTitanium) {
             wallMat = Material.IRON_BLOCK;
         }
-        
+
         int placedBlocks = 0;
-        
+
         for (int y = 0; y < height; y++) {
             for (int x = -1; x <= 1; x++) {
                 Location blockLoc = start.clone().add(x, y, 0);
                 // Yükseklik sınırı kontrolü
-                if (blockLoc.getY() < -64 || blockLoc.getY() > 319) continue;
-                
+                if (blockLoc.getY() < -64 || blockLoc.getY() > 319)
+                    continue;
+
                 // Eğer önünde blok varsa (AIR değilse), o bloğu yok etme, es geç
                 if (blockLoc.getBlock().getType() == Material.AIR) {
                     Material originalType = blockLoc.getBlock().getType();
                     blockLoc.getBlock().setType(wallMat);
                     placedBlocks++;
-                    
+
                     if (isAdamantite) {
                         // Barrier bloklarını kaydet (otomatik silme için)
                         temporaryBarriers.put(blockLoc.clone(), originalType);
@@ -556,7 +614,7 @@ public class BatteryManager {
                 // Eğer blok varsa, continue ile es geç (yok etme)
             }
         }
-        
+
         // Adamantite kullanıldıysa 15 saniye sonra barrier bloklarını sil
         if (isAdamantite && !barrierLocations.isEmpty()) {
             scheduleBarrierRemoval(barrierLocations, 15 * 20); // 15 saniye = 300 tick
@@ -588,11 +646,11 @@ public class BatteryManager {
 
     // 9. SİSMİK ÇEKİÇ (Felaket Mücadele)
     private me.mami.stratocraft.manager.DisasterManager disasterManager;
-    
+
     public void setDisasterManager(me.mami.stratocraft.manager.DisasterManager dm) {
         this.disasterManager = dm;
     }
-    
+
     public void fireSeismicHammer(Player p) {
         Block targetBlock = p.getTargetBlock(null, 30);
         // Hedef bulunamadıysa iptal et
@@ -615,14 +673,15 @@ public class BatteryManager {
         int radius = 15;
         List<Location> barrierLocations = new ArrayList<>();
         int placedBlocks = 0;
-        
+
         for (int x = -radius; x <= radius; x++) {
             for (int z = -radius; z <= radius; z++) {
-                if (x*x + z*z <= radius*radius) {
+                if (x * x + z * z <= radius * radius) {
                     Location loc = center.clone().add(x, 0, z);
                     // Yükseklik sınırı kontrolü
-                    if (loc.getY() < -64 || loc.getY() > 319) continue;
-                    
+                    if (loc.getY() < -64 || loc.getY() > 319)
+                        continue;
+
                     // Eğer önünde blok varsa (AIR değilse), o bloğu yok etme, es geç
                     if (loc.getBlock().getType() == Material.AIR) {
                         Material originalType = loc.getBlock().getType();
@@ -636,14 +695,15 @@ public class BatteryManager {
                 }
             }
         }
-        
+
         // 20 saniye sonra barrier bloklarını sil
         if (!barrierLocations.isEmpty()) {
             scheduleBarrierRemoval(barrierLocations, 20 * 20); // 20 saniye = 400 tick
         }
-        
+
         if (placedBlocks > 0) {
-            p.sendMessage("§bOzon Kalkanı aktif! Güneş Fırtınası koruması sağlandı. (" + placedBlocks + " blok, 20 saniye)");
+            p.sendMessage(
+                    "§bOzon Kalkanı aktif! Güneş Fırtınası koruması sağlandı. (" + placedBlocks + " blok, 20 saniye)");
         } else {
             p.sendMessage("§cOzon Kalkanı oluşturulamadı! Yeterli boş alan yok.");
         }
@@ -654,13 +714,14 @@ public class BatteryManager {
         Location start = p.getLocation().clone().add(p.getLocation().getDirection().setY(0).normalize().multiply(2));
         List<Location> barrierLocations = new ArrayList<>();
         int placedBlocks = 0;
-        
+
         for (int y = 0; y < 5; y++) {
             for (int x = -2; x <= 2; x++) {
                 Location loc = start.clone().add(x, y, 0);
                 // Yükseklik sınırı kontrolü
-                if (loc.getY() < -64 || loc.getY() > 319) continue;
-                
+                if (loc.getY() < -64 || loc.getY() > 319)
+                    continue;
+
                 // Eğer önünde blok varsa (AIR değilse), o bloğu yok etme, es geç
                 if (loc.getBlock().getType() == Material.AIR) {
                     Material originalType = loc.getBlock().getType();
@@ -673,12 +734,12 @@ public class BatteryManager {
                 // Eğer blok varsa, continue ile es geç (yok etme)
             }
         }
-        
+
         // 15 saniye sonra barrier bloklarını sil
         if (!barrierLocations.isEmpty()) {
             scheduleBarrierRemoval(barrierLocations, 15 * 20); // 15 saniye = 300 tick
         }
-        
+
         if (placedBlocks > 0) {
             p.sendMessage("§bEnerji Duvarı oluşturuldu! (" + placedBlocks + " blok, 15 saniye)");
         } else {
@@ -689,11 +750,11 @@ public class BatteryManager {
     // 12. LAV HENDEKÇİSİ (Alan Savunması)
     public void createLavaTrench(Player p, TerritoryManager territoryManager) {
         Location start = p.getLocation().clone().add(p.getLocation().getDirection().setY(0).normalize().multiply(3));
-        
+
         // Territory kontrolü
         Clan owner = territoryManager.getTerritoryOwner(start);
         Clan playerClan = territoryManager.getClanManager().getClanByPlayer(p.getUniqueId());
-        
+
         // Eğer başkasının bölgesindeyse ve savaş durumunda değilse engelle
         if (owner != null && playerClan != null && !owner.equals(playerClan)) {
             // Savaş kontrolü - SiegeManager'dan kontrol et
@@ -711,15 +772,17 @@ public class BatteryManager {
                 return;
             }
         }
-        
+
         int placedBlocks = 0;
-        
+
         for (int i = 0; i < 10; i++) {
             Location loc = start.clone().add(i, -1, 0);
             // Yükseklik sınırı kontrolü
-            if (loc.getY() < -64 || loc.getY() > 319) continue;
-            
-            // Eğer önünde blok varsa (LAVA değilse ve AIR değilse), o bloğu yok etme, es geç
+            if (loc.getY() < -64 || loc.getY() > 319)
+                continue;
+
+            // Eğer önünde blok varsa (LAVA değilse ve AIR değilse), o bloğu yok etme, es
+            // geç
             // Sadece AIR veya su gibi sıvı blokların üzerine lav koyabilir
             Material currentType = loc.getBlock().getType();
             if (currentType == Material.AIR || currentType == Material.WATER || currentType == Material.LAVA) {
@@ -730,20 +793,21 @@ public class BatteryManager {
             }
             // Eğer solid blok varsa, continue ile es geç (yok etme)
         }
-        
+
         if (placedBlocks > 0) {
             p.sendMessage("§cLav Hendekçisi kuruldu! (" + placedBlocks + " blok)");
         } else {
             p.sendMessage("§cLav Hendekçisi kurulamadı! Önünde engel var.");
         }
     }
-    
+
     /**
      * Barrier bloklarını belirli bir süre sonra otomatik olarak sil
      */
     private void scheduleBarrierRemoval(List<Location> locations, long delayTicks) {
-        if (plugin == null || locations.isEmpty()) return;
-        
+        if (plugin == null || locations.isEmpty())
+            return;
+
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -757,7 +821,7 @@ public class BatteryManager {
             }
         }.runTaskLater(plugin, delayTicks);
     }
-    
+
     /**
      * Sunucu kapanırken (onDisable) çağırılmalı.
      * Aktif olan tüm geçici blokları temizler.
@@ -768,7 +832,7 @@ public class BatteryManager {
         for (Map.Entry<Location, Material> entry : temporaryBarriers.entrySet()) {
             Location loc = entry.getKey();
             Material original = entry.getValue();
-            
+
             // Null kontrolü ve world kontrolü
             if (loc != null && loc.getWorld() != null) {
                 try {
@@ -782,11 +846,10 @@ public class BatteryManager {
                 }
             }
         }
-        
+
         temporaryBarriers.clear();
-        
+
         // Yüklü batarya verilerini temizle (sunucu kapanırken zaten gereksiz)
         loadedBatteries.clear();
     }
 }
-

@@ -55,13 +55,15 @@ public class Main extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
-        
+
         // Klasör Hazırlığı
         File schemDir = new File(getDataFolder(), "schematics");
-        if (!schemDir.exists()) schemDir.mkdirs();
+        if (!schemDir.exists())
+            schemDir.mkdirs();
 
         // 1. Yöneticileri Başlat
-        itemManager = new ItemManager(); itemManager.init(); 
+        itemManager = new ItemManager();
+        itemManager.init();
         clanManager = new ClanManager();
         territoryManager = new TerritoryManager(clanManager);
         batteryManager = new BatteryManager(this);
@@ -98,6 +100,8 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new CombatListener(clanManager), this);
         Bukkit.getPluginManager().registerEvents(new SurvivalListener(missionManager), this);
         Bukkit.getPluginManager().registerEvents(new TerritoryListener(territoryManager, siegeManager), this);
+        Bukkit.getPluginManager().registerEvents(new StructureActivationListener(clanManager, territoryManager), this); // YAPI
+                                                                                                                        // AKTİVASYONU
         Bukkit.getPluginManager().registerEvents(new SiegeListener(siegeManager, territoryManager), this);
         Bukkit.getPluginManager().registerEvents(new ScavengerListener(scavengerManager), this);
         Bukkit.getPluginManager().registerEvents(new LogisticsListener(logisticsManager), this);
@@ -107,48 +111,57 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new MissionListener(missionManager), this);
         Bukkit.getPluginManager().registerEvents(new ResearchListener(researchManager), this);
         Bukkit.getPluginManager().registerEvents(new StructureListener(clanManager, researchManager), this);
-        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.GhostRecipeListener(ghostRecipeManager, researchManager), this);
+        Bukkit.getPluginManager().registerEvents(
+                new me.mami.stratocraft.listener.GhostRecipeListener(ghostRecipeManager, researchManager), this);
         Bukkit.getPluginManager().registerEvents(new ConsumableListener(), this);
         Bukkit.getPluginManager().registerEvents(new VillagerListener(), this);
         Bukkit.getPluginManager().registerEvents(new GriefProtectionListener(territoryManager), this);
         virtualStorageListener = new VirtualStorageListener(territoryManager);
         Bukkit.getPluginManager().registerEvents(virtualStorageListener, this);
-        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.ClanChatListener(clanManager, langManager), this);
+        Bukkit.getPluginManager()
+                .registerEvents(new me.mami.stratocraft.listener.ClanChatListener(clanManager, langManager), this);
         // Dünya oluşturma ve doğal spawn listener'ı
-        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.WorldGenerationListener(territoryManager, mobManager), this);
+        Bukkit.getPluginManager().registerEvents(
+                new me.mami.stratocraft.listener.WorldGenerationListener(territoryManager, mobManager), this);
         // ClanMenu zaten Listener implement ediyor, kaydet
         Bukkit.getPluginManager().registerEvents(clanMenu, this);
-        
+
         // CombatLogManager kaydet (savaştan kaçmayı engellemek için)
         combatLogManager = new me.mami.stratocraft.manager.CombatLogManager();
         Bukkit.getPluginManager().registerEvents(combatLogManager, this);
         combatLogManager.startCleanupTask(this);
-        
+
         // Yeni mekanikler: Kervan, Savaş Mühendisliği, Kontratlar
-        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.CaravanListener(caravanManager), this);
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.CaravanListener(caravanManager),
+                this);
         siegeWeaponManager = new me.mami.stratocraft.manager.SiegeWeaponManager(this);
-        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.SiegeWeaponListener(siegeWeaponManager), this);
-        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.ContractListener(contractManager), this);
-        
+        Bukkit.getPluginManager()
+                .registerEvents(new me.mami.stratocraft.listener.SiegeWeaponListener(siegeWeaponManager), this);
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.ContractListener(contractManager),
+                this);
+
         // Yeni sistemler: Tuzaklar, Kancalar, Casusluk, Hava Drop
         trapManager = new me.mami.stratocraft.manager.TrapManager(this);
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.TrapListener(trapManager), this);
-        
+
         // Özel Eşyalar (Kanca, Casusluk Dürbünü)
         specialItemManager = new me.mami.stratocraft.manager.SpecialItemManager();
         specialItemManager.registerRecipes(); // Yapım tariflerini kaydet
-        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.SpecialItemListener(specialItemManager), this);
-        
+        Bukkit.getPluginManager()
+                .registerEvents(new me.mami.stratocraft.listener.SpecialItemListener(specialItemManager), this);
+
         supplyDropManager = new me.mami.stratocraft.manager.SupplyDropManager(this);
-        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.SupplyDropListener(supplyDropManager), this);
-        
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.SupplyDropListener(supplyDropManager),
+                this);
+
         // Veri yükleme
         dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener);
 
         // 3. Zamanlayıcıları Başlat
-        new BuffTask(territoryManager, siegeWeaponManager).runTaskTimer(this, 20L, 20L); 
+        new BuffTask(territoryManager, siegeWeaponManager).runTaskTimer(this, 20L, 20L);
         new DisasterTask(disasterManager, territoryManager).runTaskTimer(this, 20L, 20L);
-        
+        new me.mami.stratocraft.task.StructureEffectTask(clanManager).runTaskTimer(this, 20L, 20L); // YAPI EFEKTLERİ
+
         // Casusluk Dürbünü için Scheduler (her 5 tickte bir çalışır - performans için)
         // Bu sayede oyuncu durup kafasını çevirdiğinde de dürbün çalışır
         new org.bukkit.scheduler.BukkitRunnable() {
@@ -164,15 +177,16 @@ public class Main extends JavaPlugin {
                     }
                 }
             }
-        }.runTaskTimer(this, 0L, 5L); // Her 5 tickte bir (0.25 saniye) 
+        }.runTaskTimer(this, 0L, 5L); // Her 5 tickte bir (0.25 saniye)
         new MobRideTask(mobManager).runTaskTimer(this, 1L, 1L);
-        new DrillTask(territoryManager).runTaskTimer(this, configManager.getDrillInterval(), configManager.getDrillInterval());
-        new CropTask(territoryManager).runTaskTimer(this, 40L, 40L); // Her 2 saniye 
+        new DrillTask(territoryManager).runTaskTimer(this, configManager.getDrillInterval(),
+                configManager.getDrillInterval());
+        new CropTask(territoryManager).runTaskTimer(this, 40L, 40L); // Her 2 saniye
 
         // 4. Tab Completers
         getCommand("klan").setTabCompleter(new me.mami.stratocraft.command.ClanTabCompleter());
         getCommand("kontrat").setTabCompleter(new me.mami.stratocraft.command.ContractTabCompleter());
-        
+
         // 7. Komutlar (Sadece Admin için - Oyuncular ritüelleri kullanır)
         getCommand("klan").setExecutor(new CommandExecutor() {
             @Override
@@ -181,15 +195,15 @@ public class Main extends JavaPlugin {
                     sender.sendMessage("§cBu komut sadece oyuncular için!");
                     return true;
                 }
-                
+
                 Player p = (Player) sender;
-                
+
                 // HERKESİN KULLANABİLECEĞİ KOMUTLAR (Menü, Bilgi vb.)
                 if (args.length > 0 && args[0].equalsIgnoreCase("menü")) {
                     clanMenu.openMenu(p);
                     return true;
                 }
-                
+
                 if (args.length > 0 && args[0].equalsIgnoreCase("bilgi")) {
                     Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
                     if (clan != null) {
@@ -203,66 +217,67 @@ public class Main extends JavaPlugin {
                     }
                     return true;
                 }
-                
+
                 // BURADAN SONRASI SADECE ADMİNLER İÇİN
                 if (!p.hasPermission("stratocraft.admin")) {
                     p.sendMessage("§cDiğer işlemler için Ritüelleri kullanmalısın!");
                     p.sendMessage("§7Ritüeller: Klan Kurma (3x3 Cobblestone + Crafting Table + Named Paper)");
                     return true;
                 }
-                
+
                 // Admin komutları
                 if (args.length > 0 && args[0].equalsIgnoreCase("kur")) {
-                        if (args.length > 1) {
-                            Clan newClan = clanManager.createClan(args[1], p.getUniqueId());
-                            if (newClan != null) {
-                                newClan.setTerritory(new Territory(newClan.getId(), p.getLocation()));
-                                p.sendMessage("§aKlan kuruldu: " + args[1]);
-                            } else {
-                                p.sendMessage("§cZaten bir klana üyesin!");
-                            }
+                    if (args.length > 1) {
+                        Clan newClan = clanManager.createClan(args[1], p.getUniqueId());
+                        if (newClan != null) {
+                            newClan.setTerritory(new Territory(newClan.getId(), p.getLocation()));
+                            p.sendMessage("§aKlan kuruldu: " + args[1]);
                         } else {
-                            p.sendMessage("§cKullanım: /klan kur <isim>");
-                        }
-                    } else if (args.length > 0 && args[0].equalsIgnoreCase("ayril")) {
-                        Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
-                        if (clan != null) {
-                            if (clan.getRank(p.getUniqueId()) == Clan.Rank.LEADER) {
-                                clanManager.disbandClan(clan);
-                                p.sendMessage("§cKlanınız dağıtıldı.");
-                            } else {
-                                clan.getMembers().remove(p.getUniqueId());
-                                p.sendMessage("§eKlandan ayrıldınız.");
-                            }
-                        } else {
-                            p.sendMessage("§cBir klana üye değilsiniz!");
-                        }
-                    } else if (args.length > 0 && args[0].equalsIgnoreCase("kristal")) {
-                        Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
-                        if (clan == null) {
-                            p.sendMessage("§cBir klana üye değilsiniz!");
-                            return true;
-                        }
-                        if (clan.getRank(p.getUniqueId()) != Clan.Rank.LEADER && clan.getRank(p.getUniqueId()) != Clan.Rank.GENERAL) {
-                            p.sendMessage("§cBu işlem için yetkiniz yok!");
-                            return true;
-                        }
-                        if (clan.getTerritory() == null) {
-                            Territory newTerritory = new Territory(clan.getId(), p.getLocation());
-                            clan.setTerritory(newTerritory);
-                            p.sendMessage("§aKristal dikildi! Bölgeniz aktif.");
-                        } else {
-                            p.sendMessage("§eZaten bir bölgeniz var. Yeni kristal dikmek için mevcut bölgeyi kaldırın.");
+                            p.sendMessage("§cZaten bir klana üyesin!");
                         }
                     } else {
-                        p.sendMessage("§eKullanım: /klan <menü|bilgi|kur|ayril|kristal>");
-                        p.sendMessage("§7Oyuncular: menü, bilgi");
-                        p.sendMessage("§7Adminler: kur, ayril, kristal");
+                        p.sendMessage("§cKullanım: /klan kur <isim>");
                     }
+                } else if (args.length > 0 && args[0].equalsIgnoreCase("ayril")) {
+                    Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
+                    if (clan != null) {
+                        if (clan.getRank(p.getUniqueId()) == Clan.Rank.LEADER) {
+                            clanManager.disbandClan(clan);
+                            p.sendMessage("§cKlanınız dağıtıldı.");
+                        } else {
+                            clan.getMembers().remove(p.getUniqueId());
+                            p.sendMessage("§eKlandan ayrıldınız.");
+                        }
+                    } else {
+                        p.sendMessage("§cBir klana üye değilsiniz!");
+                    }
+                } else if (args.length > 0 && args[0].equalsIgnoreCase("kristal")) {
+                    Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
+                    if (clan == null) {
+                        p.sendMessage("§cBir klana üye değilsiniz!");
+                        return true;
+                    }
+                    if (clan.getRank(p.getUniqueId()) != Clan.Rank.LEADER
+                            && clan.getRank(p.getUniqueId()) != Clan.Rank.GENERAL) {
+                        p.sendMessage("§cBu işlem için yetkiniz yok!");
+                        return true;
+                    }
+                    if (clan.getTerritory() == null) {
+                        Territory newTerritory = new Territory(clan.getId(), p.getLocation());
+                        clan.setTerritory(newTerritory);
+                        p.sendMessage("§aKristal dikildi! Bölgeniz aktif.");
+                    } else {
+                        p.sendMessage("§eZaten bir bölgeniz var. Yeni kristal dikmek için mevcut bölgeyi kaldırın.");
+                    }
+                } else {
+                    p.sendMessage("§eKullanım: /klan <menü|bilgi|kur|ayril|kristal>");
+                    p.sendMessage("§7Oyuncular: menü, bilgi");
+                    p.sendMessage("§7Adminler: kur, ayril, kristal");
+                }
                 return true;
             }
         });
-        
+
         getCommand("kontrat").setExecutor(new CommandExecutor() {
             @Override
             public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -272,8 +287,9 @@ public class Main extends JavaPlugin {
                         p.sendMessage("§eAktif Sözleşmeler:");
                         int i = 1;
                         for (me.mami.stratocraft.model.Contract contract : contractManager.getContracts()) {
-                            p.sendMessage("§7" + i + ". " + contract.getMaterial() + " x" + contract.getAmount() + 
-                                " → " + contract.getReward() + " altın (ID: " + contract.getId().toString().substring(0, 8) + ")");
+                            p.sendMessage("§7" + i + ". " + contract.getMaterial() + " x" + contract.getAmount() +
+                                    " → " + contract.getReward() + " altın (ID: "
+                                    + contract.getId().toString().substring(0, 8) + ")");
                             i++;
                         }
                     } else if (args.length > 0 && args[0].equalsIgnoreCase("olustur")) {
@@ -292,12 +308,12 @@ public class Main extends JavaPlugin {
                             int amount = Integer.parseInt(args[2]);
                             double reward = Double.parseDouble(args[3]);
                             long days = args.length > 4 ? Long.parseLong(args[4]) : 2;
-                            
+
                             if (clan.getBalance() < reward) {
                                 p.sendMessage("§cKlanınızın kasasında yeterli para yok!");
                                 return true;
                             }
-                            
+
                             contractManager.createContract(clan.getId(), mat, amount, reward, days);
                             p.sendMessage("§aSözleşme oluşturuldu!");
                         } catch (Exception e) {
@@ -311,13 +327,13 @@ public class Main extends JavaPlugin {
                         try {
                             java.util.UUID contractId = java.util.UUID.fromString(args[1]);
                             int amount = args.length > 2 ? Integer.parseInt(args[2]) : 1;
-                            
+
                             me.mami.stratocraft.model.Contract contract = contractManager.getContract(contractId);
                             if (contract == null) {
                                 p.sendMessage("§cSözleşme bulunamadı!");
                                 return true;
                             }
-                            
+
                             // Güvenlik kontrolü: Kontratı kabul eden kişi kontrolü
                             if (contract.getAcceptor() == null) {
                                 // Henüz kabul edilmemiş, önce kabul et
@@ -327,16 +343,20 @@ public class Main extends JavaPlugin {
                                 // Kontrat zaten kabul edilmiş, sadece kabul eden kişi teslim edebilir
                                 if (!contract.getAcceptor().equals(p.getUniqueId())) {
                                     // Klan kontrolü: Aynı klan üyesi olabilir
-                                    me.mami.stratocraft.model.Clan acceptorClan = clanManager.getClanByPlayer(contract.getAcceptor());
-                                    me.mami.stratocraft.model.Clan playerClan = clanManager.getClanByPlayer(p.getUniqueId());
-                                    
-                                    if (acceptorClan == null || playerClan == null || !acceptorClan.getId().equals(playerClan.getId())) {
-                                        p.sendMessage("§cBu kontratı siz kabul etmediniz! Sadece kabul eden kişi teslim edebilir.");
+                                    me.mami.stratocraft.model.Clan acceptorClan = clanManager
+                                            .getClanByPlayer(contract.getAcceptor());
+                                    me.mami.stratocraft.model.Clan playerClan = clanManager
+                                            .getClanByPlayer(p.getUniqueId());
+
+                                    if (acceptorClan == null || playerClan == null
+                                            || !acceptorClan.getId().equals(playerClan.getId())) {
+                                        p.sendMessage(
+                                                "§cBu kontratı siz kabul etmediniz! Sadece kabul eden kişi teslim edebilir.");
                                         return true;
                                     }
                                 }
                             }
-                            
+
                             // Envanterden malzeme kontrolü
                             int playerAmount = 0;
                             for (org.bukkit.inventory.ItemStack item : p.getInventory().getContents()) {
@@ -344,12 +364,12 @@ public class Main extends JavaPlugin {
                                     playerAmount += item.getAmount();
                                 }
                             }
-                            
+
                             if (playerAmount < amount) {
                                 p.sendMessage("§cYeterli malzemeniz yok! (" + playerAmount + "/" + amount + ")");
                                 return true;
                             }
-                            
+
                             // Malzemeyi kaldır
                             int remaining = amount;
                             for (org.bukkit.inventory.ItemStack item : p.getInventory().getContents()) {
@@ -359,7 +379,7 @@ public class Main extends JavaPlugin {
                                     remaining -= remove;
                                 }
                             }
-                            
+
                             contractManager.deliverContract(contractId, amount);
                             p.sendMessage("§a" + amount + " " + contract.getMaterial() + " teslim edildi!");
                         } catch (Exception e) {
@@ -372,14 +392,14 @@ public class Main extends JavaPlugin {
                 return true;
             }
         });
-        
+
         // Admin test komutları
         getCommand("stratocraft").setExecutor(new me.mami.stratocraft.command.AdminCommandExecutor(this));
         getCommand("stratocraft").setTabCompleter(new me.mami.stratocraft.command.AdminCommandExecutor(this));
 
         getLogger().info("Stratocraft v10.0: Eksiksiz Sistem Aktif!");
     }
-    
+
     @Override
     public void onDisable() {
         // Batarya sistemini temizle (geçici barrier bloklarını kaldır)
@@ -387,54 +407,125 @@ public class Main extends JavaPlugin {
             batteryManager.shutdown();
             getLogger().info("Stratocraft: Batarya sistemi temizlendi (geçici bloklar kaldırıldı).");
         }
-        
+
         // Tuzakları kaydet
         if (trapManager != null) {
             trapManager.saveTraps();
             getLogger().info("Stratocraft: Tuzaklar kaydedildi.");
         }
-        
-        // Veri kaydetme (onDisable'da her zaman senkron kayıt yapılmalı - veri kaybı riski)
-        // NOT: Sunucu kapanırken thread havuzları kapatılır, asenkron işlemler tamamlanmayabilir
-        if (dataManager != null && clanManager != null && contractManager != null && 
-            shopManager != null && virtualStorageListener != null) {
+
+        // Veri kaydetme (onDisable'da her zaman senkron kayıt yapılmalı - veri kaybı
+        // riski)
+        // NOT: Sunucu kapanırken thread havuzları kapatılır, asenkron işlemler
+        // tamamlanmayabilir
+        if (dataManager != null && clanManager != null && contractManager != null &&
+                shopManager != null && virtualStorageListener != null) {
             // Kapanış işlemlerinde her zaman senkron kayıt
             dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener);
             getLogger().info("Stratocraft: Veriler kaydedildi.");
         }
-        
+
         // Tuzakları da kaydet (eğer trapManager varsa)
         if (trapManager != null) {
             trapManager.saveTraps();
         }
         getLogger().info("Stratocraft: Plugin kapatılıyor.");
     }
-    
-    public ConfigManager getConfigManager() { return configManager; }
-    public me.mami.stratocraft.util.LangManager getLangManager() { return langManager; }
 
-    public static Main getInstance() { return instance; }
-    
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
+
+    public me.mami.stratocraft.util.LangManager getLangManager() {
+        return langManager;
+    }
+
+    public static Main getInstance() {
+        return instance;
+    }
+
     // Getter metodları
-    public DisasterManager getDisasterManager() { return disasterManager; }
-    public ClanManager getClanManager() { return clanManager; }
-    public ScavengerManager getScavengerManager() { return scavengerManager; }
-    public BuffManager getBuffManager() { return buffManager; }
-    public me.mami.stratocraft.manager.EconomyManager getEconomyManager() { return economyManager; }
-    public TerritoryManager getTerritoryManager() { return territoryManager; }
-    public ContractManager getContractManager() { return contractManager; }
-    public ShopManager getShopManager() { return shopManager; }
-    public ResearchManager getResearchManager() { return researchManager; }
-    public me.mami.stratocraft.manager.SupplyDropManager getSupplyDropManager() { return supplyDropManager; }
-    public me.mami.stratocraft.manager.GhostRecipeManager getGhostRecipeManager() { return ghostRecipeManager; }
-    public me.mami.stratocraft.manager.TrainingManager getTrainingManager() { return trainingManager; }
-    public me.mami.stratocraft.gui.ClanMenu getClanMenu() { return clanMenu; }
-    public BatteryManager getBatteryManager() { return batteryManager; }
-    public SiegeManager getSiegeManager() { return siegeManager; }
-    public MissionManager getMissionManager() { return missionManager; }
-    public MobManager getMobManager() { return mobManager; }
-    public me.mami.stratocraft.manager.SiegeWeaponManager getSiegeWeaponManager() { return siegeWeaponManager; }
-    public CaravanManager getCaravanManager() { return caravanManager; }
-    public me.mami.stratocraft.manager.TrapManager getTrapManager() { return trapManager; }
-    public me.mami.stratocraft.manager.SpecialItemManager getSpecialItemManager() { return specialItemManager; }
+    public DisasterManager getDisasterManager() {
+        return disasterManager;
+    }
+
+    public ClanManager getClanManager() {
+        return clanManager;
+    }
+
+    public ScavengerManager getScavengerManager() {
+        return scavengerManager;
+    }
+
+    public BuffManager getBuffManager() {
+        return buffManager;
+    }
+
+    public me.mami.stratocraft.manager.EconomyManager getEconomyManager() {
+        return economyManager;
+    }
+
+    public TerritoryManager getTerritoryManager() {
+        return territoryManager;
+    }
+
+    public ContractManager getContractManager() {
+        return contractManager;
+    }
+
+    public ShopManager getShopManager() {
+        return shopManager;
+    }
+
+    public ResearchManager getResearchManager() {
+        return researchManager;
+    }
+
+    public me.mami.stratocraft.manager.SupplyDropManager getSupplyDropManager() {
+        return supplyDropManager;
+    }
+
+    public me.mami.stratocraft.manager.GhostRecipeManager getGhostRecipeManager() {
+        return ghostRecipeManager;
+    }
+
+    public me.mami.stratocraft.manager.TrainingManager getTrainingManager() {
+        return trainingManager;
+    }
+
+    public me.mami.stratocraft.gui.ClanMenu getClanMenu() {
+        return clanMenu;
+    }
+
+    public BatteryManager getBatteryManager() {
+        return batteryManager;
+    }
+
+    public SiegeManager getSiegeManager() {
+        return siegeManager;
+    }
+
+    public MissionManager getMissionManager() {
+        return missionManager;
+    }
+
+    public MobManager getMobManager() {
+        return mobManager;
+    }
+
+    public me.mami.stratocraft.manager.SiegeWeaponManager getSiegeWeaponManager() {
+        return siegeWeaponManager;
+    }
+
+    public CaravanManager getCaravanManager() {
+        return caravanManager;
+    }
+
+    public me.mami.stratocraft.manager.TrapManager getTrapManager() {
+        return trapManager;
+    }
+
+    public me.mami.stratocraft.manager.SpecialItemManager getSpecialItemManager() {
+        return specialItemManager;
+    }
 }

@@ -1,11 +1,16 @@
 @echo off
+title Stratocraft Test Sunucusu
 echo ========================================
 echo Stratocraft Test Sunucusu Baslatiliyor
 echo ========================================
 echo.
 
+REM Mevcut klasoru goster
+echo Mevcut klasor: %CD%
+echo.
+
 REM Java kontrolu
-echo Java kontrol ediliyor...
+echo [1/3] Java kontrol ediliyor...
 java -version >nul 2>&1
 if errorlevel 1 (
     echo.
@@ -14,48 +19,64 @@ if errorlevel 1 (
     echo ========================================
     echo.
     echo Lutfen Java 17 veya uzeri yukleyin: https://adoptium.net/
-    pause
-    exit
-)
-
-REM Java versiyon kontrolu (Java 8 kontrolu)
-java -version 2>&1 | findstr /i /c:"1.8" >nul
-if not errorlevel 1 (
     echo.
-    echo ========================================
-    echo UYARI: Java 8 (1.8) kullaniyorsunuz!
-    echo ========================================
-    echo.
-    echo Plugin ve Paper 1.20.4 icin Java 17 GEREKLI!
-    echo Mevcut Java versiyonu: Java 8 (yetersiz)
-    echo.
-    echo Lutfen Java 17 yukleyin: https://adoptium.net/
-    echo Detayli rehber: JAVA17_KURULUM_ADIMLARI.md
-    echo.
-    echo Mevcut Java versiyonu:
+    echo Java versiyonu kontrol ediliyor...
     java -version
     echo.
-    pause
-    exit
+    echo.
+    echo Bu pencereyi kapatmak icin bir tusa basin...
+    pause >nul
+    exit /b 1
 )
 
-echo Java versiyonu uygun gorunuyor.
+echo Java bulundu! Versiyon:
+java -version 2>&1 | findstr /i "version"
+echo.
 
-REM Dosya adini kontrol et - paper-1.20.4-445.jar veya paper-1.20.4.jar olabilir
-if exist "paper-1.20.4-445.jar" (
-    echo Paper 1.20.4-445 bulundu, baslatiliyor...
-    echo RAM: 1GB (test icin yeterli)
-    java -Xmx1G -Xms512M -jar paper-1.20.4-445.jar nogui
-) else if exist "paper-1.20.4.jar" (
-    echo Paper 1.20.4 bulundu, baslatiliyor...
-    echo RAM: 1GB (test icin yeterli)
-    java -Xmx1G -Xms512M -jar paper-1.20.4.jar nogui
+REM Dosya adini kontrol et - paper-1.20.4.jar
+echo [2/3] Paper JAR dosyasi kontrol ediliyor...
+if exist "paper-1.20.4.jar" (
+    echo Paper 1.20.4.jar bulundu!
+    echo.
 ) else (
+    echo.
+    echo ========================================
     echo HATA: Paper JAR dosyasi bulunamadi!
-    echo Lutfen paper-1.20.4-445.jar veya paper-1.20.4.jar dosyasinin bu klasorde oldugundan emin olun.
-    pause
-    exit
+    echo ========================================
+    echo.
+    echo Mevcut klasor: %CD%
+    echo.
+    echo Bu klasorde su dosyalar var:
+    dir /b *.jar 2>nul
+    echo.
+    echo Lutfen paper-1.20.4.jar dosyasinin bu klasorde oldugundan emin olun.
+    echo.
+    echo Bu pencereyi kapatmak icin bir tusa basin...
+    pause >nul
+    exit /b 1
 )
 
-pause
+REM Sunucuyu baslat
+echo [3/3] Sunucu baslatiliyor...
+echo.
+echo RAM Ayarlari:
+echo - Maksimum: 2GB (Xmx2G)
+echo - Baslangic: 1GB (Xms1G)
+echo.
+echo ========================================
+echo Sunucu baslatiliyor, lutfen bekleyin...
+echo ========================================
+echo.
+echo NOT: Sunucu kapatmak icin konsola 'stop' yazin
+echo.
 
+java -Xmx2G -Xms1G -jar paper-1.20.4.jar nogui
+
+REM Sunucu kapandiginda
+echo.
+echo ========================================
+echo Sunucu kapandi.
+echo ========================================
+echo.
+echo Bu pencereyi kapatmak icin bir tusa basin...
+pause >nul
