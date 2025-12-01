@@ -13,6 +13,9 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.Location;
+import org.bukkit.entity.LivingEntity;
+import me.mami.stratocraft.manager.BossManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -97,7 +100,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         String category = args[1].toLowerCase();
         String itemName;
         int amount;
-        
+
         if (args.length >= 3) {
             itemName = args[2].toLowerCase();
             amount = args.length > 3 ? parseInt(args[3], 1) : 1;
@@ -154,7 +157,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
         String category = args[1].toLowerCase();
         String mobName;
-        
+
         // Kategori kontrolü
         if (args.length >= 3) {
             mobName = args[2].toLowerCase();
@@ -172,7 +175,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "hell_dragon":
             case "ejder":
             case "cehennem_ejderi":
-                mobManager.spawnHellDragon(p.getLocation(), p);
+                mobManager.spawnHellDragon(p.getLocation(), p.getUniqueId());
                 mobDisplayName = "Cehennem Ejderi";
                 break;
             case "terror_worm":
@@ -291,7 +294,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 break;
             // Yeni Moblar
             case "titan_golem":
-                mobManager.spawnTitanGolem(p.getLocation(), p);
+                mobManager.spawnTitanGolem(p.getLocation(), p.getUniqueId());
                 mobDisplayName = "Titan Golem";
                 break;
             case "void_worm":
@@ -325,7 +328,6 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 mobDisplayName = "Dağ Kartalı";
                 break;
             case "bear":
-            case "ayi":
             case "cave_bear":
                 mobManager.spawnBear(p.getLocation());
                 mobDisplayName = "Mağara Ayısı";
@@ -501,7 +503,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return true;
         }
     }
-    
+
     /**
      * Felaket başlat
      */
@@ -512,7 +514,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§7Konum: 'ben' veya 'X Y Z'");
             return true;
         }
-        
+
         String disasterName = args[2].toUpperCase(java.util.Locale.ENGLISH);
         Disaster.Type type;
         try {
@@ -521,7 +523,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§cGeçersiz felaket tipi: §e" + args[2]);
             return true;
         }
-        
+
         // Seviye belirleme
         int level = Disaster.getDefaultLevel(type);
         if (args.length >= 4) {
@@ -537,16 +539,15 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 // Seviye değil, konum olabilir
             }
         }
-        
+
         // Konum belirleme
         org.bukkit.Location spawnLoc = null;
-        int locationArgIndex = args.length >= 4 && !args[3].matches("\\d+") ? 3 : 
-                              args.length >= 5 ? 4 : -1;
-        
+        int locationArgIndex = args.length >= 4 && !args[3].matches("\\d+") ? 3 : args.length >= 5 ? 4 : -1;
+
         if (locationArgIndex > 0 && locationArgIndex < args.length) {
-            if (args[locationArgIndex].equalsIgnoreCase("ben") || 
-                args[locationArgIndex].equalsIgnoreCase("me") ||
-                args[locationArgIndex].equalsIgnoreCase("self")) {
+            if (args[locationArgIndex].equalsIgnoreCase("ben") ||
+                    args[locationArgIndex].equalsIgnoreCase("me") ||
+                    args[locationArgIndex].equalsIgnoreCase("self")) {
                 spawnLoc = p.getLocation().clone();
             } else if (args.length >= locationArgIndex + 3) {
                 try {
@@ -560,21 +561,21 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 }
             }
         }
-        
+
         // Felaketi başlat
         if (spawnLoc != null) {
             disasterManager.triggerDisaster(type, level, spawnLoc);
         } else {
             disasterManager.triggerDisaster(type, level);
         }
-        
+
         p.sendMessage("§a§lFELAKET BAŞLATILDI!");
         p.sendMessage("§7Tip: §e" + disasterManager.getDisasterDisplayName(type));
         p.sendMessage("§7Seviye: §e" + level);
-        
+
         return true;
     }
-    
+
     /**
      * Felaketi durdur
      */
@@ -584,16 +585,16 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§cAktif felaket yok!");
             return true;
         }
-        
+
         activeDisaster.kill();
         disasterManager.setActiveDisaster(null);
-        
+
         org.bukkit.Bukkit.broadcastMessage("§a§lFELAKET DURDURULDU!");
         p.sendMessage("§aFelaket admin tarafından durduruldu.");
-        
+
         return true;
     }
-    
+
     /**
      * Felaket bilgisi
      */
@@ -603,18 +604,20 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§cAktif felaket yok!");
             return true;
         }
-        
+
         p.sendMessage("§6=== FELAKET BİLGİLERİ ===");
         p.sendMessage("§7Tip: §e" + disasterManager.getDisasterDisplayName(activeDisaster.getType()));
-        p.sendMessage("§7Kategori: §e" + (activeDisaster.getCategory() == Disaster.Category.CREATURE ? "Canlı" : "Doğa Olayı"));
+        p.sendMessage("§7Kategori: §e"
+                + (activeDisaster.getCategory() == Disaster.Category.CREATURE ? "Canlı" : "Doğa Olayı"));
         p.sendMessage("§7Seviye: §e" + activeDisaster.getLevel());
-        p.sendMessage("§7Can: §c" + String.format("%.0f/%.0f", activeDisaster.getCurrentHealth(), activeDisaster.getMaxHealth()));
+        p.sendMessage("§7Can: §c"
+                + String.format("%.0f/%.0f", activeDisaster.getCurrentHealth(), activeDisaster.getMaxHealth()));
         p.sendMessage("§7Hasar Çarpanı: §e" + String.format("%.2f", activeDisaster.getDamageMultiplier()) + "x");
         p.sendMessage("§7Kalan Süre: §e" + formatTime(activeDisaster.getRemainingTime()));
-        
+
         return true;
     }
-    
+
     /**
      * Felaket listesi
      */
@@ -630,17 +633,17 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§7  §eEARTHQUAKE §7- Seviye 2 - Deprem");
         p.sendMessage("§7  §eMETEOR_SHOWER §7- Seviye 2 - Meteor Yağmuru");
         p.sendMessage("§7  §eVOLCANIC_ERUPTION §7- Seviye 3 - Volkanik Patlama");
-        
+
         return true;
     }
-    
+
     /**
      * Felaketi yok et (eski komut)
      */
     private boolean handleDisasterClear(Player p, DisasterManager disasterManager) {
         return handleDisasterStop(p, disasterManager);
     }
-    
+
     /**
      * Zaman formatla
      */
@@ -809,7 +812,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         if (category.equals("all")) {
             return getItemByNameAllCategories(name);
         }
-        
+
         // Kategoriye göre filtrele
         switch (category.toLowerCase()) {
             case "weapon":
@@ -831,33 +834,40 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return getItemByNameAllCategories(name);
         }
     }
-    
+
     private ItemStack getItemByNameAllCategories(String name) {
         // Tüm kategorilerde ara
         ItemStack item = getItemByNameWeapon(name);
-        if (item != null) return item;
-        
+        if (item != null)
+            return item;
+
         item = getItemByNameArmor(name);
-        if (item != null) return item;
-        
+        if (item != null)
+            return item;
+
         item = getItemByNameMaterial(name);
-        if (item != null) return item;
-        
+        if (item != null)
+            return item;
+
         item = getItemByNameMobDrop(name);
-        if (item != null) return item;
-        
+        if (item != null)
+            return item;
+
         item = getItemByNameSpecial(name);
-        if (item != null) return item;
-        
+        if (item != null)
+            return item;
+
         item = getItemByNameOre(name);
-        if (item != null) return item;
-        
+        if (item != null)
+            return item;
+
         item = getItemByNameTool(name);
-        if (item != null) return item;
-        
+        if (item != null)
+            return item;
+
         return null;
     }
-    
+
     private ItemStack getItemByNameWeapon(String name) {
         switch (name.toLowerCase()) {
             case "war_fan":
@@ -870,12 +880,12 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return null;
         }
     }
-    
+
     private ItemStack getItemByNameArmor(String name) {
         // Şimdilik armor yok, gelecekte eklenebilir
         return null;
     }
-    
+
     private ItemStack getItemByNameMaterial(String name) {
         switch (name.toLowerCase()) {
             case "blueprint":
@@ -918,7 +928,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return null;
         }
     }
-    
+
     private ItemStack getItemByNameMobDrop(String name) {
         // Seviye belirtilmiş mi kontrol et (level1, level2, vb.)
         String[] parts = name.split("_");
@@ -928,11 +938,11 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             String itemName = name.substring(("level" + level + "_").length());
             return getMobDropItemByLevel(level, itemName);
         }
-        
+
         // Direkt item ismi
         return getMobDropItemDirect(name);
     }
-    
+
     private ItemStack getMobDropItemByLevel(String level, String itemName) {
         switch (level) {
             case "1":
@@ -949,22 +959,27 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return null;
         }
     }
-    
+
     private ItemStack getMobDropItemDirect(String name) {
         // Tüm seviyelerde ara
         ItemStack item = getLevel1MobDrop(name);
-        if (item != null) return item;
+        if (item != null)
+            return item;
         item = getLevel2MobDrop(name);
-        if (item != null) return item;
+        if (item != null)
+            return item;
         item = getLevel3MobDrop(name);
-        if (item != null) return item;
+        if (item != null)
+            return item;
         item = getLevel4MobDrop(name);
-        if (item != null) return item;
+        if (item != null)
+            return item;
         item = getLevel5MobDrop(name);
-        if (item != null) return item;
+        if (item != null)
+            return item;
         return null;
     }
-    
+
     private ItemStack getLevel1MobDrop(String name) {
         switch (name.toLowerCase()) {
             case "wild_boar_hide":
@@ -1001,7 +1016,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return null;
         }
     }
-    
+
     private ItemStack getLevel2MobDrop(String name) {
         switch (name.toLowerCase()) {
             case "iron_core":
@@ -1038,7 +1053,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return null;
         }
     }
-    
+
     private ItemStack getLevel3MobDrop(String name) {
         switch (name.toLowerCase()) {
             case "shadow_heart":
@@ -1075,7 +1090,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return null;
         }
     }
-    
+
     private ItemStack getLevel4MobDrop(String name) {
         switch (name.toLowerCase()) {
             case "devil_blood":
@@ -1110,7 +1125,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return null;
         }
     }
-    
+
     private ItemStack getLevel5MobDrop(String name) {
         switch (name.toLowerCase()) {
             case "legendary_dragon_heart":
@@ -1147,7 +1162,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return null;
         }
     }
-    
+
     private ItemStack getItemByNameSpecial(String name) {
         switch (name.toLowerCase()) {
             case "red_diamond":
@@ -1169,7 +1184,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return null;
         }
     }
-    
+
     private ItemStack getItemByNameOre(String name) {
         switch (name.toLowerCase()) {
             case "sulfur":
@@ -1214,7 +1229,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return null;
         }
     }
-    
+
     private ItemStack getItemByNameTool(String name) {
         switch (name.toLowerCase()) {
             case "rusty_hook":
@@ -1241,12 +1256,12 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return null;
         }
     }
-    
+
     // Eski metod - geriye uyumluluk için (getItemByNameAllCategories'yi çağırır)
     private ItemStack getItemByName(String name) {
         return getItemByNameAllCategories(name);
     }
-    
+
     // Eski metodun içeriği - artık kullanılmıyor ama referans için tutuluyor
     @Deprecated
     private ItemStack getItemByNameOld(String name) {
@@ -1554,7 +1569,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             switch (commandName) {
                 case "give":
                     // Kategoriler
-                    List<String> giveCategories = Arrays.asList("weapon", "armor", "material", "mobdrop", "special", "ore", "tool");
+                    List<String> giveCategories = Arrays.asList("weapon", "armor", "material", "mobdrop", "special",
+                            "ore", "tool");
                     if (input.isEmpty()) {
                         return giveCategories;
                     }
@@ -1564,7 +1580,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
                 case "spawn":
                     // Kategoriler
-                    List<String> spawnCategories = Arrays.asList("level1", "level2", "level3", "level4", "level5", "boss", "special");
+                    List<String> spawnCategories = Arrays.asList("level1", "level2", "level3", "level4", "level5",
+                            "boss", "special");
                     if (input.isEmpty()) {
                         return spawnCategories;
                     }
@@ -1644,12 +1661,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                                 .filter(s -> s.toLowerCase().startsWith(input))
                                 .collect(Collectors.toList());
                     }
-                    
+
                 case "mine":
                     // Mine komutları
                     if (args.length == 2 && args[1].equalsIgnoreCase("give")) {
                         // Mine give için mayın tipleri
-                        List<String> mineTypes = Arrays.asList("explosive", "lightning", "poison", "blindness", "fatigue", "slowness");
+                        List<String> mineTypes = Arrays.asList("explosive", "lightning", "poison", "blindness",
+                                "fatigue", "slowness");
                         if (input.isEmpty()) {
                             return mineTypes;
                         }
@@ -1666,17 +1684,6 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                                 .filter(s -> s.toLowerCase().startsWith(input))
                                 .collect(Collectors.toList());
                     }
-                                .collect(Collectors.toList());
-                    } else {
-                        // Trap list komutları
-                        List<String> trapCommands = Arrays.asList("list", "give");
-                        if (input.isEmpty()) {
-                            return trapCommands;
-                        }
-                        return trapCommands.stream()
-                                .filter(s -> s.toLowerCase().startsWith(input))
-                                .collect(Collectors.toList());
-                    }
 
                 case "build":
                     // Kategoriler
@@ -1687,7 +1694,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return buildCategories.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
-                            
+
                 case "dungeon":
                     // Dungeon komutları
                     List<String> dungeonCommands = Arrays.asList("spawn", "list", "clear");
@@ -1697,7 +1704,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return dungeonCommands.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
-                            
+
                 case "biome":
                     // Biome komutları
                     List<String> biomeCommands = Arrays.asList("list", "set");
@@ -1707,7 +1714,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return biomeCommands.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
-                            
+
                 case "boss":
                     // Boss komutları
                     List<String> bossCommands = Arrays.asList("spawn", "list", "ritual");
@@ -1719,13 +1726,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                             .collect(Collectors.toList());
             }
         }
-        
+
         // Üçüncü argüman (kategorize edilmiş komutlar)
         if (args.length == 3) {
             String commandName = args[0].toLowerCase();
             String category = args[1].toLowerCase();
             String input = args[2].toLowerCase();
-            
+
             switch (commandName) {
                 case "give":
                     return getGiveTabComplete(category, input);
@@ -1743,9 +1750,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return getTameTabComplete(args, input);
                 case "disaster":
                     // Disaster için koordinat tamamlama
-                    if (category.equalsIgnoreCase("titan_golem") || 
-                        category.equalsIgnoreCase("abyssal_worm") || 
-                        category.equalsIgnoreCase("solar_flare")) {
+                    if (category.equalsIgnoreCase("titan_golem") ||
+                            category.equalsIgnoreCase("abyssal_worm") ||
+                            category.equalsIgnoreCase("solar_flare")) {
                         // Koordinat önerileri: "ben", "me", "self" veya sayılar
                         if (input.isEmpty() || input.equals("b") || input.equals("m") || input.equals("s")) {
                             return Arrays.asList("ben", "me", "self");
@@ -1756,13 +1763,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     break;
             }
         }
-        
+
         // Dördüncü argüman (disaster koordinatları)
         if (args.length == 4 && args[0].equalsIgnoreCase("disaster")) {
             // Y koordinatı için boş liste
             return new ArrayList<>();
         }
-        
+
         // Beşinci argüman (disaster koordinatları)
         if (args.length == 5 && args[0].equalsIgnoreCase("disaster")) {
             // Z koordinatı için boş liste
@@ -1818,14 +1825,14 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             // Miktar için tab completion gerekmez, boş liste döndür
             return new ArrayList<>();
         }
-        
+
         // Üçüncü argüman (give komutu için miktar - eski format)
         if (args.length == 3 && args[0].equalsIgnoreCase("give")) {
             String category = args[1].toLowerCase();
             // Eğer kategori değilse (eski format), miktar için boş liste
             if (!category.equals("weapon") && !category.equals("armor") && !category.equals("material") &&
-                !category.equals("mobdrop") && !category.equals("special") && !category.equals("ore") &&
-                !category.equals("tool")) {
+                    !category.equals("mobdrop") && !category.equals("special") && !category.equals("ore") &&
+                    !category.equals("tool")) {
                 return new ArrayList<>();
             }
         }
@@ -1833,9 +1840,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         // Diğer durumlar için boş liste
         return new ArrayList<>();
     }
-    
+
     // ========== TAB COMPLETION HELPER METODLARI ==========
-    
+
     private List<String> getGiveTabComplete(String category, String input) {
         switch (category.toLowerCase()) {
             case "weapon":
@@ -1846,7 +1853,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "material":
                 List<String> materials = Arrays.asList("blueprint", "lightning_core", "dark_matter", "star_core",
                         "flame_amplifier", "devil_horn", "devil_snake_eye", "recipe_tectonic", "hell_fruit",
-                        "clan_crystal", "clan_fence", "red_diamond", "ruby", "adamantite", "titanium_ore", "titanium_ingot");
+                        "clan_crystal", "clan_fence", "red_diamond", "ruby", "adamantite", "titanium_ore",
+                        "titanium_ingot");
                 return filterList(materials, input);
             case "mobdrop":
                 List<String> mobDrops = new ArrayList<>();
@@ -1864,23 +1872,26 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         "death_sword_fragment", "death_dust", "chaos_core", "chaos_scale", "hell_stone", "hell_fire"));
                 // Seviye 5
                 mobDrops.addAll(Arrays.asList("legendary_dragon_heart", "legendary_dragon_scale", "god_blood",
-                        "god_fragment", "void_core", "void_dust", "time_core", "time_scale", "fate_stone", "fate_fragment"));
+                        "god_fragment", "void_core", "void_dust", "time_core", "time_scale", "fate_stone",
+                        "fate_fragment"));
                 return filterList(mobDrops, input);
             case "special":
-                List<String> specials = Arrays.asList("red_diamond", "ruby", "adamantite", "titanium_ore", "titanium_ingot");
+                List<String> specials = Arrays.asList("red_diamond", "ruby", "adamantite", "titanium_ore",
+                        "titanium_ingot");
                 return filterList(specials, input);
             case "ore":
                 List<String> ores = Arrays.asList("sulfur", "sulfur_ore", "bauxite", "bauxite_ore", "rock_salt",
                         "rock_salt_ore", "mithril", "mithril_ore", "mithril_string", "astral_crystal", "astral_ore");
                 return filterList(ores, input);
             case "tool":
-                List<String> tools = Arrays.asList("rusty_hook", "golden_hook", "titan_grapple", "trap_core", "spyglass");
+                List<String> tools = Arrays.asList("rusty_hook", "golden_hook", "titan_grapple", "trap_core",
+                        "spyglass");
                 return filterList(tools, input);
             default:
                 return new ArrayList<>();
         }
     }
-    
+
     private List<String> getSpawnTabComplete(String category, String input) {
         switch (category.toLowerCase()) {
             case "level1":
@@ -1897,14 +1908,16 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return filterList(level3, input);
             case "level4":
                 List<String> level4 = Arrays.asList("red_devil", "celestial_guardian", "thunder_wyvern", "magma_beast",
-                        "abyssal_horror", "hell_dragon", "wyvern", "terror_worm", "war_bear", "shadow_panther", "hydra", "behemoth");
+                        "abyssal_horror", "hell_dragon", "wyvern", "terror_worm", "war_bear", "shadow_panther", "hydra",
+                        "behemoth");
                 return filterList(level4, input);
             case "level5":
                 List<String> level5 = Arrays.asList("ancient_dragon", "elder_kraken", "void_lord", "cosmic_horror",
                         "elemental_titan", "titan_golem", "void_worm");
                 return filterList(level5, input);
             case "boss":
-                List<String> bosses = Arrays.asList("titan_golem", "hydra", "void_worm", "legendary_dragon", "god_slayer");
+                List<String> bosses = Arrays.asList("titan_golem", "hydra", "void_worm", "legendary_dragon",
+                        "god_slayer");
                 return filterList(bosses, input);
             case "special":
                 List<String> specials = Arrays.asList("supply_drop");
@@ -1913,11 +1926,12 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return new ArrayList<>();
         }
     }
-    
+
     private List<String> getBuildTabComplete(String category, String input) {
         switch (category.toLowerCase()) {
             case "weapon":
-                List<String> weapons = Arrays.asList("catapult", "ballista", "lava_fountain", "poison_dispenser",
+                List<String> weapons = Arrays.asList("catapult", "ballista", "trebuchet", "lava_fountain",
+                        "poison_dispenser",
                         "force_field", "healing_shrine", "power_totem", "speed_circle", "defense_wall");
                 return filterList(weapons, input);
             case "battery":
@@ -1930,13 +1944,14 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         "global_market_gate", "auto_turret", "poison_reactor", "siege_factory", "wall_generator",
                         "gravity_well", "lava_trencher", "watchtower", "drone_station", "xp_bank", "mag_rail",
                         "teleporter", "food_silo", "oil_refinery", "weather_machine", "crop_accelerator",
-                        "mob_grinder", "invisibility_cloak", "armory", "library", "warning_sign", "auto_drill", "core");
+                        "mob_grinder", "invisibility_cloak", "armory", "library", "warning_sign", "auto_drill", "core",
+                        "fortress_wall");
                 return filterList(structures, input);
             default:
                 return new ArrayList<>();
         }
     }
-    
+
     private List<String> filterList(List<String> list, String input) {
         if (input.isEmpty()) {
             return list;
@@ -1945,7 +1960,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 .filter(s -> s.toLowerCase().startsWith(input))
                 .collect(Collectors.toList());
     }
-    
+
     private List<String> getDungeonTabComplete(String[] args, String input) {
         if (args.length == 2) {
             // Komutlar: spawn, list, clear
@@ -1966,7 +1981,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
         return new ArrayList<>();
     }
-    
+
     private List<String> getBiomeTabComplete(String[] args, String input) {
         if (args.length == 2) {
             // Komutlar: list, set
@@ -1977,7 +1992,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
         return new ArrayList<>();
     }
-    
+
     private List<String> getBossTabComplete(String[] args, String input) {
         if (args.length == 2) {
             // Komutlar: spawn, list, ritual
@@ -1985,14 +2000,14 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         } else if (args.length == 3 && (args[1].equalsIgnoreCase("spawn") || args[1].equalsIgnoreCase("ritual"))) {
             // Boss tipleri
             List<String> bossTypes = Arrays.asList(
-                "GOBLIN_KING", "ORC_CHIEF", "TROLL_KING", "DRAGON", "TREX",
-                "CYCLOPS", "TITAN_GOLEM", "HELL_DRAGON", "HYDRA", "CHAOS_GOD"
-            );
+                    "GOBLIN_KING", "ORC_CHIEF", "TROLL_KING", "DRAGON", "TREX",
+                    "CYCLOPS", "TITAN_GOLEM", "HELL_DRAGON", "HYDRA", "CHAOS_GOD",
+                    "PHOENIX", "VOID_DRAGON", "CHAOS_TITAN");
             return filterList(bossTypes, input);
         }
         return new ArrayList<>();
     }
-    
+
     private List<String> getTameTabComplete(String[] args, String input) {
         if (args.length == 2) {
             // Komutlar: ritual, list, info
@@ -2007,9 +2022,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             } else if (args[2].equalsIgnoreCase("boss")) {
                 // Boss tipleri
                 List<String> bossTypes = Arrays.asList(
-                    "GOBLIN_KING", "ORC_CHIEF", "TROLL_KING", "DRAGON", "TREX",
-                    "CYCLOPS", "TITAN_GOLEM", "HELL_DRAGON", "HYDRA", "CHAOS_GOD"
-                );
+                        "GOBLIN_KING", "ORC_CHIEF", "TROLL_KING", "DRAGON", "TREX",
+                        "CYCLOPS", "TITAN_GOLEM", "HELL_DRAGON", "HYDRA", "CHAOS_GOD");
                 return filterList(bossTypes, input);
             }
         }
@@ -2243,9 +2257,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         String category = args[1].toLowerCase();
         String buildType;
         int level;
-        
+
         // Kategori kontrolü
-        if (args.length >= 3 && (category.equals("weapon") || category.equals("battery") || category.equals("structure"))) {
+        if (args.length >= 3
+                && (category.equals("weapon") || category.equals("battery") || category.equals("structure"))) {
             // Yeni format: build weapon catapult
             buildType = args[2].toLowerCase();
             level = args.length > 3 ? parseInt(args[3], 1) : 1;
@@ -2257,20 +2272,20 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
 
         // Yapı kategorisine göre yönlendir
-        if (category.equals("weapon") || (category.equals("auto") && (
-                buildType.startsWith("catapult") || buildType.startsWith("ballista") ||
-                buildType.startsWith("lava_fountain") || buildType.startsWith("poison_dispenser") ||
-                buildType.startsWith("force_field") || buildType.startsWith("healing_shrine") ||
-                buildType.startsWith("power_totem") || buildType.startsWith("speed_circle") ||
-                buildType.startsWith("defense_wall")))) {
+        if (category.equals("weapon")
+                || (category.equals("auto") && (buildType.startsWith("catapult") || buildType.startsWith("ballista") ||
+                        buildType.startsWith("lava_fountain") || buildType.startsWith("poison_dispenser") ||
+                        buildType.startsWith("force_field") || buildType.startsWith("healing_shrine") ||
+                        buildType.startsWith("power_totem") || buildType.startsWith("speed_circle") ||
+                        buildType.startsWith("defense_wall")))) {
             return buildSiegeWeapon(p, buildType);
-        } else if (category.equals("battery") || (category.equals("auto") && (
-                buildType.startsWith("magma") || buildType.startsWith("lightning") ||
-                buildType.startsWith("black_hole") || buildType.startsWith("bridge") ||
-                buildType.startsWith("shelter") || buildType.startsWith("gravity") ||
-                buildType.startsWith("seismic") || buildType.startsWith("ozone") ||
-                buildType.startsWith("magnetic") || buildType.startsWith("earth_wall") ||
-                buildType.startsWith("energy_wall") || buildType.startsWith("lava_trencher_battery")))) {
+        } else if (category.equals("battery")
+                || (category.equals("auto") && (buildType.startsWith("magma") || buildType.startsWith("lightning") ||
+                        buildType.startsWith("black_hole") || buildType.startsWith("bridge") ||
+                        buildType.startsWith("shelter") || buildType.startsWith("gravity") ||
+                        buildType.startsWith("seismic") || buildType.startsWith("ozone") ||
+                        buildType.startsWith("magnetic") || buildType.startsWith("earth_wall") ||
+                        buildType.startsWith("energy_wall") || buildType.startsWith("lava_trencher_battery")))) {
             return buildBattery(p, buildType);
         } else {
             // Klan yapıları (Structure.Type)
@@ -2956,15 +2971,15 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     }
 
     // ========== MAYIN YÖNETİMİ ==========
-    
+
     private boolean handleMine(Player p, String[] args) {
         if (args.length < 2) {
             p.sendMessage("§cKullanım: /stratocraft mine <list|give>");
             return true;
         }
-        
+
         String subCommand = args[1].toLowerCase();
-        
+
         switch (subCommand) {
             case "list":
                 showMinesList(p);
@@ -2983,7 +2998,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return true;
         }
     }
-    
+
     private void showMinesList(Player p) {
         p.sendMessage("§6§l=== MAYIN SİSTEMİ ===");
         p.sendMessage("§7Mayın kurulumu için:");
@@ -3005,11 +3020,11 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§7- Kolay yapılır (sadece basınç plakası + item)");
         p.sendMessage("§7- Sahip kırabilir");
     }
-    
+
     private void giveMineItems(Player p, String mineType) {
         // Basınç plakası
         giveItemSafely(p, new ItemStack(Material.STONE_PRESSURE_PLATE, 5));
-        
+
         // Mayın tipi itemi
         switch (mineType) {
             case "explosive":
@@ -3045,7 +3060,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return;
         }
     }
-    
+
     private boolean handleBallista(Player p, String[] args) {
         if (args.length < 2) {
             p.sendMessage("§c/admin ballista create - Baktığın yöne Balista oluştur");
@@ -3140,7 +3155,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     }
 
     // ========== BOSS KOMUTLARI ==========
-    
+
     private boolean handleBoss(Player p, String[] args) {
         if (args.length < 2) {
             p.sendMessage("§cKullanım: /stratocraft boss <spawn|list|ritual>");
@@ -3149,21 +3164,22 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§7  ritual <type> - Ritüel desenini göster");
             return true;
         }
-        
+
         me.mami.stratocraft.manager.BossManager bossManager = plugin.getBossManager();
         if (bossManager == null) {
             p.sendMessage("§cBossManager bulunamadı!");
             return true;
         }
-        
+
         switch (args[1].toLowerCase()) {
             case "spawn":
                 if (args.length < 3) {
                     p.sendMessage("§cKullanım: /stratocraft boss spawn <type>");
-                    p.sendMessage("§7Boss tipleri: goblin_king, orc_chief, troll_king, dragon, trex, cyclops, titan_golem, hell_dragon, hydra, chaos_god");
+                    p.sendMessage(
+                            "§7Boss tipleri: goblin_king, orc_chief, troll_king, dragon, trex, cyclops, titan_golem, hell_dragon, hydra, chaos_god");
                     return true;
                 }
-                
+
                 String bossTypeStr = args[2].toUpperCase();
                 BossManager.BossType bossType;
                 try {
@@ -3172,7 +3188,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     p.sendMessage("§cGeçersiz boss tipi!");
                     return true;
                 }
-                
+
                 Location spawnLoc = p.getLocation();
                 if (bossManager.spawnBossFromRitual(spawnLoc, bossType, p.getUniqueId())) {
                     p.sendMessage("§a§l" + bossManager.getBossDisplayName(bossType) + " spawn edildi!");
@@ -3180,22 +3196,23 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     p.sendMessage("§cBoss spawn edilemedi!");
                 }
                 return true;
-                
+
             case "list":
                 p.sendMessage("§6§l=== BOSS LİSTESİ ===");
-                for (me.mami.stratocraft.manager.BossManager.BossType type : me.mami.stratocraft.manager.BossManager.BossType.values()) {
+                for (me.mami.stratocraft.manager.BossManager.BossType type : me.mami.stratocraft.manager.BossManager.BossType
+                        .values()) {
                     String name = bossManager.getBossDisplayName(type);
                     Material item = bossManager.getRitualActivationItem(type);
                     p.sendMessage("§e" + type.name() + " §7- " + name + " §7(Item: " + item.name() + ")");
                 }
                 return true;
-                
+
             case "ritual":
                 if (args.length < 3) {
                     p.sendMessage("§cKullanım: /stratocraft boss ritual <type>");
                     return true;
                 }
-                
+
                 String ritualTypeStr = args[2].toUpperCase();
                 me.mami.stratocraft.manager.BossManager.BossType ritualType;
                 try {
@@ -3204,20 +3221,21 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     p.sendMessage("§cGeçersiz boss tipi!");
                     return true;
                 }
-                
+
                 showBossRitualPattern(p, ritualType, bossManager);
                 return true;
-                
+
             default:
                 p.sendMessage("§cGeçersiz komut! /stratocraft boss <spawn|list|ritual>");
                 return true;
         }
     }
-    
-    private void showBossRitualPattern(Player p, me.mami.stratocraft.manager.BossManager.BossType bossType, me.mami.stratocraft.manager.BossManager bossManager) {
+
+    private void showBossRitualPattern(Player p, me.mami.stratocraft.manager.BossManager.BossType bossType,
+            me.mami.stratocraft.manager.BossManager bossManager) {
         p.sendMessage("§6=== " + bossManager.getBossDisplayName(bossType) + " Ritüel Deseni ===");
         p.sendMessage("§7Merkez bloğa sağ tıkla ve doğru deseni yap:");
-        
+
         Material[][] pattern = bossManager.getRitualPattern(bossType);
         if (pattern != null) {
             int size = pattern.length;
@@ -3234,35 +3252,51 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 p.sendMessage(line.toString());
             }
         }
-        
+
         Material activationItem = bossManager.getRitualActivationItem(bossType);
         p.sendMessage("§7Aktifleştirme itemi: §e" + activationItem.name());
         p.sendMessage("§7Yapılışı: Merkez bloğa " + activationItem.name() + " ile sağ tıkla");
     }
-    
+
     private String getMaterialSymbol(Material mat) {
         switch (mat) {
-            case COBBLESTONE: return "§7C";
-            case STONE: return "§8S";
-            case STONE_BRICKS: return "§8B";
-            case OBSIDIAN: return "§5O";
-            case GOLD_BLOCK: return "§6G";
-            case IRON_BLOCK: return "§fI";
-            case DIAMOND_BLOCK: return "§bD";
-            case EMERALD_BLOCK: return "§aE";
-            case NETHERITE_BLOCK: return "§4N";
-            case NETHERRACK: return "§cN";
-            case PRISMARINE: return "§3P";
-            case BEDROCK: return "§0B";
-            case BEACON: return "§b★";
-            case CONDUIT: return "§b●";
-            case END_STONE_BRICKS: return "§eE";
-            default: return "?";
+            case COBBLESTONE:
+                return "§7C";
+            case STONE:
+                return "§8S";
+            case STONE_BRICKS:
+                return "§8B";
+            case OBSIDIAN:
+                return "§5O";
+            case GOLD_BLOCK:
+                return "§6G";
+            case IRON_BLOCK:
+                return "§fI";
+            case DIAMOND_BLOCK:
+                return "§bD";
+            case EMERALD_BLOCK:
+                return "§aE";
+            case NETHERITE_BLOCK:
+                return "§4N";
+            case NETHERRACK:
+                return "§cN";
+            case PRISMARINE:
+                return "§3P";
+            case BEDROCK:
+                return "§0B";
+            case BEACON:
+                return "§b★";
+            case CONDUIT:
+                return "§b●";
+            case END_STONE_BRICKS:
+                return "§eE";
+            default:
+                return "?";
         }
     }
-    
+
     // ========== ZİNDAN VE BİYOM KOMUTLARI ==========
-    
+
     private boolean handleDungeon(Player p, String[] args) {
         if (args.length < 2) {
             p.sendMessage("§cKullanım: /stratocraft dungeon <spawn|list|clear>");
@@ -3271,42 +3305,43 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§7  clear - Spawn edilmiş zindanları temizle");
             return true;
         }
-        
+
         me.mami.stratocraft.manager.DungeonManager dungeonManager = plugin.getDungeonManager();
         if (dungeonManager == null) {
             p.sendMessage("§cDungeonManager bulunamadı!");
             return true;
         }
-        
+
         switch (args[1].toLowerCase()) {
             case "spawn":
                 if (args.length < 3) {
                     p.sendMessage("§cKullanım: /stratocraft dungeon spawn <level> [type]");
                     return true;
                 }
-                
+
                 int level = parseInt(args[2], 1);
                 if (level < 1 || level > 5) {
                     p.sendMessage("§cSeviye 1-5 arası olmalı!");
                     return true;
                 }
-                
+
                 String dungeonType = args.length > 3 ? args[3] : null;
                 Location loc = p.getLocation();
-                
+
                 if (dungeonType != null) {
                     boolean success = dungeonManager.spawnDungeonManually(loc, level, dungeonType);
                     if (success) {
                         p.sendMessage("§aZindan spawn edildi: " + dungeonType + " (Seviye " + level + ")");
                     } else {
-                        p.sendMessage("§cZindan spawn edilemedi! Şema dosyası bulunamadı: dungeons/level" + level + "/" + dungeonType);
+                        p.sendMessage("§cZindan spawn edilemedi! Şema dosyası bulunamadı: dungeons/level" + level + "/"
+                                + dungeonType);
                     }
                 } else {
                     dungeonManager.spawnDungeon(loc, level);
                     p.sendMessage("§aZindan spawn edildi (Seviye " + level + ")");
                 }
                 return true;
-                
+
             case "list":
                 int listLevel = args.length > 2 ? parseInt(args[2], 0) : 0;
                 if (listLevel == 0) {
@@ -3326,18 +3361,18 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     }
                 }
                 return true;
-                
+
             case "clear":
                 dungeonManager.clearSpawnedDungeons();
                 p.sendMessage("§aSpawn edilmiş zindanlar temizlendi (yeni chunk'larda tekrar spawn olabilir)");
                 return true;
-                
+
             default:
                 p.sendMessage("§cGeçersiz komut! spawn, list veya clear kullan");
                 return true;
         }
     }
-    
+
     private boolean handleBiome(Player p, String[] args) {
         if (args.length < 2) {
             p.sendMessage("§cKullanım: /stratocraft biome <list|set>");
@@ -3345,13 +3380,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§7  set <biome> - Biyom değiştir (şimdilik sadece bilgi)");
             return true;
         }
-        
+
         me.mami.stratocraft.manager.BiomeManager biomeManager = plugin.getBiomeManager();
         if (biomeManager == null) {
             p.sendMessage("§cBiomeManager bulunamadı!");
             return true;
         }
-        
+
         switch (args[1].toLowerCase()) {
             case "list":
                 int listLevel = args.length > 2 ? parseInt(args[2], 0) : 0;
@@ -3372,17 +3407,17 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     }
                 }
                 return true;
-                
+
             case "set":
                 p.sendMessage("§eBiyom değiştirme özelliği yakında eklenecek!");
                 return true;
-                
+
             default:
                 p.sendMessage("§cGeçersiz komut! list veya set kullan");
                 return true;
         }
     }
-    
+
     private void giveItemSafely(Player p, org.bukkit.inventory.ItemStack item) {
         if (item == null)
             return;
@@ -3394,9 +3429,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             }
         }
     }
-    
+
     // ========== CANLI EĞİTME KOMUTLARI ==========
-    
+
     private boolean handleTame(Player p, String[] args) {
         if (args.length < 2) {
             p.sendMessage("§cKullanım: /stratocraft tame <ritual|list|info|instant|breed|facility>");
@@ -3408,15 +3443,15 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§7  facility complete - Çiftleştirme tesisinin süresini bitir (admin)");
             return true;
         }
-        
+
         me.mami.stratocraft.manager.TamingManager tamingManager = plugin.getTamingManager();
         me.mami.stratocraft.manager.BreedingManager breedingManager = plugin.getBreedingManager();
-        
+
         if (tamingManager == null) {
             p.sendMessage("§cTamingManager bulunamadı!");
             return true;
         }
-        
+
         switch (args[1].toLowerCase()) {
             case "ritual":
                 if (args.length < 3) {
@@ -3425,7 +3460,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     p.sendMessage("§7  boss <type> - Boss eğitme ritüel deseni");
                     return true;
                 }
-                
+
                 if (args[2].equalsIgnoreCase("level")) {
                     if (args.length < 4) {
                         p.sendMessage("§cKullanım: /stratocraft tame ritual level <1-5>");
@@ -3456,13 +3491,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 return true;
-                
+
             case "list":
                 p.sendMessage("§6§l=== EĞİTİLMİŞ CANLILAR ===");
                 p.sendMessage("§7Eğitilmiş canlılar yakınında görünecek.");
                 // TODO: Eğitilmiş canlıları listele
                 return true;
-                
+
             case "info":
                 p.sendMessage("§6§l=== CANLI EĞİTME SİSTEMİ ===");
                 p.sendMessage("§7Her canlı eğitilebilir!");
@@ -3472,59 +3507,59 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 p.sendMessage("§7Shift+Sağ tık ile takip edilecek kişi belirlenir.");
                 p.sendMessage("§7Yemek vererek çiftleştirme yapılabilir.");
                 return true;
-                
+
             case "instant":
                 // Anında eğitme (admin)
                 if (!p.hasPermission("stratocraft.admin")) {
                     p.sendMessage("§cBu komut sadece adminler için!");
                     return true;
                 }
-                
+
                 if (args.length < 3) {
                     p.sendMessage("§cKullanım: /stratocraft tame instant <entity>");
                     p.sendMessage("§7Yakındaki canlıya bak ve komutu kullan.");
                     return true;
                 }
-                
+
                 // Yakındaki canlıyı bul
                 org.bukkit.entity.Entity target = p.getTargetEntity(10);
                 if (target == null || !(target instanceof LivingEntity)) {
                     p.sendMessage("§cYakında canlı bulunamadı!");
                     return true;
                 }
-                
+
                 LivingEntity creature = (LivingEntity) target;
                 int difficultyLevel = plugin.getDifficultyManager().getDifficultyLevel(creature.getLocation());
-                
+
                 if (tamingManager.tameCreature(creature, p.getUniqueId(), difficultyLevel)) {
                     p.sendMessage("§a§lCanlı anında eğitildi!");
                 } else {
                     p.sendMessage("§cCanlı eğitilemedi! (Zaten eğitilmiş olabilir)");
                 }
                 return true;
-                
+
             case "breed":
                 // Anında çiftleştirme (admin)
                 if (!p.hasPermission("stratocraft.admin")) {
                     p.sendMessage("§cBu komut sadece adminler için!");
                     return true;
                 }
-                
+
                 if (args.length < 4) {
                     p.sendMessage("§cKullanım: /stratocraft tame breed <female> <male>");
                     p.sendMessage("§7Yakındaki dişi ve erkek canlıya bak ve komutu kullan.");
                     return true;
                 }
-                
+
                 // Yakındaki canlıları bul
                 org.bukkit.entity.Entity target1 = p.getTargetEntity(10);
                 if (target1 == null || !(target1 instanceof LivingEntity)) {
                     p.sendMessage("§cYakında canlı bulunamadı!");
                     return true;
                 }
-                
+
                 LivingEntity female = (LivingEntity) target1;
-                
+
                 // İkinci canlıyı bul (yakında)
                 LivingEntity male = null;
                 for (org.bukkit.entity.Entity nearby : p.getWorld().getNearbyEntities(p.getLocation(), 10, 10, 10)) {
@@ -3533,38 +3568,38 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         break;
                     }
                 }
-                
+
                 if (male == null) {
                     p.sendMessage("§cYakında ikinci canlı bulunamadı!");
                     return true;
                 }
-                
+
                 if (breedingManager != null && breedingManager.breedCreatures(female, male, p)) {
                     p.sendMessage("§a§lÇiftleştirme anında tamamlandı!");
                 } else {
                     p.sendMessage("§cÇiftleştirme yapılamadı!");
                 }
                 return true;
-                
+
             case "facility":
                 // Çiftleştirme tesisi yönetimi (admin)
                 if (!p.hasPermission("stratocraft.admin")) {
                     p.sendMessage("§cBu komut sadece adminler için!");
                     return true;
                 }
-                
+
                 if (args.length < 3) {
                     p.sendMessage("§cKullanım: /stratocraft tame facility <complete|create>");
                     p.sendMessage("§7  complete - Çiftleştirme tesisinin süresini bitir");
                     p.sendMessage("§7  create <level> - Çiftleştirme tesisi oluştur");
                     return true;
                 }
-                
+
                 if (breedingManager == null) {
                     p.sendMessage("§cBreedingManager bulunamadı!");
                     return true;
                 }
-                
+
                 if (args[2].equalsIgnoreCase("complete")) {
                     // Baktığı bloğu kontrol et
                     org.bukkit.block.Block targetBlock = p.getTargetBlock(null, 10);
@@ -3572,7 +3607,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         p.sendMessage("§cBir Beacon bloğuna bakmalısın!");
                         return true;
                     }
-                    
+
                     org.bukkit.Location facilityLoc = targetBlock.getLocation();
                     breedingManager.completeBreedingInstantly(facilityLoc);
                     p.sendMessage("§a§lÇiftleştirme tesisinin süresi anında bitti!");
@@ -3581,19 +3616,19 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         p.sendMessage("§cKullanım: /stratocraft tame facility create <level>");
                         return true;
                     }
-                    
+
                     int level = parseInt(args[3], 1);
                     if (level < 1 || level > 5) {
                         p.sendMessage("§cSeviye 1-5 arası olmalı!");
                         return true;
                     }
-                    
+
                     org.bukkit.block.Block targetBlock = p.getTargetBlock(null, 10);
                     if (targetBlock == null || targetBlock.getType() != org.bukkit.Material.BEACON) {
                         p.sendMessage("§cBir Beacon bloğuna bakmalısın!");
                         return true;
                     }
-                    
+
                     org.bukkit.Location facilityLoc = targetBlock.getLocation();
                     if (breedingManager.createBreedingFacility(facilityLoc, p, level)) {
                         p.sendMessage("§a§lÇiftleştirme tesisi oluşturuldu!");
@@ -3602,17 +3637,17 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     }
                 }
                 return true;
-                
+
             default:
                 p.sendMessage("§cGeçersiz komut! /stratocraft tame <ritual|list|info|instant|breed|facility>");
                 return true;
         }
     }
-    
+
     private void showTamingRitualPattern(Player p, int level, me.mami.stratocraft.manager.TamingManager tamingManager) {
         p.sendMessage("§6=== Seviye " + level + " Eğitme Ritüeli ===");
         p.sendMessage("§7Merkez bloğa sağ tıkla ve doğru deseni yap:");
-        
+
         Material[][] pattern = tamingManager.getRitualPatternForLevel(level);
         if (pattern != null) {
             int size = pattern.length;
@@ -3629,17 +3664,17 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 p.sendMessage(line.toString());
             }
         }
-        
+
         Material activationItem = tamingManager.getRitualActivationItem(level);
         p.sendMessage("§7Aktifleştirme itemi: §e" + activationItem.name());
     }
-    
+
     private void showBossTamingRitualPattern(Player p, me.mami.stratocraft.manager.BossManager.BossType bossType,
-                                            me.mami.stratocraft.manager.TamingManager tamingManager,
-                                            me.mami.stratocraft.manager.BossManager bossManager) {
+            me.mami.stratocraft.manager.TamingManager tamingManager,
+            me.mami.stratocraft.manager.BossManager bossManager) {
         p.sendMessage("§6=== " + bossManager.getBossDisplayName(bossType) + " Eğitme Ritüeli ===");
         p.sendMessage("§7Merkez bloğa sağ tıkla ve doğru deseni yap:");
-        
+
         Material[][] pattern = tamingManager.getBossRitualPattern(bossType);
         if (pattern != null) {
             int size = pattern.length;
@@ -3656,39 +3691,67 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 p.sendMessage(line.toString());
             }
         }
-        
+
         Material activationItem = tamingManager.getBossRitualActivationItem(bossType);
         p.sendMessage("§7Aktifleştirme itemi: §e" + activationItem.name());
     }
-    
+
     private String getTamingMaterialSymbol(Material mat) {
         switch (mat) {
-            case COBBLESTONE: return "§7C";
-            case STONE: return "§8S";
-            case STONE_BRICKS: return "§8B";
-            case OBSIDIAN: return "§5O";
-            case BEDROCK: return "§0B";
-            case WHEAT: return "§eW";
-            case CARROT: return "§6C";
-            case GOLDEN_APPLE: return "§6G";
-            case ENCHANTED_GOLDEN_APPLE: return "§bE";
-            case NETHER_STAR: return "§d★";
-            case GOLD_BLOCK: return "§6G";
-            case IRON_BLOCK: return "§fI";
-            case DIAMOND_BLOCK: return "§bD";
-            case EMERALD_BLOCK: return "§aE";
-            case NETHERITE_BLOCK: return "§4N";
-            case NETHERRACK: return "§cN";
-            case PRISMARINE: return "§3P";
-            case ROTTEN_FLESH: return "§2F";
-            case IRON_SWORD: return "§fS";
-            case STONE_AXE: return "§8A";
-            case DRAGON_EGG: return "§5E";
-            case BONE: return "§fB";
-            case ENDER_EYE: return "§5E";
-            case BLAZE_ROD: return "§cR";
-            case HEART_OF_THE_SEA: return "§bH";
-            default: return "?";
+            case COBBLESTONE:
+                return "§7C";
+            case STONE:
+                return "§8S";
+            case STONE_BRICKS:
+                return "§8B";
+            case OBSIDIAN:
+                return "§5O";
+            case BEDROCK:
+                return "§0B";
+            case WHEAT:
+                return "§eW";
+            case CARROT:
+                return "§6C";
+            case GOLDEN_APPLE:
+                return "§6G";
+            case ENCHANTED_GOLDEN_APPLE:
+                return "§bE";
+            case NETHER_STAR:
+                return "§d★";
+            case GOLD_BLOCK:
+                return "§6G";
+            case IRON_BLOCK:
+                return "§fI";
+            case DIAMOND_BLOCK:
+                return "§bD";
+            case EMERALD_BLOCK:
+                return "§aE";
+            case NETHERITE_BLOCK:
+                return "§4N";
+            case NETHERRACK:
+                return "§cN";
+            case PRISMARINE:
+                return "§3P";
+            case ROTTEN_FLESH:
+                return "§2F";
+            case IRON_SWORD:
+                return "§fS";
+            case STONE_AXE:
+                return "§8A";
+            case DRAGON_EGG:
+                return "§5E";
+            case BONE:
+                return "§fB";
+            case ENDER_EYE:
+                return "§5E";
+            case BLAZE_ROD:
+                return "§cR";
+            case HEART_OF_THE_SEA:
+                return "§bH";
+            default:
+                return "?";
         }
     }
 }
+
+// Missing tab completion helper methods

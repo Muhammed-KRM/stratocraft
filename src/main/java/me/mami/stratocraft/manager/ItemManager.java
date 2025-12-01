@@ -27,10 +27,11 @@ public class ItemManager {
     public static ItemStack DEVIL_HORN;
     public static ItemStack DEVIL_SNAKE_EYE;
     public static ItemStack RECIPE_BOOK_TECTONIC;
+    public static ItemStack RECIPE_TECTONIC_STABILIZER; // Alias for RECIPE_BOOK_TECTONIC
     public static ItemStack WAR_FAN;
     public static ItemStack TOWER_SHIELD;
     public static ItemStack HELL_FRUIT;
-    
+
     // ========== TARİF KİTAPLARI - YAPILAR ==========
     // Sadece bazı yapılar tarif gerektirir (aktifleştirme için)
     // Tüm yapıların tarifi var ama sadece bazıları çalışması için tarif gerektirir
@@ -59,7 +60,7 @@ public class ItemManager {
     public static ItemStack RECIPE_ARMORY;
     public static ItemStack RECIPE_LIBRARY;
     public static ItemStack RECIPE_WARNING_SIGN;
-    
+
     // ========== TARİF KİTAPLARI - ÖZEL EŞYALAR ==========
     public static ItemStack RECIPE_LIGHTNING_CORE;
     public static ItemStack RECIPE_TITANIUM_INGOT;
@@ -103,7 +104,7 @@ public class ItemManager {
     public static ItemStack GOLDEN_HOOK; // YENİ: Orta kademe kanca
     public static ItemStack TITAN_GRAPPLE;
     public static ItemStack TRAP_CORE;
-    
+
     // ========== SEVİYE 1 MOB DROP İTEMLERİ ==========
     public static ItemStack WILD_BOAR_HIDE;
     public static ItemStack WILD_BOAR_MEAT;
@@ -115,7 +116,7 @@ public class ItemManager {
     public static ItemStack EAGLE_CLAW;
     public static ItemStack BEAR_CLAW;
     public static ItemStack BEAR_PELT;
-    
+
     // ========== SEVİYE 2 MOB DROP İTEMLERİ ==========
     public static ItemStack IRON_CORE;
     public static ItemStack IRON_DUST;
@@ -127,7 +128,7 @@ public class ItemManager {
     public static ItemStack EARTH_DUST;
     public static ItemStack SOUL_FRAGMENT;
     public static ItemStack GHOST_DUST;
-    
+
     // ========== SEVİYE 3 MOB DROP İTEMLERİ ==========
     public static ItemStack SHADOW_HEART;
     public static ItemStack SHADOW_SCALE;
@@ -139,7 +140,7 @@ public class ItemManager {
     public static ItemStack LAVA_SCALE;
     public static ItemStack ICE_CORE;
     public static ItemStack ICE_SHARD;
-    
+
     // ========== SEVİYE 4 MOB DROP İTEMLERİ ==========
     public static ItemStack DEVIL_BLOOD; // Şeytan Kanı (her zaman düşer)
     public static ItemStack BLACK_DRAGON_HEART;
@@ -150,7 +151,7 @@ public class ItemManager {
     public static ItemStack CHAOS_SCALE;
     public static ItemStack HELL_STONE;
     public static ItemStack HELL_FIRE;
-    
+
     // ========== SEVİYE 5 MOB DROP İTEMLERİ ==========
     public static ItemStack LEGENDARY_DRAGON_HEART;
     public static ItemStack LEGENDARY_DRAGON_SCALE;
@@ -177,10 +178,11 @@ public class ItemManager {
         DEVIL_HORN = create(Material.GOAT_HORN, "DEVIL_HORN", "§4Şeytan Boynuzu");
         DEVIL_SNAKE_EYE = create(Material.ENDER_EYE, "DEVIL_SNAKE_EYE", "§5İblis Yılanın Gözü");
         RECIPE_BOOK_TECTONIC = createRecipeBook("RECIPE_TECTONIC", "§dTarif: Tektonik Sabitleyici");
+        RECIPE_TECTONIC_STABILIZER = RECIPE_BOOK_TECTONIC; // Alias
         WAR_FAN = create(Material.FEATHER, "WAR_FAN", "§eSavaş Yelpazesi");
         TOWER_SHIELD = create(Material.SHIELD, "TOWER_SHIELD", "§7Kule Kalkanı");
         HELL_FRUIT = create(Material.APPLE, "HELL_FRUIT", "§cCehennem Meyvesi");
-        
+
         // ========== TARİF KİTAPLARI - YAPILAR ==========
         RECIPE_CORE = createRecipeBook("RECIPE_CORE", "§bTarif: Ana Kristal");
         RECIPE_ALCHEMY_TOWER = createRecipeBook("RECIPE_ALCHEMY_TOWER", "§dTarif: Simya Kulesi");
@@ -207,7 +209,7 @@ public class ItemManager {
         RECIPE_ARMORY = createRecipeBook("RECIPE_ARMORY", "§6Tarif: Cephanelik");
         RECIPE_LIBRARY = createRecipeBook("RECIPE_LIBRARY", "§eTarif: Kütüphane");
         RECIPE_WARNING_SIGN = createRecipeBook("RECIPE_WARNING_SIGN", "§cTarif: Yasaklı Bölge Tabelası");
-        
+
         // ========== TARİF KİTAPLARI - ÖZEL EŞYALAR ==========
         RECIPE_LIGHTNING_CORE = createRecipeBook("RECIPE_LIGHTNING_CORE", "§eTarif: Yıldırım Çekirdeği");
         RECIPE_TITANIUM_INGOT = createRecipeBook("RECIPE_TITANIUM_INGOT", "§fTarif: Titanyum Külçesi");
@@ -251,7 +253,7 @@ public class ItemManager {
         GOLDEN_HOOK = create(Material.FISHING_ROD, "GOLDEN_HOOK", "§6Altın Kanca");
         TITAN_GRAPPLE = create(Material.FISHING_ROD, "TITAN_GRAPPLE", "§6§lTitan Kancası");
         TRAP_CORE = create(Material.LODESTONE, "TRAP_CORE", "§cTuzak Çekirdeği");
-        
+
         // ========== SEVİYE 1 MOB DROP İTEMLERİ ==========
         WILD_BOAR_HIDE = create(Material.LEATHER, "WILD_BOAR_HIDE", "§6Yaban Domuzu Postu");
         WILD_BOAR_MEAT = create(Material.PORKCHOP, "WILD_BOAR_MEAT", "§6Yaban Domuzu Eti");
@@ -263,7 +265,7 @@ public class ItemManager {
         EAGLE_CLAW = create(Material.FLINT, "EAGLE_CLAW", "§eKartal Pençesi");
         BEAR_CLAW = create(Material.FLINT, "BEAR_CLAW", "§7Ayı Pençesi");
         BEAR_PELT = create(Material.LEATHER, "BEAR_PELT", "§7Ayı Postu");
-        
+
         // ========== SEVİYE 2 MOB DROP İTEMLERİ ==========
         IRON_CORE = create(Material.IRON_INGOT, "IRON_CORE", "§fDemir Çekirdek");
         IRON_DUST = create(Material.GUNPOWDER, "IRON_DUST", "§fDemir Tozu");
@@ -275,7 +277,7 @@ public class ItemManager {
         EARTH_DUST = create(Material.DIRT, "EARTH_DUST", "§6Toprak Tozu");
         SOUL_FRAGMENT = create(Material.ECHO_SHARD, "SOUL_FRAGMENT", "§5Ruh Parçası");
         GHOST_DUST = create(Material.GUNPOWDER, "GHOST_DUST", "§7Hayalet Tozu");
-        
+
         // ========== SEVİYE 3 MOB DROP İTEMLERİ ==========
         SHADOW_HEART = create(Material.COAL, "SHADOW_HEART", "§8Gölge Kalbi");
         SHADOW_SCALE = create(Material.BLACK_DYE, "SHADOW_SCALE", "§8Gölge Ölçeği");
@@ -287,7 +289,7 @@ public class ItemManager {
         LAVA_SCALE = create(Material.MAGMA_CREAM, "LAVA_SCALE", "§cLav Ölçeği");
         ICE_CORE = create(Material.BLUE_ICE, "ICE_CORE", "§bBuz Çekirdeği");
         ICE_SHARD = create(Material.PACKED_ICE, "ICE_SHARD", "§bBuz Parçası");
-        
+
         // ========== SEVİYE 4 MOB DROP İTEMLERİ ==========
         DEVIL_BLOOD = create(Material.REDSTONE, "DEVIL_BLOOD", "§4Şeytan Kanı");
         BLACK_DRAGON_HEART = create(Material.NETHER_STAR, "BLACK_DRAGON_HEART", "§0Kara Ejder Kalbi");
@@ -298,7 +300,7 @@ public class ItemManager {
         CHAOS_SCALE = create(Material.PURPLE_DYE, "CHAOS_SCALE", "§5Kaos Ölçeği");
         HELL_STONE = create(Material.NETHERRACK, "HELL_STONE", "§4Cehennem Taşı");
         HELL_FIRE = create(Material.BLAZE_POWDER, "HELL_FIRE", "§4Cehennem Ateşi");
-        
+
         // ========== SEVİYE 5 MOB DROP İTEMLERİ ==========
         LEGENDARY_DRAGON_HEART = create(Material.NETHER_STAR, "LEGENDARY_DRAGON_HEART", "§6§lEfsanevi Ejder Kalbi");
         LEGENDARY_DRAGON_SCALE = create(Material.DRAGON_EGG, "LEGENDARY_DRAGON_SCALE", "§6§lEfsanevi Ejder Ölçeği");
@@ -411,7 +413,7 @@ public class ItemManager {
         item.setItemMeta(meta);
         return item;
     }
-    
+
     /**
      * Tarif kitabı oluştur
      */
