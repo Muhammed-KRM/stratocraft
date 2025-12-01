@@ -53,9 +53,9 @@ public class StructureListener implements Listener {
 
         // --- YAPI KONTROLLERİ ---
 
-        // 1. SİMYA KULESİ
+        // 1. SİMYA KULESİ (Tarif gerektirir)
         if (b.getType() == Material.ENCHANTING_TABLE) {
-            if (checkRecipe(p, "ALCHEMY")) {
+            if (checkRecipe(p, "ALCHEMY_TOWER")) {
                 if (validator.validate(b.getLocation(), "alchemy_tower")) {
                     createStructure(p, clan, b, Structure.Type.ALCHEMY_TOWER, "Simya Kulesi");
                 } else {
@@ -64,27 +64,65 @@ public class StructureListener implements Listener {
             }
         }
 
-        // 2. TEKTONİK SABİTLEYİCİ
+        // 2. TEKTONİK SABİTLEYİCİ (Tarif gerektirir)
         else if (b.getType() == Material.PISTON) {
-            if (checkRecipe(p, "TECTONIC")) {
+            if (checkRecipe(p, "TECTONIC_STABILIZER")) {
                 if (validator.validate(b.getLocation(), "tectonic_stabilizer")) {
                     createStructure(p, clan, b, Structure.Type.TECTONIC_STABILIZER, "Tektonik Sabitleyici");
                 }
             }
         }
 
-        // 3. ŞİFA KULESİ
+        // 3. ŞİFA KULESİ (Tarif gerektirir)
         else if (b.getType() == Material.LANTERN) {
-            if (validator.validate(b.getLocation(), "healing_tower")) {
-                createStructure(p, clan, b, Structure.Type.HEALING_BEACON, "Şifa Kulesi");
+            if (checkRecipe(p, "HEALING_BEACON")) {
+                if (validator.validate(b.getLocation(), "healing_tower")) {
+                    createStructure(p, clan, b, Structure.Type.HEALING_BEACON, "Şifa Kulesi");
+                }
             }
         }
         
-        // 4. GLOBAL PAZAR KAPISI
+        // 4. GLOBAL PAZAR KAPISI (Tarif gerektirir)
         else if (b.getType() == Material.ENDER_CHEST) {
-             if (validator.validate(b.getLocation(), "market_gate")) {
-                createStructure(p, clan, b, Structure.Type.GLOBAL_MARKET_GATE, "Global Pazar");
-             }
+            if (checkRecipe(p, "GLOBAL_MARKET_GATE")) {
+                if (validator.validate(b.getLocation(), "market_gate")) {
+                    createStructure(p, clan, b, Structure.Type.GLOBAL_MARKET_GATE, "Global Pazar");
+                }
+            }
+        }
+        
+        // 5. ZEHİR REAKTÖRÜ (Tarif gerektirir)
+        else if (b.getType() == Material.BEACON) {
+            // Yeşil beacon ise zehir reaktörü
+            if (checkRecipe(p, "POISON_REACTOR")) {
+                if (validator.validate(b.getLocation(), "poison_reactor")) {
+                    createStructure(p, clan, b, Structure.Type.POISON_REACTOR, "Zehir Reaktörü");
+                }
+            }
+        }
+        
+        // 6. OTOMATİK TARET (Tarif gerektirir)
+        else if (b.getType() == Material.DISPENSER) {
+            if (checkRecipe(p, "AUTO_TURRET")) {
+                // Otomatik taret için özel kontrol (Antik Dişli + Piston)
+                org.bukkit.inventory.ItemStack mainHand = p.getInventory().getItemInMainHand();
+                org.bukkit.inventory.ItemStack offHand = p.getInventory().getItemInOffHand();
+                
+                boolean hasAncientGear = mainHand != null && mainHand.getType() == Material.IRON_NUGGET && 
+                                         mainHand.getItemMeta() != null && 
+                                         mainHand.getItemMeta().getDisplayName() != null &&
+                                         mainHand.getItemMeta().getDisplayName().contains("Antik Dişli");
+                boolean hasPiston = (mainHand != null && mainHand.getType() == Material.PISTON) ||
+                                   (offHand != null && offHand.getType() == Material.PISTON);
+                
+                if (hasAncientGear && hasPiston) {
+                    if (validator.validate(b.getLocation(), "auto_turret")) {
+                        createStructure(p, clan, b, Structure.Type.AUTO_TURRET, "Otomatik Taret");
+                    }
+                } else {
+                    p.sendMessage("§cOtomatik Taret için Antik Dişli ve Piston gerekiyor!");
+                }
+            }
         }
         
         // 5. OTOMATİK TARET (Hurda teknolojisi - Antik Dişli + Piston ile yapılır)
@@ -189,9 +227,16 @@ public class StructureListener implements Listener {
     }
 
     private boolean checkRecipe(Player p, String recipeId) {
+        // Admin bypass kontrolü
+        if (me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(p)) {
+            return true; // Admin bypass yetkisi varsa tarif kısıtlamalarını atla
+        }
+        
         // Araştırma Manager'ı kontrol et
         if (!researchManager.hasRecipeBook(p, recipeId)) {
             p.sendMessage("§cGerekli tarife sahip değilsin!");
+            p.sendMessage("§7Bu yapıyı aktifleştirmek için §e" + recipeId + " §7tarif kitabı gerekiyor.");
+            p.sendMessage("§7Tarif kitapları normal canlılardan veya bosslardan düşebilir.");
             return false;
         }
         return true;

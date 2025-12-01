@@ -139,12 +139,100 @@ public class GhostRecipeListener implements Listener {
         if (item == null) return null;
         
         // RECIPE_ prefix'li özel eşyaları kontrol et
-        if (ItemManager.isCustomItem(item, "RECIPE_ALCHEMY")) return "ALCHEMY";
-        if (ItemManager.isCustomItem(item, "RECIPE_TECTONIC")) return "TECTONIC";
+        // Yapılar
+        if (ItemManager.isCustomItem(item, "RECIPE_CORE")) return "CORE";
+        if (ItemManager.isCustomItem(item, "RECIPE_ALCHEMY") || ItemManager.isCustomItem(item, "RECIPE_ALCHEMY_TOWER")) return "ALCHEMY_TOWER";
+        if (ItemManager.isCustomItem(item, "RECIPE_POISON_REACTOR")) return "POISON_REACTOR";
+        if (ItemManager.isCustomItem(item, "RECIPE_TECTONIC") || ItemManager.isCustomItem(item, "RECIPE_TECTONIC_STABILIZER")) return "TECTONIC_STABILIZER";
+        if (ItemManager.isCustomItem(item, "RECIPE_SIEGE_FACTORY")) return "SIEGE_FACTORY";
+        if (ItemManager.isCustomItem(item, "RECIPE_WALL_GENERATOR")) return "WALL_GENERATOR";
+        if (ItemManager.isCustomItem(item, "RECIPE_GRAVITY_WELL")) return "GRAVITY_WELL";
+        if (ItemManager.isCustomItem(item, "RECIPE_LAVA_TRENCHER")) return "LAVA_TRENCHER";
+        if (ItemManager.isCustomItem(item, "RECIPE_WATCHTOWER")) return "WATCHTOWER";
+        if (ItemManager.isCustomItem(item, "RECIPE_DRONE_STATION")) return "DRONE_STATION";
+        if (ItemManager.isCustomItem(item, "RECIPE_AUTO_TURRET")) return "AUTO_TURRET";
+        if (ItemManager.isCustomItem(item, "RECIPE_GLOBAL_MARKET_GATE")) return "GLOBAL_MARKET_GATE";
+        if (ItemManager.isCustomItem(item, "RECIPE_AUTO_DRILL")) return "AUTO_DRILL";
+        if (ItemManager.isCustomItem(item, "RECIPE_XP_BANK")) return "XP_BANK";
+        if (ItemManager.isCustomItem(item, "RECIPE_MAG_RAIL")) return "MAG_RAIL";
+        if (ItemManager.isCustomItem(item, "RECIPE_TELEPORTER")) return "TELEPORTER";
+        if (ItemManager.isCustomItem(item, "RECIPE_FOOD_SILO")) return "FOOD_SILO";
+        if (ItemManager.isCustomItem(item, "RECIPE_OIL_REFINERY")) return "OIL_REFINERY";
+        if (ItemManager.isCustomItem(item, "RECIPE_HEALING_BEACON")) return "HEALING_BEACON";
+        if (ItemManager.isCustomItem(item, "RECIPE_WEATHER_MACHINE")) return "WEATHER_MACHINE";
+        if (ItemManager.isCustomItem(item, "RECIPE_CROP_ACCELERATOR")) return "CROP_ACCELERATOR";
+        if (ItemManager.isCustomItem(item, "RECIPE_MOB_GRINDER")) return "MOB_GRINDER";
+        if (ItemManager.isCustomItem(item, "RECIPE_INVISIBILITY_CLOAK")) return "INVISIBILITY_CLOAK";
+        if (ItemManager.isCustomItem(item, "RECIPE_ARMORY")) return "ARMORY";
+        if (ItemManager.isCustomItem(item, "RECIPE_LIBRARY")) return "LIBRARY";
+        if (ItemManager.isCustomItem(item, "RECIPE_WARNING_SIGN")) return "WARNING_SIGN";
+        
+        // Bataryalar
         if (ItemManager.isCustomItem(item, "RECIPE_MAGMA_BATTERY")) return "MAGMA_BATTERY";
+        
+        // Ritüeller
         if (ItemManager.isCustomItem(item, "RECIPE_CLAN_CREATE")) return "CLAN_CREATE";
         
+        // Özel eşyalar (hayalet blok göstermez ama tarif ID döndürür)
+        if (ItemManager.isCustomItem(item, "RECIPE_LIGHTNING_CORE")) return "LIGHTNING_CORE";
+        if (ItemManager.isCustomItem(item, "RECIPE_TITANIUM_INGOT")) return "TITANIUM_INGOT";
+        if (ItemManager.isCustomItem(item, "RECIPE_DARK_MATTER")) return "DARK_MATTER";
+        if (ItemManager.isCustomItem(item, "RECIPE_RED_DIAMOND")) return "RED_DIAMOND";
+        if (ItemManager.isCustomItem(item, "RECIPE_RUBY")) return "RUBY";
+        if (ItemManager.isCustomItem(item, "RECIPE_ADAMANTITE")) return "ADAMANTITE";
+        if (ItemManager.isCustomItem(item, "RECIPE_STAR_CORE")) return "STAR_CORE";
+        if (ItemManager.isCustomItem(item, "RECIPE_FLAME_AMPLIFIER")) return "FLAME_AMPLIFIER";
+        if (ItemManager.isCustomItem(item, "RECIPE_DEVIL_HORN")) return "DEVIL_HORN";
+        if (ItemManager.isCustomItem(item, "RECIPE_DEVIL_SNAKE_EYE")) return "DEVIL_SNAKE_EYE";
+        if (ItemManager.isCustomItem(item, "RECIPE_WAR_FAN")) return "WAR_FAN";
+        if (ItemManager.isCustomItem(item, "RECIPE_TOWER_SHIELD")) return "TOWER_SHIELD";
+        if (ItemManager.isCustomItem(item, "RECIPE_HELL_FRUIT")) return "HELL_FRUIT";
+        if (ItemManager.isCustomItem(item, "RECIPE_SULFUR")) return "SULFUR";
+        if (ItemManager.isCustomItem(item, "RECIPE_BAUXITE_INGOT")) return "BAUXITE_INGOT";
+        if (ItemManager.isCustomItem(item, "RECIPE_ROCK_SALT")) return "ROCK_SALT";
+        if (ItemManager.isCustomItem(item, "RECIPE_MITHRIL_INGOT")) return "MITHRIL_INGOT";
+        if (ItemManager.isCustomItem(item, "RECIPE_MITHRIL_STRING")) return "MITHRIL_STRING";
+        if (ItemManager.isCustomItem(item, "RECIPE_ASTRAL_CRYSTAL")) return "ASTRAL_CRYSTAL";
+        if (ItemManager.isCustomItem(item, "RECIPE_RUSTY_HOOK")) return "RUSTY_HOOK";
+        if (ItemManager.isCustomItem(item, "RECIPE_GOLDEN_HOOK")) return "GOLDEN_HOOK";
+        if (ItemManager.isCustomItem(item, "RECIPE_TITAN_GRAPPLE")) return "TITAN_GRAPPLE";
+        if (ItemManager.isCustomItem(item, "RECIPE_TRAP_CORE")) return "TRAP_CORE";
+        
         return null;
+    }
+    
+    /**
+     * Yere Shift+Sağ tıklayınca tarifi sabitle
+     */
+    @EventHandler
+    public void onFixRecipe(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        
+        Player player = event.getPlayer();
+        if (!player.isSneaking()) return; // Shift tuşu basılı mı?
+        
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (item == null) return;
+        
+        // Tarif kitabı kontrolü
+        String recipeId = getRecipeIdFromItem(item);
+        if (recipeId == null) return;
+        
+        // Aktif tarif var mı?
+        if (!ghostRecipeManager.hasActiveRecipe(player.getUniqueId())) {
+            // Aktif tarif yoksa, yeni bir tane göster ve sabitle
+            Location targetLocation = event.getClickedBlock().getLocation();
+            ghostRecipeManager.showGhostRecipe(player, recipeId, targetLocation);
+            ghostRecipeManager.fixGhostRecipe(player, targetLocation);
+            event.setCancelled(true);
+            return;
+        }
+        
+        // Aktif tarifi sabitle
+        Location targetLocation = event.getClickedBlock().getLocation();
+        ghostRecipeManager.fixGhostRecipe(player, targetLocation);
+        event.setCancelled(true);
     }
 }
 

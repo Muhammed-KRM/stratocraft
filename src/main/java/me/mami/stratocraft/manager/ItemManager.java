@@ -30,6 +30,60 @@ public class ItemManager {
     public static ItemStack WAR_FAN;
     public static ItemStack TOWER_SHIELD;
     public static ItemStack HELL_FRUIT;
+    
+    // ========== TARİF KİTAPLARI - YAPILAR ==========
+    // Sadece bazı yapılar tarif gerektirir (aktifleştirme için)
+    // Tüm yapıların tarifi var ama sadece bazıları çalışması için tarif gerektirir
+    public static ItemStack RECIPE_CORE;
+    public static ItemStack RECIPE_ALCHEMY_TOWER;
+    public static ItemStack RECIPE_POISON_REACTOR;
+    public static ItemStack RECIPE_SIEGE_FACTORY;
+    public static ItemStack RECIPE_WALL_GENERATOR;
+    public static ItemStack RECIPE_GRAVITY_WELL;
+    public static ItemStack RECIPE_LAVA_TRENCHER;
+    public static ItemStack RECIPE_WATCHTOWER;
+    public static ItemStack RECIPE_DRONE_STATION;
+    public static ItemStack RECIPE_AUTO_TURRET;
+    public static ItemStack RECIPE_GLOBAL_MARKET_GATE;
+    public static ItemStack RECIPE_AUTO_DRILL;
+    public static ItemStack RECIPE_XP_BANK;
+    public static ItemStack RECIPE_MAG_RAIL;
+    public static ItemStack RECIPE_TELEPORTER;
+    public static ItemStack RECIPE_FOOD_SILO;
+    public static ItemStack RECIPE_OIL_REFINERY;
+    public static ItemStack RECIPE_HEALING_BEACON;
+    public static ItemStack RECIPE_WEATHER_MACHINE;
+    public static ItemStack RECIPE_CROP_ACCELERATOR;
+    public static ItemStack RECIPE_MOB_GRINDER;
+    public static ItemStack RECIPE_INVISIBILITY_CLOAK;
+    public static ItemStack RECIPE_ARMORY;
+    public static ItemStack RECIPE_LIBRARY;
+    public static ItemStack RECIPE_WARNING_SIGN;
+    
+    // ========== TARİF KİTAPLARI - ÖZEL EŞYALAR ==========
+    public static ItemStack RECIPE_LIGHTNING_CORE;
+    public static ItemStack RECIPE_TITANIUM_INGOT;
+    public static ItemStack RECIPE_DARK_MATTER;
+    public static ItemStack RECIPE_RED_DIAMOND;
+    public static ItemStack RECIPE_RUBY;
+    public static ItemStack RECIPE_ADAMANTITE;
+    public static ItemStack RECIPE_STAR_CORE;
+    public static ItemStack RECIPE_FLAME_AMPLIFIER;
+    public static ItemStack RECIPE_DEVIL_HORN;
+    public static ItemStack RECIPE_DEVIL_SNAKE_EYE;
+    public static ItemStack RECIPE_WAR_FAN;
+    public static ItemStack RECIPE_TOWER_SHIELD;
+    public static ItemStack RECIPE_HELL_FRUIT;
+    public static ItemStack RECIPE_SULFUR;
+    public static ItemStack RECIPE_BAUXITE_INGOT;
+    public static ItemStack RECIPE_ROCK_SALT;
+    public static ItemStack RECIPE_MITHRIL_INGOT;
+    public static ItemStack RECIPE_MITHRIL_STRING;
+    public static ItemStack RECIPE_ASTRAL_CRYSTAL;
+    public static ItemStack RECIPE_RUSTY_HOOK;
+    public static ItemStack RECIPE_GOLDEN_HOOK;
+    public static ItemStack RECIPE_TITAN_GRAPPLE;
+    public static ItemStack RECIPE_TRAP_CORE;
 
     // Yeni Madenler
     public static ItemStack SULFUR_ORE;
@@ -122,10 +176,62 @@ public class ItemManager {
         FLAME_AMPLIFIER = create(Material.BLAZE_ROD, "FLAME_AMPLIFIER", "§6Alev Amplifikatörü");
         DEVIL_HORN = create(Material.GOAT_HORN, "DEVIL_HORN", "§4Şeytan Boynuzu");
         DEVIL_SNAKE_EYE = create(Material.ENDER_EYE, "DEVIL_SNAKE_EYE", "§5İblis Yılanın Gözü");
-        RECIPE_BOOK_TECTONIC = create(Material.BOOK, "RECIPE_TECTONIC", "§dTarif: Tektonik Sabitleyici");
+        RECIPE_BOOK_TECTONIC = createRecipeBook("RECIPE_TECTONIC", "§dTarif: Tektonik Sabitleyici");
         WAR_FAN = create(Material.FEATHER, "WAR_FAN", "§eSavaş Yelpazesi");
         TOWER_SHIELD = create(Material.SHIELD, "TOWER_SHIELD", "§7Kule Kalkanı");
         HELL_FRUIT = create(Material.APPLE, "HELL_FRUIT", "§cCehennem Meyvesi");
+        
+        // ========== TARİF KİTAPLARI - YAPILAR ==========
+        RECIPE_CORE = createRecipeBook("RECIPE_CORE", "§bTarif: Ana Kristal");
+        RECIPE_ALCHEMY_TOWER = createRecipeBook("RECIPE_ALCHEMY_TOWER", "§dTarif: Simya Kulesi");
+        RECIPE_POISON_REACTOR = createRecipeBook("RECIPE_POISON_REACTOR", "§2Tarif: Zehir Reaktörü");
+        RECIPE_SIEGE_FACTORY = createRecipeBook("RECIPE_SIEGE_FACTORY", "§cTarif: Kuşatma Fabrikası");
+        RECIPE_WALL_GENERATOR = createRecipeBook("RECIPE_WALL_GENERATOR", "§7Tarif: Sur Jeneratörü");
+        RECIPE_GRAVITY_WELL = createRecipeBook("RECIPE_GRAVITY_WELL", "§5Tarif: Yerçekimi Kuyusu");
+        RECIPE_LAVA_TRENCHER = createRecipeBook("RECIPE_LAVA_TRENCHER", "§cTarif: Lav Hendekçisi");
+        RECIPE_WATCHTOWER = createRecipeBook("RECIPE_WATCHTOWER", "§eTarif: Gözetleme Kulesi");
+        RECIPE_DRONE_STATION = createRecipeBook("RECIPE_DRONE_STATION", "§bTarif: Drone İstasyonu");
+        RECIPE_AUTO_TURRET = createRecipeBook("RECIPE_AUTO_TURRET", "§6Tarif: Otomatik Taret");
+        RECIPE_GLOBAL_MARKET_GATE = createRecipeBook("RECIPE_GLOBAL_MARKET_GATE", "§aTarif: Global Pazar Kapısı");
+        RECIPE_AUTO_DRILL = createRecipeBook("RECIPE_AUTO_DRILL", "§7Tarif: Otomatik Madenci");
+        RECIPE_XP_BANK = createRecipeBook("RECIPE_XP_BANK", "§eTarif: Tecrübe Bankası");
+        RECIPE_MAG_RAIL = createRecipeBook("RECIPE_MAG_RAIL", "§bTarif: Manyetik Ray");
+        RECIPE_TELEPORTER = createRecipeBook("RECIPE_TELEPORTER", "§dTarif: Işınlanma Platformu");
+        RECIPE_FOOD_SILO = createRecipeBook("RECIPE_FOOD_SILO", "§6Tarif: Buzdolabı");
+        RECIPE_OIL_REFINERY = createRecipeBook("RECIPE_OIL_REFINERY", "§8Tarif: Petrol Rafinerisi");
+        RECIPE_HEALING_BEACON = createRecipeBook("RECIPE_HEALING_BEACON", "§aTarif: Şifa Kulesi");
+        RECIPE_WEATHER_MACHINE = createRecipeBook("RECIPE_WEATHER_MACHINE", "§bTarif: Hava Kontrolcüsü");
+        RECIPE_CROP_ACCELERATOR = createRecipeBook("RECIPE_CROP_ACCELERATOR", "§2Tarif: Tarım Hızlandırıcı");
+        RECIPE_MOB_GRINDER = createRecipeBook("RECIPE_MOB_GRINDER", "§cTarif: Mob Öğütücü");
+        RECIPE_INVISIBILITY_CLOAK = createRecipeBook("RECIPE_INVISIBILITY_CLOAK", "§7Tarif: Görünmezlik Perdesi");
+        RECIPE_ARMORY = createRecipeBook("RECIPE_ARMORY", "§6Tarif: Cephanelik");
+        RECIPE_LIBRARY = createRecipeBook("RECIPE_LIBRARY", "§eTarif: Kütüphane");
+        RECIPE_WARNING_SIGN = createRecipeBook("RECIPE_WARNING_SIGN", "§cTarif: Yasaklı Bölge Tabelası");
+        
+        // ========== TARİF KİTAPLARI - ÖZEL EŞYALAR ==========
+        RECIPE_LIGHTNING_CORE = createRecipeBook("RECIPE_LIGHTNING_CORE", "§eTarif: Yıldırım Çekirdeği");
+        RECIPE_TITANIUM_INGOT = createRecipeBook("RECIPE_TITANIUM_INGOT", "§fTarif: Titanyum Külçesi");
+        RECIPE_DARK_MATTER = createRecipeBook("RECIPE_DARK_MATTER", "§0Tarif: Karanlık Madde");
+        RECIPE_RED_DIAMOND = createRecipeBook("RECIPE_RED_DIAMOND", "§cTarif: Kızıl Elmas");
+        RECIPE_RUBY = createRecipeBook("RECIPE_RUBY", "§cTarif: Yakut");
+        RECIPE_ADAMANTITE = createRecipeBook("RECIPE_ADAMANTITE", "§5Tarif: Adamantite");
+        RECIPE_STAR_CORE = createRecipeBook("RECIPE_STAR_CORE", "§bTarif: Yıldız Çekirdeği");
+        RECIPE_FLAME_AMPLIFIER = createRecipeBook("RECIPE_FLAME_AMPLIFIER", "§6Tarif: Alev Amplifikatörü");
+        RECIPE_DEVIL_HORN = createRecipeBook("RECIPE_DEVIL_HORN", "§4Tarif: Şeytan Boynuzu");
+        RECIPE_DEVIL_SNAKE_EYE = createRecipeBook("RECIPE_DEVIL_SNAKE_EYE", "§5Tarif: İblis Yılanın Gözü");
+        RECIPE_WAR_FAN = createRecipeBook("RECIPE_WAR_FAN", "§eTarif: Savaş Yelpazesi");
+        RECIPE_TOWER_SHIELD = createRecipeBook("RECIPE_TOWER_SHIELD", "§7Tarif: Kule Kalkanı");
+        RECIPE_HELL_FRUIT = createRecipeBook("RECIPE_HELL_FRUIT", "§cTarif: Cehennem Meyvesi");
+        RECIPE_SULFUR = createRecipeBook("RECIPE_SULFUR", "§eTarif: Kükürt");
+        RECIPE_BAUXITE_INGOT = createRecipeBook("RECIPE_BAUXITE_INGOT", "§6Tarif: Boksit Külçesi");
+        RECIPE_ROCK_SALT = createRecipeBook("RECIPE_ROCK_SALT", "§fTarif: Tuz");
+        RECIPE_MITHRIL_INGOT = createRecipeBook("RECIPE_MITHRIL_INGOT", "§bTarif: Mithril Külçesi");
+        RECIPE_MITHRIL_STRING = createRecipeBook("RECIPE_MITHRIL_STRING", "§bTarif: Mithril İpi");
+        RECIPE_ASTRAL_CRYSTAL = createRecipeBook("RECIPE_ASTRAL_CRYSTAL", "§5Tarif: Astral Kristali");
+        RECIPE_RUSTY_HOOK = createRecipeBook("RECIPE_RUSTY_HOOK", "§7Tarif: Paslı Kanca");
+        RECIPE_GOLDEN_HOOK = createRecipeBook("RECIPE_GOLDEN_HOOK", "§6Tarif: Altın Kanca");
+        RECIPE_TITAN_GRAPPLE = createRecipeBook("RECIPE_TITAN_GRAPPLE", "§6§lTarif: Titan Kancası");
+        RECIPE_TRAP_CORE = createRecipeBook("RECIPE_TRAP_CORE", "§cTarif: Tuzak Çekirdeği");
 
         // Yeni Madenler
         SULFUR_ORE = create(Material.YELLOW_CONCRETE_POWDER, "SULFUR_ORE", "§eKükürt Cevheri");
@@ -299,6 +405,24 @@ public class ItemManager {
         meta.setDisplayName(name);
         List<String> lore = new ArrayList<>();
         lore.add("§7Stratocraft Özel Eşyası");
+        meta.setLore(lore);
+        meta.getPersistentDataContainer().set(new NamespacedKey(Main.getInstance(), "custom_id"),
+                PersistentDataType.STRING, id);
+        item.setItemMeta(meta);
+        return item;
+    }
+    
+    /**
+     * Tarif kitabı oluştur
+     */
+    private ItemStack createRecipeBook(String id, String name) {
+        ItemStack item = new ItemStack(Material.BOOK);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(name);
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Bu tarif kitabı yapı veya eşya");
+        lore.add("§7yapım bilgilerini içerir.");
+        lore.add("§7Sağ tıklayarak hayalet yapıyı görebilirsiniz.");
         meta.setLore(lore);
         meta.getPersistentDataContainer().set(new NamespacedKey(Main.getInstance(), "custom_id"),
                 PersistentDataType.STRING, id);

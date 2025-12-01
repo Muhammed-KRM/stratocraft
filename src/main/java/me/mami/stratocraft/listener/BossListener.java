@@ -1,6 +1,7 @@
 package me.mami.stratocraft.listener;
 
 import me.mami.stratocraft.manager.BossManager;
+import me.mami.stratocraft.manager.ItemManager;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -282,8 +283,10 @@ public class BossListener implements Listener {
             }
         });
         
-        // Özel drop'lar (ileride eklenebilir)
-        // event.getDrops().add(...);
+        // ========== TARİF KİTAPLARI DÜŞÜRME ==========
+        // Bosslardan sadece gerekli tarifler (aktifleştirme için gerekenler) düşer
+        // Boss seviyesine göre tarif seviyesi artar
+        dropRequiredRecipeBook(event, bossData.getType());
         
         // Boss'u listeden kaldır
         bossManager.removeBoss(entity.getUniqueId());
@@ -292,6 +295,93 @@ public class BossListener implements Listener {
         Location loc = entity.getLocation();
         loc.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, loc, 5, 1, 1, 1, 0.1);
         loc.getWorld().spawnParticle(org.bukkit.Particle.SMOKE_LARGE, loc, 50, 2, 2, 2, 0.2);
+    }
+    
+    /**
+     * Boss'tan gerekli tarif kitabı düşür (aktifleştirme için gerekenler)
+     * Boss seviyesine göre tarif seviyesi artar
+     */
+    private void dropRequiredRecipeBook(EntityDeathEvent event, BossManager.BossType bossType) {
+        // Boss seviyesini belirle
+        int bossLevel = getBossLevel(bossType);
+        
+        // Gerekli tarifler (aktifleştirme için gerekenler)
+        // Sadece bazı yapılar çalışması için tarif gerektirir
+        java.util.List<ItemStack> requiredRecipes = new java.util.ArrayList<>();
+        
+        // Seviye 1 bosslar - Temel yapılar
+        if (bossLevel >= 1) {
+            if (ItemManager.RECIPE_ALCHEMY_TOWER != null) requiredRecipes.add(ItemManager.RECIPE_ALCHEMY_TOWER);
+            if (ItemManager.RECIPE_HEALING_BEACON != null) requiredRecipes.add(ItemManager.RECIPE_HEALING_BEACON);
+        }
+        
+        // Seviye 2 bosslar - Orta seviye yapılar
+        if (bossLevel >= 2) {
+            if (ItemManager.RECIPE_POISON_REACTOR != null) requiredRecipes.add(ItemManager.RECIPE_POISON_REACTOR);
+            if (ItemManager.RECIPE_WALL_GENERATOR != null) requiredRecipes.add(ItemManager.RECIPE_WALL_GENERATOR);
+            if (ItemManager.RECIPE_AUTO_TURRET != null) requiredRecipes.add(ItemManager.RECIPE_AUTO_TURRET);
+        }
+        
+        // Seviye 3 bosslar - İleri seviye yapılar
+        if (bossLevel >= 3) {
+            if (ItemManager.RECIPE_TECTONIC_STABILIZER != null) requiredRecipes.add(ItemManager.RECIPE_TECTONIC_STABILIZER);
+            if (ItemManager.RECIPE_SIEGE_FACTORY != null) requiredRecipes.add(ItemManager.RECIPE_SIEGE_FACTORY);
+            if (ItemManager.RECIPE_GRAVITY_WELL != null) requiredRecipes.add(ItemManager.RECIPE_GRAVITY_WELL);
+            if (ItemManager.RECIPE_GLOBAL_MARKET_GATE != null) requiredRecipes.add(ItemManager.RECIPE_GLOBAL_MARKET_GATE);
+        }
+        
+        // Seviye 4 bosslar - Çok ileri seviye yapılar
+        if (bossLevel >= 4) {
+            if (ItemManager.RECIPE_LAVA_TRENCHER != null) requiredRecipes.add(ItemManager.RECIPE_LAVA_TRENCHER);
+            if (ItemManager.RECIPE_DRONE_STATION != null) requiredRecipes.add(ItemManager.RECIPE_DRONE_STATION);
+            if (ItemManager.RECIPE_TELEPORTER != null) requiredRecipes.add(ItemManager.RECIPE_TELEPORTER);
+            if (ItemManager.RECIPE_OIL_REFINERY != null) requiredRecipes.add(ItemManager.RECIPE_OIL_REFINERY);
+        }
+        
+        // Seviye 5 bosslar - Efsanevi yapılar
+        if (bossLevel >= 5) {
+            if (ItemManager.RECIPE_WEATHER_MACHINE != null) requiredRecipes.add(ItemManager.RECIPE_WEATHER_MACHINE);
+            if (ItemManager.RECIPE_INVISIBILITY_CLOAK != null) requiredRecipes.add(ItemManager.RECIPE_INVISIBILITY_CLOAK);
+        }
+        
+        if (requiredRecipes.isEmpty()) {
+            return;
+        }
+        
+        // Boss seviyesine göre düşürme şansı
+        double dropChance = 0.3 + (bossLevel * 0.1); // Seviye 1: %40, Seviye 5: %80
+        dropChance = Math.min(dropChance, 0.9); // Maksimum %90
+        
+        if (new java.util.Random().nextDouble() < dropChance) {
+            // Rastgele bir gerekli tarif seç
+            ItemStack randomRecipe = requiredRecipes.get(new java.util.Random().nextInt(requiredRecipes.size()));
+            event.getDrops().add(randomRecipe.clone());
+        }
+    }
+    
+    /**
+     * Boss seviyesini belirle
+     */
+    private int getBossLevel(BossManager.BossType bossType) {
+        switch (bossType) {
+            case GOBLIN_KING:
+            case ORC_CHIEF:
+                return 1;
+            case TROLL_KING:
+                return 2;
+            case DRAGON:
+            case TREX:
+            case CYCLOPS:
+                return 3;
+            case TITAN_GOLEM:
+            case PHOENIX:
+                return 4;
+            case VOID_DRAGON:
+            case CHAOS_TITAN:
+                return 5;
+            default:
+                return 1;
+        }
     }
 }
 

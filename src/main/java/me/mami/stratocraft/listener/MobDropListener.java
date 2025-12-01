@@ -331,6 +331,90 @@ public class MobDropListener implements Listener {
                 event.getDrops().add(fragment);
             }
         }
+        
+        // ========== TARİF KİTAPLARI DÜŞÜRME ==========
+        // Normal canlılardan her türlü tarif düşebilir (düşük şansla)
+        // Tüm yapı ve itemlerin tarifi düşebilir
+        dropRandomRecipeBook(event, mobName);
+    }
+    
+    /**
+     * Rastgele tarif kitabı düşür (normal canlılardan)
+     */
+    private void dropRandomRecipeBook(EntityDeathEvent event, String mobName) {
+        // %2 şansla rastgele bir tarif kitabı düşür
+        if (random.nextDouble() >= 0.02) {
+            return;
+        }
+        
+        // Tüm tarif kitapları listesi
+        ItemStack[] allRecipeBooks = {
+            ItemManager.RECIPE_CORE,
+            ItemManager.RECIPE_ALCHEMY_TOWER,
+            ItemManager.RECIPE_POISON_REACTOR,
+            ItemManager.RECIPE_TECTONIC_STABILIZER,
+            ItemManager.RECIPE_SIEGE_FACTORY,
+            ItemManager.RECIPE_WALL_GENERATOR,
+            ItemManager.RECIPE_GRAVITY_WELL,
+            ItemManager.RECIPE_LAVA_TRENCHER,
+            ItemManager.RECIPE_WATCHTOWER,
+            ItemManager.RECIPE_DRONE_STATION,
+            ItemManager.RECIPE_AUTO_TURRET,
+            ItemManager.RECIPE_GLOBAL_MARKET_GATE,
+            ItemManager.RECIPE_AUTO_DRILL,
+            ItemManager.RECIPE_XP_BANK,
+            ItemManager.RECIPE_MAG_RAIL,
+            ItemManager.RECIPE_TELEPORTER,
+            ItemManager.RECIPE_FOOD_SILO,
+            ItemManager.RECIPE_OIL_REFINERY,
+            ItemManager.RECIPE_HEALING_BEACON,
+            ItemManager.RECIPE_WEATHER_MACHINE,
+            ItemManager.RECIPE_CROP_ACCELERATOR,
+            ItemManager.RECIPE_MOB_GRINDER,
+            ItemManager.RECIPE_INVISIBILITY_CLOAK,
+            ItemManager.RECIPE_ARMORY,
+            ItemManager.RECIPE_LIBRARY,
+            ItemManager.RECIPE_WARNING_SIGN,
+            ItemManager.RECIPE_LIGHTNING_CORE,
+            ItemManager.RECIPE_TITANIUM_INGOT,
+            ItemManager.RECIPE_DARK_MATTER,
+            ItemManager.RECIPE_RED_DIAMOND,
+            ItemManager.RECIPE_RUBY,
+            ItemManager.RECIPE_ADAMANTITE,
+            ItemManager.RECIPE_STAR_CORE,
+            ItemManager.RECIPE_FLAME_AMPLIFIER,
+            ItemManager.RECIPE_DEVIL_HORN,
+            ItemManager.RECIPE_DEVIL_SNAKE_EYE,
+            ItemManager.RECIPE_WAR_FAN,
+            ItemManager.RECIPE_TOWER_SHIELD,
+            ItemManager.RECIPE_HELL_FRUIT,
+            ItemManager.RECIPE_SULFUR,
+            ItemManager.RECIPE_BAUXITE_INGOT,
+            ItemManager.RECIPE_ROCK_SALT,
+            ItemManager.RECIPE_MITHRIL_INGOT,
+            ItemManager.RECIPE_MITHRIL_STRING,
+            ItemManager.RECIPE_ASTRAL_CRYSTAL,
+            ItemManager.RECIPE_RUSTY_HOOK,
+            ItemManager.RECIPE_GOLDEN_HOOK,
+            ItemManager.RECIPE_TITAN_GRAPPLE,
+            ItemManager.RECIPE_TRAP_CORE
+        };
+        
+        // Null olmayan tarif kitaplarını filtrele
+        java.util.List<ItemStack> validRecipes = new java.util.ArrayList<>();
+        for (ItemStack recipe : allRecipeBooks) {
+            if (recipe != null) {
+                validRecipes.add(recipe);
+            }
+        }
+        
+        if (validRecipes.isEmpty()) {
+            return;
+        }
+        
+        // Rastgele bir tarif seç
+        ItemStack randomRecipe = validRecipes.get(random.nextInt(validRecipes.size()));
+        event.getDrops().add(randomRecipe.clone());
     }
 }
 
