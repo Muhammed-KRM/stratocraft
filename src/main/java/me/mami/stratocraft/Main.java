@@ -50,7 +50,14 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.SiegeWeaponManager siegeWeaponManager;
     private me.mami.stratocraft.manager.SupplyDropManager supplyDropManager;
     private me.mami.stratocraft.manager.TrapManager trapManager;
+    private me.mami.stratocraft.manager.MineManager mineManager;
     private me.mami.stratocraft.manager.SpecialItemManager specialItemManager;
+    private me.mami.stratocraft.manager.DifficultyManager difficultyManager;
+    private me.mami.stratocraft.manager.DungeonManager dungeonManager;
+    private me.mami.stratocraft.manager.BiomeManager biomeManager;
+    private me.mami.stratocraft.manager.BossManager bossManager;
+    private me.mami.stratocraft.manager.TamingManager tamingManager;
+    private me.mami.stratocraft.manager.BreedingManager breedingManager;
 
     @Override
     public void onEnable() {
@@ -60,6 +67,9 @@ public class Main extends JavaPlugin {
         File schemDir = new File(getDataFolder(), "schematics");
         if (!schemDir.exists())
             schemDir.mkdirs();
+        
+        // Şema klasörlerini otomatik oluştur
+        me.mami.stratocraft.manager.StructureBuilder.createSchematicDirectories();
 
         // 1. Yöneticileri Başlat
         itemManager = new ItemManager();
@@ -68,7 +78,7 @@ public class Main extends JavaPlugin {
         territoryManager = new TerritoryManager(clanManager);
         batteryManager = new BatteryManager(this);
         siegeManager = new SiegeManager();
-        disasterManager = new DisasterManager();
+        disasterManager = new DisasterManager(this);
         batteryManager.setDisasterManager(disasterManager);
         caravanManager = new CaravanManager();
         scavengerManager = new ScavengerManager();
@@ -87,6 +97,12 @@ public class Main extends JavaPlugin {
         langManager = new me.mami.stratocraft.util.LangManager(this);
         clanMenu = new me.mami.stratocraft.gui.ClanMenu(clanManager);
         economyManager = new me.mami.stratocraft.manager.EconomyManager();
+        difficultyManager = new me.mami.stratocraft.manager.DifficultyManager(this);
+        dungeonManager = new me.mami.stratocraft.manager.DungeonManager(this);
+        biomeManager = new me.mami.stratocraft.manager.BiomeManager(this);
+        bossManager = new me.mami.stratocraft.manager.BossManager(this);
+        tamingManager = new me.mami.stratocraft.manager.TamingManager(this);
+        breedingManager = new me.mami.stratocraft.manager.BreedingManager(this);
 
         // Manager bağlantıları
         siegeManager.setBuffManager(buffManager);
@@ -122,7 +138,36 @@ public class Main extends JavaPlugin {
                 .registerEvents(new me.mami.stratocraft.listener.ClanChatListener(clanManager, langManager), this);
         // Dünya oluşturma ve doğal spawn listener'ı
         Bukkit.getPluginManager().registerEvents(
-                new me.mami.stratocraft.listener.WorldGenerationListener(territoryManager, mobManager), this);
+                new me.mami.stratocraft.listener.WorldGenerationListener(territoryManager, mobManager, difficultyManager, dungeonManager, bossManager), this);
+        
+        // Boss sistemi
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.BossListener(bossManager), this);
+        
+        // Canlı eğitme sistemi
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.TamingListener(tamingManager, difficultyManager, bossManager), this);
+        
+        // Çiftleştirme sistemi
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.BreedingListener(breedingManager, tamingManager), this);
+        
+        // Yumurta çatlama kontrolü (her 5 saniyede bir)
+        new org.bukkit.scheduler.BukkitRunnable() {
+            @Override
+            public void run() {
+                if (breedingManager == null) return;
+                
+                // Tüm dünyalarda kontrol et
+                for (org.bukkit.World world : org.bukkit.Bukkit.getWorlds()) {
+                    for (org.bukkit.entity.Entity entity : world.getEntities()) {
+                        if (entity instanceof org.bukkit.entity.Turtle) {
+                            org.bukkit.entity.Turtle turtle = (org.bukkit.entity.Turtle) entity;
+                            if (turtle.hasMetadata("EggOwner") && turtle.getAge() >= 0) {
+                                breedingManager.checkEggHatching(turtle);
+                            }
+                        }
+                    }
+                }
+            }
+        }.runTaskTimer(this, 100L, 100L); // Her 5 saniye
         // ClanMenu zaten Listener implement ediyor, kaydet
         Bukkit.getPluginManager().registerEvents(clanMenu, this);
 
@@ -143,6 +188,8 @@ public class Main extends JavaPlugin {
         // Yeni sistemler: Tuzaklar, Kancalar, Casusluk, Hava Drop
         trapManager = new me.mami.stratocraft.manager.TrapManager(this);
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.TrapListener(trapManager), this);
+        mineManager = new me.mami.stratocraft.manager.MineManager(this);
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.MineListener(mineManager), this);
 
         // Özel Eşyalar (Kanca, Casusluk Dürbünü)
         specialItemManager = new me.mami.stratocraft.manager.SpecialItemManager();
@@ -153,6 +200,9 @@ public class Main extends JavaPlugin {
         supplyDropManager = new me.mami.stratocraft.manager.SupplyDropManager(this);
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.SupplyDropListener(supplyDropManager),
                 this);
+        
+        // Mob Drop Listener - Özel mob drop sistemi
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.MobDropListener(), this);
 
         // Veri yükleme
         dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener);
@@ -160,6 +210,15 @@ public class Main extends JavaPlugin {
         // 3. Zamanlayıcıları Başlat
         new BuffTask(territoryManager, siegeWeaponManager).runTaskTimer(this, 20L, 20L);
         new DisasterTask(disasterManager, territoryManager).runTaskTimer(this, 20L, 20L);
+        
+        // Otomatik felaket spawn kontrolü (her 10 dakikada bir)
+        new org.bukkit.scheduler.BukkitRunnable() {
+            @Override
+            public void run() {
+                disasterManager.checkAutoSpawn();
+            }
+        }.runTaskTimer(this, 12000L, 12000L); // 10 dakika = 12000 tick
+        
         new me.mami.stratocraft.task.StructureEffectTask(clanManager).runTaskTimer(this, 20L, 20L); // YAPI EFEKTLERİ
 
         // Casusluk Dürbünü için Scheduler (her 5 tickte bir çalışır - performans için)
@@ -413,6 +472,11 @@ public class Main extends JavaPlugin {
             trapManager.saveTraps();
             getLogger().info("Stratocraft: Tuzaklar kaydedildi.");
         }
+        
+        // Mayınları kaydet (mines.yml otomatik kaydediliyor, ama kontrol edelim)
+        if (mineManager != null) {
+            getLogger().info("Stratocraft: Mayınlar kaydedildi.");
+        }
 
         // Veri kaydetme (onDisable'da her zaman senkron kayıt yapılmalı - veri kaybı
         // riski)
@@ -524,8 +588,36 @@ public class Main extends JavaPlugin {
     public me.mami.stratocraft.manager.TrapManager getTrapManager() {
         return trapManager;
     }
+    
+    public me.mami.stratocraft.manager.MineManager getMineManager() {
+        return mineManager;
+    }
 
     public me.mami.stratocraft.manager.SpecialItemManager getSpecialItemManager() {
         return specialItemManager;
+    }
+
+    public me.mami.stratocraft.manager.DifficultyManager getDifficultyManager() {
+        return difficultyManager;
+    }
+    
+    public me.mami.stratocraft.manager.DungeonManager getDungeonManager() {
+        return dungeonManager;
+    }
+    
+    public me.mami.stratocraft.manager.BiomeManager getBiomeManager() {
+        return biomeManager;
+    }
+    
+    public me.mami.stratocraft.manager.BossManager getBossManager() {
+        return bossManager;
+    }
+    
+    public me.mami.stratocraft.manager.TamingManager getTamingManager() {
+        return tamingManager;
+    }
+    
+    public me.mami.stratocraft.manager.BreedingManager getBreedingManager() {
+        return breedingManager;
     }
 }

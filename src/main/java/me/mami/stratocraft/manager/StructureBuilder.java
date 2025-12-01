@@ -30,15 +30,52 @@ public class StructureBuilder {
 
     /**
      * Şema dosyasını yükle ve dünyaya yerleştir
+     * Önce FAWE dener, yoksa normal WorldEdit kullanır
      * 
      * @param location      Yerleştirilecek konum
-     * @param schematicName Şema dosya adı (uzantı olmadan)
+     * @param schematicName Şema dosya adı (uzantı olmadan veya tam yol)
      * @return Başarılı olursa true
      */
     public static boolean pasteSchematic(Location location, String schematicName) {
-        File file = new File(Main.getInstance().getDataFolder() + "/schematics/" + schematicName + ".schem");
+        // FAWE varsa onu kullan (daha hızlı)
+        if (hasFAWE()) {
+            return pasteSchematicFAWE(location, schematicName);
+        }
+        
+        // Normal WorldEdit kullan
+        return pasteSchematicWorldEdit(location, schematicName);
+    }
+    
+    /**
+     * FAWE yüklü mü kontrol et
+     */
+    private static boolean hasFAWE() {
+        try {
+            Class.forName("com.fastasyncworldedit.core.FaweAPI");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+    
+    /**
+     * FAWE ile şema yükle (async, daha hızlı)
+     * Not: FAWE WorldEdit API'si ile uyumludur, normal WorldEdit metodunu kullanır
+     * FAWE'nin avantajı async çalışmasıdır, API aynıdır
+     */
+    private static boolean pasteSchematicFAWE(Location location, String schematicName) {
+        // FAWE varsa normal WorldEdit API'sini kullan (FAWE otomatik async yapar)
+        // FAWE WorldEdit API'si ile uyumlu olduğu için aynı kodu kullanabiliriz
+        return pasteSchematicWorldEdit(location, schematicName);
+    }
+    
+    /**
+     * Normal WorldEdit ile şema yükle
+     */
+    private static boolean pasteSchematicWorldEdit(Location location, String schematicName) {
+        File file = findSchematicFile(schematicName);
 
-        if (!file.exists()) {
+        if (file == null || !file.exists()) {
             return false;
         }
 
@@ -88,11 +125,85 @@ public class StructureBuilder {
     }
 
     /**
+     * Şema dosyasını bul (tam yol veya kısa isim)
+     */
+    private static File findSchematicFile(String schematicName) {
+        File dataFolder = Main.getInstance().getDataFolder();
+        File schematicsDir = new File(dataFolder, "schematics");
+        
+        // Eğer zaten tam yol ise
+        if (schematicName.contains("/")) {
+            File file = new File(schematicsDir, schematicName + ".schem");
+            if (file.exists()) {
+                return file;
+            }
+            // .schematic uzantısını da dene
+            file = new File(schematicsDir, schematicName + ".schematic");
+            if (file.exists()) {
+                return file;
+            }
+        } else {
+            // Kısa isim ise schematics/ klasöründe ara
+            File file = new File(schematicsDir, schematicName + ".schem");
+            if (file.exists()) {
+                return file;
+            }
+            file = new File(schematicsDir, schematicName + ".schematic");
+            if (file.exists()) {
+                return file;
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
      * Şema dosyası var mı kontrol et
      */
     public static boolean schematicExists(String schematicName) {
-        File file = new File(Main.getInstance().getDataFolder() + "/schematics/" + schematicName + ".schem");
-        return file.exists();
+        File file = findSchematicFile(schematicName);
+        return file != null && file.exists();
+    }
+    
+    /**
+     * Şema klasörlerini oluştur (otomatik)
+     */
+    public static void createSchematicDirectories() {
+        File dataFolder = Main.getInstance().getDataFolder();
+        File schematicsDir = new File(dataFolder, "schematics");
+        File dungeonsDir = new File(schematicsDir, "dungeons");
+        File biomesDir = new File(schematicsDir, "biomes");
+        File biomesStructuresDir = new File(biomesDir, "structures");
+        File biomesCustomDir = new File(biomesDir, "custom");
+        
+        // Ana klasörler
+        if (!schematicsDir.exists()) {
+            schematicsDir.mkdirs();
+        }
+        
+        // Zindan klasörleri
+        if (!dungeonsDir.exists()) {
+            dungeonsDir.mkdirs();
+        }
+        for (int level = 1; level <= 5; level++) {
+            File levelDir = new File(dungeonsDir, "level" + level);
+            if (!levelDir.exists()) {
+                levelDir.mkdirs();
+            }
+        }
+        
+        // Biyom klasörleri
+        if (!biomesDir.exists()) {
+            biomesDir.mkdirs();
+        }
+        if (!biomesStructuresDir.exists()) {
+            biomesStructuresDir.mkdirs();
+        }
+        if (!biomesCustomDir.exists()) {
+            biomesCustomDir.mkdirs();
+        }
+        
+        Main.getInstance().getLogger().info("Şema klasörleri oluşturuldu: " + schematicsDir.getAbsolutePath());
     }
 
     /**

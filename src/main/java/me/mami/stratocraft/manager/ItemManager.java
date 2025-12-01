@@ -49,6 +49,65 @@ public class ItemManager {
     public static ItemStack GOLDEN_HOOK; // YENİ: Orta kademe kanca
     public static ItemStack TITAN_GRAPPLE;
     public static ItemStack TRAP_CORE;
+    
+    // ========== SEVİYE 1 MOB DROP İTEMLERİ ==========
+    public static ItemStack WILD_BOAR_HIDE;
+    public static ItemStack WILD_BOAR_MEAT;
+    public static ItemStack WOLF_FANG;
+    public static ItemStack WOLF_PELT;
+    public static ItemStack SNAKE_VENOM;
+    public static ItemStack SNAKE_SKIN;
+    public static ItemStack EAGLE_FEATHER;
+    public static ItemStack EAGLE_CLAW;
+    public static ItemStack BEAR_CLAW;
+    public static ItemStack BEAR_PELT;
+    
+    // ========== SEVİYE 2 MOB DROP İTEMLERİ ==========
+    public static ItemStack IRON_CORE;
+    public static ItemStack IRON_DUST;
+    public static ItemStack ICE_HEART;
+    public static ItemStack ICE_CRYSTAL;
+    public static ItemStack FIRE_CORE;
+    public static ItemStack FIRE_SCALE;
+    public static ItemStack EARTH_STONE;
+    public static ItemStack EARTH_DUST;
+    public static ItemStack SOUL_FRAGMENT;
+    public static ItemStack GHOST_DUST;
+    
+    // ========== SEVİYE 3 MOB DROP İTEMLERİ ==========
+    public static ItemStack SHADOW_HEART;
+    public static ItemStack SHADOW_SCALE;
+    public static ItemStack LIGHT_HEART;
+    public static ItemStack LIGHT_FEATHER;
+    public static ItemStack STORM_CORE;
+    public static ItemStack STORM_DUST;
+    public static ItemStack LAVA_HEART;
+    public static ItemStack LAVA_SCALE;
+    public static ItemStack ICE_CORE;
+    public static ItemStack ICE_SHARD;
+    
+    // ========== SEVİYE 4 MOB DROP İTEMLERİ ==========
+    public static ItemStack DEVIL_BLOOD; // Şeytan Kanı (her zaman düşer)
+    public static ItemStack BLACK_DRAGON_HEART;
+    public static ItemStack BLACK_DRAGON_SCALE;
+    public static ItemStack DEATH_SWORD_FRAGMENT;
+    public static ItemStack DEATH_DUST;
+    public static ItemStack CHAOS_CORE;
+    public static ItemStack CHAOS_SCALE;
+    public static ItemStack HELL_STONE;
+    public static ItemStack HELL_FIRE;
+    
+    // ========== SEVİYE 5 MOB DROP İTEMLERİ ==========
+    public static ItemStack LEGENDARY_DRAGON_HEART;
+    public static ItemStack LEGENDARY_DRAGON_SCALE;
+    public static ItemStack GOD_BLOOD;
+    public static ItemStack GOD_FRAGMENT;
+    public static ItemStack VOID_CORE;
+    public static ItemStack VOID_DUST;
+    public static ItemStack TIME_CORE;
+    public static ItemStack TIME_SCALE;
+    public static ItemStack FATE_STONE;
+    public static ItemStack FATE_FRAGMENT;
 
     public void init() {
         BLUEPRINT_PAPER = create(Material.PAPER, "BLUEPRINT", "§bMühendis Şeması");
@@ -86,6 +145,65 @@ public class ItemManager {
         GOLDEN_HOOK = create(Material.FISHING_ROD, "GOLDEN_HOOK", "§6Altın Kanca");
         TITAN_GRAPPLE = create(Material.FISHING_ROD, "TITAN_GRAPPLE", "§6§lTitan Kancası");
         TRAP_CORE = create(Material.LODESTONE, "TRAP_CORE", "§cTuzak Çekirdeği");
+        
+        // ========== SEVİYE 1 MOB DROP İTEMLERİ ==========
+        WILD_BOAR_HIDE = create(Material.LEATHER, "WILD_BOAR_HIDE", "§6Yaban Domuzu Postu");
+        WILD_BOAR_MEAT = create(Material.PORKCHOP, "WILD_BOAR_MEAT", "§6Yaban Domuzu Eti");
+        WOLF_FANG = create(Material.BONE, "WOLF_FANG", "§7Kurt Dişi");
+        WOLF_PELT = create(Material.LEATHER, "WOLF_PELT", "§7Kurt Postu");
+        SNAKE_VENOM = create(Material.POISONOUS_POTATO, "SNAKE_VENOM", "§2Yılan Zehri");
+        SNAKE_SKIN = create(Material.LEATHER, "SNAKE_SKIN", "§2Yılan Derisi");
+        EAGLE_FEATHER = create(Material.FEATHER, "EAGLE_FEATHER", "§eKartal Tüyü");
+        EAGLE_CLAW = create(Material.FLINT, "EAGLE_CLAW", "§eKartal Pençesi");
+        BEAR_CLAW = create(Material.FLINT, "BEAR_CLAW", "§7Ayı Pençesi");
+        BEAR_PELT = create(Material.LEATHER, "BEAR_PELT", "§7Ayı Postu");
+        
+        // ========== SEVİYE 2 MOB DROP İTEMLERİ ==========
+        IRON_CORE = create(Material.IRON_INGOT, "IRON_CORE", "§fDemir Çekirdek");
+        IRON_DUST = create(Material.GUNPOWDER, "IRON_DUST", "§fDemir Tozu");
+        ICE_HEART = create(Material.BLUE_ICE, "ICE_HEART", "§bBuz Kalbi");
+        ICE_CRYSTAL = create(Material.PACKED_ICE, "ICE_CRYSTAL", "§bBuz Kristali");
+        FIRE_CORE = create(Material.BLAZE_ROD, "FIRE_CORE", "§cAteş Çekirdeği");
+        FIRE_SCALE = create(Material.MAGMA_CREAM, "FIRE_SCALE", "§cAteş Ölçeği");
+        EARTH_STONE = create(Material.COBBLESTONE, "EARTH_STONE", "§6Toprak Taşı");
+        EARTH_DUST = create(Material.DIRT, "EARTH_DUST", "§6Toprak Tozu");
+        SOUL_FRAGMENT = create(Material.ECHO_SHARD, "SOUL_FRAGMENT", "§5Ruh Parçası");
+        GHOST_DUST = create(Material.GUNPOWDER, "GHOST_DUST", "§7Hayalet Tozu");
+        
+        // ========== SEVİYE 3 MOB DROP İTEMLERİ ==========
+        SHADOW_HEART = create(Material.COAL, "SHADOW_HEART", "§8Gölge Kalbi");
+        SHADOW_SCALE = create(Material.BLACK_DYE, "SHADOW_SCALE", "§8Gölge Ölçeği");
+        LIGHT_HEART = create(Material.GLOWSTONE_DUST, "LIGHT_HEART", "§eIşık Kalbi");
+        LIGHT_FEATHER = create(Material.FEATHER, "LIGHT_FEATHER", "§eIşık Tüyü");
+        STORM_CORE = create(Material.LIGHTNING_ROD, "STORM_CORE", "§bFırtına Çekirdeği");
+        STORM_DUST = create(Material.GUNPOWDER, "STORM_DUST", "§bFırtına Tozu");
+        LAVA_HEART = create(Material.MAGMA_CREAM, "LAVA_HEART", "§cLav Kalbi");
+        LAVA_SCALE = create(Material.MAGMA_CREAM, "LAVA_SCALE", "§cLav Ölçeği");
+        ICE_CORE = create(Material.BLUE_ICE, "ICE_CORE", "§bBuz Çekirdeği");
+        ICE_SHARD = create(Material.PACKED_ICE, "ICE_SHARD", "§bBuz Parçası");
+        
+        // ========== SEVİYE 4 MOB DROP İTEMLERİ ==========
+        DEVIL_BLOOD = create(Material.REDSTONE, "DEVIL_BLOOD", "§4Şeytan Kanı");
+        BLACK_DRAGON_HEART = create(Material.NETHER_STAR, "BLACK_DRAGON_HEART", "§0Kara Ejder Kalbi");
+        BLACK_DRAGON_SCALE = create(Material.BLACK_DYE, "BLACK_DRAGON_SCALE", "§0Kara Ejder Ölçeği");
+        DEATH_SWORD_FRAGMENT = create(Material.IRON_SWORD, "DEATH_SWORD_FRAGMENT", "§8Ölüm Kılıcı Parçası");
+        DEATH_DUST = create(Material.GUNPOWDER, "DEATH_DUST", "§8Ölüm Tozu");
+        CHAOS_CORE = create(Material.ENDER_PEARL, "CHAOS_CORE", "§5Kaos Çekirdeği");
+        CHAOS_SCALE = create(Material.PURPLE_DYE, "CHAOS_SCALE", "§5Kaos Ölçeği");
+        HELL_STONE = create(Material.NETHERRACK, "HELL_STONE", "§4Cehennem Taşı");
+        HELL_FIRE = create(Material.BLAZE_POWDER, "HELL_FIRE", "§4Cehennem Ateşi");
+        
+        // ========== SEVİYE 5 MOB DROP İTEMLERİ ==========
+        LEGENDARY_DRAGON_HEART = create(Material.NETHER_STAR, "LEGENDARY_DRAGON_HEART", "§6§lEfsanevi Ejder Kalbi");
+        LEGENDARY_DRAGON_SCALE = create(Material.DRAGON_EGG, "LEGENDARY_DRAGON_SCALE", "§6§lEfsanevi Ejder Ölçeği");
+        GOD_BLOOD = create(Material.ECHO_SHARD, "GOD_BLOOD", "§d§lTanrı Kanı");
+        GOD_FRAGMENT = create(Material.NETHER_STAR, "GOD_FRAGMENT", "§d§lTanrı Parçası");
+        VOID_CORE = create(Material.ENDER_EYE, "VOID_CORE", "§5§lHiçlik Çekirdeği");
+        VOID_DUST = create(Material.GUNPOWDER, "VOID_DUST", "§5§lHiçlik Tozu");
+        TIME_CORE = create(Material.CLOCK, "TIME_CORE", "§b§lZaman Çekirdeği");
+        TIME_SCALE = create(Material.ECHO_SHARD, "TIME_SCALE", "§b§lZaman Ölçeği");
+        FATE_STONE = create(Material.AMETHYST_SHARD, "FATE_STONE", "§d§lKader Taşı");
+        FATE_FRAGMENT = create(Material.ECHO_SHARD, "FATE_FRAGMENT", "§d§lKader Parçası");
 
         registerRecipes();
     }

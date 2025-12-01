@@ -32,6 +32,10 @@ public class SpecialItemManager {
     // Kanca Cooldown sistemi (Fly hack önleme)
     private final Map<java.util.UUID, Long> hookCooldowns = new HashMap<>();
     private static final long HOOK_COOLDOWN = 1000; // 1 saniye
+    
+    // Düşme hasarı koruması (kanca kullanıldıktan sonra)
+    private final Map<java.util.UUID, Long> fallDamageProtection = new HashMap<>();
+    private static final long FALL_DAMAGE_PROTECTION_DURATION = 3000; // 3 saniye
 
     /**
      * Kanca kullanımını işle - 3 KADEMELİ SİSTEM
@@ -63,6 +67,9 @@ public class SpecialItemManager {
         if (ItemManager.isCustomItem(rod, "RUSTY_HOOK")) {
             double verticalDistance = hook.getLocation().getY() - player.getLocation().getY();
 
+            // Düşme hasarı koruması ekle (slow falling olmadan)
+            fallDamageProtection.put(player.getUniqueId(), System.currentTimeMillis());
+
             // Max 3 blok yukarı çek
             if (verticalDistance > 3.0) {
                 // 3 bloktan fazlaysa, gücü azalt
@@ -86,9 +93,8 @@ public class SpecialItemManager {
                 return;
             }
 
-            // Bloğun üstüne çıkmak için kısa slow falling
-            player.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                    org.bukkit.potion.PotionEffectType.SLOW_FALLING, 20, 0, false, false));
+            // Düşme hasarı koruması ekle (slow falling olmadan)
+            fallDamageProtection.put(player.getUniqueId(), System.currentTimeMillis());
 
             // Orta güçte çekme (bloğun üstüne yetecek kadar)
             pullPlayer(player, hook.getLocation(), 1.2);
@@ -109,9 +115,8 @@ public class SpecialItemManager {
                 return;
             }
 
-            // Kısa slow falling (hızlı iniş)
-            player.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                    org.bukkit.potion.PotionEffectType.SLOW_FALLING, 10, 0, false, false));
+            // Düşme hasarı koruması ekle (slow falling olmadan)
+            fallDamageProtection.put(player.getUniqueId(), System.currentTimeMillis());
 
             // Çok güçlü çekme
             pullPlayer(player, hook.getLocation(), 2.5);
@@ -332,5 +337,27 @@ public class SpecialItemManager {
         spyStartTimes.remove(player);
         spyTargets.remove(player);
         hookCooldowns.remove(player.getUniqueId()); // Cooldown'u da temizle
+        fallDamageProtection.remove(player.getUniqueId()); // Düşme hasarı korumasını da temizle
+    }
+    
+    /**
+     * Düşme hasarı koruması kontrolü
+     * @return true eğer oyuncu korumalıysa
+     */
+    public boolean hasFallDamageProtection(Player player) {
+        if (!fallDamageProtection.containsKey(player.getUniqueId())) {
+            return false;
+        }
+        
+        long protectionTime = fallDamageProtection.get(player.getUniqueId());
+        long elapsed = System.currentTimeMillis() - protectionTime;
+        
+        // Süre dolduysa kaldır
+        if (elapsed >= FALL_DAMAGE_PROTECTION_DURATION) {
+            fallDamageProtection.remove(player.getUniqueId());
+            return false;
+        }
+        
+        return true;
     }
 }

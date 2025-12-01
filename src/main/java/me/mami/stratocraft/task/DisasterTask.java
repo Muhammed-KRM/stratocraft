@@ -34,17 +34,71 @@ public class DisasterTask extends BukkitRunnable {
     @Override
     public void run() {
         Disaster disaster = disasterManager.getActiveDisaster();
-        if (disaster == null || disaster.isDead()) return;
+        if (disaster == null || disaster.isDead()) {
+            // Doğa olayları için entity yok
+            if (disaster != null && disaster.getCategory() == Disaster.Category.NATURAL) {
+                handleNaturalDisaster(disaster);
+            }
+            return;
+        }
+
+        // Süre doldu mu kontrol et
+        if (disaster.isExpired()) {
+            disaster.kill();
+            disasterManager.setActiveDisaster(null);
+            Bukkit.broadcastMessage("§a§lFelaket süresi doldu!");
+            return;
+        }
 
         Entity entity = disaster.getEntity();
-        if (entity == null) return;
-
+        
+        // Canlı felaketler için entity kontrolü
+        if (disaster.getCategory() == Disaster.Category.CREATURE) {
+            if (entity == null || entity.isDead()) {
+                disaster.kill();
+                disasterManager.setActiveDisaster(null);
+                return;
+            }
+            handleCreatureDisaster(disaster, entity);
+        } else {
+            // Doğa olayları
+            handleNaturalDisaster(disaster);
+        }
+    }
+    
+    /**
+     * Canlı felaketleri işle
+     */
+    private void handleCreatureDisaster(Disaster disaster, Entity entity) {
         Location current = entity.getLocation();
         Location target = disaster.getTarget();
+        double damageMultiplier = disaster.getDamageMultiplier();
         
         // TITAN GOLEM
         if (disaster.getType() == Disaster.Type.TITAN_GOLEM && entity instanceof Giant) {
-            Giant golem = (Giant) entity;
+            handleTitanGolem(disaster, (Giant) entity, current, target, damageMultiplier);
+        }
+        
+        // HİÇLİK SOLUCANI
+        else if (disaster.getType() == Disaster.Type.ABYSSAL_WORM && entity instanceof Silverfish) {
+            handleAbyssalWorm(disaster, (Silverfish) entity, current, target, damageMultiplier);
+        }
+        
+        // KHAOS EJDERİ
+        else if (disaster.getType() == Disaster.Type.CHAOS_DRAGON && entity instanceof org.bukkit.entity.EnderDragon) {
+            handleChaosDragon(disaster, (org.bukkit.entity.EnderDragon) entity, current, target, damageMultiplier);
+        }
+        
+        // BOŞLUK TİTANI
+        else if (disaster.getType() == Disaster.Type.VOID_TITAN && entity instanceof org.bukkit.entity.Wither) {
+            handleVoidTitan(disaster, (org.bukkit.entity.Wither) entity, current, target, damageMultiplier);
+        }
+    }
+    
+    /**
+     * Titan Golem işle
+     */
+    private void handleTitanGolem(Disaster disaster, Giant golem, Location current, Location target, double damageMultiplier) {
             titanGolemTickCounter++;
             
             Vector direction = target.toVector().subtract(current.toVector()).normalize();
@@ -88,7 +142,17 @@ public class DisasterTask extends BukkitRunnable {
             }
             
             // Normal yürüme
-            entity.setVelocity(direction.multiply(0.4));
+            golem.setVelocity(direction.multiply(0.4));
+            
+            // Sıkışma kontrolü - önünde blok varsa zıpla
+            Block frontBlock = current.clone().add(direction).getBlock();
+            if (frontBlock.getType() != Material.AIR && frontBlock.getType() != Material.BEDROCK) {
+                // Sıkışma önleme - zıplama
+                if (titanGolemTickCounter % 20 == 0) { // Her saniye kontrol
+                    Vector jumpVector = direction.clone().multiply(1.5).setY(1.5);
+                    golem.setVelocity(jumpVector);
+                }
+            }
             
             // Blok Fırlatma Yeteneği (Her 10-15 saniyede bir)
             if (titanGolemTickCounter % (random.nextInt(100) + 200) == 0) { // 10-15 saniye arası
@@ -113,54 +177,127 @@ public class DisasterTask extends BukkitRunnable {
             }
             
             // Blok Yıkma - Tektonik Sabitleyici kontrolü
-            Block frontBlock = current.clone().add(direction).getBlock();
-            if (frontBlock.getType() != Material.AIR && frontBlock.getType() != Material.BEDROCK) {
+            Block frontBlockCheck = current.clone().add(direction).getBlock();
+            if (frontBlockCheck.getType() != Material.AIR && frontBlockCheck.getType() != Material.BEDROCK) {
                 // Bu bölgede Tektonik Sabitleyici var mı kontrol et
-                Clan owner = territoryManager.getTerritoryOwner(frontBlock.getLocation());
+                Clan owner = territoryManager.getTerritoryOwner(frontBlockCheck.getLocation());
                 if (owner != null) {
                     Structure stabilizer = owner.getStructures().stream()
                             .filter(s -> s.getType() == Structure.Type.TECTONIC_STABILIZER)
                             .findFirst().orElse(null);
                     
-                    if (stabilizer != null && stabilizer.getLocation().distance(frontBlock.getLocation()) <= 50) {
+                    if (stabilizer != null && stabilizer.getLocation().distance(frontBlockCheck.getLocation()) <= 50) {
                         // Tektonik Sabitleyici aktif - blok kırma iptal, yakıt tüket
                         if (stabilizer.getLevel() > 0) {
                             stabilizer.consumeFuel();
-                            // Hasarı %90 azalt (sadece görsel efekt)
-                            EffectUtil.playDisasterEffect(frontBlock.getLocation());
+                            EffectUtil.playDisasterEffect(frontBlockCheck.getLocation());
                             return; // Blok kırılmaz
                         }
                     }
+                    
+                    // Klan yok etme - yapıları yok et
+                    destroyClanStructures(owner, current, damageMultiplier);
                 }
                 
                 // Normal blok kırma
-                frontBlock.setType(Material.AIR);
-                EffectUtil.playDisasterEffect(frontBlock.getLocation());
+                frontBlockCheck.setType(Material.AIR);
+                EffectUtil.playDisasterEffect(frontBlockCheck.getLocation());
             }
+            
+            // Pasif hasar - sürekli patlama
+            if (titanGolemTickCounter % 200 == 0) { // Her 10 saniyede bir
+                current.getWorld().createExplosion(current, (float)(2.0 * damageMultiplier), false, true);
+            }
+    }
+    
+    /**
+     * Hiçlik Solucanı işle
+     */
+    private void handleAbyssalWorm(Disaster disaster, Silverfish worm, Location current, Location target, double damageMultiplier) {
+        Vector direction = target.toVector().subtract(current.toVector()).normalize();
+        worm.setVelocity(direction.multiply(0.3));
+        
+        // Temelleri (alt blokları) kaz
+        Block belowBlock = current.clone().add(0, -1, 0).getBlock();
+        if (belowBlock.getType() != Material.AIR && belowBlock.getType() != Material.BEDROCK) {
+            belowBlock.setType(Material.AIR);
+            EffectUtil.playDisasterEffect(belowBlock.getLocation());
         }
         
-        // HİÇLİK SOLUCANI
-        else if (disaster.getType() == Disaster.Type.ABYSSAL_WORM && entity instanceof Silverfish) {
-            Vector direction = target.toVector().subtract(current.toVector()).normalize();
-            entity.setVelocity(direction.multiply(0.3));
-            
-            // Temelleri (alt blokları) kaz
-            Block belowBlock = current.clone().add(0, -1, 0).getBlock();
-            if (belowBlock.getType() != Material.AIR && belowBlock.getType() != Material.BEDROCK) {
-                belowBlock.setType(Material.AIR);
-                EffectUtil.playDisasterEffect(belowBlock.getLocation());
-            }
-            
-            // Önündeki bloğu da kır
-            Block frontBlock = current.clone().add(direction).getBlock();
-            if (frontBlock.getType() != Material.AIR && frontBlock.getType() != Material.BEDROCK) {
-                frontBlock.setType(Material.AIR);
-                EffectUtil.playDisasterEffect(frontBlock.getLocation());
+        // Önündeki bloğu da kır
+        Block frontBlock = current.clone().add(direction).getBlock();
+        if (frontBlock.getType() != Material.AIR && frontBlock.getType() != Material.BEDROCK) {
+            frontBlock.setType(Material.AIR);
+            EffectUtil.playDisasterEffect(frontBlock.getLocation());
+        }
+        
+        // Sıkışma önleme - ışınlanma
+        if (worm.getLocation().getBlock().getType() != Material.AIR) {
+            Location teleportLoc = current.clone().add(direction.multiply(5));
+            teleportLoc.setY(current.getWorld().getHighestBlockYAt(teleportLoc) + 1);
+            worm.teleport(teleportLoc);
+        }
+    }
+    
+    /**
+     * Khaos Ejderi işle
+     */
+    private void handleChaosDragon(Disaster disaster, org.bukkit.entity.EnderDragon dragon, Location current, Location target, double damageMultiplier) {
+        Vector direction = target.toVector().subtract(current.toVector()).normalize();
+        dragon.setVelocity(direction.multiply(0.5));
+        
+        // Ateş püskürtme
+        if (random.nextInt(100) < 5) { // %5 şans
+            for (Player player : current.getWorld().getPlayers()) {
+                if (player.getLocation().distance(current) <= 50) {
+                    Location playerLoc = player.getLocation();
+                    playerLoc.getWorld().spawnParticle(org.bukkit.Particle.FLAME, playerLoc, 20, 1, 1, 1, 0.1);
+                    player.setFireTicks((int)(100 * damageMultiplier));
+                    player.damage(5.0 * damageMultiplier, dragon);
+                }
             }
         }
+    }
+    
+    /**
+     * Boşluk Titanı işle
+     */
+    private void handleVoidTitan(Disaster disaster, org.bukkit.entity.Wither wither, Location current, Location target, double damageMultiplier) {
+        Vector direction = target.toVector().subtract(current.toVector()).normalize();
+        wither.setVelocity(direction.multiply(0.3));
+        
+        // Boşluk patlaması
+        if (random.nextInt(100) < 3) { // %3 şans
+            Location explosionLoc = current.clone().add(
+                (random.nextDouble() - 0.5) * 10,
+                0,
+                (random.nextDouble() - 0.5) * 10
+            );
+            explosionLoc.getWorld().createExplosion(explosionLoc, (float)(4.0 * damageMultiplier), false, true);
+        }
+    }
+    
+    /**
+     * Klan yapılarını yok et
+     */
+    private void destroyClanStructures(Clan clan, Location disasterLoc, double damageMultiplier) {
+        for (Structure structure : clan.getStructures()) {
+            if (structure.getLocation().distance(disasterLoc) <= 20) {
+                // Yapıyı yok et
+                structure.getLocation().getBlock().setType(Material.AIR);
+                EffectUtil.playDisasterEffect(structure.getLocation());
+            }
+        }
+    }
+    
+    /**
+     * Doğa olaylarını işle
+     */
+    private void handleNaturalDisaster(Disaster disaster) {
+        if (disaster == null) return;
         
         // GÜNEŞ FIRTINASI
-        else if (disaster.getType() == Disaster.Type.SOLAR_FLARE) {
+        if (disaster.getType() == Disaster.Type.SOLAR_FLARE) {
             // Yüzeydeki oyuncuları yak, ahşap yapılar ve ormanlar tutuşur
             for (Player p : Bukkit.getOnlinePlayers()) {
                 Location playerLoc = p.getLocation();

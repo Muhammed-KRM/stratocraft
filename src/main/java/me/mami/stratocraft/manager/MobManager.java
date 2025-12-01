@@ -572,4 +572,355 @@ public class MobManager {
             // Her 30 saniyede bir Kızıl Elmas kontrolü yapılmalı (MobRideTask'ta)
         }
     }
+    
+    // ========== SEVİYE 1 YENİ MOBLAR (200-1000 blok) ==========
+    
+    public void spawnWildBoar(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.Pig boar = (org.bukkit.entity.Pig) loc.getWorld().spawnEntity(loc, EntityType.PIG);
+        boar.setCustomName("§6Yaban Domuzu");
+        if (boar.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            boar.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(50.0);
+        }
+        if (boar.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) != null) {
+            boar.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(5.0);
+        }
+        boar.setHealth(50.0);
+    }
+    
+    public void spawnWolfPack(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.Wolf wolf = (org.bukkit.entity.Wolf) loc.getWorld().spawnEntity(loc, EntityType.WOLF);
+        wolf.setCustomName("§7Kurt Sürüsü");
+        wolf.setAngry(true);
+        if (wolf.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            wolf.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(60.0);
+        }
+        if (wolf.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) != null) {
+            wolf.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(6.0);
+        }
+        wolf.setHealth(60.0);
+    }
+    
+    public void spawnSnake(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.Silverfish snake = (org.bukkit.entity.Silverfish) loc.getWorld().spawnEntity(loc, EntityType.SILVERFISH);
+        snake.setCustomName("§2Yılan");
+        if (snake.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            snake.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(40.0);
+        }
+        snake.setHealth(40.0);
+        snake.addPotionEffect(new PotionEffect(PotionEffectType.POISON, Integer.MAX_VALUE, 0, false, false));
+    }
+    
+    public void spawnEagle(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.Parrot eagle = (org.bukkit.entity.Parrot) loc.getWorld().spawnEntity(loc, EntityType.PARROT);
+        eagle.setCustomName("§eKartal");
+        if (eagle.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            eagle.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(45.0);
+        }
+        eagle.setHealth(45.0);
+    }
+    
+    public void spawnBear(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.PolarBear bear = (org.bukkit.entity.PolarBear) loc.getWorld().spawnEntity(loc, EntityType.POLAR_BEAR);
+        bear.setCustomName("§7Ayı");
+        if (bear.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            bear.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(90.0);
+        }
+        if (bear.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) != null) {
+            bear.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(8.0);
+        }
+        bear.setHealth(90.0);
+    }
+    
+    // ========== SEVİYE 2 YENİ MOBLAR (1000-3000 blok) ==========
+    
+    public void spawnIronGolem(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.IronGolem golem = (org.bukkit.entity.IronGolem) loc.getWorld().spawnEntity(loc, EntityType.IRON_GOLEM);
+        golem.setCustomName("§fDemir Golem");
+        if (golem.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            golem.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(150.0);
+        }
+        if (golem.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) != null) {
+            golem.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(12.0);
+        }
+        golem.setHealth(150.0);
+    }
+    
+    public void spawnIceDragon(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        Phantom dragon = (Phantom) loc.getWorld().spawnEntity(loc, EntityType.PHANTOM);
+        dragon.setCustomName("§bBuz Ejderi");
+        dragon.setSize(12);
+        if (dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(200.0);
+        }
+        dragon.setHealth(200.0);
+    }
+    
+    public void spawnFireSerpent(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.Blaze serpent = (org.bukkit.entity.Blaze) loc.getWorld().spawnEntity(loc, EntityType.BLAZE);
+        serpent.setCustomName("§cAteş Yılanı");
+        if (serpent.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            serpent.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(180.0);
+        }
+        if (serpent.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) != null) {
+            serpent.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(10.0);
+        }
+        serpent.setHealth(180.0);
+        serpent.setFireTicks(Integer.MAX_VALUE);
+    }
+    
+    public void spawnEarthGiant(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.Giant giant = (org.bukkit.entity.Giant) loc.getWorld().spawnEntity(loc, EntityType.GIANT);
+        giant.setCustomName("§6Toprak Dev");
+        if (giant.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            giant.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(250.0);
+        }
+        if (giant.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) != null) {
+            giant.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(14.0);
+        }
+        giant.setHealth(250.0);
+    }
+    
+    public void spawnSoulHunter(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.Vex hunter = (org.bukkit.entity.Vex) loc.getWorld().spawnEntity(loc, EntityType.VEX);
+        hunter.setCustomName("§5Ruh Avcısı");
+        if (hunter.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            hunter.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(120.0);
+        }
+        hunter.setHealth(120.0);
+        hunter.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
+    }
+    
+    // ========== SEVİYE 3 YENİ MOBLAR (3000-5000 blok) ==========
+    
+    public void spawnShadowDragon(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        Phantom dragon = (Phantom) loc.getWorld().spawnEntity(loc, EntityType.PHANTOM);
+        dragon.setCustomName("§8Gölge Ejderi");
+        dragon.setSize(18);
+        if (dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(350.0);
+        }
+        dragon.setHealth(350.0);
+    }
+    
+    public void spawnLightDragon(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        Phantom dragon = (Phantom) loc.getWorld().spawnEntity(loc, EntityType.PHANTOM);
+        dragon.setCustomName("§eIşık Ejderi");
+        dragon.setSize(18);
+        if (dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(350.0);
+        }
+        dragon.setHealth(350.0);
+    }
+    
+    public void spawnStormGiant(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.Giant giant = (org.bukkit.entity.Giant) loc.getWorld().spawnEntity(loc, EntityType.GIANT);
+        giant.setCustomName("§bFırtına Dev");
+        if (giant.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            giant.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(400.0);
+        }
+        if (giant.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) != null) {
+            giant.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(18.0);
+        }
+        giant.setHealth(400.0);
+    }
+    
+    public void spawnLavaDragon(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        Phantom dragon = (Phantom) loc.getWorld().spawnEntity(loc, EntityType.PHANTOM);
+        dragon.setCustomName("§cLav Ejderi");
+        dragon.setSize(20);
+        if (dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(400.0);
+        }
+        dragon.setHealth(400.0);
+    }
+    
+    public void spawnIceGiant(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.Giant giant = (org.bukkit.entity.Giant) loc.getWorld().spawnEntity(loc, EntityType.GIANT);
+        giant.setCustomName("§bBuz Dev");
+        if (giant.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            giant.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(400.0);
+        }
+        if (giant.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) != null) {
+            giant.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(18.0);
+        }
+        giant.setHealth(400.0);
+    }
+    
+    // ========== SEVİYE 4 YENİ MOBLAR (5000+ blok) ==========
+    
+    public void spawnRedDevil(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.Blaze devil = (org.bukkit.entity.Blaze) loc.getWorld().spawnEntity(loc, EntityType.BLAZE);
+        devil.setCustomName("§4§lKızıl Şeytan");
+        if (devil.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            devil.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(500.0);
+        }
+        if (devil.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) != null) {
+            devil.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(20.0);
+        }
+        devil.setHealth(500.0);
+        devil.setFireTicks(Integer.MAX_VALUE);
+    }
+    
+    public void spawnBlackDragon(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        Phantom dragon = (Phantom) loc.getWorld().spawnEntity(loc, EntityType.PHANTOM);
+        dragon.setCustomName("§0§lKara Ejder");
+        dragon.setSize(25);
+        if (dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(600.0);
+        }
+        dragon.setHealth(600.0);
+    }
+    
+    public void spawnDeathKnight(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.Skeleton knight = (org.bukkit.entity.Skeleton) loc.getWorld().spawnEntity(loc, EntityType.SKELETON);
+        knight.setCustomName("§8§lÖlüm Şövalyesi");
+        if (knight.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            knight.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(450.0);
+        }
+        knight.setHealth(450.0);
+        if (knight.getEquipment() != null) {
+            knight.getEquipment().setHelmet(new ItemStack(org.bukkit.Material.NETHERITE_HELMET));
+            knight.getEquipment().setChestplate(new ItemStack(org.bukkit.Material.NETHERITE_CHESTPLATE));
+            knight.getEquipment().setLeggings(new ItemStack(org.bukkit.Material.NETHERITE_LEGGINGS));
+            knight.getEquipment().setBoots(new ItemStack(org.bukkit.Material.NETHERITE_BOOTS));
+            knight.getEquipment().setItemInMainHand(new ItemStack(org.bukkit.Material.NETHERITE_SWORD));
+        }
+    }
+    
+    public void spawnChaosDragon(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        Phantom dragon = (Phantom) loc.getWorld().spawnEntity(loc, EntityType.PHANTOM);
+        dragon.setCustomName("§5§lKaos Ejderi");
+        dragon.setSize(28);
+        if (dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(700.0);
+        }
+        dragon.setHealth(700.0);
+    }
+    
+    public void spawnHellDevil(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.Blaze devil = (org.bukkit.entity.Blaze) loc.getWorld().spawnEntity(loc, EntityType.BLAZE);
+        devil.setCustomName("§4§lCehennem Şeytanı");
+        if (devil.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            devil.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(550.0);
+        }
+        if (devil.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) != null) {
+            devil.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(22.0);
+        }
+        devil.setHealth(550.0);
+        devil.setFireTicks(Integer.MAX_VALUE);
+    }
+    
+    // ========== SEVİYE 5 YENİ MOBLAR (Efsanevi) ==========
+    
+    public void spawnLegendaryDragon(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        Phantom dragon = (Phantom) loc.getWorld().spawnEntity(loc, EntityType.PHANTOM);
+        dragon.setCustomName("§6§lEfsanevi Ejder");
+        dragon.setSize(35);
+        if (dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(1000.0);
+        }
+        dragon.setHealth(1000.0);
+    }
+    
+    public void spawnGodSlayer(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.Giant slayer = (org.bukkit.entity.Giant) loc.getWorld().spawnEntity(loc, EntityType.GIANT);
+        slayer.setCustomName("§d§lTanrı Katili");
+        if (slayer.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            slayer.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(1200.0);
+        }
+        if (slayer.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) != null) {
+            slayer.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(30.0);
+        }
+        slayer.setHealth(1200.0);
+    }
+    
+    public void spawnVoidCreature(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.Vex creature = (org.bukkit.entity.Vex) loc.getWorld().spawnEntity(loc, EntityType.VEX);
+        creature.setCustomName("§5§lHiçlik Yaratığı");
+        if (creature.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            creature.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(800.0);
+        }
+        creature.setHealth(800.0);
+        creature.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
+    }
+    
+    public void spawnTimeDragon(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        Phantom dragon = (Phantom) loc.getWorld().spawnEntity(loc, EntityType.PHANTOM);
+        dragon.setCustomName("§b§lZaman Ejderi");
+        dragon.setSize(32);
+        if (dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(900.0);
+        }
+        dragon.setHealth(900.0);
+    }
+    
+    public void spawnFateCreature(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        org.bukkit.entity.Vex creature = (org.bukkit.entity.Vex) loc.getWorld().spawnEntity(loc, EntityType.VEX);
+        creature.setCustomName("§d§lKader Yaratığı");
+        if (creature.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            creature.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(850.0);
+        }
+        creature.setHealth(850.0);
+        creature.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
+    }
+    
+    // Boss spawn metodları
+    public LivingEntity spawnTitanGolem(Location loc, UUID ownerId) {
+        if (loc == null || loc.getWorld() == null) return null;
+        IronGolem golem = (IronGolem) loc.getWorld().spawnEntity(loc, EntityType.IRON_GOLEM);
+        golem.setCustomName("§4§lTİTAN GOLEM");
+        if (golem.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            golem.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(800.0);
+        }
+        golem.setHealth(800.0);
+        return golem;
+    }
+    
+    public LivingEntity spawnHellDragon(Location loc, UUID ownerId) {
+        if (loc == null || loc.getWorld() == null) return null;
+        Phantom dragon = (Phantom) loc.getWorld().spawnEntity(loc, EntityType.PHANTOM);
+        dragon.setCustomName("§4§lCEHENNEM EJDERİ");
+        dragon.setSize(30);
+        if (dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(900.0);
+        }
+        dragon.setHealth(900.0);
+        return dragon;
+    }
+    
+    public LivingEntity spawnHydra(Location loc) {
+        if (loc == null || loc.getWorld() == null) return null;
+        EnderDragon hydra = (EnderDragon) loc.getWorld().spawnEntity(loc, EntityType.ENDER_DRAGON);
+        hydra.setCustomName("§5§lHYDRA");
+        if (hydra.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            hydra.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(1000.0);
+        }
+        hydra.setHealth(1000.0);
+        return hydra;
+    }
 }

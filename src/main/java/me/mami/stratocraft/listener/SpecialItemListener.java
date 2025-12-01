@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -41,8 +42,88 @@ public class SpecialItemListener implements Listener {
 
         // Özel kanca kontrolü
         if (ItemManager.isCustomItem(rod, "RUSTY_HOOK") ||
+                ItemManager.isCustomItem(rod, "GOLDEN_HOOK") ||
                 ItemManager.isCustomItem(rod, "TITAN_GRAPPLE")) {
             specialItemManager.handleGrapple(event, rod);
+        }
+        
+        // Olta hızını artır (tüm kancalar için)
+        if (ItemManager.isCustomItem(rod, "RUSTY_HOOK") ||
+                ItemManager.isCustomItem(rod, "GOLDEN_HOOK") ||
+                ItemManager.isCustomItem(rod, "TITAN_GRAPPLE")) {
+            
+            org.bukkit.entity.FishHook hook = event.getHook();
+            if (hook != null) {
+                // Hook hızını artır - her tick'te güncelle
+                if (event.getState() == PlayerFishEvent.State.FISHING) {
+                    // Hook'un hızını artırmak için task başlat
+                    accelerateHook(hook);
+                }
+            }
+        }
+    }
+    
+    // Aktif hook'ları takip et (performans için)
+    private final Map<UUID, Integer> activeHooks = new HashMap<>();
+    
+    /**
+     * Hook hızını artır (task ile sürekli güncelle)
+     */
+    private void accelerateHook(org.bukkit.entity.FishHook hook) {
+        if (hook == null || !hook.isValid() || hook.isOnGround()) {
+            activeHooks.remove(hook.getUniqueId());
+            return;
+        }
+        
+        // Hook'un mevcut hızını al
+        Vector velocity = hook.getVelocity();
+        
+        // Eğer çok yavaşsa (düşüyorsa), hızını artır
+        if (velocity.length() < 0.8) {
+            // Yönü koruyarak hızı artır
+            if (velocity.length() > 0.01) {
+                velocity.normalize().multiply(1.8); // 1.8x hız
+            } else {
+                // Hız yoksa, aşağı doğru hızlandır
+                velocity = new Vector(0, -0.5, 0);
+            }
+            hook.setVelocity(velocity);
+        }
+        
+        // Maksimum 100 tick (5 saniye) sonra durdur
+        int tickCount = activeHooks.getOrDefault(hook.getUniqueId(), 0);
+        if (tickCount > 100) {
+            activeHooks.remove(hook.getUniqueId());
+            return;
+        }
+        
+        activeHooks.put(hook.getUniqueId(), tickCount + 1);
+        
+        // Her tick'te güncelle
+        org.bukkit.Bukkit.getScheduler().runTaskLater(
+            me.mami.stratocraft.Main.getInstance(),
+            () -> accelerateHook(hook),
+            1L // 1 tick sonra tekrar kontrol et
+        );
+    }
+    
+    /**
+     * Düşme hasarını engelle (kanca kullanıldıktan sonra)
+     */
+    @EventHandler
+    public void onEntityDamage(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Player)) {
+            return;
+        }
+        
+        Player player = (Player) event.getEntity();
+        
+        // Sadece düşme hasarını engelle
+        if (event.getCause() == EntityDamageEvent.DamageCause.FALL) {
+            // Kanca koruması var mı kontrol et
+            if (specialItemManager.hasFallDamageProtection(player)) {
+                event.setCancelled(true);
+            }
         }
     }
 

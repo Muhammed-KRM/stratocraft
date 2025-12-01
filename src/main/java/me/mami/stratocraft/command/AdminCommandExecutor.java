@@ -67,6 +67,16 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return handleBuild(p, args);
             case "trap":
                 return handleTrap(p, args);
+            case "mine":
+                return handleMine(p, args);
+            case "dungeon":
+                return handleDungeon(p, args);
+            case "biome":
+                return handleBiome(p, args);
+            case "boss":
+                return handleBoss(p, args);
+            case "tame":
+                return handleTame(p, args);
             default:
                 showHelp(sender);
                 return true;
@@ -75,26 +85,45 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
     private boolean handleGive(Player p, String[] args) {
         if (args.length < 2) {
-            p.sendMessage(langManager.getMessage("admin.give-usage"));
-            p.sendMessage(langManager.getMessage("admin.give-example"));
+            p.sendMessage("§cKullanım: /stratocraft give <kategori> <item> [miktar]");
+            p.sendMessage("§7Kategoriler: weapon, armor, material, mobdrop, special, ore, tool");
+            p.sendMessage("§7Örnek: /stratocraft give weapon war_fan");
+            p.sendMessage("§7Örnek: /stratocraft give mobdrop level1 wild_boar_hide");
+            p.sendMessage("§7Örnek: /stratocraft give material blueprint 64");
             return true;
         }
 
-        String itemName = args[1].toLowerCase();
-        int amount = args.length > 2 ? parseInt(args[2], 1) : 1;
+        // Kategori kontrolü
+        String category = args[1].toLowerCase();
+        String itemName;
+        int amount;
+        
+        if (args.length >= 3) {
+            itemName = args[2].toLowerCase();
+            amount = args.length > 3 ? parseInt(args[3], 1) : 1;
+        } else {
+            // Eski format desteği (kategori yok, direkt item)
+            itemName = args[1].toLowerCase();
+            amount = args.length > 2 ? parseInt(args[2], 1) : 1;
+            category = "all"; // Tüm kategorilerde ara
+        }
 
         // Miktar kontrolü
         if (amount < 1) {
             amount = 1;
         }
-        if (amount > 2304) { // Max stack size * 36 slots
+        if (amount > 2304) {
             p.sendMessage("§cMiktar çok yüksek! Maksimum 2304.");
             return true;
         }
 
-        ItemStack item = getItemByName(itemName);
+        ItemStack item = getItemByName(itemName, category);
         if (item == null) {
-            p.sendMessage(langManager.getMessage("admin.give-invalid-item"));
+            p.sendMessage("§cGeçersiz item: §e" + itemName);
+            if (!category.equals("all")) {
+                p.sendMessage("§7Kategori: §e" + category);
+            }
+            p.sendMessage("§7Kullanım: /stratocraft give <kategori> <item> [miktar]");
             return true;
         }
 
@@ -106,25 +135,35 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             for (ItemStack drop : overflow.values()) {
                 p.getWorld().dropItemNaturally(p.getLocation(), drop);
             }
-            p.sendMessage(langManager.getMessage("admin.give-success-overflow",
-                    "amount", String.valueOf(amount),
-                    "item", getItemDisplayName(itemName)));
+            p.sendMessage("§a" + amount + "x " + getItemDisplayName(itemName) + " verildi (yere düştü)");
         } else {
-            p.sendMessage(langManager.getMessage("admin.give-success",
-                    "amount", String.valueOf(amount),
-                    "item", getItemDisplayName(itemName)));
+            p.sendMessage("§a" + amount + "x " + getItemDisplayName(itemName) + " verildi");
         }
         return true;
     }
 
     private boolean handleSpawn(Player p, String[] args) {
         if (args.length < 2) {
-            p.sendMessage(langManager.getMessage("admin.spawn-usage"));
-            p.sendMessage(langManager.getMessage("admin.spawn-example"));
+            p.sendMessage("§cKullanım: /stratocraft spawn <kategori> <mob>");
+            p.sendMessage("§7Kategoriler: level1, level2, level3, level4, level5, boss, special");
+            p.sendMessage("§7Örnek: /stratocraft spawn level1 wild_boar");
+            p.sendMessage("§7Örnek: /stratocraft spawn boss titan_golem");
+            p.sendMessage("§7Eski format: /stratocraft spawn <mob> (hala çalışıyor)");
             return true;
         }
 
-        String mobName = args[1].toLowerCase();
+        String category = args[1].toLowerCase();
+        String mobName;
+        
+        // Kategori kontrolü
+        if (args.length >= 3) {
+            mobName = args[2].toLowerCase();
+        } else {
+            // Eski format desteği (kategori yok, direkt mob)
+            mobName = args[1].toLowerCase();
+            category = "all"; // Tüm kategorilerde ara
+        }
+
         MobManager mobManager = plugin.getMobManager();
         String mobDisplayName = "";
 
@@ -258,9 +297,142 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "void_worm":
             case "hiclik_solucani":
             case "hiçlik_solucanı":
-                // Void Worm için spawn metodu var mı kontrol et
-                p.sendMessage("§cVoid Worm spawn metodu henüz eklenmedi!");
-                return true;
+                mobManager.spawnVoidCreature(p.getLocation());
+                mobDisplayName = "Hiçlik Yaratığı";
+                break;
+            // ========== YENİ SEVİYE 1 MOBLAR ==========
+            case "wild_boar":
+            case "yaban_domuzu":
+                mobManager.spawnWildBoar(p.getLocation());
+                mobDisplayName = "Yaban Domuzu";
+                break;
+            case "wolf_pack":
+            case "kurt_surusu":
+            case "forest_wolf":
+                mobManager.spawnWolfPack(p.getLocation());
+                mobDisplayName = "Orman Kurdu";
+                break;
+            case "snake":
+            case "yilan":
+            case "swamp_serpent":
+                mobManager.spawnSnake(p.getLocation());
+                mobDisplayName = "Bataklık Yılanı";
+                break;
+            case "eagle":
+            case "kartal":
+            case "mountain_eagle":
+                mobManager.spawnEagle(p.getLocation());
+                mobDisplayName = "Dağ Kartalı";
+                break;
+            case "bear":
+            case "ayi":
+            case "cave_bear":
+                mobManager.spawnBear(p.getLocation());
+                mobDisplayName = "Mağara Ayısı";
+                break;
+            // ========== YENİ SEVİYE 2 MOBLAR ==========
+            case "iron_golem":
+            case "iron_golem_variant":
+                mobManager.spawnIronGolem(p.getLocation());
+                mobDisplayName = "Demir Golem Varyantı";
+                break;
+            case "ice_elemental":
+            case "ice_dragon":
+                mobManager.spawnIceDragon(p.getLocation());
+                mobDisplayName = "Buz Ejderi";
+                break;
+            case "fire_elemental":
+            case "fire_serpent":
+                mobManager.spawnFireSerpent(p.getLocation());
+                mobDisplayName = "Ateş Yılanı";
+                break;
+            case "earth_elemental":
+            case "earth_giant":
+                mobManager.spawnEarthGiant(p.getLocation());
+                mobDisplayName = "Toprak Dev";
+                break;
+            case "spirit_guardian":
+            case "soul_hunter":
+                mobManager.spawnSoulHunter(p.getLocation());
+                mobDisplayName = "Ruh Avcısı";
+                break;
+            // ========== YENİ SEVİYE 3 MOBLAR ==========
+            case "shadow_beast":
+            case "shadow_dragon":
+                mobManager.spawnShadowDragon(p.getLocation());
+                mobDisplayName = "Gölge Ejderi";
+                break;
+            case "light_spirit":
+            case "light_dragon":
+                mobManager.spawnLightDragon(p.getLocation());
+                mobDisplayName = "Işık Ejderi";
+                break;
+            case "storm_giant":
+                mobManager.spawnStormGiant(p.getLocation());
+                mobDisplayName = "Fırtına Devi";
+                break;
+            case "lava_golem":
+            case "lava_dragon":
+                mobManager.spawnLavaDragon(p.getLocation());
+                mobDisplayName = "Lav Ejderi";
+                break;
+            case "frost_giant":
+            case "ice_giant":
+                mobManager.spawnIceGiant(p.getLocation());
+                mobDisplayName = "Buz Devi";
+                break;
+            // ========== YENİ SEVİYE 4 MOBLAR ==========
+            case "red_devil":
+            case "kizil_seytan":
+                mobManager.spawnRedDevil(p.getLocation());
+                mobDisplayName = "Kızıl Şeytan";
+                break;
+            case "celestial_guardian":
+            case "black_dragon":
+                mobManager.spawnBlackDragon(p.getLocation());
+                mobDisplayName = "Kara Ejder";
+                break;
+            case "thunder_wyvern":
+            case "death_knight":
+                mobManager.spawnDeathKnight(p.getLocation());
+                mobDisplayName = "Ölüm Şövalyesi";
+                break;
+            case "magma_beast":
+            case "chaos_dragon":
+                mobManager.spawnChaosDragon(p.getLocation());
+                mobDisplayName = "Kaos Ejderi";
+                break;
+            case "abyssal_horror":
+            case "hell_devil":
+                mobManager.spawnHellDevil(p.getLocation());
+                mobDisplayName = "Cehennem Şeytanı";
+                break;
+            // ========== YENİ SEVİYE 5 MOBLAR ==========
+            case "ancient_dragon":
+            case "legendary_dragon":
+                mobManager.spawnLegendaryDragon(p.getLocation());
+                mobDisplayName = "Efsanevi Ejder";
+                break;
+            case "elder_kraken":
+            case "god_slayer":
+                mobManager.spawnGodSlayer(p.getLocation());
+                mobDisplayName = "Tanrı Katili";
+                break;
+            case "void_lord":
+            case "void_creature":
+                mobManager.spawnVoidCreature(p.getLocation());
+                mobDisplayName = "Hiçlik Lordu";
+                break;
+            case "cosmic_horror":
+            case "time_dragon":
+                mobManager.spawnTimeDragon(p.getLocation());
+                mobDisplayName = "Zaman Ejderi";
+                break;
+            case "elemental_titan":
+            case "fate_creature":
+                mobManager.spawnFateCreature(p.getLocation());
+                mobDisplayName = "Kader Yaratığı";
+                break;
             // Hava Drop
             case "supply_drop":
             case "supplydrop":
@@ -290,93 +462,193 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
     private boolean handleDisaster(Player p, String[] args) {
         if (args.length < 2) {
-            p.sendMessage("§cKullanım: /stratocraft disaster <type> [konum]");
-            p.sendMessage("§7Felaket Tipleri: titan_golem, abyssal_worm, solar_flare");
-            p.sendMessage("§7Konum: (boş) = uzak, 'ben' = yanında, 'X Y Z' = koordinat");
-            p.sendMessage("§7Yok etme: /stratocraft disaster clear");
+            p.sendMessage("§cKullanım: /stratocraft disaster <komut>");
+            p.sendMessage("§7Komutlar:");
+            p.sendMessage("§7  start <type> [level] [konum] - Felaket başlat");
+            p.sendMessage("§7  stop - Felaketi durdur");
+            p.sendMessage("§7  info - Aktif felaket bilgisi");
+            p.sendMessage("§7  list - Tüm felaket tiplerini listele");
+            p.sendMessage("§7  clear - Felaketi yok et (eski komut)");
             p.sendMessage("§eÖrnek:");
-            p.sendMessage("§7  /stratocraft disaster titan_golem");
-            p.sendMessage("§7  /stratocraft disaster titan_golem ben");
-            p.sendMessage("§7  /stratocraft disaster titan_golem 100 64 200");
-            p.sendMessage("§7  /stratocraft disaster clear");
+            p.sendMessage("§7  /stratocraft disaster start titan_golem 3");
+            p.sendMessage("§7  /stratocraft disaster start solar_flare 1 ben");
+            p.sendMessage("§7  /stratocraft disaster stop");
+            p.sendMessage("§7  /stratocraft disaster info");
             return true;
         }
 
         DisasterManager disasterManager = plugin.getDisasterManager();
+        String command = args[1].toLowerCase();
 
-        // CLEAR komutu
-        if (args[1].equalsIgnoreCase("clear") || args[1].equalsIgnoreCase("yok") ||
-                args[1].equalsIgnoreCase("temizle")) {
-            Disaster activeDisaster = disasterManager.getActiveDisaster();
-            if (activeDisaster == null) {
-                p.sendMessage("§cAktif felaket yok!");
+        switch (command) {
+            case "start":
+                return handleDisasterStart(p, args, disasterManager);
+            case "stop":
+            case "durdur":
+                return handleDisasterStop(p, disasterManager);
+            case "info":
+            case "bilgi":
+                return handleDisasterInfo(p, disasterManager);
+            case "list":
+            case "liste":
+                return handleDisasterList(p);
+            case "clear":
+            case "yok":
+            case "temizle":
+                return handleDisasterClear(p, disasterManager);
+            default:
+                p.sendMessage("§cGeçersiz komut! /stratocraft disaster <start|stop|info|list|clear>");
                 return true;
-            }
-
-            // Felaketi yok et
-            activeDisaster.kill();
-            disasterManager.setActiveDisaster(null);
-
-            org.bukkit.Bukkit.broadcastMessage("§a§lFELAKET YOK EDİLDİ!");
-            p.sendMessage("§aFelaket admin tarafından yok edildi.");
+        }
+    }
+    
+    /**
+     * Felaket başlat
+     */
+    private boolean handleDisasterStart(Player p, String[] args, DisasterManager disasterManager) {
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft disaster start <type> [level] [konum]");
+            p.sendMessage("§7Level: 1-3 (varsayılan: tip'e göre)");
+            p.sendMessage("§7Konum: 'ben' veya 'X Y Z'");
             return true;
         }
-
-        String disasterName = args[1].toUpperCase(java.util.Locale.ENGLISH);
-
-        // Felaket tipini bul
+        
+        String disasterName = args[2].toUpperCase(java.util.Locale.ENGLISH);
         Disaster.Type type;
         try {
             type = Disaster.Type.valueOf(disasterName);
         } catch (IllegalArgumentException e) {
-            p.sendMessage("§cGeçersiz felaket tipi: §e" + args[1]);
-            p.sendMessage("§7Geçerli tipler: §etitan_golem§7, §eabyssal_worm§7, §esolar_flare");
+            p.sendMessage("§cGeçersiz felaket tipi: §e" + args[2]);
             return true;
         }
-
-        // Konum belirleme
-        org.bukkit.Location spawnLoc;
-
-        if (args.length >= 3) {
-            // Konum belirtilmiş
-            if (args[2].equalsIgnoreCase("ben") || args[2].equalsIgnoreCase("me") ||
-                    args[2].equalsIgnoreCase("self")) {
-                // Oyuncunun yanına spawn et
-                spawnLoc = p.getLocation().clone();
-                p.sendMessage("§eFelaket yanınıza spawn ediliyor...");
-            } else if (args.length >= 5) {
-                // X Y Z koordinatları
-                try {
-                    double x = Double.parseDouble(args[2]);
-                    double y = Double.parseDouble(args[3]);
-                    double z = Double.parseDouble(args[4]);
-                    spawnLoc = new org.bukkit.Location(p.getWorld(), x, y, z);
-                    p.sendMessage("§eFelaket belirtilen koordinata spawn ediliyor: §7" +
-                            (int) x + " " + (int) y + " " + (int) z);
-                } catch (NumberFormatException ex) {
-                    p.sendMessage("§cGeçersiz koordinatlar! Örnek: /stratocraft disaster titan_golem 100 64 200");
+        
+        // Seviye belirleme
+        int level = Disaster.getDefaultLevel(type);
+        if (args.length >= 4) {
+            try {
+                int inputLevel = Integer.parseInt(args[3]);
+                if (inputLevel >= 1 && inputLevel <= 3) {
+                    level = inputLevel;
+                } else {
+                    p.sendMessage("§cSeviye 1-3 arası olmalı!");
                     return true;
                 }
-            } else {
-                p.sendMessage("§cEksik koordinat! 3 değer gerekli: X Y Z");
-                return true;
+            } catch (NumberFormatException ex) {
+                // Seviye değil, konum olabilir
             }
-        } else {
-            // Konum belirtilmemiş - uzak rastgele konum (varsayılan)
-            spawnLoc = null;
         }
-
-        // Felaketi tetikle
+        
+        // Konum belirleme
+        org.bukkit.Location spawnLoc = null;
+        int locationArgIndex = args.length >= 4 && !args[3].matches("\\d+") ? 3 : 
+                              args.length >= 5 ? 4 : -1;
+        
+        if (locationArgIndex > 0 && locationArgIndex < args.length) {
+            if (args[locationArgIndex].equalsIgnoreCase("ben") || 
+                args[locationArgIndex].equalsIgnoreCase("me") ||
+                args[locationArgIndex].equalsIgnoreCase("self")) {
+                spawnLoc = p.getLocation().clone();
+            } else if (args.length >= locationArgIndex + 3) {
+                try {
+                    double x = Double.parseDouble(args[locationArgIndex]);
+                    double y = Double.parseDouble(args[locationArgIndex + 1]);
+                    double z = Double.parseDouble(args[locationArgIndex + 2]);
+                    spawnLoc = new org.bukkit.Location(p.getWorld(), x, y, z);
+                } catch (NumberFormatException ex) {
+                    p.sendMessage("§cGeçersiz koordinatlar!");
+                    return true;
+                }
+            }
+        }
+        
+        // Felaketi başlat
         if (spawnLoc != null) {
-            disasterManager.triggerDisaster(type, spawnLoc);
+            disasterManager.triggerDisaster(type, level, spawnLoc);
         } else {
-            disasterManager.triggerDisaster(type);
+            disasterManager.triggerDisaster(type, level);
         }
-
-        p.sendMessage("§a§lFELAKET TETİKLENDİ!");
-        p.sendMessage("§7Tip: §e" + getDisasterDisplayName(disasterName));
-
+        
+        p.sendMessage("§a§lFELAKET BAŞLATILDI!");
+        p.sendMessage("§7Tip: §e" + disasterManager.getDisasterDisplayName(type));
+        p.sendMessage("§7Seviye: §e" + level);
+        
         return true;
+    }
+    
+    /**
+     * Felaketi durdur
+     */
+    private boolean handleDisasterStop(Player p, DisasterManager disasterManager) {
+        Disaster activeDisaster = disasterManager.getActiveDisaster();
+        if (activeDisaster == null) {
+            p.sendMessage("§cAktif felaket yok!");
+            return true;
+        }
+        
+        activeDisaster.kill();
+        disasterManager.setActiveDisaster(null);
+        
+        org.bukkit.Bukkit.broadcastMessage("§a§lFELAKET DURDURULDU!");
+        p.sendMessage("§aFelaket admin tarafından durduruldu.");
+        
+        return true;
+    }
+    
+    /**
+     * Felaket bilgisi
+     */
+    private boolean handleDisasterInfo(Player p, DisasterManager disasterManager) {
+        Disaster activeDisaster = disasterManager.getActiveDisaster();
+        if (activeDisaster == null) {
+            p.sendMessage("§cAktif felaket yok!");
+            return true;
+        }
+        
+        p.sendMessage("§6=== FELAKET BİLGİLERİ ===");
+        p.sendMessage("§7Tip: §e" + disasterManager.getDisasterDisplayName(activeDisaster.getType()));
+        p.sendMessage("§7Kategori: §e" + (activeDisaster.getCategory() == Disaster.Category.CREATURE ? "Canlı" : "Doğa Olayı"));
+        p.sendMessage("§7Seviye: §e" + activeDisaster.getLevel());
+        p.sendMessage("§7Can: §c" + String.format("%.0f/%.0f", activeDisaster.getCurrentHealth(), activeDisaster.getMaxHealth()));
+        p.sendMessage("§7Hasar Çarpanı: §e" + String.format("%.2f", activeDisaster.getDamageMultiplier()) + "x");
+        p.sendMessage("§7Kalan Süre: §e" + formatTime(activeDisaster.getRemainingTime()));
+        
+        return true;
+    }
+    
+    /**
+     * Felaket listesi
+     */
+    private boolean handleDisasterList(Player p) {
+        p.sendMessage("§6=== FELAKET TİPLERİ ===");
+        p.sendMessage("§7§lCanlı Felaketler:");
+        p.sendMessage("§7  §eTITAN_GOLEM §7- Seviye 3 - Titan Golem");
+        p.sendMessage("§7  §eABYSSAL_WORM §7- Seviye 2 - Hiçlik Solucanı");
+        p.sendMessage("§7  §eCHAOS_DRAGON §7- Seviye 3 - Khaos Ejderi");
+        p.sendMessage("§7  §eVOID_TITAN §7- Seviye 3 - Boşluk Titanı");
+        p.sendMessage("§7§lDoğa Olayları:");
+        p.sendMessage("§7  §eSOLAR_FLARE §7- Seviye 1 - Güneş Patlaması");
+        p.sendMessage("§7  §eEARTHQUAKE §7- Seviye 2 - Deprem");
+        p.sendMessage("§7  §eMETEOR_SHOWER §7- Seviye 2 - Meteor Yağmuru");
+        p.sendMessage("§7  §eVOLCANIC_ERUPTION §7- Seviye 3 - Volkanik Patlama");
+        
+        return true;
+    }
+    
+    /**
+     * Felaketi yok et (eski komut)
+     */
+    private boolean handleDisasterClear(Player p, DisasterManager disasterManager) {
+        return handleDisasterStop(p, disasterManager);
+    }
+    
+    /**
+     * Zaman formatla
+     */
+    private String formatTime(long ms) {
+        long seconds = ms / 1000;
+        long minutes = seconds / 60;
+        seconds = seconds % 60;
+        return String.format("%d:%02d", minutes, seconds);
     }
 
     private boolean handleList(Player p, String[] args) {
@@ -433,6 +705,11 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7  /stratocraft contract <list|clear> §7- Kontratları yönet");
         sender.sendMessage("§7  /stratocraft build <type> [level] §7- Yapı oluştur");
         sender.sendMessage("§7  /stratocraft trap <list|give> §7- Tuzak sistemi");
+        sender.sendMessage("§7  /stratocraft mine <list|give> §7- Mayın sistemi");
+        sender.sendMessage("§7  /stratocraft boss <spawn|list|ritual> §7- Boss sistemi");
+        sender.sendMessage("§7  /stratocraft tame <ritual|list|info> §7- Canlı eğitme sistemi");
+        sender.sendMessage("§7  /stratocraft dungeon <spawn|list|clear> §7- Zindan yönetimi");
+        sender.sendMessage("§7  /stratocraft biome <list|set> §7- Biyom yönetimi");
         sender.sendMessage("");
         sender.sendMessage(langManager.getMessage("admin.help-examples"));
         sender.sendMessage("§7  /stratocraft give blueprint 64");
@@ -527,7 +804,452 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§e3. §7solar_flare §7- Güneş Fırtınası");
     }
 
+    private ItemStack getItemByName(String name, String category) {
+        // Eğer kategori "all" ise, tüm kategorilerde ara
+        if (category.equals("all")) {
+            return getItemByNameAllCategories(name);
+        }
+        
+        // Kategoriye göre filtrele
+        switch (category.toLowerCase()) {
+            case "weapon":
+                return getItemByNameWeapon(name);
+            case "armor":
+                return getItemByNameArmor(name);
+            case "material":
+                return getItemByNameMaterial(name);
+            case "mobdrop":
+                return getItemByNameMobDrop(name);
+            case "special":
+                return getItemByNameSpecial(name);
+            case "ore":
+                return getItemByNameOre(name);
+            case "tool":
+                return getItemByNameTool(name);
+            default:
+                // Bilinmeyen kategori, tüm kategorilerde ara
+                return getItemByNameAllCategories(name);
+        }
+    }
+    
+    private ItemStack getItemByNameAllCategories(String name) {
+        // Tüm kategorilerde ara
+        ItemStack item = getItemByNameWeapon(name);
+        if (item != null) return item;
+        
+        item = getItemByNameArmor(name);
+        if (item != null) return item;
+        
+        item = getItemByNameMaterial(name);
+        if (item != null) return item;
+        
+        item = getItemByNameMobDrop(name);
+        if (item != null) return item;
+        
+        item = getItemByNameSpecial(name);
+        if (item != null) return item;
+        
+        item = getItemByNameOre(name);
+        if (item != null) return item;
+        
+        item = getItemByNameTool(name);
+        if (item != null) return item;
+        
+        return null;
+    }
+    
+    private ItemStack getItemByNameWeapon(String name) {
+        switch (name.toLowerCase()) {
+            case "war_fan":
+            case "savas_yelpazesi":
+                return ItemManager.WAR_FAN != null ? ItemManager.WAR_FAN.clone() : null;
+            case "tower_shield":
+            case "kule_kalkani":
+                return ItemManager.TOWER_SHIELD != null ? ItemManager.TOWER_SHIELD.clone() : null;
+            default:
+                return null;
+        }
+    }
+    
+    private ItemStack getItemByNameArmor(String name) {
+        // Şimdilik armor yok, gelecekte eklenebilir
+        return null;
+    }
+    
+    private ItemStack getItemByNameMaterial(String name) {
+        switch (name.toLowerCase()) {
+            case "blueprint":
+            case "blueprint_paper":
+            case "mühendis_şeması":
+                return ItemManager.BLUEPRINT_PAPER != null ? ItemManager.BLUEPRINT_PAPER.clone() : null;
+            case "lightning_core":
+            case "yıldırım_çekirdeği":
+                return ItemManager.LIGHTNING_CORE != null ? ItemManager.LIGHTNING_CORE.clone() : null;
+            case "dark_matter":
+            case "karanlık_madde":
+                return ItemManager.DARK_MATTER != null ? ItemManager.DARK_MATTER.clone() : null;
+            case "star_core":
+            case "yıldız_çekirdeği":
+                return ItemManager.STAR_CORE != null ? ItemManager.STAR_CORE.clone() : null;
+            case "flame_amplifier":
+            case "alev_amplifikatörü":
+                return ItemManager.FLAME_AMPLIFIER != null ? ItemManager.FLAME_AMPLIFIER.clone() : null;
+            case "devil_horn":
+            case "şeytan_boynuzu":
+                return ItemManager.DEVIL_HORN != null ? ItemManager.DEVIL_HORN.clone() : null;
+            case "devil_snake_eye":
+            case "iblis_yılanın_gözü":
+                return ItemManager.DEVIL_SNAKE_EYE != null ? ItemManager.DEVIL_SNAKE_EYE.clone() : null;
+            case "recipe_tectonic":
+            case "recipe_book_tectonic":
+            case "tarif_tektonik":
+                return ItemManager.RECIPE_BOOK_TECTONIC != null ? ItemManager.RECIPE_BOOK_TECTONIC.clone() : null;
+            case "hell_fruit":
+            case "cehennem_meyvesi":
+                return ItemManager.HELL_FRUIT != null ? ItemManager.HELL_FRUIT.clone() : null;
+            case "clan_crystal":
+            case "klan_kristali":
+                return createClanCrystal();
+            case "clan_fence":
+            case "klan_çiti":
+            case "klan_citi":
+                return createClanFence();
+            default:
+                return null;
+        }
+    }
+    
+    private ItemStack getItemByNameMobDrop(String name) {
+        // Seviye belirtilmiş mi kontrol et (level1, level2, vb.)
+        String[] parts = name.split("_");
+        if (parts.length > 1 && parts[0].equals("level")) {
+            // level1_wild_boar_hide formatı
+            String level = parts[1];
+            String itemName = name.substring(("level" + level + "_").length());
+            return getMobDropItemByLevel(level, itemName);
+        }
+        
+        // Direkt item ismi
+        return getMobDropItemDirect(name);
+    }
+    
+    private ItemStack getMobDropItemByLevel(String level, String itemName) {
+        switch (level) {
+            case "1":
+                return getLevel1MobDrop(itemName);
+            case "2":
+                return getLevel2MobDrop(itemName);
+            case "3":
+                return getLevel3MobDrop(itemName);
+            case "4":
+                return getLevel4MobDrop(itemName);
+            case "5":
+                return getLevel5MobDrop(itemName);
+            default:
+                return null;
+        }
+    }
+    
+    private ItemStack getMobDropItemDirect(String name) {
+        // Tüm seviyelerde ara
+        ItemStack item = getLevel1MobDrop(name);
+        if (item != null) return item;
+        item = getLevel2MobDrop(name);
+        if (item != null) return item;
+        item = getLevel3MobDrop(name);
+        if (item != null) return item;
+        item = getLevel4MobDrop(name);
+        if (item != null) return item;
+        item = getLevel5MobDrop(name);
+        if (item != null) return item;
+        return null;
+    }
+    
+    private ItemStack getLevel1MobDrop(String name) {
+        switch (name.toLowerCase()) {
+            case "wild_boar_hide":
+            case "yaban_domuzu_postu":
+                return ItemManager.WILD_BOAR_HIDE != null ? ItemManager.WILD_BOAR_HIDE.clone() : null;
+            case "wild_boar_meat":
+            case "yaban_domuzu_eti":
+                return ItemManager.WILD_BOAR_MEAT != null ? ItemManager.WILD_BOAR_MEAT.clone() : null;
+            case "wolf_fang":
+            case "kurt_disi":
+                return ItemManager.WOLF_FANG != null ? ItemManager.WOLF_FANG.clone() : null;
+            case "wolf_pelt":
+            case "kurt_postu":
+                return ItemManager.WOLF_PELT != null ? ItemManager.WOLF_PELT.clone() : null;
+            case "snake_venom":
+            case "yilan_zehri":
+                return ItemManager.SNAKE_VENOM != null ? ItemManager.SNAKE_VENOM.clone() : null;
+            case "snake_skin":
+            case "yilan_derisi":
+                return ItemManager.SNAKE_SKIN != null ? ItemManager.SNAKE_SKIN.clone() : null;
+            case "eagle_feather":
+            case "kartal_tuyu":
+                return ItemManager.EAGLE_FEATHER != null ? ItemManager.EAGLE_FEATHER.clone() : null;
+            case "eagle_claw":
+            case "kartal_pençesi":
+                return ItemManager.EAGLE_CLAW != null ? ItemManager.EAGLE_CLAW.clone() : null;
+            case "bear_claw":
+            case "ayi_pençesi":
+                return ItemManager.BEAR_CLAW != null ? ItemManager.BEAR_CLAW.clone() : null;
+            case "bear_pelt":
+            case "ayi_postu":
+                return ItemManager.BEAR_PELT != null ? ItemManager.BEAR_PELT.clone() : null;
+            default:
+                return null;
+        }
+    }
+    
+    private ItemStack getLevel2MobDrop(String name) {
+        switch (name.toLowerCase()) {
+            case "iron_core":
+            case "demir_çekirdek":
+                return ItemManager.IRON_CORE != null ? ItemManager.IRON_CORE.clone() : null;
+            case "iron_dust":
+            case "demir_tozu":
+                return ItemManager.IRON_DUST != null ? ItemManager.IRON_DUST.clone() : null;
+            case "ice_heart":
+            case "buz_kalbi":
+                return ItemManager.ICE_HEART != null ? ItemManager.ICE_HEART.clone() : null;
+            case "ice_crystal":
+            case "buz_kristali":
+                return ItemManager.ICE_CRYSTAL != null ? ItemManager.ICE_CRYSTAL.clone() : null;
+            case "fire_core":
+            case "ates_çekirdeği":
+                return ItemManager.FIRE_CORE != null ? ItemManager.FIRE_CORE.clone() : null;
+            case "fire_scale":
+            case "ates_ölçeği":
+                return ItemManager.FIRE_SCALE != null ? ItemManager.FIRE_SCALE.clone() : null;
+            case "earth_stone":
+            case "toprak_tasi":
+                return ItemManager.EARTH_STONE != null ? ItemManager.EARTH_STONE.clone() : null;
+            case "earth_dust":
+            case "toprak_tozu":
+                return ItemManager.EARTH_DUST != null ? ItemManager.EARTH_DUST.clone() : null;
+            case "soul_fragment":
+            case "ruh_parçası":
+                return ItemManager.SOUL_FRAGMENT != null ? ItemManager.SOUL_FRAGMENT.clone() : null;
+            case "ghost_dust":
+            case "hayalet_tozu":
+                return ItemManager.GHOST_DUST != null ? ItemManager.GHOST_DUST.clone() : null;
+            default:
+                return null;
+        }
+    }
+    
+    private ItemStack getLevel3MobDrop(String name) {
+        switch (name.toLowerCase()) {
+            case "shadow_heart":
+            case "golge_kalbi":
+                return ItemManager.SHADOW_HEART != null ? ItemManager.SHADOW_HEART.clone() : null;
+            case "shadow_scale":
+            case "golge_ölçeği":
+                return ItemManager.SHADOW_SCALE != null ? ItemManager.SHADOW_SCALE.clone() : null;
+            case "light_heart":
+            case "isik_kalbi":
+                return ItemManager.LIGHT_HEART != null ? ItemManager.LIGHT_HEART.clone() : null;
+            case "light_feather":
+            case "isik_tuyu":
+                return ItemManager.LIGHT_FEATHER != null ? ItemManager.LIGHT_FEATHER.clone() : null;
+            case "storm_core":
+            case "firtina_çekirdeği":
+                return ItemManager.STORM_CORE != null ? ItemManager.STORM_CORE.clone() : null;
+            case "storm_dust":
+            case "firtina_tozu":
+                return ItemManager.STORM_DUST != null ? ItemManager.STORM_DUST.clone() : null;
+            case "lava_heart":
+            case "lav_kalbi":
+                return ItemManager.LAVA_HEART != null ? ItemManager.LAVA_HEART.clone() : null;
+            case "lava_scale":
+            case "lav_ölçeği":
+                return ItemManager.LAVA_SCALE != null ? ItemManager.LAVA_SCALE.clone() : null;
+            case "ice_core":
+            case "buz_çekirdeği":
+                return ItemManager.ICE_CORE != null ? ItemManager.ICE_CORE.clone() : null;
+            case "ice_shard":
+            case "buz_parçası":
+                return ItemManager.ICE_SHARD != null ? ItemManager.ICE_SHARD.clone() : null;
+            default:
+                return null;
+        }
+    }
+    
+    private ItemStack getLevel4MobDrop(String name) {
+        switch (name.toLowerCase()) {
+            case "devil_blood":
+            case "seytan_kani":
+            case "şeytan_kanı":
+                return ItemManager.DEVIL_BLOOD != null ? ItemManager.DEVIL_BLOOD.clone() : null;
+            case "black_dragon_heart":
+            case "kara_ejder_kalbi":
+                return ItemManager.BLACK_DRAGON_HEART != null ? ItemManager.BLACK_DRAGON_HEART.clone() : null;
+            case "black_dragon_scale":
+            case "kara_ejder_ölçeği":
+                return ItemManager.BLACK_DRAGON_SCALE != null ? ItemManager.BLACK_DRAGON_SCALE.clone() : null;
+            case "death_sword_fragment":
+            case "olum_kilici_parçası":
+                return ItemManager.DEATH_SWORD_FRAGMENT != null ? ItemManager.DEATH_SWORD_FRAGMENT.clone() : null;
+            case "death_dust":
+            case "olum_tozu":
+                return ItemManager.DEATH_DUST != null ? ItemManager.DEATH_DUST.clone() : null;
+            case "chaos_core":
+            case "kaos_çekirdeği":
+                return ItemManager.CHAOS_CORE != null ? ItemManager.CHAOS_CORE.clone() : null;
+            case "chaos_scale":
+            case "kaos_ölçeği":
+                return ItemManager.CHAOS_SCALE != null ? ItemManager.CHAOS_SCALE.clone() : null;
+            case "hell_stone":
+            case "cehennem_tasi":
+                return ItemManager.HELL_STONE != null ? ItemManager.HELL_STONE.clone() : null;
+            case "hell_fire":
+            case "cehennem_atesi":
+                return ItemManager.HELL_FIRE != null ? ItemManager.HELL_FIRE.clone() : null;
+            default:
+                return null;
+        }
+    }
+    
+    private ItemStack getLevel5MobDrop(String name) {
+        switch (name.toLowerCase()) {
+            case "legendary_dragon_heart":
+            case "efsanevi_ejder_kalbi":
+                return ItemManager.LEGENDARY_DRAGON_HEART != null ? ItemManager.LEGENDARY_DRAGON_HEART.clone() : null;
+            case "legendary_dragon_scale":
+            case "efsanevi_ejder_ölçeği":
+                return ItemManager.LEGENDARY_DRAGON_SCALE != null ? ItemManager.LEGENDARY_DRAGON_SCALE.clone() : null;
+            case "god_blood":
+            case "tanri_kani":
+                return ItemManager.GOD_BLOOD != null ? ItemManager.GOD_BLOOD.clone() : null;
+            case "god_fragment":
+            case "tanri_parçası":
+                return ItemManager.GOD_FRAGMENT != null ? ItemManager.GOD_FRAGMENT.clone() : null;
+            case "void_core":
+            case "hiclik_çekirdeği":
+                return ItemManager.VOID_CORE != null ? ItemManager.VOID_CORE.clone() : null;
+            case "void_dust":
+            case "hiclik_tozu":
+                return ItemManager.VOID_DUST != null ? ItemManager.VOID_DUST.clone() : null;
+            case "time_core":
+            case "zaman_çekirdeği":
+                return ItemManager.TIME_CORE != null ? ItemManager.TIME_CORE.clone() : null;
+            case "time_scale":
+            case "zaman_ölçeği":
+                return ItemManager.TIME_SCALE != null ? ItemManager.TIME_SCALE.clone() : null;
+            case "fate_stone":
+            case "kader_tasi":
+                return ItemManager.FATE_STONE != null ? ItemManager.FATE_STONE.clone() : null;
+            case "fate_fragment":
+            case "kader_parçası":
+                return ItemManager.FATE_FRAGMENT != null ? ItemManager.FATE_FRAGMENT.clone() : null;
+            default:
+                return null;
+        }
+    }
+    
+    private ItemStack getItemByNameSpecial(String name) {
+        switch (name.toLowerCase()) {
+            case "red_diamond":
+            case "kızıl_elmas":
+                return ItemManager.RED_DIAMOND != null ? ItemManager.RED_DIAMOND.clone() : null;
+            case "ruby":
+            case "yakut":
+                return ItemManager.RUBY != null ? ItemManager.RUBY.clone() : null;
+            case "adamantite":
+                return ItemManager.ADAMANTITE != null ? ItemManager.ADAMANTITE.clone() : null;
+            case "titanium_ore":
+            case "titanium":
+            case "titanyum_parçası":
+                return ItemManager.TITANIUM_ORE != null ? ItemManager.TITANIUM_ORE.clone() : null;
+            case "titanium_ingot":
+            case "titanyum_külçesi":
+                return ItemManager.TITANIUM_INGOT != null ? ItemManager.TITANIUM_INGOT.clone() : null;
+            default:
+                return null;
+        }
+    }
+    
+    private ItemStack getItemByNameOre(String name) {
+        switch (name.toLowerCase()) {
+            case "sulfur":
+            case "kukurt":
+            case "kükürt":
+                return ItemManager.SULFUR != null ? ItemManager.SULFUR.clone() : null;
+            case "sulfur_ore":
+            case "kukurt_cevheri":
+            case "kükürt_cevheri":
+                return ItemManager.SULFUR_ORE != null ? ItemManager.SULFUR_ORE.clone() : null;
+            case "bauxite":
+            case "boksit":
+                return ItemManager.BAUXITE_INGOT != null ? ItemManager.BAUXITE_INGOT.clone() : null;
+            case "bauxite_ore":
+            case "boksit_cevheri":
+                return ItemManager.BAUXITE_ORE != null ? ItemManager.BAUXITE_ORE.clone() : null;
+            case "rock_salt":
+            case "tuz_kayasi":
+            case "tuz_kayası":
+                return ItemManager.ROCK_SALT != null ? ItemManager.ROCK_SALT.clone() : null;
+            case "rock_salt_ore":
+            case "tuz_kayasi_cevheri":
+            case "tuz_kayası_cevheri":
+                return ItemManager.ROCK_SALT_ORE != null ? ItemManager.ROCK_SALT_ORE.clone() : null;
+            case "mithril":
+            case "mithril_ingot":
+                return ItemManager.MITHRIL_INGOT != null ? ItemManager.MITHRIL_INGOT.clone() : null;
+            case "mithril_ore":
+            case "mithril_cevheri":
+                return ItemManager.MITHRIL_ORE != null ? ItemManager.MITHRIL_ORE.clone() : null;
+            case "mithril_string":
+            case "mithril_ipi":
+                return ItemManager.MITHRIL_STRING != null ? ItemManager.MITHRIL_STRING.clone() : null;
+            case "astral_crystal":
+            case "astral_kristali":
+            case "astral_kristal":
+                return ItemManager.ASTRAL_CRYSTAL != null ? ItemManager.ASTRAL_CRYSTAL.clone() : null;
+            case "astral_ore":
+            case "astral_cevheri":
+                return ItemManager.ASTRAL_ORE != null ? ItemManager.ASTRAL_ORE.clone() : null;
+            default:
+                return null;
+        }
+    }
+    
+    private ItemStack getItemByNameTool(String name) {
+        switch (name.toLowerCase()) {
+            case "rusty_hook":
+            case "pasli_kanca":
+            case "paslı_kanca":
+                return ItemManager.RUSTY_HOOK != null ? ItemManager.RUSTY_HOOK.clone() : null;
+            case "golden_hook":
+            case "altin_kanca":
+            case "altın_kanca":
+                return ItemManager.GOLDEN_HOOK != null ? ItemManager.GOLDEN_HOOK.clone() : null;
+            case "titan_grapple":
+            case "titan_kancasi":
+            case "titan_kancası":
+                return ItemManager.TITAN_GRAPPLE != null ? ItemManager.TITAN_GRAPPLE.clone() : null;
+            case "trap_core":
+            case "tuzak_cekirdegi":
+            case "tuzak_çekirdeği":
+                return ItemManager.TRAP_CORE != null ? ItemManager.TRAP_CORE.clone() : null;
+            case "spyglass":
+            case "durbun":
+            case "dürbün":
+                return new ItemStack(Material.SPYGLASS);
+            default:
+                return null;
+        }
+    }
+    
+    // Eski metod - geriye uyumluluk için (getItemByNameAllCategories'yi çağırır)
     private ItemStack getItemByName(String name) {
+        return getItemByNameAllCategories(name);
+    }
+    
+    // Eski metodun içeriği - artık kullanılmıyor ama referans için tutuluyor
+    @Deprecated
+    private ItemStack getItemByNameOld(String name) {
         switch (name.toLowerCase()) {
             case "blueprint":
             case "blueprint_paper":
@@ -811,7 +1533,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         // İlk argüman (komut seçimi)
         if (args.length == 1) {
             List<String> commands = Arrays.asList("give", "spawn", "disaster", "list", "help", "siege", "caravan",
-                    "contract", "build", "trap");
+                    "contract", "build", "trap", "dungeon", "biome");
             String input = args[0].toLowerCase();
 
             // Eğer boşsa veya başlangıç eşleşiyorsa filtrele
@@ -831,51 +1553,28 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
             switch (commandName) {
                 case "give":
-                    // Tüm item isimlerini listele
-                    List<String> items = Arrays.asList(
-                            "blueprint", "lightning_core", "titanium_ore", "titanium_ingot",
-                            "dark_matter", "red_diamond", "ruby", "adamantite", "star_core",
-                            "flame_amplifier", "devil_horn", "devil_snake_eye", "recipe_tectonic",
-                            "war_fan", "tower_shield", "hell_fruit", "clan_crystal", "clan_fence",
-                            // Özel Eşyalar
-                            "rusty_hook", "titan_grapple", "trap_core", "spyglass",
-                            // Yeni Madenler
-                            "sulfur", "sulfur_ore", "bauxite", "bauxite_ore",
-                            "rock_salt", "rock_salt_ore", "mithril", "mithril_ore", "mithril_string",
-                            "astral_crystal", "astral_ore");
+                    // Kategoriler
+                    List<String> giveCategories = Arrays.asList("weapon", "armor", "material", "mobdrop", "special", "ore", "tool");
                     if (input.isEmpty()) {
-                        return items;
+                        return giveCategories;
                     }
-                    return items.stream()
+                    return giveCategories.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
 
                 case "spawn":
-                    // Tüm mob isimlerini listele (27 mob + supply drop)
-                    List<String> mobs = Arrays.asList(
-                            // Eski moblar
-                            "hell_dragon", "terror_worm", "war_bear", "shadow_panther", "wyvern",
-                            // Sık gelen canavarlar
-                            "goblin", "ork", "troll", "skeleton_knight", "dark_mage",
-                            "werewolf", "giant_spider", "minotaur", "harpy", "basilisk",
-                            // Nadir canavarlar
-                            "dragon", "trex", "cyclops", "griffin", "wraith",
-                            "lich", "kraken", "phoenix", "hydra", "behemoth",
-                            // Yeni moblar
-                            "titan_golem",
-                            // Özel spawnlar
-                            "supply_drop");
+                    // Kategoriler
+                    List<String> spawnCategories = Arrays.asList("level1", "level2", "level3", "level4", "level5", "boss", "special");
                     if (input.isEmpty()) {
-                        return mobs;
+                        return spawnCategories;
                     }
-                    return mobs.stream()
+                    return spawnCategories.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
 
                 case "disaster":
-                    // Tüm felaket tiplerini listele
-                    List<String> disasters = Arrays.asList(
-                            "titan_golem", "abyssal_worm", "solar_flare");
+                    // Felaket tipleri + clear
+                    List<String> disasters = Arrays.asList("titan_golem", "abyssal_worm", "solar_flare", "clear");
                     if (input.isEmpty()) {
                         return disasters;
                     }
@@ -945,44 +1644,161 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                                 .filter(s -> s.toLowerCase().startsWith(input))
                                 .collect(Collectors.toList());
                     }
+                    
+                case "mine":
+                    // Mine komutları
+                    if (args.length == 2 && args[1].equalsIgnoreCase("give")) {
+                        // Mine give için mayın tipleri
+                        List<String> mineTypes = Arrays.asList("explosive", "lightning", "poison", "blindness", "fatigue", "slowness");
+                        if (input.isEmpty()) {
+                            return mineTypes;
+                        }
+                        return mineTypes.stream()
+                                .filter(s -> s.toLowerCase().startsWith(input))
+                                .collect(Collectors.toList());
+                    } else {
+                        // Mine list komutları
+                        List<String> mineCommands = Arrays.asList("list", "give");
+                        if (input.isEmpty()) {
+                            return mineCommands;
+                        }
+                        return mineCommands.stream()
+                                .filter(s -> s.toLowerCase().startsWith(input))
+                                .collect(Collectors.toList());
+                    }
+                                .collect(Collectors.toList());
+                    } else {
+                        // Trap list komutları
+                        List<String> trapCommands = Arrays.asList("list", "give");
+                        if (input.isEmpty()) {
+                            return trapCommands;
+                        }
+                        return trapCommands.stream()
+                                .filter(s -> s.toLowerCase().startsWith(input))
+                                .collect(Collectors.toList());
+                    }
 
                 case "build":
-                    // Build komutları - Tüm yapı tipleri
-                    List<String> buildTypes = Arrays.asList(
-                            // Savaş yapıları
-                            "catapult", "ballista", "lava_fountain", "poison_dispenser",
-                            "force_field", "healing_shrine", "power_totem", "speed_circle", "defense_wall",
-                            // Bataryalar
-                            "magma_battery", "lightning_battery", "black_hole", "bridge",
-                            "shelter", "gravity_anchor", "seismic_hammer", "magnetic_disruptor", "ozone_shield",
-                            "earth_wall", "energy_wall", "lava_trencher_battery",
-                            // Klan yapıları
-                            "alchemy_tower", "tectonic_stabilizer", "healing_beacon", "global_market_gate",
-                            "auto_turret", "poison_reactor", "siege_factory", "wall_generator",
-                            "gravity_well", "lava_trencher", "watchtower", "drone_station",
-                            "xp_bank", "mag_rail", "teleporter", "food_silo", "oil_refinery",
-                            "weather_machine", "crop_accelerator", "mob_grinder", "invisibility_cloak",
-                            "armory", "library", "warning_sign", "auto_drill", "core");
+                    // Kategoriler
+                    List<String> buildCategories = Arrays.asList("weapon", "battery", "structure");
                     if (input.isEmpty()) {
-                        return buildTypes;
+                        return buildCategories;
                     }
-                    return buildTypes.stream()
+                    return buildCategories.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
+                            .collect(Collectors.toList());
+                            
+                case "dungeon":
+                    // Dungeon komutları
+                    List<String> dungeonCommands = Arrays.asList("spawn", "list", "clear");
+                    if (input.isEmpty()) {
+                        return dungeonCommands;
+                    }
+                    return dungeonCommands.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
+                            .collect(Collectors.toList());
+                            
+                case "biome":
+                    // Biome komutları
+                    List<String> biomeCommands = Arrays.asList("list", "set");
+                    if (input.isEmpty()) {
+                        return biomeCommands;
+                    }
+                    return biomeCommands.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
+                            .collect(Collectors.toList());
+                            
+                case "boss":
+                    // Boss komutları
+                    List<String> bossCommands = Arrays.asList("spawn", "list", "ritual");
+                    if (input.isEmpty()) {
+                        return bossCommands;
+                    }
+                    return bossCommands.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
             }
         }
-
-        // Build komutu için seviye argümanı
-        if (args.length == 3 && args[0].equalsIgnoreCase("build")) {
-            // Seviye için 1-5 arası öner
-            List<String> levels = Arrays.asList("1", "2", "3", "4", "5");
+        
+        // Üçüncü argüman (kategorize edilmiş komutlar)
+        if (args.length == 3) {
+            String commandName = args[0].toLowerCase();
+            String category = args[1].toLowerCase();
             String input = args[2].toLowerCase();
-            if (input.isEmpty()) {
-                return levels;
+            
+            switch (commandName) {
+                case "give":
+                    return getGiveTabComplete(category, input);
+                case "spawn":
+                    return getSpawnTabComplete(category, input);
+                case "build":
+                    return getBuildTabComplete(category, input);
+                case "dungeon":
+                    return getDungeonTabComplete(args, input);
+                case "biome":
+                    return getBiomeTabComplete(args, input);
+                case "boss":
+                    return getBossTabComplete(args, input);
+                case "tame":
+                    return getTameTabComplete(args, input);
+                case "disaster":
+                    // Disaster için koordinat tamamlama
+                    if (category.equalsIgnoreCase("titan_golem") || 
+                        category.equalsIgnoreCase("abyssal_worm") || 
+                        category.equalsIgnoreCase("solar_flare")) {
+                        // Koordinat önerileri: "ben", "me", "self" veya sayılar
+                        if (input.isEmpty() || input.equals("b") || input.equals("m") || input.equals("s")) {
+                            return Arrays.asList("ben", "me", "self");
+                        }
+                        // Sayısal koordinat için boş liste (kullanıcı kendisi yazacak)
+                        return new ArrayList<>();
+                    }
+                    break;
             }
-            return levels.stream()
-                    .filter(s -> s.startsWith(input))
-                    .collect(Collectors.toList());
+        }
+        
+        // Dördüncü argüman (disaster koordinatları)
+        if (args.length == 4 && args[0].equalsIgnoreCase("disaster")) {
+            // Y koordinatı için boş liste
+            return new ArrayList<>();
+        }
+        
+        // Beşinci argüman (disaster koordinatları)
+        if (args.length == 5 && args[0].equalsIgnoreCase("disaster")) {
+            // Z koordinatı için boş liste
+            return new ArrayList<>();
+        }
+
+        // Build komutu için seviye argümanı (kategorize edilmiş veya eski format)
+        if (args.length >= 3 && args[0].equalsIgnoreCase("build")) {
+            String category = args[1].toLowerCase();
+            // Eğer kategori weapon, battery, structure ise 4. argüman seviye
+            if (category.equals("weapon") || category.equals("battery") || category.equals("structure")) {
+                if (args.length == 4) {
+                    // Seviye için 1-5 arası öner
+                    List<String> levels = Arrays.asList("1", "2", "3", "4", "5");
+                    String input = args[3].toLowerCase();
+                    if (input.isEmpty()) {
+                        return levels;
+                    }
+                    return levels.stream()
+                            .filter(s -> s.startsWith(input))
+                            .collect(Collectors.toList());
+                }
+            } else {
+                // Eski format: build <type> [level]
+                if (args.length == 3) {
+                    // Seviye için 1-5 arası öner
+                    List<String> levels = Arrays.asList("1", "2", "3", "4", "5");
+                    String input = args[2].toLowerCase();
+                    if (input.isEmpty()) {
+                        return levels;
+                    }
+                    return levels.stream()
+                            .filter(s -> s.startsWith(input))
+                            .collect(Collectors.toList());
+                }
+            }
         }
 
         // Trap give komutu için tuzak tipleri
@@ -997,13 +1813,206 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     .collect(Collectors.toList());
         }
 
-        // Üçüncü argüman (sadece give komutu için miktar)
-        if (args.length == 3 && args[0].equalsIgnoreCase("give")) {
+        // Dördüncü argüman (give komutu için miktar - kategorize edilmiş format)
+        if (args.length == 4 && args[0].equalsIgnoreCase("give")) {
             // Miktar için tab completion gerekmez, boş liste döndür
             return new ArrayList<>();
         }
+        
+        // Üçüncü argüman (give komutu için miktar - eski format)
+        if (args.length == 3 && args[0].equalsIgnoreCase("give")) {
+            String category = args[1].toLowerCase();
+            // Eğer kategori değilse (eski format), miktar için boş liste
+            if (!category.equals("weapon") && !category.equals("armor") && !category.equals("material") &&
+                !category.equals("mobdrop") && !category.equals("special") && !category.equals("ore") &&
+                !category.equals("tool")) {
+                return new ArrayList<>();
+            }
+        }
 
         // Diğer durumlar için boş liste
+        return new ArrayList<>();
+    }
+    
+    // ========== TAB COMPLETION HELPER METODLARI ==========
+    
+    private List<String> getGiveTabComplete(String category, String input) {
+        switch (category.toLowerCase()) {
+            case "weapon":
+                List<String> weapons = Arrays.asList("war_fan", "tower_shield");
+                return filterList(weapons, input);
+            case "armor":
+                return new ArrayList<>(); // Şimdilik boş
+            case "material":
+                List<String> materials = Arrays.asList("blueprint", "lightning_core", "dark_matter", "star_core",
+                        "flame_amplifier", "devil_horn", "devil_snake_eye", "recipe_tectonic", "hell_fruit",
+                        "clan_crystal", "clan_fence", "red_diamond", "ruby", "adamantite", "titanium_ore", "titanium_ingot");
+                return filterList(materials, input);
+            case "mobdrop":
+                List<String> mobDrops = new ArrayList<>();
+                // Seviye 1
+                mobDrops.addAll(Arrays.asList("wild_boar_hide", "wild_boar_meat", "wolf_fang", "wolf_pelt",
+                        "snake_venom", "snake_skin", "eagle_feather", "eagle_claw", "bear_claw", "bear_pelt"));
+                // Seviye 2
+                mobDrops.addAll(Arrays.asList("iron_core", "iron_dust", "ice_heart", "ice_crystal", "fire_core",
+                        "fire_scale", "earth_stone", "earth_dust", "soul_fragment", "ghost_dust"));
+                // Seviye 3
+                mobDrops.addAll(Arrays.asList("shadow_heart", "shadow_scale", "light_heart", "light_feather",
+                        "storm_core", "storm_dust", "lava_heart", "lava_scale", "ice_core", "ice_shard"));
+                // Seviye 4
+                mobDrops.addAll(Arrays.asList("devil_blood", "black_dragon_heart", "black_dragon_scale",
+                        "death_sword_fragment", "death_dust", "chaos_core", "chaos_scale", "hell_stone", "hell_fire"));
+                // Seviye 5
+                mobDrops.addAll(Arrays.asList("legendary_dragon_heart", "legendary_dragon_scale", "god_blood",
+                        "god_fragment", "void_core", "void_dust", "time_core", "time_scale", "fate_stone", "fate_fragment"));
+                return filterList(mobDrops, input);
+            case "special":
+                List<String> specials = Arrays.asList("red_diamond", "ruby", "adamantite", "titanium_ore", "titanium_ingot");
+                return filterList(specials, input);
+            case "ore":
+                List<String> ores = Arrays.asList("sulfur", "sulfur_ore", "bauxite", "bauxite_ore", "rock_salt",
+                        "rock_salt_ore", "mithril", "mithril_ore", "mithril_string", "astral_crystal", "astral_ore");
+                return filterList(ores, input);
+            case "tool":
+                List<String> tools = Arrays.asList("rusty_hook", "golden_hook", "titan_grapple", "trap_core", "spyglass");
+                return filterList(tools, input);
+            default:
+                return new ArrayList<>();
+        }
+    }
+    
+    private List<String> getSpawnTabComplete(String category, String input) {
+        switch (category.toLowerCase()) {
+            case "level1":
+                List<String> level1 = Arrays.asList("wild_boar", "wolf_pack", "snake", "eagle", "bear",
+                        "goblin", "ork", "troll", "skeleton_knight", "dark_mage");
+                return filterList(level1, input);
+            case "level2":
+                List<String> level2 = Arrays.asList("iron_golem", "ice_elemental", "fire_elemental", "earth_elemental",
+                        "spirit_guardian", "werewolf", "giant_spider", "minotaur", "harpy", "basilisk");
+                return filterList(level2, input);
+            case "level3":
+                List<String> level3 = Arrays.asList("shadow_beast", "light_spirit", "storm_giant", "lava_golem",
+                        "frost_giant", "dragon", "trex", "cyclops", "griffin", "wraith", "lich", "kraken", "phoenix");
+                return filterList(level3, input);
+            case "level4":
+                List<String> level4 = Arrays.asList("red_devil", "celestial_guardian", "thunder_wyvern", "magma_beast",
+                        "abyssal_horror", "hell_dragon", "wyvern", "terror_worm", "war_bear", "shadow_panther", "hydra", "behemoth");
+                return filterList(level4, input);
+            case "level5":
+                List<String> level5 = Arrays.asList("ancient_dragon", "elder_kraken", "void_lord", "cosmic_horror",
+                        "elemental_titan", "titan_golem", "void_worm");
+                return filterList(level5, input);
+            case "boss":
+                List<String> bosses = Arrays.asList("titan_golem", "hydra", "void_worm", "legendary_dragon", "god_slayer");
+                return filterList(bosses, input);
+            case "special":
+                List<String> specials = Arrays.asList("supply_drop");
+                return filterList(specials, input);
+            default:
+                return new ArrayList<>();
+        }
+    }
+    
+    private List<String> getBuildTabComplete(String category, String input) {
+        switch (category.toLowerCase()) {
+            case "weapon":
+                List<String> weapons = Arrays.asList("catapult", "ballista", "lava_fountain", "poison_dispenser",
+                        "force_field", "healing_shrine", "power_totem", "speed_circle", "defense_wall");
+                return filterList(weapons, input);
+            case "battery":
+                List<String> batteries = Arrays.asList("magma_battery", "lightning_battery", "black_hole", "bridge",
+                        "shelter", "gravity_anchor", "seismic_hammer", "magnetic_disruptor", "ozone_shield",
+                        "earth_wall", "energy_wall", "lava_trencher_battery");
+                return filterList(batteries, input);
+            case "structure":
+                List<String> structures = Arrays.asList("alchemy_tower", "tectonic_stabilizer", "healing_beacon",
+                        "global_market_gate", "auto_turret", "poison_reactor", "siege_factory", "wall_generator",
+                        "gravity_well", "lava_trencher", "watchtower", "drone_station", "xp_bank", "mag_rail",
+                        "teleporter", "food_silo", "oil_refinery", "weather_machine", "crop_accelerator",
+                        "mob_grinder", "invisibility_cloak", "armory", "library", "warning_sign", "auto_drill", "core");
+                return filterList(structures, input);
+            default:
+                return new ArrayList<>();
+        }
+    }
+    
+    private List<String> filterList(List<String> list, String input) {
+        if (input.isEmpty()) {
+            return list;
+        }
+        return list.stream()
+                .filter(s -> s.toLowerCase().startsWith(input))
+                .collect(Collectors.toList());
+    }
+    
+    private List<String> getDungeonTabComplete(String[] args, String input) {
+        if (args.length == 2) {
+            // Komutlar: spawn, list, clear
+            return filterList(Arrays.asList("spawn", "list", "clear"), input);
+        } else if (args.length == 3) {
+            String subCommand = args[1].toLowerCase();
+            if (subCommand.equals("spawn") || subCommand.equals("list")) {
+                // Seviyeler: 1, 2, 3, 4, 5
+                return filterList(Arrays.asList("1", "2", "3", "4", "5"), input);
+            }
+        } else if (args.length == 4 && args[1].equalsIgnoreCase("spawn")) {
+            // Zindan tipleri
+            int level = parseInt(args[2], 1);
+            me.mami.stratocraft.manager.DungeonManager dungeonManager = plugin.getDungeonManager();
+            if (dungeonManager != null) {
+                return filterList(dungeonManager.getDungeonTypes(level), input);
+            }
+        }
+        return new ArrayList<>();
+    }
+    
+    private List<String> getBiomeTabComplete(String[] args, String input) {
+        if (args.length == 2) {
+            // Komutlar: list, set
+            return filterList(Arrays.asList("list", "set"), input);
+        } else if (args.length == 3 && args[1].equalsIgnoreCase("list")) {
+            // Seviyeler: 1, 2, 3, 4, 5
+            return filterList(Arrays.asList("1", "2", "3", "4", "5"), input);
+        }
+        return new ArrayList<>();
+    }
+    
+    private List<String> getBossTabComplete(String[] args, String input) {
+        if (args.length == 2) {
+            // Komutlar: spawn, list, ritual
+            return filterList(Arrays.asList("spawn", "list", "ritual"), input);
+        } else if (args.length == 3 && (args[1].equalsIgnoreCase("spawn") || args[1].equalsIgnoreCase("ritual"))) {
+            // Boss tipleri
+            List<String> bossTypes = Arrays.asList(
+                "GOBLIN_KING", "ORC_CHIEF", "TROLL_KING", "DRAGON", "TREX",
+                "CYCLOPS", "TITAN_GOLEM", "HELL_DRAGON", "HYDRA", "CHAOS_GOD"
+            );
+            return filterList(bossTypes, input);
+        }
+        return new ArrayList<>();
+    }
+    
+    private List<String> getTameTabComplete(String[] args, String input) {
+        if (args.length == 2) {
+            // Komutlar: ritual, list, info
+            return filterList(Arrays.asList("ritual", "list", "info"), input);
+        } else if (args.length == 3 && args[1].equalsIgnoreCase("ritual")) {
+            // Ritual alt komutları: level, boss
+            return filterList(Arrays.asList("level", "boss"), input);
+        } else if (args.length == 4 && args[1].equalsIgnoreCase("ritual")) {
+            if (args[2].equalsIgnoreCase("level")) {
+                // Seviyeler: 1, 2, 3, 4, 5
+                return filterList(Arrays.asList("1", "2", "3", "4", "5"), input);
+            } else if (args[2].equalsIgnoreCase("boss")) {
+                // Boss tipleri
+                List<String> bossTypes = Arrays.asList(
+                    "GOBLIN_KING", "ORC_CHIEF", "TROLL_KING", "DRAGON", "TREX",
+                    "CYCLOPS", "TITAN_GOLEM", "HELL_DRAGON", "HYDRA", "CHAOS_GOD"
+                );
+                return filterList(bossTypes, input);
+            }
+        }
         return new ArrayList<>();
     }
 
@@ -1223,29 +2232,45 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      */
     private boolean handleBuild(Player p, String[] args) {
         if (args.length < 2) {
-            p.sendMessage("§cKullanım: /stratocraft build <type> [level]");
-            p.sendMessage("§7Örnek: /stratocraft build catapult");
-            p.sendMessage("§7Örnek: /stratocraft build alchemy_tower 3");
-            p.sendMessage("§7Yapı tipleri: siege, structure, battery");
+            p.sendMessage("§cKullanım: /stratocraft build <kategori> <type> [level]");
+            p.sendMessage("§7Kategoriler: weapon, battery, structure");
+            p.sendMessage("§7Örnek: /stratocraft build weapon catapult");
+            p.sendMessage("§7Örnek: /stratocraft build structure alchemy_tower 3");
+            p.sendMessage("§7Eski format: /stratocraft build <type> [level] (hala çalışıyor)");
             return true;
         }
 
-        String buildType = args[1].toLowerCase();
-        int level = args.length > 2 ? parseInt(args[2], 1) : 1;
+        String category = args[1].toLowerCase();
+        String buildType;
+        int level;
+        
+        // Kategori kontrolü
+        if (args.length >= 3 && (category.equals("weapon") || category.equals("battery") || category.equals("structure"))) {
+            // Yeni format: build weapon catapult
+            buildType = args[2].toLowerCase();
+            level = args.length > 3 ? parseInt(args[3], 1) : 1;
+        } else {
+            // Eski format desteği (kategori yok, direkt type)
+            buildType = args[1].toLowerCase();
+            level = args.length > 2 ? parseInt(args[2], 1) : 1;
+            category = "auto"; // Otomatik kategori belirleme
+        }
 
         // Yapı kategorisine göre yönlendir
-        if (buildType.startsWith("catapult") || buildType.startsWith("ballista") ||
+        if (category.equals("weapon") || (category.equals("auto") && (
+                buildType.startsWith("catapult") || buildType.startsWith("ballista") ||
                 buildType.startsWith("lava_fountain") || buildType.startsWith("poison_dispenser") ||
                 buildType.startsWith("force_field") || buildType.startsWith("healing_shrine") ||
                 buildType.startsWith("power_totem") || buildType.startsWith("speed_circle") ||
-                buildType.startsWith("defense_wall")) {
+                buildType.startsWith("defense_wall")))) {
             return buildSiegeWeapon(p, buildType);
-        } else if (buildType.startsWith("magma") || buildType.startsWith("lightning") ||
+        } else if (category.equals("battery") || (category.equals("auto") && (
+                buildType.startsWith("magma") || buildType.startsWith("lightning") ||
                 buildType.startsWith("black_hole") || buildType.startsWith("bridge") ||
                 buildType.startsWith("shelter") || buildType.startsWith("gravity") ||
                 buildType.startsWith("seismic") || buildType.startsWith("ozone") ||
                 buildType.startsWith("magnetic") || buildType.startsWith("earth_wall") ||
-                buildType.startsWith("energy_wall") || buildType.startsWith("lava_trencher_battery")) {
+                buildType.startsWith("energy_wall") || buildType.startsWith("lava_trencher_battery")))) {
             return buildBattery(p, buildType);
         } else {
             // Klan yapıları (Structure.Type)
@@ -1930,6 +2955,97 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
     }
 
+    // ========== MAYIN YÖNETİMİ ==========
+    
+    private boolean handleMine(Player p, String[] args) {
+        if (args.length < 2) {
+            p.sendMessage("§cKullanım: /stratocraft mine <list|give>");
+            return true;
+        }
+        
+        String subCommand = args[1].toLowerCase();
+        
+        switch (subCommand) {
+            case "list":
+                showMinesList(p);
+                return true;
+            case "give":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft mine give <type>");
+                    p.sendMessage("§7Mayın tipleri: explosive, lightning, poison, blindness, fatigue, slowness");
+                    return true;
+                }
+                String mineType = args[2].toLowerCase();
+                giveMineItems(p, mineType);
+                return true;
+            default:
+                p.sendMessage("§cGeçersiz komut! /stratocraft mine <list|give>");
+                return true;
+        }
+    }
+    
+    private void showMinesList(Player p) {
+        p.sendMessage("§6§l=== MAYIN SİSTEMİ ===");
+        p.sendMessage("§7Mayın kurulumu için:");
+        p.sendMessage("§e1. §7Basınç plakası yerleştir (Stone, Oak, Light/Heavy Weighted)");
+        p.sendMessage("§e2. §7Basınç plakasına mayın tipi item ile sağ tık");
+        p.sendMessage("§e3. §7Mayın hazır! Basınca tetiklenir ve yok olur");
+        p.sendMessage("");
+        p.sendMessage("§7--- Mayın Tipleri ---");
+        p.sendMessage("§e- explosive §7- Patlama Mayını (TNT) - Alan hasarı");
+        p.sendMessage("§e- lightning §7- Yıldırım Mayını (Lightning Core) - Tek hedef");
+        p.sendMessage("§e- poison §7- Zehir Mayını (Spider Eye) - Tek hedef");
+        p.sendMessage("§e- blindness §7- Körlük Mayını (Ink Sac) - Tek hedef");
+        p.sendMessage("§e- fatigue §7- Yorgunluk Mayını (Iron Pickaxe) - Tek hedef");
+        p.sendMessage("§e- slowness §7- Yavaşlık Mayını (Slime Ball) - Tek hedef");
+        p.sendMessage("");
+        p.sendMessage("§7Özellikler:");
+        p.sendMessage("§7- Görünür (basınç plakası)");
+        p.sendMessage("§7- Basınca yok olur");
+        p.sendMessage("§7- Kolay yapılır (sadece basınç plakası + item)");
+        p.sendMessage("§7- Sahip kırabilir");
+    }
+    
+    private void giveMineItems(Player p, String mineType) {
+        // Basınç plakası
+        giveItemSafely(p, new ItemStack(Material.STONE_PRESSURE_PLATE, 5));
+        
+        // Mayın tipi itemi
+        switch (mineType) {
+            case "explosive":
+                giveItemSafely(p, new ItemStack(Material.TNT, 5));
+                p.sendMessage("§aPatlama Mayını itemleri verildi!");
+                break;
+            case "lightning":
+                if (ItemManager.LIGHTNING_CORE != null) {
+                    giveItemSafely(p, ItemManager.LIGHTNING_CORE.clone());
+                    giveItemSafely(p, ItemManager.LIGHTNING_CORE.clone());
+                    giveItemSafely(p, ItemManager.LIGHTNING_CORE.clone());
+                }
+                p.sendMessage("§aYıldırım Mayını itemleri verildi!");
+                break;
+            case "poison":
+                giveItemSafely(p, new ItemStack(Material.SPIDER_EYE, 5));
+                p.sendMessage("§aZehir Mayını itemleri verildi!");
+                break;
+            case "blindness":
+                giveItemSafely(p, new ItemStack(Material.INK_SAC, 5));
+                p.sendMessage("§aKörlük Mayını itemleri verildi!");
+                break;
+            case "fatigue":
+                giveItemSafely(p, new ItemStack(Material.IRON_PICKAXE, 5));
+                p.sendMessage("§aYorgunluk Mayını itemleri verildi!");
+                break;
+            case "slowness":
+                giveItemSafely(p, new ItemStack(Material.SLIME_BALL, 5));
+                p.sendMessage("§aYavaşlık Mayını itemleri verildi!");
+                break;
+            default:
+                p.sendMessage("§cGeçersiz mayın tipi! explosive, lightning, poison, blindness, fatigue, slowness");
+                return;
+        }
+    }
+    
     private boolean handleBallista(Player p, String[] args) {
         if (args.length < 2) {
             p.sendMessage("§c/admin ballista create - Baktığın yöne Balista oluştur");
@@ -2023,6 +3139,250 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§a§lBALİSTA YENİDEN DOLDURULDU! (30/30)");
     }
 
+    // ========== BOSS KOMUTLARI ==========
+    
+    private boolean handleBoss(Player p, String[] args) {
+        if (args.length < 2) {
+            p.sendMessage("§cKullanım: /stratocraft boss <spawn|list|ritual>");
+            p.sendMessage("§7  spawn <type> - Boss spawn et");
+            p.sendMessage("§7  list - Boss tiplerini listele");
+            p.sendMessage("§7  ritual <type> - Ritüel desenini göster");
+            return true;
+        }
+        
+        me.mami.stratocraft.manager.BossManager bossManager = plugin.getBossManager();
+        if (bossManager == null) {
+            p.sendMessage("§cBossManager bulunamadı!");
+            return true;
+        }
+        
+        switch (args[1].toLowerCase()) {
+            case "spawn":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft boss spawn <type>");
+                    p.sendMessage("§7Boss tipleri: goblin_king, orc_chief, troll_king, dragon, trex, cyclops, titan_golem, hell_dragon, hydra, chaos_god");
+                    return true;
+                }
+                
+                String bossTypeStr = args[2].toUpperCase();
+                BossManager.BossType bossType;
+                try {
+                    bossType = BossManager.BossType.valueOf(bossTypeStr);
+                } catch (IllegalArgumentException e) {
+                    p.sendMessage("§cGeçersiz boss tipi!");
+                    return true;
+                }
+                
+                Location spawnLoc = p.getLocation();
+                if (bossManager.spawnBossFromRitual(spawnLoc, bossType, p.getUniqueId())) {
+                    p.sendMessage("§a§l" + bossManager.getBossDisplayName(bossType) + " spawn edildi!");
+                } else {
+                    p.sendMessage("§cBoss spawn edilemedi!");
+                }
+                return true;
+                
+            case "list":
+                p.sendMessage("§6§l=== BOSS LİSTESİ ===");
+                for (me.mami.stratocraft.manager.BossManager.BossType type : me.mami.stratocraft.manager.BossManager.BossType.values()) {
+                    String name = bossManager.getBossDisplayName(type);
+                    Material item = bossManager.getRitualActivationItem(type);
+                    p.sendMessage("§e" + type.name() + " §7- " + name + " §7(Item: " + item.name() + ")");
+                }
+                return true;
+                
+            case "ritual":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft boss ritual <type>");
+                    return true;
+                }
+                
+                String ritualTypeStr = args[2].toUpperCase();
+                me.mami.stratocraft.manager.BossManager.BossType ritualType;
+                try {
+                    ritualType = me.mami.stratocraft.manager.BossManager.BossType.valueOf(ritualTypeStr);
+                } catch (IllegalArgumentException e) {
+                    p.sendMessage("§cGeçersiz boss tipi!");
+                    return true;
+                }
+                
+                showBossRitualPattern(p, ritualType, bossManager);
+                return true;
+                
+            default:
+                p.sendMessage("§cGeçersiz komut! /stratocraft boss <spawn|list|ritual>");
+                return true;
+        }
+    }
+    
+    private void showBossRitualPattern(Player p, me.mami.stratocraft.manager.BossManager.BossType bossType, me.mami.stratocraft.manager.BossManager bossManager) {
+        p.sendMessage("§6=== " + bossManager.getBossDisplayName(bossType) + " Ritüel Deseni ===");
+        p.sendMessage("§7Merkez bloğa sağ tıkla ve doğru deseni yap:");
+        
+        Material[][] pattern = bossManager.getRitualPattern(bossType);
+        if (pattern != null) {
+            int size = pattern.length;
+            for (int x = 0; x < size; x++) {
+                StringBuilder line = new StringBuilder("§7");
+                for (int z = 0; z < size; z++) {
+                    Material mat = pattern[x][z];
+                    if (mat == null) {
+                        line.append("· ");
+                    } else {
+                        line.append(getMaterialSymbol(mat)).append(" ");
+                    }
+                }
+                p.sendMessage(line.toString());
+            }
+        }
+        
+        Material activationItem = bossManager.getRitualActivationItem(bossType);
+        p.sendMessage("§7Aktifleştirme itemi: §e" + activationItem.name());
+        p.sendMessage("§7Yapılışı: Merkez bloğa " + activationItem.name() + " ile sağ tıkla");
+    }
+    
+    private String getMaterialSymbol(Material mat) {
+        switch (mat) {
+            case COBBLESTONE: return "§7C";
+            case STONE: return "§8S";
+            case STONE_BRICKS: return "§8B";
+            case OBSIDIAN: return "§5O";
+            case GOLD_BLOCK: return "§6G";
+            case IRON_BLOCK: return "§fI";
+            case DIAMOND_BLOCK: return "§bD";
+            case EMERALD_BLOCK: return "§aE";
+            case NETHERITE_BLOCK: return "§4N";
+            case NETHERRACK: return "§cN";
+            case PRISMARINE: return "§3P";
+            case BEDROCK: return "§0B";
+            case BEACON: return "§b★";
+            case CONDUIT: return "§b●";
+            case END_STONE_BRICKS: return "§eE";
+            default: return "?";
+        }
+    }
+    
+    // ========== ZİNDAN VE BİYOM KOMUTLARI ==========
+    
+    private boolean handleDungeon(Player p, String[] args) {
+        if (args.length < 2) {
+            p.sendMessage("§cKullanım: /stratocraft dungeon <spawn|list|clear>");
+            p.sendMessage("§7  spawn <level> [type] - Zindan spawn et");
+            p.sendMessage("§7  list [level] - Zindan tiplerini listele");
+            p.sendMessage("§7  clear - Spawn edilmiş zindanları temizle");
+            return true;
+        }
+        
+        me.mami.stratocraft.manager.DungeonManager dungeonManager = plugin.getDungeonManager();
+        if (dungeonManager == null) {
+            p.sendMessage("§cDungeonManager bulunamadı!");
+            return true;
+        }
+        
+        switch (args[1].toLowerCase()) {
+            case "spawn":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft dungeon spawn <level> [type]");
+                    return true;
+                }
+                
+                int level = parseInt(args[2], 1);
+                if (level < 1 || level > 5) {
+                    p.sendMessage("§cSeviye 1-5 arası olmalı!");
+                    return true;
+                }
+                
+                String dungeonType = args.length > 3 ? args[3] : null;
+                Location loc = p.getLocation();
+                
+                if (dungeonType != null) {
+                    boolean success = dungeonManager.spawnDungeonManually(loc, level, dungeonType);
+                    if (success) {
+                        p.sendMessage("§aZindan spawn edildi: " + dungeonType + " (Seviye " + level + ")");
+                    } else {
+                        p.sendMessage("§cZindan spawn edilemedi! Şema dosyası bulunamadı: dungeons/level" + level + "/" + dungeonType);
+                    }
+                } else {
+                    dungeonManager.spawnDungeon(loc, level);
+                    p.sendMessage("§aZindan spawn edildi (Seviye " + level + ")");
+                }
+                return true;
+                
+            case "list":
+                int listLevel = args.length > 2 ? parseInt(args[2], 0) : 0;
+                if (listLevel == 0) {
+                    // Tüm seviyeleri listele
+                    for (int l = 1; l <= 5; l++) {
+                        java.util.List<String> types = dungeonManager.getDungeonTypes(l);
+                        p.sendMessage("§6Seviye " + l + " Zindanları:");
+                        for (String type : types) {
+                            p.sendMessage("§7  - " + type);
+                        }
+                    }
+                } else {
+                    java.util.List<String> types = dungeonManager.getDungeonTypes(listLevel);
+                    p.sendMessage("§6Seviye " + listLevel + " Zindanları:");
+                    for (String type : types) {
+                        p.sendMessage("§7  - " + type);
+                    }
+                }
+                return true;
+                
+            case "clear":
+                dungeonManager.clearSpawnedDungeons();
+                p.sendMessage("§aSpawn edilmiş zindanlar temizlendi (yeni chunk'larda tekrar spawn olabilir)");
+                return true;
+                
+            default:
+                p.sendMessage("§cGeçersiz komut! spawn, list veya clear kullan");
+                return true;
+        }
+    }
+    
+    private boolean handleBiome(Player p, String[] args) {
+        if (args.length < 2) {
+            p.sendMessage("§cKullanım: /stratocraft biome <list|set>");
+            p.sendMessage("§7  list [level] - Biyomları listele");
+            p.sendMessage("§7  set <biome> - Biyom değiştir (şimdilik sadece bilgi)");
+            return true;
+        }
+        
+        me.mami.stratocraft.manager.BiomeManager biomeManager = plugin.getBiomeManager();
+        if (biomeManager == null) {
+            p.sendMessage("§cBiomeManager bulunamadı!");
+            return true;
+        }
+        
+        switch (args[1].toLowerCase()) {
+            case "list":
+                int listLevel = args.length > 2 ? parseInt(args[2], 0) : 0;
+                if (listLevel == 0) {
+                    // Tüm seviyeleri listele
+                    for (int l = 1; l <= 5; l++) {
+                        java.util.List<org.bukkit.block.Biome> biomes = biomeManager.getBiomesForLevel(l);
+                        p.sendMessage("§6Seviye " + l + " Biyomları:");
+                        for (org.bukkit.block.Biome biome : biomes) {
+                            p.sendMessage("§7  - " + biome.name());
+                        }
+                    }
+                } else {
+                    java.util.List<org.bukkit.block.Biome> biomes = biomeManager.getBiomesForLevel(listLevel);
+                    p.sendMessage("§6Seviye " + listLevel + " Biyomları:");
+                    for (org.bukkit.block.Biome biome : biomes) {
+                        p.sendMessage("§7  - " + biome.name());
+                    }
+                }
+                return true;
+                
+            case "set":
+                p.sendMessage("§eBiyom değiştirme özelliği yakında eklenecek!");
+                return true;
+                
+            default:
+                p.sendMessage("§cGeçersiz komut! list veya set kullan");
+                return true;
+        }
+    }
+    
     private void giveItemSafely(Player p, org.bukkit.inventory.ItemStack item) {
         if (item == null)
             return;
@@ -2032,6 +3392,303 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             for (org.bukkit.inventory.ItemStack drop : overflow.values()) {
                 p.getWorld().dropItemNaturally(p.getLocation(), drop);
             }
+        }
+    }
+    
+    // ========== CANLI EĞİTME KOMUTLARI ==========
+    
+    private boolean handleTame(Player p, String[] args) {
+        if (args.length < 2) {
+            p.sendMessage("§cKullanım: /stratocraft tame <ritual|list|info|instant|breed|facility>");
+            p.sendMessage("§7  ritual <level|boss> - Ritüel desenini göster");
+            p.sendMessage("§7  list - Eğitilmiş canlıları listele");
+            p.sendMessage("§7  info - Eğitme sistemi hakkında bilgi");
+            p.sendMessage("§7  instant <entity> - Anında eğit (admin)");
+            p.sendMessage("§7  breed <female> <male> - Anında çiftleştir (admin)");
+            p.sendMessage("§7  facility complete - Çiftleştirme tesisinin süresini bitir (admin)");
+            return true;
+        }
+        
+        me.mami.stratocraft.manager.TamingManager tamingManager = plugin.getTamingManager();
+        me.mami.stratocraft.manager.BreedingManager breedingManager = plugin.getBreedingManager();
+        
+        if (tamingManager == null) {
+            p.sendMessage("§cTamingManager bulunamadı!");
+            return true;
+        }
+        
+        switch (args[1].toLowerCase()) {
+            case "ritual":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft tame ritual <level|boss>");
+                    p.sendMessage("§7  level <1-5> - Seviye ritüel deseni");
+                    p.sendMessage("§7  boss <type> - Boss eğitme ritüel deseni");
+                    return true;
+                }
+                
+                if (args[2].equalsIgnoreCase("level")) {
+                    if (args.length < 4) {
+                        p.sendMessage("§cKullanım: /stratocraft tame ritual level <1-5>");
+                        return true;
+                    }
+                    int level = parseInt(args[3], 1);
+                    if (level < 1 || level > 5) {
+                        p.sendMessage("§cSeviye 1-5 arası olmalı!");
+                        return true;
+                    }
+                    showTamingRitualPattern(p, level, tamingManager);
+                } else if (args[2].equalsIgnoreCase("boss")) {
+                    if (args.length < 4) {
+                        p.sendMessage("§cKullanım: /stratocraft tame ritual boss <type>");
+                        return true;
+                    }
+                    String bossTypeStr = args[3].toUpperCase();
+                    me.mami.stratocraft.manager.BossManager.BossType bossType;
+                    try {
+                        bossType = me.mami.stratocraft.manager.BossManager.BossType.valueOf(bossTypeStr);
+                    } catch (IllegalArgumentException e) {
+                        p.sendMessage("§cGeçersiz boss tipi!");
+                        return true;
+                    }
+                    showBossTamingRitualPattern(p, bossType, tamingManager, plugin.getBossManager());
+                } else {
+                    p.sendMessage("§cGeçersiz komut! level veya boss kullan.");
+                    return true;
+                }
+                return true;
+                
+            case "list":
+                p.sendMessage("§6§l=== EĞİTİLMİŞ CANLILAR ===");
+                p.sendMessage("§7Eğitilmiş canlılar yakınında görünecek.");
+                // TODO: Eğitilmiş canlıları listele
+                return true;
+                
+            case "info":
+                p.sendMessage("§6§l=== CANLI EĞİTME SİSTEMİ ===");
+                p.sendMessage("§7Her canlı eğitilebilir!");
+                p.sendMessage("§7Seviyeye göre ritüel deseni yap ve aktifleştirme itemi ile sağ tıkla.");
+                p.sendMessage("§7Bosslar için özel eğitme ritüelleri var.");
+                p.sendMessage("§7Bazı canlılara binilebilir (ejderha, savaş ayısı vb.).");
+                p.sendMessage("§7Shift+Sağ tık ile takip edilecek kişi belirlenir.");
+                p.sendMessage("§7Yemek vererek çiftleştirme yapılabilir.");
+                return true;
+                
+            case "instant":
+                // Anında eğitme (admin)
+                if (!p.hasPermission("stratocraft.admin")) {
+                    p.sendMessage("§cBu komut sadece adminler için!");
+                    return true;
+                }
+                
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft tame instant <entity>");
+                    p.sendMessage("§7Yakındaki canlıya bak ve komutu kullan.");
+                    return true;
+                }
+                
+                // Yakındaki canlıyı bul
+                org.bukkit.entity.Entity target = p.getTargetEntity(10);
+                if (target == null || !(target instanceof LivingEntity)) {
+                    p.sendMessage("§cYakında canlı bulunamadı!");
+                    return true;
+                }
+                
+                LivingEntity creature = (LivingEntity) target;
+                int difficultyLevel = plugin.getDifficultyManager().getDifficultyLevel(creature.getLocation());
+                
+                if (tamingManager.tameCreature(creature, p.getUniqueId(), difficultyLevel)) {
+                    p.sendMessage("§a§lCanlı anında eğitildi!");
+                } else {
+                    p.sendMessage("§cCanlı eğitilemedi! (Zaten eğitilmiş olabilir)");
+                }
+                return true;
+                
+            case "breed":
+                // Anında çiftleştirme (admin)
+                if (!p.hasPermission("stratocraft.admin")) {
+                    p.sendMessage("§cBu komut sadece adminler için!");
+                    return true;
+                }
+                
+                if (args.length < 4) {
+                    p.sendMessage("§cKullanım: /stratocraft tame breed <female> <male>");
+                    p.sendMessage("§7Yakındaki dişi ve erkek canlıya bak ve komutu kullan.");
+                    return true;
+                }
+                
+                // Yakındaki canlıları bul
+                org.bukkit.entity.Entity target1 = p.getTargetEntity(10);
+                if (target1 == null || !(target1 instanceof LivingEntity)) {
+                    p.sendMessage("§cYakında canlı bulunamadı!");
+                    return true;
+                }
+                
+                LivingEntity female = (LivingEntity) target1;
+                
+                // İkinci canlıyı bul (yakında)
+                LivingEntity male = null;
+                for (org.bukkit.entity.Entity nearby : p.getWorld().getNearbyEntities(p.getLocation(), 10, 10, 10)) {
+                    if (nearby instanceof LivingEntity && !nearby.equals(female) && !nearby.equals(p)) {
+                        male = (LivingEntity) nearby;
+                        break;
+                    }
+                }
+                
+                if (male == null) {
+                    p.sendMessage("§cYakında ikinci canlı bulunamadı!");
+                    return true;
+                }
+                
+                if (breedingManager != null && breedingManager.breedCreatures(female, male, p)) {
+                    p.sendMessage("§a§lÇiftleştirme anında tamamlandı!");
+                } else {
+                    p.sendMessage("§cÇiftleştirme yapılamadı!");
+                }
+                return true;
+                
+            case "facility":
+                // Çiftleştirme tesisi yönetimi (admin)
+                if (!p.hasPermission("stratocraft.admin")) {
+                    p.sendMessage("§cBu komut sadece adminler için!");
+                    return true;
+                }
+                
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft tame facility <complete|create>");
+                    p.sendMessage("§7  complete - Çiftleştirme tesisinin süresini bitir");
+                    p.sendMessage("§7  create <level> - Çiftleştirme tesisi oluştur");
+                    return true;
+                }
+                
+                if (breedingManager == null) {
+                    p.sendMessage("§cBreedingManager bulunamadı!");
+                    return true;
+                }
+                
+                if (args[2].equalsIgnoreCase("complete")) {
+                    // Baktığı bloğu kontrol et
+                    org.bukkit.block.Block targetBlock = p.getTargetBlock(null, 10);
+                    if (targetBlock == null || targetBlock.getType() != org.bukkit.Material.BEACON) {
+                        p.sendMessage("§cBir Beacon bloğuna bakmalısın!");
+                        return true;
+                    }
+                    
+                    org.bukkit.Location facilityLoc = targetBlock.getLocation();
+                    breedingManager.completeBreedingInstantly(facilityLoc);
+                    p.sendMessage("§a§lÇiftleştirme tesisinin süresi anında bitti!");
+                } else if (args[2].equalsIgnoreCase("create")) {
+                    if (args.length < 4) {
+                        p.sendMessage("§cKullanım: /stratocraft tame facility create <level>");
+                        return true;
+                    }
+                    
+                    int level = parseInt(args[3], 1);
+                    if (level < 1 || level > 5) {
+                        p.sendMessage("§cSeviye 1-5 arası olmalı!");
+                        return true;
+                    }
+                    
+                    org.bukkit.block.Block targetBlock = p.getTargetBlock(null, 10);
+                    if (targetBlock == null || targetBlock.getType() != org.bukkit.Material.BEACON) {
+                        p.sendMessage("§cBir Beacon bloğuna bakmalısın!");
+                        return true;
+                    }
+                    
+                    org.bukkit.Location facilityLoc = targetBlock.getLocation();
+                    if (breedingManager.createBreedingFacility(facilityLoc, p, level)) {
+                        p.sendMessage("§a§lÇiftleştirme tesisi oluşturuldu!");
+                    } else {
+                        p.sendMessage("§cTesis zaten var!");
+                    }
+                }
+                return true;
+                
+            default:
+                p.sendMessage("§cGeçersiz komut! /stratocraft tame <ritual|list|info|instant|breed|facility>");
+                return true;
+        }
+    }
+    
+    private void showTamingRitualPattern(Player p, int level, me.mami.stratocraft.manager.TamingManager tamingManager) {
+        p.sendMessage("§6=== Seviye " + level + " Eğitme Ritüeli ===");
+        p.sendMessage("§7Merkez bloğa sağ tıkla ve doğru deseni yap:");
+        
+        Material[][] pattern = tamingManager.getRitualPatternForLevel(level);
+        if (pattern != null) {
+            int size = pattern.length;
+            for (int x = 0; x < size; x++) {
+                StringBuilder line = new StringBuilder("§7");
+                for (int z = 0; z < size; z++) {
+                    Material mat = pattern[x][z];
+                    if (mat == null) {
+                        line.append("· ");
+                    } else {
+                        line.append(getTamingMaterialSymbol(mat)).append(" ");
+                    }
+                }
+                p.sendMessage(line.toString());
+            }
+        }
+        
+        Material activationItem = tamingManager.getRitualActivationItem(level);
+        p.sendMessage("§7Aktifleştirme itemi: §e" + activationItem.name());
+    }
+    
+    private void showBossTamingRitualPattern(Player p, me.mami.stratocraft.manager.BossManager.BossType bossType,
+                                            me.mami.stratocraft.manager.TamingManager tamingManager,
+                                            me.mami.stratocraft.manager.BossManager bossManager) {
+        p.sendMessage("§6=== " + bossManager.getBossDisplayName(bossType) + " Eğitme Ritüeli ===");
+        p.sendMessage("§7Merkez bloğa sağ tıkla ve doğru deseni yap:");
+        
+        Material[][] pattern = tamingManager.getBossRitualPattern(bossType);
+        if (pattern != null) {
+            int size = pattern.length;
+            for (int x = 0; x < size; x++) {
+                StringBuilder line = new StringBuilder("§7");
+                for (int z = 0; z < size; z++) {
+                    Material mat = pattern[x][z];
+                    if (mat == null) {
+                        line.append("· ");
+                    } else {
+                        line.append(getTamingMaterialSymbol(mat)).append(" ");
+                    }
+                }
+                p.sendMessage(line.toString());
+            }
+        }
+        
+        Material activationItem = tamingManager.getBossRitualActivationItem(bossType);
+        p.sendMessage("§7Aktifleştirme itemi: §e" + activationItem.name());
+    }
+    
+    private String getTamingMaterialSymbol(Material mat) {
+        switch (mat) {
+            case COBBLESTONE: return "§7C";
+            case STONE: return "§8S";
+            case STONE_BRICKS: return "§8B";
+            case OBSIDIAN: return "§5O";
+            case BEDROCK: return "§0B";
+            case WHEAT: return "§eW";
+            case CARROT: return "§6C";
+            case GOLDEN_APPLE: return "§6G";
+            case ENCHANTED_GOLDEN_APPLE: return "§bE";
+            case NETHER_STAR: return "§d★";
+            case GOLD_BLOCK: return "§6G";
+            case IRON_BLOCK: return "§fI";
+            case DIAMOND_BLOCK: return "§bD";
+            case EMERALD_BLOCK: return "§aE";
+            case NETHERITE_BLOCK: return "§4N";
+            case NETHERRACK: return "§cN";
+            case PRISMARINE: return "§3P";
+            case ROTTEN_FLESH: return "§2F";
+            case IRON_SWORD: return "§fS";
+            case STONE_AXE: return "§8A";
+            case DRAGON_EGG: return "§5E";
+            case BONE: return "§fB";
+            case ENDER_EYE: return "§5E";
+            case BLAZE_ROD: return "§cR";
+            case HEART_OF_THE_SEA: return "§bH";
+            default: return "?";
         }
     }
 }

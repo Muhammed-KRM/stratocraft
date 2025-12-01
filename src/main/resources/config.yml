@@ -53,3 +53,80 @@ performance:
   async-saving: true     # Async kayıt aktif mi?
   max-particles-per-tick: 50  # Tick başına maksimum partikül sayısı
 
+# Dünya Zorluk Sistemi
+world:
+  # Merkez noktası (spawn noktası - başlangıç alanı)
+  center:
+    x: 0.0
+    y: 64.0
+    z: 0.0
+    world: world  # Dünya adı
+  
+  # Zorluk seviyeleri (merkezden uzaklık - blok cinsinden)
+  difficulty:
+    level1-distance: 1000  # Seviye 1: Yeni başlangıç mobları (200-1000 blok)
+    level2-distance: 3000  # Seviye 2: Ork, Troll vb. (1000-3000 blok)
+    level3-distance: 5000  # Seviye 3: T-Rex, Cyclops vb. (3000-5000 blok)
+    level4-distance: 10000  # Seviye 4: Ejder, Wyvern vb. (5000-10000 blok)
+    level5-distance: 20000 # Seviye 5: Titan Golem, Hydra vb. (10000+ blok)
+
+# Zindan Sistemi
+dungeons:
+  enabled: true
+  # Her seviye için spawn şansı (0.0 - 1.0 arası)
+  spawn-chance:
+    level1: 0.05  # %5 şans
+    level2: 0.08  # %8 şans
+    level3: 0.10  # %10 şans
+    level4: 0.12  # %12 şans
+    level5: 0.15  # %15 şans
+  
+  # Her seviye için zindan tipleri (şema dosya adları, .schem uzantısı olmadan)
+  types:
+    level1:
+      - goblin_cave
+      - spider_nest
+      - bandit_hideout
+    level2:
+      - orc_fortress
+      - skeleton_crypt
+      - dark_temple
+    level3:
+      - dragon_lair
+      - ancient_ruins
+      - demon_castle
+    level4:
+      - titan_tomb
+      - void_prison
+      - hell_fortress
+    level5:
+      - cosmic_temple
+      - god_realm
+      - chaos_dimension
+
+# Biyom Sistemi
+biomes:
+  enabled: true
+  # Her seviye için özel biyomlar (Minecraft Biome enum değerleri)
+  custom-biomes:
+    level1:
+      - "FOREST"
+      - "PLAINS"
+      - "BIRCH_FOREST"
+    level2:
+      - "TAIGA"
+      - "SWAMP"
+      - "DARK_FOREST"
+    level3:
+      - "JUNGLE"
+      - "SAVANNA"
+      - "BADLANDS"
+    level4:
+      - "NETHER_WASTES"
+      - "SOUL_SAND_VALLEY"
+      - "CRIMSON_FOREST"
+    level5:
+      - "END_BARRENS"
+      - "END_HIGHLANDS"
+      - "THE_END"
+
