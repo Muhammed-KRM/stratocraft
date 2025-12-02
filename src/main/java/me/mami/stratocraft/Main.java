@@ -307,6 +307,7 @@ public class Main extends JavaPlugin {
                     if (clan != null) {
                         if (clan.getRank(p.getUniqueId()) == Clan.Rank.LEADER) {
                             clanManager.disbandClan(clan);
+                            territoryManager.setCacheDirty(); // Cache'i güncelle
                             p.sendMessage("§cKlanınız dağıtıldı.");
                         } else {
                             clan.getMembers().remove(p.getUniqueId());
@@ -329,6 +330,7 @@ public class Main extends JavaPlugin {
                     if (clan.getTerritory() == null) {
                         Territory newTerritory = new Territory(clan.getId(), p.getLocation());
                         clan.setTerritory(newTerritory);
+                        territoryManager.setCacheDirty(); // Cache'i güncelle
                         p.sendMessage("§aKristal dikildi! Bölgeniz aktif.");
                     } else {
                         p.sendMessage("§eZaten bir bölgeniz var. Yeni kristal dikmek için mevcut bölgeyi kaldırın.");

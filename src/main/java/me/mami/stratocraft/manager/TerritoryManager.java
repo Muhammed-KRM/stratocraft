@@ -15,8 +15,7 @@ public class TerritoryManager {
     // Chunk-based cache: O(1) lookup için
     // Key: "chunkX;chunkZ", Value: Clan ID
     private final Map<String, UUID> chunkTerritoryCache = new HashMap<>();
-    private long lastCacheUpdate = 0;
-    private static final long CACHE_UPDATE_INTERVAL = 60000L; // 1 dakika
+    private boolean isCacheDirty = true; // Event-based cache güncelleme
 
     public TerritoryManager(ClanManager cm) { 
         this.clanManager = cm;
@@ -28,10 +27,10 @@ public class TerritoryManager {
      * Chunk-based cache kullanarak bölge sahibini bul (O(1) lookup)
      */
     public Clan getTerritoryOwner(Location loc) {
-        // Cache'i güncelle (1 dakikada bir)
-        if (System.currentTimeMillis() - lastCacheUpdate > CACHE_UPDATE_INTERVAL) {
+        // Sadece veri değiştiyse güncelle (event-based)
+        if (isCacheDirty) {
             updateChunkCache();
-            lastCacheUpdate = System.currentTimeMillis();
+            isCacheDirty = false;
         }
         
         // Chunk key oluştur
@@ -112,11 +111,17 @@ public class TerritoryManager {
     }
     
     /**
-     * Bölge değiştiğinde cache'i temizle
+     * Bölge değiştiğinde cache'i işaretle (event-based güncelleme)
+     */
+    public void setCacheDirty() {
+        this.isCacheDirty = true;
+    }
+    
+    /**
+     * Bölge değiştiğinde cache'i temizle (eski metod - geriye uyumluluk)
      */
     public void invalidateCache() {
-        chunkTerritoryCache.clear();
-        lastCacheUpdate = 0;
+        setCacheDirty();
     }
 
     public boolean isSafeZone(UUID playerId, Location loc) {

@@ -226,6 +226,7 @@ public class TerritoryListener implements Listener {
             newClan.setCrystalEntity(crystalEntity);
             newClan.setTerritory(new Territory(newClan.getId(), crystalLoc));
             // hasCrystal otomatik setCrystalLocation ile true olur
+            territoryManager.setCacheDirty(); // Cache'i güncelle
             
             player.sendMessage("§a§lTEBRİKLER! §eKlan Kristali aktifleşti ve bölgeni mühürledi.");
             player.getWorld().strikeLightningEffect(crystalLoc); // Görsel şimşek
@@ -319,6 +320,7 @@ public class TerritoryListener implements Listener {
             if (breaker != null && owner.getRank(breaker.getUniqueId()) == Clan.Rank.LEADER) {
                 // Lider klanı bozdu
                 territoryManager.getClanManager().disbandClan(owner);
+                territoryManager.setCacheDirty(); // Cache'i güncelle
                 breaker.sendMessage("§cKlanınız dağıtıldı!");
                 crystal.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, crystal.getLocation(), 1);
                 return;
@@ -335,6 +337,7 @@ public class TerritoryListener implements Listener {
                     }
                 }
                 territoryManager.getClanManager().disbandClan(owner);
+                territoryManager.setCacheDirty(); // Cache'i güncelle
                 crystal.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, crystal.getLocation(), 1);
                 return;
             }
@@ -399,6 +402,7 @@ public class TerritoryListener implements Listener {
                             crystal.teleport(newLoc);
                             owner.setCrystalLocation(newLoc);
                             owner.setTerritory(new Territory(owner.getId(), newLoc));
+                            territoryManager.setCacheDirty(); // Cache'i güncelle
                             player.sendMessage("§aKlan Kristali taşındı!");
                         } else {
                             player.sendMessage("§cYeni konum Klan Çitleri ile çevrili olmalı!");

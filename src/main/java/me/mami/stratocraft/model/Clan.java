@@ -50,7 +50,10 @@ public class Clan {
     public void addStructure(Structure s) { structures.add(s); }
 
     public Territory getTerritory() { return territory; }
-    public void setTerritory(Territory t) { this.territory = t; }
+    public void setTerritory(Territory t) { 
+        this.territory = t;
+        // Cache güncellemesi TerritoryManager'da yapılmalı (setCacheDirty çağrılmalı)
+    }
 
     public void deposit(double amount) { bankBalance += amount; }
     public void withdraw(double amount) { bankBalance -= amount; }

@@ -351,19 +351,29 @@ public class DisasterTask extends BukkitRunnable {
                 Location playerLoc = p.getLocation();
                 int highestY = p.getWorld().getHighestBlockYAt(playerLoc);
                 
+                // Önce oyuncunun olduğu yeri kontrol et (performans optimizasyonu)
+                Clan currentOwner = territoryManager.getTerritoryOwner(playerLoc);
+                
+                // Eğer oyuncu zaten bir klan bölgesindeyse, etrafı yakma işlemini tamamen atla
+                // Çünkü klan bölgeleri yangından etkilenmemeli
+                if (currentOwner != null) {
+                    continue; // Bu oyuncu klan bölgesinde, atla
+                }
+                
                 // Oyuncu yüzeydeyse (üstünde blok yoksa)
                 if (playerLoc.getBlockY() >= highestY - 1) {
                     p.setFireTicks(Math.max(p.getFireTicks(), 100)); // 5 saniye yanma
                 }
                 
                 // Geniş alan tarama: 10x10 alan (oyuncu merkezli)
+                // NOT: Oyuncu klan bölgesinde değil, bu yüzden etrafındaki bloklar da büyük ihtimalle değil
                 for (int x = -5; x <= 5; x++) {
                     for (int z = -5; z <= 5; z++) {
                         for (int y = -2; y <= 5; y++) { // Yükseklik aralığı
                             Block targetBlock = playerLoc.clone().add(x, y, z).getBlock();
                             Material type = targetBlock.getType();
                             
-                            // Klan bölgesi kontrolü - korumalı bölgelerde yakma
+                            // Klan bölgesi kontrolü - korumalı bölgelerde yakma (nadiren gerekli ama güvenlik için)
                             Clan owner = territoryManager.getTerritoryOwner(targetBlock.getLocation());
                             if (owner != null) {
                                 continue; // Klan bölgesinde yakma

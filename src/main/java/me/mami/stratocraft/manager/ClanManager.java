@@ -43,6 +43,7 @@ public class ClanManager {
         clan.getMembers().keySet().forEach(playerClanMap::remove);
         clans.remove(clan.getId());
         Bukkit.broadcastMessage("§c" + clan.getName() + " klanı dağıtıldı.");
+        // Cache güncellemesi TerritoryManager'da yapılmalı (setCacheDirty çağrılmalı)
     }
     
     // DataManager için
