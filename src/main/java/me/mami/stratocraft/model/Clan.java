@@ -88,6 +88,11 @@ public class Clan {
      */
     public boolean hasCrystal() { return hasCrystal; }
     
+    /**
+     * Kristal durumunu ayarla
+     */
+    public void setHasCrystal(boolean hasCrystal) { this.hasCrystal = hasCrystal; }
+    
     public boolean isGeneral(UUID uuid) {
         Rank rank = getRank(uuid);
         return rank == Rank.GENERAL || rank == Rank.LEADER;

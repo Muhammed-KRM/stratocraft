@@ -200,9 +200,47 @@ public class BatteryListener implements Listener {
                     ItemStack offHand = player.getInventory().getItemInOffHand();
                     boolean hasAmplifier = ItemManager.isCustomItem(offHand, "FLAME_AMPLIFIER");
                     
-                    // Batarya verisini oluştur
+                    // Seviye tespiti
+                    int batteryLevel = batteryManager.detectBatteryLevel(centerBlock, Material.MAGMA_BLOCK);
+                    if (batteryLevel == 0) batteryLevel = 1; // Varsayılan seviye 1
+                    
+                    // Seviye 5 için özel kontrol (altında BEACON, üstünde NETHER_STAR veya BEDROCK)
+                    if (batteryLevel >= 4) {
+                        Block bottom = centerBlock;
+                        while (bottom.getRelative(BlockFace.DOWN).getType() == Material.MAGMA_BLOCK) {
+                            bottom = bottom.getRelative(BlockFace.DOWN);
+                        }
+                        Block top = centerBlock;
+                        while (top.getRelative(BlockFace.UP).getType() == Material.MAGMA_BLOCK) {
+                            top = top.getRelative(BlockFace.UP);
+                        }
+                        Block belowSpecial = bottom.getRelative(BlockFace.DOWN);
+                        Block aboveSpecial = top.getRelative(BlockFace.UP);
+                        if (belowSpecial.getType() == Material.BEACON && 
+                            (aboveSpecial.getType() == Material.NETHER_STAR || 
+                             aboveSpecial.getType() == Material.BEDROCK)) {
+                            batteryLevel = 5;
+                        } else if (batteryLevel == 4) {
+                            // Seviye 4 için özel kontrol (altında BEACON yeterli)
+                            if (belowSpecial.getType() == Material.BEACON) {
+                                batteryLevel = 4;
+                            } else {
+                                batteryLevel = 3; // 11+ blok ama özel blok yok = Seviye 3
+                            }
+                        }
+                    }
+                    
+                    // Batarya verisini oluştur (seviye ile)
                     BatteryData data = new BatteryData("Ateş Topu", fuel, alchemyLevel, hasAmplifier, 
-                                                      powerMultiplier, isRedDiamond, isDarkMatter);
+                                                      powerMultiplier, isRedDiamond, isDarkMatter, batteryLevel);
+                    
+                    // Seviye mesajı
+                    if (batteryLevel > 1) {
+                        player.sendMessage("§6§lSeviye " + batteryLevel + " Batarya tespit edildi!");
+                        if (batteryLevel == 5) {
+                            player.sendMessage("§c§lEFSANEVI GÜÇ AKTİF! Dağ yıkma, klan yok etme ve boss yenme gücü hazır!");
+                        }
+                    }
                     
                     // Yükleme işlemi
                     loadBattery(player, centerBlock, below, above, handItem, slot, data, event);
@@ -530,9 +568,26 @@ public class BatteryListener implements Listener {
                 trainingManager.recordUse(player.getUniqueId(), "MAGMA_BATTERY");
             }
             
-            // BatteryManager metodunu çağır
+            // BatteryManager metodunu çağır (seviye ile)
+            int batteryLevel = data.getBatteryLevel();
             batteryManager.fireMagmaBattery(player, data.getFuel(), data.getAlchemyLevel(), 
-                                          data.hasAmplifier(), data.getTrainingMultiplier());
+                                          data.hasAmplifier(), data.getTrainingMultiplier(), batteryLevel);
+            
+            // Seviye 5 özel güçler
+            if (batteryLevel == 5) {
+                // Klan yıkımı (sağ elinde özel item varsa)
+                ItemStack mainHand = player.getInventory().getItemInMainHand();
+                if (ItemManager.isCustomItem(mainHand, "RED_DIAMOND")) {
+                    batteryManager.fireClanDestroyer(player, territoryManager);
+                }
+                
+                // Boss yıkımı (sol elinde özel item varsa)
+                ItemStack offHand = player.getInventory().getItemInOffHand();
+                if (ItemManager.isCustomItem(offHand, "STAR_CORE")) {
+                    batteryManager.fireBossDestroyer(player, 
+                        me.mami.stratocraft.Main.getInstance().getBossManager());
+                }
+            }
             
             // Mastery mesajları ve seviye atlama kontrolü (Listener'a özel)
             handleMasteryMessages(player, "MAGMA_BATTERY", data);

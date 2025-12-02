@@ -2,6 +2,7 @@ package me.mami.stratocraft.listener;
 
 import me.mami.stratocraft.manager.ItemManager;
 import me.mami.stratocraft.manager.MineManager;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -11,6 +12,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -30,10 +32,72 @@ public class MineListener implements Listener {
     }
     
     /**
-     * Basınç plakasına basma (mayın tetikleme)
-     * PlayerMoveEvent ile kontrol et
+     * Basınç plakası aktif olduğunda (redstone sinyali geldiğinde) mayın tetikle
+     * BlockRedstoneEvent ile kontrol et - daha güvenilir
      */
     @EventHandler(priority = EventPriority.HIGH)
+    public void onPressurePlateActivate(BlockRedstoneEvent event) {
+        Block block = event.getBlock();
+        
+        // Basınç plakası mı?
+        if (block.getType() != Material.LIGHT_WEIGHTED_PRESSURE_PLATE &&
+            block.getType() != Material.HEAVY_WEIGHTED_PRESSURE_PLATE &&
+            block.getType() != Material.STONE_PRESSURE_PLATE &&
+            block.getType() != Material.OAK_PRESSURE_PLATE) {
+            return;
+        }
+        
+        // Mayın var mı?
+        if (!block.hasMetadata("Mine")) {
+            return;
+        }
+        
+        // Basınç plakası aktif mi? (redstone sinyali > 0)
+        if (event.getNewCurrent() <= 0) {
+            return; // Basınç plakası aktif değil
+        }
+        
+        // Basınç plakasının üzerindeki oyuncuyu bul
+        Location loc = block.getLocation();
+        Player player = null;
+        
+        // Basınç plakasının üzerindeki oyuncuları kontrol et
+        for (org.bukkit.entity.Entity entity : block.getWorld().getNearbyEntities(
+                loc.clone().add(0.5, 0.5, 0.5), 0.5, 0.5, 0.5)) {
+            if (entity instanceof Player) {
+                player = (Player) entity;
+                break;
+            }
+        }
+        
+        // Eğer oyuncu bulunamazsa, basınç plakasının üzerindeki en yakın oyuncuyu bul
+        if (player == null) {
+            for (org.bukkit.entity.Entity entity : block.getWorld().getNearbyEntities(
+                    loc.clone().add(0.5, 1.0, 0.5), 0.7, 1.0, 0.7)) {
+                if (entity instanceof Player) {
+                    Player nearbyPlayer = (Player) entity;
+                    // Oyuncu basınç plakasının üzerinde mi?
+                    if (nearbyPlayer.getLocation().getBlockX() == loc.getBlockX() &&
+                        nearbyPlayer.getLocation().getBlockZ() == loc.getBlockZ() &&
+                        nearbyPlayer.getLocation().getY() >= loc.getY() &&
+                        nearbyPlayer.getLocation().getY() <= loc.getY() + 1) {
+                        player = nearbyPlayer;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (player != null) {
+            // Mayın tetikle
+            mineManager.triggerMine(block, player);
+        }
+    }
+    
+    /**
+     * Alternatif: PlayerMoveEvent ile de kontrol et (yedek sistem)
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerMove(org.bukkit.event.player.PlayerMoveEvent event) {
         // PERFORMANS FİLTRESİ: Sadece blok değiştiyse çalış
         if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
@@ -58,8 +122,12 @@ public class MineListener implements Listener {
             return;
         }
         
-        // Mayın tetikle
-        mineManager.triggerMine(standingBlock, player);
+        // Basınç plakası aktif mi kontrol et
+        org.bukkit.block.data.Powerable powerable = (org.bukkit.block.data.Powerable) standingBlock.getBlockData();
+        if (powerable.isPowered()) {
+            // Mayın tetikle
+            mineManager.triggerMine(standingBlock, player);
+        }
     }
     
     /**

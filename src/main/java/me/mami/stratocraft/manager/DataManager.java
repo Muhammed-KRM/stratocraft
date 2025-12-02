@@ -243,28 +243,6 @@ public class DataManager {
         // VirtualStorage kaydetme
     }
     
-    // Eski save metodları kaldırıldı - snapshot sistemi kullanılıyor
-        File file = new File(dataFolder, "data/contracts.json");
-        List<ContractData> contractDataList = new ArrayList<>();
-        
-        for (Contract contract : contractManager.getContracts()) {
-            ContractData data = new ContractData();
-            data.id = contract.getId().toString();
-            data.issuer = contract.getIssuer().toString();
-            data.acceptor = contract.getAcceptor() != null ? contract.getAcceptor().toString() : null;
-            data.material = contract.getMaterial().name();
-            data.amount = contract.getAmount();
-            data.reward = contract.getReward();
-            data.delivered = contract.getDelivered();
-            data.deadline = contract.getDeadline();
-            contractDataList.add(data);
-        }
-        
-        try (FileWriter writer = new FileWriter(file)) {
-            gson.toJson(contractDataList, writer);
-        }
-    }
-    
     private void saveShops(ShopManager shopManager) throws IOException {
         File file = new File(dataFolder, "data/shops.json");
         List<ShopData> shopDataList = shopManager.getAllShops().stream()

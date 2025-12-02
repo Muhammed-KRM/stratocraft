@@ -300,42 +300,75 @@ public class TrapManager {
             return;
         }
 
-        // Trigger bloğunun altında tuzak var mı?
-        Block below = triggerLocation.getBlock().getRelative(0, -1, 0);
-        Block below2 = below.getRelative(0, -1, 0);
-
+        Block triggerBlock = triggerLocation.getBlock();
         TrapData trap = null;
         Location trapCore = null;
 
-        // 1 blok altında kontrol
+        // 1. Trigger bloğunun altında tuzak var mı? (1 blok altında)
+        Block below = triggerBlock.getRelative(0, -1, 0);
         if (below.hasMetadata("TrapCore")) {
             trapCore = below.getLocation();
             trap = activeTraps.get(trapCore);
         }
-        // 2 blok altında kontrol
-        else if (below2.hasMetadata("TrapCore")) {
-            trapCore = below2.getLocation();
-            trap = activeTraps.get(trapCore);
+        // 2. Trigger bloğunun altında tuzak var mı? (2 blok altında)
+        else {
+            Block below2 = below.getRelative(0, -1, 0);
+            if (below2.hasMetadata("TrapCore")) {
+                trapCore = below2.getLocation();
+                trap = activeTraps.get(trapCore);
+            }
         }
 
-        if (trap == null || !trap.isCovered())
-            return;
+        // 3. Eğer trigger bloğu Magma Block ise, bu bir tuzak çerçevesi olabilir
+        // Tüm aktif tuzakları kontrol et ve çerçeve bloklarını ara
+        if (trap == null && triggerBlock.getType() == Material.MAGMA_BLOCK) {
+            for (Map.Entry<Location, TrapData> entry : activeTraps.entrySet()) {
+                TrapData checkTrap = entry.getValue();
+                // Bu bloğun tuzak çerçevesinde olup olmadığını kontrol et
+                for (Location frameLoc : checkTrap.getFrameBlocks()) {
+                    if (frameLoc.getBlockX() == triggerBlock.getX() &&
+                        frameLoc.getBlockY() == triggerBlock.getY() &&
+                        frameLoc.getBlockZ() == triggerBlock.getZ()) {
+                        trap = checkTrap;
+                        trapCore = entry.getKey();
+                        break;
+                    }
+                }
+                if (trap != null) break;
+            }
+        }
 
-        // Null kontrolleri
-        if (trapCore == null || trap == null) {
+        // Tuzak bulunamadı
+        if (trap == null || trapCore == null) {
             return;
         }
 
-        // GİZLEME KONTROLÜ: Tuzağın üstü açıksa (Hava ise) çalışma
+        // GİZLEME KONTROLÜ: Tuzağın üstü kapalı olmalı (gizlenmiş olmalı)
         Block trapBlock = trapCore.getBlock();
         Block coverBlock = trapBlock.getRelative(0, 1, 0); // Tuzağın üstündeki blok
 
-        // Eğer tuzağın üstü açıksa (Hava ise) veya Yarım Blok vb. değilse çalışma
-        // Yani oyuncu tuzağı gizlememiş
+        // Eğer tuzağın üstü açıksa (Hava ise) çalışma - tuzak gizlenmemiş
         if (coverBlock.getType() == Material.AIR ||
                 coverBlock.getType() == Material.CAVE_AIR ||
                 coverBlock.getType() == Material.VOID_AIR) {
             return; // Tuzak gizlenmemiş, çalışma
+        }
+
+        // Çerçeve bloklarının üstünü de kontrol et
+        boolean allCovered = true;
+        for (Location frameLoc : trap.getFrameBlocks()) {
+            Block frameBlock = frameLoc.getBlock();
+            Block frameAbove = frameBlock.getRelative(0, 1, 0);
+            if (frameAbove.getType() == Material.AIR ||
+                    frameAbove.getType() == Material.CAVE_AIR ||
+                    frameAbove.getType() == Material.VOID_AIR) {
+                allCovered = false;
+                break;
+            }
+        }
+
+        if (!allCovered) {
+            return; // Tuzak tamamen gizlenmemiş, çalışma
         }
 
         // Klan kontrolü - Dostlar korunur

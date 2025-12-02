@@ -213,6 +213,9 @@ public class Main extends JavaPlugin {
         
         // Mob Drop Listener - Özel mob drop sistemi
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.MobDropListener(), this);
+        
+        // Seviyeli Silah ve Zırh Listener
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.WeaponArmorListener(), this);
 
         // Veri yükleme
         dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener);
@@ -228,6 +231,23 @@ public class Main extends JavaPlugin {
                 disasterManager.checkAutoSpawn();
             }
         }.runTaskTimer(this, 12000L, 12000L); // 10 dakika = 12000 tick
+        
+        // Countdown BossBar'ı başlangıçta oluştur
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            if (disasterManager != null) {
+                disasterManager.checkAutoSpawn(); // Countdown BossBar'ı oluştur
+            }
+        }, 40L); // 2 saniye sonra (sunucu tamamen yüklendikten sonra)
+        
+        // PlayerJoinEvent listener - BossBar'a yeni oyuncuları ekle
+        Bukkit.getPluginManager().registerEvents(new org.bukkit.event.Listener() {
+            @org.bukkit.event.EventHandler
+            public void onPlayerJoin(org.bukkit.event.player.PlayerJoinEvent event) {
+                if (disasterManager != null) {
+                    disasterManager.onPlayerJoin(event.getPlayer());
+                }
+            }
+        }, this);
         
         new me.mami.stratocraft.task.StructureEffectTask(clanManager).runTaskTimer(this, 20L, 20L); // YAPI EFEKTLERİ
 

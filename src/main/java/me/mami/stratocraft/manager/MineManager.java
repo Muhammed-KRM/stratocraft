@@ -6,11 +6,14 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.EulerAngle;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +32,8 @@ public class MineManager {
 
     // Aktif mayınlar (Location -> MineData)
     private final Map<Location, MineData> activeMines = new HashMap<>();
+    // Mayın isim standları (Location -> ArmorStand)
+    private final Map<Location, ArmorStand> mineNameStands = new HashMap<>();
 
     private File minesFile;
     private FileConfiguration minesConfig;
@@ -83,6 +88,36 @@ public class MineManager {
     }
 
     /**
+     * Mayın tipine göre basınç plakası tipi döndür
+     */
+    private Material getPressurePlateType(MineType type) {
+        switch (type) {
+            case EXPLOSIVE:
+                return Material.STONE_PRESSURE_PLATE; // Kırmızımsı
+            case LIGHTNING:
+                return Material.LIGHT_WEIGHTED_PRESSURE_PLATE; // Altın
+            case POISON:
+                return Material.OAK_PRESSURE_PLATE; // Yeşilimsi
+            case BLINDNESS:
+                return Material.HEAVY_WEIGHTED_PRESSURE_PLATE; // Demir
+            case FATIGUE:
+                return Material.STONE_PRESSURE_PLATE;
+            case SLOWNESS:
+                return Material.OAK_PRESSURE_PLATE;
+            case FIRE:
+                return Material.LIGHT_WEIGHTED_PRESSURE_PLATE;
+            case FREEZE:
+                return Material.HEAVY_WEIGHTED_PRESSURE_PLATE;
+            case WEAKNESS:
+                return Material.STONE_PRESSURE_PLATE;
+            case CONFUSION:
+                return Material.OAK_PRESSURE_PLATE;
+            default:
+                return Material.STONE_PRESSURE_PLATE;
+        }
+    }
+
+    /**
      * Mayın oluştur
      */
     public boolean createMine(Player player, Block pressurePlate, MineType type) {
@@ -104,6 +139,12 @@ public class MineManager {
             clanId = clanManager.getClanByPlayer(player.getUniqueId()).getId();
         }
 
+        // Basınç plakası tipini değiştir (mayın tipine göre)
+        Material plateType = getPressurePlateType(type);
+        if (pressurePlate.getType() != plateType) {
+            pressurePlate.setType(plateType);
+        }
+
         // MineData oluştur
         MineData mine = new MineData(player.getUniqueId(), clanId, type, loc);
 
@@ -114,6 +155,21 @@ public class MineManager {
         pressurePlate.setMetadata("Mine", new FixedMetadataValue(plugin, true));
         pressurePlate.setMetadata("MineOwner", new FixedMetadataValue(plugin, player.getUniqueId().toString()));
         pressurePlate.setMetadata("MineType", new FixedMetadataValue(plugin, type.name()));
+
+        // Özel isim için görünmez armor stand oluştur
+        Location standLoc = loc.clone().add(0.5, 0.1, 0.5);
+        ArmorStand nameStand = (ArmorStand) loc.getWorld().spawnEntity(standLoc, EntityType.ARMOR_STAND);
+        nameStand.setVisible(false);
+        nameStand.setGravity(false);
+        nameStand.setInvulnerable(true);
+        nameStand.setCustomNameVisible(true);
+        nameStand.setCustomName("§c§l" + getMineTypeName(type));
+        nameStand.setMarker(true); // Görünmez ve etkileşimsiz
+        nameStand.setSmall(true);
+        nameStand.setHeadPose(new EulerAngle(0, 0, 0));
+        nameStand.setMetadata("MineNameStand", new FixedMetadataValue(plugin, true));
+        
+        mineNameStands.put(loc, nameStand);
 
         // Kaydet
         saveMines();
@@ -145,10 +201,7 @@ public class MineManager {
             }
         }
 
-        // Sahip kontrolü
-        if (mine.getOwnerId().equals(victim.getUniqueId())) {
-            return; // Sahip, mayın tetiklenmez
-        }
+        // Sahip kontrolü KALDIRILDI - Herkes basınca mayın tetiklenir
 
         // Mayın etkisini uygula
         applyMineEffect(mine, victim, pressurePlate.getLocation());
@@ -214,7 +267,7 @@ public class MineManager {
             case FREEZE:
                 // Dondurma - Buz efekti
                 victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 150, 2, false, false)); // Çok yavaş
-                victim.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, 150, 1, false, false));
+                victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, 150, 1, false, false));
                 victim.sendMessage("§b§lDONDUN!");
                 mineLoc.getWorld().spawnParticle(org.bukkit.Particle.SNOWBALL, 
                     mineLoc.clone().add(0.5, 0.1, 0.5), 30, 0.3, 0.1, 0.3, 0.1);
@@ -228,7 +281,7 @@ public class MineManager {
 
             case CONFUSION:
                 // Karışıklık - Nausea efekti
-                victim.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 200, 1, false, false));
+                victim.addPotionEffect(new PotionEffect(PotionEffectType.CONFUSION, 200, 1, false, false));
                 victim.sendMessage("§d§lKARIŞIKLIK HİSSEDİYORSUN!");
                 break;
         }
@@ -251,6 +304,13 @@ public class MineManager {
             block.removeMetadata("Mine", plugin);
             block.removeMetadata("MineOwner", plugin);
             block.removeMetadata("MineType", plugin);
+            
+            // İsim standını kaldır
+            ArmorStand nameStand = mineNameStands.remove(loc);
+            if (nameStand != null && !nameStand.isDead()) {
+                nameStand.remove();
+            }
+            
             saveMines();
         }
     }
@@ -376,6 +436,27 @@ public class MineManager {
                 block.setMetadata("Mine", new FixedMetadataValue(plugin, true));
                 block.setMetadata("MineOwner", new FixedMetadataValue(plugin, ownerId.toString()));
                 block.setMetadata("MineType", new FixedMetadataValue(plugin, type.name()));
+                
+                // Basınç plakası tipini güncelle
+                Material plateType = getPressurePlateType(type);
+                if (block.getType() != plateType) {
+                    block.setType(plateType);
+                }
+                
+                // Özel isim için görünmez armor stand oluştur
+                Location standLoc = loc.clone().add(0.5, 0.1, 0.5);
+                ArmorStand nameStand = (ArmorStand) loc.getWorld().spawnEntity(standLoc, EntityType.ARMOR_STAND);
+                nameStand.setVisible(false);
+                nameStand.setGravity(false);
+                nameStand.setInvulnerable(true);
+                nameStand.setCustomNameVisible(true);
+                nameStand.setCustomName("§c§l" + getMineTypeName(type));
+                nameStand.setMarker(true);
+                nameStand.setSmall(true);
+                nameStand.setHeadPose(new EulerAngle(0, 0, 0));
+                nameStand.setMetadata("MineNameStand", new FixedMetadataValue(plugin, true));
+                
+                mineNameStands.put(loc, nameStand);
             }
         }
 

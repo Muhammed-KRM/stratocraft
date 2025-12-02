@@ -41,6 +41,10 @@ public class DisasterManager {
     private BossBar disasterBossBar = null;
     private BukkitTask bossBarUpdateTask = null;
     
+    // Countdown BossBar (spawn olacağı zamanı gösterir)
+    private BossBar countdownBossBar = null;
+    private BukkitTask countdownUpdateTask = null;
+    
     public DisasterManager(Main plugin) {
         this.plugin = plugin;
         this.clanManager = plugin.getClanManager();
@@ -176,6 +180,16 @@ public class DisasterManager {
                                      difficultyManager.getCenterLocation(), 
                                      power.health, power.damage, duration);
         
+        // Countdown BossBar'ı kaldır
+        if (countdownBossBar != null) {
+            countdownBossBar.removeAll();
+            countdownBossBar = null;
+        }
+        if (countdownUpdateTask != null) {
+            countdownUpdateTask.cancel();
+            countdownUpdateTask = null;
+        }
+        
         // BossBar oluştur
         createBossBar(activeDisaster);
         
@@ -270,6 +284,8 @@ public class DisasterManager {
                     bossBarUpdateTask.cancel();
                     bossBarUpdateTask = null;
                 }
+                // Felaket bittiğinde countdown'u tekrar göster
+                updateCountdownBossBar();
                 return;
             }
             
@@ -284,6 +300,13 @@ public class DisasterManager {
             String healthText = String.format("%.0f/%.0f", health, maxHealth);
             disasterBossBar.setTitle("§c§l" + getDisasterDisplayName(activeDisaster.getType()) + 
                                     " §7| §c" + healthText + " §7| §e" + timeLeft);
+            
+            // Yeni oyuncuları ekle
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (!disasterBossBar.getPlayers().contains(player)) {
+                    disasterBossBar.addPlayer(player);
+                }
+            }
         }, 0L, 20L); // Her saniye
     }
     
@@ -336,8 +359,20 @@ public class DisasterManager {
      */
     public void checkAutoSpawn() {
         if (activeDisaster != null && !activeDisaster.isDead()) {
+            // Aktif felaket varsa countdown'u kaldır
+            if (countdownBossBar != null) {
+                countdownBossBar.removeAll();
+                countdownBossBar = null;
+            }
+            if (countdownUpdateTask != null) {
+                countdownUpdateTask.cancel();
+                countdownUpdateTask = null;
+            }
             return; // Zaten aktif felaket var
         }
+        
+        // Countdown BossBar'ı güncelle
+        updateCountdownBossBar();
         
         // Seviye 1 kontrolü (her gün)
         if (shouldSpawnDisaster(1)) {
@@ -365,13 +400,143 @@ public class DisasterManager {
         }
     }
     
+    /**
+     * Countdown BossBar'ı güncelle (spawn olacağı zamanı gösterir)
+     */
+    private void updateCountdownBossBar() {
+        long elapsed = System.currentTimeMillis() - lastDisasterTime;
+        
+        // En yakın spawn zamanını bul
+        long nextSpawnTime = Long.MAX_VALUE;
+        int nextLevel = 0;
+        
+        for (int level = 1; level <= 3; level++) {
+            long interval;
+            switch (level) {
+                case 1: interval = LEVEL_1_INTERVAL; break;
+                case 2: interval = LEVEL_2_INTERVAL; break;
+                case 3: interval = LEVEL_3_INTERVAL; break;
+                default: continue;
+            }
+            
+            long remaining = interval - elapsed;
+            if (remaining > 0 && remaining < nextSpawnTime) {
+                nextSpawnTime = remaining;
+                nextLevel = level;
+            }
+        }
+        
+        // Eğer hiç spawn zamanı yoksa (hepsi geçmişse), en kısa interval'i kullan
+        if (nextSpawnTime == Long.MAX_VALUE || nextSpawnTime <= 0) {
+            // En kısa interval'i bul
+            long minInterval = Math.min(LEVEL_1_INTERVAL, Math.min(LEVEL_2_INTERVAL, LEVEL_3_INTERVAL));
+            long timeSinceLast = elapsed % minInterval;
+            nextSpawnTime = minInterval - timeSinceLast;
+            nextLevel = 1; // En kısa interval seviye 1
+        }
+        
+        // Countdown BossBar oluştur veya güncelle
+        if (countdownBossBar == null) {
+            countdownBossBar = Bukkit.createBossBar("", BarColor.YELLOW, BarStyle.SOLID);
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                countdownBossBar.addPlayer(player);
+            }
+            
+            // Güncelleme task'ı
+            if (countdownUpdateTask != null) {
+                countdownUpdateTask.cancel();
+            }
+            
+            countdownUpdateTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+                if (activeDisaster != null && !activeDisaster.isDead()) {
+                    // Aktif felaket varsa countdown'u kaldır
+                    if (countdownBossBar != null) {
+                        countdownBossBar.removeAll();
+                        countdownBossBar = null;
+                    }
+                    if (countdownUpdateTask != null) {
+                        countdownUpdateTask.cancel();
+                        countdownUpdateTask = null;
+                    }
+                    return;
+                }
+                
+                long currentElapsed = System.currentTimeMillis() - lastDisasterTime;
+                long currentNextSpawnTime = Long.MAX_VALUE;
+                int currentNextLevel = 0;
+                
+                for (int level = 1; level <= 3; level++) {
+                    long interval;
+                    switch (level) {
+                        case 1: interval = LEVEL_1_INTERVAL; break;
+                        case 2: interval = LEVEL_2_INTERVAL; break;
+                        case 3: interval = LEVEL_3_INTERVAL; break;
+                        default: continue;
+                    }
+                    
+                    long remaining = interval - currentElapsed;
+                    if (remaining > 0 && remaining < currentNextSpawnTime) {
+                        currentNextSpawnTime = remaining;
+                        currentNextLevel = level;
+                    }
+                }
+                
+                if (currentNextSpawnTime == Long.MAX_VALUE || currentNextSpawnTime <= 0) {
+                    // En kısa interval'i bul
+                    long minInterval = Math.min(LEVEL_1_INTERVAL, Math.min(LEVEL_2_INTERVAL, LEVEL_3_INTERVAL));
+                    long timeSinceLast = currentElapsed % minInterval;
+                    currentNextSpawnTime = minInterval - timeSinceLast;
+                    currentNextLevel = 1; // En kısa interval seviye 1
+                }
+                
+                if (countdownBossBar != null) {
+                    // Progress hesapla (0'dan 1'e)
+                    long maxInterval = currentNextLevel == 1 ? LEVEL_1_INTERVAL : 
+                                      currentNextLevel == 2 ? LEVEL_2_INTERVAL : LEVEL_3_INTERVAL;
+                    double progress = Math.max(0, Math.min(1, (double)currentNextSpawnTime / maxInterval));
+                    countdownBossBar.setProgress(progress);
+                    
+                    // Başlık güncelle
+                    String timeText = formatTime(currentNextSpawnTime);
+                    String levelText = "Seviye " + currentNextLevel;
+                    countdownBossBar.setTitle("§e§l⏰ Sonraki Felaket: §6" + levelText + " §7| §e" + timeText);
+                    
+                    // Yeni oyuncuları ekle
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        if (!countdownBossBar.getPlayers().contains(player)) {
+                            countdownBossBar.addPlayer(player);
+                        }
+                    }
+                }
+            }, 0L, 20L); // Her saniye
+        }
+        
+        // İlk güncelleme
+        long maxInterval = nextLevel == 1 ? LEVEL_1_INTERVAL : 
+                          nextLevel == 2 ? LEVEL_2_INTERVAL : LEVEL_3_INTERVAL;
+        double progress = Math.max(0, Math.min(1, (double)nextSpawnTime / maxInterval));
+        countdownBossBar.setProgress(progress);
+        
+        String timeText = formatTime(nextSpawnTime);
+        String levelText = "Seviye " + nextLevel;
+        countdownBossBar.setTitle("§e§l⏰ Sonraki Felaket: §6" + levelText + " §7| §e" + timeText);
+    }
+    
     // Getter/Setter
     public Disaster getActiveDisaster() { return activeDisaster; }
     public void setActiveDisaster(Disaster d) { 
         this.activeDisaster = d;
-        if (d == null && disasterBossBar != null) {
-            disasterBossBar.removeAll();
-            disasterBossBar = null;
+        if (d == null) {
+            if (disasterBossBar != null) {
+                disasterBossBar.removeAll();
+                disasterBossBar = null;
+            }
+            if (bossBarUpdateTask != null) {
+                bossBarUpdateTask.cancel();
+                bossBarUpdateTask = null;
+            }
+            // Felaket bittiğinde countdown'u tekrar göster
+            updateCountdownBossBar();
         }
     }
     
@@ -396,6 +561,16 @@ public class DisasterManager {
             bossBarUpdateTask = null;
         }
         
+        if (countdownBossBar != null) {
+            countdownBossBar.removeAll();
+            countdownBossBar = null;
+        }
+        
+        if (countdownUpdateTask != null) {
+            countdownUpdateTask.cancel();
+            countdownUpdateTask = null;
+        }
+        
         Bukkit.broadcastMessage("§a§lTüm felaketler temizlendi!");
     }
     
@@ -408,6 +583,18 @@ public class DisasterManager {
     public void triggerDisaster(Disaster.Type type, Location spawnLoc) {
         int level = Disaster.getDefaultLevel(type);
         triggerDisaster(type, level, spawnLoc);
+    }
+    
+    /**
+     * Yeni oyuncu giriş yaptığında BossBar'a ekle
+     */
+    public void onPlayerJoin(Player player) {
+        if (disasterBossBar != null) {
+            disasterBossBar.addPlayer(player);
+        }
+        if (countdownBossBar != null) {
+            countdownBossBar.addPlayer(player);
+        }
     }
     
     // Eski metodlar

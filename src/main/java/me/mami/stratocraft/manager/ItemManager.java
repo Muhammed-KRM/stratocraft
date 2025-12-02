@@ -4,6 +4,9 @@ import me.mami.stratocraft.Main;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
@@ -12,6 +15,7 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class ItemManager {
     public static ItemStack BLUEPRINT_PAPER;
@@ -337,6 +341,167 @@ public class ItemManager {
 
         // Tuzak Çekirdeği (TRAP_CORE) tarifi
         registerTrapCoreRecipe();
+        
+        // Seviyeli silah ve zırh tarifleri
+        registerLeveledWeaponsAndArmor();
+    }
+    
+    /**
+     * Seviyeli silah ve zırh tariflerini kaydet
+     */
+    private void registerLeveledWeaponsAndArmor() {
+        // Seviye 1: Demir seviyesi
+        registerLevel1Recipes();
+        // Seviye 2: Elmas seviyesi
+        registerLevel2Recipes();
+        // Seviye 3: Netherite seviyesi
+        registerLevel3Recipes();
+        // Seviye 4: Titanyum seviyesi
+        registerLevel4Recipes();
+        // Seviye 5: Efsanevi seviye
+        registerLevel5Recipes();
+    }
+    
+    private void registerLevel1Recipes() {
+        // Demir Kılıç: 3 Demir + 2 Çubuk
+        ShapedRecipe l1Sword = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "level1_sword"),
+            createLeveledWeapon(1, WeaponType.SWORD)
+        );
+        l1Sword.shape(" I ", " I ", " S ");
+        l1Sword.setIngredient('I', Material.IRON_INGOT);
+        l1Sword.setIngredient('S', Material.STICK);
+        Bukkit.addRecipe(l1Sword);
+        
+        // Demir Zırh seti: Standart demir zırh tarifleri ama özel item olarak
+        registerArmorRecipe(1, ArmorType.HELMET, Material.IRON_HELMET);
+        registerArmorRecipe(1, ArmorType.CHESTPLATE, Material.IRON_CHESTPLATE);
+        registerArmorRecipe(1, ArmorType.LEGGINGS, Material.IRON_LEGGINGS);
+        registerArmorRecipe(1, ArmorType.BOOTS, Material.IRON_BOOTS);
+    }
+    
+    private void registerLevel2Recipes() {
+        // Elmas Kılıç: 3 Elmas + 2 Çubuk
+        ShapedRecipe l2Sword = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "level2_sword"),
+            createLeveledWeapon(2, WeaponType.SWORD)
+        );
+        l2Sword.shape(" D ", " D ", " S ");
+        l2Sword.setIngredient('D', Material.DIAMOND);
+        l2Sword.setIngredient('S', Material.STICK);
+        Bukkit.addRecipe(l2Sword);
+        
+        // Elmas Zırh seti
+        registerArmorRecipe(2, ArmorType.HELMET, Material.DIAMOND_HELMET);
+        registerArmorRecipe(2, ArmorType.CHESTPLATE, Material.DIAMOND_CHESTPLATE);
+        registerArmorRecipe(2, ArmorType.LEGGINGS, Material.DIAMOND_LEGGINGS);
+        registerArmorRecipe(2, ArmorType.BOOTS, Material.DIAMOND_BOOTS);
+    }
+    
+    private void registerLevel3Recipes() {
+        // Netherite Kılıç: 1 Netherite Külçe + 1 Elmas Kılıç
+        ShapedRecipe l3Sword = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "level3_sword"),
+            createLeveledWeapon(3, WeaponType.SWORD)
+        );
+        l3Sword.shape("N", "D");
+        l3Sword.setIngredient('N', Material.NETHERITE_INGOT);
+        l3Sword.setIngredient('D', Material.DIAMOND_SWORD);
+        Bukkit.addRecipe(l3Sword);
+        
+        // Netherite Zırh seti
+        registerArmorRecipe(3, ArmorType.HELMET, Material.NETHERITE_HELMET);
+        registerArmorRecipe(3, ArmorType.CHESTPLATE, Material.NETHERITE_CHESTPLATE);
+        registerArmorRecipe(3, ArmorType.LEGGINGS, Material.NETHERITE_LEGGINGS);
+        registerArmorRecipe(3, ArmorType.BOOTS, Material.NETHERITE_BOOTS);
+    }
+    
+    private void registerLevel4Recipes() {
+        // Titanyum Kılıç: 3 Titanyum Külçe + 2 Çubuk
+        ShapedRecipe l4Sword = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "level4_sword"),
+            createLeveledWeapon(4, WeaponType.SWORD)
+        );
+        l4Sword.shape(" T ", " T ", " S ");
+        l4Sword.setIngredient('T', TITANIUM_INGOT);
+        l4Sword.setIngredient('S', Material.STICK);
+        Bukkit.addRecipe(l4Sword);
+        
+        // Titanyum Zırh seti: Netherite zırh + Titanyum Külçe
+        registerArmorUpgradeRecipe(4, ArmorType.HELMET, Material.NETHERITE_HELMET, TITANIUM_INGOT);
+        registerArmorUpgradeRecipe(4, ArmorType.CHESTPLATE, Material.NETHERITE_CHESTPLATE, TITANIUM_INGOT);
+        registerArmorUpgradeRecipe(4, ArmorType.LEGGINGS, Material.NETHERITE_LEGGINGS, TITANIUM_INGOT);
+        registerArmorUpgradeRecipe(4, ArmorType.BOOTS, Material.NETHERITE_BOOTS, TITANIUM_INGOT);
+    }
+    
+    private void registerLevel5Recipes() {
+        // Efsanevi Kılıç: 3 Kızıl Elmas + 2 Çubuk
+        ShapedRecipe l5Sword = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "level5_sword"),
+            createLeveledWeapon(5, WeaponType.SWORD)
+        );
+        l5Sword.shape(" R ", " R ", " S ");
+        l5Sword.setIngredient('R', RED_DIAMOND);
+        l5Sword.setIngredient('S', Material.STICK);
+        Bukkit.addRecipe(l5Sword);
+        
+        // Efsanevi Zırh seti: Titanyum zırh + Kızıl Elmas
+        registerArmorUpgradeRecipe(5, ArmorType.HELMET, Material.NETHERITE_HELMET, RED_DIAMOND);
+        registerArmorUpgradeRecipe(5, ArmorType.CHESTPLATE, Material.NETHERITE_CHESTPLATE, RED_DIAMOND);
+        registerArmorUpgradeRecipe(5, ArmorType.LEGGINGS, Material.NETHERITE_LEGGINGS, RED_DIAMOND);
+        registerArmorUpgradeRecipe(5, ArmorType.BOOTS, Material.NETHERITE_BOOTS, RED_DIAMOND);
+    }
+    
+    private void registerArmorRecipe(int level, ArmorType type, Material baseMaterial) {
+        ItemStack armor = createLeveledArmor(level, type);
+        ShapedRecipe recipe = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "level" + level + "_" + type.name().toLowerCase()),
+            armor
+        );
+        
+        // Standart zırh tarifleri
+        switch (type) {
+            case HELMET:
+                recipe.shape("MMM", "M M", "   ");
+                recipe.setIngredient('M', baseMaterial == Material.IRON_HELMET ? Material.IRON_INGOT :
+                                     baseMaterial == Material.DIAMOND_HELMET ? Material.DIAMOND :
+                                     Material.NETHERITE_INGOT);
+                break;
+            case CHESTPLATE:
+                recipe.shape("M M", "MMM", "MMM");
+                recipe.setIngredient('M', baseMaterial == Material.IRON_CHESTPLATE ? Material.IRON_INGOT :
+                                     baseMaterial == Material.DIAMOND_CHESTPLATE ? Material.DIAMOND :
+                                     Material.NETHERITE_INGOT);
+                break;
+            case LEGGINGS:
+                recipe.shape("MMM", "M M", "M M");
+                recipe.setIngredient('M', baseMaterial == Material.IRON_LEGGINGS ? Material.IRON_INGOT :
+                                     baseMaterial == Material.DIAMOND_LEGGINGS ? Material.DIAMOND :
+                                     Material.NETHERITE_INGOT);
+                break;
+            case BOOTS:
+                recipe.shape("   ", "M M", "M M");
+                recipe.setIngredient('M', baseMaterial == Material.IRON_BOOTS ? Material.IRON_INGOT :
+                                     baseMaterial == Material.DIAMOND_BOOTS ? Material.DIAMOND :
+                                     Material.NETHERITE_INGOT);
+                break;
+        }
+        
+        Bukkit.addRecipe(recipe);
+    }
+    
+    private void registerArmorUpgradeRecipe(int level, ArmorType type, Material baseArmor, ItemStack upgradeMaterial) {
+        ItemStack armor = createLeveledArmor(level, type);
+        ShapedRecipe recipe = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "level" + level + "_" + type.name().toLowerCase() + "_upgrade"),
+            armor
+        );
+        
+        recipe.shape("U", "A");
+        recipe.setIngredient('U', upgradeMaterial);
+        recipe.setIngredient('A', baseArmor);
+        
+        Bukkit.addRecipe(recipe);
     }
 
     private void registerTrapCoreRecipe() {
@@ -618,5 +783,305 @@ public class ItemManager {
         NamespacedKey key = new NamespacedKey(Main.getInstance(), "clan_item");
         String data = item.getItemMeta().getPersistentDataContainer().get(key, PersistentDataType.STRING);
         return data != null && data.equals(type);
+    }
+
+    // ========== SEVİYELİ SİLAH VE ZIRH SİSTEMİ ==========
+    
+    /**
+     * Seviyeye göre silah oluştur
+     * @param level Seviye (1-5)
+     * @param weaponType Silah tipi (SWORD, AXE, BOW)
+     * @return Oluşturulan silah
+     */
+    public static ItemStack createLeveledWeapon(int level, WeaponType weaponType) {
+        Material baseMaterial;
+        String name;
+        double baseDamage;
+        String color;
+        
+        switch (level) {
+            case 1:
+                baseMaterial = Material.IRON_SWORD;
+                color = "§f";
+                baseDamage = 12.0; // Demir seviyesi
+                name = "Demir Kılıç";
+                break;
+            case 2:
+                baseMaterial = Material.DIAMOND_SWORD;
+                color = "§b";
+                baseDamage = 20.0; // Elmas seviyesi
+                name = "Elmas Kılıç";
+                break;
+            case 3:
+                baseMaterial = Material.NETHERITE_SWORD;
+                color = "§5";
+                baseDamage = 32.0; // Netherite seviyesi
+                name = "Netherite Kılıç";
+                break;
+            case 4:
+                baseMaterial = Material.NETHERITE_SWORD;
+                color = "§6";
+                baseDamage = 50.0; // Özel seviye
+                name = "Titanyum Kılıç";
+                break;
+            case 5:
+                baseMaterial = Material.NETHERITE_SWORD;
+                color = "§d§l";
+                baseDamage = 80.0; // Efsanevi seviye
+                name = "Efsanevi Kılıç";
+                break;
+            default:
+                baseMaterial = Material.IRON_SWORD;
+                color = "§7";
+                baseDamage = 8.0;
+                name = "Temel Kılıç";
+        }
+        
+        // WeaponType'a göre material değiştir
+        if (weaponType == WeaponType.AXE) {
+            switch (level) {
+                case 1: baseMaterial = Material.IRON_AXE; name = "Demir Balta"; break;
+                case 2: baseMaterial = Material.DIAMOND_AXE; name = "Elmas Balta"; break;
+                case 3: baseMaterial = Material.NETHERITE_AXE; name = "Netherite Balta"; break;
+                case 4: baseMaterial = Material.NETHERITE_AXE; name = "Titanyum Balta"; break;
+                case 5: baseMaterial = Material.NETHERITE_AXE; name = "Efsanevi Balta"; break;
+            }
+        } else if (weaponType == WeaponType.BOW) {
+            baseMaterial = Material.BOW;
+            switch (level) {
+                case 1: name = "Demir Yay"; break;
+                case 2: name = "Elmas Yay"; break;
+                case 3: name = "Netherite Yay"; break;
+                case 4: name = "Titanyum Yay"; break;
+                case 5: name = "Efsanevi Yay"; break;
+            }
+        }
+        
+        ItemStack weapon = new ItemStack(baseMaterial);
+        ItemMeta meta = weapon.getItemMeta();
+        meta.setDisplayName(color + "§l" + name);
+        
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Seviye: §e" + level);
+        lore.add("§7Hasar: §c" + String.format("%.1f", baseDamage));
+        lore.add("");
+        lore.add("§7Stratocraft Özel Silahı");
+        meta.setLore(lore);
+        
+        // Hasar modifier ekle
+        if (weaponType != WeaponType.BOW) {
+            AttributeModifier damageMod = new AttributeModifier(
+                UUID.randomUUID(),
+                "stratocraft_weapon_damage",
+                baseDamage - 1.0, // Minecraft'ın base hasarı 1.0
+                AttributeModifier.Operation.ADD_NUMBER,
+                EquipmentSlot.HAND
+            );
+            meta.addAttributeModifier(Attribute.GENERIC_ATTACK_DAMAGE, damageMod);
+        }
+        
+        // Seviye bilgisini kaydet
+        meta.getPersistentDataContainer().set(
+            new NamespacedKey(Main.getInstance(), "weapon_level"),
+            PersistentDataType.INTEGER,
+            level
+        );
+        meta.getPersistentDataContainer().set(
+            new NamespacedKey(Main.getInstance(), "custom_id"),
+            PersistentDataType.STRING,
+            "LEVELED_WEAPON_" + level
+        );
+        
+        weapon.setItemMeta(meta);
+        return weapon;
+    }
+    
+    /**
+     * Seviyeye göre zırh oluştur
+     * @param level Seviye (1-5)
+     * @param armorType Zırh tipi (HELMET, CHESTPLATE, LEGGINGS, BOOTS)
+     * @return Oluşturulan zırh
+     */
+    public static ItemStack createLeveledArmor(int level, ArmorType armorType) {
+        Material baseMaterial;
+        String name;
+        double armorPoints;
+        String color;
+        
+        switch (level) {
+            case 1:
+                color = "§f";
+                armorPoints = 6.0; // Demir seviyesi
+                name = "Demir";
+                break;
+            case 2:
+                color = "§b";
+                armorPoints = 10.0; // Elmas seviyesi
+                name = "Elmas";
+                break;
+            case 3:
+                color = "§5";
+                armorPoints = 15.0; // Netherite seviyesi
+                name = "Netherite";
+                break;
+            case 4:
+                color = "§6";
+                armorPoints = 22.0; // Özel seviye
+                name = "Titanyum";
+                break;
+            case 5:
+                color = "§d§l";
+                armorPoints = 30.0; // Efsanevi seviye
+                name = "Efsanevi";
+                break;
+            default:
+                color = "§7";
+                armorPoints = 3.0;
+                name = "Temel";
+        }
+        
+        // ArmorType'a göre material ve isim belirle
+        switch (armorType) {
+            case HELMET:
+                switch (level) {
+                    case 1: baseMaterial = Material.IRON_HELMET; name += " Miğfer"; break;
+                    case 2: baseMaterial = Material.DIAMOND_HELMET; name += " Miğfer"; break;
+                    case 3: baseMaterial = Material.NETHERITE_HELMET; name += " Miğfer"; break;
+                    case 4: baseMaterial = Material.NETHERITE_HELMET; name += " Miğfer"; break;
+                    case 5: baseMaterial = Material.NETHERITE_HELMET; name += " Miğfer"; break;
+                    default: baseMaterial = Material.IRON_HELMET; name += " Miğfer"; break;
+                }
+                armorPoints *= 0.25; // Miğfer = %25
+                break;
+            case CHESTPLATE:
+                switch (level) {
+                    case 1: baseMaterial = Material.IRON_CHESTPLATE; name += " Göğüslük"; break;
+                    case 2: baseMaterial = Material.DIAMOND_CHESTPLATE; name += " Göğüslük"; break;
+                    case 3: baseMaterial = Material.NETHERITE_CHESTPLATE; name += " Göğüslük"; break;
+                    case 4: baseMaterial = Material.NETHERITE_CHESTPLATE; name += " Göğüslük"; break;
+                    case 5: baseMaterial = Material.NETHERITE_CHESTPLATE; name += " Göğüslük"; break;
+                    default: baseMaterial = Material.IRON_CHESTPLATE; name += " Göğüslük"; break;
+                }
+                armorPoints *= 0.4; // Göğüslük = %40
+                break;
+            case LEGGINGS:
+                switch (level) {
+                    case 1: baseMaterial = Material.IRON_LEGGINGS; name += " Pantolon"; break;
+                    case 2: baseMaterial = Material.DIAMOND_LEGGINGS; name += " Pantolon"; break;
+                    case 3: baseMaterial = Material.NETHERITE_LEGGINGS; name += " Pantolon"; break;
+                    case 4: baseMaterial = Material.NETHERITE_LEGGINGS; name += " Pantolon"; break;
+                    case 5: baseMaterial = Material.NETHERITE_LEGGINGS; name += " Pantolon"; break;
+                    default: baseMaterial = Material.IRON_LEGGINGS; name += " Pantolon"; break;
+                }
+                armorPoints *= 0.3; // Pantolon = %30
+                break;
+            case BOOTS:
+                switch (level) {
+                    case 1: baseMaterial = Material.IRON_BOOTS; name += " Bot"; break;
+                    case 2: baseMaterial = Material.DIAMOND_BOOTS; name += " Bot"; break;
+                    case 3: baseMaterial = Material.NETHERITE_BOOTS; name += " Bot"; break;
+                    case 4: baseMaterial = Material.NETHERITE_BOOTS; name += " Bot"; break;
+                    case 5: baseMaterial = Material.NETHERITE_BOOTS; name += " Bot"; break;
+                    default: baseMaterial = Material.IRON_BOOTS; name += " Bot"; break;
+                }
+                armorPoints *= 0.15; // Bot = %15
+                break;
+            default:
+                baseMaterial = Material.IRON_HELMET;
+                name += " Miğfer";
+        }
+        
+        ItemStack armor = new ItemStack(baseMaterial);
+        ItemMeta meta = armor.getItemMeta();
+        meta.setDisplayName(color + "§l" + name);
+        
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Seviye: §e" + level);
+        lore.add("§7Zırh: §a" + String.format("%.1f", armorPoints));
+        lore.add("");
+        lore.add("§7Stratocraft Özel Zırhı");
+        meta.setLore(lore);
+        
+        // Zırh modifier ekle
+        EquipmentSlot slot = armorType == ArmorType.HELMET ? EquipmentSlot.HEAD :
+                            armorType == ArmorType.CHESTPLATE ? EquipmentSlot.CHEST :
+                            armorType == ArmorType.LEGGINGS ? EquipmentSlot.LEGS :
+                            EquipmentSlot.FEET;
+        
+        AttributeModifier armorMod = new AttributeModifier(
+            UUID.randomUUID(),
+            "stratocraft_armor",
+            armorPoints,
+            AttributeModifier.Operation.ADD_NUMBER,
+            slot
+        );
+        meta.addAttributeModifier(Attribute.GENERIC_ARMOR, armorMod);
+        
+        // Seviye bilgisini kaydet
+        meta.getPersistentDataContainer().set(
+            new NamespacedKey(Main.getInstance(), "armor_level"),
+            PersistentDataType.INTEGER,
+            level
+        );
+        meta.getPersistentDataContainer().set(
+            new NamespacedKey(Main.getInstance(), "custom_id"),
+            PersistentDataType.STRING,
+            "LEVELED_ARMOR_" + level
+        );
+        
+        armor.setItemMeta(meta);
+        return armor;
+    }
+    
+    /**
+     * Bir eşyanın seviyeli silah olup olmadığını kontrol et
+     */
+    public static boolean isLeveledWeapon(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        return item.getItemMeta().getPersistentDataContainer()
+            .has(new NamespacedKey(Main.getInstance(), "weapon_level"), PersistentDataType.INTEGER);
+    }
+    
+    /**
+     * Bir eşyanın seviyeli zırh olup olmadığını kontrol et
+     */
+    public static boolean isLeveledArmor(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        return item.getItemMeta().getPersistentDataContainer()
+            .has(new NamespacedKey(Main.getInstance(), "armor_level"), PersistentDataType.INTEGER);
+    }
+    
+    /**
+     * Silah seviyesini al
+     */
+    public static int getWeaponLevel(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return 0;
+        Integer level = item.getItemMeta().getPersistentDataContainer()
+            .get(new NamespacedKey(Main.getInstance(), "weapon_level"), PersistentDataType.INTEGER);
+        return level != null ? level : 0;
+    }
+    
+    /**
+     * Zırh seviyesini al
+     */
+    public static int getArmorLevel(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return 0;
+        Integer level = item.getItemMeta().getPersistentDataContainer()
+            .get(new NamespacedKey(Main.getInstance(), "armor_level"), PersistentDataType.INTEGER);
+        return level != null ? level : 0;
+    }
+    
+    /**
+     * Silah tipi enum
+     */
+    public enum WeaponType {
+        SWORD, AXE, BOW
+    }
+    
+    /**
+     * Zırh tipi enum
+     */
+    public enum ArmorType {
+        HELMET, CHESTPLATE, LEGGINGS, BOOTS
     }
 }

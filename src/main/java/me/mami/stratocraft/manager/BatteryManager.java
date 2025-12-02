@@ -9,6 +9,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -43,9 +44,15 @@ public class BatteryManager {
         private final double trainingMultiplier;
         private final boolean isRedDiamond;
         private final boolean isDarkMatter;
+        private final int batteryLevel; // Seviye (1-5)
 
         public BatteryData(String type, Material fuel, int alchemyLevel, boolean hasAmplifier,
                 double trainingMultiplier, boolean isRedDiamond, boolean isDarkMatter) {
+            this(type, fuel, alchemyLevel, hasAmplifier, trainingMultiplier, isRedDiamond, isDarkMatter, 1);
+        }
+        
+        public BatteryData(String type, Material fuel, int alchemyLevel, boolean hasAmplifier,
+                double trainingMultiplier, boolean isRedDiamond, boolean isDarkMatter, int batteryLevel) {
             this.type = type;
             this.fuel = fuel;
             this.alchemyLevel = alchemyLevel;
@@ -53,6 +60,7 @@ public class BatteryManager {
             this.trainingMultiplier = trainingMultiplier;
             this.isRedDiamond = isRedDiamond;
             this.isDarkMatter = isDarkMatter;
+            this.batteryLevel = batteryLevel;
         }
 
         public String getType() {
@@ -81,6 +89,10 @@ public class BatteryManager {
 
         public boolean isDarkMatter() {
             return isDarkMatter;
+        }
+        
+        public int getBatteryLevel() {
+            return batteryLevel;
         }
     }
 
@@ -391,25 +403,127 @@ public class BatteryManager {
         return getParticleCountByFuel(fuel);
     }
 
-    // 1. ATEŞ TOPU (Geliştirilmiş)
+    /**
+     * Batarya seviyesini tespit et (blok sayısına göre)
+     * @param centerBlock Merkez blok
+     * @param blockType Kontrol edilecek blok tipi
+     * @return Seviye (1-5), 0 = geçersiz
+     */
+    public int detectBatteryLevel(Block centerBlock, Material blockType) {
+        if (centerBlock.getType() != blockType) return 0;
+        
+        int count = 1; // Merkez blok
+        Block current = centerBlock;
+        
+        // Yukarı say
+        while (current.getRelative(BlockFace.UP).getType() == blockType) {
+            current = current.getRelative(BlockFace.UP);
+            count++;
+            if (count >= 11) break; // Maksimum 11 blok
+        }
+        
+        // Aşağı say
+        current = centerBlock;
+        while (current.getRelative(BlockFace.DOWN).getType() == blockType) {
+            current = current.getRelative(BlockFace.DOWN);
+            count++;
+            if (count >= 11) break; // Maksimum 11 blok
+        }
+        
+        // Seviye belirleme
+        if (count >= 11) {
+            // Seviye 5: 11 blok + özel kontrol (alt ve üstte özel bloklar)
+            Block bottom = centerBlock;
+            while (bottom.getRelative(BlockFace.DOWN).getType() == blockType) {
+                bottom = bottom.getRelative(BlockFace.DOWN);
+            }
+            Block top = centerBlock;
+            while (top.getRelative(BlockFace.UP).getType() == blockType) {
+                top = top.getRelative(BlockFace.UP);
+            }
+            // Alt ve üstte özel blok kontrolü (örneğin: altında BEACON, üstünde NETHER_STAR)
+            Block belowSpecial = bottom.getRelative(BlockFace.DOWN);
+            Block aboveSpecial = top.getRelative(BlockFace.UP);
+            if (belowSpecial.getType() == Material.BEACON && 
+                (aboveSpecial.getType() == Material.NETHER_STAR || 
+                 aboveSpecial.getType() == Material.BEDROCK)) {
+                return 5;
+            }
+            return 4; // 11+ blok ama özel blok yok = Seviye 4
+        } else if (count >= 9) {
+            return 4;
+        } else if (count >= 7) {
+            return 3;
+        } else if (count >= 5) {
+            return 2;
+        } else if (count >= 3) {
+            return 1;
+        }
+        return 0;
+    }
+
+    // 1. ATEŞ TOPU (Geliştirilmiş - Seviyeli)
     public void fireMagmaBattery(Player p, Material fuel, int alchemyLevel, boolean hasAmplifier) {
-        fireMagmaBattery(p, fuel, alchemyLevel, hasAmplifier, 1.0);
+        fireMagmaBattery(p, fuel, alchemyLevel, hasAmplifier, 1.0, 1);
+    }
+    
+    public void fireMagmaBattery(Player p, Material fuel, int alchemyLevel, boolean hasAmplifier,
+            double trainingMultiplier) {
+        fireMagmaBattery(p, fuel, alchemyLevel, hasAmplifier, trainingMultiplier, 1);
     }
 
     public void fireMagmaBattery(Player p, Material fuel, int alchemyLevel, boolean hasAmplifier,
-            double trainingMultiplier) {
-        int count;
-        if (fuel == Material.DIAMOND)
-            count = 5;
-        else if (ItemManager.RED_DIAMOND != null &&
+            double trainingMultiplier, int batteryLevel) {
+        // Seviyeye göre temel güç
+        int baseCount;
+        float baseYield;
+        double levelMultiplier;
+        
+        switch (batteryLevel) {
+            case 1:
+                baseCount = 2;
+                baseYield = 2.0f;
+                levelMultiplier = 1.0;
+                break;
+            case 2:
+                baseCount = 5;
+                baseYield = 3.0f;
+                levelMultiplier = 1.5;
+                break;
+            case 3:
+                baseCount = 15;
+                baseYield = 5.0f;
+                levelMultiplier = 2.5;
+                break;
+            case 4:
+                baseCount = 40;
+                baseYield = 8.0f;
+                levelMultiplier = 4.0;
+                break;
+            case 5:
+                baseCount = 100;
+                baseYield = 15.0f;
+                levelMultiplier = 10.0;
+                break;
+            default:
+                baseCount = 2;
+                baseYield = 2.0f;
+                levelMultiplier = 1.0;
+        }
+        
+        // Yakıt tipine göre çarpan
+        double fuelMultiplier = 1.0;
+        if (fuel == Material.DIAMOND) {
+            fuelMultiplier = 2.5;
+        } else if (ItemManager.RED_DIAMOND != null &&
                 p.getInventory().getItemInMainHand().equals(ItemManager.RED_DIAMOND)) {
-            count = 20;
+            fuelMultiplier = 5.0;
         } else if (ItemManager.DARK_MATTER != null &&
                 p.getInventory().getItemInMainHand().equals(ItemManager.DARK_MATTER)) {
-            count = 50;
-        } else {
-            count = 2;
+            fuelMultiplier = 10.0;
         }
+        
+        int count = (int) (baseCount * fuelMultiplier * levelMultiplier);
 
         // Simya Kulesi seviyesine göre güç artışı: Seviye 1 = %10, Seviye 5 = %50
         if (alchemyLevel > 0) {
@@ -425,8 +539,8 @@ public class BatteryManager {
 
         @SuppressWarnings("unused")
         float size = hasAmplifier ? 2.0f : 1.0f;
-        float yield = hasAmplifier ? 4.0f : 2.0f; // Alev Amplifikatörü ile çap 2 katına çıkar
-        yield = (float) (yield * trainingMultiplier); // Mastery çarpanı yield'e de uygulanır
+        float yield = hasAmplifier ? baseYield * 2.0f : baseYield; // Alev Amplifikatörü ile çap 2 katına çıkar
+        yield = (float) (yield * trainingMultiplier * levelMultiplier); // Mastery çarpanı yield'e de uygulanır
 
         // Ateş toplarını sırayla at (aynı anda değil, delay ile)
         final int finalCount = count;
@@ -474,9 +588,193 @@ public class BatteryManager {
 
         String ampMsg = hasAmplifier ? " §c§l[ALEV AMPLİFİKATÖRÜ AKTİF!]" : "";
 
+        String levelMsg = batteryLevel > 1 ? " §6§l[Seviye " + batteryLevel + " Batarya]" : "";
+        
         p.sendMessage("§6Ateş topları fırlatıldı! (" + count + " adet)" +
                 (alchemyLevel > 0 ? " [Simya Kulesi Seviye " + alchemyLevel + "]" : "") +
-                masteryMsg + ampMsg);
+                masteryMsg + ampMsg + levelMsg);
+        
+        // Seviye 5 özel güç: Dağ yıkma
+        if (batteryLevel == 5 && fuel == Material.DIAMOND) {
+            fireMountainDestroyer(p);
+        }
+    }
+    
+    /**
+     * Seviye 5 Özel Güç: Dağ Yıkma (Optimize)
+     */
+    private void fireMountainDestroyer(Player p) {
+        Block targetBlock = p.getTargetBlock(null, 100);
+        if (targetBlock == null || targetBlock.getType() == Material.AIR) {
+            return;
+        }
+        
+        Location center = targetBlock.getLocation();
+        int radius = 30; // 30 blok yarıçap
+        int height = 50; // 50 blok yükseklik
+        
+        p.sendMessage("§c§lDAĞ YIKICI AKTİF! Büyük alan yıkımı başlıyor...");
+        
+        // Optimize: Chunk kontrolü ve batch işlem
+        new BukkitRunnable() {
+            int processed = 0;
+            final int maxPerTick = 50; // Her tick'te maksimum 50 blok işle
+            
+            @Override
+            public void run() {
+                int count = 0;
+                for (int x = -radius; x <= radius && count < maxPerTick; x++) {
+                    for (int z = -radius; z <= radius && count < maxPerTick; z++) {
+                        for (int y = -height/2; y <= height/2 && count < maxPerTick; y++) {
+                            Location loc = center.clone().add(x, y, z);
+                            
+                            // Chunk yüklü mü kontrol et
+                            if (!loc.getChunk().isLoaded()) {
+                                continue;
+                            }
+                            
+                            double distance = center.distance(loc);
+                            if (distance <= radius) {
+                                Block block = loc.getBlock();
+                                Material type = block.getType();
+                                
+                                // Sadece doğal blokları yok et (yapıları koru)
+                                if (type != Material.AIR && 
+                                    type != Material.BEDROCK &&
+                                    !type.name().contains("STRUCTURE") &&
+                                    !type.name().contains("BARRIER")) {
+                                    
+                                    // Optimize: setType yerine breakNaturally (daha hızlı)
+                                    block.breakNaturally();
+                                    count++;
+                                    processed++;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Partikül efekti (optimize: her 100 blokta bir)
+                if (processed % 100 == 0) {
+                    p.getWorld().spawnParticle(
+                        org.bukkit.Particle.EXPLOSION_LARGE,
+                        center.clone().add(
+                            (Math.random() - 0.5) * radius * 2,
+                            (Math.random() - 0.5) * height,
+                            (Math.random() - 0.5) * radius * 2
+                        ),
+                        1
+                    );
+                }
+                
+                // İşlem tamamlandı mı?
+                if (processed >= radius * radius * height * 0.3) { // %30'u yeterli
+                    p.sendMessage("§c§lDağ yıkımı tamamlandı! " + processed + " blok yok edildi.");
+                    cancel();
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 1L); // Her tick'te çalış
+    }
+    
+    /**
+     * Seviye 5 Özel Güç: Klan Yıkımı (Tüm yapıları tek seferde)
+     */
+    public void fireClanDestroyer(Player p, me.mami.stratocraft.manager.TerritoryManager territoryManager) {
+        if (territoryManager == null) return;
+        
+        Block targetBlock = p.getTargetBlock(null, 100);
+        if (targetBlock == null) return;
+        
+        Location target = targetBlock.getLocation();
+        me.mami.stratocraft.model.Clan targetClan = territoryManager.getTerritoryOwner(target);
+        
+        if (targetClan == null) {
+            p.sendMessage("§cHedef bölgede klan yok!");
+            return;
+        }
+        
+        p.sendMessage("§c§lKLAN YIKICI AKTİF! " + targetClan.getName() + " klanının tüm yapıları yok ediliyor...");
+        
+        // Tüm yapıları yok et
+        int destroyed = 0;
+        for (me.mami.stratocraft.model.Structure structure : new ArrayList<>(targetClan.getStructures())) {
+            Location structLoc = structure.getLocation();
+            if (structLoc != null && structLoc.getWorld() != null) {
+                // Yapıyı yok et (optimize: batch işlem)
+                destroyStructureOptimized(structLoc, 5); // 5 blok yarıçap
+                destroyed++;
+            }
+        }
+        
+        p.sendMessage("§c§l" + destroyed + " yapı yok edildi!");
+    }
+    
+    /**
+     * Optimize yapı yıkımı
+     */
+    private void destroyStructureOptimized(Location center, int radius) {
+        // Chunk kontrolü
+        if (!center.getChunk().isLoaded()) {
+            return;
+        }
+        
+        // Batch işlem: sadece yapı bloklarını yok et
+        for (int x = -radius; x <= radius; x++) {
+            for (int y = -radius; y <= radius; y++) {
+                for (int z = -radius; z <= radius; z++) {
+                    Location loc = center.clone().add(x, y, z);
+                    if (loc.distance(center) <= radius) {
+                        Block block = loc.getBlock();
+                        Material type = block.getType();
+                        
+                        // Yapı bloklarını yok et
+                        if (type != Material.AIR && 
+                            type != Material.BEDROCK &&
+                            (type.name().contains("BLOCK") || 
+                             type.name().contains("BRICK") ||
+                             type.name().contains("STONE"))) {
+                            block.setType(Material.AIR);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Seviye 5 Özel Güç: Boss Yıkımı
+     */
+    public void fireBossDestroyer(Player p, me.mami.stratocraft.manager.BossManager bossManager) {
+        if (bossManager == null) return;
+        
+        Block targetBlock = p.getTargetBlock(null, 100);
+        if (targetBlock == null) return;
+        
+        Location target = targetBlock.getLocation();
+        
+        // Yakındaki bossları bul
+        for (org.bukkit.entity.Entity entity : target.getWorld().getNearbyEntities(target, 50, 50, 50)) {
+            if (entity instanceof LivingEntity) {
+                LivingEntity living = (LivingEntity) entity;
+                if (bossManager.getBossData(living.getUniqueId()) != null) {
+                    // Boss'a büyük hasar ver
+                    double maxHealth = living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue();
+                    double damage = maxHealth * 0.5; // %50 hasar
+                    living.damage(damage);
+                    
+                    // Efekt
+                    living.getWorld().spawnParticle(
+                        org.bukkit.Particle.EXPLOSION_HUGE,
+                        living.getLocation(),
+                        10,
+                        2, 2, 2,
+                        0.1
+                    );
+                    
+                    p.sendMessage("§c§lBOSS YIKICI! " + living.getCustomName() + " büyük hasar aldı!");
+                }
+            }
+        }
     }
 
     // 2. YILDIRIM

@@ -196,12 +196,16 @@ public class TrapListener implements Listener {
         Player player = event.getPlayer();
         Block standingBlock = event.getTo().getBlock();
 
-        // Tuzak tetikleme kontrolü
+        // Tuzak tetikleme kontrolü - oyuncunun üzerinde durduğu blok
         trapManager.triggerTrap(standingBlock.getLocation(), player);
 
-        // Tuzak kapatma kontrolü (oyuncu üzerinde yürüyorsa, altındaki tuzakları
-        // kontrol et)
+        // Tuzak tetikleme kontrolü - oyuncunun altındaki blok (1 blok altında)
         Block below = standingBlock.getRelative(0, -1, 0);
+        if (below.getType() == Material.MAGMA_BLOCK || below.getType() == Material.LODESTONE) {
+            trapManager.triggerTrap(below.getLocation(), player);
+        }
+
+        // Tuzak kapatma kontrolü (oyuncu üzerinde yürüyorsa, altındaki tuzakları kontrol et)
         if (below.getType() == Material.LODESTONE && below.hasMetadata("TrapCore")) {
             trapManager.checkTrapCoverage(below.getLocation());
         }

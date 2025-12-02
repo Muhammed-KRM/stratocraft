@@ -2250,7 +2250,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             return true;
         }
         
-        siegeManager.startSiege(attacker, defender);
+        siegeManager.startSiege(attacker, defender, p);
         new me.mami.stratocraft.task.SiegeTimer(defender, plugin)
             .runTaskTimer(plugin, 20L, 20L);
         
@@ -2602,7 +2602,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "trebuset":
             case "trebuşet":
                 // Trebuchet: 5x5 Obsidian taban + Merkezde Anvil
-                org.bukkit.block.BlockFace facing = p.getFacing();
+                org.bukkit.block.BlockFace trebuchetFacing = p.getFacing();
                 
                 // 5x5 Obsidian taban oluştur
                 for (int x = -2; x <= 2; x++) {
@@ -2617,22 +2617,22 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 anvilLoc.getBlock().setType(Material.ANVIL);
                 
                 // YAPILDI EFEKTLERİ
-                org.bukkit.Location effectLoc = loc.clone().add(0, 1, 0);
-                p.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, effectLoc, 5);
-                p.getWorld().spawnParticle(org.bukkit.Particle.SMOKE_LARGE, effectLoc, 30, 1, 1, 1);
-                p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_ANVIL_USE, 1.0f, 0.8f);
-                p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.2f);
+                org.bukkit.Location trebuchetEffectLoc = loc.clone().add(0, 1, 0);
+                p.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, trebuchetEffectLoc, 5);
+                p.getWorld().spawnParticle(org.bukkit.Particle.SMOKE_LARGE, trebuchetEffectLoc, 30, 1, 1, 1);
+                p.getWorld().playSound(trebuchetEffectLoc, org.bukkit.Sound.BLOCK_ANVIL_USE, 1.0f, 0.8f);
+                p.getWorld().playSound(trebuchetEffectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.2f);
                 
                 // Havai fişek efekti
-                org.bukkit.entity.Firework firework = (org.bukkit.entity.Firework) p.getWorld().spawnEntity(
-                        effectLoc, org.bukkit.entity.EntityType.FIREWORK);
-                org.bukkit.inventory.meta.FireworkMeta fireworkMeta = firework.getFireworkMeta();
-                fireworkMeta.addEffect(org.bukkit.FireworkEffect.builder()
+                org.bukkit.entity.Firework trebuchetFirework = (org.bukkit.entity.Firework) p.getWorld().spawnEntity(
+                        trebuchetEffectLoc, org.bukkit.entity.EntityType.FIREWORK);
+                org.bukkit.inventory.meta.FireworkMeta trebuchetFireworkMeta = trebuchetFirework.getFireworkMeta();
+                trebuchetFireworkMeta.addEffect(org.bukkit.FireworkEffect.builder()
                         .with(org.bukkit.FireworkEffect.Type.BURST)
                         .withColor(org.bukkit.Color.PURPLE, org.bukkit.Color.BLACK)
                         .flicker(true).build());
-                fireworkMeta.setPower(0);
-                firework.setFireworkMeta(fireworkMeta);
+                trebuchetFireworkMeta.setPower(0);
+                trebuchetFirework.setFireworkMeta(trebuchetFireworkMeta);
                 
                 // Kullanım talimatları
                 p.sendMessage("§a§l5x5 TREBUCHET OLUŞTURULDU!");
