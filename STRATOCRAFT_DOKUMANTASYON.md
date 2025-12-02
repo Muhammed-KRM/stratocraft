@@ -51,56 +51,11 @@ Stratocraft, Minecraft için geliştirilmiş kapsamlı bir klan tabanlı savaş 
 
 ## 👥 Klan Sistemi
 
-Stratocraft'ta klan kurmak için **iki farklı yöntem** vardır. Her iki yöntem de geçerlidir ve aynı sonucu verir.
+Stratocraft'ta klan kurmak için **sadece Klan Kristali** kullanılır. Ritüel ile klan kurma kaldırılmıştır.
 
 ---
 
-### 🎯 Yöntem 1: Temel Taşı Ritüeli (Ritüel ile Klan Kurma)
-
-Bu yöntem, **ritüel sistemi** kullanarak klan kurmaktır. Komut gerektirmez, sadece fiziksel etkileşimlerle yapılır.
-
-#### Gereksinimler:
-1. **3x3 Cobblestone Platform:** Crafting Table'ın altında 3x3 kırık taş (Cobblestone) platformu
-2. **İsimlendirilmiş Kağıt:** Örs'te isim verilmiş bir kağıt (kağıdın üzerinde klan ismi yazılı olmalı)
-3. **Crafting Table:** Platformun ortasına yerleştirilmiş
-4. **Oyuncu:** Crafting Table'ın üzerinde durmalı
-
-#### Adım Adım:
-1. **Platform Hazırlığı:**
-   - Yere 3x3 Cobblestone platformu yerleştir
-   - Platformun ortasına Crafting Table koy
-
-2. **Kağıt Hazırlığı:**
-   - Örs'te bir kağıda klan ismini yaz (örn: "Aslanlar")
-   - Kağıdı eline al
-
-3. **Ritüel:**
-   - Crafting Table'ın üzerine çık
-   - Crafting Table'a **sağ tıkla**
-
-#### Sonuç:
-- ✅ Klan kurulur (kağıttaki isimle)
-- ✅ Oyuncu otomatik olarak **Lider** olur
-- ✅ Bölge (Territory) otomatik oluşturulur (Crafting Table'ın konumu merkez olur)
-- ✅ Şimşek ve partikül efektleri gösterilir
-- ✅ Sunucuya duyuru yapılır
-- ✅ Kağıt tüketilir (1 adet azalır)
-- ✅ 10 saniye cooldown uygulanır
-
-#### Örnek Senaryo:
-```
-Oyuncu: "Aslanlar" isimli kağıtla Crafting Table'a tıklar
-→ Klan "Aslanlar" kurulur
-→ Oyuncu Lider olur
-→ Bölge aktif olur (Crafting Table konumu merkez)
-→ Sunucuya: "OyuncuAdı klanı kurdu: Aslanlar"
-```
-
-**Not:** Bu yöntemle kurulan klanın kristali yoktur. Bölge koruması aktif olsa da görsel bir kristal entity'si oluşturulmaz.
-
----
-
-### 💎 Yöntem 2: Klan Kristali ile Klan Kurma
+### 💎 Klan Kristali ile Klan Kurma
 
 Bu yöntem, **Klan Kristali** craft edip yerleştirerek klan kurmaktır. Daha görsel ve savaş mekaniği içerir.
 
@@ -151,24 +106,7 @@ Oyuncu: Klan Çitleri ile 5x5 alan oluşturur
 → Bölge aktif olur (Kristal konumu merkez)
 ```
 
-**Not:** Bu yöntemle kurulan klanın kristali vardır. Kristal kırılırsa klan bozulur (savaş mekaniği).
-
----
-
-### ⚔️ İki Yöntem Arasındaki Farklar
-
-| Özellik | Temel Taşı Ritüeli | Klan Kristali |
-|---------|-------------------|---------------|
-| **Gereksinim** | 3x3 Cobblestone + Crafting Table + İsimli Kağıt | Klan Kristali + Klan Çitleri |
-| **Klan İsmi** | Kağıttaki isim | Otomatik: `OyuncuAdı_Klanı` |
-| **Kristal Entity** | ❌ Yok | ✅ Var (EnderCrystal) |
-| **Savaş Mekaniği** | Kristal yok, kırılamaz | Kristal kırılabilir, klan bozulur |
-| **Görsel** | Sadece efektler | Kristal entity görünür |
-| **Cooldown** | 10 saniye | Yok |
-
-**Öneri:** 
-- **Hızlı kurulum** için: Temel Taşı Ritüeli
-- **Savaş mekaniği** için: Klan Kristali (kuşatma sistemi ile uyumlu)
+**Not:** Klanın kristali vardır. Kristal kırılırsa klan bozulur (savaş mekaniği). Bu yüzden kristal korunmalıdır.
 
 ---
 

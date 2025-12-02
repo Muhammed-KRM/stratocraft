@@ -17,44 +17,13 @@ Ritüeller, Stratocraft'ta **fiziksel blok düzenekleriyle** yapılan özel etki
 
 ## 🏰 KLAN RİTÜELLERİ
 
-### 1. Temel Taşı Ritüeli (Klan Kurma)
-
-**Gereksinimler**:
-- 3x3 Cobblestone platform
-- 1 Crafting Table (ortada)
-- 1 Named Paper (klan ismi yazılı)
-
-**Platform Kurulumu**:
-```
-[C][C][C]
-[C][T][C]    C = Cobblestone
-[C][C][C]    T = Crafting Table (ortada)
-
-Platform tamamen Cobblestone olmalı!
-```
-
-**Adımlar**:
-```
-1. 3x3 Cobblestone platforma Crafting Table koy
-2. Örs'te Paper'a klan ismi yaz (örs ile rename yap)
-3. Eline bu Named Paper'ı al
-4. Crafting Table'ın ÜZERİNE ÇIK
-5. Crafting Table'a SAĞ TIK
-6. SONUÇ:
-   - Şimşek çakar
-   - TOTEM + END_ROD partikülleri
-   - "KLAN KURULDU" title
-   - Paper tüketilir
-   - Klan oluşturulur
-```
-
-**Cooldown**: 10 saniye
+**Not**: Klan kurma artık sadece **Klan Kristali** ile yapılır. Ritüel ile klan kurma kaldırılmıştır. Detaylar için `01_klan_sistemi.md` dosyasına bakın.
 
 ---
 
 ## 👥 ÜYE YÖNETİM RİTÜELLERİ
 
-### 2. Ateş Ritüeli (Üye Alma)
+### 1. Ateş Ritüeli (Üye Alma)
 
 **Gereksinimler**:
 - 3x3 Stripped Log (soyulmuş odun kütüğü) platform

@@ -29,10 +29,12 @@ public class Clan {
     private int storedXP = 0; // XP Bankası için
     private Location crystalLocation; // Klan Kristali lokasyonu
     private EnderCrystal crystalEntity; // Kristal entity referansı
+    private long createdAt; // Klan kurulma zamanı (grace period için)
 
     public Clan(String name, UUID leader) {
         this.name = name;
         this.members.put(leader, Rank.LEADER);
+        this.createdAt = System.currentTimeMillis();
     }
 
     public UUID getId() { return id; }
@@ -82,6 +84,27 @@ public class Clan {
                 .map(Map.Entry::getKey)
                 .findFirst()
                 .orElse(null);
+    }
+    
+    // Grace Period (Başlangıç Koruması)
+    public long getCreatedAt() { return createdAt; }
+    public void setCreatedAt(long time) { this.createdAt = time; } // DataManager için
+    
+    /**
+     * Grace period aktif mi? (24 saat = 86400000 ms)
+     */
+    public boolean isInGracePeriod() {
+        long gracePeriodDuration = 24 * 60 * 60 * 1000L; // 24 saat
+        return System.currentTimeMillis() - createdAt < gracePeriodDuration;
+    }
+    
+    /**
+     * Grace period süresi kaldı mı? (saniye cinsinden)
+     */
+    public long getGracePeriodRemaining() {
+        long gracePeriodDuration = 24 * 60 * 60 * 1000L; // 24 saat
+        long remaining = gracePeriodDuration - (System.currentTimeMillis() - createdAt);
+        return Math.max(0, remaining / 1000); // Saniye cinsinden
     }
 }
 

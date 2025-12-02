@@ -33,6 +33,7 @@ public class Main extends JavaPlugin {
     private ScavengerManager scavengerManager;
     private LogisticsManager logisticsManager;
     private ContractManager contractManager;
+    private AllianceManager allianceManager;
     private MobManager mobManager;
     private ShopManager shopManager;
     private ResearchManager researchManager;
@@ -84,6 +85,7 @@ public class Main extends JavaPlugin {
         scavengerManager = new ScavengerManager();
         logisticsManager = new LogisticsManager(territoryManager);
         contractManager = new ContractManager(clanManager);
+        allianceManager = new AllianceManager(clanManager);
         mobManager = new MobManager();
         shopManager = new ShopManager();
         researchManager = new ResearchManager();
@@ -123,7 +125,9 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new ScavengerListener(scavengerManager), this);
         Bukkit.getPluginManager().registerEvents(new LogisticsListener(logisticsManager), this);
         // RitualListener artık RitualInteractionListener içinde birleştirildi
-        Bukkit.getPluginManager().registerEvents(new RitualInteractionListener(clanManager, territoryManager), this);
+        RitualInteractionListener ritualListener = new RitualInteractionListener(clanManager, territoryManager);
+        ritualListener.setAllianceManager(allianceManager);
+        Bukkit.getPluginManager().registerEvents(ritualListener, this);
         Bukkit.getPluginManager().registerEvents(new ShopListener(shopManager), this);
         Bukkit.getPluginManager().registerEvents(new MissionListener(missionManager), this);
         Bukkit.getPluginManager().registerEvents(new ResearchListener(researchManager), this);
@@ -280,8 +284,8 @@ public class Main extends JavaPlugin {
 
                 // BURADAN SONRASI SADECE ADMİNLER İÇİN
                 if (!p.hasPermission("stratocraft.admin")) {
-                    p.sendMessage("§cDiğer işlemler için Ritüelleri kullanmalısın!");
-                    p.sendMessage("§7Ritüeller: Klan Kurma (3x3 Cobblestone + Crafting Table + Named Paper)");
+                    p.sendMessage("§cKlan kurmak için Klan Kristali kullanmalısın!");
+                    p.sendMessage("§7Klan Kristali craft et ve Klan Çitleri ile çevrelenmiş alana yerleştir.");
                     return true;
                 }
 
@@ -536,6 +540,10 @@ public class Main extends JavaPlugin {
 
     public ContractManager getContractManager() {
         return contractManager;
+    }
+    
+    public AllianceManager getAllianceManager() {
+        return allianceManager;
     }
 
     public ShopManager getShopManager() {

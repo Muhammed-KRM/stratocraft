@@ -36,6 +36,7 @@ import java.util.UUID;
 public class RitualInteractionListener implements Listener {
     private final ClanManager clanManager;
     private final TerritoryManager territoryManager;
+    private me.mami.stratocraft.manager.AllianceManager allianceManager;
     
     // Cooldown sistemi: Oyuncu UUID -> Son ritüel zamanı
     private final Map<UUID, Long> ritualCooldowns = new HashMap<>();
@@ -45,95 +46,9 @@ public class RitualInteractionListener implements Listener {
         this.clanManager = cm;
         this.territoryManager = tm;
     }
-
-    // ========== KLAN KURMA: "Temel Taşı Ritüeli" ==========
     
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onClanCreate(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        if (event.getHand() != EquipmentSlot.HAND) return;
-        if (event.getClickedBlock() == null) return;
-        
-        Player p = event.getPlayer();
-        Block clicked = event.getClickedBlock();
-        
-        // Crafting Table kontrolü
-        if (clicked.getType() != Material.CRAFTING_TABLE) return;
-        
-        // Oyuncu zaten bir klana üye mi?
-        if (clanManager.getClanByPlayer(p.getUniqueId()) != null) {
-            p.sendMessage("§cZaten bir klana üyesin!");
-            return;
-        }
-        
-        // Cooldown kontrolü
-        if (isOnCooldown(p.getUniqueId())) {
-            p.sendMessage("§cRitüel henüz hazır değil! Lütfen bekleyin.");
-            return;
-        }
-        
-        // Elinde Named Paper var mı?
-        ItemStack handItem = p.getInventory().getItemInMainHand();
-        if (handItem == null || handItem.getType() != Material.PAPER) return;
-        
-        ItemMeta meta = handItem.getItemMeta();
-        if (meta == null || !meta.hasDisplayName()) {
-            p.sendMessage("§cRitüel için isimlendirilmiş bir kağıt gerekli! (Örs'te isim yaz)");
-            return;
-        }
-        
-        String clanName = meta.getDisplayName().replace("§r", "").trim();
-        if (clanName.isEmpty()) {
-            p.sendMessage("§cKağıdın üzerinde bir isim olmalı!");
-            return;
-        }
-        
-        // 3x3 Cobblestone platform kontrolü
-        Block tableBlock = clicked;
-        if (!checkCobblestonePlatform(tableBlock)) {
-            p.sendMessage("§cRitüel için 3x3 Kırık Taş (Cobblestone) platform gerekli!");
-            // Görsel geri bildirim: Yanlış blokların üzerinde kırmızı partiküller
-            showPlatformError(tableBlock);
-            return;
-        }
-        
-        // Oyuncu Crafting Table'ın üzerinde mi?
-        if (!p.getLocation().getBlock().equals(tableBlock.getRelative(BlockFace.UP))) {
-            p.sendMessage("§cRitüel için Çalışma Masasının üzerine çıkmalısın!");
-            return;
-        }
-        
-        // Klan oluştur
-        Clan newClan = clanManager.createClan(clanName, p.getUniqueId());
-        if (newClan != null) {
-            // Bölge oluştur
-            newClan.setTerritory(new me.mami.stratocraft.model.Territory(newClan.getId(), p.getLocation()));
-            
-            // Efektler
-            Location loc = tableBlock.getLocation().add(0.5, 1, 0.5);
-            
-            // Şimşek (zarar vermeyen)
-            p.getWorld().strikeLightningEffect(loc);
-            
-            // Partiküller
-            p.getWorld().spawnParticle(Particle.TOTEM, loc, 100, 1, 1, 1, 0.5);
-            p.getWorld().spawnParticle(Particle.END_ROD, loc, 50, 1, 1, 1, 0.3);
-            
-            // Ses
-            p.playSound(loc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
-            p.playSound(loc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.5f, 1.5f);
-            
-            // Title
-            p.sendTitle("§6§lKLAN KURULDU", "§e" + clanName, 10, 70, 20);
-            
-            // Kağıdı tüket
-            handItem.setAmount(handItem.getAmount() - 1);
-            
-            // Cooldown ekle
-            setCooldown(p.getUniqueId());
-            
-            Bukkit.broadcastMessage("§6§l" + p.getName() + " §6klanı kurdu: §e" + clanName);
-        }
+    public void setAllianceManager(me.mami.stratocraft.manager.AllianceManager am) {
+        this.allianceManager = am;
     }
 
     // ========== KLAN ÜYE ALMA: "Ateş Ritüeli" (3x3 Soyulmuş Odun) ==========
@@ -586,10 +501,14 @@ public class RitualInteractionListener implements Listener {
         }
     }
 
-    // ========== MÜTTEFİKLİK: "Kan Anlaşması" ==========
+    // ========== İTTİFAK: "Kan Anlaşması Ritüeli" (YENİ SİSTEM) ==========
+    // İki lider elinde Elmas ile birbirine shift+sağ tık yapar
+    // İttifak tipi: Elinde farklı itemlar ile farklı ittifaklar yapılabilir
     
     @EventHandler(priority = EventPriority.HIGH)
     public void onAllianceRitual(PlayerInteractEntityEvent event) {
+        if (allianceManager == null) return; // AllianceManager yoksa çalışma
+        
         if (event.getHand() != EquipmentSlot.HAND) return;
         if (!(event.getRightClicked() instanceof Player)) return;
 
@@ -620,24 +539,33 @@ public class RitualInteractionListener implements Listener {
         // İkisi de lider mi?
         if (clan1.getRank(p1.getUniqueId()) != Clan.Rank.LEADER ||
             clan2.getRank(p2.getUniqueId()) != Clan.Rank.LEADER) {
-            return; // Sadece liderler müttefik olabilir
+            return; // Sadece liderler ittifak yapabilir
         }
         
-        // Cooldown kontrolü
-        if (isOnCooldown(p1.getUniqueId()) || isOnCooldown(p2.getUniqueId())) {
-            p1.sendMessage("§cRitüel henüz hazır değil! Lütfen bekleyin.");
+        // Cooldown kontrolü (AllianceManager'dan)
+        if (allianceManager.isOnCooldown(clan1.getId()) || allianceManager.isOnCooldown(clan2.getId())) {
+            p1.sendMessage("§cİttifak ritüeli henüz hazır değil! Lütfen bekleyin.");
             return;
         }
         
-        // Zaten müttefik mi?
-        if (clan1.isGuest(p2.getUniqueId()) && clan2.isGuest(p1.getUniqueId())) {
-            p1.sendMessage("§eBu klanlar zaten müttefik!");
+        // Zaten ittifak var mı?
+        if (allianceManager.hasAlliance(clan1.getId(), clan2.getId())) {
+            p1.sendMessage("§eBu klanlar zaten ittifak halinde!");
             return;
         }
         
-        // Müttefiklik (basit versiyon - guests olarak ekle)
-        clan1.addGuest(p2.getUniqueId());
-        clan2.addGuest(p1.getUniqueId());
+        // İttifak tipi belirleme: Elinde farklı itemlar ile farklı ittifaklar
+        // Şimdilik FULL ittifak (elinde başka item yoksa)
+        me.mami.stratocraft.model.Alliance.Type allianceType = me.mami.stratocraft.model.Alliance.Type.FULL;
+        
+        // İttifak oluştur (süresiz - 0 = süresiz)
+        me.mami.stratocraft.model.Alliance alliance = allianceManager.createAlliance(
+            clan1.getId(), clan2.getId(), allianceType, 0);
+        
+        if (alliance == null) {
+            p1.sendMessage("§cİttifak oluşturulamadı!");
+            return;
+        }
         
         // Elmasları tüket
         handItem.setAmount(handItem.getAmount() - 1);
@@ -647,18 +575,20 @@ public class RitualInteractionListener implements Listener {
         Location midLoc = p1.getLocation().add(p2.getLocation()).multiply(0.5);
         midLoc.getWorld().spawnParticle(Particle.HEART, midLoc, 20, 1, 1, 1, 0.1);
         midLoc.getWorld().spawnParticle(Particle.END_ROD, midLoc, 30, 1, 1, 1, 0.2);
+        midLoc.getWorld().spawnParticle(Particle.TOTEM, midLoc, 50, 1, 1, 1, 0.3);
         
         p1.playSound(midLoc, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
         p2.playSound(midLoc, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
         
-        p1.sendTitle("§a§lMÜTTEFİK OLUNDU", "§e" + clan2.getName(), 10, 70, 20);
-        p2.sendTitle("§a§lMÜTTEFİK OLUNDU", "§e" + clan1.getName(), 10, 70, 20);
+        p1.sendTitle("§a§lİTTİFAK KURULDU", "§e" + clan2.getName(), 10, 70, 20);
+        p2.sendTitle("§a§lİTTİFAK KURULDU", "§e" + clan1.getName(), 10, 70, 20);
         
-        Bukkit.broadcastMessage("§a§l" + clan1.getName() + " §7ve §a" + clan2.getName() + " §7klanları müttefik oldu!");
+        Bukkit.broadcastMessage("§a§l" + clan1.getName() + " §7ve §a" + clan2.getName() + 
+            " §7klanları ittifak kurdu! (Tip: " + allianceType.name() + ")");
         
         // Cooldown ekle
-        setCooldown(p1.getUniqueId());
-        setCooldown(p2.getUniqueId());
+        allianceManager.setCooldown(clan1.getId());
+        allianceManager.setCooldown(clan2.getId());
     }
 
     // ========== LİDERLİK DEVRİ: "Taç Geçişi" (ZOR) ==========
@@ -1273,41 +1203,6 @@ public class RitualInteractionListener implements Listener {
     }
 
     // ========== YARDIMCI METODLAR ==========
-    
-    private boolean checkCobblestonePlatform(Block center) {
-        // 3x3 Cobblestone kontrolü (center'ın altında)
-        Block base = center.getRelative(BlockFace.DOWN);
-        
-        for (int x = -1; x <= 1; x++) {
-            for (int z = -1; z <= 1; z++) {
-                Block check = base.getRelative(x, 0, z);
-                if (check.getType() != Material.COBBLESTONE) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-    
-    /**
-     * Ritüel platform hatası için görsel geri bildirim
-     * Yanlış blokların üzerinde kırmızı partiküller gösterir
-     */
-    private void showPlatformError(Block center) {
-        Block base = center.getRelative(BlockFace.DOWN);
-        
-        for (int x = -1; x <= 1; x++) {
-            for (int z = -1; z <= 1; z++) {
-                Block check = base.getRelative(x, 0, z);
-                if (check.getType() != Material.COBBLESTONE) {
-                    // Yanlış blok - kırmızı partikül göster
-                    Location loc = check.getLocation().add(0.5, 1.2, 0.5);
-                    loc.getWorld().spawnParticle(Particle.REDSTONE, loc, 10, 
-                        new Particle.DustOptions(org.bukkit.Color.RED, 1.0f));
-                }
-            }
-        }
-    }
     
     private boolean checkInviteCircle(Block torch) {
         // 5x5 Taş Tuğla çember kontrolü (torch'un etrafında)

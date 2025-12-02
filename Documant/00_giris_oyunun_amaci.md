@@ -398,7 +398,7 @@ Bu döküman, Stratocraft'ın temel felsefesini ve amacını anlatır. Detaylı 
 
 - **01_klan_sistemi.md**: Klan kurma, üye yönetimi, rütbe sistemi
 - **02_bolge_sistemi.md**: Bölge oluşturma, genişletme, korumalar
-- **03_rituel_sistemi.md**: Tüm ritüeller (klan, üye, terfi, savaş)
+- **03_rituel_sistemi.md**: Tüm ritüeller (üye, terfi, savaş) - Not: Klan kurma artık sadece Klan Kristali ile yapılır
 - **04_batarya_sistemi.md**: Büyü sistemi, batarya türleri, stratejiler
 - **05_ozel_esyalar.md**: Yeni madenler, silahlar, eşyalar
 - **06_ozel_moblar.md**: Özel moblar, eğitme, binme
@@ -416,6 +416,7 @@ Bu döküman, Stratocraft'ın temel felsefesini ve amacını anlatır. Detaylı 
 - **18_ureme_sistemi.md**: Çiftleştirme, üreme tesisleri, yumurta
 - **19_zorluk_sistemi.md**: Zorluk bölgeleri, mob/maden kısıtlamaları
 - **20_admin_komutlari.md**: Admin komutları, test araçları
+- **21_ittifak_sistemi.md**: İttifak sistemi, ritüeller, ihlal ve ceza
 
 ---
 

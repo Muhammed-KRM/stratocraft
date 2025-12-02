@@ -74,6 +74,15 @@ public class DisasterTask extends BukkitRunnable {
         Location target = disaster.getTarget();
         double damageMultiplier = disaster.getDamageMultiplier();
         
+        // Chunk yüklü mü kontrol et, değilse yükle (entity hareket edebilsin diye)
+        if (current.getWorld() != null) {
+            int chunkX = current.getBlockX() >> 4;
+            int chunkZ = current.getBlockZ() >> 4;
+            if (!current.getWorld().isChunkLoaded(chunkX, chunkZ)) {
+                current.getWorld().getChunkAt(chunkX, chunkZ).load(true);
+            }
+        }
+        
         // TITAN GOLEM
         if (disaster.getType() == Disaster.Type.TITAN_GOLEM && entity instanceof Giant) {
             handleTitanGolem(disaster, (Giant) entity, current, target, damageMultiplier);

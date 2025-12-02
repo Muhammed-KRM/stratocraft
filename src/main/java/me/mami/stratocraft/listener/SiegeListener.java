@@ -3,6 +3,7 @@ package me.mami.stratocraft.listener;
 import me.mami.stratocraft.manager.SiegeManager;
 import me.mami.stratocraft.manager.TerritoryManager;
 import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.Structure;
 import me.mami.stratocraft.task.SiegeTimer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -13,12 +14,17 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public class SiegeListener implements Listener {
     private final SiegeManager siegeManager;
     private final TerritoryManager territoryManager;
+    
+    // Spam attack önleme: Her klan için son anıt dikme zamanı
+    private final Map<UUID, Long> lastSiegeMonumentTime = new HashMap<>();
+    private static final long SIEGE_MONUMENT_COOLDOWN = 300000L; // 5 dakika (300 saniye)
 
     public SiegeListener(SiegeManager sm, TerritoryManager tm) {
         this.siegeManager = sm;
@@ -69,6 +75,17 @@ public class SiegeListener implements Listener {
         Clan defender = territoryManager.getTerritoryOwner(event.getBlock().getLocation());
         
         if (defender != null && !defender.equals(attacker)) {
+            // Grace Period kontrolü: Yeni kurulan klanlar 24 saat korunur
+            if (defender.isInGracePeriod()) {
+                long remainingSeconds = defender.getGracePeriodRemaining();
+                long hours = remainingSeconds / 3600;
+                long minutes = (remainingSeconds % 3600) / 60;
+                player.sendMessage("§e" + defender.getName() + " klanı başlangıç koruması altında! " + 
+                    hours + " saat " + minutes + " dakika kaldı.");
+                event.setCancelled(true);
+                return;
+            }
+            
             // Mesafe kontrolü (50 blok)
             if (defender.getTerritory() != null && defender.getTerritory().getCenter() != null) {
                 double distance = event.getBlock().getLocation().distance(defender.getTerritory().getCenter());
@@ -80,7 +97,38 @@ public class SiegeListener implements Listener {
             }
             
             if (!siegeManager.isUnderSiege(defender)) {
+                // Spam attack önleme: Aynı saldıran klan 5 dakika içinde tekrar anıt dikemez
+                UUID attackerId = attacker.getId();
+                Long lastTime = lastSiegeMonumentTime.get(attackerId);
+                if (lastTime != null && System.currentTimeMillis() - lastTime < SIEGE_MONUMENT_COOLDOWN) {
+                    long remainingSeconds = (SIEGE_MONUMENT_COOLDOWN - (System.currentTimeMillis() - lastTime)) / 1000;
+                    player.sendMessage("§cKuşatma Anıtı cooldown'da! Lütfen " + remainingSeconds + " saniye bekleyin.");
+                    event.setCancelled(true);
+                    return;
+                }
+                
+                // Offline koruma: Eğer savunan klan offline ise ve kalkan yakıtı varsa, yakıt tüket
+                Structure core = defender.getStructures().stream()
+                    .filter(s -> s.getType() == Structure.Type.CORE)
+                    .findFirst().orElse(null);
+                
+                if (core != null && core.isShieldActive()) {
+                    boolean anyOnline = defender.getMembers().keySet().stream()
+                        .anyMatch(uuid -> Bukkit.getPlayer(uuid) != null && Bukkit.getPlayer(uuid).isOnline());
+                    
+                    if (!anyOnline) {
+                        // Offline koruma aktif - yakıt tüket (spam attack önleme: maksimum 5 yakıt tüket)
+                        int fuelToConsume = Math.min(5, core.getShieldFuel());
+                        for (int i = 0; i < fuelToConsume; i++) {
+                            core.consumeFuel();
+                        }
+                        player.sendMessage("§bOffline koruma aktif! " + fuelToConsume + " yakıt tüketildi. Kalan: " + core.getShieldFuel());
+                    }
+                }
+                
                 siegeManager.startSiege(attacker, defender);
+                lastSiegeMonumentTime.put(attackerId, System.currentTimeMillis());
+                
                 new SiegeTimer(defender, me.mami.stratocraft.Main.getInstance())
                     .runTaskTimer(me.mami.stratocraft.Main.getInstance(), 20L, 20L); // 1 saniye = 20 tick
                 player.sendMessage("§6Kuşatma İlan Edildi! Hazırlık süresi başladı.");

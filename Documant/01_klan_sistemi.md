@@ -15,10 +15,26 @@ Klan, Stratocraft'ta hayatta kalmanın temeli. Kendi bölgenizi oluşturun, yap�
 3. [Üye Yönetimi](#üye-yönetimi)
 4. [Rütbe Sistemi](#rütbe-sistemi)
 5. [Savaş ve İlan](#savaş-ve-ilan)
+6. [İttifaklar](#ittifaklar)
 
 ---
 
 ## 🏰 KLAN KURMA
+
+### ⛔ Başlangıç Koruması (Grace Period)
+
+**Yeni kurulan klanlar 24 saat korunur!**
+
+- Yeni kurulan klanlara **24 saat** boyunca saldırılamaz
+- Bu süre içinde klan güvenli bir şekilde gelişebilir
+- Grace period süresi dolduktan sonra normal savaş kuralları geçerli olur
+
+**Koruma Özellikleri:**
+- Kuşatma anıtı dikilemez
+- Bölge koruması aktif
+- Normal oyun mekanikleri çalışır (sadece saldırı engellenir)
+
+---
 
 ### Adım 1: Malzeme Toplama
 
@@ -476,6 +492,30 @@ Gün 5: Kristal Yerleştir
 → İçine gir
 → Kristali koy
 → KLAN KURULDU!
+→ **24 saat başlangıç koruması aktif!**
+
+---
+
+## 🤝 İTTİFAKLAR
+
+Klanlar arası kalıcı anlaşmalar için **İttifak Sistemi** kullanılır.
+
+### İttifak Sistemi Nedir?
+
+İttifaklar, kontrat sistemine benzer şekilde çalışır ancak **daha güçlü ve bağlayıcı**dır:
+- İttifaklı klanlara saldırılamaz
+- İttifak ihlali ağır cezalara yol açar
+- İttifaklar ritüellerle kurulur
+
+### Detaylı Bilgi
+
+Detaylı bilgi için **`21_ittifak_sistemi.md`** dosyasına bakın.
+
+**Özet:**
+- İttifak kurma: İki lider elinde Elmas ile ritüel yapar
+- İttifak tipleri: Savunma, Saldırı, Ticaret, Tam İttifak
+- İhlal cezası: Klan bakiyesinin %20'si + Hain etiketi
+- Cooldown: 5 dakika
 
 Gün 6: İlk Üyeler
 → Davet ritüeli platformu yap

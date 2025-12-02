@@ -165,16 +165,40 @@ public class TerritoryListener implements Listener {
             return;
         }
         
-        // --- ALAN KONTROLÜ (FENCE CHECK) ---
-        if (!isSurroundedByClanFences(placeLocation)) {
-            player.sendMessage("§cKlan Kristali sadece §6Klan Çitleri §cile tamamen çevrelenmiş güvenli bir alana kurulabilir!");
-            event.setCancelled(true);
-            return;
-        }
+        // --- ALAN KONTROLÜ (FENCE CHECK) - ASYNC ---
+        event.setCancelled(true); // Önce iptal et, async kontrol sonrası devam edeceğiz
         
-        // --- KLAN KURULUMU ---
-        event.setCancelled(true); // Eşyayı koymayı engelle, biz entity yaratacağız
+        // Async flood-fill kontrolü (büyük alanlar için main thread'i kilitlememek için)
+        Player finalPlayer = player;
+        Block finalPlaceLocation = placeLocation;
+        org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(
+            me.mami.stratocraft.Main.getInstance(),
+            () -> {
+                boolean isValid = isSurroundedByClanFences(finalPlaceLocation);
+                
+                // Main thread'e geri dön
+                org.bukkit.Bukkit.getScheduler().runTask(
+                    me.mami.stratocraft.Main.getInstance(),
+                    () -> {
+                        if (!isValid) {
+                            finalPlayer.sendMessage("§cKlan Kristali sadece §6Klan Çitleri §cile tamamen çevrelenmiş güvenli bir alana kurulabilir!");
+                            return;
+                        }
+                        
+                        // --- KLAN KURULUMU ---
+                        continueCrystalPlacement(finalPlayer, finalPlaceLocation);
+                    }
+                );
+            }
+        );
         
+        return; // Async işlem başladı, buradan çık
+    }
+    
+    /**
+     * Kristal yerleştirme işlemini tamamla (main thread'de)
+     */
+    private void continueCrystalPlacement(Player player, Block placeLocation) {
         // Eşyayı tüket
         ItemStack handItem = player.getInventory().getItemInMainHand();
         if (handItem.getAmount() > 1) {

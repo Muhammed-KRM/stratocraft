@@ -129,6 +129,13 @@ public class DisasterManager {
         // Merkezden en uzak noktayı bul (5000 blok)
         int x = centerLoc.getBlockX() + (new Random().nextBoolean() ? 5000 : -5000);
         int z = centerLoc.getBlockZ() + (new Random().nextBoolean() ? 5000 : -5000);
+        
+        // Chunk'ı force load et (felaket hareket edebilsin diye)
+        int chunkX = x >> 4;
+        int chunkZ = z >> 4;
+        world.getChunkAt(chunkX, chunkZ).load(true); // Force load
+        
+        // Chunk yüklendikten sonra spawn yap
         int y = world.getHighestBlockYAt(x, z);
         Location spawnLoc = new Location(world, x, y + 1, z);
         
@@ -142,6 +149,29 @@ public class DisasterManager {
         if (activeDisaster != null && !activeDisaster.isDead()) {
             Bukkit.broadcastMessage("§cZaten aktif bir felaket var!");
             return;
+        }
+        
+        // Spawn lokasyonunun chunk'ını force load et
+        World world = spawnLoc.getWorld();
+        int chunkX = spawnLoc.getBlockX() >> 4;
+        int chunkZ = spawnLoc.getBlockZ() >> 4;
+        world.getChunkAt(chunkX, chunkZ).load(true); // Force load
+        
+        // Canlı felaketler için merkeze giden yol boyunca chunk'ları da yükle (opsiyonel, performans için)
+        if (Disaster.getCategory(type) == Disaster.Category.CREATURE) {
+            Location centerLoc = difficultyManager.getCenterLocation();
+            if (centerLoc != null) {
+                // Spawn'dan merkeze doğru her 100 blokta bir chunk yükle
+                int steps = (int) (spawnLoc.distance(centerLoc) / 100);
+                for (int i = 1; i <= steps; i++) {
+                    double ratio = (double) i / steps;
+                    int midX = (int) (spawnLoc.getX() + (centerLoc.getX() - spawnLoc.getX()) * ratio);
+                    int midZ = (int) (spawnLoc.getZ() + (centerLoc.getZ() - spawnLoc.getZ()) * ratio);
+                    int midChunkX = midX >> 4;
+                    int midChunkZ = midZ >> 4;
+                    world.getChunkAt(midChunkX, midChunkZ).load(true);
+                }
+            }
         }
         
         Disaster.Category category = Disaster.getCategory(type);
