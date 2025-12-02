@@ -35,7 +35,7 @@ Bölge, **Klan Çitinin çevrelediği alandan** oluşur. Sadece bu alanda yapıl
 ```
 Boyutlar:
 Minimum: 10x10
-Maksimum: 150x150
+Maksimum: Limit yok (istediğin kadar büyük olabilir)
 
 Örnek Başlangıç: 20x20 veya 30x30
 ```
@@ -102,12 +102,10 @@ Yeni çitler: 30x30
 ### Maksimum Boyut
 
 ```
-Limit: 150x150
+Limit: Yok
 
-Neden Limit Var?
-- Performans
-- Denge (büyük klanlar çok alan kaplamasın)
-- Felaket mekaniği (çok büyük alanlar savunulamaz)
+Not: Klan bölgenizi istediğiniz kadar genişletebilirsiniz. 
+Ancak çok büyük alanlar savunması zor olabilir, stratejik planlama önemlidir.
 ```
 
 ### Genişletme Stratejisi
@@ -120,7 +118,7 @@ Seviye 2: 40x40 (Orta)
    ↓ Yapılar kuruldukça  
 Seviye 3: 70x70 (İleri)
    ↓ Güçlendikçe
-Seviye 4: 100x100 (Maksimum - savaş için)
+Seviye 4: 100x100+ (Savaş için - limit yok)
 ```
 
 ---
@@ -158,6 +156,16 @@ Eğer Kuşatma Başlatılmışsa:
 → Düşman gir ebilir
 → Yapılara hasar verebilir
 → KRİSTALE ulaşabilir
+```
+
+#### **4. Ender Pearl Kısıtlaması**
+```
+Başkasının Klan Bölgesine:
+❌ Ender Pearl ile ışınlanamazsın
+
+İzin Verilenler:
+✓ Kendi klan bölgene ışınlanabilirsin
+✓ Misafir olduğun klana ışınlanabilirsin
 ```
 
 ### Rütbe Bazlı Yetkiler
@@ -343,10 +351,11 @@ Faz 3 (İleri - 70x70):
 - Enerji ağı
 - Gelişmiş savunma
 
-Faz 4 (Maksimum - 100x100):
+Faz 4 (İleri Seviye - 100x100+):
 - Tam savunma hattı
 - Çoklu katmanlar
 - Savaş hazırlığı
+- Limit yok, istediğin kadar büyütebilirsin
 ```
 
 ---

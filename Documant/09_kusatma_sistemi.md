@@ -23,12 +23,14 @@ Kuşatma, düşman klanını yok etmenin resmi yoludur. **Beacon anıtı** dikip
 Malzemeler:
 - 1 Beacon (kuşatma anıtı)
 - 9 Obsidian (piramit tabanı)
-- Yetki: General veya Lider
+- Yetki: General veya Lider (sadece)
 
 Koşullar:
 - Düşman klanın 50 blok yakınında olmalı
 - Klan seviyeleri 3'ten fazla fark OLMAMALI
 - Daha önce aktif kuşatma olmamalı
+- Klanın %35'i aktif olmalı (online)
+- En az bir General aktif olmalı
 ```
 
 ---
@@ -176,6 +178,40 @@ T-5dk: SAVAŞ BAŞLAR!
 
 ---
 
+## 🏳️ BEYAZ BAYRAK - PES ETME SİSTEMİ
+
+### Nasıl Pes Edilir?
+
+Savaşta kaybetmek üzereyseniz, **Beyaz Bayrak** çekerek pes edebilirsiniz.
+
+**Gereksinimler**:
+```
+- Klanınız savaşta olmalı
+- Yetki: General veya Lider (sadece)
+- Beyaz Bayrak (White Banner) klan bölgenizde olmalı
+```
+
+**Adımlar**:
+```
+1. Klan bölgenize White Banner (Beyaz Bayrak) koy
+2. Eline hiçbir şey alma (boş el)
+3. Shift + Sağ Tık (Beyaz Bayrağa)
+4. SONUÇ: Klanınız pes eder
+```
+
+**Pes Etme Sonuçları**:
+```
+✓ Klan YOK OLMAZ (dağılmaz)
+✓ Savaş biter
+✓ Klandaki TÜM sandıkların itemlerinin YARISI gider
+✓ Klan kasasının %50'si kazanan klana gider
+✓ Kazanan klan Fatih Buff'ı alır
+```
+
+**Önemli**: Pes etmek, kristal kırılmasından daha iyi bir seçenektir çünkü klanınız dağılmaz!
+
+---
+
 ## ⚔️ SAVAŞ KURALLARI
 
 ### Savaş Başladığında (5 dk sonra)
@@ -288,7 +324,7 @@ Bu malzemeler ile kendi yapılarını güçlendir!
 
 ### Kaybeden Klan
 
-**Kayıplar**:
+**Kristal Kırıldığında**:
 ```
 - Klan dağılır
 - Kasanın %50'si gider
@@ -296,12 +332,27 @@ Bu malzemeler ile kendi yapılarını güçlendir!
 - Tüm yapılar savunmasız
 ```
 
+**Pes Ettiğinde (Beyaz Bayrak)**:
+```
+- Klan YOK OLMAZ (dağılmaz)
+- Sandıkların itemlerinin yarısı gider
+- Kasanın %50'si gider
+- Bölge koruması KALIR
+- Yapılar KALIR
+- Savaş biter
+```
+
 **Kurtarma**:
 ```
-Klan lideri 24 saat içinde yeniden kurabilir:
+Kristal kırıldıysa:
+→ Klan lideri 24 saat içinde yeniden kurabilir
 → Aynı isimle
 → Eski üyelerden bazılarını davet et
 → Yeniden başla
+
+Pes ettiyse:
+→ Klan zaten var, sadece kaynaklar azaldı
+→ Normal şekilde devam edebilir
 ```
 
 ---
@@ -356,6 +407,10 @@ Kristal: Enerji kalkanı + son savunma
 2. **Tek Kuşatma**: Aynı anda 1 klana 1 kuşatma
 3. **Beacon Kırılırsa**: Kuşatma iptal, savaş bitmez
 4. **Offline Koruma**: Kalanı varsa kristal korunur, ama yapılar hasarlı
+5. **Savaş Açma Yetkisi**: Sadece General ve Lider savaş açabilir
+6. **Aktif Üye Gereksinimi**: Klanın %35'i aktif olmalı
+7. **General Gereksinimi**: En az bir General aktif olmalı
+8. **Pes Etme Yetkisi**: Sadece General ve Lider pes edebilir
 
 ---
 

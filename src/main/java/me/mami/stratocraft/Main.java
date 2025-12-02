@@ -119,6 +119,7 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new StructureActivationListener(clanManager, territoryManager), this); // YAPI
                                                                                                                         // AKTİVASYONU
         Bukkit.getPluginManager().registerEvents(new SiegeListener(siegeManager, territoryManager), this);
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.EnderPearlListener(territoryManager), this);
         Bukkit.getPluginManager().registerEvents(new ScavengerListener(scavengerManager), this);
         Bukkit.getPluginManager().registerEvents(new LogisticsListener(logisticsManager), this);
         // RitualListener artık RitualInteractionListener içinde birleştirildi

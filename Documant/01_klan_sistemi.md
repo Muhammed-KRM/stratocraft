@@ -41,7 +41,7 @@ Klan Çiti:
 ### Adım 2: Alan Belirleme
 
 1. İstediğin yeri seç (düz alan tercih edilir)
-2. **Minimum 10x10**, **Maksimum 150x150** alan seç
+2. **Minimum 10x10** alan seç (maksimum limit yok, istediğin kadar büyük olabilir)
 3. Bu alan senin başlangıç bölgen olacak
 
 ### Adım 3: Çitleri Yerleştir
@@ -62,7 +62,7 @@ DİKKAT: Çitler birbirine değmeli!
 **Kurallar**:
 - Çitler arasında 2 bloktan fazla boşluk OL MAMALI
 - Alan kapalı olmalı (delik olmamalı)
-- Minimum 10x10, Maksimum 150x150
+- Minimum 10x10 (maksimum limit yok)
 
 ### Adım 4: Kristali Yerleştir
 
@@ -105,7 +105,7 @@ Flood-Fill Algoritması:
 
 **Genişletme**:
 - Çitleri genişlet → Bölge otomatik büyür
-- Maks: 150x150
+- Maksimum limit yok, istediğin kadar genişletebilirsin
 
 ---
 
@@ -212,6 +212,34 @@ Ortada ateş yak
 
 ## ⚔️ SAVAŞ VE İLAN
 
+### Savaş Açma Koşulları
+
+**Yetki Gereksinimleri**:
+```
+Sadece General ve Lider savaş açabilir:
+- Member (Üye) → Savaş açamaz
+- Recruit (Acemi) → Savaş açamaz
+```
+
+**Aktif Üye Gereksinimleri**:
+```
+1. Klanın %35'i aktif olmalı (online)
+   Örnek: 10 üyeli klan → En az 4 üye online
+
+2. En az bir General aktif olmalı
+   → Lider veya General online olmalı
+```
+
+**Savaş Açma Yöntemi**:
+```
+1. Düşman klanın 50 blok yakınına Beacon dik
+2. 3x3 Obsidian piramit yap
+3. TNT ile aktifleştir
+4. Savaş başlar!
+```
+
+---
+
 ### Otomatik Savaş İlanı
 
 Stratocraft'ta savaş **iki durumda otomatik** başlar:
@@ -247,7 +275,9 @@ SONUÇ: Otomatik savaş!
 
 ### Savaş Kuralları
 
-#### **Seviye Koruması**
+#### **Seviye Koruması (Klan Koruma Sistemi)**
+
+**Kural 1: Saldırı Engelleme**
 ```
 Klan seviyeleri 3'ten fazla fark varsa saldırı YASAK:
 
@@ -256,6 +286,22 @@ Klan A (Seviye 5) → Klan B (Seviye 1) = YASAK (5-1=4 > 3)
 
 Örnek 2:
 Klan A (Seviye 3) → Klan B (Seviye 2) = İZİNLİ (3-2=1 ≤ 3)
+```
+
+**Kural 2: Hasar Azaltma**
+```
+3 seviye altındaki klanın oyuncularına %95 hasar azaltma:
+
+Örnek:
+Klan A (Seviye 5) → Klan B (Seviye 1) oyuncusuna saldırırsa:
+- Normal hasar: 10 kalp
+- Gerçek hasar: 0.5 kalp (%95 azalma)
+
+Bu koruma:
+✓ PvP savaşlarında aktif
+✓ Kuşatma sırasında aktif
+✓ Batarya saldırılarında aktif
+✓ Tuzak hasarlarında aktif
 ```
 
 **Klan Seviyesi Hesaplama**:
@@ -268,6 +314,21 @@ Seviye = Yapı Sayısı × Yapı Seviyesi
 Toplam Seviye = 11
 ```
 
+**Koruma Mantığı**:
+```
+Amaç: Güçlü klanların zayıf klanları ezmesini önlemek
+
+Koruma Aktif Olduğunda:
+- Saldırı engellenir (kuşatma başlatılamaz)
+- Hasar %95 azalır (oyunculara zarar verilemez)
+- Yapılara hasar verilebilir (ama çok az)
+
+Koruma Kalktığında:
+- Normal savaş kuralları geçerli
+- Tam hasar verilir
+- Kuşatma başlatılabilir
+```
+
 #### **Savaş Halinde**
 
 **İzin Verilenler**:
@@ -278,6 +339,7 @@ Toplam Seviye = 11
 **Yasak Olanlar**:
 - Düşman bölgesinde blok kırma (sadece yapılara hasar)
 - Kristali normal yöntemlerle yok etme
+- Ender Pearl ile başkasının klanına ışınlanma
 
 ---
 
@@ -312,7 +374,58 @@ Kazanan Klan:
 
 ---
 
+## 🏳️ BEYAZ BAYRAK - PES ETME SİSTEMİ
+
+### Nasıl Pes Edilir?
+
+Savaşta kaybetmek üzereyseniz, **Beyaz Bayrak** çekerek pes edebilirsiniz.
+
+**Gereksinimler**:
+```
+- Klanınız savaşta olmalı
+- Yetki: General veya Lider (sadece)
+- Beyaz Bayrak (White Banner) klan bölgenizde olmalı
+```
+
+**Adımlar**:
+```
+1. Klan bölgenize White Banner (Beyaz Bayrak) koy
+2. Eline hiçbir şey alma (boş el)
+3. Shift + Sağ Tık (Beyaz Bayrağa)
+4. SONUÇ: Klanınız pes eder
+```
+
+**Pes Etme Sonuçları**:
+```
+✓ Klan YOK OLMAZ (dağılmaz)
+✓ Savaş biter
+✓ Klandaki TÜM sandıkların itemlerinin YARISI gider
+✓ Klan kasasının %50'si kazanan klana gider
+✓ Kazanan klan Fatih Buff'ı alır
+```
+
+**Önemli**: Pes etmek, kristal kırılmasından daha iyi bir seçenektir çünkü klanınız dağılmaz!
+
+---
+
 ## 🛡️ ÖZEL KURALLAR
+
+### Ender Pearl Kısıtlaması
+
+**Kural**: Başkasının klan bölgesine Ender Pearl ile ışınlanamazsın!
+
+```
+İzin Verilenler:
+✓ Kendi klan bölgene ışınlanabilirsin
+✓ Misafir olduğun klana ışınlanabilirsin
+
+Yasak:
+❌ Başkasının klan bölgesine ışınlanamazsın
+```
+
+**Mesaj**: "§cEnder Pearl ile başkasının klan bölgesine ışınlanamazsın!"
+
+---
 
 ### Kristal Taşıma
 

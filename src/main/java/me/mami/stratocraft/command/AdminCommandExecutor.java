@@ -703,7 +703,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7  Özel Eşyalar: /stratocraft give rusty_hook, titan_grapple, trap_core, spyglass");
         sender.sendMessage("§7  Yeni Madenler: /stratocraft give sulfur, bauxite, rock_salt, mithril, astral_crystal");
         sender.sendMessage("§7  Yeni Moblar: /stratocraft spawn titan_golem, supply_drop");
-        sender.sendMessage("§7  /stratocraft siege <clear|list> §7- Savaş yapılarını yönet");
+        sender.sendMessage("§7  /stratocraft siege <clear|list|start|surrender> §7- Savaş yönetimi");
         sender.sendMessage("§7  /stratocraft caravan <list|clear> §7- Kervanları yönet");
         sender.sendMessage("§7  /stratocraft contract <list|clear> §7- Kontratları yönet");
         sender.sendMessage("§7  /stratocraft build <type> [level] §7- Yapı oluştur");
@@ -1611,7 +1611,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
                 case "siege":
                     // Siege komutları
-                    List<String> siegeCommands = Arrays.asList("clear", "list");
+                    List<String> siegeCommands = Arrays.asList("clear", "list", "start", "surrender");
                     if (input.isEmpty()) {
                         return siegeCommands;
                     }
@@ -2036,32 +2036,127 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      * Savaş yapıları yönetimi
      * /stratocraft siege clear - Tüm savaş yapılarını temizle
      * /stratocraft siege list - Aktif yapıları listele
+     * /stratocraft siege start <saldıran_klan> <savunan_klan> - Savaş başlat
+     * /stratocraft siege surrender <klan> - Klanı pes ettir
      */
     private boolean handleSiege(Player p, String[] args) {
         if (args.length < 2) {
-            p.sendMessage("§cKullanım: /stratocraft siege <clear|list>");
+            p.sendMessage("§cKullanım: /stratocraft siege <clear|list|start|surrender>");
             return true;
         }
 
-        me.mami.stratocraft.manager.SiegeWeaponManager siegeManager = plugin.getSiegeWeaponManager();
-        if (siegeManager == null) {
-            p.sendMessage("§cSiegeWeaponManager bulunamadı!");
-            return true;
-        }
+        me.mami.stratocraft.manager.SiegeWeaponManager siegeWeaponManager = plugin.getSiegeWeaponManager();
+        me.mami.stratocraft.manager.SiegeManager siegeManager = plugin.getSiegeManager();
+        me.mami.stratocraft.manager.TerritoryManager territoryManager = plugin.getTerritoryManager();
 
         switch (args[1].toLowerCase()) {
             case "clear":
-                // Tüm aktif yapıları temizle
-                int cleared = clearAllSiegeStructures(siegeManager);
+                if (siegeWeaponManager == null) {
+                    p.sendMessage("§cSiegeWeaponManager bulunamadı!");
+                    return true;
+                }
+                int cleared = clearAllSiegeStructures(siegeWeaponManager);
                 p.sendMessage("§a" + cleared + " savaş yapısı temizlendi.");
                 return true;
             case "list":
-                showSiegeStructuresList(p, siegeManager);
+                if (siegeWeaponManager == null) {
+                    p.sendMessage("§cSiegeWeaponManager bulunamadı!");
+                    return true;
+                }
+                showSiegeStructuresList(p, siegeWeaponManager);
                 return true;
+            case "start":
+                if (args.length < 4) {
+                    p.sendMessage("§cKullanım: /stratocraft siege start <saldıran_klan> <savunan_klan>");
+                    return true;
+                }
+                return handleSiegeStart(p, args[2], args[3], siegeManager, territoryManager);
+            case "surrender":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft siege surrender <klan>");
+                    return true;
+                }
+                return handleSiegeSurrender(p, args[2], siegeManager, territoryManager);
             default:
-                p.sendMessage("§cKullanım: /stratocraft siege <clear|list>");
+                p.sendMessage("§cKullanım: /stratocraft siege <clear|list|start|surrender>");
                 return true;
         }
+    }
+
+    /**
+     * Admin komutu: Savaş başlat
+     */
+    private boolean handleSiegeStart(Player p, String attackerName, String defenderName, 
+                                     me.mami.stratocraft.manager.SiegeManager siegeManager,
+                                     me.mami.stratocraft.manager.TerritoryManager territoryManager) {
+        me.mami.stratocraft.manager.ClanManager clanManager = territoryManager.getClanManager();
+        
+        // Klanları bul
+        me.mami.stratocraft.model.Clan attacker = null;
+        me.mami.stratocraft.model.Clan defender = null;
+        
+        for (me.mami.stratocraft.model.Clan clan : clanManager.getAllClans()) {
+            if (clan.getName().equalsIgnoreCase(attackerName)) {
+                attacker = clan;
+            }
+            if (clan.getName().equalsIgnoreCase(defenderName)) {
+                defender = clan;
+            }
+        }
+        
+        if (attacker == null) {
+            p.sendMessage("§cSaldıran klan bulunamadı: " + attackerName);
+            return true;
+        }
+        
+        if (defender == null) {
+            p.sendMessage("§cSavunan klan bulunamadı: " + defenderName);
+            return true;
+        }
+        
+        if (siegeManager.isUnderSiege(defender)) {
+            p.sendMessage("§c" + defender.getName() + " klanı zaten savaşta!");
+            return true;
+        }
+        
+        siegeManager.startSiege(attacker, defender);
+        new me.mami.stratocraft.task.SiegeTimer(defender, plugin)
+            .runTaskTimer(plugin, 20L, 20L);
+        
+        p.sendMessage("§aSavaş başlatıldı: " + attacker.getName() + " → " + defender.getName());
+        org.bukkit.Bukkit.broadcastMessage("§4§l[ADMIN] SAVAŞ BAŞLATILDI! §e" + attacker.getName() + " → " + defender.getName());
+        return true;
+    }
+
+    /**
+     * Admin komutu: Klanı pes ettir
+     */
+    private boolean handleSiegeSurrender(Player p, String clanName,
+                                         me.mami.stratocraft.manager.SiegeManager siegeManager,
+                                         me.mami.stratocraft.manager.TerritoryManager territoryManager) {
+        me.mami.stratocraft.manager.ClanManager clanManager = territoryManager.getClanManager();
+        
+        me.mami.stratocraft.model.Clan clan = null;
+        for (me.mami.stratocraft.model.Clan c : clanManager.getAllClans()) {
+            if (c.getName().equalsIgnoreCase(clanName)) {
+                clan = c;
+                break;
+            }
+        }
+        
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clanName);
+            return true;
+        }
+        
+        if (!siegeManager.isUnderSiege(clan)) {
+            p.sendMessage("§c" + clan.getName() + " klanı savaşta değil!");
+            return true;
+        }
+        
+        siegeManager.surrender(clan, clanManager);
+        p.sendMessage("§a" + clan.getName() + " klanı pes etti!");
+        return true;
     }
 
     private int clearAllSiegeStructures(me.mami.stratocraft.manager.SiegeWeaponManager manager) {

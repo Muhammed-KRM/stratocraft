@@ -212,7 +212,6 @@ public class TerritoryListener implements Listener {
         queue.add(center);
         visited.add(center);
         
-        int limit = 500; // Maksimum alan büyüklüğü
         int minArea = 9; // Minimum alan büyüklüğü (3x3 = 9 blok)
         int iterations = 0;
         
@@ -220,10 +219,7 @@ public class TerritoryListener implements Listener {
             Block current = queue.poll();
             iterations++;
             
-            if (iterations > limit) {
-                // Alan çok büyük veya açık
-                return false;
-            }
+            // Maksimum limit kaldırıldı - istediğin kadar büyük alan olabilir
             
             // 4 Yöne bak (Kuzey, Güney, Doğu, Batı)
             Block[] neighbors = {

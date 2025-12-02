@@ -183,13 +183,32 @@ solar_flare - Güneş Fırtınası
 
 ---
 
-### `/scadmin siege <saldıran_klan> <savunan_klan>`
+### `/scadmin siege <komut> [parametreler]`
 
-**Açıklama**: Kuşatma başlat
+**Açıklama**: Savaş yönetimi
 
-**Kullanım**:
+**Komutlar**:
 ```
-/scadmin siege Klan1 Klan2
+/scadmin siege start <saldıran_klan> <savunan_klan>
+→ Savaş başlat (admin)
+
+/scadmin siege surrender <klan>
+→ Klanı pes ettir (admin)
+
+/scadmin siege clear
+→ Tüm savaş yapılarını temizle
+
+/scadmin siege list
+→ Aktif savaş yapılarını listele
+```
+
+**Örnekler**:
+```
+/scadmin siege start KlanA KlanB
+→ KlanA, KlanB'ye savaş açar
+
+/scadmin siege surrender KlanB
+→ KlanB pes eder
 ```
 
 ---
