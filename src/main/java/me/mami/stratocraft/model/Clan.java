@@ -30,6 +30,7 @@ public class Clan {
     private Location crystalLocation; // Klan Kristali lokasyonu
     private EnderCrystal crystalEntity; // Kristal entity referansı
     private long createdAt; // Klan kurulma zamanı (grace period için)
+    private boolean hasCrystal = false; // Kristal yerleştirildi mi? (Ölümsüz klan önleme)
 
     public Clan(String name, UUID leader) {
         this.name = name;
@@ -69,9 +70,20 @@ public class Clan {
     public void removeXP(int amount) { this.storedXP = Math.max(0, this.storedXP - amount); }
     
     public Location getCrystalLocation() { return crystalLocation; }
-    public void setCrystalLocation(Location loc) { this.crystalLocation = loc; }
+    public void setCrystalLocation(Location loc) { 
+        this.crystalLocation = loc;
+        this.hasCrystal = (loc != null);
+    }
     public EnderCrystal getCrystalEntity() { return crystalEntity; }
-    public void setCrystalEntity(EnderCrystal crystal) { this.crystalEntity = crystal; }
+    public void setCrystalEntity(EnderCrystal crystal) { 
+        this.crystalEntity = crystal;
+        this.hasCrystal = (crystal != null);
+    }
+    
+    /**
+     * Kristal yerleştirildi mi? (Ölümsüz klan önleme)
+     */
+    public boolean hasCrystal() { return hasCrystal; }
     
     public boolean isGeneral(UUID uuid) {
         Rank rank = getRank(uuid);

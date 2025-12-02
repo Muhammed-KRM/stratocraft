@@ -490,7 +490,7 @@ public class Main extends JavaPlugin {
         if (dataManager != null && clanManager != null && contractManager != null &&
                 shopManager != null && virtualStorageListener != null) {
             // Kapanış işlemlerinde her zaman senkron kayıt
-            dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener);
+            dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener, true);
             getLogger().info("Stratocraft: Veriler kaydedildi.");
         }
 

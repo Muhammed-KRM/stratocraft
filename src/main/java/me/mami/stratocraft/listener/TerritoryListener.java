@@ -48,6 +48,11 @@ public class TerritoryListener implements Listener {
         // Sahipsiz yerse kırılabilir
         if (owner == null) return;
         
+        // Ölümsüz klan önleme: Kristal yoksa bölge koruması yok
+        if (!owner.hasCrystal()) {
+            return; // Kristal yoksa koruma yok
+        }
+        
         // Kendi yerinse kırılabilir (Rütbe kontrolü dahil)
         Clan playerClan = territoryManager.getClanManager().getClanByPlayer(event.getPlayer().getUniqueId());
         
@@ -220,6 +225,7 @@ public class TerritoryListener implements Listener {
             newClan.setCrystalLocation(crystalLoc);
             newClan.setCrystalEntity(crystalEntity);
             newClan.setTerritory(new Territory(newClan.getId(), crystalLoc));
+            // hasCrystal otomatik setCrystalLocation ile true olur
             
             player.sendMessage("§a§lTEBRİKLER! §eKlan Kristali aktifleşti ve bölgeni mühürledi.");
             player.getWorld().strikeLightningEffect(crystalLoc); // Görsel şimşek

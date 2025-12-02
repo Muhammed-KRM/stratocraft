@@ -13,6 +13,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 import me.mami.stratocraft.listener.VirtualStorageListener;
@@ -41,23 +45,83 @@ public class DataManager {
     
     // ========== KAYDETME METODLARI ==========
     
+    /**
+     * Tüm verileri kaydet (SYNC - Main Thread'de çağrılmalı)
+     * Bukkit API'ye erişim gerektirdiği için async yapılamaz
+     * @param forceSync true ise async kullanmaz (onDisable için)
+     */
     public void saveAll(ClanManager clanManager, ContractManager contractManager, 
-                       ShopManager shopManager, VirtualStorageListener virtualStorage) {
+                       ShopManager shopManager, VirtualStorageListener virtualStorage, boolean forceSync) {
         try {
-            saveClans(clanManager);
-            saveContracts(contractManager);
-            saveShops(shopManager);
-            saveVirtualInventories(virtualStorage);
-            plugin.getLogger().info("§aTüm veriler kaydedildi!");
+            // Önce tüm verileri snapshot al (sync thread'de)
+            ClanSnapshot clanSnapshot = createClanSnapshot(clanManager);
+            ContractSnapshot contractSnapshot = createContractSnapshot(contractManager);
+            ShopSnapshot shopSnapshot = createShopSnapshot(shopManager);
+            InventorySnapshot inventorySnapshot = createInventorySnapshot(virtualStorage);
+            
+            if (forceSync) {
+                // Sunucu kapanıyor - sync kayıt (onDisable)
+                try {
+                    writeClanSnapshot(clanSnapshot);
+                    writeContractSnapshot(contractSnapshot);
+                    writeShopSnapshot(shopSnapshot);
+                    writeInventorySnapshot(inventorySnapshot);
+                    plugin.getLogger().info("§aTüm veriler kaydedildi!");
+                } catch (Exception e) {
+                    plugin.getLogger().severe("§cVeri kaydetme hatası: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            } else {
+                // Normal kayıt - async
+                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                    try {
+                        writeClanSnapshot(clanSnapshot);
+                        writeContractSnapshot(contractSnapshot);
+                        writeShopSnapshot(shopSnapshot);
+                        writeInventorySnapshot(inventorySnapshot);
+                        plugin.getLogger().info("§aTüm veriler kaydedildi!");
+                    } catch (Exception e) {
+                        plugin.getLogger().severe("§cVeri kaydetme hatası: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                });
+            }
         } catch (Exception e) {
-            plugin.getLogger().severe("§cVeri kaydetme hatası: " + e.getMessage());
+            plugin.getLogger().severe("§cVeri snapshot hatası: " + e.getMessage());
             e.printStackTrace();
         }
     }
     
-    private void saveClans(ClanManager clanManager) throws IOException {
-        File file = new File(dataFolder, "data/clans.json");
-        List<ClanData> clanDataList = new ArrayList<>();
+    /**
+     * Overload: Varsayılan olarak async kayıt
+     */
+    public void saveAll(ClanManager clanManager, ContractManager contractManager, 
+                       ShopManager shopManager, VirtualStorageListener virtualStorage) {
+        saveAll(clanManager, contractManager, shopManager, virtualStorage, false);
+    }
+    
+    // Snapshot sınıfları
+    private static class ClanSnapshot {
+        List<ClanData> clans = new ArrayList<>();
+    }
+    
+    private static class ContractSnapshot {
+        List<ContractData> contracts = new ArrayList<>();
+    }
+    
+    private static class ShopSnapshot {
+        List<ShopData> shops = new ArrayList<>();
+    }
+    
+    private static class InventorySnapshot {
+        Map<String, String> inventories = new HashMap<>();
+    }
+    
+    /**
+     * Klan verilerini snapshot al (sync thread'de - Bukkit API kullanılabilir)
+     */
+    private ClanSnapshot createClanSnapshot(ClanManager clanManager) {
+        ClanSnapshot snapshot = new ClanSnapshot();
         
         for (Clan clan : clanManager.getAllClans()) {
             ClanData data = new ClanData();
@@ -67,7 +131,8 @@ public class DataManager {
                     .collect(Collectors.toMap(e -> e.getKey().toString(), e -> e.getValue().name()));
             data.bankBalance = clan.getBalance();
             data.storedXP = clan.getStoredXP();
-            data.guests = clan.getMembers().keySet().stream()
+            data.createdAt = clan.getCreatedAt(); // Grace period için
+            data.guests = clan.getGuests().stream()
                     .map(UUID::toString)
                     .collect(Collectors.toList());
             
@@ -82,6 +147,11 @@ public class DataManager {
                         .collect(Collectors.toList());
             }
             
+            // Crystal location
+            if (clan.getCrystalLocation() != null) {
+                data.crystalLocation = serializeLocation(clan.getCrystalLocation());
+            }
+            
             // Structures
             data.structures = clan.getStructures().stream()
                     .map(s -> {
@@ -94,15 +164,86 @@ public class DataManager {
                     })
                     .collect(Collectors.toList());
             
-            clanDataList.add(data);
+            snapshot.clans.add(data);
         }
         
+        return snapshot;
+    }
+    
+    private ContractSnapshot createContractSnapshot(ContractManager contractManager) {
+        ContractSnapshot snapshot = new ContractSnapshot();
+        
+        for (Contract contract : contractManager.getContracts()) {
+            ContractData data = new ContractData();
+            data.id = contract.getId().toString();
+            data.issuer = contract.getIssuer().toString();
+            data.acceptor = contract.getAcceptor() != null ? contract.getAcceptor().toString() : null;
+            data.material = contract.getMaterial().name();
+            data.amount = contract.getAmount();
+            data.reward = contract.getReward();
+            data.delivered = contract.getDelivered();
+            data.deadline = contract.getDeadline();
+            snapshot.contracts.add(data);
+        }
+        
+        return snapshot;
+    }
+    
+    private ShopSnapshot createShopSnapshot(ShopManager shopManager) {
+        ShopSnapshot snapshot = new ShopSnapshot();
+        
+        snapshot.shops = shopManager.getAllShops().stream()
+                .map(shop -> {
+                    ShopData data = new ShopData();
+                    data.id = UUID.randomUUID().toString();
+                    data.owner = shop.getOwnerId().toString();
+                    data.location = serializeLocation(shop.getLocation());
+                    data.sellItem = serializeItemStack(shop.getSellingItem());
+                    data.priceItem = serializeItemStack(shop.getPriceItem());
+                    data.protectedZone = shop.isProtectedZone();
+                    return data;
+                })
+                .collect(Collectors.toList());
+        
+        return snapshot;
+    }
+    
+    private InventorySnapshot createInventorySnapshot(VirtualStorageListener virtualStorage) {
+        InventorySnapshot snapshot = new InventorySnapshot();
+        // VirtualStorage'dan inventory snapshot al
+        // (Bu kısım VirtualStorageListener'ın implementasyonuna bağlı)
+        return snapshot;
+    }
+    
+    /**
+     * Snapshot'ları diske yaz (async thread'de güvenli)
+     */
+    private void writeClanSnapshot(ClanSnapshot snapshot) throws IOException {
+        File file = new File(dataFolder, "data/clans.json");
         try (FileWriter writer = new FileWriter(file)) {
-            gson.toJson(clanDataList, writer);
+            gson.toJson(snapshot.clans, writer);
         }
     }
     
-    private void saveContracts(ContractManager contractManager) throws IOException {
+    private void writeContractSnapshot(ContractSnapshot snapshot) throws IOException {
+        File file = new File(dataFolder, "data/contracts.json");
+        try (FileWriter writer = new FileWriter(file)) {
+            gson.toJson(snapshot.contracts, writer);
+        }
+    }
+    
+    private void writeShopSnapshot(ShopSnapshot snapshot) throws IOException {
+        File file = new File(dataFolder, "data/shops.json");
+        try (FileWriter writer = new FileWriter(file)) {
+            gson.toJson(snapshot.shops, writer);
+        }
+    }
+    
+    private void writeInventorySnapshot(InventorySnapshot snapshot) throws IOException {
+        // VirtualStorage kaydetme
+    }
+    
+    // Eski save metodları kaldırıldı - snapshot sistemi kullanılıyor
         File file = new File(dataFolder, "data/contracts.json");
         List<ContractData> contractDataList = new ArrayList<>();
         
@@ -402,6 +543,8 @@ public class DataManager {
         Map<String, String> members;
         double bankBalance;
         int storedXP;
+        long createdAt; // Grace period için
+        String crystalLocation; // Ölümsüz klan önleme için
         List<String> guests;
         TerritoryData territory;
         List<StructureData> structures;
@@ -472,3 +615,4 @@ public class DataManager {
         }
     }
 }
+

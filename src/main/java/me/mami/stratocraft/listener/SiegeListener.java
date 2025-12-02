@@ -126,7 +126,7 @@ public class SiegeListener implements Listener {
                     }
                 }
                 
-                siegeManager.startSiege(attacker, defender);
+                siegeManager.startSiege(attacker, defender, player);
                 lastSiegeMonumentTime.put(attackerId, System.currentTimeMillis());
                 
                 new SiegeTimer(defender, me.mami.stratocraft.Main.getInstance())

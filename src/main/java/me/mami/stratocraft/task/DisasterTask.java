@@ -25,6 +25,10 @@ public class DisasterTask extends BukkitRunnable {
     private final Random random = new Random();
     private int titanGolemTickCounter = 0; // Titan Golem için tick sayacı
     private int lastJumpTick = 0; // Son zıplama zamanı
+    
+    // Chunk yönetimi: Force-loaded chunk'ları takip et
+    private final java.util.Map<String, org.bukkit.Chunk> forceLoadedChunks = new java.util.HashMap<>();
+    private static final int CHUNK_UNLOAD_DELAY = 200; // 10 saniye (200 tick) sonra unload et
 
     public DisasterTask(DisasterManager dm, TerritoryManager tm) { 
         this.disasterManager = dm; 
@@ -35,6 +39,9 @@ public class DisasterTask extends BukkitRunnable {
     public void run() {
         Disaster disaster = disasterManager.getActiveDisaster();
         if (disaster == null || disaster.isDead()) {
+            // Felaket bittiğinde force-loaded chunk'ları temizle
+            cleanupForceLoadedChunks();
+            
             // Doğa olayları için entity yok
             if (disaster != null && disaster.getCategory() == Disaster.Category.NATURAL) {
                 handleNaturalDisaster(disaster);
@@ -46,6 +53,7 @@ public class DisasterTask extends BukkitRunnable {
         if (disaster.isExpired()) {
             disaster.kill();
             disasterManager.setActiveDisaster(null);
+            cleanupForceLoadedChunks(); // Chunk'ları temizle
             Bukkit.broadcastMessage("§a§lFelaket süresi doldu!");
             return;
         }
@@ -57,6 +65,7 @@ public class DisasterTask extends BukkitRunnable {
             if (entity == null || entity.isDead()) {
                 disaster.kill();
                 disasterManager.setActiveDisaster(null);
+                cleanupForceLoadedChunks(); // Chunk'ları temizle
                 return;
             }
             handleCreatureDisaster(disaster, entity);
@@ -64,6 +73,18 @@ public class DisasterTask extends BukkitRunnable {
             // Doğa olayları
             handleNaturalDisaster(disaster);
         }
+    }
+    
+    /**
+     * Force-loaded chunk'ları temizle (Memory leak önleme)
+     */
+    private void cleanupForceLoadedChunks() {
+        for (org.bukkit.Chunk chunk : forceLoadedChunks.values()) {
+            if (chunk != null && chunk.isLoaded()) {
+                chunk.setForceLoaded(false);
+            }
+        }
+        forceLoadedChunks.clear();
     }
     
     /**
@@ -78,8 +99,26 @@ public class DisasterTask extends BukkitRunnable {
         if (current.getWorld() != null) {
             int chunkX = current.getBlockX() >> 4;
             int chunkZ = current.getBlockZ() >> 4;
-            if (!current.getWorld().isChunkLoaded(chunkX, chunkZ)) {
-                current.getWorld().getChunkAt(chunkX, chunkZ).load(true);
+            String chunkKey = chunkX + ";" + chunkZ;
+            
+            // Mevcut chunk'ı force load et
+            org.bukkit.Chunk currentChunk = current.getWorld().getChunkAt(chunkX, chunkZ);
+            if (!currentChunk.isLoaded()) {
+                currentChunk.load(true);
+            }
+            currentChunk.setForceLoaded(true);
+            forceLoadedChunks.put(chunkKey, currentChunk);
+            
+            // Eski chunk'ları unload et (10 saniye sonra)
+            java.util.Iterator<java.util.Map.Entry<String, org.bukkit.Chunk>> iterator = 
+                forceLoadedChunks.entrySet().iterator();
+            while (iterator.hasNext()) {
+                java.util.Map.Entry<String, org.bukkit.Chunk> entry = iterator.next();
+                if (!entry.getKey().equals(chunkKey)) {
+                    // Bu chunk artık kullanılmıyor, unload et
+                    entry.getValue().setForceLoaded(false);
+                    iterator.remove();
+                }
             }
         }
         

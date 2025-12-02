@@ -158,21 +158,7 @@ public class DisasterManager {
         world.getChunkAt(chunkX, chunkZ).load(true); // Force load
         
         // Canlı felaketler için merkeze giden yol boyunca chunk'ları da yükle (opsiyonel, performans için)
-        if (Disaster.getCategory(type) == Disaster.Category.CREATURE) {
-            Location centerLoc = difficultyManager.getCenterLocation();
-            if (centerLoc != null) {
-                // Spawn'dan merkeze doğru her 100 blokta bir chunk yükle
-                int steps = (int) (spawnLoc.distance(centerLoc) / 100);
-                for (int i = 1; i <= steps; i++) {
-                    double ratio = (double) i / steps;
-                    int midX = (int) (spawnLoc.getX() + (centerLoc.getX() - spawnLoc.getX()) * ratio);
-                    int midZ = (int) (spawnLoc.getZ() + (centerLoc.getZ() - spawnLoc.getZ()) * ratio);
-                    int midChunkX = midX >> 4;
-                    int midChunkZ = midZ >> 4;
-                    world.getChunkAt(midChunkX, midChunkZ).load(true);
-                }
-            }
-        }
+        // NOT: DisasterTask içinde chunk yönetimi yapılıyor, burada sadece spawn chunk'ını yükle
         
         Disaster.Category category = Disaster.getCategory(type);
         DisasterPower power = calculateDisasterPower(level);
