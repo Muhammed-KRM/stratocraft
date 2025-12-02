@@ -455,37 +455,97 @@ public class TerritoryListener implements Listener {
         ItemStack handItem = player.getInventory().getItemInMainHand();
         if (handItem != null && handItem.getType() != Material.AIR) return;
         
-        // Tıklanan blokun üstünde kristal var mı?
+        // Önce kristalin yakınında mı kontrol et (5 blok mesafe)
         Block clicked = event.getClickedBlock();
-        Location checkLoc = clicked.getRelative(BlockFace.UP).getLocation().add(0.5, 0, 0.5);
+        Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
+        if (playerClan == null) return; // Oyuncunun klanı yok
         
-        for (Entity entity : clicked.getWorld().getNearbyEntities(checkLoc, 0.5, 0.5, 0.5)) {
-            if (entity instanceof EnderCrystal) {
-                EnderCrystal crystal = (EnderCrystal) entity;
-                Clan owner = findClanByCrystal(crystal);
-                
-                if (owner != null && owner.getRank(player.getUniqueId()) == Clan.Rank.LEADER) {
-                    // Lider kristali hareket ettirebilir
-                    // Yeni lokasyon seç
-                    Block newLocation = clicked.getRelative(BlockFace.UP);
-                    if (newLocation.getType() == Material.AIR) {
-                        // Çit kontrolü
-                        if (isSurroundedByClanFences(newLocation)) {
-                            // Kristali taşı
-                            Location newLoc = newLocation.getLocation().add(0.5, 0, 0.5);
-                            crystal.teleport(newLoc);
-                            owner.setCrystalLocation(newLoc);
-                            owner.setTerritory(new Territory(owner.getId(), newLoc));
-                            territoryManager.setCacheDirty(); // Cache'i güncelle
-                            player.sendMessage("§aKlan Kristali taşındı!");
-                        } else {
-                            player.sendMessage("§cYeni konum Klan Çitleri ile çevrili olmalı!");
-                        }
-                    }
-                    event.setCancelled(true);
-                    return;
-                }
+        // Lider kontrolü
+        if (playerClan.getRank(player.getUniqueId()) != Clan.Rank.LEADER) {
+            return; // Lider değil, devam etme
+        }
+        
+        // Kristal var mı?
+        if (playerClan.getCrystalLocation() == null || playerClan.getCrystalEntity() == null) {
+            return; // Kristal yok
+        }
+        
+        EnderCrystal crystal = playerClan.getCrystalEntity();
+        Location crystalLoc = crystal.getLocation();
+        
+        // Oyuncu kristale yakın mı? (5 blok mesafe)
+        double distance = player.getLocation().distance(crystalLoc);
+        if (distance > 5) {
+            player.sendMessage("§cKlan Kristalini taşımak için kristale yakın olmalısın! (5 blok)");
+            event.setCancelled(true);
+            return;
+        }
+        
+        // Tıklanan bloğun üstünde kristal var mı kontrol et
+        Location checkLoc = clicked.getRelative(BlockFace.UP).getLocation().add(0.5, 0, 0.5);
+        boolean isCrystalAtClicked = (crystalLoc.getBlockX() == checkLoc.getBlockX() && 
+                                     crystalLoc.getBlockY() == checkLoc.getBlockY() && 
+                                     crystalLoc.getBlockZ() == checkLoc.getBlockZ());
+        
+        if (!isCrystalAtClicked) {
+            // Kristal tıklanan bloğun üstünde değil, yeni konum olarak kullan
+            Block newLocation = clicked.getRelative(BlockFace.UP);
+            if (newLocation.getType() != Material.AIR) {
+                player.sendMessage("§cYeni konum boş olmalı!");
+                event.setCancelled(true);
+                return;
             }
+            
+            // Aynı konuma taşıma kontrolü
+            Location newLoc = newLocation.getLocation().add(0.5, 0, 0.5);
+            if (crystalLoc.getBlockX() == newLoc.getBlockX() && 
+                crystalLoc.getBlockY() == newLoc.getBlockY() && 
+                crystalLoc.getBlockZ() == newLoc.getBlockZ()) {
+                player.sendMessage("§cKristal zaten bu konumda!");
+                event.setCancelled(true);
+                return;
+            }
+            
+            // Async çit kontrolü (büyük alanlar için lag önleme)
+            event.setCancelled(true);
+            Block finalNewLocation = newLocation;
+            Player finalPlayer = player;
+            EnderCrystal finalCrystal = crystal;
+            Clan finalOwner = playerClan;
+            Location finalNewLoc = newLoc;
+            
+            org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(
+                me.mami.stratocraft.Main.getInstance(),
+                () -> {
+                    boolean isValid = isSurroundedByClanFences(finalNewLocation);
+                    
+                    // Main thread'e geri dön
+                    org.bukkit.Bukkit.getScheduler().runTask(
+                        me.mami.stratocraft.Main.getInstance(),
+                        () -> {
+                            if (!isValid) {
+                                finalPlayer.sendMessage("§cYeni konum Klan Çitleri ile çevrili olmalı!");
+                                return;
+                            }
+                            
+                            // Kristali taşı
+                            finalCrystal.teleport(finalNewLoc);
+                            finalOwner.setCrystalLocation(finalNewLoc);
+                            finalOwner.setCrystalEntity(finalCrystal); // Entity referansını güncelle
+                            finalOwner.setTerritory(new Territory(finalOwner.getId(), finalNewLoc));
+                            territoryManager.setCacheDirty(); // Cache'i güncelle
+                            
+                            // Efektler
+                            finalPlayer.getWorld().spawnParticle(Particle.TOTEM, finalNewLoc, 50, 0.5, 0.5, 0.5, 0.1);
+                            finalPlayer.playSound(finalNewLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1.5f);
+                            
+                            finalPlayer.sendMessage("§a§lKlan Kristali taşındı!");
+                        }
+                    );
+                }
+            );
+            
+            return; // İşlem başladı, çık
         }
     }
 }

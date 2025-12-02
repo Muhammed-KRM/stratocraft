@@ -171,6 +171,8 @@ public class GhostRecipeManager {
         
         // Hayalet yapıyı oluştur
         List<ArmorStand> ghostBlocks = new ArrayList<>();
+        Map<Vector, ArmorStand> offsetToGhostMap = new HashMap<>(); // Offset -> ArmorStand mapping
+        
         for (Map.Entry<Vector, Material> entry : data.getBlocks().entrySet()) {
             Vector offset = entry.getKey();
             Material material = entry.getValue();
@@ -200,10 +202,11 @@ public class GhostRecipeManager {
             }
             
             ghostBlocks.add(ghost);
+            offsetToGhostMap.put(offset, ghost); // Offset -> ArmorStand mapping
         }
         
         // Aktif tarifi kaydet
-        GhostRecipe recipe = new GhostRecipe(recipeId, targetLocation, ghostBlocks, System.currentTimeMillis());
+        GhostRecipe recipe = new GhostRecipe(recipeId, targetLocation, ghostBlocks, offsetToGhostMap, System.currentTimeMillis());
         activeGhostRecipes.put(player.getUniqueId(), recipe);
         
         player.sendMessage("§aHayalet tarif gösteriliyor! Blokları doğru yere koyun.");
@@ -232,6 +235,8 @@ public class GhostRecipeManager {
         
         // Hayalet yapıyı oluştur
         List<ArmorStand> ghostBlocks = new ArrayList<>();
+        Map<Vector, ArmorStand> offsetToGhostMap = new HashMap<>(); // Offset -> ArmorStand mapping
+        
         for (Map.Entry<Vector, Material> entry : data.getBlocks().entrySet()) {
             Vector offset = entry.getKey();
             Material material = entry.getValue();
@@ -261,10 +266,11 @@ public class GhostRecipeManager {
             }
             
             ghostBlocks.add(ghost);
+            offsetToGhostMap.put(offset, ghost); // Offset -> ArmorStand mapping
         }
         
         // Sabit tarifi kaydet
-        GhostRecipe fixedRecipe = new GhostRecipe(recipe.getRecipeId(), targetLocation, ghostBlocks, System.currentTimeMillis());
+        GhostRecipe fixedRecipe = new GhostRecipe(recipe.getRecipeId(), targetLocation, ghostBlocks, offsetToGhostMap, System.currentTimeMillis());
         fixedGhostRecipes.put(targetLocation, fixedRecipe);
         
         player.sendMessage("§a§lTarif sabitlendi! Bu konumda kalacak.");
@@ -280,6 +286,41 @@ public class GhostRecipeManager {
                 ghost.remove();
             }
         }
+    }
+    
+    /**
+     * Belirli bir konumda sabit tarif var mı kontrol et
+     */
+    public boolean hasFixedRecipeAt(Location location) {
+        // 5 blok yarıçap içinde sabit tarif var mı?
+        for (Location fixedLoc : fixedGhostRecipes.keySet()) {
+            if (fixedLoc.getWorld().equals(location.getWorld()) &&
+                fixedLoc.distance(location) <= 5) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Belirli bir konumdaki sabit tarifi kaldır
+     */
+    public boolean removeFixedRecipeAt(Location location) {
+        // 5 blok yarıçap içinde sabit tarif bul ve kaldır
+        Location foundLoc = null;
+        for (Location fixedLoc : fixedGhostRecipes.keySet()) {
+            if (fixedLoc.getWorld().equals(location.getWorld()) &&
+                fixedLoc.distance(location) <= 5) {
+                foundLoc = fixedLoc;
+                break;
+            }
+        }
+        
+        if (foundLoc != null) {
+            removeFixedRecipe(foundLoc);
+            return true;
+        }
+        return false;
     }
     
     /**
@@ -315,8 +356,115 @@ public class GhostRecipeManager {
     }
     
     /**
-     * Tarif tamamlandı mı kontrol et (bloklar doğru yere konuldu mu?)
+     * Blok koyulduğunda kontrol et ve doğru blok ise hayalet görüntüsünü kaldır
+     * @return true eğer blok doğru yerde ve hayalet görüntüsü kaldırıldıysa
      */
+    public boolean checkAndRemoveBlock(Player player, Location blockLocation, Material placedMaterial) {
+        // Önce aktif tarifleri kontrol et
+        GhostRecipe activeRecipe = activeGhostRecipes.get(player.getUniqueId());
+        if (activeRecipe != null) {
+            if (checkAndRemoveBlockFromRecipe(player, activeRecipe, blockLocation, placedMaterial, true, null)) {
+                return true;
+            }
+        }
+        
+        // Sonra sabit tarifleri kontrol et (tarif boyutuna göre dinamik yarıçap)
+        for (Map.Entry<Location, GhostRecipe> entry : new ArrayList<>(fixedGhostRecipes.entrySet())) {
+            Location fixedLoc = entry.getKey();
+            GhostRecipe fixedRecipe = entry.getValue();
+            
+            if (!fixedLoc.getWorld().equals(blockLocation.getWorld())) continue;
+            
+            // Tarif boyutuna göre maksimum mesafe hesapla (en büyük offset + 2 blok güvenlik)
+            GhostRecipeData recipeData = this.recipeData.get(fixedRecipe.getRecipeId());
+            if (recipeData != null) {
+                double maxDistance = 0;
+                for (Vector offset : recipeData.getBlocks().keySet()) {
+                    double dist = offset.length();
+                    if (dist > maxDistance) maxDistance = dist;
+                }
+                maxDistance = Math.max(maxDistance + 2, 5); // En az 5 blok
+                
+                if (fixedLoc.distance(blockLocation) <= maxDistance) {
+                    // Sabit tarif için doğru key'i (fixedLoc) geçir
+                    if (checkAndRemoveBlockFromRecipe(player, fixedRecipe, blockLocation, placedMaterial, false, fixedLoc)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Belirli bir tarif için blok kontrolü ve hayalet görüntüsü kaldırma
+     * @param fixedRecipeKey Sabit tarifler için map key'i (Location), aktif tarifler için null
+     */
+    private boolean checkAndRemoveBlockFromRecipe(Player player, GhostRecipe recipe, 
+                                                   Location blockLocation, Material placedMaterial, 
+                                                   boolean isActive, Location fixedRecipeKey) {
+        GhostRecipeData data = recipeData.get(recipe.getRecipeId());
+        if (data == null) return false;
+        
+        // Koyulan bloğun tarifteki konumunu bul
+        Location recipeCenter = recipe.getLocation();
+        Vector offset = blockLocation.toVector().subtract(recipeCenter.toVector());
+        
+        // En yakın offset'i bul (blok koordinatları için)
+        Vector blockOffset = new Vector(
+            Math.round(offset.getX()),
+            Math.round(offset.getY()),
+            Math.round(offset.getZ())
+        );
+        
+        // Bu offset'te bir blok var mı?
+        Material expectedMaterial = data.getBlocks().get(blockOffset);
+        if (expectedMaterial == null) return false; // Bu blok tarifte yok
+        
+        // Malzeme doğru mu?
+        if (placedMaterial != expectedMaterial) return false; // Yanlış malzeme
+        
+        // Bu offset'teki hayalet görüntüsünü kaldır
+        ArmorStand ghost = recipe.getOffsetToGhostMap().get(blockOffset);
+        if (ghost != null && ghost.isValid()) {
+            ghost.remove();
+            recipe.getOffsetToGhostMap().remove(blockOffset);
+            recipe.getGhostBlocks().remove(ghost);
+            
+            // Kalan blok sayısını kontrol et
+            int remainingBlocks = recipe.getOffsetToGhostMap().size();
+            if (remainingBlocks == 0) {
+                // Tüm bloklar tamamlandı!
+                if (isActive) {
+                    activeGhostRecipes.remove(player.getUniqueId());
+                } else {
+                    // Sabit tarif tamamlandı, kaldır (doğru key'i kullan)
+                    if (fixedRecipeKey != null) {
+                        fixedGhostRecipes.remove(fixedRecipeKey);
+                    } else {
+                        // Fallback: recipe.getLocation() kullan (ama bu genelde çalışmaz)
+                        fixedGhostRecipes.remove(recipe.getLocation());
+                    }
+                }
+                player.sendMessage("§a§l════════════════════════════");
+                player.sendMessage("§a§l✓ TARİF TAMAMLANDI!");
+                player.sendMessage("§7Yapının tarifi başarıyla tamamlandı.");
+                player.sendMessage("§a§l════════════════════════════");
+                return true;
+            } else {
+                player.sendMessage("§e✓ Blok doğru yere konuldu! (§7" + remainingBlocks + " blok kaldı§e)");
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Tarif tamamlandı mı kontrol et (bloklar doğru yere konuldu mu?)
+     * @deprecated checkAndRemoveBlock kullanın
+     */
+    @Deprecated
     public boolean checkRecipeComplete(Player player, Location checkLocation) {
         GhostRecipe recipe = activeGhostRecipes.get(player.getUniqueId());
         if (recipe == null) return false;
@@ -355,18 +503,22 @@ public class GhostRecipeManager {
         private final String recipeId;
         private final Location location;
         private final List<ArmorStand> ghostBlocks;
+        private final Map<Vector, ArmorStand> offsetToGhostMap; // Offset -> ArmorStand mapping
         private final long startTime;
         
-        public GhostRecipe(String recipeId, Location location, List<ArmorStand> ghostBlocks, long startTime) {
+        public GhostRecipe(String recipeId, Location location, List<ArmorStand> ghostBlocks, 
+                          Map<Vector, ArmorStand> offsetToGhostMap, long startTime) {
             this.recipeId = recipeId;
             this.location = location;
             this.ghostBlocks = ghostBlocks;
+            this.offsetToGhostMap = offsetToGhostMap;
             this.startTime = startTime;
         }
         
         public String getRecipeId() { return recipeId; }
         public Location getLocation() { return location; }
         public List<ArmorStand> getGhostBlocks() { return ghostBlocks; }
+        public Map<Vector, ArmorStand> getOffsetToGhostMap() { return offsetToGhostMap; }
         @SuppressWarnings("unused")
         public long getStartTime() { return startTime; }
     }

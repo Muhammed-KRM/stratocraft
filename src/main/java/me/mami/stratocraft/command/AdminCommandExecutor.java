@@ -80,8 +80,72 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return handleBoss(p, args);
             case "tame":
                 return handleTame(p, args);
+            case "recipe":
+                return handleRecipe(p, args);
             default:
                 showHelp(sender);
+                return true;
+        }
+    }
+    
+    /**
+     * Tarif yönetimi komutları
+     */
+    private boolean handleRecipe(Player p, String[] args) {
+        if (args.length < 2) {
+            p.sendMessage("§cKullanım: /scadmin recipe <komut>");
+            p.sendMessage("§7Komutlar:");
+            p.sendMessage("§7  remove <oyuncu> - Oyuncunun aktif tarifini kaldır");
+            p.sendMessage("§7  removeall - Tüm aktif tarifleri kaldır");
+            p.sendMessage("§7  list - Aktif tarifleri listele");
+            return true;
+        }
+        
+        switch (args[1].toLowerCase()) {
+            case "remove":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /scadmin recipe remove <oyuncu>");
+                    return true;
+                }
+                org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayer(args[2]);
+                if (target == null) {
+                    p.sendMessage("§cOyuncu bulunamadı: " + args[2]);
+                    return true;
+                }
+                plugin.getGhostRecipeManager().removeGhostRecipe(target);
+                p.sendMessage("§a" + target.getName() + " oyuncusunun aktif tarifi kaldırıldı.");
+                return true;
+                
+            case "removeall":
+                // Tüm oyuncuların aktif tariflerini kaldır
+                int count = 0;
+                for (org.bukkit.entity.Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
+                    if (plugin.getGhostRecipeManager().hasActiveRecipe(player.getUniqueId())) {
+                        plugin.getGhostRecipeManager().removeGhostRecipe(player);
+                        count++;
+                    }
+                }
+                p.sendMessage("§a" + count + " aktif tarif kaldırıldı.");
+                return true;
+                
+            case "list":
+                p.sendMessage("§6§l════════════════════════════");
+                p.sendMessage("§e§lAKTİF TARİFLER");
+                p.sendMessage("§6§l════════════════════════════");
+                int activeCount = 0;
+                for (org.bukkit.entity.Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
+                    if (plugin.getGhostRecipeManager().hasActiveRecipe(player.getUniqueId())) {
+                        p.sendMessage("§7- §e" + player.getName());
+                        activeCount++;
+                    }
+                }
+                if (activeCount == 0) {
+                    p.sendMessage("§7Aktif tarif yok.");
+                }
+                return true;
+                
+            default:
+                p.sendMessage("§cBilinmeyen komut: " + args[1]);
                 return true;
         }
     }
@@ -1548,7 +1612,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         // İlk argüman (komut seçimi)
         if (args.length == 1) {
             List<String> commands = Arrays.asList("give", "spawn", "disaster", "list", "help", "siege", "caravan",
-                    "contract", "build", "trap", "dungeon", "biome");
+                    "contract", "build", "trap", "dungeon", "biome", "mine", "recipe", "ballista", "boss", "tame");
             String input = args[0].toLowerCase();
 
             // Eğer boşsa veya başlangıç eşleşiyorsa filtrele
@@ -1665,9 +1729,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 case "mine":
                     // Mine komutları
                     if (args.length == 2 && args[1].equalsIgnoreCase("give")) {
-                        // Mine give için mayın tipleri
+                        // Mine give için mayın tipleri (10 tür)
                         List<String> mineTypes = Arrays.asList("explosive", "lightning", "poison", "blindness",
-                                "fatigue", "slowness");
+                                "fatigue", "slowness", "fire", "freeze", "weakness", "confusion");
                         if (input.isEmpty()) {
                             return mineTypes;
                         }
@@ -1722,6 +1786,36 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         return bossCommands;
                     }
                     return bossCommands.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
+                            .collect(Collectors.toList());
+
+                case "tame":
+                    // Tame komutları
+                    List<String> tameCommands = Arrays.asList("ritual", "list", "info");
+                    if (input.isEmpty()) {
+                        return tameCommands;
+                    }
+                    return tameCommands.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
+                            .collect(Collectors.toList());
+
+                case "recipe":
+                    // Recipe komutları
+                    List<String> recipeCommands = Arrays.asList("remove", "removeall", "list");
+                    if (input.isEmpty()) {
+                        return recipeCommands;
+                    }
+                    return recipeCommands.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
+                            .collect(Collectors.toList());
+
+                case "ballista":
+                    // Ballista komutları
+                    List<String> ballistaCommands = Arrays.asList("spawn", "list", "clear");
+                    if (input.isEmpty()) {
+                        return ballistaCommands;
+                    }
+                    return ballistaCommands.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
             }
@@ -1818,6 +1912,43 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             return trapTypes.stream()
                     .filter(s -> s.toLowerCase().startsWith(input))
                     .collect(Collectors.toList());
+        }
+
+        // Siege start ve surrender için klan isimleri
+        if (args.length == 3 && args[0].equalsIgnoreCase("siege")) {
+            String subCommand = args[1].toLowerCase();
+            if (subCommand.equals("start") || subCommand.equals("surrender")) {
+                // Klan isimlerini al
+                List<String> clanNames = new ArrayList<>();
+                if (plugin.getTerritoryManager() != null && plugin.getTerritoryManager().getClanManager() != null) {
+                    plugin.getTerritoryManager().getClanManager().getAllClans().forEach(clan -> {
+                        clanNames.add(clan.getName());
+                    });
+                }
+                return filterList(clanNames, args[2].toLowerCase());
+            }
+        }
+
+        // Siege start için 4. argüman (savunan klan)
+        if (args.length == 4 && args[0].equalsIgnoreCase("siege") && args[1].equalsIgnoreCase("start")) {
+            // Klan isimlerini al
+            List<String> clanNames = new ArrayList<>();
+            if (plugin.getTerritoryManager() != null && plugin.getTerritoryManager().getClanManager() != null) {
+                plugin.getTerritoryManager().getClanManager().getAllClans().forEach(clan -> {
+                    clanNames.add(clan.getName());
+                });
+            }
+            return filterList(clanNames, args[3].toLowerCase());
+        }
+
+        // Recipe remove için oyuncu isimleri
+        if (args.length == 3 && args[0].equalsIgnoreCase("recipe") && args[1].equalsIgnoreCase("remove")) {
+            // Online oyuncu isimlerini al
+            List<String> playerNames = new ArrayList<>();
+            org.bukkit.Bukkit.getOnlinePlayers().forEach(player -> {
+                playerNames.add(player.getName());
+            });
+            return filterList(playerNames, args[2].toLowerCase());
         }
 
         // Dördüncü argüman (give komutu için miktar - kategorize edilmiş format)
@@ -2467,6 +2598,52 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 p.sendMessage("§7Sağ tıkla ateş edebilirsin.");
                 return true;
 
+            case "trebuchet":
+            case "trebuset":
+            case "trebuşet":
+                // Trebuchet: 5x5 Obsidian taban + Merkezde Anvil
+                org.bukkit.block.BlockFace facing = p.getFacing();
+                
+                // 5x5 Obsidian taban oluştur
+                for (int x = -2; x <= 2; x++) {
+                    for (int z = -2; z <= 2; z++) {
+                        org.bukkit.Location obsidianLoc = loc.clone().add(x, 0, z);
+                        obsidianLoc.getBlock().setType(Material.OBSIDIAN);
+                    }
+                }
+                
+                // Merkezde Anvil (1 blok yukarıda)
+                org.bukkit.Location anvilLoc = loc.clone().add(0, 1, 0);
+                anvilLoc.getBlock().setType(Material.ANVIL);
+                
+                // YAPILDI EFEKTLERİ
+                org.bukkit.Location effectLoc = loc.clone().add(0, 1, 0);
+                p.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, effectLoc, 5);
+                p.getWorld().spawnParticle(org.bukkit.Particle.SMOKE_LARGE, effectLoc, 30, 1, 1, 1);
+                p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_ANVIL_USE, 1.0f, 0.8f);
+                p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.2f);
+                
+                // Havai fişek efekti
+                org.bukkit.entity.Firework firework = (org.bukkit.entity.Firework) p.getWorld().spawnEntity(
+                        effectLoc, org.bukkit.entity.EntityType.FIREWORK);
+                org.bukkit.inventory.meta.FireworkMeta fireworkMeta = firework.getFireworkMeta();
+                fireworkMeta.addEffect(org.bukkit.FireworkEffect.builder()
+                        .with(org.bukkit.FireworkEffect.Type.BURST)
+                        .withColor(org.bukkit.Color.PURPLE, org.bukkit.Color.BLACK)
+                        .flicker(true).build());
+                fireworkMeta.setPower(0);
+                firework.setFireworkMeta(fireworkMeta);
+                
+                // Kullanım talimatları
+                p.sendMessage("§a§l5x5 TREBUCHET OLUŞTURULDU!");
+                p.sendMessage("§7Kullanım:");
+                p.sendMessage("§e  1. §7Boş El + Sağ Tık = Bin");
+                p.sendMessage("§e  2. §7Sol Tık = Ateş Et! (Uzun menzil)");
+                p.sendMessage("§e  3. §7Shift + Sağ Tık = İn");
+                p.sendMessage("§7Cooldown: 15 saniye");
+                p.sendMessage("§7Yapı: 5x5 Obsidian taban + Merkez Anvil");
+                return true;
+
             case "lava_fountain":
             case "lav_fiskiyesi":
                 // Lav Fıskiyesi: Cauldron oluştur ve doldur
@@ -3082,7 +3259,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "give":
                 if (args.length < 3) {
                     p.sendMessage("§cKullanım: /stratocraft mine give <type>");
-                    p.sendMessage("§7Mayın tipleri: explosive, lightning, poison, blindness, fatigue, slowness");
+                    p.sendMessage("§7Mayın tipleri: explosive, lightning, poison, blindness, fatigue, slowness, fire, freeze, weakness, confusion");
                     return true;
                 }
                 String mineType = args[2].toLowerCase();
@@ -3101,13 +3278,17 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§e2. §7Basınç plakasına mayın tipi item ile sağ tık");
         p.sendMessage("§e3. §7Mayın hazır! Basınca tetiklenir ve yok olur");
         p.sendMessage("");
-        p.sendMessage("§7--- Mayın Tipleri ---");
+        p.sendMessage("§7--- Mayın Tipleri (10 Tür) ---");
         p.sendMessage("§e- explosive §7- Patlama Mayını (TNT) - Alan hasarı");
         p.sendMessage("§e- lightning §7- Yıldırım Mayını (Lightning Core) - Tek hedef");
         p.sendMessage("§e- poison §7- Zehir Mayını (Spider Eye) - Tek hedef");
         p.sendMessage("§e- blindness §7- Körlük Mayını (Ink Sac) - Tek hedef");
         p.sendMessage("§e- fatigue §7- Yorgunluk Mayını (Iron Pickaxe) - Tek hedef");
         p.sendMessage("§e- slowness §7- Yavaşlık Mayını (Slime Ball) - Tek hedef");
+        p.sendMessage("§e- fire §7- Ateş Mayını (Blaze Rod) - Yanma efekti");
+        p.sendMessage("§e- freeze §7- Dondurma Mayını (Ice) - Buz efekti");
+        p.sendMessage("§e- weakness §7- Zayıflık Mayını (Bone) - Zayıflık efekti");
+        p.sendMessage("§e- confusion §7- Karışıklık Mayını (Fermented Spider Eye) - Nausea efekti");
         p.sendMessage("");
         p.sendMessage("§7Özellikler:");
         p.sendMessage("§7- Görünür (basınç plakası)");
@@ -3150,8 +3331,25 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 giveItemSafely(p, new ItemStack(Material.SLIME_BALL, 5));
                 p.sendMessage("§aYavaşlık Mayını itemleri verildi!");
                 break;
+            case "fire":
+                giveItemSafely(p, new ItemStack(Material.BLAZE_ROD, 5));
+                p.sendMessage("§aAteş Mayını itemleri verildi!");
+                break;
+            case "freeze":
+                giveItemSafely(p, new ItemStack(Material.ICE, 5));
+                p.sendMessage("§aDondurma Mayını itemleri verildi!");
+                break;
+            case "weakness":
+                giveItemSafely(p, new ItemStack(Material.BONE, 5));
+                p.sendMessage("§aZayıflık Mayını itemleri verildi!");
+                break;
+            case "confusion":
+                giveItemSafely(p, new ItemStack(Material.FERMENTED_SPIDER_EYE, 5));
+                p.sendMessage("§aKarışıklık Mayını itemleri verildi!");
+                break;
             default:
-                p.sendMessage("§cGeçersiz mayın tipi! explosive, lightning, poison, blindness, fatigue, slowness");
+                p.sendMessage("§cGeçersiz mayın tipi!");
+                p.sendMessage("§7Geçerli tipler: explosive, lightning, poison, blindness, fatigue, slowness, fire, freeze, weakness, confusion");
                 return;
         }
     }

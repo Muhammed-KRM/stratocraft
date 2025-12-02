@@ -190,6 +190,26 @@ public class MineListener implements Listener {
             return MineManager.MineType.SLOWNESS;
         }
         
+        // Blaze Rod - Ateş mayını
+        if (material == Material.BLAZE_ROD) {
+            return MineManager.MineType.FIRE;
+        }
+        
+        // Ice - Dondurma mayını
+        if (material == Material.ICE) {
+            return MineManager.MineType.FREEZE;
+        }
+        
+        // Bone - Zayıflık mayını
+        if (material == Material.BONE) {
+            return MineManager.MineType.WEAKNESS;
+        }
+        
+        // Fermented Spider Eye - Karışıklık mayını
+        if (material == Material.FERMENTED_SPIDER_EYE) {
+            return MineManager.MineType.CONFUSION;
+        }
+        
         return null;
     }
     

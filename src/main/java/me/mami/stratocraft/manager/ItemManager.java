@@ -415,21 +415,190 @@ public class ItemManager {
     }
 
     /**
-     * Tarif kitabı oluştur
+     * Tarif kitabı oluştur (geliştirilmiş açıklamalarla)
      */
     private ItemStack createRecipeBook(String id, String name) {
         ItemStack item = new ItemStack(Material.BOOK);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(name);
         List<String> lore = new ArrayList<>();
-        lore.add("§7Bu tarif kitabı yapı veya eşya");
-        lore.add("§7yapım bilgilerini içerir.");
-        lore.add("§7Sağ tıklayarak hayalet yapıyı görebilirsiniz.");
+        
+        // Tarif türüne göre açıklama ekle
+        String recipeId = id.replace("RECIPE_", "").toUpperCase();
+        RecipeInfo info = getRecipeInfo(recipeId);
+        
+        lore.add("§6═══════════════════════");
+        lore.add("§e§l" + info.getDisplayName());
+        lore.add("§6═══════════════════════");
+        lore.add("");
+        lore.add("§7§l📍 Yerleşim:");
+        lore.add("§7" + info.getLocationInfo());
+        lore.add("");
+        lore.add("§7§l⚙️ İşlev:");
+        lore.add("§7" + info.getFunctionInfo());
+        lore.add("");
+        
+        // Eğer item tarifi ise crafting bilgisi ekle
+        if (info.isItemRecipe()) {
+            lore.add("§7§l🔨 Yapılış:");
+            lore.add("§7Crafting masasında yapılır.");
+            lore.add("§7Tarif detayları için kitaba");
+            lore.add("§7Shift+Sağ tıklayın.");
+        } else {
+            lore.add("§7§l📖 Kullanım:");
+            lore.add("§7Sağ tık: Hayalet yapı göster");
+            lore.add("§7Shift+Sağ tık: Tarifi sabitle");
+            lore.add("§7Shift+Sol tık: Tarifi kaldır");
+        }
+        
+        lore.add("");
+        lore.add("§8Tarif Kitabı");
+        
         meta.setLore(lore);
         meta.getPersistentDataContainer().set(new NamespacedKey(Main.getInstance(), "custom_id"),
                 PersistentDataType.STRING, id);
         item.setItemMeta(meta);
         return item;
+    }
+    
+    /**
+     * Tarif bilgilerini döndür
+     */
+    private RecipeInfo getRecipeInfo(String recipeId) {
+        // Yapılar
+        switch (recipeId) {
+            case "CORE":
+                return new RecipeInfo("Ana Kristal", "§cSadece klan bölgesi içinde", "Klan merkezi ve offline koruma sağlar. Kırılırsa klan dağılır!");
+            case "ALCHEMY_TOWER":
+            case "ALCHEMY":
+                return new RecipeInfo("Simya Kulesi", "§cSadece klan bölgesi içinde", "Bataryaların gücünü %10-75 arası artırır (seviyeye göre).");
+            case "POISON_REACTOR":
+                return new RecipeInfo("Zehir Reaktörü", "§cSadece klan bölgesi içinde", "Bölgeye giren düşmanlara sürekli zehir verir (30 blok menzil).");
+            case "TECTONIC":
+            case "TECTONIC_STABILIZER":
+                return new RecipeInfo("Tektonik Sabitleyici", "§cSadece klan bölgesi içinde", "Felaket hasarını %50-99 arası azaltır (seviyeye göre).");
+            case "SIEGE_FACTORY":
+                return new RecipeInfo("Kuşatma Fabrikası", "§cSadece klan bölgesi içinde", "Mancınık ve Balista üretir (seviyeye göre hız artar).");
+            case "WALL_GENERATOR":
+                return new RecipeInfo("Sur Jeneratörü", "§cSadece klan bölgesi içinde", "Otomatik sur blokları oluşturur.");
+            case "GRAVITY_WELL":
+                return new RecipeInfo("Yerçekimi Kuyusu", "§cSadece klan bölgesi içinde", "Düşmanları yavaşlatır ve çeker.");
+            case "LAVA_TRENCHER":
+                return new RecipeInfo("Lav Hendekçisi", "§cSadece klan bölgesi içinde", "Lav hendekleri oluşturur.");
+            case "WATCHTOWER":
+                return new RecipeInfo("Gözetleme Kulesi", "§cSadece klan bölgesi içinde", "Alarm sistemi - düşmanları tespit eder ve uyarır.");
+            case "DRONE_STATION":
+                return new RecipeInfo("Drone İstasyonu", "§cSadece klan bölgesi içinde", "Otomatik drone üretir.");
+            case "AUTO_TURRET":
+                return new RecipeInfo("Otomatik Taret", "§cSadece klan bölgesi içinde", "Otonom ok savunması (20 blok menzil).");
+            case "GLOBAL_MARKET_GATE":
+                return new RecipeInfo("Global Pazar Kapısı", "§cSadece klan bölgesi içinde", "Klanlar arası ticaret platformu.");
+            case "AUTO_DRILL":
+                return new RecipeInfo("Otomatik Madenci", "§cSadece klan bölgesi içinde", "Otomatik maden çıkarır.");
+            case "XP_BANK":
+                return new RecipeInfo("Tecrübe Bankası", "§cSadece klan bölgesi içinde", "XP depolama ve paylaşım.");
+            case "MAG_RAIL":
+                return new RecipeInfo("Manyetik Ray", "§cSadece klan bölgesi içinde", "Hızlı ulaşım rayı.");
+            case "TELEPORTER":
+                return new RecipeInfo("Işınlanma Platformu", "§cSadece klan bölgesi içinde", "Klan içi ışınlanma.");
+            case "FOOD_SILO":
+                return new RecipeInfo("Buzdolabı", "§cSadece klan bölgesi içinde", "Yiyecek depolama.");
+            case "OIL_REFINERY":
+                return new RecipeInfo("Petrol Rafinerisi", "§cSadece klan bölgesi içinde", "Yakıt üretimi.");
+            case "HEALING_BEACON":
+                return new RecipeInfo("Şifa Kulesi", "§aKlan bölgesi veya dışarıda", "Sürekli regen efekti verir.");
+            case "WEATHER_MACHINE":
+                return new RecipeInfo("Hava Kontrolcüsü", "§cSadece klan bölgesi içinde", "Hava durumunu kontrol eder.");
+            case "CROP_ACCELERATOR":
+                return new RecipeInfo("Tarım Hızlandırıcı", "§cSadece klan bölgesi içinde", "Ekinleri hızlandırır.");
+            case "MOB_GRINDER":
+                return new RecipeInfo("Mob Öğütücü", "§cSadece klan bölgesi içinde", "Mobları otomatik öğütür.");
+            case "INVISIBILITY_CLOAK":
+                return new RecipeInfo("Görünmezlik Perdesi", "§cSadece klan bölgesi içinde", "Klan üyelerini görünmez yapar.");
+            case "ARMORY":
+                return new RecipeInfo("Cephanelik", "§cSadece klan bölgesi içinde", "Ekipman depolama.");
+            case "LIBRARY":
+                return new RecipeInfo("Kütüphane", "§cSadece klan bölgesi içinde", "Tarif kitabı depolama.");
+            case "WARNING_SIGN":
+                return new RecipeInfo("Yasaklı Bölge Tabelası", "§aKlan bölgesi veya dışarıda", "Yasaklı bölge işareti.");
+            
+            // Özel Eşyalar
+            case "LIGHTNING_CORE":
+                return new RecipeInfo("Yıldırım Çekirdeği", "§7Crafting masasında", "Batarya yakıtı - güçlü yıldırım efekti.", true);
+            case "TITANIUM_INGOT":
+                return new RecipeInfo("Titanyum Külçesi", "§7Crafting masasında", "Güçlü zırh ve silah malzemesi.", true);
+            case "DARK_MATTER":
+                return new RecipeInfo("Karanlık Madde", "§7Crafting masasında", "Efsanevi eşya malzemesi.", true);
+            case "RED_DIAMOND":
+                return new RecipeInfo("Kızıl Elmas", "§7Crafting masasında", "En güçlü silahlar için malzeme.", true);
+            case "RUBY":
+                return new RecipeInfo("Yakut", "§7Crafting masasında", "Değerli mücevher.", true);
+            case "ADAMANTITE":
+                return new RecipeInfo("Adamantite", "§7Crafting masasında", "Efsanevi zırh malzemesi.", true);
+            case "STAR_CORE":
+                return new RecipeInfo("Yıldız Çekirdeği", "§7Crafting masasında", "Güçlü eşya malzemesi.", true);
+            case "FLAME_AMPLIFIER":
+                return new RecipeInfo("Alev Amplifikatörü", "§7Crafting masasında", "Ateş bataryası güçlendirici.", true);
+            case "DEVIL_HORN":
+                return new RecipeInfo("Şeytan Boynuzu", "§7Crafting masasında", "Özel eşya malzemesi.", true);
+            case "DEVIL_SNAKE_EYE":
+                return new RecipeInfo("İblis Yılanın Gözü", "§7Crafting masasında", "Özel eşya malzemesi.", true);
+            case "WAR_FAN":
+                return new RecipeInfo("Savaş Yelpazesi", "§7Crafting masasında", "Özel silah.", true);
+            case "TOWER_SHIELD":
+                return new RecipeInfo("Kule Kalkanı", "§7Crafting masasında", "Güçlü kalkan.", true);
+            case "HELL_FRUIT":
+                return new RecipeInfo("Cehennem Meyvesi", "§7Crafting masasında", "Özel tüketilebilir.", true);
+            case "SULFUR":
+                return new RecipeInfo("Kükürt", "§7Crafting masasında", "Yakıt ve patlayıcı malzemesi.", true);
+            case "BAUXITE_INGOT":
+                return new RecipeInfo("Boksit Külçesi", "§7Crafting masasında", "Orta seviye malzeme.", true);
+            case "ROCK_SALT":
+                return new RecipeInfo("Tuz", "§7Crafting masasında", "Temel malzeme.", true);
+            case "MITHRIL_INGOT":
+                return new RecipeInfo("Mithril Külçesi", "§7Crafting masasında", "Güçlü zırh malzemesi.", true);
+            case "MITHRIL_STRING":
+                return new RecipeInfo("Mithril İpi", "§7Crafting masasında", "Güçlü ip malzemesi.", true);
+            case "ASTRAL_CRYSTAL":
+                return new RecipeInfo("Astral Kristali", "§7Crafting masasında", "İleri seviye malzeme.", true);
+            case "RUSTY_HOOK":
+                return new RecipeInfo("Paslı Kanca", "§7Crafting masasında", "7 blok menzilli kanca.", true);
+            case "GOLDEN_HOOK":
+                return new RecipeInfo("Altın Kanca", "§7Crafting masasında", "15 blok menzilli kanca.", true);
+            case "TITAN_GRAPPLE":
+                return new RecipeInfo("Titan Kancası", "§7Crafting masasında", "40 blok menzilli kanca + Slow Falling.", true);
+            case "TRAP_CORE":
+                return new RecipeInfo("Tuzak Çekirdeği", "§7Crafting masasında", "Tuzak kurmak için çekirdek.", true);
+            
+            default:
+                return new RecipeInfo("Bilinmeyen Tarif", "§7Bilinmeyen", "Açıklama yok.");
+        }
+    }
+    
+    /**
+     * Tarif bilgisi sınıfı
+     */
+    private static class RecipeInfo {
+        private final String displayName;
+        private final String locationInfo;
+        private final String functionInfo;
+        private final boolean isItemRecipe;
+        
+        public RecipeInfo(String displayName, String locationInfo, String functionInfo) {
+            this(displayName, locationInfo, functionInfo, false);
+        }
+        
+        public RecipeInfo(String displayName, String locationInfo, String functionInfo, boolean isItemRecipe) {
+            this.displayName = displayName;
+            this.locationInfo = locationInfo;
+            this.functionInfo = functionInfo;
+            this.isItemRecipe = isItemRecipe;
+        }
+        
+        public String getDisplayName() { return displayName; }
+        public String getLocationInfo() { return locationInfo; }
+        public String getFunctionInfo() { return functionInfo; }
+        public boolean isItemRecipe() { return isItemRecipe; }
     }
 
     public static boolean isCustomItem(ItemStack item, String id) {

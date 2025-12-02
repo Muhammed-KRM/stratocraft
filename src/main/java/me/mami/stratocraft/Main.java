@@ -135,8 +135,10 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new MissionListener(missionManager), this);
         Bukkit.getPluginManager().registerEvents(new ResearchListener(researchManager), this);
         Bukkit.getPluginManager().registerEvents(new StructureListener(clanManager, researchManager), this);
-        Bukkit.getPluginManager().registerEvents(
-                new me.mami.stratocraft.listener.GhostRecipeListener(ghostRecipeManager, researchManager), this);
+        me.mami.stratocraft.listener.GhostRecipeListener ghostRecipeListener = 
+            new me.mami.stratocraft.listener.GhostRecipeListener(ghostRecipeManager, researchManager);
+        ghostRecipeListener.setTerritoryManager(territoryManager);
+        Bukkit.getPluginManager().registerEvents(ghostRecipeListener, this);
         Bukkit.getPluginManager().registerEvents(new ConsumableListener(), this);
         Bukkit.getPluginManager().registerEvents(new VillagerListener(), this);
         Bukkit.getPluginManager().registerEvents(new GriefProtectionListener(territoryManager), this);

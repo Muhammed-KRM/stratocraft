@@ -171,6 +171,29 @@ public class BatteryManager {
     public void clearBatteries(Player player) {
         loadedBatteries.remove(player.getUniqueId());
         particleAngles.remove(player.getUniqueId()); // Partikül açısını da temizle
+        batteryActivationTimes.remove(player.getUniqueId()); // Aktivasyon zamanlarını da temizle
+    }
+    
+    /**
+     * Oyuncunun herhangi bir yüklü bataryası var mı?
+     */
+    public boolean hasAnyLoadedBattery(Player player) {
+        if (!loadedBatteries.containsKey(player.getUniqueId())) {
+            return false;
+        }
+        Map<Integer, BatteryData> playerBatteries = loadedBatteries.get(player.getUniqueId());
+        return playerBatteries != null && !playerBatteries.isEmpty();
+    }
+    
+    /**
+     * Oyuncunun tüm yüklü bataryalarını al
+     */
+    public Map<Integer, BatteryData> getAllLoadedBatteries(Player player) {
+        if (!loadedBatteries.containsKey(player.getUniqueId())) {
+            return new HashMap<>();
+        }
+        Map<Integer, BatteryData> playerBatteries = loadedBatteries.get(player.getUniqueId());
+        return playerBatteries != null ? new HashMap<>(playerBatteries) : new HashMap<>();
     }
 
     /**

@@ -39,7 +39,11 @@ public class MineManager {
         POISON, // Zehir (Spider Eye) - Tek hedef
         BLINDNESS, // Körlük (Ink Sac) - Tek hedef
         FATIGUE, // Madencinin Yorgunluğu (Iron Pickaxe) - Tek hedef
-        SLOWNESS // Yavaşlık (Slime Ball) - Tek hedef
+        SLOWNESS, // Yavaşlık (Slime Ball) - Tek hedef
+        FIRE, // Ateş (Blaze Rod) - Yanma efekti
+        FREEZE, // Dondurma (Ice) - Buz efekti
+        WEAKNESS, // Zayıflık (Bone) - Zayıflık efekti
+        CONFUSION // Karışıklık (Fermented Spider Eye) - Nausea efekti
     }
 
     public static class MineData {
@@ -197,6 +201,36 @@ public class MineManager {
                 victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 100, 1, false, false));
                 victim.sendMessage("§b§lYAVAŞLADIN!");
                 break;
+
+            case FIRE:
+                // Ateş - Yanma efekti
+                victim.setFireTicks(100); // 5 saniye yanma
+                victim.damage(2.0); // İlk hasar
+                victim.sendMessage("§c§lYANDIN!");
+                mineLoc.getWorld().spawnParticle(org.bukkit.Particle.FLAME, 
+                    mineLoc.clone().add(0.5, 0.1, 0.5), 30, 0.3, 0.1, 0.3, 0.1);
+                break;
+
+            case FREEZE:
+                // Dondurma - Buz efekti
+                victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 150, 2, false, false)); // Çok yavaş
+                victim.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, 150, 1, false, false));
+                victim.sendMessage("§b§lDONDUN!");
+                mineLoc.getWorld().spawnParticle(org.bukkit.Particle.SNOWBALL, 
+                    mineLoc.clone().add(0.5, 0.1, 0.5), 30, 0.3, 0.1, 0.3, 0.1);
+                break;
+
+            case WEAKNESS:
+                // Zayıflık - Zayıflık efekti
+                victim.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 200, 1, false, false));
+                victim.sendMessage("§7§lZAYIFLADIN!");
+                break;
+
+            case CONFUSION:
+                // Karışıklık - Nausea efekti
+                victim.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 200, 1, false, false));
+                victim.sendMessage("§d§lKARIŞIKLIK HİSSEDİYORSUN!");
+                break;
         }
 
         // Ses efekti
@@ -204,7 +238,7 @@ public class MineManager {
 
         // Partikül efekti
         mineLoc.getWorld().spawnParticle(org.bukkit.Particle.SMOKE_LARGE,
-                mineLoc.add(0.5, 0.1, 0.5), 20, 0.3, 0.1, 0.3, 0.1);
+                mineLoc.clone().add(0.5, 0.1, 0.5), 20, 0.3, 0.1, 0.3, 0.1);
     }
 
     /**
@@ -238,6 +272,14 @@ public class MineManager {
                 return "Yorgunluk Mayını";
             case SLOWNESS:
                 return "Yavaşlık Mayını";
+            case FIRE:
+                return "Ateş Mayını";
+            case FREEZE:
+                return "Dondurma Mayını";
+            case WEAKNESS:
+                return "Zayıflık Mayını";
+            case CONFUSION:
+                return "Karışıklık Mayını";
             default:
                 return "Bilinmeyen Mayın";
         }

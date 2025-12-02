@@ -17,10 +17,15 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.NamespacedKey;
+import me.mami.stratocraft.Main;
 
 public class BatteryListener implements Listener {
     private final BatteryManager batteryManager;
@@ -120,11 +125,35 @@ public class BatteryListener implements Listener {
             if (action == Action.RIGHT_CLICK_BLOCK && player.isSneaking()) {
                 Block clickedBlock = event.getClickedBlock();
                 if (clickedBlock != null) {
+                    // Önce "Yüklü Batarya Çekirdeği" kontrolü
+                    ItemStack handItem = player.getInventory().getItemInMainHand();
+                    if (handItem != null && handItem.getType() == Material.ECHO_SHARD) {
+                        if (isLoadedBatteryCore(handItem)) {
+                            // Yüklü Batarya Çekirdeği kullanarak hızlı yükleme
+                            if (restoreBatteryFromCore(player, handItem, slot, clickedBlock, event)) {
+                                return; // Başarılı, devam etme
+                            }
+                        }
+                    }
+                    
                     // Her batarya tipi için kontrol
                     checkAndLoadBattery(player, clickedBlock, slot, event);
                     // Yükleme başarılı olduysa (event iptal edildiyse), kodun devam etmemesi için return
                     if (event.isCancelled()) {
                         return;
+                    }
+                }
+            }
+            
+            // Havaya tıklama durumunda da Yüklü Batarya Çekirdeği kontrolü (blok gerekmez)
+            if ((action == Action.RIGHT_CLICK_AIR) && player.isSneaking()) {
+                ItemStack handItem = player.getInventory().getItemInMainHand();
+                if (handItem != null && handItem.getType() == Material.ECHO_SHARD) {
+                    if (isLoadedBatteryCore(handItem)) {
+                        // Havaya tıklayınca da çalışabilir (blok gerekmez, null geçilebilir)
+                        if (restoreBatteryFromCore(player, handItem, slot, null, event)) {
+                            return;
+                        }
                     }
                 }
             }
@@ -604,5 +633,196 @@ public class BatteryListener implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         batteryManager.clearBatteries(event.getPlayer());
+    }
+    
+    /**
+     * Oyuncu öldüğünde yüklü bataryaları "Yüklü Batarya Çekirdeği" item'ına dönüştür
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        
+        // Oyuncunun yüklü bataryalarını kontrol et
+        if (!batteryManager.hasAnyLoadedBattery(player)) {
+            return; // Batarya yok, devam et
+        }
+        
+        // Tüm yüklü bataryaları item'a dönüştür ve drop et
+        java.util.Map<Integer, BatteryData> batteries = batteryManager.getAllLoadedBatteries(player);
+        if (batteries == null || batteries.isEmpty()) {
+            return;
+        }
+        
+        for (java.util.Map.Entry<Integer, BatteryData> entry : batteries.entrySet()) {
+            int slot = entry.getKey();
+            BatteryData battery = entry.getValue();
+            
+            // Yüklü Batarya Çekirdeği item'ı oluştur
+            ItemStack batteryCore = createLoadedBatteryCore(battery, slot);
+            
+            // Item'ı drop et
+            player.getWorld().dropItemNaturally(player.getLocation(), batteryCore);
+        }
+        
+        // Bataryaları temizle
+        batteryManager.clearBatteries(player);
+        
+        // Oyuncuya bilgi ver (oyuncu ölü olsa bile mesaj gönderilebilir, ama güvenli olmak için kontrol)
+        if (player.isOnline()) {
+            // Ölüm mesajı genelde chat'e gider, ama oyuncu ölü olabilir
+            // Bu yüzden delayed task ile gönderelim
+            org.bukkit.Bukkit.getScheduler().runTaskLater(Main.getInstance(), () -> {
+                if (player.isOnline()) {
+                    player.sendMessage("§e⚡ Yüklü bataryalarınız 'Yüklü Batarya Çekirdeği' olarak düştü!");
+                    player.sendMessage("§7Bu item'ı kullanarak bataryalarınızı hızlıca yeniden yükleyebilirsiniz.");
+                }
+            }, 20L); // 1 saniye sonra (oyuncu respawn olmuş olabilir)
+        }
+    }
+    
+    /**
+     * Yüklü Batarya Çekirdeği item'ı oluştur
+     */
+    private ItemStack createLoadedBatteryCore(BatteryData battery, int slot) {
+        ItemStack item = new ItemStack(Material.ECHO_SHARD); // Echo Shard görsel olarak uygun
+        ItemMeta meta = item.getItemMeta();
+        
+        if (meta == null) return item;
+        
+        // Item ismi ve açıklama
+        meta.setDisplayName("§6⚡ Yüklü Batarya Çekirdeği");
+        java.util.List<String> lore = new java.util.ArrayList<>();
+        lore.add("§7Batarya Tipi: §e" + battery.getType());
+        lore.add("§7Slot: §e" + (slot + 1));
+        lore.add("§7Yakıt: §e" + getFuelDisplayName(battery.getFuel(), battery.isRedDiamond(), battery.isDarkMatter()));
+        if (battery.getAlchemyLevel() > 0) {
+            lore.add("§7Simya Seviyesi: §e" + battery.getAlchemyLevel());
+        }
+        if (battery.hasAmplifier()) {
+            lore.add("§7Amplifikatör: §aVar");
+        }
+        lore.add("");
+        lore.add("§7Shift + Sağ Tık ile bataryayı");
+        lore.add("§7hızlıca yeniden yükleyebilirsiniz.");
+        meta.setLore(lore);
+        
+        // NBT ile batarya verilerini sakla
+        NamespacedKey key = new NamespacedKey(Main.getInstance(), "loaded_battery");
+        meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, 
+            serializeBatteryData(battery, slot));
+        
+        item.setItemMeta(meta);
+        return item;
+    }
+    
+    /**
+     * Batarya verilerini serialize et (NBT için)
+     */
+    private String serializeBatteryData(BatteryData battery, int slot) {
+        // Format: type:fuel:alchemyLevel:hasAmplifier:trainingMultiplier:isRedDiamond:isDarkMatter:slot
+        return battery.getType() + ":" +
+               battery.getFuel().name() + ":" +
+               battery.getAlchemyLevel() + ":" +
+               battery.hasAmplifier() + ":" +
+               battery.getTrainingMultiplier() + ":" +
+               battery.isRedDiamond() + ":" +
+               battery.isDarkMatter() + ":" +
+               slot;
+    }
+    
+    /**
+     * Yakıt ismini göster
+     */
+    private String getFuelDisplayName(Material fuel, boolean isRedDiamond, boolean isDarkMatter) {
+        if (isDarkMatter) return "Karanlık Madde";
+        if (isRedDiamond) return "Kızıl Elmas";
+        if (fuel == Material.DIAMOND) return "Elmas";
+        if (fuel == Material.IRON_INGOT) return "Demir";
+        return fuel.name();
+    }
+    
+    /**
+     * Item "Yüklü Batarya Çekirdeği" mi kontrol et
+     */
+    private boolean isLoadedBatteryCore(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return false;
+        
+        NamespacedKey key = new NamespacedKey(Main.getInstance(), "loaded_battery");
+        return meta.getPersistentDataContainer().has(key, PersistentDataType.STRING);
+    }
+    
+    /**
+     * Yüklü Batarya Çekirdeği'nden bataryayı geri yükle
+     */
+    private boolean restoreBatteryFromCore(Player player, ItemStack coreItem, int slot, 
+                                            Block clickedBlock, PlayerInteractEvent event) {
+        if (coreItem == null || !coreItem.hasItemMeta()) return false;
+        
+        ItemMeta meta = coreItem.getItemMeta();
+        if (meta == null) return false;
+        
+        NamespacedKey key = new NamespacedKey(Main.getInstance(), "loaded_battery");
+        String data = meta.getPersistentDataContainer().get(key, PersistentDataType.STRING);
+        if (data == null) return false;
+        
+        // Batarya verilerini deserialize et
+        BatteryData batteryData = deserializeBatteryData(data);
+        if (batteryData == null) return false;
+        
+        // Aynı slotta başka batarya var mı?
+        if (batteryManager.hasLoadedBattery(player, slot)) {
+            player.sendMessage("§cBu slotta zaten yüklü bir batarya var! Önce onu ateşle veya iptal et.");
+            return false;
+        }
+        
+        // Bataryayı yükle (blok yapısı gerekmez, direkt yükle)
+        batteryManager.loadBattery(player, slot, batteryData);
+        
+        // Item'ı tüket (1 adet azalt)
+        if (coreItem.getAmount() > 1) {
+            coreItem.setAmount(coreItem.getAmount() - 1);
+        } else {
+            player.getInventory().setItemInMainHand(null);
+        }
+        
+        // Event'i iptal et
+        event.setCancelled(true);
+        
+        // Efektler (clickedBlock null ise oyuncunun konumunu kullan)
+        org.bukkit.Location effectLoc = clickedBlock != null ? 
+            clickedBlock.getLocation().clone().add(0.5, 0.5, 0.5) : 
+            player.getLocation().clone().add(0, 1, 0);
+        player.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, effectLoc, 1);
+        player.getWorld().spawnParticle(org.bukkit.Particle.SMOKE_LARGE, effectLoc, 10);
+        player.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1f, 2f);
+        
+        player.sendMessage("§a⚡ " + batteryData.getType() + " bataryası başarıyla yeniden yüklendi!");
+        return true;
+    }
+    
+    /**
+     * Batarya verilerini deserialize et
+     */
+    private BatteryData deserializeBatteryData(String data) {
+        try {
+            String[] parts = data.split(":");
+            if (parts.length < 8) return null;
+            
+            String type = parts[0];
+            Material fuel = Material.valueOf(parts[1]);
+            int alchemyLevel = Integer.parseInt(parts[2]);
+            boolean hasAmplifier = Boolean.parseBoolean(parts[3]);
+            double trainingMultiplier = Double.parseDouble(parts[4]);
+            boolean isRedDiamond = Boolean.parseBoolean(parts[5]);
+            boolean isDarkMatter = Boolean.parseBoolean(parts[6]);
+            // slot bilgisi kullanılmıyor ama saklanıyor
+            
+            return new BatteryData(type, fuel, alchemyLevel, hasAmplifier, 
+                                 trainingMultiplier, isRedDiamond, isDarkMatter);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
