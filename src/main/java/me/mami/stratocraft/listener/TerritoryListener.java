@@ -21,6 +21,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -30,6 +31,21 @@ import java.util.*;
 public class TerritoryListener implements Listener {
     private final TerritoryManager territoryManager;
     private final SiegeManager siegeManager;
+    // Klan kurma için chat input sistemi
+    private final Map<UUID, PendingClanCreation> waitingForClanName = new HashMap<>();
+    
+    // Bekleyen klan oluşturma verisi
+    private static class PendingClanCreation {
+        final Location crystalLoc;
+        final EnderCrystal crystalEntity;
+        final Block placeLocation;
+        
+        PendingClanCreation(Location crystalLoc, EnderCrystal crystalEntity, Block placeLocation) {
+            this.crystalLoc = crystalLoc;
+            this.crystalEntity = crystalEntity;
+            this.placeLocation = placeLocation;
+        }
+    }
 
     public TerritoryListener(TerritoryManager tm, SiegeManager sm) {
         this.territoryManager = tm;
@@ -218,22 +234,80 @@ public class TerritoryListener implements Listener {
         crystalEntity.setShowingBottom(true); // Tabanı görünsün
         crystalEntity.setBeamTarget(null);
         
-        // Klanı Sisteme Kaydet
-        String clanName = player.getName() + "_Klanı"; // Geçici isim
-        Clan newClan = territoryManager.getClanManager().createClan(clanName, player.getUniqueId());
-        if (newClan != null) {
-            newClan.setCrystalLocation(crystalLoc);
-            newClan.setCrystalEntity(crystalEntity);
-            newClan.setTerritory(new Territory(newClan.getId(), crystalLoc));
-            // hasCrystal otomatik setCrystalLocation ile true olur
-            territoryManager.setCacheDirty(); // Cache'i güncelle
-            
-            player.sendMessage("§a§lTEBRİKLER! §eKlan Kristali aktifleşti ve bölgeni mühürledi.");
-            player.getWorld().strikeLightningEffect(crystalLoc); // Görsel şimşek
-            player.getWorld().spawnParticle(Particle.TOTEM, crystalLoc, 100, 1, 1, 1, 0.5);
-            player.playSound(crystalLoc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
-            player.sendTitle("§6§lKLAN KURULDU", "§e" + clanName, 10, 70, 20);
+        // Chat input için beklet
+        waitingForClanName.put(player.getUniqueId(), new PendingClanCreation(crystalLoc, crystalEntity, placeLocation));
+        player.sendMessage("§6§l════════════════════════════");
+        player.sendMessage("§e§lKLAN KURULUYOR!");
+        player.sendMessage("§7Lütfen chat'e klan ismini yazın:");
+        player.sendMessage("§7(İptal için 'iptal' yazın)");
+        player.sendMessage("§6§l════════════════════════════");
+    }
+    
+    /**
+     * Chat input ile klan ismi al
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onChatInput(AsyncPlayerChatEvent event) {
+        Player player = event.getPlayer();
+        PendingClanCreation pending = waitingForClanName.get(player.getUniqueId());
+        
+        if (pending == null) return; // Bu oyuncu klan kurmuyor
+        
+        event.setCancelled(true); // Chat mesajını iptal et
+        
+        String message = event.getMessage().trim();
+        
+        // İptal kontrolü
+        if (message.equalsIgnoreCase("iptal") || message.equalsIgnoreCase("cancel")) {
+            waitingForClanName.remove(player.getUniqueId());
+            pending.crystalEntity.remove(); // Kristali kaldır
+            player.sendMessage("§cKlan kurma iptal edildi.");
+            return;
         }
+        
+        // İsim validasyonu
+        if (message.length() < 3 || message.length() > 16) {
+            player.sendMessage("§cKlan ismi 3-16 karakter arasında olmalı!");
+            return;
+        }
+        
+        // Özel karakter kontrolü
+        if (!message.matches("^[a-zA-Z0-9_]+$")) {
+            player.sendMessage("§cKlan ismi sadece harf, rakam ve alt çizgi içerebilir!");
+            return;
+        }
+        
+        // Aynı isimde klan var mı?
+        boolean nameExists = territoryManager.getClanManager().getAllClans().stream()
+            .anyMatch(c -> c.getName().equalsIgnoreCase(message));
+        
+        if (nameExists) {
+            player.sendMessage("§cBu isimde bir klan zaten var!");
+            return;
+        }
+        
+        // Main thread'de klanı oluştur
+        org.bukkit.Bukkit.getScheduler().runTask(Main.getInstance(), () -> {
+            Clan newClan = territoryManager.getClanManager().createClan(message, player.getUniqueId());
+            if (newClan != null) {
+                newClan.setCrystalLocation(pending.crystalLoc);
+                newClan.setCrystalEntity(pending.crystalEntity);
+                newClan.setTerritory(new Territory(newClan.getId(), pending.crystalLoc));
+                newClan.setHasCrystal(true); // Kristal var
+                territoryManager.setCacheDirty(); // Cache'i güncelle
+                
+                player.sendMessage("§a§lTEBRİKLER! §eKlan Kristali aktifleşti ve bölgeni mühürledi.");
+                player.getWorld().strikeLightningEffect(pending.crystalLoc); // Görsel şimşek
+                player.getWorld().spawnParticle(Particle.TOTEM, pending.crystalLoc, 100, 1, 1, 1, 0.5);
+                player.playSound(pending.crystalLoc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
+                player.sendTitle("§6§lKLAN KURULDU", "§e" + message, 10, 70, 20);
+            } else {
+                player.sendMessage("§cKlan oluşturulamadı! Zaten bir klanın olabilir.");
+                pending.crystalEntity.remove(); // Kristali kaldır
+            }
+            
+            waitingForClanName.remove(player.getUniqueId());
+        });
     }
     
     // Flood Fill Algoritması ile Çit Kontrolü

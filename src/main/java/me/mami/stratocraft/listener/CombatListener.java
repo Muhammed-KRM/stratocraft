@@ -1,5 +1,6 @@
 package me.mami.stratocraft.listener;
 
+import me.mami.stratocraft.manager.AllianceManager;
 import me.mami.stratocraft.manager.ClanManager;
 import me.mami.stratocraft.model.Clan;
 import org.bukkit.entity.Entity;
@@ -8,13 +9,19 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.util.Vector;
 
 public class CombatListener implements Listener {
     private final ClanManager clanManager;
+    private AllianceManager allianceManager;
 
     public CombatListener(ClanManager cm) {
         this.clanManager = cm;
+    }
+    
+    public void setAllianceManager(AllianceManager am) {
+        this.allianceManager = am;
     }
 
     @EventHandler
@@ -61,12 +68,49 @@ public class CombatListener implements Listener {
 
         if (clanA == null || clanD == null || clanA.equals(clanD)) return;
 
+        // İttifak kontrolü: İttifaklı klanlar birbirine vuramaz (ama öldürmek ittifakı bozar)
+        if (allianceManager != null && allianceManager.hasAlliance(clanA.getId(), clanD.getId())) {
+            event.setCancelled(true);
+            attacker.sendMessage("§cİttifak üyesine saldıramazsın!");
+            return;
+        }
+
         int techA = clanA.getTechLevel();
         int techD = clanD.getTechLevel();
 
         if (techA >= techD + 2) {
             event.setCancelled(true);
             attacker.sendMessage("§4Kural İhlali! §cTeknoloji farkı çok yüksek olduğu için bu klana saldıramazsın. (Fark: " + (techA - techD) + ")");
+        }
+    }
+    
+    /**
+     * Oyuncu öldüğünde ittifak kontrolü: Öldürmek ittifakı bozar
+     */
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        if (allianceManager == null) return;
+        
+        Player victim = event.getEntity();
+        Player killer = victim.getKiller();
+        
+        if (killer == null) return;
+        
+        Clan killerClan = clanManager.getClanByPlayer(killer.getUniqueId());
+        Clan victimClan = clanManager.getClanByPlayer(victim.getUniqueId());
+        
+        if (killerClan == null || victimClan == null || killerClan.equals(victimClan)) return;
+        
+        // İttifak var mı kontrol et
+        if (allianceManager.hasAlliance(killerClan.getId(), victimClan.getId())) {
+            // İttifakı boz (ceza uygulanır)
+            java.util.List<me.mami.stratocraft.model.Alliance> alliances = allianceManager.getAlliances(killerClan.getId());
+            for (me.mami.stratocraft.model.Alliance alliance : alliances) {
+                if (alliance.involvesClan(victimClan.getId()) && alliance.isActive()) {
+                    allianceManager.breakAlliance(alliance.getId(), killerClan.getId());
+                    break;
+                }
+            }
         }
     }
 }

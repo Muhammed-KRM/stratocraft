@@ -8,12 +8,21 @@ import java.util.*;
 public class ClanManager {
     private final Map<UUID, Clan> clans = new HashMap<>();
     private final Map<UUID, UUID> playerClanMap = new HashMap<>();
+    private TerritoryManager territoryManager; // Cache güncellemesi için
+
+    public void setTerritoryManager(TerritoryManager tm) {
+        this.territoryManager = tm;
+    }
 
     public Clan createClan(String name, UUID leader) {
         if (getClanByPlayer(leader) != null) return null;
         Clan c = new Clan(name, leader);
         clans.put(c.getId(), c);
         playerClanMap.put(leader, c.getId());
+        // Cache'i güncelle
+        if (territoryManager != null) {
+            territoryManager.setCacheDirty();
+        }
         return c;
     }
 
@@ -43,7 +52,10 @@ public class ClanManager {
         clan.getMembers().keySet().forEach(playerClanMap::remove);
         clans.remove(clan.getId());
         Bukkit.broadcastMessage("§c" + clan.getName() + " klanı dağıtıldı.");
-        // Cache güncellemesi TerritoryManager'da yapılmalı (setCacheDirty çağrılmalı)
+        // Cache'i güncelle
+        if (territoryManager != null) {
+            territoryManager.setCacheDirty();
+        }
     }
     
     // DataManager için

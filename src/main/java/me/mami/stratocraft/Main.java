@@ -77,6 +77,7 @@ public class Main extends JavaPlugin {
         itemManager.init();
         clanManager = new ClanManager();
         territoryManager = new TerritoryManager(clanManager);
+        clanManager.setTerritoryManager(territoryManager); // Cache güncellemesi için
         batteryManager = new BatteryManager(this);
         siegeManager = new SiegeManager();
         disasterManager = new DisasterManager(this);
@@ -115,7 +116,9 @@ public class Main extends JavaPlugin {
         BatteryListener batteryListener = new BatteryListener(batteryManager, territoryManager, researchManager);
         batteryListener.setTrainingManager(trainingManager);
         Bukkit.getPluginManager().registerEvents(batteryListener, this);
-        Bukkit.getPluginManager().registerEvents(new CombatListener(clanManager), this);
+        CombatListener combatListener = new CombatListener(clanManager);
+        combatListener.setAllianceManager(allianceManager);
+        Bukkit.getPluginManager().registerEvents(combatListener, this);
         Bukkit.getPluginManager().registerEvents(new SurvivalListener(missionManager), this);
         Bukkit.getPluginManager().registerEvents(new TerritoryListener(territoryManager, siegeManager), this);
         Bukkit.getPluginManager().registerEvents(new StructureActivationListener(clanManager, territoryManager), this); // YAPI
@@ -242,7 +245,7 @@ public class Main extends JavaPlugin {
                 }
             }
         }.runTaskTimer(this, 0L, 5L); // Her 5 tickte bir (0.25 saniye)
-        new MobRideTask(mobManager).runTaskTimer(this, 1L, 1L);
+        new MobRideTask(mobManager).runTaskTimer(this, 5L, 5L); // Performans için 5 tick (0.25 saniye)
         new DrillTask(territoryManager).runTaskTimer(this, configManager.getDrillInterval(),
                 configManager.getDrillInterval());
         new CropTask(territoryManager).runTaskTimer(this, 40L, 40L); // Her 2 saniye

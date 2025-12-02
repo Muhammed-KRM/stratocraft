@@ -76,7 +76,13 @@ Blokları belirli bir sırayla yere koyarsın, eline yakıtı alırsın ve siste
 2. Minimum 10x10 kapalı alan çevrele (maksimum limit yok)
 3. İçine Klan Kristali yerleştir
 4. Klan kuruldu!
+5. ⛔ 24 saat başlangıç koruması aktif!
 ```
+
+**Başlangıç Koruması (Grace Period)**:
+- Yeni kurulan klanlar **24 saat** boyunca saldırıya karşı korunur
+- Bu süre içinde klan güvenli bir şekilde gelişebilir
+- Grace period süresi dolduktan sonra normal savaş kuralları geçerli olur
 
 **Bölge Korumaları**:
 - Düşman klanlar blok kıramaz
@@ -97,6 +103,8 @@ Klan A (Seviye 5) → Klan B (Seviye 1):
 ```
 
 **Rütbe Sistemi**: Lider → General → Üye → Acemi (her rütbenin farklı yetkileri var)
+
+**İttifak Sistemi**: Klanlar arası kalıcı anlaşmalar. İki lider elinde Elmas ile ritüel yaparak ittifak kurulur. İttifaklı klanlara saldırılamaz; ihlal edilirse ağır ceza uygulanır (klan bakiyesinin %20'si + Hain etiketi). Detaylar için `01_klan_sistemi.md` dosyasına bakın.
 
 ---
 
@@ -221,6 +229,7 @@ Derinlerde sıradan elmas değil, **Titanyum** ve **Kızıl Elmas** gibi yeni ce
 - **Yetki**: Sadece General ve Lider savaş açabilir
 - **Aktif Üye**: Klanın %35'i aktif olmalı
 - **General**: En az bir General aktif olmalı
+- **Savunan Klan**: Karşı klandan en az 1 kişi online olmalı (offline baskın önleme)
 
 **Kuşatma Silahları**:
 - **Balista**: Hızlı atış, ok fırlatır
@@ -374,9 +383,9 @@ Seviye 5 (10000+): Efsanevi moblar, Kızıl Elmas
 
 ### 3. Kaynak Yönetimi
 
-- Offline koruma için kristale yakıt ekle (Kömür, Kükürt)
-- Bataryalar için yakıt hazır tut (Elmas, Kızıl Elmas)
-- Yapılar için boss malzemeleri topla
+- **Offline Koruma**: Klan üyeleri offline iken kristale yakıt ekle (Kömür, Kükürt, Karanlık Madde). Her saldırıda 1 birim yakıt tüketilir, maksimum 12 saat koruma.
+- **Bataryalar**: Yakıt hazır tut (Elmas, Kızıl Elmas, Karanlık Madde)
+- **Yapılar**: Boss malzemeleri topla
 
 **Ekonomi**: Kontratlar ve kervanlar ile para kazan!
 
@@ -416,7 +425,6 @@ Bu döküman, Stratocraft'ın temel felsefesini ve amacını anlatır. Detaylı 
 - **18_ureme_sistemi.md**: Çiftleştirme, üreme tesisleri, yumurta
 - **19_zorluk_sistemi.md**: Zorluk bölgeleri, mob/maden kısıtlamaları
 - **20_admin_komutlari.md**: Admin komutları, test araçları
-- **21_ittifak_sistemi.md**: İttifak sistemi, ritüeller, ihlal ve ceza
 
 ---
 

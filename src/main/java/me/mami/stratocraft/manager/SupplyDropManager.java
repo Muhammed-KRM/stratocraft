@@ -54,7 +54,15 @@ public class SupplyDropManager {
         Location spawnLoc = world.getSpawnLocation();
         int x = spawnLoc.getBlockX() + random.nextInt(2000) - 1000;
         int z = spawnLoc.getBlockZ() + random.nextInt(2000) - 1000;
-        int groundY = world.getHighestBlockYAt(x, z);
+        
+        // Güvenli Y koordinatı bul (sıvı ve geçersiz blok kontrolü)
+        int groundY = findSafeGroundY(world, x, z);
+        if (groundY <= 0) {
+            // Geçersiz konum, tekrar dene
+            plugin.getLogger().warning("Supply Drop için geçersiz konum bulundu, atlanıyor.");
+            return;
+        }
+        
         int dropY = groundY + 50; // 50 blok yukarıdan
 
         Location dropLoc = new Location(world, x + 0.5, dropY, z + 0.5);
@@ -75,7 +83,11 @@ public class SupplyDropManager {
         // Eğer groundLocation verilmemişse, targetLocation'dan hesapla
         Location groundLoc;
         if (groundLocation == null) {
-            int groundY = world.getHighestBlockYAt(targetLocation.getBlockX(), targetLocation.getBlockZ());
+            int groundY = findSafeGroundY(world, targetLocation.getBlockX(), targetLocation.getBlockZ());
+            if (groundY <= 0) {
+                plugin.getLogger().warning("Supply Drop için geçersiz konum bulundu, atlanıyor.");
+                return;
+            }
             groundLoc = new Location(world, targetLocation.getBlockX(), groundY + 1, targetLocation.getBlockZ());
         } else {
             groundLoc = groundLocation;
@@ -257,5 +269,46 @@ public class SupplyDropManager {
                 }
             }
         }.runTaskLater(plugin, 1L); // 1 tick sonra çalıştır
+    }
+    
+    /**
+     * Güvenli Y koordinatı bul (sıvı ve geçersiz blok kontrolü)
+     */
+    private int findSafeGroundY(World world, int x, int z) {
+        int groundY = world.getHighestBlockYAt(x, z);
+        
+        // Geçersiz Y kontrolü
+        if (groundY <= 0 || groundY >= world.getMaxHeight()) {
+            return -1;
+        }
+        
+        // Sıvı kontrolü: Eğer en üst blok su veya lav ise, bir altına bak
+        org.bukkit.block.Block topBlock = world.getBlockAt(x, groundY, z);
+        if (topBlock.getType() == Material.WATER || 
+            topBlock.getType() == Material.LAVA ||
+            topBlock.getType() == Material.KELP ||
+            topBlock.getType() == Material.SEAGRASS) {
+            // Sıvı üzerinde, bir altına bak
+            if (groundY > 0) {
+                groundY--;
+            } else {
+                return -1; // Geçersiz
+            }
+        }
+        
+        // Blok geçerliliği kontrolü: Hava veya geçici bloklar (yaprak, çimen vb.) olabilir
+        org.bukkit.block.Block finalBlock = world.getBlockAt(x, groundY, z);
+        if (finalBlock.getType() == Material.AIR || 
+            finalBlock.getType() == Material.CAVE_AIR ||
+            finalBlock.getType() == Material.VOID_AIR) {
+            // Hava bloğu, bir altına bak
+            if (groundY > 0) {
+                groundY--;
+            } else {
+                return -1; // Geçersiz
+            }
+        }
+        
+        return groundY;
     }
 }
