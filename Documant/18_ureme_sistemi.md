@@ -57,16 +57,28 @@ Eğitilmiş canlıları çiftleştirerek yavru üret! **Memeli canlılar** direk
 
 ## 🏭 ÇİFTLEŞTİRME TESİSLERİ
 
+**YENİ ÖZELLİK**: Artık üreme tesisleri **seviyeli** ve **Üreme Çekirdeği** ile çalışıyor!
+
+### Üreme Çekirdeği Nedir?
+
+**Üreme Çekirdeği** (`BREEDING_CORE`), tüm üreme tesislerinin merkezinde bulunan özel bir bloktur. Bu çekirdek:
+- Admin komutu ile verilebilir: `/scadmin give tool breeding_core`
+- Yerleştirildiğinde `BEACON` bloğu olarak görünür
+- Tesis içindeki canlıları otomatik bulur ve çiftleştirir
+- Aktivasyon: Çekirdeğe sağ tıklayarak aktifleştirilir
+
 ### Tesis Oluşturma
 
 **Adımlar**:
 ```
-1. Uygun platform kur (seviyeye göre)
-2. Admin komutu ile tesis oluştur
-3. 1 dişi + 1 erkek canlı getir
-4. Yiyecek blokları yerleştir (en az 3)
-5. Çiftleştirme otomatik başlar
+1. Admin komutu ile tesis yapısını oluştur: /scadmin breeding build <seviye>
+2. Üreme Çekirdeği otomatik yerleştirilir (merkeze)
+3. Tesis içine 1 dişi + 1 erkek canlı getir (aynı tür)
+4. Üreme Çekirdeği'ne sağ tıkla
+5. Sistem otomatik olarak uygun çifti bulur ve çiftleştirme başlar
 ```
+
+**Önemli**: Eğer tesis içinde 2'den fazla canlı varsa, sistem rastgele bir erkek ve bir dişi seçer.
 
 ---
 
@@ -74,19 +86,15 @@ Eğitilmiş canlıları çiftleştirerek yavru üret! **Memeli canlılar** direk
 
 **Süre**: 1 gün (24 saat)
 
-**Platform**: Basit ahır yapısı
+**Platform**: 3x3 Hay Bale + Merkez Üreme Çekirdeği
 
-**Yiyecek Gereksinimleri**:
 ```
-En az 3 yiyecek bloğu (3x3 alan içinde):
-- Hay Bale (Saman Balyası)
-- Wheat (Buğday)
-- Carrots (Havuç)
-- Potatoes (Patates)
-- Beetroots (Pancar)
-- Melon (Karpuz)
-- Pumpkin (Balkabağı)
+[H][H][H]
+[H][C][H]    H = Hay Bale
+[H][H][H]    C = Üreme Çekirdeği (BEACON bloğu)
 ```
+
+**Admin Komutu**: `/scadmin breeding build 1`
 
 ---
 
@@ -94,9 +102,17 @@ En az 3 yiyecek bloğu (3x3 alan içinde):
 
 **Süre**: 2 gün (48 saat)
 
-**Platform**: Gelişmiş ahır
+**Platform**: 5x5 Hay Bale + Merkez Üreme Çekirdeği
 
-**Yiyecek Gereksinimleri**: Aynı (en az 3 blok)
+```
+[H][H][H][H][H]
+[H][ ][ ][ ][H]
+[H][ ][C][ ][H]    H = Hay Bale
+[H][ ][ ][ ][H]    C = Üreme Çekirdeği (BEACON bloğu)
+[H][H][H][H][H]    [ ] = Boş
+```
+
+**Admin Komutu**: `/scadmin breeding build 2`
 
 ---
 
@@ -104,9 +120,19 @@ En az 3 yiyecek bloğu (3x3 alan içinde):
 
 **Süre**: 3 gün (72 saat)
 
-**Platform**: Profesyonel üreme tesisi
+**Platform**: 7x7 Hay Bale + Merkez Üreme Çekirdeği
 
-**Yiyecek Gereksinimleri**: Aynı (en az 3 blok)
+```
+[H][H][H][H][H][H][H]
+[H][ ][ ][ ][ ][ ][H]
+[H][ ][ ][ ][ ][ ][H]
+[H][ ][ ][C][ ][ ][H]    H = Hay Bale
+[H][ ][ ][ ][ ][ ][H]    C = Üreme Çekirdeği (BEACON bloğu)
+[H][ ][ ][ ][ ][ ][H]    [ ] = Boş
+[H][H][H][H][H][H][H]
+```
+
+**Admin Komutu**: `/scadmin breeding build 3`
 
 ---
 
@@ -114,9 +140,9 @@ En az 3 yiyecek bloğu (3x3 alan içinde):
 
 **Süre**: 4 gün (96 saat)
 
-**Platform**: İleri seviye tesis
+**Platform**: 9x9 Hay Bale + Merkez Üreme Çekirdeği
 
-**Yiyecek Gereksinimleri**: Aynı (en az 3 blok)
+**Admin Komutu**: `/scadmin breeding build 4`
 
 ---
 
@@ -124,9 +150,9 @@ En az 3 yiyecek bloğu (3x3 alan içinde):
 
 **Süre**: 5 gün (120 saat)
 
-**Platform**: Efsanevi üreme tesisi
+**Platform**: 11x11 Hay Bale + Merkez Üreme Çekirdeği
 
-**Yiyecek Gereksinimleri**: Aynı (en az 3 blok)
+**Admin Komutu**: `/scadmin breeding build 5`
 
 ---
 
@@ -210,17 +236,57 @@ Yumurtlayan canlılar için özel mekanik!
 
 ---
 
+## 🔍 CİNSİYET TARAYICISI
+
+**YENİ ÖZELLİK**: Canlıların cinsiyetini görmek için **Cinsiyet Tarayıcısı** kullanılabilir!
+
+### Cinsiyet Tarayıcısı Nedir?
+
+**Cinsiyet Tarayıcısı** (`GENDER_SCANNER`), eğitilmiş canlıların cinsiyetini gösteren özel bir eşyadır.
+
+**Kullanım**:
+```
+1. Cinsiyet Tarayıcısı'nı eline al: /scadmin give tool gender_scanner
+2. Eğitilmiş bir canlıya sağ tıkla
+3. Canlının cinsiyeti chat'te gösterilir: "♂ Erkek" veya "♀ Dişi"
+```
+
+**Görünüm**: Spyglass (Dürbün) benzeri
+
+---
+
 ## ⚡ ADMIN ÖZELLİKLERİ
 
 ### Anında Tamamlama
 
-**Komut**: `/stratocraft breeding complete <location>`
+**Komut**: `/scadmin breeding complete <location>`
 
 **Etki**:
 ```
 - Çiftleştirme süresini atlar
 - Anında yavru doğar
 - Test ve hızlı üretim için
+```
+
+### Otomatik Tesis Yapımı
+
+**Komut**: `/scadmin breeding build <seviye>`
+
+**Seviyeler**: 1-5
+
+**Etki**:
+```
+- Tesis yapısını otomatik oluşturur
+- Üreme Çekirdeği'ni merkeze yerleştirir
+- Tesis seviyesini ayarlar
+```
+
+### Eşya Verme
+
+**Komutlar**:
+```
+/scadmin give tool breeding_core    → Üreme Çekirdeği
+/scadmin give tool gender_scanner   → Cinsiyet Tarayıcısı
 ```
 
 ---

@@ -39,13 +39,17 @@ Stratocraft, Minecraft için geliştirilmiş kapsamlı bir klan tabanlı savaş 
 ### Temel Özellikler
 - ✅ Klan kurma ve yönetimi
 - ✅ Bölge kontrolü ve koruması
-- ✅ Ritüel tabanlı sistemler
+- ✅ Ritüel tabanlı sistemler (Eğitim, Boss Çağırma, Üreme)
 - ✅ Özel eşyalar ve moblar
 - ✅ Yapı inşası (WorldEdit schematics)
 - ✅ Tuzak sistemi
 - ✅ Kuşatma mekaniği
 - ✅ Felaket sistemi
 - ✅ Ekonomi entegrasyonu
+- ✅ Eğitim sistemi (Eğitim Çekirdeği ile)
+- ✅ Üreme sistemi (Seviyeli tesisler, Üreme Çekirdeği)
+- ✅ Özel zırh ve silah setleri (5 seviye, 25 zırh, 25 silah)
+- ✅ Güçlü yiyecekler ve iksirler
 
 ---
 
@@ -391,6 +395,19 @@ Her yapı için farklı ritüel gereksinimleri vardır (aşağıda detaylı).
 
 ## 🎒 Özel Eşyalar
 
+**YENİ ÖZELLİKLER**:
+- **Eğitim Çekirdeği**: Tüm eğitim ritüellerinin merkezinde kullanılır
+- **Çağırma Çekirdeği**: Boss çağırma ritüellerinin merkezinde kullanılır
+- **Üreme Çekirdeği**: Üreme tesislerinin merkezinde kullanılır, otomatik çiftleştirme yapar
+- **Cinsiyet Tarayıcısı**: Eğitilmiş canlıların cinsiyetini gösterir
+- **Güçlü Yiyecekler**: Yaşam İksiri, Güç Meyvesi, Hız İksiri, Yenilenme İksiri, Güç İksiri
+- **Özel Zırhlar**: 5 seviye, her seviyede 5 varyant (toplam 25 zırh)
+- **Özel Silahlar**: 5 seviye, her seviyede 5 varyant (toplam 25 silah)
+
+Detaylı bilgi için `05_ozel_esyalar.md` dosyasına bakın.
+
+---
+
 ### Madenler
 
 #### 1. Titanyum
@@ -510,25 +527,31 @@ Her yapı için farklı ritüel gereksinimleri vardır (aşağıda detaylı).
 ### Admin Komutu ile Eşya Verme
 
 ```
-/stratocraft give <eşya_adı> [miktar]
+/scadmin give <kategori> <eşya_adı> [miktar]
 ```
+
+**Kategoriler**: `weapon`, `armor`, `material`, `tool`, `special`, `ore`, `mobdrop`, `bossitem`, `recipebook`
 
 **Örnekler:**
 ```
-/stratocraft give titanium_ingot 64
-/stratocraft give trap_core 1
-/stratocraft give titan_grapple 1
+/scadmin give material titanium_ingot 64
+/scadmin give tool trap_core 1
+/scadmin give tool taming_core 1
+/scadmin give tool breeding_core 1
+/scadmin give tool gender_scanner 1
+/scadmin give material life_elixir 10
+/scadmin give armor armor_l5_1 1
+/scadmin give weapon weapon_l5_3 1
 ```
 
-**Mevcut Eşyalar:**
-- `blueprint`, `lightning_core`, `titanium_ore`, `titanium_ingot`
-- `dark_matter`, `red_diamond`, `ruby`, `adamantite`, `star_core`
-- `flame_amplifier`, `devil_horn`, `devil_snake_eye`
-- `war_fan`, `tower_shield`, `hell_fruit`
-- `sulfur_ore`, `sulfur`, `bauxite_ore`, `bauxite_ingot`
-- `rock_salt_ore`, `rock_salt`, `mithril_ore`, `mithril_ingot`, `mithril_string`
-- `astral_ore`, `astral_crystal`
-- `rusty_hook`, `titan_grapple`, `trap_core`
+**Yeni Eşyalar:**
+- **Çekirdekler**: `taming_core`, `summon_core`, `breeding_core`
+- **Araçlar**: `gender_scanner`
+- **Yiyecekler**: `life_elixir`, `power_fruit`, `speed_elixir`, `regeneration_elixir`, `strength_elixir`
+- **Zırhlar**: `armor_l1_1` ila `armor_l5_5` (25 zırh)
+- **Silahlar**: `weapon_l1_1` ila `weapon_l5_5` (25 silah)
+
+Detaylı liste için `20_admin_komutlari.md` dosyasına bakın.
 
 ---
 

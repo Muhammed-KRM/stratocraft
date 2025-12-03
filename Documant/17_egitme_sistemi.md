@@ -83,47 +83,64 @@ Renk: Mavi (♂ Erkek) / Pembe (♀ Dişi)
 
 ## 🎯 ZORLUK SEVİYESİ RİTÜELLERİ
 
+**ÖNEMLİ DEĞİŞİKLİK**: Artık tüm eğitim ritüellerinde **Eğitim Çekirdeği** kullanılıyor! Merkez bloğa Eğitim Çekirdeği yerleştirilir ve ritüel deseni çekirdeğin altına yapılır.
+
+### Eğitim Çekirdeği Nedir?
+
+**Eğitim Çekirdeği** (`TAMING_CORE`), tüm eğitim ritüellerinin merkezinde bulunan özel bir bloktur. Bu çekirdek:
+- Admin komutu ile verilebilir: `/scadmin give tool taming_core`
+- Yerleştirildiğinde `BEACON` bloğu olarak görünür
+- Ritüel deseni çekirdeğin **altına** (1 blok aşağıya) yapılır
+- Aktivasyon itemi ile çekirdeğe sağ tıklanarak ritüel aktifleştirilir
+
+---
+
 ### Seviye 1: Basit Canlılar (0-200 blok)
 
-**Platform**: 3x3 Cobblestone + Merkez Hay Bale
+**Platform**: 3x3 Dirt/Grass Block + Merkez Eğitim Çekirdeği
 
 ```
-[C][C][C]
-[C][H][C]    C = Cobblestone
-[C][C][C]    H = Hay Bale (Merkez)
+[D][G][D]
+[G][C][G]    D = Dirt
+[D][G][D]    G = Grass Block
+             C = Eğitim Çekirdeği (BEACON bloğu)
 ```
 
 **Aktivasyon İtemi**: Wheat (Buğday)
 
 **Eğitilebilir Canlılar**: Goblin, Ork, Kurt Adam
 
+**Admin Komutu ile Otomatik Yapı**: `/scadmin tame build 1`
+
 ---
 
 ### Seviye 2: Orta Canlılar (200-1000 blok)
 
-**Platform**: 3x3 Stone + Merkez Carrots
+**Platform**: 3x3 Cobblestone + Merkez Eğitim Çekirdeği
 
 ```
-[S][S][S]
-[S][R][S]    S = Stone
-[S][S][S]    R = Carrots (Merkez)
+[C][C][C]
+[C][E][C]    C = Cobblestone
+[C][C][C]    E = Eğitim Çekirdeği (BEACON bloğu)
 ```
 
-**Aktivasyon İtemi**: Carrot (Havuç)
+**Aktivasyon İtemi**: Bread (Ekmek) - **Güncellendi!**
 
 **Eğitilebilir Canlılar**: İskelet Şövalye, Karanlık Büyücü, Dev Örümcek
+
+**Admin Komutu ile Otomatik Yapı**: `/scadmin tame build 2`
 
 ---
 
 ### Seviye 3: İleri Canlılar (1000-3000 blok)
 
-**Platform**: 5x5 Stone Bricks + Merkez Gold Block
+**Platform**: 5x5 Stone Bricks + Merkez Eğitim Çekirdeği
 
 ```
 [B][B][B][B][B]
 [B][ ][ ][ ][B]
-[B][ ][G][ ][B]    B = Stone Bricks
-[B][ ][ ][ ][B]    G = Gold Block (Merkez)
+[B][ ][E][ ][B]    B = Stone Bricks
+[B][ ][ ][ ][B]    E = Eğitim Çekirdeği (BEACON bloğu)
 [B][B][B][B][B]    [ ] = Boş
 ```
 
@@ -131,17 +148,19 @@ Renk: Mavi (♂ Erkek) / Pembe (♀ Dişi)
 
 **Eğitilebilir Canlılar**: Minotaur, Harpy, Basilisk
 
+**Admin Komutu ile Otomatik Yapı**: `/scadmin tame build 3`
+
 ---
 
 ### Seviye 4: Güçlü Canlılar (3000-5000 blok)
 
-**Platform**: 5x5 Obsidian + Merkez Emerald Block
+**Platform**: 5x5 Obsidian + Merkez Eğitim Çekirdeği
 
 ```
 [O][O][O][O][O]
 [O][ ][ ][ ][O]
 [O][ ][E][ ][O]    O = Obsidian
-[O][ ][ ][ ][O]    E = Emerald Block (Merkez)
+[O][ ][ ][ ][O]    E = Eğitim Çekirdeği (BEACON bloğu)
 [O][O][O][O][O]    [ ] = Boş
 ```
 
@@ -149,18 +168,20 @@ Renk: Mavi (♂ Erkek) / Pembe (♀ Dişi)
 
 **Eğitilebilir Canlılar**: Griffin, Wraith, Lich
 
+**Admin Komutu ile Otomatik Yapı**: `/scadmin tame build 4`
+
 ---
 
 ### Seviye 5: Efsanevi Canlılar (5000+ blok)
 
-**Platform**: 7x7 Bedrock + Merkez Beacon
+**Platform**: 7x7 Bedrock + Merkez Eğitim Çekirdeği
 
 ```
 [R][R][R][R][R][R][R]
 [R][ ][ ][ ][ ][ ][R]
 [R][ ][ ][ ][ ][ ][R]
-[R][ ][ ][B][ ][ ][R]    R = Bedrock
-[R][ ][ ][ ][ ][ ][R]    B = Beacon (Merkez)
+[R][ ][ ][E][ ][ ][R]    R = Bedrock
+[R][ ][ ][ ][ ][ ][R]    E = Eğitim Çekirdeği (BEACON bloğu)
 [R][ ][ ][ ][ ][ ][R]    [ ] = Boş
 [R][R][R][R][R][R][R]
 ```
@@ -168,6 +189,8 @@ Renk: Mavi (♂ Erkek) / Pembe (♀ Dişi)
 **Aktivasyon İtemi**: Nether Star (Nether Yıldızı)
 
 **Eğitilebilir Canlılar**: Kraken, Behemoth, Legendary Dragon
+
+**Admin Komutu ile Otomatik Yapı**: `/scadmin tame build 5`
 
 ---
 

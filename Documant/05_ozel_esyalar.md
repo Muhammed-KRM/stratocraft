@@ -221,6 +221,79 @@
 
 ---
 
+## 🏆 BOSS ÖZEL İTEMLERİ
+
+Bosslar öldürüldüğünde **%100 şansla** kendi özel itemlerini düşürürler. Bu itemler özel zırh ve silah tariflerinde kullanılır.
+
+### Seviye 1 Boss İtemleri
+
+#### 👑 Goblin Kralı Taçı (Goblin Crown)
+- **Boss**: Goblin Kralı
+- **Görünüm**: Altın Miğfer
+- **Kullanım**: Seviye 2 özel zırh/silah tariflerinde
+
+#### 🏺 Ork Şefi Amuleti (Orc Amulet)
+- **Boss**: Ork Şefi
+- **Görünüm**: Altın Elma
+- **Kullanım**: Seviye 2 özel zırh/silah tariflerinde
+
+### Seviye 2 Boss İtemleri
+
+#### ❤️ Troll Kralı Kalbi (Troll Heart)
+- **Boss**: Troll Kralı
+- **Görünüm**: Deniz Kalbi
+- **Kullanım**: Seviye 2 özel zırh/silah tariflerinde
+
+### Seviye 3 Boss İtemleri
+
+#### 🐉 Ejderha Ölçeği (Dragon Scale)
+- **Boss**: Ejderha
+- **Görünüm**: Ejderha Ölçeği
+- **Kullanım**: Seviye 3 özel zırh/silah tariflerinde
+
+#### 🦷 T-Rex Dişi (T-Rex Tooth)
+- **Boss**: T-Rex
+- **Görünüm**: Kemik
+- **Kullanım**: Seviye 3 özel zırh/silah tariflerinde
+
+#### 👁️ Cyclops Gözü (Cyclops Eye)
+- **Boss**: Cyclops
+- **Görünüm**: Ender Gözü
+- **Kullanım**: Seviye 3 özel zırh/silah tariflerinde
+
+### Seviye 4 Boss İtemleri
+
+#### ⭐ Titan Golem Çekirdeği (Titan Core)
+- **Boss**: Titan Golem
+- **Görünüm**: Nether Star
+- **Kullanım**: Seviye 4 özel zırh/silah tariflerinde
+
+#### 🔥 Phoenix Tüyü (Phoenix Feather)
+- **Boss**: Phoenix
+- **Görünüm**: Tüy
+- **Kullanım**: Seviye 4 özel zırh/silah tariflerinde
+
+#### 🐙 Kraken Dokunaçı (Kraken Tentacle)
+- **Boss**: Kraken / Cehennem Ejderi
+- **Görünüm**: Yosun
+- **Kullanım**: Seviye 4 özel zırh/silah tariflerinde
+
+### Seviye 5 Boss İtemleri
+
+#### 👹 Şeytan Lordu Boynuzu (Demon Lord Horn)
+- **Boss**: Kaos Titan / Kaos Tanrısı
+- **Görünüm**: Keçi Boynuzu
+- **Kullanım**: Seviye 5 özel zırh/silah tariflerinde
+
+#### 💜 Hiçlik Ejderi Kalbi (Void Dragon Heart)
+- **Boss**: Hiçlik Ejderi
+- **Görünüm**: Echo Shard
+- **Kullanım**: Seviye 5 özel zırh/silah tariflerinde
+
+**Not**: Bu itemler sadece boss öldürüldüğünde düşer ve özel zırh/silah tariflerinde kullanılır.
+
+---
+
 ## 🗡️ ÖZEL SİLAHLAR VE ARAÇLAR
 
 ### 📜 Mühendis Şeması (Blueprint Paper)
@@ -241,10 +314,10 @@
 
 **Craft**:
 ```
-[F][F][F]
-[F][S][F]    F = Feather
-[B][S][B]    S = Stick
-             B = Blaze Powder
+[I][G][I]
+[S]   [S]    I = Demir Külçe
+[I][G][I]    G = Altın Külçe
+             S = İp
 ```
 
 **Kullanım**:
@@ -256,9 +329,13 @@
 
 ### 🛡️ Kule Kalkanı (Tower Shield)
 
-**Görünüm**: Shield benzeri ama büyük
-
-**Elde Etme**: **Tarif Kitabı + Boss malzemeleri**
+**Craft**:
+```
+[I][D][I]
+[I][W][I]    I = Demir Külçe
+[I][W][I]    D = Elmas
+             W = Tahta
+```
 
 **Kullanım**:
 - Shift tutarak kalkana saklan
@@ -737,6 +814,102 @@
 - Hafif ve hızlı
 - Gece bonusu
 - Sessiz hareket
+
+---
+
+---
+
+## ⚔️ ÖZEL ZIRH VE SİLAH SETLERİ
+
+**YENİ ÖZELLİK**: Artık oyunda **5 seviyeli özel zırh ve silah setleri** var! Her seviyede 5 farklı varyant bulunur.
+
+### 🛡️ Özel Zırhlar
+
+**Toplam**: 25 zırh (5 seviye × 5 varyant)
+
+#### Seviye 1 Zırhlar
+- **Koruma**: 6.0 zırh puanı
+- **Özellik**: Temel koruma
+- **Varyantlar**: Kask, Göğüslük, Pantolon, Bot, Ekstra Göğüslük
+
+#### Seviye 2 Zırhlar
+- **Koruma**: 10.0 zırh puanı
+- **Özellik**: Güçlü Diken Etkisi (saldırıya uğradığında saldırana %30 hasar verir)
+- **Varyantlar**: 5 farklı zırh parçası
+
+#### Seviye 3 Zırhlar
+- **Koruma**: 14.0 zırh puanı
+- **Özellikler**:
+  - 2x Hız Artışı (Speed II)
+  - Yüksek Zıplama Gücü (Jump III)
+  - Aşırı Güçlü Koruma
+- **Varyantlar**: 5 farklı zırh parçası
+
+#### Seviye 4 Zırhlar
+- **Koruma**: 18.0 zırh puanı
+- **Özellik**: Sürekli Can Yenileme (her saniye can yenilenir)
+- **Varyantlar**: 5 farklı zırh parçası
+
+#### Seviye 5 Zırhlar
+- **Koruma**: 22.0 zırh puanı
+- **Özellik**: Uçma Gücü (çift zıplama ile uçabilirsin)
+- **Varyantlar**: 5 farklı zırh parçası
+
+**Admin Komutu**: `/scadmin give armor armor_l<seviye>_<varyant>`
+
+**Örnekler**:
+```
+/scadmin give armor armor_l1_1  → Seviye 1, Varyant 1
+/scadmin give armor armor_l3_5  → Seviye 3, Varyant 5
+/scadmin give armor armor_l5_2  → Seviye 5, Varyant 2
+```
+
+---
+
+### ⚔️ Özel Silahlar
+
+**Toplam**: 25 silah (5 seviye × 5 varyant)
+
+#### Seviye 1-2 Silahlar
+- **Hasar**: Seviye 1: 5.0, Seviye 2: 8.0
+- **Özellik**: Standart silahlar
+- **Varyantlar**: Kılıç, Balta, Mızrak, Yay, Çekiç
+
+#### Seviye 3 Silahlar
+- **Hasar**: 11.0
+- **Özellik**: Patlama Atabilme
+  - Sağ tık ile 20 blok menzile patlama at
+  - Yüksek hasar verir
+- **Varyantlar**: 5 farklı silah
+
+#### Seviye 4 Silahlar
+- **Hasar**: 14.0
+- **Özellik**: Devamlı Lazer
+  - Sağ tık ile yüksek hasarlı lazer at
+  - Sürekli hasar verir
+- **Varyantlar**: 5 farklı silah
+
+#### Seviye 5 Silahlar
+- **Hasar**: 17.0
+- **Özellik**: Çok Modlu Silah
+  - **Mod 1 (Blok Fırlatma)**: Q tuşu ile blokları fırlat
+  - **Mod 2 (Duvar Yapma)**: F tuşu ile etraftaki bloklardan duvar yap
+  - **Mod 3 (Atılma/Patlama)**: Shift+Sağ Tık ile atılma ve patlama
+  - **Mod Değiştirme**: `/weaponmode <1|2|3>` komutu veya Shift+Sağ Tık ile menü
+
+**Admin Komutu**: `/scadmin give weapon weapon_l<seviye>_<varyant>`
+
+**Örnekler**:
+```
+/scadmin give weapon weapon_l1_1  → Seviye 1, Varyant 1
+/scadmin give weapon weapon_l3_3  → Seviye 3, Varyant 3
+/scadmin give weapon weapon_l5_4  → Seviye 5, Varyant 4
+```
+
+**Mod Değiştirme Komutu**: `/weaponmode <1|2|3>`
+- `1` = Blok Fırlatma modu
+- `2` = Duvar Yapma modu
+- `3` = Atılma/Patlama modu
 
 ---
 

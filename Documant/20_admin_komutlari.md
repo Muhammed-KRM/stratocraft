@@ -37,24 +37,38 @@ Admin komutları, **sadece yöneticilerin** kullanabileceği özel komutlardır.
 
 ## 🎁 EŞYA KOMUTLARI
 
-### `/scadmin give <item> [miktar]`
+### `/scadmin give <kategori> <item> [miktar]`
 
-**Açıklama**: Özel eşya ver
+**Açıklama**: Özel eşya ver (kategorize edilmiş)
 
 **KOD DOĞRULANDI**:
 ```java
-// AdminCommandExecutor.java satır 74-116
+// AdminCommandExecutor.java satır 168-220
 // Miktar kontrolü: 1-2304 (36 slot * 64 stack)
 if (amount > 2304) {
     p.sendMessage("§cMiktar çok yüksek! Maksimum 2304.");
 }
 ```
 
+**Kategoriler**:
+- `weapon` - Silahlar
+- `armor` - Zırhlar
+- `material` - Malzemeler
+- `mobdrop` - Mob dropları
+- `special` - Özel eşyalar
+- `ore` - Cevherler
+- `tool` - Araçlar
+- `bossitem` - Boss özel itemleri
+- `recipebook` - Tarif kitapları
+
 **Kullanım**:
 ```
-/scadmin give titanium_ingot 64
-/scadmin give red_diamond 10
-/scadmin give dark_matter 5
+/scadmin give material titanium_ingot 64
+/scadmin give material red_diamond 10
+/scadmin give material dark_matter 5
+/scadmin give bossitem goblin_crown 1
+/scadmin give recipebook armor_l1_1 1
+/scadmin give recipebook weapon_l5_3 1
 ```
 
 **Özel Eşyalar**:
@@ -91,8 +105,43 @@ mithril_string - Mithril İpi
 astral_ore - Astral Cevheri
 astral_crystal - Astral Kristali
 
+Yeni Güçlü Yiyecekler:
+life_elixir - Yaşam İksiri (can ve açlık fulleyen)
+power_fruit - Güç Meyvesi (5x hasar artışı, 30 saniye)
+speed_elixir - Hız İksiri (hız artışı, 2 dakika)
+regeneration_elixir - Yenilenme İksiri (can yenileme, 1 dakika)
+strength_elixir - Güç İksiri (güç artışı, 2 dakika)
+
 Tarif Kitapları:
 recipe_tectonic - Tarif: Tektonik Sabitleyici
+```
+
+**Yeni Özel Çekirdekler ve Araçlar** (tool kategorisi):
+```
+taming_core - Eğitim Çekirdeği
+summon_core - Çağırma Çekirdeği
+breeding_core - Üreme Çekirdeği
+gender_scanner - Cinsiyet Tarayıcısı
+```
+
+**Özel Zırhlar** (armor kategorisi):
+```
+armor_l1_1 ila armor_l1_5 - Seviye 1 Zırhlar (5 varyant)
+armor_l2_1 ila armor_l2_5 - Seviye 2 Zırhlar (5 varyant)
+armor_l3_1 ila armor_l3_5 - Seviye 3 Zırhlar (5 varyant)
+armor_l4_1 ila armor_l4_5 - Seviye 4 Zırhlar (5 varyant)
+armor_l5_1 ila armor_l5_5 - Seviye 5 Zırhlar (5 varyant)
+Toplam: 25 zırh
+```
+
+**Özel Silahlar** (weapon kategorisi):
+```
+weapon_l1_1 ila weapon_l1_5 - Seviye 1 Silahlar (5 varyant)
+weapon_l2_1 ila weapon_l2_5 - Seviye 2 Silahlar (5 varyant)
+weapon_l3_1 ila weapon_l3_5 - Seviye 3 Silahlar (5 varyant)
+weapon_l4_1 ila weapon_l4_5 - Seviye 4 Silahlar (5 varyant)
+weapon_l5_1 ila weapon_l5_5 - Seviye 5 Silahlar (5 varyant)
+Toplam: 25 silah
 ```
 
 **Limit**: Maksimum 2304 adet (36 slot × 64)
@@ -287,15 +336,16 @@ warning_sign - Yasaklı Bölge Tabelası
 
 ---
 
-### `/scadmin trap <tuzak_tipi>`
+### `/scadmin trap <komut> [parametreler]`
 
-**Açıklama**: Tuzak oluştur
+**Açıklama**: Tuzak yönetimi
 
-**Kullanım**:
+**Komutlar**:
 ```
-/scadmin trap fire
-/scadmin trap shock
-/scadmin trap poison
+/scadmin trap build              → Tuzak yapısını otomatik oluştur
+/scadmin trap give <oyuncu>      → Tuzak Çekirdeği ver
+/scadmin trap list               → Aktif tuzakları listele
+/scadmin trap remove <x> <y> <z> → Tuzak kaldır
 ```
 
 **Tuzak Tipleri**:
@@ -305,6 +355,74 @@ shock - Şok Tuzağı
 poison - Zehir Tuzağı
 freeze - Donma Tuzağı
 explosive - Patlayıcı Tuzak
+```
+
+---
+
+### `/scadmin tame <komut> [parametreler]`
+
+**Açıklama**: Eğitim sistemi yönetimi
+
+**Komutlar**:
+```
+/scadmin tame build <seviye>     → Eğitim ritüeli yapısını otomatik oluştur
+/scadmin tame pattern <seviye>   → Ritüel desenini göster
+/scadmin tame facility <komut>   → Eğitim tesisi yönetimi
+```
+
+**Seviyeler**: 1-5
+
+**Örnekler**:
+```
+/scadmin tame build 1  → Seviye 1 eğitim ritüeli yapısı
+/scadmin tame build 5  → Seviye 5 eğitim ritüeli yapısı
+```
+
+---
+
+### `/scadmin boss <komut> [parametreler]`
+
+**Açıklama**: Boss sistemi yönetimi
+
+**Komutlar**:
+```
+/scadmin boss build <boss_tipi>  → Boss ritüeli yapısını otomatik oluştur
+/scadmin boss spawn <boss_tipi>  → Boss spawn et
+```
+
+**Boss Tipleri**:
+```
+goblin_king, orc_chief, troll_king
+dragon, trex, cyclops
+titan_golem, hell_dragon, hydra, phoenix
+void_dragon, chaos_titan, chaos_god
+```
+
+**Örnekler**:
+```
+/scadmin boss build goblin_king  → Goblin Kralı ritüeli yapısı
+/scadmin boss build dragon       → Ejderha ritüeli yapısı
+```
+
+---
+
+### `/scadmin breeding <komut> [parametreler]`
+
+**Açıklama**: Üreme sistemi yönetimi
+
+**Komutlar**:
+```
+/scadmin breeding build <seviye>     → Üreme tesisi yapısını otomatik oluştur
+/scadmin breeding complete <location> → Çiftleştirmeyi anında tamamla
+/scadmin breeding create <seviye>    → Üreme tesisi oluştur
+```
+
+**Seviyeler**: 1-5
+
+**Örnekler**:
+```
+/scadmin breeding build 1  → Seviye 1 üreme tesisi yapısı
+/scadmin breeding build 5  → Seviye 5 üreme tesisi yapısı
 ```
 
 ---
@@ -389,6 +507,34 @@ if (!overflow.isEmpty()) {
 /scadmin give flame_amplifier 5
 /scadmin give tower_shield 1
 ```
+
+---
+
+---
+
+## 🎮 YENİ ÖZELLİKLER
+
+### Silah Modu Değiştirme
+
+**Komut**: `/weaponmode <1|2|3>`
+
+**Açıklama**: Seviye 5 özel silahların modunu değiştir
+
+**Modlar**:
+```
+1 - Blok Fırlatma modu (Q tuşu ile blok fırlat)
+2 - Duvar Yapma modu (F tuşu ile duvar yap)
+3 - Atılma/Patlama modu (Shift+Sağ Tık ile atılma)
+```
+
+**Kullanım**:
+```
+/weaponmode 1  → Blok Fırlatma moduna geç
+/weaponmode 2  → Duvar Yapma moduna geç
+/weaponmode 3  → Atılma/Patlama moduna geç
+```
+
+**Alternatif**: Shift+Sağ Tık ile mod seçim menüsü açılır
 
 ---
 

@@ -341,21 +341,48 @@ Klandan Ayrıl:
 
 ## 🐉 BOSS ÇAĞIRMA RİTÜELLERİ
 
-Bosslar, özel blok desenleri ve aktifleştirme itemları ile çağrılabilir. Her boss'un kendine özel ritüel deseni vardır.
+**YENİ ÖZELLİK**: Artık tüm boss ritüellerinde **Çağırma Çekirdeği** kullanılıyor!
+
+### Çağırma Çekirdeği Nedir?
+
+**Çağırma Çekirdeği** (`SUMMON_CORE`), tüm boss ritüellerinin merkezinde bulunan özel bir bloktur. Bu çekirdek:
+- Admin komutu ile verilebilir: `/scadmin give tool summon_core`
+- Yerleştirildiğinde `END_CRYSTAL` bloğu olarak görünür
+- Ritüel deseni çekirdeğin **altına** (1 blok aşağıya) yapılır
+- Aktivasyon itemi ile çekirdeğe sağ tıklanarak boss çağrılır
+- Hangi boss çağrılacağı aktivasyon itemine göre belirlenir
 
 ### Genel Adımlar
 
 **Tüm Boss Ritüelleri İçin:**
 ```
-1. Boss'un ritüel desenini yere yerleştir
-2. Merkez bloğu doğru yere koy
+1. Çağırma Çekirdeği'ni yerleştir (admin komutu veya manuel)
+2. Boss'un ritüel desenini çekirdeğin altına yerleştir
 3. Tüm blokların doğru olduğundan emin ol
 4. Eline aktifleştirme item'ını al
-5. Merkez bloğa SAĞ TIKLA
+5. Çağırma Çekirdeği'ne SAĞ TIKLA
 6. Boss spawn olur!
 ```
 
 **Cooldown**: Her ritüel konumu için 1 dakika cooldown var.
+
+**Admin Komutu ile Otomatik Yapı**: `/scadmin boss build <boss_tipi>`
+
+**Boss Drop Sistemi**:
+- Boss öldürüldüğünde **%100 şansla** kendi özel itemi düşer
+- Boss seviyesine göre **%60-100 şansla** özel zırh/silah tarif kitapları düşer (1-3 adet)
+- Boss seviyesine göre **%40-90 şansla** yapı tarif kitapları düşer
+
+**Boss Özel İtemleri**:
+- Seviye 1: Goblin Kralı Taçı, Ork Şefi Amuleti
+- Seviye 2: Troll Kralı Kalbi
+- Seviye 3: Ejderha Ölçeği, T-Rex Dişi, Cyclops Gözü
+- Seviye 4: Titan Golem Çekirdeği, Phoenix Tüyü, Kraken Dokunaçı
+- Seviye 5: Şeytan Lordu Boynuzu, Hiçlik Ejderi Kalbi
+
+**Tarif Kitapları**:
+- Her boss seviyesine göre ilgili zırh/silah tarif kitapları düşer
+- Yapı tarif kitapları da boss seviyesine göre düşer
 
 ---
 
@@ -366,7 +393,7 @@ Bosslar, özel blok desenleri ve aktifleştirme itemları ile çağrılabilir. H
 **Ritüel Deseni:**
 ```
 C C C
-C G C  (C = Cobblestone, G = Gold Block)
+C E C  (C = Cobblestone, E = Çağırma Çekirdeği - END_CRYSTAL)
 C C C
 ```
 
@@ -374,12 +401,14 @@ C C C
 
 **Adımlar:**
 ```
-1. 3x3 Cobblestone platform oluştur
-2. Merkeze Gold Block koy
+1. Çağırma Çekirdeği'ni yerleştir (merkeze)
+2. 3x3 Cobblestone platform oluştur (çekirdeğin altına)
 3. Eline Rotten Flesh al
-4. Gold Block'a SAĞ TIKLA
+4. Çağırma Çekirdeği'ne SAĞ TIKLA
 5. Goblin Kralı spawn olur!
 ```
+
+**Admin Komutu**: `/scadmin boss build goblin_king`
 
 ---
 
@@ -388,7 +417,7 @@ C C C
 **Ritüel Deseni:**
 ```
 S S S
-S I S  (S = Stone, I = Iron Block)
+S E S  (S = Stone, E = Çağırma Çekirdeği - END_CRYSTAL)
 S S S
 ```
 
@@ -396,12 +425,14 @@ S S S
 
 **Adımlar:**
 ```
-1. 3x3 Stone platform oluştur
-2. Merkeze Iron Block koy
+1. Çağırma Çekirdeği'ni yerleştir (merkeze)
+2. 3x3 Stone platform oluştur (çekirdeğin altına)
 3. Eline Iron Sword al
-4. Iron Block'a SAĞ TIKLA
+4. Çağırma Çekirdeği'ne SAĞ TIKLA
 5. Ork Şefi spawn olur!
 ```
+
+**Admin Komutu**: `/scadmin boss build orc_chief`
 
 ---
 
@@ -699,7 +730,7 @@ N B B B B B B B N
 
 ## 🐾 CANLI EĞİTME RİTÜELLERİ
 
-Eğitilebilir canlılar, özel ritüel desenleri ve aktifleştirme itemları ile eğitilebilir. Detaylı bilgi için `17_egitme_sistemi.md` dosyasına bakın.
+**YENİ ÖZELLİK**: Artık tüm eğitim ritüellerinde **Eğitim Çekirdeği** kullanılıyor! Detaylı bilgi için `17_egitme_sistemi.md` dosyasına bakın.
 
 ### Genel Adımlar
 
@@ -709,15 +740,17 @@ Eğitilebilir canlılar, özel ritüel desenleri ve aktifleştirme itemları ile
    → Merkeze yakın = Seviye 1
    → Merkeze uzak = Seviye 5
 
-2. Ritüel platformunu kur (seviyeye göre)
+2. Eğitim Çekirdeği'ni yerleştir (merkeze)
 
-3. Canlıyı platformun üzerine getir
+3. Ritüel platformunu kur (seviyeye göre, çekirdeğin altına)
 
-4. Eline aktivasyon itemini al
+4. Canlıyı platformun üzerine getir
 
-5. Merkez bloğa SAĞ TIKLA
+5. Eline aktivasyon itemini al
 
-6. SONUÇ:
+6. Eğitim Çekirdeği'ne SAĞ TIKLA
+
+7. SONUÇ:
    - Canlı eğitilir
    - Cinsiyet belirlenir (♂/♀)
    - Parıldama efekti
@@ -725,6 +758,8 @@ Eğitilebilir canlılar, özel ritüel desenleri ve aktifleştirme itemları ile
 ```
 
 **Cooldown**: 30 saniye (ritüel başına)
+
+**Admin Komutu ile Otomatik Yapı**: `/scadmin tame build <seviye>`
 
 ---
 
