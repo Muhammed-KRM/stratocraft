@@ -631,6 +631,8 @@ public class BatteryListener implements Listener {
         
         // Ateşlendikten sonra bataryayı sil
         batteryManager.removeBattery(player, slot);
+        }
+    }
     }
     
     /**

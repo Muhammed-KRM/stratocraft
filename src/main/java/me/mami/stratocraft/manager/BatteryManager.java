@@ -1,7 +1,7 @@
 package me.mami.stratocraft.manager;
 
 import me.mami.stratocraft.Main;
-import me.mami.stratocraft.model.BossData;
+import me.mami.stratocraft.manager.BossManager.BossData;
 import me.mami.stratocraft.model.Clan;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
