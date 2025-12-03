@@ -61,6 +61,57 @@ YASAK yerler:
 
 ---
 
+## ⚙️ YAPI AKTİVASYON SİSTEMİ
+
+### 🔧 Aktivasyon Yöntemi
+
+**ÖNEMLİ**: Tüm yapı aktivasyonları için **Shift + Sağ Tık** gereklidir!
+
+**Neden?**
+- Normal Minecraft bloklarının kullanımını engellemez
+- Örs (Anvil), Büyü Masası (Enchanting Table), Ender Sandığı gibi bloklar normal kullanımda çalışır
+- Sadece yapı aktivasyonu için shift+sağ tık yapılmalıdır
+
+**Aktivasyon Adımları**:
+```
+1. Elinde "Blueprint" (Plan) item'ı olmalı
+2. Yapı desenini manuel olarak kur
+3. Merkez bloğa Shift + Sağ Tık yap
+4. Sistem deseni kontrol eder
+5. Doğruysa → Yapı aktif olur!
+```
+
+### 🚫 Kaldırılan Özellikler
+
+**1. Fener (LANTERN) ile Şifa Kulesi**:
+- ❌ **KALDIRILDI**: Fener ile sağ tıklama bug'a neden oluyordu
+- Artık fener normal Minecraft bloğu olarak çalışır
+- Şifa Kulesi için farklı bir aktivasyon yöntemi kullanılmalı
+
+**2. Enerji Kalkanı (Shield/Force Field) Sistemi**:
+- ❌ **KALDIRILDI**: Shield sistemi sorunlu ve bug'a neden oluyordu
+- Artık shield oluşturulamaz
+- Mevcut shield'lar kırıldığında düzgün temizlenir
+
+### 📋 Yapı Aktivasyonu İçin Gereksinimler
+
+**Gerekli Malzemeler**:
+- **Blueprint** (Plan) item'ı elinde olmalı
+- Yapı için gerekli tarif kitabı öğrenilmiş olmalı
+- Yapı deseni doğru kurulmuş olmalı
+- Klan üyesi olmalı (Recruit hariç)
+- Kendi klan bölgesinde olmalı
+
+**Aktivasyon Kontrolleri**:
+- ✅ Shift + Sağ Tık yapıldı mı?
+- ✅ Elinde Blueprint var mı?
+- ✅ Tarif kitabı öğrenilmiş mi?
+- ✅ Yapı deseni doğru mu?
+- ✅ Klan üyesi mi? (Recruit değil)
+- ✅ Kendi bölgesinde mi?
+
+---
+
 # 🏰 1. KLAN YAPILARI
 
 **Özellikler**:

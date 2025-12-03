@@ -323,17 +323,10 @@ public class DisasterManager {
      * BossBar oluştur ve güncelle
      */
     private void createBossBar(Disaster disaster) {
+        // BossBar'ı kaldır (sadece ActionBar kullanılacak)
         if (disasterBossBar != null) {
             disasterBossBar.removeAll();
-        }
-        
-        String title = "§c§l" + getDisasterDisplayName(disaster.getType()) + 
-                      " §7(Seviye " + disaster.getLevel() + ")";
-        disasterBossBar = Bukkit.createBossBar(title, BarColor.RED, BarStyle.SOLID);
-        
-        // Tüm oyunculara göster
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            disasterBossBar.addPlayer(player);
+            disasterBossBar = null;
         }
         
         // Güncelleme task'ı
@@ -343,10 +336,6 @@ public class DisasterManager {
         
         bossBarUpdateTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             if (activeDisaster == null || activeDisaster.isDead()) {
-                if (disasterBossBar != null) {
-                    disasterBossBar.removeAll();
-                    disasterBossBar = null;
-                }
                 if (bossBarUpdateTask != null) {
                     bossBarUpdateTask.cancel();
                     bossBarUpdateTask = null;
@@ -356,17 +345,11 @@ public class DisasterManager {
                 return;
             }
             
-            // Can güncelle
+            // Can ve zaman bilgisi
             double health = activeDisaster.getCurrentHealth();
             double maxHealth = activeDisaster.getMaxHealth();
-            double progress = Math.max(0, Math.min(1, health / maxHealth));
-            disasterBossBar.setProgress(progress);
-            
-            // Başlık güncelle
             String timeLeft = formatTime(activeDisaster.getRemainingTime());
             String healthText = String.format("%.0f/%.0f", health, maxHealth);
-            disasterBossBar.setTitle("§c§l" + getDisasterDisplayName(activeDisaster.getType()) + 
-                                    " §7| §c" + healthText + " §7| §e" + timeLeft);
             
             // ActionBar ile sağ üstte göster (her oyuncuya)
             // PERFORMANS OPTİMİZASYONU: getOnlinePlayers()'ı bir kez çağır
@@ -376,23 +359,29 @@ public class DisasterManager {
             for (Player player : onlinePlayers) {
                 player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
                     net.md_5.bungee.api.chat.TextComponent.fromLegacyText(actionBarText));
-                
-                // Yeni oyuncuları ekle (aynı döngüde)
-                if (!disasterBossBar.getPlayers().contains(player)) {
-                    disasterBossBar.addPlayer(player);
-                }
             }
         }, 0L, 20L); // Her saniye
     }
     
     /**
-     * Zaman formatla (ms -> dakika:saniye)
+     * Zaman formatla (ms -> dd/hh/mm/ss)
      */
     private String formatTime(long ms) {
-        long seconds = ms / 1000;
-        long minutes = seconds / 60;
-        seconds = seconds % 60;
-        return String.format("%d:%02d", minutes, seconds);
+        long totalSeconds = ms / 1000;
+        long days = totalSeconds / 86400;
+        long hours = (totalSeconds % 86400) / 3600;
+        long minutes = (totalSeconds % 3600) / 60;
+        long seconds = totalSeconds % 60;
+        
+        if (days > 0) {
+            return String.format("%02d/%02d/%02d/%02d", days, hours, minutes, seconds);
+        } else if (hours > 0) {
+            return String.format("00/%02d/%02d/%02d", hours, minutes, seconds);
+        } else if (minutes > 0) {
+            return String.format("00/00/%02d/%02d", minutes, seconds);
+        } else {
+            return String.format("00/00/00/%02d", seconds);
+        }
     }
     
     /**
@@ -510,98 +499,74 @@ public class DisasterManager {
             nextLevel = 1; // En kısa interval seviye 1
         }
         
-        // Countdown BossBar oluştur veya güncelle
-        if (countdownBossBar == null) {
-            countdownBossBar = Bukkit.createBossBar("", BarColor.YELLOW, BarStyle.SOLID);
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                countdownBossBar.addPlayer(player);
-            }
-            
-            // Güncelleme task'ı
-            if (countdownUpdateTask != null) {
-                countdownUpdateTask.cancel();
-            }
-            
-            countdownUpdateTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-                if (activeDisaster != null && !activeDisaster.isDead()) {
-                    // Aktif felaket varsa countdown'u kaldır
-                    if (countdownBossBar != null) {
-                        countdownBossBar.removeAll();
-                        countdownBossBar = null;
-                    }
-                    if (countdownUpdateTask != null) {
-                        countdownUpdateTask.cancel();
-                        countdownUpdateTask = null;
-                    }
-                    return;
-                }
-                
-                long currentElapsed = System.currentTimeMillis() - lastDisasterTime;
-                long currentNextSpawnTime = Long.MAX_VALUE;
-                int currentNextLevel = 0;
-                
-                for (int level = 1; level <= 3; level++) {
-                    long interval;
-                    switch (level) {
-                        case 1: interval = LEVEL_1_INTERVAL; break;
-                        case 2: interval = LEVEL_2_INTERVAL; break;
-                        case 3: interval = LEVEL_3_INTERVAL; break;
-                        default: continue;
-                    }
-                    
-                    long remaining = interval - currentElapsed;
-                    if (remaining > 0 && remaining < currentNextSpawnTime) {
-                        currentNextSpawnTime = remaining;
-                        currentNextLevel = level;
-                    }
-                }
-                
-                if (currentNextSpawnTime == Long.MAX_VALUE || currentNextSpawnTime <= 0) {
-                    // En kısa interval'i bul
-                    long minInterval = Math.min(LEVEL_1_INTERVAL, Math.min(LEVEL_2_INTERVAL, LEVEL_3_INTERVAL));
-                    long timeSinceLast = currentElapsed % minInterval;
-                    currentNextSpawnTime = minInterval - timeSinceLast;
-                    currentNextLevel = 1; // En kısa interval seviye 1
-                }
-                
-                if (countdownBossBar != null) {
-                    // Progress hesapla (0'dan 1'e)
-                    long maxInterval = currentNextLevel == 1 ? LEVEL_1_INTERVAL : 
-                                      currentNextLevel == 2 ? LEVEL_2_INTERVAL : LEVEL_3_INTERVAL;
-                    double progress = Math.max(0, Math.min(1, (double)currentNextSpawnTime / maxInterval));
-                    countdownBossBar.setProgress(progress);
-                    
-                    // Başlık güncelle
-                    String timeText = formatTime(currentNextSpawnTime);
-                    String levelText = "Seviye " + currentNextLevel;
-                    countdownBossBar.setTitle("§e§l⏰ Sonraki Felaket: §6" + levelText + " §7| §e" + timeText);
-                    
-                    // ActionBar ile sağ üstte göster (her oyuncuya)
-                    // PERFORMANS OPTİMİZASYONU: getOnlinePlayers()'ı bir kez çağır
-                    String actionBarText = "§e§l⏰ Sonraki Felaket: §6" + levelText + " §7| §e" + timeText;
-                    java.util.Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
-                    for (Player player : onlinePlayers) {
-                        player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
-                            net.md_5.bungee.api.chat.TextComponent.fromLegacyText(actionBarText));
-                        
-                        // Yeni oyuncuları ekle (aynı döngüde)
-                        if (!countdownBossBar.getPlayers().contains(player)) {
-                            countdownBossBar.addPlayer(player);
-                        }
-                    }
-                }
-            }, 0L, 20L); // Her saniye
+        // Countdown güncelleme task'ı (BossBar kaldırıldı, sadece ActionBar kullanılacak)
+        if (countdownBossBar != null) {
+            countdownBossBar.removeAll();
+            countdownBossBar = null;
         }
         
-        // İlk güncelleme
-        long maxInterval = nextLevel == 1 ? LEVEL_1_INTERVAL : 
-                          nextLevel == 2 ? LEVEL_2_INTERVAL : LEVEL_3_INTERVAL;
-        double progress = Math.max(0, Math.min(1, (double)nextSpawnTime / maxInterval));
-        countdownBossBar.setProgress(progress);
+        // Güncelleme task'ı
+        if (countdownUpdateTask != null) {
+            countdownUpdateTask.cancel();
+        }
         
+        countdownUpdateTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            if (activeDisaster != null && !activeDisaster.isDead()) {
+                // Aktif felaket varsa countdown'u kaldır
+                if (countdownUpdateTask != null) {
+                    countdownUpdateTask.cancel();
+                    countdownUpdateTask = null;
+                }
+                return;
+            }
+            
+            long currentElapsed = System.currentTimeMillis() - lastDisasterTime;
+            long currentNextSpawnTime = Long.MAX_VALUE;
+            int currentNextLevel = 0;
+            
+            for (int level = 1; level <= 3; level++) {
+                long interval;
+                switch (level) {
+                    case 1: interval = LEVEL_1_INTERVAL; break;
+                    case 2: interval = LEVEL_2_INTERVAL; break;
+                    case 3: interval = LEVEL_3_INTERVAL; break;
+                    default: continue;
+                }
+                
+                long remaining = interval - currentElapsed;
+                if (remaining > 0 && remaining < currentNextSpawnTime) {
+                    currentNextSpawnTime = remaining;
+                    currentNextLevel = level;
+                }
+            }
+            
+            if (currentNextSpawnTime == Long.MAX_VALUE || currentNextSpawnTime <= 0) {
+                // En kısa interval'i bul
+                long minInterval = Math.min(LEVEL_1_INTERVAL, Math.min(LEVEL_2_INTERVAL, LEVEL_3_INTERVAL));
+                long timeSinceLast = currentElapsed % minInterval;
+                currentNextSpawnTime = minInterval - timeSinceLast;
+                currentNextLevel = 1; // En kısa interval seviye 1
+            }
+            
+            // ActionBar ile sağ üstte göster (her oyuncuya)
+            String timeText = formatTime(currentNextSpawnTime);
+            String levelText = "Seviye " + currentNextLevel;
+            String actionBarText = "§e§l⏰ Sonraki Felaket: §6" + levelText + " §7| §e" + timeText;
+            java.util.Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+            for (Player player : onlinePlayers) {
+                player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                    net.md_5.bungee.api.chat.TextComponent.fromLegacyText(actionBarText));
+            }
+        }, 0L, 20L); // Her saniye
+        
+        // İlk güncelleme
         String timeText = formatTime(nextSpawnTime);
         String levelText = "Seviye " + nextLevel;
-        countdownBossBar.setTitle("§e§l⏰ Sonraki Felaket: §6" + levelText + " §7| §e" + timeText);
+        String actionBarText = "§e§l⏰ Sonraki Felaket: §6" + levelText + " §7| §e" + timeText;
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                net.md_5.bungee.api.chat.TextComponent.fromLegacyText(actionBarText));
+        }
     }
     
     // Getter/Setter

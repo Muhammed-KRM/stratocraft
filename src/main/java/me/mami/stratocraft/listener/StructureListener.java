@@ -32,6 +32,10 @@ public class StructureListener implements Listener {
     public void onBuild(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
+        
+        // BUG FIX: Shift+Sağ tık kontrolü - Normal Minecraft kullanımını engelleme
+        // Yapı aktivasyonu için shift+sağ tık gerekli (normal kullanımı engellemez)
+        if (!event.getPlayer().isSneaking()) return;
 
         Player p = event.getPlayer();
         
@@ -73,14 +77,14 @@ public class StructureListener implements Listener {
             }
         }
 
-        // 3. ŞİFA KULESİ (Tarif gerektirir)
-        else if (b.getType() == Material.LANTERN) {
-            if (checkRecipe(p, "HEALING_BEACON")) {
-                if (validator.validate(b.getLocation(), "healing_tower")) {
-                    createStructure(p, clan, b, Structure.Type.HEALING_BEACON, "Şifa Kulesi");
-                }
-            }
-        }
+        // 3. ŞİFA KULESİ (KALDIRILDI - Fener ile sağ tıklama bug'a neden oluyordu)
+        // else if (b.getType() == Material.LANTERN) {
+        //     if (checkRecipe(p, "HEALING_BEACON")) {
+        //         if (validator.validate(b.getLocation(), "healing_tower")) {
+        //             createStructure(p, clan, b, Structure.Type.HEALING_BEACON, "Şifa Kulesi");
+        //         }
+        //     }
+        // }
         
         // 4. GLOBAL PAZAR KAPISI (Tarif gerektirir)
         else if (b.getType() == Material.ENDER_CHEST) {
@@ -118,41 +122,21 @@ public class StructureListener implements Listener {
                 if (hasAncientGear && hasPiston) {
                     if (validator.validate(b.getLocation(), "auto_turret")) {
                         createStructure(p, clan, b, Structure.Type.AUTO_TURRET, "Otomatik Taret");
+                        // Malzemeleri tüket
+                        if (mainHand != null && mainHand.getType() == Material.IRON_NUGGET) {
+                            mainHand.setAmount(mainHand.getAmount() - 1);
+                        } else if (offHand != null && offHand.getType() == Material.IRON_NUGGET) {
+                            offHand.setAmount(offHand.getAmount() - 1);
+                        }
+                        if (mainHand != null && mainHand.getType() == Material.PISTON) {
+                            mainHand.setAmount(mainHand.getAmount() - 1);
+                        } else if (offHand != null && offHand.getType() == Material.PISTON) {
+                            offHand.setAmount(offHand.getAmount() - 1);
+                        }
                     }
                 } else {
                     p.sendMessage("§cOtomatik Taret için Antik Dişli ve Piston gerekiyor!");
                 }
-            }
-        }
-        
-        // 5. OTOMATİK TARET (Hurda teknolojisi - Antik Dişli + Piston ile yapılır)
-        else if (b.getType() == Material.DISPENSER) {
-            // Oyuncunun elinde Antik Dişli ve Piston var mı kontrol et
-            org.bukkit.inventory.ItemStack mainHand = p.getInventory().getItemInMainHand();
-            org.bukkit.inventory.ItemStack offHand = p.getInventory().getItemInOffHand();
-            
-            boolean hasAncientGear = mainHand != null && mainHand.getType() == Material.IRON_NUGGET && 
-                                     mainHand.getItemMeta() != null && 
-                                     mainHand.getItemMeta().getDisplayName() != null &&
-                                     mainHand.getItemMeta().getDisplayName().contains("Antik Dişli");
-            boolean hasPiston = (mainHand != null && mainHand.getType() == Material.PISTON) ||
-                                (offHand != null && offHand.getType() == Material.PISTON);
-            
-            if (hasAncientGear && hasPiston) {
-                createStructure(p, clan, b, Structure.Type.AUTO_TURRET, "Otomatik Taret");
-                // Malzemeleri tüket
-                if (mainHand != null && mainHand.getType() == Material.IRON_NUGGET) {
-                    mainHand.setAmount(mainHand.getAmount() - 1);
-                } else if (offHand != null && offHand.getType() == Material.IRON_NUGGET) {
-                    offHand.setAmount(offHand.getAmount() - 1);
-                }
-                if (mainHand != null && mainHand.getType() == Material.PISTON) {
-                    mainHand.setAmount(mainHand.getAmount() - 1);
-                } else if (offHand != null && offHand.getType() == Material.PISTON) {
-                    offHand.setAmount(offHand.getAmount() - 1);
-                }
-            } else {
-                p.sendMessage("§cOtomatik Taret için Antik Dişli ve Piston gerekli!");
             }
         }
         

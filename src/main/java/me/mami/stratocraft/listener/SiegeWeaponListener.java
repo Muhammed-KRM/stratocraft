@@ -419,79 +419,24 @@ public class SiegeWeaponListener implements Listener {
         arrow.remove(); // Oku sil
     }
 
-    // ========== ENERJİ KALKANI (FORCE FIELD) ==========
+    // ========== ENERJİ KALKANI (FORCE FIELD) - KALDIRILDI ==========
+    // Kullanıcı isteği: Fener ile sağ tıklama bug'a neden oluyordu ve güç alanı sistemi sorunlu
+    // Shield sistemi tamamen kaldırıldı
+    
+    // @EventHandler(priority = EventPriority.HIGH)
+    // public void onShieldGeneratorInteract(PlayerInteractEvent event) {
+    //     // KALDIRILDI
+    // }
 
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onShieldGeneratorInteract(PlayerInteractEvent event) {
-        // Çift el kontrolü
-        if (event.getHand() == EquipmentSlot.OFF_HAND)
-            return;
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK)
-            return;
+    // @EventHandler
+    // public void onGeneratorBreak(BlockBreakEvent event) {
+    //     // KALDIRILDI
+    // }
 
-        Block block = event.getClickedBlock();
-        if (block == null)
-            return;
-
-        // Jeneratör kontrolü: Beacon bloğu
-        if (block.getType() != Material.BEACON)
-            return;
-
-        // Can Tapınağı kontrolü - Eğer Can Tapınağı ise bu handler'ı atla
-        if (block.hasMetadata("HealingShrine"))
-            return;
-
-        // Zaten aktif bir kalkan var mı?
-        if (manager.isShieldActive(block.getLocation())) {
-            event.getPlayer().sendMessage("§cBu jeneratör zaten aktif!");
-            event.setCancelled(true);
-            return;
-        }
-
-        manager.activateShield(block.getLocation());
-        event.getPlayer().sendMessage("§b§lENERJİ KALKANI AKTİF!");
-        event.setCancelled(true); // Beacon menüsünü açmayı engelle
-    }
-
-    @EventHandler
-    public void onGeneratorBreak(BlockBreakEvent event) {
-        Block block = event.getBlock();
-
-        // Jeneratör mü?
-        if (block.getType() != Material.BEACON)
-            return;
-
-        if (manager.removeShield(block.getLocation())) {
-            Player breaker = event.getPlayer();
-            if (breaker != null) {
-                breaker.sendMessage("§eEnerji kalkanı devre dışı bırakıldı!");
-            }
-        }
-    }
-
-    @EventHandler
-    public void onPlayerMoveIntoShield(PlayerMoveEvent event) {
-        // PERFORMANS FİLTRESİ: Sadece blok değiştiyse çalış (X, Y, Z kontrolü)
-        if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
-                event.getFrom().getBlockY() == event.getTo().getBlockY() &&
-                event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
-            return; // Oyuncu sadece kafasını çevirmiş, işlem yapma
-        }
-
-        org.bukkit.Location to = event.getTo();
-        if (to == null)
-            return;
-
-        // Kalkan içine girmeye çalışıyor mu?
-        if (manager.isInsideShield(to)) {
-            org.bukkit.Location from = event.getFrom();
-            // Eğer dışarıdan içeriye giriyorsa engelle
-            if (!manager.isInsideShield(from)) {
-                event.setCancelled(true);
-                event.getPlayer().sendMessage("§cEnerji kalkanı içine giremezsin! Önce kalkanı kır veya kapıyı aç.");
-            }
-        }
-    }
+    // @EventHandler
+    // public void onPlayerMoveIntoShield(PlayerMoveEvent event) {
+    //     // KALDIRILDI
+    // }
 
     @EventHandler
     public void onProjectileHitShield(ProjectileHitEvent event) {
@@ -699,6 +644,10 @@ public class SiegeWeaponListener implements Listener {
             return;
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK)
             return;
+        
+        // BUG FIX: Shift+Sağ tık kontrolü - Normal büyü masası kullanımını engelleme
+        if (!event.getPlayer().isSneaking())
+            return;
 
         Block block = event.getClickedBlock();
         if (block == null)
@@ -730,6 +679,10 @@ public class SiegeWeaponListener implements Listener {
             return;
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK)
             return;
+        
+        // BUG FIX: Shift+Sağ tık kontrolü - Normal ender sandığı kullanımını engelleme
+        if (!event.getPlayer().isSneaking())
+            return;
 
         Block block = event.getClickedBlock();
         if (block == null)
@@ -760,6 +713,10 @@ public class SiegeWeaponListener implements Listener {
         if (event.getHand() == EquipmentSlot.OFF_HAND)
             return;
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK)
+            return;
+        
+        // BUG FIX: Shift+Sağ tık kontrolü - Normal örs kullanımını engelleme
+        if (!event.getPlayer().isSneaking())
             return;
 
         Block block = event.getClickedBlock();

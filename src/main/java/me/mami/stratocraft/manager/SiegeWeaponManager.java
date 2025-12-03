@@ -100,6 +100,10 @@ public class SiegeWeaponManager {
         List<Block> blocks = activeShields.remove(center);
         for (Block b : blocks) {
             if (b.getType() == Material.GLASS) {
+                // Metadata'yı temizle (BUG FIX: Metadata temizlenmediği için alan kalıyordu)
+                if (b.hasMetadata("ForceFieldBlock")) {
+                    b.removeMetadata("ForceFieldBlock", plugin);
+                }
                 b.setType(Material.AIR);
                 b.getWorld().spawnParticle(org.bukkit.Particle.BLOCK_CRACK, b.getLocation().add(0.5, 0.5, 0.5), 5,
                         Material.GLASS.createBlockData());
@@ -115,6 +119,15 @@ public class SiegeWeaponManager {
     public boolean isInsideShield(Location loc) {
         Block b = loc.getBlock();
         return b.hasMetadata("ForceFieldBlock");
+    }
+    
+    /**
+     * Tüm aktif shield'ları temizle (BUG FIX: Kullanıcı isteği - Shield sistemi sorunlu)
+     */
+    public void clearAllShields() {
+        for (Location center : new ArrayList<>(activeShields.keySet())) {
+            removeShield(center);
+        }
     }
 
     // ========== CLAN STRUCTURES ==========
