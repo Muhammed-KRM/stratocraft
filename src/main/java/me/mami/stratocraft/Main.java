@@ -93,6 +93,8 @@ public class Main extends JavaPlugin {
         siegeManager = new SiegeManager();
         disasterManager = new DisasterManager(this);
         batteryManager.setDisasterManager(disasterManager);
+        batteryManager.setTerritoryManager(territoryManager);
+        batteryManager.setSiegeManager(siegeManager);
         caravanManager = new CaravanManager();
         scavengerManager = new ScavengerManager();
         logisticsManager = new LogisticsManager(territoryManager);

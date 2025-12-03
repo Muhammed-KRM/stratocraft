@@ -668,7 +668,7 @@ public class ItemManager {
     private void registerArmorRecipe(int level, ArmorType type, Material baseMaterial) {
         ItemStack armor = createLeveledArmor(level, type);
         ShapedRecipe recipe = new ShapedRecipe(
-            new NamespacedKey(Main.getInstance(), "level" + level + "_" + type.name().toLowerCase(java.util.Locale.ENGLISH)),
+            new NamespacedKey(Main.getInstance(), "level" + level + "_" + type.name().toLowerCase()),
             armor
         );
         
@@ -706,7 +706,7 @@ public class ItemManager {
     private void registerArmorUpgradeRecipe(int level, ArmorType type, Material baseArmor, ItemStack upgradeMaterial) {
         ItemStack armor = createLeveledArmor(level, type);
         ShapedRecipe recipe = new ShapedRecipe(
-            new NamespacedKey(Main.getInstance(), "level" + level + "_" + type.name().toLowerCase(java.util.Locale.ENGLISH) + "_upgrade"),
+            new NamespacedKey(Main.getInstance(), "level" + level + "_" + type.name().toLowerCase() + "_upgrade"),
             armor
         );
         
@@ -1342,19 +1342,29 @@ public class ItemManager {
      * Özel silahları başlat
      */
     private void initSpecialWeapons() {
-        // Seviye 1 Silahlar
-        WEAPON_L1_1 = createSpecialWeapon(1, 1, Material.IRON_SWORD, "Demir Kılıç", "§f");
-        WEAPON_L1_2 = createSpecialWeapon(1, 2, Material.IRON_AXE, "Demir Balta", "§f");
-        WEAPON_L1_3 = createSpecialWeapon(1, 3, Material.TRIDENT, "Demir Mızrak", "§f");
-        WEAPON_L1_4 = createSpecialWeapon(1, 4, Material.BOW, "Demir Yay", "§f");
-        WEAPON_L1_5 = createSpecialWeapon(1, 5, Material.IRON_PICKAXE, "Demir Çekiç", "§f");
+        // Seviye 1 Silahlar (Her birinin farklı özelliği var)
+        WEAPON_L1_1 = createSpecialWeapon(1, 1, Material.IRON_SWORD, "Demir Hız Kılıcı", "§f", 
+            "§e• Hız Artışı", "§7  Saldırıda %20 hız artışı");
+        WEAPON_L1_2 = createSpecialWeapon(1, 2, Material.IRON_AXE, "Demir Kritik Baltası", "§f",
+            "§e• Kritik Vuruş", "§7  %15 şansla 2x hasar");
+        WEAPON_L1_3 = createSpecialWeapon(1, 3, Material.TRIDENT, "Demir Savunma Mızrağı", "§f",
+            "§e• Savunma Bonusu", "§7  Saldırıda %10 hasar azaltma");
+        WEAPON_L1_4 = createSpecialWeapon(1, 4, Material.BOW, "Demir Hızlı Yayı", "§f",
+            "§e• Hızlı Çekim", "§7  %30 daha hızlı ok atışı");
+        WEAPON_L1_5 = createSpecialWeapon(1, 5, Material.IRON_PICKAXE, "Demir Güç Çekici", "§f",
+            "§e• Güç Artışı", "§7  +2 ekstra hasar");
         
-        // Seviye 2 Silahlar
-        WEAPON_L2_1 = createSpecialWeapon(2, 1, Material.DIAMOND_SWORD, "Elmas Kılıç", "§b");
-        WEAPON_L2_2 = createSpecialWeapon(2, 2, Material.DIAMOND_AXE, "Elmas Balta", "§b");
-        WEAPON_L2_3 = createSpecialWeapon(2, 3, Material.TRIDENT, "Elmas Mızrak", "§b");
-        WEAPON_L2_4 = createSpecialWeapon(2, 4, Material.BOW, "Elmas Yay", "§b");
-        WEAPON_L2_5 = createSpecialWeapon(2, 5, Material.DIAMOND_PICKAXE, "Elmas Çekiç", "§b");
+        // Seviye 2 Silahlar (Her birinin farklı özelliği var)
+        WEAPON_L2_1 = createSpecialWeapon(2, 1, Material.DIAMOND_SWORD, "Elmas Zehir Kılıcı", "§b",
+            "§e• Zehir Etkisi", "§7  Saldırıda 3 saniye zehir");
+        WEAPON_L2_2 = createSpecialWeapon(2, 2, Material.DIAMOND_AXE, "Elmas Yavaşlatma Baltası", "§b",
+            "§e• Yavaşlatma", "§7  Saldırıda 3 saniye yavaşlatma");
+        WEAPON_L2_3 = createSpecialWeapon(2, 3, Material.TRIDENT, "Elmas Ateş Mızrağı", "§b",
+            "§e• Ateş Etkisi", "§7  Saldırıda 5 saniye ateş");
+        WEAPON_L2_4 = createSpecialWeapon(2, 4, Material.BOW, "Elmas Buz Yayı", "§b",
+            "§e• Buz Etkisi", "§7  Ok ile dondurma etkisi");
+        WEAPON_L2_5 = createSpecialWeapon(2, 5, Material.DIAMOND_PICKAXE, "Elmas Şok Çekici", "§b",
+            "§e• Şok Etkisi", "§7  Saldırıda yakındaki düşmanlara hasar");
         
         // Seviye 3 Silahlar (Patlama Atabilme - 20 blok menzil)
         WEAPON_L3_1 = createSpecialWeapon(3, 1, Material.NETHERITE_SWORD, "Netherite Patlama Kılıcı", "§5");
@@ -1370,12 +1380,22 @@ public class ItemManager {
         WEAPON_L4_4 = createSpecialWeapon(4, 4, Material.BOW, "Titanyum Lazer Yayı", "§6");
         WEAPON_L4_5 = createSpecialWeapon(4, 5, Material.NETHERITE_PICKAXE, "Titanyum Lazer Çekici", "§6");
         
-        // Seviye 5 Silahlar (Çok Modlu: Blok Fırlatma, Duvar Yapma, Atılma/Patlama)
-        WEAPON_L5_1 = createSpecialWeapon(5, 1, Material.NETHERITE_SWORD, "Efsanevi Çok Modlu Kılıç", "§d§l");
-        WEAPON_L5_2 = createSpecialWeapon(5, 2, Material.NETHERITE_AXE, "Efsanevi Çok Modlu Balta", "§d§l");
-        WEAPON_L5_3 = createSpecialWeapon(5, 3, Material.TRIDENT, "Efsanevi Çok Modlu Mızrak", "§d§l");
-        WEAPON_L5_4 = createSpecialWeapon(5, 4, Material.BOW, "Efsanevi Çok Modlu Yay", "§d§l");
-        WEAPON_L5_5 = createSpecialWeapon(5, 5, Material.NETHERITE_PICKAXE, "Efsanevi Çok Modlu Çekiç", "§d§l");
+        // Seviye 5 Silahlar (Her birinin farklı mod kombinasyonları var)
+        WEAPON_L5_1 = createSpecialWeapon(5, 1, Material.NETHERITE_SWORD, "Efsanevi Savaş Kılıcı", "§d§l",
+            "§e• Çok Modlu Silah", "§7  Shift+Sağ Tık: Mod Seçimi",
+            "§7  Mod 1: Blok Fırlatma (Q)", "§7  Mod 2: Duvar Yapma (Sağ Tık)", "§7  Mod 3: Atılma/Patlama (Sağ Tık)");
+        WEAPON_L5_2 = createSpecialWeapon(5, 2, Material.NETHERITE_AXE, "Efsanevi Yıkım Baltası", "§d§l",
+            "§e• Çok Modlu Silah", "§7  Shift+Sağ Tık: Mod Seçimi",
+            "§7  Mod 1: Blok Fırlatma (Q)", "§7  Mod 2: Dash/Patlama (Sağ Tık)", "§7  Mod 3: Atılma/Patlama (Sağ Tık)");
+        WEAPON_L5_3 = createSpecialWeapon(5, 3, Material.TRIDENT, "Efsanevi Savunma Mızrağı", "§d§l",
+            "§e• Çok Modlu Silah", "§7  Shift+Sağ Tık: Mod Seçimi",
+            "§7  Mod 1: Duvar Yapma (Sağ Tık)", "§7  Mod 2: Dash/Patlama (Sağ Tık)", "§7  Mod 3: Atılma/Patlama (Sağ Tık)");
+        WEAPON_L5_4 = createSpecialWeapon(5, 4, Material.BOW, "Efsanevi Çoklu Yay", "§d§l",
+            "§e• Çok Modlu Silah", "§7  Shift+Sağ Tık: Mod Seçimi",
+            "§7  Mod 1: Blok Fırlatma (Q)", "§7  Mod 2: Dash/Patlama (Sağ Tık)", "§7  Mod 3: Duvar Yapma (Sağ Tık)");
+        WEAPON_L5_5 = createSpecialWeapon(5, 5, Material.NETHERITE_PICKAXE, "Efsanevi Kaos Çekici", "§d§l",
+            "§e• Çok Modlu Silah", "§7  Shift+Sağ Tık: Mod Seçimi",
+            "§7  Mod 1: Atılma/Patlama (Sağ Tık)", "§7  Mod 2: Dash/Patlama (Sağ Tık)", "§7  Mod 3: Blok Fırlatma (Q)");
     }
     
     /**
@@ -1447,9 +1467,16 @@ public class ItemManager {
     }
     
     /**
-     * Özel silah oluştur
+     * Özel silah oluştur (varsayılan - özel yetenek yok)
      */
     private ItemStack createSpecialWeapon(int level, int variant, Material material, String name, String color) {
+        return createSpecialWeapon(level, variant, material, name, color, (String[]) null);
+    }
+    
+    /**
+     * Özel silah oluştur (özel yetenekler ile)
+     */
+    private ItemStack createSpecialWeapon(int level, int variant, Material material, String name, String color, String... abilities) {
         ItemStack weapon = new ItemStack(material);
         ItemMeta meta = weapon.getItemMeta();
         meta.setDisplayName(color + "§l" + name);
@@ -1461,7 +1488,15 @@ public class ItemManager {
         lore.add("");
         
         // Özel yetenekler
-        if (level >= 3) {
+        if (abilities != null && abilities.length > 0) {
+            lore.add("§6§lÖzel Yetenekler:");
+            for (String ability : abilities) {
+                if (ability != null && !ability.isEmpty()) {
+                    lore.add(ability);
+                }
+            }
+        } else if (level >= 3) {
+            // Varsayılan yetenekler (geriye dönük uyumluluk)
             lore.add("§6§lÖzel Yetenekler:");
             if (level == 3) {
                 lore.add("§e• Patlama Atabilme");
@@ -1471,9 +1506,10 @@ public class ItemManager {
                 lore.add("§7  Sağ tık ile yüksek hasarlı lazer at");
             } else if (level == 5) {
                 lore.add("§e• Çok Modlu Silah");
+                lore.add("§7  Shift+Sağ Tık: Mod Seçimi");
                 lore.add("§7  Q: Blok Fırlatma");
-                lore.add("§7  F: Duvar Yapma");
-                lore.add("§7  Shift+Sağ Tık: Atılma/Patlama");
+                lore.add("§7  Sağ Tık: Duvar Yapma");
+                lore.add("§7  Sağ Tık: Atılma/Patlama");
             }
         }
         

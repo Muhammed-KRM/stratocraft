@@ -484,6 +484,91 @@ void_dragon, chaos_titan, chaos_god
 
 ---
 
+### `/scadmin build battery <batarya_ismi>`
+
+**Açıklama**: Yeni batarya sistemi (75 batarya) - Otomatik yapı oluşturma
+
+**Kategoriler**:
+- **Saldırı Bataryaları** (`attack_*`) - 25 batarya
+- **Oluşturma Bataryaları** (`construction_*`) - 25 batarya
+- **Destek Bataryaları** (`support_*`) - 25 batarya
+
+**Seviye 1 Bataryalar** (5'er batarya):
+```
+Saldırı:
+attack_fireball_l1, attack_lightning_l1, attack_ice_ball_l1, attack_poison_arrow_l1, attack_shock_l1
+
+Oluşturma:
+construction_obsidian_wall_l1, construction_stone_bridge_l1, construction_iron_cage_l1, construction_glass_wall_l1, construction_wood_barricade_l1
+
+Destek:
+support_heal_l1, support_speed_l1, support_damage_l1, support_armor_l1, support_regeneration_l1
+```
+
+**Seviye 2 Bataryalar** (5'er batarya):
+```
+Saldırı:
+attack_double_fireball_l2, attack_chain_lightning_l2, attack_ice_storm_l2, attack_acid_rain_l2, attack_electric_net_l2
+
+Oluşturma:
+construction_obsidian_cage_l2, construction_stone_bridge_l2, construction_iron_wall_l2, construction_glass_tunnel_l2, construction_wood_castle_l2
+
+Destek:
+support_heal_l2, support_speed_l2, support_damage_l2, support_armor_l2, support_regeneration_l2
+```
+
+**Seviye 3 Bataryalar** (5'er batarya):
+```
+Saldırı:
+attack_meteor_shower_l3, attack_storm_l3, attack_ice_age_l3, attack_poison_bomb_l3, attack_lightning_storm_l3
+
+Oluşturma:
+construction_obsidian_wall_l3, construction_netherite_bridge_l3, construction_iron_prison_l3, construction_glass_tower_l3, construction_stone_castle_l3
+
+Destek:
+support_heal_l3, support_speed_l3, support_damage_l3, support_armor_l3, support_regeneration_l3
+```
+
+**Seviye 4 Bataryalar** (5'er batarya):
+```
+Saldırı:
+attack_hellfire_l4, attack_thunder_l4, attack_ice_age_l4, attack_death_cloud_l4, attack_electric_storm_l4
+
+Oluşturma:
+construction_obsidian_castle_l4, construction_netherite_bridge_l4, construction_iron_prison_l4, construction_glass_tower_l4, construction_stone_fortress_l4
+
+Destek:
+support_heal_l4, support_speed_l4, support_damage_l4, support_armor_l4, support_regeneration_l4
+```
+
+**Seviye 5 Bataryalar** (5'er batarya):
+```
+Saldırı:
+attack_mountain_destroyer_l5, attack_lava_tsunami_l5, attack_boss_killer_l5, attack_area_destroyer_l5, attack_apocalypse_l5
+
+Oluşturma:
+construction_obsidian_prison_l5, construction_netherite_bridge_l5, construction_iron_castle_l5, construction_glass_tower_l5, construction_stone_fortress_l5
+
+Destek:
+support_heal_l5, support_speed_l5, support_damage_l5, support_armor_l5, support_regeneration_l5
+```
+
+**Örnekler**:
+```
+/scadmin build battery attack_fireball_l1
+/scadmin build battery construction_obsidian_wall_l1
+/scadmin build battery support_heal_l1
+/scadmin build battery attack_mountain_destroyer_l5
+/scadmin build battery construction_netherite_bridge_l5
+/scadmin build battery support_heal_l5
+```
+
+**Tab Completion**: Tüm 75 batarya için otomatik tamamlama mevcuttur.
+
+**Not**: Komut, baktığın yere batarya yapısını otomatik olarak oluşturur ve gerekli aktivasyon item'ını verir.
+
+---
+
 ## ⚠️ ÖNEMLİ NOTLAR
 
 ### Yetki Kontrolü

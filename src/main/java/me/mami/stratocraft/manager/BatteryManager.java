@@ -32,6 +32,18 @@ public class BatteryManager {
     // Batarya aktivasyon zamanı takibi (UUID -> (Slot -> ActivationTime)) - İptal
     // edilemez süre için
     private final Map<UUID, Map<Integer, Long>> batteryActivationTimes;
+    
+    // Manager referansları (klan kontrolü için)
+    private TerritoryManager territoryManager;
+    private SiegeManager siegeManager;
+    
+    public void setTerritoryManager(TerritoryManager tm) {
+        this.territoryManager = tm;
+    }
+    
+    public void setSiegeManager(SiegeManager sm) {
+        this.siegeManager = sm;
+    }
 
     /**
      * Batarya veri sınıfı - tip ve ek bilgileri tutar
@@ -1239,5 +1251,1539 @@ public class BatteryManager {
 
         // Yüklü batarya verilerini temizle (sunucu kapanırken zaten gereksiz)
         loadedBatteries.clear();
+    }
+    
+    // ========== YENİ BATARYA SİSTEMİ - 3 KATEGORİ (75 BATARYA) ==========
+    
+    /**
+     * Batarya Kategorileri
+     */
+    public enum BatteryCategory {
+        ATTACK,      // Saldırı (Yok Etme) Bataryaları
+        CONSTRUCTION, // Oluşturma Bataryaları
+        SUPPORT      // Destek Bataryaları
+    }
+    
+    /**
+     * Batarya Tipi Enum (75 batarya için)
+     */
+    public enum BatteryType {
+        // SALDIRI BATARYALARI (Seviye 1-5, her seviyede 5)
+        // Seviye 1
+        ATTACK_FIREBALL_L1("Ateş Topu", BatteryCategory.ATTACK, 1, Material.MAGMA_BLOCK, null),
+        ATTACK_LIGHTNING_L1("Yıldırım", BatteryCategory.ATTACK, 1, Material.IRON_BLOCK, null),
+        ATTACK_ICE_BALL_L1("Buz Topu", BatteryCategory.ATTACK, 1, Material.PACKED_ICE, null),
+        ATTACK_POISON_ARROW_L1("Zehir Oku", BatteryCategory.ATTACK, 1, Material.EMERALD_BLOCK, null),
+        ATTACK_SHOCK_L1("Şok", BatteryCategory.ATTACK, 1, Material.REDSTONE_BLOCK, null),
+        
+        // Seviye 2
+        ATTACK_DOUBLE_FIREBALL_L2("Çift Ateş Topu", BatteryCategory.ATTACK, 2, Material.MAGMA_BLOCK, Material.NETHERRACK),
+        ATTACK_CHAIN_LIGHTNING_L2("Zincir Yıldırım", BatteryCategory.ATTACK, 2, Material.IRON_BLOCK, Material.GOLD_BLOCK),
+        ATTACK_ICE_STORM_L2("Buz Fırtınası", BatteryCategory.ATTACK, 2, Material.PACKED_ICE, Material.BLUE_ICE),
+        ATTACK_ACID_RAIN_L2("Asit Yağmuru", BatteryCategory.ATTACK, 2, Material.EMERALD_BLOCK, Material.SLIME_BLOCK),
+        ATTACK_ELECTRIC_NET_L2("Elektrik Ağı", BatteryCategory.ATTACK, 2, Material.REDSTONE_BLOCK, Material.LAPIS_BLOCK),
+        
+        // Seviye 3
+        ATTACK_METEOR_SHOWER_L3("Meteor Yağmuru", BatteryCategory.ATTACK, 3, Material.OBSIDIAN, Material.MAGMA_BLOCK),
+        ATTACK_STORM_L3("Fırtına", BatteryCategory.ATTACK, 3, Material.IRON_BLOCK, Material.DIAMOND_BLOCK),
+        ATTACK_ICE_AGE_L3("Buz Çağı", BatteryCategory.ATTACK, 3, Material.PACKED_ICE, Material.BLUE_ICE),
+        ATTACK_POISON_BOMB_L3("Zehir Bombası", BatteryCategory.ATTACK, 3, Material.EMERALD_BLOCK, Material.POISONOUS_POTATO),
+        ATTACK_LIGHTNING_STORM_L3("Yıldırım Fırtınası", BatteryCategory.ATTACK, 3, Material.REDSTONE_BLOCK, Material.GLOWSTONE),
+        
+        // Seviye 4
+        ATTACK_HELLFIRE_L4("Cehennem Ateşi", BatteryCategory.ATTACK, 4, Material.MAGMA_BLOCK, Material.NETHER_STAR),
+        ATTACK_THUNDER_L4("Gök Gürültüsü", BatteryCategory.ATTACK, 4, Material.IRON_BLOCK, Material.BEACON),
+        ATTACK_ICE_AGE_L4("Buz Çağı", BatteryCategory.ATTACK, 4, Material.PACKED_ICE, Material.FROSTED_ICE),
+        ATTACK_DEATH_CLOUD_L4("Ölüm Bulutu", BatteryCategory.ATTACK, 4, Material.EMERALD_BLOCK, Material.WITHER_SKELETON_SKULL),
+        ATTACK_ELECTRIC_STORM_L4("Elektrik Fırtınası", BatteryCategory.ATTACK, 4, Material.REDSTONE_BLOCK, Material.END_CRYSTAL),
+        
+        // Seviye 5
+        ATTACK_MOUNTAIN_DESTROYER_L5("Dağ Yok Edici", BatteryCategory.ATTACK, 5, Material.BEDROCK, Material.NETHER_STAR),
+        ATTACK_LAVA_TSUNAMI_L5("Lava Tufanı", BatteryCategory.ATTACK, 5, Material.BEDROCK, Material.LAVA_BUCKET),
+        ATTACK_BOSS_KILLER_L5("Boss Katili", BatteryCategory.ATTACK, 5, Material.BEDROCK, Material.DRAGON_HEAD),
+        ATTACK_AREA_DESTROYER_L5("Alan Yok Edici", BatteryCategory.ATTACK, 5, Material.BEDROCK, Material.COMMAND_BLOCK),
+        ATTACK_APOCALYPSE_L5("Kıyamet", BatteryCategory.ATTACK, 5, Material.BEDROCK, Material.END_CRYSTAL),
+        
+        // OLUŞTURMA BATARYALARI (Seviye 1-5, her seviyede 5)
+        // Seviye 1
+        CONSTRUCTION_OBSIDIAN_WALL_L1("Obsidyen Duvar", BatteryCategory.CONSTRUCTION, 1, Material.OBSIDIAN, null),
+        CONSTRUCTION_STONE_BRIDGE_L1("Taş Köprü", BatteryCategory.CONSTRUCTION, 1, Material.STONE, null),
+        CONSTRUCTION_IRON_CAGE_L1("Demir Kafes", BatteryCategory.CONSTRUCTION, 1, Material.IRON_BLOCK, null),
+        CONSTRUCTION_GLASS_WALL_L1("Cam Duvar", BatteryCategory.CONSTRUCTION, 1, Material.GLASS, null),
+        CONSTRUCTION_WOOD_BARRICADE_L1("Ahşap Barikat", BatteryCategory.CONSTRUCTION, 1, Material.OAK_PLANKS, null),
+        
+        // Seviye 2
+        CONSTRUCTION_OBSIDIAN_CAGE_L2("Obsidyen Kafes", BatteryCategory.CONSTRUCTION, 2, Material.OBSIDIAN, Material.IRON_BLOCK),
+        CONSTRUCTION_STONE_BRIDGE_L2("Taş Köprü (Gelişmiş)", BatteryCategory.CONSTRUCTION, 2, Material.STONE, Material.COBBLESTONE),
+        CONSTRUCTION_IRON_WALL_L2("Demir Duvar", BatteryCategory.CONSTRUCTION, 2, Material.IRON_BLOCK, Material.IRON_INGOT),
+        CONSTRUCTION_GLASS_TUNNEL_L2("Cam Tünel", BatteryCategory.CONSTRUCTION, 2, Material.GLASS, Material.GLASS_PANE),
+        CONSTRUCTION_WOOD_CASTLE_L2("Ahşap Kale", BatteryCategory.CONSTRUCTION, 2, Material.OAK_PLANKS, Material.OAK_LOG),
+        
+        // Seviye 3
+        CONSTRUCTION_OBSIDIAN_WALL_L3("Obsidyen Duvar (Güçlü)", BatteryCategory.CONSTRUCTION, 3, Material.OBSIDIAN, Material.BEDROCK),
+        CONSTRUCTION_NETHERITE_BRIDGE_L3("Netherite Köprü", BatteryCategory.CONSTRUCTION, 3, Material.NETHERITE_BLOCK, Material.NETHERITE_INGOT),
+        CONSTRUCTION_IRON_PRISON_L3("Demir Hapishane", BatteryCategory.CONSTRUCTION, 3, Material.IRON_BLOCK, Material.IRON_BARS),
+        CONSTRUCTION_GLASS_TOWER_L3("Cam Kule", BatteryCategory.CONSTRUCTION, 3, Material.GLASS, Material.GLASS_PANE),
+        CONSTRUCTION_STONE_CASTLE_L3("Taş Kale", BatteryCategory.CONSTRUCTION, 3, Material.STONE, Material.COBBLESTONE),
+        
+        // Seviye 4
+        CONSTRUCTION_OBSIDIAN_CASTLE_L4("Obsidyen Kale", BatteryCategory.CONSTRUCTION, 4, Material.OBSIDIAN, Material.END_CRYSTAL),
+        CONSTRUCTION_NETHERITE_BRIDGE_L4("Netherite Köprü (Gelişmiş)", BatteryCategory.CONSTRUCTION, 4, Material.NETHERITE_BLOCK, Material.BEACON),
+        CONSTRUCTION_IRON_PRISON_L4("Demir Hapishane (Güçlü)", BatteryCategory.CONSTRUCTION, 4, Material.IRON_BLOCK, Material.ANVIL),
+        CONSTRUCTION_GLASS_TOWER_L4("Cam Kule (Gelişmiş)", BatteryCategory.CONSTRUCTION, 4, Material.GLASS, Material.BEACON),
+        CONSTRUCTION_STONE_FORTRESS_L4("Taş Şato", BatteryCategory.CONSTRUCTION, 4, Material.STONE, Material.BEACON),
+        
+        // Seviye 5
+        CONSTRUCTION_OBSIDIAN_PRISON_L5("Obsidyen Hapishane", BatteryCategory.CONSTRUCTION, 5, Material.BEDROCK, Material.END_CRYSTAL),
+        CONSTRUCTION_NETHERITE_BRIDGE_L5("Netherite Köprü (Efsanevi)", BatteryCategory.CONSTRUCTION, 5, Material.BEDROCK, Material.BEACON),
+        CONSTRUCTION_IRON_CASTLE_L5("Demir Kale (Efsanevi)", BatteryCategory.CONSTRUCTION, 5, Material.BEDROCK, Material.ANVIL),
+        CONSTRUCTION_GLASS_TOWER_L5("Cam Kule (Efsanevi)", BatteryCategory.CONSTRUCTION, 5, Material.BEDROCK, Material.BEACON),
+        CONSTRUCTION_STONE_FORTRESS_L5("Taş Kalesi (Efsanevi)", BatteryCategory.CONSTRUCTION, 5, Material.BEDROCK, Material.BEACON),
+        
+        // DESTEK BATARYALARI (Seviye 1-5, her seviyede 5)
+        // Seviye 1
+        SUPPORT_HEAL_L1("Can Yenileme", BatteryCategory.SUPPORT, 1, Material.GOLD_BLOCK, null),
+        SUPPORT_SPEED_L1("Hız Artışı", BatteryCategory.SUPPORT, 1, Material.EMERALD_BLOCK, null),
+        SUPPORT_DAMAGE_L1("Hasar Artışı", BatteryCategory.SUPPORT, 1, Material.DIAMOND_BLOCK, null),
+        SUPPORT_ARMOR_L1("Zırh Artışı", BatteryCategory.SUPPORT, 1, Material.IRON_BLOCK, null),
+        SUPPORT_REGENERATION_L1("Yenilenme", BatteryCategory.SUPPORT, 1, Material.LAPIS_BLOCK, null),
+        
+        // Seviye 2
+        SUPPORT_HEAL_L2("Can Yenileme (Gelişmiş)", BatteryCategory.SUPPORT, 2, Material.GOLD_BLOCK, Material.GOLD_INGOT),
+        SUPPORT_SPEED_L2("Hız Artışı (Gelişmiş)", BatteryCategory.SUPPORT, 2, Material.EMERALD_BLOCK, Material.EMERALD),
+        SUPPORT_DAMAGE_L2("Hasar Artışı (Gelişmiş)", BatteryCategory.SUPPORT, 2, Material.DIAMOND_BLOCK, Material.DIAMOND),
+        SUPPORT_ARMOR_L2("Zırh Artışı (Gelişmiş)", BatteryCategory.SUPPORT, 2, Material.IRON_BLOCK, Material.IRON_INGOT),
+        SUPPORT_REGENERATION_L2("Yenilenme (Gelişmiş)", BatteryCategory.SUPPORT, 2, Material.LAPIS_BLOCK, Material.LAPIS_LAZULI),
+        
+        // Seviye 3
+        SUPPORT_HEAL_L3("Can Yenileme (Güçlü)", BatteryCategory.SUPPORT, 3, Material.GOLD_BLOCK, Material.GOLDEN_APPLE),
+        SUPPORT_SPEED_L3("Hız Artışı (Güçlü)", BatteryCategory.SUPPORT, 3, Material.EMERALD_BLOCK, Material.EMERALD_BLOCK),
+        SUPPORT_DAMAGE_L3("Hasar Artışı (Güçlü)", BatteryCategory.SUPPORT, 3, Material.DIAMOND_BLOCK, Material.DIAMOND_BLOCK),
+        SUPPORT_ARMOR_L3("Zırh Artışı (Güçlü)", BatteryCategory.SUPPORT, 3, Material.IRON_BLOCK, Material.IRON_BLOCK),
+        SUPPORT_REGENERATION_L3("Yenilenme (Güçlü)", BatteryCategory.SUPPORT, 3, Material.LAPIS_BLOCK, Material.LAPIS_BLOCK),
+        
+        // Seviye 4
+        SUPPORT_HEAL_L4("Can Yenileme (Çok Güçlü)", BatteryCategory.SUPPORT, 4, Material.GOLD_BLOCK, Material.ENCHANTED_GOLDEN_APPLE),
+        SUPPORT_SPEED_L4("Hız Artışı (Çok Güçlü)", BatteryCategory.SUPPORT, 4, Material.EMERALD_BLOCK, Material.BEACON),
+        SUPPORT_DAMAGE_L4("Hasar Artışı (Çok Güçlü)", BatteryCategory.SUPPORT, 4, Material.DIAMOND_BLOCK, Material.BEACON),
+        SUPPORT_ARMOR_L4("Zırh Artışı (Çok Güçlü)", BatteryCategory.SUPPORT, 4, Material.IRON_BLOCK, Material.BEACON),
+        SUPPORT_REGENERATION_L4("Yenilenme (Çok Güçlü)", BatteryCategory.SUPPORT, 4, Material.LAPIS_BLOCK, Material.BEACON),
+        
+        // Seviye 5
+        SUPPORT_HEAL_L5("Can Yenileme (Efsanevi)", BatteryCategory.SUPPORT, 5, Material.BEDROCK, Material.NETHER_STAR),
+        SUPPORT_SPEED_L5("Hız Artışı (Efsanevi)", BatteryCategory.SUPPORT, 5, Material.BEDROCK, Material.NETHER_STAR),
+        SUPPORT_DAMAGE_L5("Hasar Artışı (Efsanevi)", BatteryCategory.SUPPORT, 5, Material.BEDROCK, Material.NETHER_STAR),
+        SUPPORT_ARMOR_L5("Zırh Artışı (Efsanevi)", BatteryCategory.SUPPORT, 5, Material.BEDROCK, Material.NETHER_STAR),
+        SUPPORT_REGENERATION_L5("Yenilenme (Efsanevi)", BatteryCategory.SUPPORT, 5, Material.BEDROCK, Material.NETHER_STAR);
+        
+        private final String displayName;
+        private final BatteryCategory category;
+        private final int level;
+        private final Material baseBlock;
+        private final Material sideBlock;
+        
+        BatteryType(String displayName, BatteryCategory category, int level, Material baseBlock, Material sideBlock) {
+            this.displayName = displayName;
+            this.category = category;
+            this.level = level;
+            this.baseBlock = baseBlock;
+            this.sideBlock = sideBlock;
+        }
+        
+        public String getDisplayName() { return displayName; }
+        public BatteryCategory getCategory() { return category; }
+        public int getLevel() { return level; }
+        public Material getBaseBlock() { return baseBlock; }
+        public Material getSideBlock() { return sideBlock; }
+    }
+    
+    /**
+     * Klan kontrolü - Savaşta olmayan klan alanlarında blok yok etme/yapma yapılamaz
+     */
+    private boolean canModifyTerritory(Player player, Location loc) {
+        if (territoryManager == null || siegeManager == null) return true; // Manager yoksa izin ver
+        
+        Clan territoryOwner = territoryManager.getTerritoryOwner(loc);
+        if (territoryOwner == null) return true; // Bölge sahibi yok, izin ver
+        
+        Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
+        if (playerClan == null) return true; // Oyuncu klanı yok, izin ver
+        
+        // Aynı klan ise izin ver
+        if (territoryOwner.equals(playerClan)) return true;
+        
+        // Savaşta mı kontrol et
+        return siegeManager.isUnderSiege(territoryOwner) && 
+               siegeManager.getAttacker(territoryOwner).equals(playerClan);
+    }
+    
+    /**
+     * Yakındaki klan üyelerini bul
+     */
+    private List<Player> getNearbyClanMembers(Player player, double radius) {
+        List<Player> members = new ArrayList<>();
+        Clan playerClan = plugin.getClanManager().getClanByPlayer(player.getUniqueId());
+        if (playerClan == null) return members;
+        
+        for (Player nearby : player.getWorld().getPlayers()) {
+            if (nearby.equals(player)) continue;
+            if (nearby.getLocation().distance(player.getLocation()) > radius) continue;
+            
+            Clan nearbyClan = plugin.getClanManager().getClanByPlayer(nearby.getUniqueId());
+            if (nearbyClan != null && nearbyClan.equals(playerClan)) {
+                members.add(nearby);
+            }
+        }
+        return members;
+    }
+    
+    /**
+     * RayTrace ile hedef bul (oyuncunun baktığı yön)
+     */
+    private Location getTargetLocation(Player player, int maxDistance) {
+        org.bukkit.util.RayTraceResult result = player.rayTraceBlocks(maxDistance);
+        if (result != null && result.getHitBlock() != null) {
+            return result.getHitBlock().getLocation();
+        }
+        // Hedef bulunamadıysa, oyuncunun baktığı yöne doğru maxDistance kadar ileri
+        Vector direction = player.getLocation().getDirection().normalize();
+        return player.getLocation().add(direction.multiply(maxDistance));
+    }
+    
+    // ========== YENİ BATARYA METODLARI (75 BATARYA) ==========
+    
+    /**
+     * Batarya ateşleme - Ana metod (kategori ve tip'e göre yönlendirme)
+     */
+    public void fireBattery(Player player, BatteryType batteryType, BatteryData data) {
+        switch (batteryType.getCategory()) {
+            case ATTACK:
+                fireAttackBattery(player, batteryType, data);
+                break;
+            case CONSTRUCTION:
+                fireConstructionBattery(player, batteryType, data);
+                break;
+            case SUPPORT:
+                fireSupportBattery(player, batteryType, data);
+                break;
+        }
+        // Bataryayı kullan (removeBattery çağrısı BatteryListener'da yapılıyor)
+    }
+    
+    /**
+     * SALDIRI BATARYALARI (25 batarya)
+     */
+    private void fireAttackBattery(Player player, BatteryType batteryType, BatteryData data) {
+        Location target = getTargetLocation(player, getAttackRange(batteryType));
+        int level = batteryType.getLevel();
+        
+        switch (batteryType) {
+            // Seviye 1
+            case ATTACK_FIREBALL_L1:
+                fireFireball(player, target, 3, 2.0, level);
+                break;
+            case ATTACK_LIGHTNING_L1:
+                fireLightning(player, target, 5, 5.0, level);
+                break;
+            case ATTACK_ICE_BALL_L1:
+                fireIceBall(player, target, 5, 2.0, level);
+                break;
+            case ATTACK_POISON_ARROW_L1:
+                firePoisonArrow(player, target, 8, 2.0, 3, level);
+                break;
+            case ATTACK_SHOCK_L1:
+                fireShock(player, target, 4, 3.0, level);
+                break;
+            
+            // Seviye 2
+            case ATTACK_DOUBLE_FIREBALL_L2:
+                fireDoubleFireball(player, target, 5, 4.0, level);
+                break;
+            case ATTACK_CHAIN_LIGHTNING_L2:
+                fireChainLightning(player, target, 8, 4.0, 3, level);
+                break;
+            case ATTACK_ICE_STORM_L2:
+                fireIceStorm(player, target, 7, 6.0, level);
+                break;
+            case ATTACK_ACID_RAIN_L2:
+                fireAcidRain(player, target, 5, 5, level);
+                break;
+            case ATTACK_ELECTRIC_NET_L2:
+                fireElectricNet(player, target, 5, 5.0, level);
+                break;
+            
+            // Seviye 3
+            case ATTACK_METEOR_SHOWER_L3:
+                fireMeteorShower(player, target, 10, 8.0, 5, level);
+                break;
+            case ATTACK_STORM_L3:
+                fireStorm(player, target, 8, 7.0, 5, level);
+                break;
+            case ATTACK_ICE_AGE_L3:
+                fireIceAge(player, target, 15, 8.0, 10, level);
+                break;
+            case ATTACK_POISON_BOMB_L3:
+                firePoisonBomb(player, target, 8, 10, level);
+                break;
+            case ATTACK_LIGHTNING_STORM_L3:
+                fireLightningStorm(player, target, 7, 5.0, 5, level);
+                break;
+            
+            // Seviye 4
+            case ATTACK_HELLFIRE_L4:
+                fireHellfire(player, target, 12, 10, level);
+                break;
+            case ATTACK_THUNDER_L4:
+                fireThunder(player, target, 15, 20.0, level);
+                break;
+            case ATTACK_ICE_AGE_L4:
+                fireIceAge(player, target, 15, 10.0, 10, level);
+                break;
+            case ATTACK_DEATH_CLOUD_L4:
+                fireDeathCloud(player, target, 12, 15, level);
+                break;
+            case ATTACK_ELECTRIC_STORM_L4:
+                fireElectricStorm(player, target, 10, 7.0, 8, level);
+                break;
+            
+            // Seviye 5
+            case ATTACK_MOUNTAIN_DESTROYER_L5:
+                fireMountainDestroyer(player, target, 50, 500.0, 30, level);
+                break;
+            case ATTACK_LAVA_TSUNAMI_L5:
+                fireLavaTsunami(player, target, 30, 300.0, 60, level);
+                break;
+            case ATTACK_BOSS_KILLER_L5:
+                fireBossKiller(player, target, 50, 500.0, 50.0, level);
+                break;
+            case ATTACK_AREA_DESTROYER_L5:
+                fireAreaDestroyer(player, target, 30, 500.0, 30, level);
+                break;
+            case ATTACK_APOCALYPSE_L5:
+                fireApocalypse(player, target, 40, 600.0, 40, level);
+                break;
+        }
+    }
+    
+    /**
+     * OLUŞTURMA BATARYALARI (25 batarya)
+     */
+    private void fireConstructionBattery(Player player, BatteryType batteryType, BatteryData data) {
+        Location target = getTargetLocation(player, getConstructionRange(batteryType));
+        int level = batteryType.getLevel();
+        
+        // Klan kontrolü
+        if (!canModifyTerritory(player, target)) {
+            player.sendMessage("§cBu bölgede yapı oluşturamazsın! Sadece savaşta olan klan alanlarında çalışır.");
+            return;
+        }
+        
+        switch (batteryType) {
+            // Seviye 1
+            case CONSTRUCTION_OBSIDIAN_WALL_L1:
+                createObsidianWall(player, target, 5, 5, 3, level);
+                break;
+            case CONSTRUCTION_STONE_BRIDGE_L1:
+                createStoneBridge(player, target, 10, level);
+                break;
+            case CONSTRUCTION_IRON_CAGE_L1:
+                createIronCage(player, target, 5, 5, 3, level);
+                break;
+            case CONSTRUCTION_GLASS_WALL_L1:
+                createGlassWall(player, target, 5, 5, 3, level);
+                break;
+            case CONSTRUCTION_WOOD_BARRICADE_L1:
+                createWoodBarricade(player, target, 5, 5, 2, level);
+                break;
+            
+            // Seviye 2
+            case CONSTRUCTION_OBSIDIAN_CAGE_L2:
+                createObsidianCage(player, target, 10, 10, 5, level);
+                break;
+            case CONSTRUCTION_STONE_BRIDGE_L2:
+                createStoneBridge(player, target, 20, level);
+                break;
+            case CONSTRUCTION_IRON_WALL_L2:
+                createIronWall(player, target, 10, 5, 3, level);
+                break;
+            case CONSTRUCTION_GLASS_TUNNEL_L2:
+                createGlassTunnel(player, target, 15, level);
+                break;
+            case CONSTRUCTION_WOOD_CASTLE_L2:
+                createWoodCastle(player, target, 10, 10, 5, level);
+                break;
+            
+            // Seviye 3
+            case CONSTRUCTION_OBSIDIAN_WALL_L3:
+                createObsidianWall(player, target, 15, 5, 5, level);
+                break;
+            case CONSTRUCTION_NETHERITE_BRIDGE_L3:
+                createNetheriteBridge(player, target, 30, level);
+                break;
+            case CONSTRUCTION_IRON_PRISON_L3:
+                createIronPrison(player, target, 15, 15, 8, level);
+                break;
+            case CONSTRUCTION_GLASS_TOWER_L3:
+                createGlassTower(player, target, 10, 10, 15, level);
+                break;
+            case CONSTRUCTION_STONE_CASTLE_L3:
+                createStoneCastle(player, target, 15, 15, 10, level);
+                break;
+            
+            // Seviye 4
+            case CONSTRUCTION_OBSIDIAN_CASTLE_L4:
+                createObsidianCastle(player, target, 20, 20, 10, level);
+                break;
+            case CONSTRUCTION_NETHERITE_BRIDGE_L4:
+                createNetheriteBridge(player, target, 50, level);
+                break;
+            case CONSTRUCTION_IRON_PRISON_L4:
+                createIronPrison(player, target, 20, 20, 12, level);
+                break;
+            case CONSTRUCTION_GLASS_TOWER_L4:
+                createGlassTower(player, target, 15, 15, 20, level);
+                break;
+            case CONSTRUCTION_STONE_FORTRESS_L4:
+                createStoneFortress(player, target, 25, 25, 15, level);
+                break;
+            
+            // Seviye 5
+            case CONSTRUCTION_OBSIDIAN_PRISON_L5:
+                createObsidianPrison(player, target, 25, 25, 15, level);
+                break;
+            case CONSTRUCTION_NETHERITE_BRIDGE_L5:
+                createNetheriteBridge(player, target, 100, level);
+                break;
+            case CONSTRUCTION_IRON_CASTLE_L5:
+                createIronCastle(player, target, 30, 30, 20, level);
+                break;
+            case CONSTRUCTION_GLASS_TOWER_L5:
+                createGlassTower(player, target, 20, 20, 30, level);
+                break;
+            case CONSTRUCTION_STONE_FORTRESS_L5:
+                createStoneFortress(player, target, 40, 40, 25, level);
+                break;
+        }
+    }
+    
+    /**
+     * DESTEK BATARYALARI (25 batarya)
+     */
+    private void fireSupportBattery(Player player, BatteryType batteryType, BatteryData data) {
+        int level = batteryType.getLevel();
+        double radius = getSupportRadius(level);
+        
+        switch (batteryType) {
+            // Seviye 1
+            case SUPPORT_HEAL_L1:
+                applyHealSupport(player, radius, 5.0, level);
+                break;
+            case SUPPORT_SPEED_L1:
+                applySpeedSupport(player, radius, 1, 10, level);
+                break;
+            case SUPPORT_DAMAGE_L1:
+                applyDamageSupport(player, radius, 1, 10, level);
+                break;
+            case SUPPORT_ARMOR_L1:
+                applyArmorSupport(player, radius, 1, 10, level);
+                break;
+            case SUPPORT_REGENERATION_L1:
+                applyRegenerationSupport(player, radius, 1, 10, level);
+                break;
+            
+            // Seviye 2
+            case SUPPORT_HEAL_L2:
+                applyHealSupport(player, radius, 10.0, level);
+                break;
+            case SUPPORT_SPEED_L2:
+                applySpeedSupport(player, radius, 2, 15, level);
+                break;
+            case SUPPORT_DAMAGE_L2:
+                applyDamageSupport(player, radius, 2, 15, level);
+                break;
+            case SUPPORT_ARMOR_L2:
+                applyArmorSupport(player, radius, 2, 15, level);
+                break;
+            case SUPPORT_REGENERATION_L2:
+                applyRegenerationSupport(player, radius, 2, 15, level);
+                break;
+            
+            // Seviye 3
+            case SUPPORT_HEAL_L3:
+                applyHealSupport(player, radius, 20.0, level);
+                break;
+            case SUPPORT_SPEED_L3:
+                applySpeedSupport(player, radius, 3, 20, level);
+                break;
+            case SUPPORT_DAMAGE_L3:
+                applyDamageSupport(player, radius, 3, 20, level);
+                break;
+            case SUPPORT_ARMOR_L3:
+                applyArmorSupport(player, radius, 3, 20, level);
+                break;
+            case SUPPORT_REGENERATION_L3:
+                applyRegenerationSupport(player, radius, 3, 20, level);
+                break;
+            
+            // Seviye 4
+            case SUPPORT_HEAL_L4:
+                applyHealSupport(player, radius, 30.0, level);
+                break;
+            case SUPPORT_SPEED_L4:
+                applySpeedSupport(player, radius, 4, 30, level);
+                break;
+            case SUPPORT_DAMAGE_L4:
+                applyDamageSupport(player, radius, 4, 30, level);
+                break;
+            case SUPPORT_ARMOR_L4:
+                applyArmorSupport(player, radius, 4, 30, level);
+                break;
+            case SUPPORT_REGENERATION_L4:
+                applyRegenerationSupport(player, radius, 4, 30, level);
+                break;
+            
+            // Seviye 5
+            case SUPPORT_HEAL_L5:
+                applyHealSupport(player, radius, -1.0, level); // -1 = tam can + 50 ekstra
+                break;
+            case SUPPORT_SPEED_L5:
+                applySpeedSupport(player, radius, 5, 60, level);
+                break;
+            case SUPPORT_DAMAGE_L5:
+                applyDamageSupport(player, radius, 5, 60, level);
+                break;
+            case SUPPORT_ARMOR_L5:
+                applyArmorSupport(player, radius, 5, 60, level);
+                break;
+            case SUPPORT_REGENERATION_L5:
+                applyRegenerationSupport(player, radius, 5, 60, level);
+                break;
+        }
+    }
+    
+    // ========== HELPER METODLAR ==========
+    
+    private int getAttackRange(BatteryType type) {
+        int level = type.getLevel();
+        switch (level) {
+            case 1: return 8;
+            case 2: return 10;
+            case 3: return 15;
+            case 4: return 20;
+            case 5: return 50;
+            default: return 10;
+        }
+    }
+    
+    private int getConstructionRange(BatteryType type) {
+        int level = type.getLevel();
+        switch (level) {
+            case 1: return 10;
+            case 2: return 15;
+            case 3: return 20;
+            case 4: return 25;
+            case 5: return 30;
+            default: return 15;
+        }
+    }
+    
+    private double getSupportRadius(int level) {
+        switch (level) {
+            case 1: return 10.0;
+            case 2: return 15.0;
+            case 3: return 20.0;
+            case 4: return 25.0;
+            case 5: return 30.0;
+            default: return 10.0;
+        }
+    }
+    
+    // ========== SALDIRI BATARYA METODLARI ==========
+    
+    private void fireFireball(Player player, Location target, int radius, double damage, int level) {
+        // Ateş topu at
+        org.bukkit.entity.Fireball fireball = player.getWorld().spawn(target, org.bukkit.entity.Fireball.class);
+        fireball.setDirection(player.getLocation().getDirection());
+        fireball.setYield((float) (damage / 2.0));
+        
+        // Hasar ver
+        for (Entity entity : player.getWorld().getNearbyEntities(target, radius, radius, radius)) {
+            if (entity instanceof LivingEntity && entity != player) {
+                ((LivingEntity) entity).damage(damage);
+                entity.setFireTicks(100);
+            }
+        }
+        
+        player.sendMessage("§cAteş topu atıldı!");
+    }
+    
+    private void fireLightning(Player player, Location target, int radius, double damage, int level) {
+        player.getWorld().strikeLightning(target);
+        
+        // Hasar ver
+        for (Entity entity : player.getWorld().getNearbyEntities(target, radius, radius, radius)) {
+            if (entity instanceof LivingEntity && entity != player) {
+                ((LivingEntity) entity).damage(damage);
+            }
+        }
+        
+        player.sendMessage("§eYıldırım düştü!");
+    }
+    
+    private void fireIceBall(Player player, Location target, int radius, double damage, int level) {
+        // Buz topu efekti
+        player.getWorld().spawnParticle(org.bukkit.Particle.SNOWBALL, target, 20, 0.5, 0.5, 0.5, 0.1);
+        
+        // Hasar ve dondurma
+        for (Entity entity : player.getWorld().getNearbyEntities(target, radius, radius, radius)) {
+            if (entity instanceof LivingEntity && entity != player) {
+                ((LivingEntity) entity).damage(damage);
+                ((LivingEntity) entity).addPotionEffect(new org.bukkit.potion.PotionEffect(
+                    org.bukkit.potion.PotionEffectType.SLOW, 60, 1, false, false, true));
+            }
+        }
+        
+        player.sendMessage("§bBuz topu atıldı!");
+    }
+    
+    private void firePoisonArrow(Player player, Location target, int radius, double damage, int duration, int level) {
+        // Zehir oku efekti
+        org.bukkit.entity.Arrow arrow = player.getWorld().spawn(target, org.bukkit.entity.Arrow.class);
+        arrow.setVelocity(player.getLocation().getDirection().multiply(2.0));
+        
+        // Hasar ve zehir
+        for (Entity entity : player.getWorld().getNearbyEntities(target, radius, radius, radius)) {
+            if (entity instanceof LivingEntity && entity != player) {
+                ((LivingEntity) entity).damage(damage);
+                ((LivingEntity) entity).addPotionEffect(new org.bukkit.potion.PotionEffect(
+                    org.bukkit.potion.PotionEffectType.POISON, duration * 20, 0, false, false, true));
+            }
+        }
+        
+        player.sendMessage("§2Zehir oku atıldı!");
+    }
+    
+    private void fireShock(Player player, Location target, int radius, double damage, int level) {
+        // Şok efekti
+        player.getWorld().spawnParticle(org.bukkit.Particle.ELECTRIC_SPARK, target, 30, 1.0, 1.0, 1.0, 0.1);
+        player.getWorld().playSound(target, org.bukkit.Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.0f);
+        
+        // Hasar ver
+        for (Entity entity : player.getWorld().getNearbyEntities(target, radius, radius, radius)) {
+            if (entity instanceof LivingEntity && entity != player) {
+                ((LivingEntity) entity).damage(damage);
+            }
+        }
+        
+        player.sendMessage("§eŞok atıldı!");
+    }
+    
+    private void fireDoubleFireball(Player player, Location target, int radius, double damage, int level) {
+        // İki ateş topu
+        Vector direction = player.getLocation().getDirection();
+        Vector perpendicular = new Vector(-direction.getZ(), 0, direction.getX()).normalize().multiply(1.5);
+        
+        Location target1 = target.clone().add(perpendicular);
+        Location target2 = target.clone().subtract(perpendicular);
+        
+        fireFireball(player, target1, radius, damage, level);
+        fireFireball(player, target2, radius, damage, level);
+        
+        player.sendMessage("§cÇift ateş topu atıldı!");
+    }
+    
+    private void fireChainLightning(Player player, Location target, int radius, double damage, int chainCount, int level) {
+        Location currentTarget = target;
+        
+        for (int i = 0; i < chainCount; i++) {
+            fireLightning(player, currentTarget, radius, damage, level);
+            
+            // Sonraki hedef bul
+            Entity nearest = null;
+            double nearestDist = Double.MAX_VALUE;
+            for (Entity entity : player.getWorld().getNearbyEntities(currentTarget, 10, 10, 10)) {
+                if (entity instanceof LivingEntity && entity != player && entity != nearest) {
+                    double dist = entity.getLocation().distance(currentTarget);
+                    if (dist < nearestDist) {
+                        nearestDist = dist;
+                        nearest = entity;
+                    }
+                }
+            }
+            
+            if (nearest != null) {
+                currentTarget = nearest.getLocation();
+            } else {
+                break;
+            }
+        }
+        
+        player.sendMessage("§eZincir yıldırım atıldı!");
+    }
+    
+    private void fireIceStorm(Player player, Location target, int radius, double damage, int level) {
+        // Buz fırtınası
+        for (int i = 0; i < 10; i++) {
+            Location randomLoc = target.clone().add(
+                (Math.random() - 0.5) * radius * 2,
+                Math.random() * 5,
+                (Math.random() - 0.5) * radius * 2
+            );
+            fireIceBall(player, randomLoc, radius / 2, damage / 2, level);
+        }
+        
+        player.sendMessage("§bBuz fırtınası atıldı!");
+    }
+    
+    private void fireAcidRain(Player player, Location target, int radius, int duration, int level) {
+        // Asit yağmuru (sürekli zehir)
+        new BukkitRunnable() {
+            int count = 0;
+            @Override
+            public void run() {
+                if (count >= duration) {
+                    cancel();
+                    return;
+                }
+                
+                for (Entity entity : player.getWorld().getNearbyEntities(target, radius, radius, radius)) {
+                    if (entity instanceof LivingEntity && entity != player) {
+                        ((LivingEntity) entity).addPotionEffect(new org.bukkit.potion.PotionEffect(
+                            org.bukkit.potion.PotionEffectType.POISON, 20, 0, false, false, true));
+                        ((LivingEntity) entity).damage(1.0);
+                    }
+                }
+                
+                player.getWorld().spawnParticle(org.bukkit.Particle.DRIP_LAVA, target, 10, radius, 5, radius, 0.1);
+                count++;
+            }
+        }.runTaskTimer(plugin, 0L, 20L);
+        
+        player.sendMessage("§2Asit yağmuru başladı!");
+    }
+    
+    private void fireElectricNet(Player player, Location target, int radius, double damage, int level) {
+        // Elektrik ağı (çoklu şok)
+        for (int i = 0; i < 5; i++) {
+            Location randomLoc = target.clone().add(
+                (Math.random() - 0.5) * radius * 2,
+                Math.random() * 3,
+                (Math.random() - 0.5) * radius * 2
+            );
+            fireShock(player, randomLoc, radius / 2, damage, level);
+        }
+        
+        player.sendMessage("§eElektrik ağı atıldı!");
+    }
+    
+    private void fireMeteorShower(Player player, Location target, int radius, double damage, int meteorCount, int level) {
+        // Meteor yağmuru
+        for (int i = 0; i < meteorCount; i++) {
+            Location meteorLoc = target.clone().add(
+                (Math.random() - 0.5) * radius * 2,
+                20 + Math.random() * 10,
+                (Math.random() - 0.5) * radius * 2
+            );
+            
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (meteorLoc.getY() <= target.getY()) {
+                        // Patlama
+                        player.getWorld().createExplosion(meteorLoc, 3.0f, false, false);
+                        
+                        // Hasar ve blok kırma (klan kontrolü ile)
+                        for (Entity entity : player.getWorld().getNearbyEntities(meteorLoc, 5, 5, 5)) {
+                            if (entity instanceof LivingEntity && entity != player) {
+                                ((LivingEntity) entity).damage(damage);
+                            }
+                        }
+                        
+                        // Blok kırma (sadece savaşta olan klan alanlarında)
+                        if (canModifyTerritory(player, meteorLoc)) {
+                            for (int x = -2; x <= 2; x++) {
+                                for (int y = -2; y <= 2; y++) {
+                                    for (int z = -2; z <= 2; z++) {
+                                        Block block = meteorLoc.clone().add(x, y, z).getBlock();
+                                        if (block.getType() != Material.BEDROCK && block.getType() != Material.AIR) {
+                                            block.setType(Material.AIR);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        cancel();
+                        return;
+                    }
+                    
+                    // Meteor düşüşü
+                    meteorLoc.add(0, -1, 0);
+                    player.getWorld().spawnParticle(org.bukkit.Particle.FLAME, meteorLoc, 5, 0.3, 0.3, 0.3, 0.05);
+                }
+            }.runTaskTimer(plugin, 0L, 2L);
+        }
+        
+        player.sendMessage("§cMeteor yağmuru başladı!");
+    }
+    
+    private void fireStorm(Player player, Location target, int radius, double damage, int lightningCount, int level) {
+        // Fırtına (çoklu yıldırım)
+        for (int i = 0; i < lightningCount; i++) {
+            Location lightningLoc = target.clone().add(
+                (Math.random() - 0.5) * radius * 2,
+                0,
+                (Math.random() - 0.5) * radius * 2
+            );
+            
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    fireLightning(player, lightningLoc, radius / 2, damage, level);
+                }
+            }.runTaskLater(plugin, i * 10L);
+        }
+        
+        player.sendMessage("§eFırtına başladı!");
+    }
+    
+    private void fireIceAge(Player player, Location target, int radius, double damage, int duration, int level) {
+        // Buz çağı (sürekli dondurma)
+        new BukkitRunnable() {
+            int count = 0;
+            @Override
+            public void run() {
+                if (count >= duration) {
+                    cancel();
+                    return;
+                }
+                
+                for (Entity entity : player.getWorld().getNearbyEntities(target, radius, radius, radius)) {
+                    if (entity instanceof LivingEntity && entity != player) {
+                        ((LivingEntity) entity).damage(damage / duration);
+                        ((LivingEntity) entity).addPotionEffect(new org.bukkit.potion.PotionEffect(
+                            org.bukkit.potion.PotionEffectType.SLOW, 40, 2, false, false, true));
+                    }
+                }
+                
+                player.getWorld().spawnParticle(org.bukkit.Particle.SNOWBALL, target, 50, radius, 5, radius, 0.1);
+                count++;
+            }
+        }.runTaskTimer(plugin, 0L, 20L);
+        
+        player.sendMessage("§bBuz çağı başladı!");
+    }
+    
+    private void firePoisonBomb(Player player, Location target, int radius, int duration, int level) {
+        // Zehir bombası (büyük alan zehir)
+        player.getWorld().spawnParticle(org.bukkit.Particle.DRAGON_BREATH, target, 100, radius, 5, radius, 0.1);
+        
+        new BukkitRunnable() {
+            int count = 0;
+            @Override
+            public void run() {
+                if (count >= duration) {
+                    cancel();
+                    return;
+                }
+                
+                for (Entity entity : player.getWorld().getNearbyEntities(target, radius, radius, radius)) {
+                    if (entity instanceof LivingEntity && entity != player) {
+                        ((LivingEntity) entity).addPotionEffect(new org.bukkit.potion.PotionEffect(
+                            org.bukkit.potion.PotionEffectType.POISON, 40, 1, false, false, true));
+                        ((LivingEntity) entity).damage(2.0);
+                    }
+                }
+                
+                count++;
+            }
+        }.runTaskTimer(plugin, 0L, 20L);
+        
+        player.sendMessage("§2Zehir bombası patladı!");
+    }
+    
+    private void fireLightningStorm(Player player, Location target, int radius, double damage, int duration, int level) {
+        // Yıldırım fırtınası (sürekli şok)
+        new BukkitRunnable() {
+            int count = 0;
+            @Override
+            public void run() {
+                if (count >= duration) {
+                    cancel();
+                    return;
+                }
+                
+                Location randomLoc = target.clone().add(
+                    (Math.random() - 0.5) * radius * 2,
+                    0,
+                    (Math.random() - 0.5) * radius * 2
+                );
+                fireLightning(player, randomLoc, radius / 2, damage, level);
+                count++;
+            }
+        }.runTaskTimer(plugin, 0L, 20L);
+        
+        player.sendMessage("§eYıldırım fırtınası başladı!");
+    }
+    
+    private void fireHellfire(Player player, Location target, int radius, int duration, int level) {
+        // Cehennem ateşi (sürekli yanma + blok kırma)
+        new BukkitRunnable() {
+            int count = 0;
+            @Override
+            public void run() {
+                if (count >= duration) {
+                    cancel();
+                    return;
+                }
+                
+                for (Entity entity : player.getWorld().getNearbyEntities(target, radius, radius, radius)) {
+                    if (entity instanceof LivingEntity && entity != player) {
+                        entity.setFireTicks(100);
+                        ((LivingEntity) entity).damage(3.0);
+                    }
+                }
+                
+                // Blok kırma (sadece savaşta olan klan alanlarında)
+                if (canModifyTerritory(player, target)) {
+                    for (int x = -1; x <= 1; x++) {
+                        for (int z = -1; z <= 1; z++) {
+                            Block block = target.clone().add(x, 0, z).getBlock();
+                            if (block.getType() != Material.BEDROCK && block.getType() != Material.AIR) {
+                                block.setType(Material.AIR);
+                            }
+                        }
+                    }
+                }
+                
+                player.getWorld().spawnParticle(org.bukkit.Particle.FLAME, target, 50, radius, 5, radius, 0.1);
+                count++;
+            }
+        }.runTaskTimer(plugin, 0L, 20L);
+        
+        player.sendMessage("§cCehennem ateşi başladı!");
+    }
+    
+    private void fireThunder(Player player, Location target, int radius, double damage, int level) {
+        // Gök gürültüsü (dev yıldırım + patlama)
+        fireLightning(player, target, radius, damage, level);
+        player.getWorld().createExplosion(target, 5.0f, false, false);
+        
+        player.sendMessage("§eGök gürültüsü düştü!");
+    }
+    
+    private void fireDeathCloud(Player player, Location target, int radius, int duration, int level) {
+        // Ölüm bulutu (ölümcül zehir)
+        new BukkitRunnable() {
+            int count = 0;
+            @Override
+            public void run() {
+                if (count >= duration) {
+                    cancel();
+                    return;
+                }
+                
+                for (Entity entity : player.getWorld().getNearbyEntities(target, radius, radius, radius)) {
+                    if (entity instanceof LivingEntity && entity != player) {
+                        ((LivingEntity) entity).addPotionEffect(new org.bukkit.potion.PotionEffect(
+                            org.bukkit.potion.PotionEffectType.POISON, 40, 2, false, false, true));
+                        ((LivingEntity) entity).addPotionEffect(new org.bukkit.potion.PotionEffect(
+                            org.bukkit.potion.PotionEffectType.WITHER, 40, 0, false, false, true));
+                        ((LivingEntity) entity).damage(5.0);
+                    }
+                }
+                
+                // Blok kırma (sadece savaşta olan klan alanlarında)
+                if (canModifyTerritory(player, target)) {
+                    for (int x = -1; x <= 1; x++) {
+                        for (int z = -1; z <= 1; z++) {
+                            Block block = target.clone().add(x, 0, z).getBlock();
+                            if (block.getType() != Material.BEDROCK && block.getType() != Material.AIR) {
+                                block.setType(Material.AIR);
+                            }
+                        }
+                    }
+                }
+                
+                player.getWorld().spawnParticle(org.bukkit.Particle.DRAGON_BREATH, target, 100, radius, 5, radius, 0.1);
+                count++;
+            }
+        }.runTaskTimer(plugin, 0L, 20L);
+        
+        player.sendMessage("§4Ölüm bulutu başladı!");
+    }
+    
+    private void fireElectricStorm(Player player, Location target, int radius, double damage, int duration, int level) {
+        // Elektrik fırtınası (sürekli şok alanı)
+        new BukkitRunnable() {
+            int count = 0;
+            @Override
+            public void run() {
+                if (count >= duration) {
+                    cancel();
+                    return;
+                }
+                
+                for (Entity entity : player.getWorld().getNearbyEntities(target, radius, radius, radius)) {
+                    if (entity instanceof LivingEntity && entity != player) {
+                        ((LivingEntity) entity).damage(damage);
+                        player.getWorld().spawnParticle(org.bukkit.Particle.ELECTRIC_SPARK, entity.getLocation(), 5, 0.3, 0.3, 0.3, 0.05);
+                    }
+                }
+                
+                player.getWorld().spawnParticle(org.bukkit.Particle.ELECTRIC_SPARK, target, 50, radius, 5, radius, 0.1);
+                count++;
+            }
+        }.runTaskTimer(plugin, 0L, 20L);
+        
+        player.sendMessage("§eElektrik fırtınası başladı!");
+    }
+    
+    private void fireMountainDestroyer(Player player, Location target, int radius, double damage, int areaSize, int level) {
+        // Dağ yok edici (30x30 alan, 500 hasar, blok kırma)
+        int halfSize = areaSize / 2;
+        
+        for (int x = -halfSize; x <= halfSize; x++) {
+            for (int z = -halfSize; z <= halfSize; z++) {
+                Location loc = target.clone().add(x, 0, z);
+                
+                // Hasar ver
+                for (Entity entity : player.getWorld().getNearbyEntities(loc, 2, 2, 2)) {
+                    if (entity instanceof LivingEntity && entity != player) {
+                        ((LivingEntity) entity).damage(damage / (areaSize * areaSize));
+                    }
+                }
+                
+                // Blok kırma (sadece savaşta olan klan alanlarında)
+                if (canModifyTerritory(player, loc)) {
+                    for (int y = -10; y <= 10; y++) {
+                        Block block = loc.clone().add(0, y, 0).getBlock();
+                        if (block.getType() != Material.BEDROCK && block.getType() != Material.AIR) {
+                            block.setType(Material.AIR);
+                        }
+                    }
+                }
+            }
+        }
+        
+        player.getWorld().createExplosion(target, 10.0f, false, false);
+        player.sendMessage("§4§lDAĞ YOK EDİCİ AKTİF!");
+    }
+    
+    private void fireLavaTsunami(Player player, Location target, int radius, double damage, int duration, int level) {
+        // Lava tufanı (60 saniye sürekli lava)
+        int halfSize = radius / 2;
+        
+        new BukkitRunnable() {
+            int count = 0;
+            @Override
+            public void run() {
+                if (count >= duration) {
+                    cancel();
+                    return;
+                }
+                
+                // Lava spawnla (sadece savaşta olan klan alanlarında)
+                if (canModifyTerritory(player, target)) {
+                    for (int x = -halfSize; x <= halfSize; x++) {
+                        for (int z = -halfSize; z <= halfSize; z++) {
+                            Location loc = target.clone().add(x, 0, z);
+                            Block block = loc.getBlock();
+                            if (block.getType() == Material.AIR) {
+                                block.setType(Material.LAVA);
+                            }
+                        }
+                    }
+                }
+                
+                // Hasar ver
+                for (Entity entity : player.getWorld().getNearbyEntities(target, radius, radius, radius)) {
+                    if (entity instanceof LivingEntity && entity != player) {
+                        entity.setFireTicks(100);
+                        ((LivingEntity) entity).damage(damage / duration);
+                    }
+                }
+                
+                player.getWorld().spawnParticle(org.bukkit.Particle.LAVA, target, 100, radius, 5, radius, 0.1);
+                count++;
+            }
+        }.runTaskTimer(plugin, 0L, 20L);
+        
+        player.sendMessage("§4§lLAVA TUFANI BAŞLADI!");
+    }
+    
+    private void fireBossKiller(Player player, Location target, int radius, double bossDamage, double normalDamage, int level) {
+        // Boss katili (bosslara özel hasar)
+        BossManager bossManager = plugin.getBossManager();
+        
+        for (Entity entity : player.getWorld().getNearbyEntities(target, radius, radius, radius)) {
+            if (entity instanceof LivingEntity && entity != player) {
+                // Boss kontrolü
+                if (bossManager != null && bossManager.isBoss(entity)) {
+                    ((LivingEntity) entity).damage(bossDamage);
+                    player.sendMessage("§c§lBOSS HASARI: " + bossDamage + " kalp!");
+                } else {
+                    ((LivingEntity) entity).damage(normalDamage);
+                }
+            }
+        }
+        
+        player.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, target, 1);
+        player.sendMessage("§4§lBOSS KATİLİ AKTİF!");
+    }
+    
+    private void fireAreaDestroyer(Player player, Location target, int radius, double damage, int areaSize, int level) {
+        // Alan yok edici (30x30 alan, 500 hasar)
+        int halfSize = areaSize / 2;
+        
+        for (int x = -halfSize; x <= halfSize; x++) {
+            for (int z = -halfSize; z <= halfSize; z++) {
+                Location loc = target.clone().add(x, 0, z);
+                
+                // Hasar ver
+                for (Entity entity : player.getWorld().getNearbyEntities(loc, 2, 2, 2)) {
+                    if (entity instanceof LivingEntity && entity != player) {
+                        ((LivingEntity) entity).damage(damage / (areaSize * areaSize));
+                    }
+                }
+                
+                // Blok kırma (sadece savaşta olan klan alanlarında)
+                if (canModifyTerritory(player, loc)) {
+                    for (int y = -5; y <= 5; y++) {
+                        Block block = loc.clone().add(0, y, 0).getBlock();
+                        if (block.getType() != Material.BEDROCK && block.getType() != Material.AIR) {
+                            block.setType(Material.AIR);
+                        }
+                    }
+                }
+            }
+        }
+        
+        player.getWorld().createExplosion(target, 8.0f, false, false);
+        player.sendMessage("§4§lALAN YOK EDİCİ AKTİF!");
+    }
+    
+    private void fireApocalypse(Player player, Location target, int radius, double damage, int areaSize, int level) {
+        // Kıyamet (tüm elementlerin kombinasyonu)
+        fireMeteorShower(player, target, areaSize, damage / 4, 5, level);
+        fireStorm(player, target, areaSize, damage / 4, 5, level);
+        fireDeathCloud(player, target, areaSize, 10, level);
+        fireIceAge(player, target, areaSize, damage / 4, 10, level);
+        
+        player.sendMessage("§4§lKIYAMET BAŞLADI!");
+    }
+    
+    // ========== OLUŞTURMA BATARYA METODLARI ==========
+    
+    private void createObsidianWall(Player player, Location target, int width, int height, int depth, int level) {
+        Vector direction = player.getLocation().getDirection().setY(0).normalize();
+        Vector perpendicular = new Vector(-direction.getZ(), 0, direction.getX()).normalize();
+        
+        int placed = 0;
+        for (int w = 0; w < width; w++) {
+            for (int h = 0; h < height; h++) {
+                for (int d = 0; d < depth; d++) {
+                    Location loc = target.clone().add(perpendicular.clone().multiply(w - width/2))
+                        .add(0, h, direction.getZ() * d);
+                    Block block = loc.getBlock();
+                    if (block.getType() == Material.AIR) {
+                        block.setType(Material.OBSIDIAN);
+                        placed++;
+                    }
+                }
+            }
+        }
+        
+        player.sendMessage("§5Obsidyen duvar oluşturuldu! (" + placed + " blok)");
+    }
+    
+    private void createStoneBridge(Player player, Location target, int length, int level) {
+        Vector direction = player.getLocation().getDirection().setY(0).normalize();
+        int placed = 0;
+        
+        for (int i = 0; i < length; i++) {
+            Location loc = target.clone().add(direction.clone().multiply(i));
+            Block block = loc.getBlock();
+            if (block.getType() == Material.AIR) {
+                block.setType(Material.STONE);
+                placed++;
+            }
+        }
+        
+        player.sendMessage("§7Taş köprü oluşturuldu! (" + placed + " blok)");
+    }
+    
+    private void createIronCage(Player player, Location target, int width, int height, int depth, int level) {
+        int placed = 0;
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                for (int z = 0; z < depth; z++) {
+                    if (x == 0 || x == width-1 || y == 0 || y == height-1 || z == 0 || z == depth-1) {
+                        Location loc = target.clone().add(x - width/2, y, z - depth/2);
+                        Block block = loc.getBlock();
+                        if (block.getType() == Material.AIR) {
+                            block.setType(Material.IRON_BARS);
+                            placed++;
+                        }
+                    }
+                }
+            }
+        }
+        
+        player.sendMessage("§7Demir kafes oluşturuldu! (" + placed + " blok)");
+    }
+    
+    private void createGlassWall(Player player, Location target, int width, int height, int depth, int level) {
+        Vector direction = player.getLocation().getDirection().setY(0).normalize();
+        Vector perpendicular = new Vector(-direction.getZ(), 0, direction.getX()).normalize();
+        
+        int placed = 0;
+        for (int w = 0; w < width; w++) {
+            for (int h = 0; h < height; h++) {
+                for (int d = 0; d < depth; d++) {
+                    Location loc = target.clone().add(perpendicular.clone().multiply(w - width/2))
+                        .add(0, h, direction.getZ() * d);
+                    Block block = loc.getBlock();
+                    if (block.getType() == Material.AIR) {
+                        block.setType(Material.GLASS);
+                        placed++;
+                    }
+                }
+            }
+        }
+        
+        player.sendMessage("§bCam duvar oluşturuldu! (" + placed + " blok)");
+    }
+    
+    private void createWoodBarricade(Player player, Location target, int width, int height, int depth, int level) {
+        int placed = 0;
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                for (int z = 0; z < depth; z++) {
+                    Location loc = target.clone().add(x - width/2, y, z - depth/2);
+                    Block block = loc.getBlock();
+                    if (block.getType() == Material.AIR) {
+                        block.setType(Material.OAK_PLANKS);
+                        placed++;
+                    }
+                }
+            }
+        }
+        
+        player.sendMessage("§6Ahşap barikat oluşturuldu! (" + placed + " blok)");
+    }
+    
+    private void createObsidianCage(Player player, Location target, int width, int height, int depth, int level) {
+        int placed = 0;
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                for (int z = 0; z < depth; z++) {
+                    if (x == 0 || x == width-1 || y == 0 || y == height-1 || z == 0 || z == depth-1) {
+                        Location loc = target.clone().add(x - width/2, y, z - depth/2);
+                        Block block = loc.getBlock();
+                        if (block.getType() == Material.AIR) {
+                            block.setType(Material.OBSIDIAN);
+                            placed++;
+                        }
+                    }
+                }
+            }
+        }
+        
+        player.sendMessage("§5Obsidyen kafes oluşturuldu! (" + placed + " blok)");
+    }
+    
+    private void createIronWall(Player player, Location target, int width, int height, int depth, int level) {
+        Vector direction = player.getLocation().getDirection().setY(0).normalize();
+        Vector perpendicular = new Vector(-direction.getZ(), 0, direction.getX()).normalize();
+        
+        int placed = 0;
+        for (int w = 0; w < width; w++) {
+            for (int h = 0; h < height; h++) {
+                for (int d = 0; d < depth; d++) {
+                    Location loc = target.clone().add(perpendicular.clone().multiply(w - width/2))
+                        .add(0, h, direction.getZ() * d);
+                    Block block = loc.getBlock();
+                    if (block.getType() == Material.AIR) {
+                        block.setType(Material.IRON_BLOCK);
+                        placed++;
+                    }
+                }
+            }
+        }
+        
+        player.sendMessage("§7Demir duvar oluşturuldu! (" + placed + " blok)");
+    }
+    
+    private void createGlassTunnel(Player player, Location target, int length, int level) {
+        Vector direction = player.getLocation().getDirection().setY(0).normalize();
+        Vector perpendicular = new Vector(-direction.getZ(), 0, direction.getX()).normalize();
+        
+        int placed = 0;
+        for (int i = 0; i < length; i++) {
+            for (int h = 0; h < 3; h++) {
+                for (int w = -1; w <= 1; w++) {
+                    Location loc = target.clone().add(direction.clone().multiply(i))
+                        .add(perpendicular.clone().multiply(w)).add(0, h, 0);
+                    Block block = loc.getBlock();
+                    if (block.getType() == Material.AIR) {
+                        if (h == 0 || h == 2 || w == -1 || w == 1) {
+                            block.setType(Material.GLASS);
+                            placed++;
+                        }
+                    }
+                }
+            }
+        }
+        
+        player.sendMessage("§bCam tünel oluşturuldu! (" + placed + " blok)");
+    }
+    
+    private void createWoodCastle(Player player, Location target, int width, int height, int depth, int level) {
+        int placed = 0;
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                for (int z = 0; z < depth; z++) {
+                    if (x == 0 || x == width-1 || y == 0 || y == height-1 || z == 0 || z == depth-1) {
+                        Location loc = target.clone().add(x - width/2, y, z - depth/2);
+                        Block block = loc.getBlock();
+                        if (block.getType() == Material.AIR) {
+                            block.setType(Material.OAK_PLANKS);
+                            placed++;
+                        }
+                    }
+                }
+            }
+        }
+        
+        player.sendMessage("§6Ahşap kale oluşturuldu! (" + placed + " blok)");
+    }
+    
+    private void createNetheriteBridge(Player player, Location target, int length, int level) {
+        Vector direction = player.getLocation().getDirection().setY(0).normalize();
+        int placed = 0;
+        
+        for (int i = 0; i < length; i++) {
+            Location loc = target.clone().add(direction.clone().multiply(i));
+            Block block = loc.getBlock();
+            if (block.getType() == Material.AIR) {
+                block.setType(Material.NETHERITE_BLOCK);
+                placed++;
+            }
+        }
+        
+        player.sendMessage("§5Netherite köprü oluşturuldu! (" + placed + " blok)");
+    }
+    
+    private void createIronPrison(Player player, Location target, int width, int height, int depth, int level) {
+        int placed = 0;
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                for (int z = 0; z < depth; z++) {
+                    if (x == 0 || x == width-1 || y == 0 || y == height-1 || z == 0 || z == depth-1) {
+                        Location loc = target.clone().add(x - width/2, y, z - depth/2);
+                        Block block = loc.getBlock();
+                        if (block.getType() == Material.AIR) {
+                            block.setType(Material.IRON_BLOCK);
+                            placed++;
+                        }
+                    }
+                }
+            }
+        }
+        
+        player.sendMessage("§7Demir hapishane oluşturuldu! (" + placed + " blok)");
+    }
+    
+    private void createGlassTower(Player player, Location target, int width, int height, int depth, int level) {
+        int placed = 0;
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                for (int z = 0; z < depth; z++) {
+                    if (x == 0 || x == width-1 || y == 0 || y == height-1 || z == 0 || z == depth-1) {
+                        Location loc = target.clone().add(x - width/2, y, z - depth/2);
+                        Block block = loc.getBlock();
+                        if (block.getType() == Material.AIR) {
+                            block.setType(Material.GLASS);
+                            placed++;
+                        }
+                    }
+                }
+            }
+        }
+        
+        player.sendMessage("§bCam kule oluşturuldu! (" + placed + " blok)");
+    }
+    
+    private void createStoneCastle(Player player, Location target, int width, int height, int depth, int level) {
+        int placed = 0;
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                for (int z = 0; z < depth; z++) {
+                    if (x == 0 || x == width-1 || y == 0 || y == height-1 || z == 0 || z == depth-1) {
+                        Location loc = target.clone().add(x - width/2, y, z - depth/2);
+                        Block block = loc.getBlock();
+                        if (block.getType() == Material.AIR) {
+                            block.setType(Material.STONE);
+                            placed++;
+                        }
+                    }
+                }
+            }
+        }
+        
+        player.sendMessage("§7Taş kale oluşturuldu! (" + placed + " blok)");
+    }
+    
+    private void createObsidianCastle(Player player, Location target, int width, int height, int depth, int level) {
+        int placed = 0;
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                for (int z = 0; z < depth; z++) {
+                    if (x == 0 || x == width-1 || y == 0 || y == height-1 || z == 0 || z == depth-1) {
+                        Location loc = target.clone().add(x - width/2, y, z - depth/2);
+                        Block block = loc.getBlock();
+                        if (block.getType() == Material.AIR) {
+                            block.setType(Material.OBSIDIAN);
+                            placed++;
+                        }
+                    }
+                }
+            }
+        }
+        
+        player.sendMessage("§5Obsidyen kale oluşturuldu! (" + placed + " blok)");
+    }
+    
+    private void createStoneFortress(Player player, Location target, int width, int height, int depth, int level) {
+        int placed = 0;
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                for (int z = 0; z < depth; z++) {
+                    if (x == 0 || x == width-1 || y == 0 || y == height-1 || z == 0 || z == depth-1) {
+                        Location loc = target.clone().add(x - width/2, y, z - depth/2);
+                        Block block = loc.getBlock();
+                        if (block.getType() == Material.AIR) {
+                            block.setType(Material.STONE);
+                            placed++;
+                        }
+                    }
+                }
+            }
+        }
+        
+        player.sendMessage("§7Taş şato oluşturuldu! (" + placed + " blok)");
+    }
+    
+    private void createObsidianPrison(Player player, Location target, int width, int height, int depth, int level) {
+        int placed = 0;
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                for (int z = 0; z < depth; z++) {
+                    if (x == 0 || x == width-1 || y == 0 || y == height-1 || z == 0 || z == depth-1) {
+                        Location loc = target.clone().add(x - width/2, y, z - depth/2);
+                        Block block = loc.getBlock();
+                        if (block.getType() == Material.AIR) {
+                            block.setType(Material.OBSIDIAN);
+                            placed++;
+                        }
+                    }
+                }
+            }
+        }
+        
+        player.sendMessage("§5Obsidyen hapishane oluşturuldu! (" + placed + " blok)");
+    }
+    
+    private void createIronCastle(Player player, Location target, int width, int height, int depth, int level) {
+        int placed = 0;
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                for (int z = 0; z < depth; z++) {
+                    if (x == 0 || x == width-1 || y == 0 || y == height-1 || z == 0 || z == depth-1) {
+                        Location loc = target.clone().add(x - width/2, y, z - depth/2);
+                        Block block = loc.getBlock();
+                        if (block.getType() == Material.AIR) {
+                            block.setType(Material.IRON_BLOCK);
+                            placed++;
+                        }
+                    }
+                }
+            }
+        }
+        
+        player.sendMessage("§7Demir kale oluşturuldu! (" + placed + " blok)");
+    }
+    
+    // ========== DESTEK BATARYA METODLARI ==========
+    
+    private void applyHealSupport(Player player, double radius, double healAmount, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player); // Kendini de ekle
+        
+        for (Player member : members) {
+            if (healAmount < 0) {
+                // Efsanevi: Tam can + 50 ekstra
+                member.setHealth(member.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue());
+                member.setAbsorptionAmount(50.0f);
+            } else {
+                // Normal can yenileme
+                double newHealth = Math.min(
+                    member.getHealth() + healAmount,
+                    member.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue()
+                );
+                member.setHealth(newHealth);
+            }
+        }
+        
+        player.sendMessage("§aCan yenileme uygulandı! (" + members.size() + " oyuncu)");
+    }
+    
+    private void applySpeedSupport(Player player, double radius, int amplifier, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.SPEED, duration * 20, amplifier, false, false, true));
+        }
+        
+        player.sendMessage("§eHız artışı uygulandı! (" + members.size() + " oyuncu)");
+    }
+    
+    private void applyDamageSupport(Player player, double radius, int amplifier, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.INCREASE_DAMAGE, duration * 20, amplifier, false, false, true));
+        }
+        
+        player.sendMessage("§cHasar artışı uygulandı! (" + members.size() + " oyuncu)");
+    }
+    
+    private void applyArmorSupport(Player player, double radius, int amplifier, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.DAMAGE_RESISTANCE, duration * 20, amplifier, false, false, true));
+        }
+        
+        player.sendMessage("§bZırh artışı uygulandı! (" + members.size() + " oyuncu)");
+    }
+    
+    private void applyRegenerationSupport(Player player, double radius, int amplifier, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.REGENERATION, duration * 20, amplifier, false, false, true));
+        }
+        
+        player.sendMessage("§dYenilenme uygulandı! (" + members.size() + " oyuncu)");
     }
 }

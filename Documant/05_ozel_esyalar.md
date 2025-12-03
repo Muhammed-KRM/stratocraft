@@ -871,46 +871,155 @@ Bosslar öldürüldüğünde **%100 şansla** kendi özel itemlerini düşürür
 
 **Toplam**: 25 silah (5 seviye × 5 varyant)
 
-#### Seviye 1-2 Silahlar
-- **Hasar**: Seviye 1: 5.0, Seviye 2: 8.0
-- **Özellik**: Standart silahlar
-- **Varyantlar**: Kılıç, Balta, Mızrak, Yay, Çekiç
+Her silahın **benzersiz özellikleri** vardır ve farklı durumlarda kullanılır.
 
-#### Seviye 3 Silahlar
-- **Hasar**: 11.0
-- **Özellik**: Patlama Atabilme
-  - Sağ tık ile 20 blok menzile patlama at
-  - Yüksek hasar verir
-- **Varyantlar**: 5 farklı silah
+---
 
-#### Seviye 4 Silahlar
-- **Hasar**: 14.0
-- **Özellik**: Devamlı Lazer
-  - Sağ tık ile yüksek hasarlı lazer at
-  - Sürekli hasar verir
-- **Varyantlar**: 5 farklı silah
+#### 🗡️ Seviye 1 Silahlar (Hasar: 5.0)
 
-#### Seviye 5 Silahlar
-- **Hasar**: 17.0
-- **Özellik**: Çok Modlu Silah
-  - **Mod 1 (Blok Fırlatma)**: Q tuşu ile blokları fırlat
-  - **Mod 2 (Duvar Yapma)**: F tuşu ile etraftaki bloklardan duvar yap
-  - **Mod 3 (Atılma/Patlama)**: Shift+Sağ Tık ile atılma ve patlama
-  - **Mod Değiştirme**: `/weaponmode <1|2|3>` komutu veya Shift+Sağ Tık ile menü
+**1. Demir Hız Kılıcı** (`weapon_l1_1`)
+- **Özellik**: Hız Artışı (Sağ Tık)
+- **Etki**: 3 saniye Speed I
+- **Kullanım**: Saldırıda %20 hız artışı
+
+**2. Demir Kritik Baltası** (`weapon_l1_2`)
+- **Özellik**: Kritik Vuruş (Pasif)
+- **Etki**: %15 şansla 2x hasar
+- **Kullanım**: Otomatik çalışır, saldırıda aktif
+
+**3. Demir Savunma Mızrağı** (`weapon_l1_3`)
+- **Özellik**: Savunma Bonusu (Sağ Tık)
+- **Etki**: 3 saniye Damage Resistance I
+- **Kullanım**: Saldırıda %10 hasar azaltma
+
+**4. Demir Hızlı Yayı** (`weapon_l1_4`)
+- **Özellik**: Hızlı Çekim (Pasif)
+- **Etki**: %30 daha hızlı ok atışı
+- **Kullanım**: Ok atışında otomatik çalışır
+
+**5. Demir Güç Çekici** (`weapon_l1_5`)
+- **Özellik**: Güç Artışı (Sağ Tık)
+- **Etki**: 3 saniye Strength I
+- **Kullanım**: +2 ekstra hasar
+
+---
+
+#### 💎 Seviye 2 Silahlar (Hasar: 8.0)
+
+**1. Elmas Zehir Kılıcı** (`weapon_l2_1`)
+- **Özellik**: Zehir Etkisi (Pasif)
+- **Etki**: Saldırıda 3 saniye Poison
+- **Kullanım**: Otomatik çalışır, saldırıda aktif
+
+**2. Elmas Yavaşlatma Baltası** (`weapon_l2_2`)
+- **Özellik**: Yavaşlatma (Pasif)
+- **Etki**: Saldırıda 3 saniye Slowness
+- **Kullanım**: Otomatik çalışır, saldırıda aktif
+
+**3. Elmas Ateş Mızrağı** (`weapon_l2_3`)
+- **Özellik**: Ateş Etkisi (Pasif)
+- **Etki**: Saldırıda 5 saniye Fire
+- **Kullanım**: Otomatik çalışır, saldırıda aktif
+
+**4. Elmas Buz Yayı** (`weapon_l2_4`)
+- **Özellik**: Buz Etkisi (Pasif)
+- **Etki**: Ok ile dondurma etkisi
+- **Kullanım**: Ok atışında otomatik çalışır
+
+**5. Elmas Şok Çekici** (`weapon_l2_5`)
+- **Özellik**: Şok Etkisi (Pasif)
+- **Etki**: Saldırıda yakındaki düşmanlara hasar
+- **Kullanım**: Otomatik çalışır, saldırıda aktif
+
+---
+
+#### 🔥 Seviye 3 Silahlar (Hasar: 11.0)
+
+**Özellik**: Patlama Atabilme
+- **Aktivasyon**: Sağ Tık (Hava veya Blok)
+- **Menzil**: 20 blok
+- **Hasar**: 10 kalp (5 blok yarıçap)
+- **Etki**: Patlama oluşturur, yakındaki canlılara hasar verir
+
+**Varyantlar**:
+- `weapon_l3_1` - Netherite Patlama Kılıcı
+- `weapon_l3_2` - Netherite Patlama Baltası
+- `weapon_l3_3` - Netherite Patlama Mızrağı
+- `weapon_l3_4` - Netherite Patlama Yayı
+- `weapon_l3_5` - Netherite Patlama Çekici
+
+---
+
+#### ⚡ Seviye 4 Silahlar (Hasar: 14.0)
+
+**Özellik**: Devamlı Lazer
+- **Aktivasyon**: Sağ Tık (Hava veya Blok)
+- **Menzil**: 30 blok
+- **Hasar**: 5 kalp/saniye (sürekli)
+- **Cooldown**: 0.5 saniye
+- **Etki**: Sürekli lazer atar, yüksek hasar verir
+
+**Varyantlar**:
+- `weapon_l4_1` - Titanyum Lazer Kılıcı
+- `weapon_l4_2` - Titanyum Lazer Baltası
+- `weapon_l4_3` - Titanyum Lazer Mızrağı
+- `weapon_l4_4` - Titanyum Lazer Yayı
+- `weapon_l4_5` - Titanyum Lazer Çekici
+
+---
+
+#### 🌟 Seviye 5 Silahlar (Hasar: 17.0)
+
+**Özellik**: Çok Modlu Silah
+
+Her Seviye 5 silahın **farklı mod kombinasyonları** vardır:
+
+**1. Efsanevi Savaş Kılıcı** (`weapon_l5_1`)
+- **Mod 1**: Blok Fırlatma (Q tuşu)
+- **Mod 2**: Duvar Yapma (Sağ Tık)
+- **Mod 3**: Atılma/Patlama (Sağ Tık)
+
+**2. Efsanevi Yıkım Baltası** (`weapon_l5_2`)
+- **Mod 1**: Blok Fırlatma (Q tuşu)
+- **Mod 2**: Dash/Patlama (Sağ Tık)
+- **Mod 3**: Atılma/Patlama (Sağ Tık)
+
+**3. Efsanevi Savunma Mızrağı** (`weapon_l5_3`)
+- **Mod 1**: Duvar Yapma (Sağ Tık)
+- **Mod 2**: Dash/Patlama (Sağ Tık)
+- **Mod 3**: Atılma/Patlama (Sağ Tık)
+
+**4. Efsanevi Çoklu Yay** (`weapon_l5_4`)
+- **Mod 1**: Blok Fırlatma (Q tuşu)
+- **Mod 2**: Dash/Patlama (Sağ Tık)
+- **Mod 3**: Duvar Yapma (Sağ Tık)
+
+**5. Efsanevi Kaos Çekici** (`weapon_l5_5`)
+- **Mod 1**: Atılma/Patlama (Sağ Tık)
+- **Mod 2**: Dash/Patlama (Sağ Tık)
+- **Mod 3**: Blok Fırlatma (Q tuşu)
+
+**Mod Açıklamaları**:
+- **Blok Fırlatma**: Q tuşu ile bakılan bloğu fırlat (10 blok menzil)
+- **Duvar Yapma**: Sağ Tık ile 3x3 obsidyen duvar yap
+- **Atılma/Patlama**: Sağ Tık ile silahı at, 2 saniye sonra patlar (5.0 patlama gücü)
+- **Dash/Patlama**: Sağ Tık ile hızlı ileri atıl, 1 saniye sonra patlar (4.0 patlama gücü, 15 kalp hasar)
+
+**Mod Değiştirme**:
+- **Komut**: `/weaponmode <1|2|3>`
+- **Menü**: Shift+Sağ Tık ile mod seçim menüsü açılır
+- **ActionBar**: Mevcut mod ActionBar'da gösterilir
 
 **Admin Komutu**: `/scadmin give weapon weapon_l<seviye>_<varyant>`
 
 **Örnekler**:
 ```
-/scadmin give weapon weapon_l1_1  → Seviye 1, Varyant 1
-/scadmin give weapon weapon_l3_3  → Seviye 3, Varyant 3
-/scadmin give weapon weapon_l5_4  → Seviye 5, Varyant 4
+/scadmin give weapon weapon_l1_1  → Demir Hız Kılıcı
+/scadmin give weapon weapon_l2_3  → Elmas Ateş Mızrağı
+/scadmin give weapon weapon_l3_4  → Netherite Patlama Yayı
+/scadmin give weapon weapon_l4_2  → Titanyum Lazer Baltası
+/scadmin give weapon weapon_l5_1  → Efsanevi Savaş Kılıcı
 ```
-
-**Mod Değiştirme Komutu**: `/weaponmode <1|2|3>`
-- `1` = Blok Fırlatma modu
-- `2` = Duvar Yapma modu
-- `3` = Atılma/Patlama modu
 
 ---
 

@@ -167,7 +167,12 @@ public class BatteryListener implements Listener {
         ItemStack handItem = player.getInventory().getItemInMainHand();
         if (handItem == null) return;
         
-        // 1. MAGMA BATARYASI (3 Magma Bloğu üst üste)
+        // Önce yeni batarya sistemini kontrol et
+        if (checkNewBatterySystem(player, centerBlock, slot, event)) {
+            return; // Yeni sistemde bulunduysa eski sisteme geçme
+        }
+        
+        // 1. MAGMA BATARYASI (3 Magma Bloğu üst üste) - ESKİ SİSTEM (geriye dönük uyumluluk)
         if (centerBlock.getType() == Material.MAGMA_BLOCK) {
             Block below = centerBlock.getRelative(BlockFace.DOWN);
             Block above = centerBlock.getRelative(BlockFace.UP);
@@ -595,8 +600,15 @@ public class BatteryListener implements Listener {
             
         } else if (type.equals("Yıldırım")) {
             batteryManager.fireLightningBattery(player);
-        } else if (type.equals("Kara Delik")) {
-            batteryManager.fireBlackHole(player);
+        } else {
+            // Yeni batarya sistemi - BatteryType enum kullanarak
+            BatteryManager.BatteryType batteryType = getBatteryTypeFromName(type);
+            if (batteryType != null) {
+                batteryManager.fireBattery(player, batteryType, data);
+            } else {
+                // Eski bataryalar (geriye dönük uyumluluk)
+                if (type.equals("Kara Delik")) {
+                    batteryManager.fireBlackHole(player);
         } else if (type.equals("Anlık Köprü")) {
             batteryManager.createInstantBridge(player);
         } else if (type.equals("Sığınak Küpü")) {
@@ -619,6 +631,102 @@ public class BatteryListener implements Listener {
         
         // Ateşlendikten sonra bataryayı sil
         batteryManager.removeBattery(player, slot);
+    }
+    
+    /**
+     * Batarya isminden BatteryType enum'una çevir
+     */
+    private BatteryManager.BatteryType getBatteryTypeFromName(String name) {
+        for (BatteryManager.BatteryType type : BatteryManager.BatteryType.values()) {
+            if (type.getDisplayName().equals(name)) {
+                return type;
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Yeni batarya tespit sistemi - BatteryType enum kullanarak
+     * @return true if battery was found and loaded, false otherwise
+     */
+    private boolean checkNewBatterySystem(Player player, Block centerBlock, int slot, PlayerInteractEvent event) {
+        ItemStack handItem = player.getInventory().getItemInMainHand();
+        if (handItem == null) return false;
+        
+        Block below = centerBlock.getRelative(BlockFace.DOWN);
+        Block above = centerBlock.getRelative(BlockFace.UP);
+        Block east = centerBlock.getRelative(BlockFace.EAST);
+        Block west = centerBlock.getRelative(BlockFace.WEST);
+        
+        // Tüm BatteryType'ları kontrol et
+        for (BatteryManager.BatteryType batteryType : BatteryManager.BatteryType.values()) {
+            Material baseBlock = batteryType.getBaseBlock();
+            Material sideBlock = batteryType.getSideBlock();
+            
+            // Temel blok kontrolü
+            if (centerBlock.getType() != baseBlock) continue;
+            
+            // Üst üste blok kontrolü
+            if (below.getType() != baseBlock || above.getType() != baseBlock) continue;
+            
+            // Seviye tespiti
+            int batteryLevel = batteryManager.detectBatteryLevel(centerBlock, baseBlock);
+            if (batteryLevel != batteryType.getLevel()) continue;
+            
+            // Yan blok kontrolü (seviye 2+ için)
+            if (sideBlock != null && batteryLevel >= 2) {
+                boolean hasSideBlock = east.getType() == sideBlock || west.getType() == sideBlock ||
+                                      below.getRelative(BlockFace.DOWN).getType() == sideBlock ||
+                                      above.getRelative(BlockFace.UP).getType() == sideBlock;
+                if (!hasSideBlock) continue;
+            }
+            
+            // Yakıt kontrolü
+            Material fuel = handItem.getType();
+            boolean isValidFuel = fuel == Material.DIAMOND || fuel == Material.IRON_INGOT ||
+                                 ItemManager.isCustomItem(handItem, "RED_DIAMOND") ||
+                                 ItemManager.isCustomItem(handItem, "DARK_MATTER");
+            
+            if (!isValidFuel) continue;
+            
+            // Zaten yüklü batarya var mı?
+            if (batteryManager.hasLoadedBattery(player, slot)) {
+                player.sendMessage("§cBu slotta zaten yüklü bir batarya var!");
+                event.setCancelled(true);
+                return true;
+            }
+            
+            // Batarya verisini oluştur
+            boolean isRedDiamond = ItemManager.isCustomItem(handItem, "RED_DIAMOND");
+            boolean isDarkMatter = ItemManager.isCustomItem(handItem, "DARK_MATTER");
+            int alchemyLevel = getAlchemyTowerLevel(player);
+            ItemStack offHand = player.getInventory().getItemInOffHand();
+            boolean hasAmplifier = ItemManager.isCustomItem(offHand, "FLAME_AMPLIFIER");
+            double trainingMultiplier = 1.0; // Yeni bataryalar için mastery yok (şimdilik)
+            
+            BatteryData data = new BatteryData(
+                batteryType.getDisplayName(),
+                fuel,
+                alchemyLevel,
+                hasAmplifier,
+                trainingMultiplier,
+                isRedDiamond,
+                isDarkMatter,
+                batteryLevel
+            );
+            
+            // Yükleme işlemi
+            loadBattery(player, centerBlock, below, above, handItem, slot, data, event);
+            
+            // Seviye mesajı
+            if (batteryLevel > 1) {
+                player.sendMessage("§6§lSeviye " + batteryLevel + " " + batteryType.getDisplayName() + " tespit edildi!");
+            }
+            
+            return true;
+        }
+        
+        return false;
     }
     
     /**

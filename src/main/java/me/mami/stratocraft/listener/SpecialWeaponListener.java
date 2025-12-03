@@ -78,6 +78,11 @@ public class SpecialWeaponListener implements Listener {
             return; // Diğer kontrolleri atla
         }
         
+        // Seviye 1-2: Özel yetenekler (saldırıda pasif olarak çalışır, sağ tık ile aktif edilebilir)
+        if (weaponLevel == 1 || weaponLevel == 2) {
+            handleLevel1And2Abilities(player, weaponId, weaponLevel, event);
+        }
+        
         // Seviye 3: Patlama Atabilme
         if (weaponLevel == 3 && (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK)) {
             event.setCancelled(true);
@@ -136,13 +141,19 @@ public class SpecialWeaponListener implements Listener {
                 return;
             }
             
-            // Normal Sağ Tık: Atılma/Patlama (sadece throw modunda)
-            String mode = weaponMode.getOrDefault(player.getUniqueId(), "block_throw");
+            // Normal Sağ Tık: Mod'a göre farklı işlemler
+            String mode = weaponMode.getOrDefault(player.getUniqueId(), getAvailableModesForWeapon(weaponId)[0]);
+            
             if (mode.equals("throw") && (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK)) {
                 event.setCancelled(true);
                 throwWeapon(player, item);
                 return;
+            } else if (mode.equals("dash_explosion") && (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK)) {
+                event.setCancelled(true);
+                dashExplosion(player);
+                return;
             }
+            // wall_build modu onPlayerInteractWallBuild'de işleniyor
         }
     }
     
@@ -232,7 +243,8 @@ public class SpecialWeaponListener implements Listener {
         String weaponId = getSpecialWeaponId(item);
         if (weaponId == null || !weaponId.startsWith("WEAPON_L5")) return;
         
-        String mode = weaponMode.getOrDefault(player.getUniqueId(), "block_throw");
+        String[] availableModes = getAvailableModesForWeapon(weaponId);
+        String mode = weaponMode.getOrDefault(player.getUniqueId(), availableModes[0]);
         
         // Sadece blok fırlatma modunda Q tuşu çalışsın
         if (mode.equals("block_throw")) {
@@ -259,47 +271,62 @@ public class SpecialWeaponListener implements Listener {
     }
     
     /**
-     * Mod Seçim Ekranı Göster (GTA 5 tarzı)
+     * Mod Seçim Ekranı Göster (GTA 5 tarzı) - Silah ID'sine göre özelleştirilmiş
      */
     private void showModeSelectionMenu(Player player) {
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (item == null) return;
+        
+        String weaponId = getSpecialWeaponId(item);
+        if (weaponId == null || !weaponId.startsWith("WEAPON_L5")) return;
+        
         String currentMode = weaponMode.getOrDefault(player.getUniqueId(), "block_throw");
         
-        // ActionBar ile mod seçim menüsü göster (sürekli güncellenir)
-        updateModeSelectionActionBar(player, currentMode);
+        // Silah ID'sine göre mod listesi al
+        String[] availableModes = getAvailableModesForWeapon(weaponId);
+        String[] modeNames = getModeNamesForWeapon(weaponId);
+        String[] modeDescriptions = getModeDescriptionsForWeapon(weaponId);
         
-        // Chat mesajları
-        player.sendMessage("§6§l═══════════════════════════");
-        player.sendMessage("§6§l        MOD SEÇİMİ");
-        player.sendMessage("§6§l═══════════════════════════");
+        // ActionBar ile mod seçim menüsü göster
+        updateModeSelectionActionBar(player, currentMode, availableModes, modeNames);
+        
+        // Chat mesajları - GTA 5 tarzı menü
+        player.sendMessage("§6§l═══════════════════════════════════");
+        player.sendMessage("§6§l         MOD SEÇİM MENÜSÜ");
+        player.sendMessage("§6§l═══════════════════════════════════");
         player.sendMessage("");
-        player.sendMessage("§eMevcut Mod: §f" + getModeDisplayName(currentMode));
+        // Mevcut modun index'ini bul
+        int currentIndex = 0;
+        for (int i = 0; i < availableModes.length; i++) {
+            if (availableModes[i].equals(currentMode)) {
+                currentIndex = i;
+                break;
+            }
+        }
+        player.sendMessage("§eMevcut Mod: §f" + modeNames[currentIndex]);
         player.sendMessage("");
         player.sendMessage("§7§lKullanılabilir Modlar:");
         player.sendMessage("");
         
-        // Mod seçeneklerini göster (mevcut modu vurgula)
-        if (currentMode.equals("block_throw")) {
-            player.sendMessage("§e§l▶ §e1. Blok Fırlatma §7(Q tuşu ile kullan)");
-        } else {
-            player.sendMessage("§7  1. Blok Fırlatma §7(Q tuşu ile kullan)");
+        // Her mod için seçenek göster
+        for (int i = 0; i < availableModes.length; i++) {
+            String mode = availableModes[i];
+            String modeName = modeNames[i];
+            String modeDesc = modeDescriptions[i];
+            
+            if (currentMode.equals(mode)) {
+                player.sendMessage("§e§l▶ §e" + (i + 1) + ". " + modeName);
+                player.sendMessage("§7    " + modeDesc);
+            } else {
+                player.sendMessage("§7   " + (i + 1) + ". " + modeName);
+                player.sendMessage("§7    " + modeDesc);
+            }
+            player.sendMessage("");
         }
         
-        if (currentMode.equals("wall_build")) {
-            player.sendMessage("§a§l▶ §a2. Duvar Yapma §7(Sağ tık ile kullan)");
-        } else {
-            player.sendMessage("§7  2. Duvar Yapma §7(Sağ tık ile kullan)");
-        }
-        
-        if (currentMode.equals("throw")) {
-            player.sendMessage("§d§l▶ §d3. Atılma/Patlama §7(Sağ tık ile kullan)");
-        } else {
-            player.sendMessage("§7  3. Atılma/Patlama §7(Sağ tık ile kullan)");
-        }
-        
-        player.sendMessage("");
         player.sendMessage("§7Mod değiştirmek için: §e/weaponmode <1|2|3>");
         player.sendMessage("§7veya tekrar §eShift+Sağ Tık §7yapın");
-        player.sendMessage("§6§l═══════════════════════════");
+        player.sendMessage("§6§l═══════════════════════════════════");
         
         // ActionBar'ı 10 saniye boyunca güncelle
         new BukkitRunnable() {
@@ -314,8 +341,8 @@ public class SpecialWeaponListener implements Listener {
                 
                 // Her 20 tick'te bir (1 saniye) güncelle
                 if (count % 20 == 0) {
-                    String mode = weaponMode.getOrDefault(player.getUniqueId(), "block_throw");
-                    updateModeSelectionActionBar(player, mode);
+                    String mode = weaponMode.getOrDefault(player.getUniqueId(), availableModes[0]);
+                    updateModeSelectionActionBar(player, mode, availableModes, modeNames);
                 }
                 
                 count++;
@@ -324,10 +351,103 @@ public class SpecialWeaponListener implements Listener {
     }
     
     /**
+     * Silah ID'sine göre kullanılabilir modları döndür
+     */
+    private String[] getAvailableModesForWeapon(String weaponId) {
+        switch (weaponId) {
+            case "WEAPON_L5_1": // Kılıç
+                return new String[]{"block_throw", "wall_build", "throw"};
+            case "WEAPON_L5_2": // Balta
+                return new String[]{"block_throw", "dash_explosion", "throw"};
+            case "WEAPON_L5_3": // Mızrak
+                return new String[]{"wall_build", "dash_explosion", "throw"};
+            case "WEAPON_L5_4": // Yay
+                return new String[]{"block_throw", "dash_explosion", "wall_build"};
+            case "WEAPON_L5_5": // Çekiç
+                return new String[]{"throw", "dash_explosion", "block_throw"};
+            default:
+                return new String[]{"block_throw", "wall_build", "throw"};
+        }
+    }
+    
+    /**
+     * Silah ID'sine göre mod isimlerini döndür
+     */
+    private String[] getModeNamesForWeapon(String weaponId) {
+        switch (weaponId) {
+            case "WEAPON_L5_1": // Kılıç
+                return new String[]{"§eBlok Fırlatma", "§aDuvar Yapma", "§dAtılma/Patlama"};
+            case "WEAPON_L5_2": // Balta
+                return new String[]{"§eBlok Fırlatma", "§cDash/Patlama", "§dAtılma/Patlama"};
+            case "WEAPON_L5_3": // Mızrak
+                return new String[]{"§aDuvar Yapma", "§cDash/Patlama", "§dAtılma/Patlama"};
+            case "WEAPON_L5_4": // Yay
+                return new String[]{"§eBlok Fırlatma", "§cDash/Patlama", "§aDuvar Yapma"};
+            case "WEAPON_L5_5": // Çekiç
+                return new String[]{"§dAtılma/Patlama", "§cDash/Patlama", "§eBlok Fırlatma"};
+            default:
+                return new String[]{"§eBlok Fırlatma", "§aDuvar Yapma", "§dAtılma/Patlama"};
+        }
+    }
+    
+    /**
+     * Silah ID'sine göre mod açıklamalarını döndür
+     */
+    private String[] getModeDescriptionsForWeapon(String weaponId) {
+        switch (weaponId) {
+            case "WEAPON_L5_1": // Kılıç
+                return new String[]{
+                    "§7Q tuşu ile bakılan bloğu fırlat",
+                    "§7Sağ tık ile 3x3 duvar yap",
+                    "§7Sağ tık ile silahı at (patlama)"
+                };
+            case "WEAPON_L5_2": // Balta
+                return new String[]{
+                    "§7Q tuşu ile bakılan bloğu fırlat",
+                    "§7Sağ tık ile ileriye dash yap ve patlat",
+                    "§7Sağ tık ile silahı at (patlama)"
+                };
+            case "WEAPON_L5_3": // Mızrak
+                return new String[]{
+                    "§7Sağ tık ile 3x3 duvar yap",
+                    "§7Sağ tık ile ileriye dash yap ve patlat",
+                    "§7Sağ tık ile silahı at (patlama)"
+                };
+            case "WEAPON_L5_4": // Yay
+                return new String[]{
+                    "§7Q tuşu ile bakılan bloğu fırlat",
+                    "§7Sağ tık ile ileriye dash yap ve patlat",
+                    "§7Sağ tık ile 3x3 duvar yap"
+                };
+            case "WEAPON_L5_5": // Çekiç
+                return new String[]{
+                    "§7Sağ tık ile silahı at (patlama)",
+                    "§7Sağ tık ile ileriye dash yap ve patlat",
+                    "§7Q tuşu ile bakılan bloğu fırlat"
+                };
+            default:
+                return new String[]{
+                    "§7Q tuşu ile bakılan bloğu fırlat",
+                    "§7Sağ tık ile 3x3 duvar yap",
+                    "§7Sağ tık ile silahı at (patlama)"
+                };
+        }
+    }
+    
+    /**
      * ActionBar'da mod seçim menüsünü göster
      */
-    private void updateModeSelectionActionBar(Player player, String currentMode) {
-        String modeName = getModeDisplayName(currentMode);
+    private void updateModeSelectionActionBar(Player player, String currentMode, String[] availableModes, String[] modeNames) {
+        // Mevcut modun index'ini bul
+        int currentIndex = 0;
+        for (int i = 0; i < availableModes.length; i++) {
+            if (availableModes[i].equals(currentMode)) {
+                currentIndex = i;
+                break;
+            }
+        }
+        
+        String modeName = modeNames[currentIndex];
         player.sendActionBar("§6§l[MOD SEÇİMİ] §7Mevcut: " + modeName + " §7| §e/weaponmode <1|2|3>");
     }
     
@@ -339,16 +459,20 @@ public class SpecialWeaponListener implements Listener {
             case "block_throw": return "§eBlok Fırlatma";
             case "wall_build": return "§aDuvar Yapma";
             case "throw": return "§dAtılma/Patlama";
+            case "dash_explosion": return "§cDash/Patlama";
             default: return "§7Bilinmeyen";
         }
     }
     
     /**
-     * Mod değiştir (komut ile)
+     * Mod değiştir (komut ile) - Silah ID'sine göre özelleştirilmiş
      */
     public void changeWeaponMode(Player player, int modeNumber) {
         ItemStack item = player.getInventory().getItemInMainHand();
-        if (item == null) return;
+        if (item == null) {
+            player.sendMessage("§cElinde silah yok!");
+            return;
+        }
         
         int weaponLevel = getWeaponLevel(item);
         if (weaponLevel != 5) {
@@ -356,37 +480,29 @@ public class SpecialWeaponListener implements Listener {
             return;
         }
         
-        String newMode;
-        String displayName;
-        
-        switch (modeNumber) {
-            case 1:
-                newMode = "block_throw";
-                displayName = "§eBlok Fırlatma";
-                break;
-            case 2:
-                newMode = "wall_build";
-                displayName = "§aDuvar Yapma";
-                break;
-            case 3:
-                newMode = "throw";
-                displayName = "§dAtılma/Patlama";
-                break;
-            default:
-                player.sendMessage("§cGeçersiz mod! 1, 2 veya 3 seçin.");
-                return;
+        String weaponId = getSpecialWeaponId(item);
+        if (weaponId == null || !weaponId.startsWith("WEAPON_L5")) {
+            player.sendMessage("§cBu özel silah değil!");
+            return;
         }
+        
+        // Silah ID'sine göre mod listesi al
+        String[] availableModes = getAvailableModesForWeapon(weaponId);
+        String[] modeNames = getModeNamesForWeapon(weaponId);
+        String[] modeDescriptions = getModeDescriptionsForWeapon(weaponId);
+        
+        if (modeNumber < 1 || modeNumber > availableModes.length) {
+            player.sendMessage("§cGeçersiz mod! 1-" + availableModes.length + " arası seçin.");
+            return;
+        }
+        
+        String newMode = availableModes[modeNumber - 1];
+        String displayName = modeNames[modeNumber - 1];
+        String description = modeDescriptions[modeNumber - 1];
         
         weaponMode.put(player.getUniqueId(), newMode);
         player.sendMessage("§aMod değiştirildi: " + displayName);
-        player.sendMessage("§7Kullanım:");
-        if (newMode.equals("block_throw")) {
-            player.sendMessage("§7  Q tuşu: Blok fırlat");
-        } else if (newMode.equals("wall_build")) {
-            player.sendMessage("§7  Sağ tık: Duvar yap");
-        } else if (newMode.equals("throw")) {
-            player.sendMessage("§7  Sağ tık: Silahı at (patlama)");
-        }
+        player.sendMessage(description);
     }
     
     /**
@@ -405,7 +521,7 @@ public class SpecialWeaponListener implements Listener {
         String weaponId = getSpecialWeaponId(item);
         if (weaponId == null || !weaponId.startsWith("WEAPON_L5")) return;
         
-        String mode = weaponMode.getOrDefault(player.getUniqueId(), "block_throw");
+        String mode = weaponMode.getOrDefault(player.getUniqueId(), getAvailableModesForWeapon(weaponId)[0]);
         
         // Duvar yapma modu
         if (mode.equals("wall_build") && event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null) {
@@ -430,6 +546,169 @@ public class SpecialWeaponListener implements Listener {
             
             if (blocksPlaced > 0) {
                 player.sendMessage("§aDuvar oluşturuldu! (" + blocksPlaced + " blok)");
+            }
+        }
+    }
+    
+    /**
+     * Seviye 5: Dash/Patlama modu
+     */
+    private void dashExplosion(Player player) {
+        Vector direction = player.getLocation().getDirection();
+        Location startLoc = player.getLocation();
+        
+        // Dash efekti
+        player.setVelocity(direction.multiply(2.0));
+        player.getWorld().spawnParticle(Particle.CLOUD, startLoc, 20, 0.5, 0.5, 0.5, 0.1);
+        player.getWorld().playSound(startLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.5f);
+        
+        // 1 saniye sonra patlama
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                Location explosionLoc = player.getLocation();
+                player.getWorld().createExplosion(explosionLoc, 4.0f, false, false);
+                player.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, explosionLoc, 1);
+                player.getWorld().playSound(explosionLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
+                
+                // Yakındaki canlılara hasar ver
+                for (Entity entity : player.getWorld().getNearbyEntities(explosionLoc, 5, 5, 5)) {
+                    if (entity instanceof LivingEntity && entity != player) {
+                        ((LivingEntity) entity).damage(15.0);
+                    }
+                }
+            }
+        }.runTaskLater(plugin, 20L); // 1 saniye
+        
+        player.sendMessage("§cDash/Patlama aktif! 1 saniye sonra patlayacak!");
+    }
+    
+    /**
+     * Seviye 1-2: Özel yetenekleri işle
+     */
+    private void handleLevel1And2Abilities(Player player, String weaponId, int weaponLevel, PlayerInteractEvent event) {
+        // Seviye 1 yetenekler
+        if (weaponLevel == 1) {
+            switch (weaponId) {
+                case "WEAPON_L1_1": // Hız Kılıcı - Sağ tık ile hız artışı
+                    if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+                        event.setCancelled(true);
+                        player.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                            org.bukkit.potion.PotionEffectType.SPEED, 60, 0, false, false, true));
+                        player.sendMessage("§eHız artışı aktif! (3 saniye)");
+                    }
+                    break;
+                case "WEAPON_L1_2": // Kritik Baltası - Saldırıda otomatik çalışır (EntityDamageByEntityEvent'te)
+                    // Pasif yetenek, saldırıda işlenecek
+                    break;
+                case "WEAPON_L1_3": // Savunma Mızrağı - Sağ tık ile savunma bonusu
+                    if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+                        event.setCancelled(true);
+                        player.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                            org.bukkit.potion.PotionEffectType.DAMAGE_RESISTANCE, 60, 0, false, false, true));
+                        player.sendMessage("§bSavunma bonusu aktif! (3 saniye)");
+                    }
+                    break;
+                case "WEAPON_L1_4": // Hızlı Yay - Pasif yetenek (ok atışında işlenecek)
+                    // Pasif yetenek, ok atışında işlenecek
+                    break;
+                case "WEAPON_L1_5": // Güç Çekici - Sağ tık ile güç artışı
+                    if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+                        event.setCancelled(true);
+                        player.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                            org.bukkit.potion.PotionEffectType.INCREASE_DAMAGE, 60, 0, false, false, true));
+                        player.sendMessage("§cGüç artışı aktif! (3 saniye)");
+                    }
+                    break;
+            }
+        }
+        
+        // Seviye 2 yetenekler
+        if (weaponLevel == 2) {
+            switch (weaponId) {
+                case "WEAPON_L2_1": // Zehir Kılıcı - Saldırıda otomatik çalışır
+                    // Pasif yetenek, saldırıda işlenecek
+                    break;
+                case "WEAPON_L2_2": // Yavaşlatma Baltası - Saldırıda otomatik çalışır
+                    // Pasif yetenek, saldırıda işlenecek
+                    break;
+                case "WEAPON_L2_3": // Ateş Mızrağı - Saldırıda otomatik çalışır
+                    // Pasif yetenek, saldırıda işlenecek
+                    break;
+                case "WEAPON_L2_4": // Buz Yayı - Ok atışında işlenecek
+                    // Pasif yetenek, ok atışında işlenecek
+                    break;
+                case "WEAPON_L2_5": // Şok Çekici - Saldırıda otomatik çalışır
+                    // Pasif yetenek, saldırıda işlenecek
+                    break;
+            }
+        }
+    }
+    
+    /**
+     * Seviye 1-2: Saldırıda pasif yetenekleri işle
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onEntityDamageByEntity(org.bukkit.event.entity.EntityDamageByEntityEvent event) {
+        if (!(event.getDamager() instanceof Player)) return;
+        
+        Player player = (Player) event.getDamager();
+        ItemStack item = player.getInventory().getItemInMainHand();
+        
+        if (item == null) return;
+        
+        int weaponLevel = getWeaponLevel(item);
+        String weaponId = getSpecialWeaponId(item);
+        
+        if (weaponId == null || !weaponId.startsWith("WEAPON_L")) return;
+        if (weaponLevel != 1 && weaponLevel != 2) return;
+        
+        Entity target = event.getEntity();
+        if (!(target instanceof LivingEntity)) return;
+        
+        LivingEntity livingTarget = (LivingEntity) target;
+        
+        // Seviye 1 yetenekler
+        if (weaponLevel == 1) {
+            switch (weaponId) {
+                case "WEAPON_L1_2": // Kritik Baltası - %15 şansla 2x hasar
+                    if (Math.random() < 0.15) {
+                        double currentDamage = event.getDamage();
+                        event.setDamage(currentDamage * 2.0);
+                        player.sendMessage("§e§lKRİTİK VURUŞ!");
+                        player.getWorld().spawnParticle(Particle.CRIT, target.getLocation(), 10, 0.5, 0.5, 0.5, 0.1);
+                        player.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.0f);
+                    }
+                    break;
+            }
+        }
+        
+        // Seviye 2 yetenekler
+        if (weaponLevel == 2) {
+            switch (weaponId) {
+                case "WEAPON_L2_1": // Zehir Kılıcı - 3 saniye zehir
+                    livingTarget.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                        org.bukkit.potion.PotionEffectType.POISON, 60, 0, false, false, true));
+                    player.sendMessage("§2Zehir etkisi uygulandı!");
+                    break;
+                case "WEAPON_L2_2": // Yavaşlatma Baltası - 3 saniye yavaşlatma
+                    livingTarget.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                        org.bukkit.potion.PotionEffectType.SLOW, 60, 0, false, false, true));
+                    player.sendMessage("§bYavaşlatma etkisi uygulandı!");
+                    break;
+                case "WEAPON_L2_3": // Ateş Mızrağı - 5 saniye ateş
+                    livingTarget.setFireTicks(100); // 5 saniye
+                    player.sendMessage("§cAteş etkisi uygulandı!");
+                    break;
+                case "WEAPON_L2_5": // Şok Çekici - Yakındaki düşmanlara hasar
+                    for (Entity nearby : player.getWorld().getNearbyEntities(target.getLocation(), 3, 3, 3)) {
+                        if (nearby instanceof LivingEntity && nearby != target && nearby != player) {
+                            ((LivingEntity) nearby).damage(3.0);
+                            player.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, nearby.getLocation(), 5, 0.3, 0.3, 0.3, 0.05);
+                        }
+                    }
+                    player.sendMessage("§eŞok etkisi uygulandı!");
+                    break;
             }
         }
     }

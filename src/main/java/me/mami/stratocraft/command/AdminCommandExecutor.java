@@ -4,6 +4,7 @@ import me.mami.stratocraft.Main;
 import me.mami.stratocraft.manager.ItemManager;
 import me.mami.stratocraft.manager.MobManager;
 import me.mami.stratocraft.manager.DisasterManager;
+import me.mami.stratocraft.manager.BatteryManager;
 import me.mami.stratocraft.model.Disaster;
 import me.mami.stratocraft.util.LangManager;
 import org.bukkit.Material;
@@ -2765,9 +2766,103 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         "force_field", "healing_shrine", "power_totem", "speed_circle", "defense_wall");
                 return filterList(weapons, input);
             case "battery":
-                List<String> batteries = Arrays.asList("magma_battery", "lightning_battery", "black_hole", "bridge",
-                        "shelter", "gravity_anchor", "seismic_hammer", "magnetic_disruptor", "ozone_shield",
-                        "earth_wall", "energy_wall", "lava_trencher_battery");
+                // Yeni batarya sistemi - kategorize edilmiş
+                List<String> batteries = new ArrayList<>();
+                
+                // Saldırı Bataryaları
+                batteries.add("attack_fireball_l1");
+                batteries.add("attack_lightning_l1");
+                batteries.add("attack_ice_ball_l1");
+                batteries.add("attack_poison_arrow_l1");
+                batteries.add("attack_shock_l1");
+                batteries.add("attack_double_fireball_l2");
+                batteries.add("attack_chain_lightning_l2");
+                batteries.add("attack_ice_storm_l2");
+                batteries.add("attack_acid_rain_l2");
+                batteries.add("attack_electric_net_l2");
+                batteries.add("attack_meteor_shower_l3");
+                batteries.add("attack_storm_l3");
+                batteries.add("attack_ice_age_l3");
+                batteries.add("attack_poison_bomb_l3");
+                batteries.add("attack_lightning_storm_l3");
+                batteries.add("attack_hellfire_l4");
+                batteries.add("attack_thunder_l4");
+                batteries.add("attack_death_cloud_l4");
+                batteries.add("attack_electric_storm_l4");
+                batteries.add("attack_mountain_destroyer_l5");
+                batteries.add("attack_lava_tsunami_l5");
+                batteries.add("attack_boss_killer_l5");
+                batteries.add("attack_area_destroyer_l5");
+                batteries.add("attack_apocalypse_l5");
+                
+                // Oluşturma Bataryaları
+                batteries.add("construction_obsidian_wall_l1");
+                batteries.add("construction_stone_bridge_l1");
+                batteries.add("construction_iron_cage_l1");
+                batteries.add("construction_glass_wall_l1");
+                batteries.add("construction_wood_barricade_l1");
+                batteries.add("construction_obsidian_cage_l2");
+                batteries.add("construction_stone_bridge_l2");
+                batteries.add("construction_iron_wall_l2");
+                batteries.add("construction_glass_tunnel_l2");
+                batteries.add("construction_wood_castle_l2");
+                batteries.add("construction_obsidian_wall_l3");
+                batteries.add("construction_netherite_bridge_l3");
+                batteries.add("construction_iron_prison_l3");
+                batteries.add("construction_glass_tower_l3");
+                batteries.add("construction_stone_castle_l3");
+                batteries.add("construction_obsidian_castle_l4");
+                batteries.add("construction_netherite_bridge_l4");
+                batteries.add("construction_iron_prison_l4");
+                batteries.add("construction_glass_tower_l4");
+                batteries.add("construction_stone_fortress_l4");
+                batteries.add("construction_obsidian_prison_l5");
+                batteries.add("construction_netherite_bridge_l5");
+                batteries.add("construction_iron_castle_l5");
+                batteries.add("construction_glass_tower_l5");
+                batteries.add("construction_stone_fortress_l5");
+                
+                // Destek Bataryaları
+                batteries.add("support_heal_l1");
+                batteries.add("support_speed_l1");
+                batteries.add("support_damage_l1");
+                batteries.add("support_armor_l1");
+                batteries.add("support_regeneration_l1");
+                batteries.add("support_heal_l2");
+                batteries.add("support_speed_l2");
+                batteries.add("support_damage_l2");
+                batteries.add("support_armor_l2");
+                batteries.add("support_regeneration_l2");
+                batteries.add("support_heal_l3");
+                batteries.add("support_speed_l3");
+                batteries.add("support_damage_l3");
+                batteries.add("support_armor_l3");
+                batteries.add("support_regeneration_l3");
+                batteries.add("support_heal_l4");
+                batteries.add("support_speed_l4");
+                batteries.add("support_damage_l4");
+                batteries.add("support_armor_l4");
+                batteries.add("support_regeneration_l4");
+                batteries.add("support_heal_l5");
+                batteries.add("support_speed_l5");
+                batteries.add("support_damage_l5");
+                batteries.add("support_armor_l5");
+                batteries.add("support_regeneration_l5");
+                
+                // Eski bataryalar (geriye dönük uyumluluk)
+                batteries.add("magma_battery");
+                batteries.add("lightning_battery");
+                batteries.add("black_hole");
+                batteries.add("bridge");
+                batteries.add("shelter");
+                batteries.add("gravity_anchor");
+                batteries.add("seismic_hammer");
+                batteries.add("magnetic_disruptor");
+                batteries.add("ozone_shield");
+                batteries.add("earth_wall");
+                batteries.add("energy_wall");
+                batteries.add("lava_trencher_battery");
+                
                 return filterList(batteries, input);
             case "structure":
                 List<String> structures = Arrays.asList("alchemy_tower", "tectonic_stabilizer", "healing_beacon",
@@ -3763,10 +3858,229 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
                 return true;
 
+            // ========== YENİ BATARYA SİSTEMİ (75 BATARYA) ==========
+            
+            // SALDIRI BATARYALARI (25 batarya)
+            case "attack_fireball_l1":
+                return buildNewBattery(p, loc, Material.MAGMA_BLOCK, null, 1, "Ateş Topu", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_lightning_l1":
+                return buildNewBattery(p, loc, Material.IRON_BLOCK, null, 1, "Yıldırım", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_ice_ball_l1":
+                return buildNewBattery(p, loc, Material.PACKED_ICE, null, 1, "Buz Topu", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_poison_arrow_l1":
+                return buildNewBattery(p, loc, Material.EMERALD_BLOCK, null, 1, "Zehir Oku", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_shock_l1":
+                return buildNewBattery(p, loc, Material.REDSTONE_BLOCK, null, 1, "Şok", BatteryManager.BatteryCategory.ATTACK);
+            
+            case "attack_double_fireball_l2":
+                return buildNewBattery(p, loc, Material.MAGMA_BLOCK, Material.NETHERRACK, 2, "Çift Ateş Topu", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_chain_lightning_l2":
+                return buildNewBattery(p, loc, Material.IRON_BLOCK, Material.GOLD_BLOCK, 2, "Zincir Yıldırım", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_ice_storm_l2":
+                return buildNewBattery(p, loc, Material.PACKED_ICE, Material.BLUE_ICE, 2, "Buz Fırtınası", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_acid_rain_l2":
+                return buildNewBattery(p, loc, Material.EMERALD_BLOCK, Material.SLIME_BLOCK, 2, "Asit Yağmuru", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_electric_net_l2":
+                return buildNewBattery(p, loc, Material.REDSTONE_BLOCK, Material.LAPIS_BLOCK, 2, "Elektrik Ağı", BatteryManager.BatteryCategory.ATTACK);
+            
+            case "attack_meteor_shower_l3":
+                return buildNewBattery(p, loc, Material.OBSIDIAN, Material.MAGMA_BLOCK, 3, "Meteor Yağmuru", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_storm_l3":
+                return buildNewBattery(p, loc, Material.IRON_BLOCK, Material.DIAMOND_BLOCK, 3, "Fırtına", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_ice_age_l3":
+                return buildNewBattery(p, loc, Material.PACKED_ICE, Material.BLUE_ICE, 3, "Buz Çağı", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_poison_bomb_l3":
+                return buildNewBattery(p, loc, Material.EMERALD_BLOCK, Material.POISONOUS_POTATO, 3, "Zehir Bombası", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_lightning_storm_l3":
+                return buildNewBattery(p, loc, Material.REDSTONE_BLOCK, Material.GLOWSTONE, 3, "Yıldırım Fırtınası", BatteryManager.BatteryCategory.ATTACK);
+            
+            case "attack_hellfire_l4":
+                return buildNewBattery(p, loc, Material.MAGMA_BLOCK, Material.NETHER_STAR, 4, "Cehennem Ateşi", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_thunder_l4":
+                return buildNewBattery(p, loc, Material.IRON_BLOCK, Material.BEACON, 4, "Gök Gürültüsü", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_ice_age_l4":
+                return buildNewBattery(p, loc, Material.PACKED_ICE, Material.FROSTED_ICE, 4, "Buz Çağı", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_death_cloud_l4":
+                return buildNewBattery(p, loc, Material.EMERALD_BLOCK, Material.WITHER_SKELETON_SKULL, 4, "Ölüm Bulutu", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_electric_storm_l4":
+                return buildNewBattery(p, loc, Material.REDSTONE_BLOCK, Material.END_CRYSTAL, 4, "Elektrik Fırtınası", BatteryManager.BatteryCategory.ATTACK);
+            
+            case "attack_mountain_destroyer_l5":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.NETHER_STAR, 5, "Dağ Yok Edici", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_lava_tsunami_l5":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.LAVA_BUCKET, 5, "Lava Tufanı", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_boss_killer_l5":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.DRAGON_HEAD, 5, "Boss Katili", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_area_destroyer_l5":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.COMMAND_BLOCK, 5, "Alan Yok Edici", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_apocalypse_l5":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.END_CRYSTAL, 5, "Kıyamet", BatteryManager.BatteryCategory.ATTACK);
+            
+            // OLUŞTURMA BATARYALARI (25 batarya)
+            case "construction_obsidian_wall_l1":
+                return buildNewBattery(p, loc, Material.OBSIDIAN, null, 1, "Obsidyen Duvar", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_stone_bridge_l1":
+                return buildNewBattery(p, loc, Material.STONE, null, 1, "Taş Köprü", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_iron_cage_l1":
+                return buildNewBattery(p, loc, Material.IRON_BLOCK, null, 1, "Demir Kafes", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_glass_wall_l1":
+                return buildNewBattery(p, loc, Material.GLASS, null, 1, "Cam Duvar", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_wood_barricade_l1":
+                return buildNewBattery(p, loc, Material.OAK_PLANKS, null, 1, "Ahşap Barikat", BatteryManager.BatteryCategory.CONSTRUCTION);
+            
+            case "construction_obsidian_cage_l2":
+                return buildNewBattery(p, loc, Material.OBSIDIAN, Material.IRON_BLOCK, 2, "Obsidyen Kafes", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_stone_bridge_l2":
+                return buildNewBattery(p, loc, Material.STONE, Material.COBBLESTONE, 2, "Taş Köprü (Gelişmiş)", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_iron_wall_l2":
+                return buildNewBattery(p, loc, Material.IRON_BLOCK, Material.IRON_INGOT, 2, "Demir Duvar", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_glass_tunnel_l2":
+                return buildNewBattery(p, loc, Material.GLASS, Material.GLASS_PANE, 2, "Cam Tünel", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_wood_castle_l2":
+                return buildNewBattery(p, loc, Material.OAK_PLANKS, Material.OAK_LOG, 2, "Ahşap Kale", BatteryManager.BatteryCategory.CONSTRUCTION);
+            
+            case "construction_obsidian_wall_l3":
+                return buildNewBattery(p, loc, Material.OBSIDIAN, Material.BEDROCK, 3, "Obsidyen Duvar (Güçlü)", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_netherite_bridge_l3":
+                return buildNewBattery(p, loc, Material.NETHERITE_BLOCK, Material.NETHERITE_INGOT, 3, "Netherite Köprü", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_iron_prison_l3":
+                return buildNewBattery(p, loc, Material.IRON_BLOCK, Material.IRON_BARS, 3, "Demir Hapishane", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_glass_tower_l3":
+                return buildNewBattery(p, loc, Material.GLASS, Material.GLASS_PANE, 3, "Cam Kule", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_stone_castle_l3":
+                return buildNewBattery(p, loc, Material.STONE, Material.COBBLESTONE, 3, "Taş Kale", BatteryManager.BatteryCategory.CONSTRUCTION);
+            
+            case "construction_obsidian_castle_l4":
+                return buildNewBattery(p, loc, Material.OBSIDIAN, Material.END_CRYSTAL, 4, "Obsidyen Kale", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_netherite_bridge_l4":
+                return buildNewBattery(p, loc, Material.NETHERITE_BLOCK, Material.BEACON, 4, "Netherite Köprü (Gelişmiş)", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_iron_prison_l4":
+                return buildNewBattery(p, loc, Material.IRON_BLOCK, Material.ANVIL, 4, "Demir Hapishane (Güçlü)", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_glass_tower_l4":
+                return buildNewBattery(p, loc, Material.GLASS, Material.BEACON, 4, "Cam Kule (Gelişmiş)", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_stone_fortress_l4":
+                return buildNewBattery(p, loc, Material.STONE, Material.BEACON, 4, "Taş Şato", BatteryManager.BatteryCategory.CONSTRUCTION);
+            
+            case "construction_obsidian_prison_l5":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.END_CRYSTAL, 5, "Obsidyen Hapishane", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_netherite_bridge_l5":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.BEACON, 5, "Netherite Köprü (Efsanevi)", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_iron_castle_l5":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.ANVIL, 5, "Demir Kale (Efsanevi)", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_glass_tower_l5":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.BEACON, 5, "Cam Kule (Efsanevi)", BatteryManager.BatteryCategory.CONSTRUCTION);
+            case "construction_stone_fortress_l5":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.BEACON, 5, "Taş Kalesi (Efsanevi)", BatteryManager.BatteryCategory.CONSTRUCTION);
+            
+            // DESTEK BATARYALARI (25 batarya)
+            case "support_heal_l1":
+                return buildNewBattery(p, loc, Material.GOLD_BLOCK, null, 1, "Can Yenileme", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_speed_l1":
+                return buildNewBattery(p, loc, Material.EMERALD_BLOCK, null, 1, "Hız Artışı", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_damage_l1":
+                return buildNewBattery(p, loc, Material.DIAMOND_BLOCK, null, 1, "Hasar Artışı", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_armor_l1":
+                return buildNewBattery(p, loc, Material.IRON_BLOCK, null, 1, "Zırh Artışı", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_regeneration_l1":
+                return buildNewBattery(p, loc, Material.LAPIS_BLOCK, null, 1, "Yenilenme", BatteryManager.BatteryCategory.SUPPORT);
+            
+            case "support_heal_l2":
+                return buildNewBattery(p, loc, Material.GOLD_BLOCK, Material.GOLD_INGOT, 2, "Can Yenileme (Gelişmiş)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_speed_l2":
+                return buildNewBattery(p, loc, Material.EMERALD_BLOCK, Material.EMERALD, 2, "Hız Artışı (Gelişmiş)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_damage_l2":
+                return buildNewBattery(p, loc, Material.DIAMOND_BLOCK, Material.DIAMOND, 2, "Hasar Artışı (Gelişmiş)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_armor_l2":
+                return buildNewBattery(p, loc, Material.IRON_BLOCK, Material.IRON_INGOT, 2, "Zırh Artışı (Gelişmiş)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_regeneration_l2":
+                return buildNewBattery(p, loc, Material.LAPIS_BLOCK, Material.LAPIS_LAZULI, 2, "Yenilenme (Gelişmiş)", BatteryManager.BatteryCategory.SUPPORT);
+            
+            case "support_heal_l3":
+                return buildNewBattery(p, loc, Material.GOLD_BLOCK, Material.GOLDEN_APPLE, 3, "Can Yenileme (Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_speed_l3":
+                return buildNewBattery(p, loc, Material.EMERALD_BLOCK, Material.EMERALD_BLOCK, 3, "Hız Artışı (Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_damage_l3":
+                return buildNewBattery(p, loc, Material.DIAMOND_BLOCK, Material.DIAMOND_BLOCK, 3, "Hasar Artışı (Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_armor_l3":
+                return buildNewBattery(p, loc, Material.IRON_BLOCK, Material.IRON_BLOCK, 3, "Zırh Artışı (Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_regeneration_l3":
+                return buildNewBattery(p, loc, Material.LAPIS_BLOCK, Material.LAPIS_BLOCK, 3, "Yenilenme (Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
+            
+            case "support_heal_l4":
+                return buildNewBattery(p, loc, Material.GOLD_BLOCK, Material.ENCHANTED_GOLDEN_APPLE, 4, "Can Yenileme (Çok Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_speed_l4":
+                return buildNewBattery(p, loc, Material.EMERALD_BLOCK, Material.BEACON, 4, "Hız Artışı (Çok Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_damage_l4":
+                return buildNewBattery(p, loc, Material.DIAMOND_BLOCK, Material.BEACON, 4, "Hasar Artışı (Çok Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_armor_l4":
+                return buildNewBattery(p, loc, Material.IRON_BLOCK, Material.BEACON, 4, "Zırh Artışı (Çok Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_regeneration_l4":
+                return buildNewBattery(p, loc, Material.LAPIS_BLOCK, Material.BEACON, 4, "Yenilenme (Çok Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
+            
+            case "support_heal_l5":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.NETHER_STAR, 5, "Can Yenileme (Efsanevi)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_speed_l5":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.NETHER_STAR, 5, "Hız Artışı (Efsanevi)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_damage_l5":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.NETHER_STAR, 5, "Hasar Artışı (Efsanevi)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_armor_l5":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.NETHER_STAR, 5, "Zırh Artışı (Efsanevi)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_regeneration_l5":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.NETHER_STAR, 5, "Yenilenme (Efsanevi)", BatteryManager.BatteryCategory.SUPPORT);
+            
             default:
                 p.sendMessage("§cBilinmeyen batarya tipi: " + type);
                 return true;
         }
+    }
+    
+    /**
+     * Yeni batarya sistemi için build metodu
+     */
+    private boolean buildNewBattery(Player p, org.bukkit.Location loc, Material baseBlock, Material sideBlock, int level, String displayName, BatteryManager.BatteryCategory category) {
+        // Yerinde blok varsa temizle
+        me.mami.stratocraft.manager.StructureBuilder.clearArea(loc, 5, 5, 5);
+        
+        // Seviyeye göre blok sayısı
+        int blockCount = 3 + (level - 1) * 2; // Seviye 1: 3, Seviye 2: 5, Seviye 3: 7, Seviye 4: 9, Seviye 5: 11
+        
+        // Üst üste bloklar
+        for (int i = 0; i < blockCount; i++) {
+            loc.clone().add(0, i, 0).getBlock().setType(baseBlock);
+        }
+        
+        // Yan blok (seviye 2+ için)
+        if (sideBlock != null && level >= 2) {
+            loc.clone().add(1, blockCount / 2, 0).getBlock().setType(sideBlock);
+        }
+        
+        // Seviye 5 için özel bloklar
+        if (level == 5) {
+            loc.clone().add(0, -1, 0).getBlock().setType(Material.BEACON);
+            if (sideBlock != null) {
+                loc.clone().add(0, blockCount, 0).getBlock().setType(sideBlock);
+            }
+        }
+        
+        // Yakıt ver
+        giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.DIAMOND, 5));
+        giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.IRON_INGOT, 5));
+        if (ItemManager.RED_DIAMOND != null) {
+            giveItemSafely(p, ItemManager.RED_DIAMOND.clone());
+        }
+        if (ItemManager.DARK_MATTER != null) {
+            giveItemSafely(p, ItemManager.DARK_MATTER.clone());
+        }
+        
+        String categoryName = category == BatteryManager.BatteryCategory.ATTACK ? "§cSaldırı" :
+                             category == BatteryManager.BatteryCategory.CONSTRUCTION ? "§aOluşturma" :
+                             "§eDestek";
+        
+        p.sendMessage("§a§l" + displayName + " BATARYASI OLUŞTURULDU!");
+        p.sendMessage("§7Kategori: " + categoryName);
+        p.sendMessage("§7Seviye: §e" + level);
+        p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
+        return true;
     }
 
     /**
