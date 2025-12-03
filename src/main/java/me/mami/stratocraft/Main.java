@@ -75,7 +75,13 @@ public class Main extends JavaPlugin {
             schemDir.mkdirs();
         
         // Şema klasörlerini otomatik oluştur
-        me.mami.stratocraft.manager.StructureBuilder.createSchematicDirectories();
+        // Schematic klasörlerini oluştur (hata durumunda plugin yine de açılsın)
+        try {
+            me.mami.stratocraft.manager.StructureBuilder.createSchematicDirectories();
+        } catch (Exception e) {
+            getLogger().warning("§cSchematic klasörleri oluşturulurken hata: " + e.getMessage());
+            e.printStackTrace();
+        }
 
         // 1. Yöneticileri Başlat
         itemManager = new ItemManager();
@@ -291,7 +297,13 @@ public class Main extends JavaPlugin {
                     ItemStack item = player.getInventory().getItemInMainHand();
                     if (item != null && item.getType() == org.bukkit.Material.SPYGLASS) {
                         org.bukkit.util.RayTraceResult result = player.rayTraceEntities(50);
-                        specialItemManager.handleSpyglass(player, result);
+                        // Null kontrolü: Oyuncu boşluğa bakıyorsa result null olabilir
+                        if (result != null) {
+                            specialItemManager.handleSpyglass(player, result);
+                        } else {
+                            // Boşluğa bakıyorsa spyglass verisini temizle
+                            specialItemManager.clearSpyData(player);
+                        }
                     } else {
                         specialItemManager.clearSpyData(player);
                     }

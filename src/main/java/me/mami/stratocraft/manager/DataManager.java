@@ -239,8 +239,23 @@ public class DataManager {
     
     private InventorySnapshot createInventorySnapshot(VirtualStorageListener virtualStorage) {
         InventorySnapshot snapshot = new InventorySnapshot();
-        // VirtualStorage'dan inventory snapshot al
-        // (Bu kısım VirtualStorageListener'ın implementasyonuna bağlı)
+        
+        if (virtualStorage == null) {
+            return snapshot;
+        }
+        
+        // VirtualStorageListener'dan tüm sanal envanterleri al
+        Map<UUID, Inventory> virtualInventories = virtualStorage.getVirtualInventories();
+        
+        for (Map.Entry<UUID, Inventory> entry : virtualInventories.entrySet()) {
+            UUID clanId = entry.getKey();
+            Inventory inv = entry.getValue();
+            
+            // Inventory'yi Base64 string'e çevir
+            String base64 = serializeInventory(inv);
+            snapshot.inventories.put(clanId.toString(), base64);
+        }
+        
         return snapshot;
     }
     
@@ -329,7 +344,12 @@ public class DataManager {
     }
     
     private void writeInventorySnapshot(InventorySnapshot snapshot) throws IOException {
-        // VirtualStorage kaydetme
+        File file = new File(dataFolder, "data/virtual_inventories.json");
+        file.getParentFile().mkdirs(); // Klasör yoksa oluştur
+        
+        try (FileWriter writer = new FileWriter(file)) {
+            gson.toJson(snapshot.inventories, writer); // inventories map'ini JSON'a yaz
+        }
     }
     
     private void saveShops(ShopManager shopManager) throws IOException {
