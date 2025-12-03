@@ -3376,6 +3376,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§7Kategoriler: weapon, battery, structure");
             p.sendMessage("§7Örnek: /stratocraft build weapon catapult");
             p.sendMessage("§7Örnek: /stratocraft build structure alchemy_tower 3");
+            p.sendMessage("§7Batarya: /stratocraft build battery <seviye> <isim>");
             p.sendMessage("§7Eski format: /stratocraft build <type> [level] (hala çalışıyor)");
             return true;
         }
@@ -3387,7 +3388,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         // Kategori kontrolü
         if (args.length >= 3
                 && (category.equals("weapon") || category.equals("battery") || category.equals("structure"))) {
-            // Yeni format: build weapon catapult
+            // Yeni format: build weapon catapult veya build battery <seviye> <isim>
+            if (category.equals("battery") && args.length >= 4) {
+                // Batarya formatı: build battery <seviye> <isim>
+                level = parseInt(args[2], 1);
+                buildType = args[3].toLowerCase();
+                return buildBatteryByLevelAndName(p, level, buildType);
+            }
             buildType = args[2].toLowerCase();
             level = args.length > 3 ? parseInt(args[3], 1) : 1;
         } else {
@@ -4076,11 +4083,60 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                              category == BatteryManager.BatteryCategory.CONSTRUCTION ? "§aOluşturma" :
                              "§eDestek";
         
+        // Aktifleştirme malzemeleri mesajı
+        String fuelMaterials = "§7Aktifleştirme Malzemeleri: §eElmas, Demir Çubuğu";
+        if (level >= 3) {
+            fuelMaterials += ", §cKızıl Elmas";
+        }
+        if (level >= 4) {
+            fuelMaterials += ", §5Karanlık Madde";
+        }
+        
         p.sendMessage("§a§l" + displayName + " BATARYASI OLUŞTURULDU!");
         p.sendMessage("§7Kategori: " + categoryName);
         p.sendMessage("§7Seviye: §e" + level);
+        p.sendMessage(fuelMaterials);
         p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
         return true;
+    }
+    
+    /**
+     * Yeni batarya komut formatı: /stratocraft build battery <seviye> <isim>
+     */
+    private boolean buildBatteryByLevelAndName(Player p, int level, String name) {
+        if (level < 1 || level > 5) {
+            p.sendMessage("§cSeviye 1-5 arası olmalı!");
+            return true;
+        }
+        
+        // İsmi normalize et (tire ve alt çizgiyi kaldır, küçük harfe çevir)
+        String normalizedName = name.toLowerCase().replace("_", "").replace("-", "");
+        
+        // BatteryType enum'undan eşleşen bataryayı bul
+        BatteryManager.BatteryType foundBattery = null;
+        for (BatteryManager.BatteryType batteryType : BatteryManager.BatteryType.values()) {
+            if (batteryType.getLevel() == level) {
+                String batteryName = batteryType.getDisplayName().toLowerCase()
+                    .replace(" ", "").replace("(", "").replace(")", "")
+                    .replace("ç", "c").replace("ğ", "g").replace("ı", "i")
+                    .replace("ö", "o").replace("ş", "s").replace("ü", "u");
+                
+                if (batteryName.contains(normalizedName) || normalizedName.contains(batteryName)) {
+                    foundBattery = batteryType;
+                    break;
+                }
+            }
+        }
+        
+        if (foundBattery == null) {
+            p.sendMessage("§cSeviye " + level + " için '" + name + "' bataryası bulunamadı!");
+            p.sendMessage("§7Mevcut bataryaları görmek için: /stratocraft build battery " + level + " <isim>");
+            return true;
+        }
+        
+        org.bukkit.Location loc = p.getLocation();
+        return buildNewBattery(p, loc, foundBattery.getBaseBlock(), foundBattery.getSideBlock(), 
+                              foundBattery.getLevel(), foundBattery.getDisplayName(), foundBattery.getCategory());
     }
 
     /**

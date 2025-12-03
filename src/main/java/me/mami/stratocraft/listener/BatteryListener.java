@@ -600,39 +600,48 @@ public class BatteryListener implements Listener {
             
         } else if (type.equals("Yıldırım")) {
             batteryManager.fireLightningBattery(player);
+            // BUG FIX: Ateşlendikten sonra bataryayı sil
+            batteryManager.removeBattery(player, slot);
         } else {
             // Yeni batarya sistemi - BatteryType enum kullanarak
             BatteryManager.BatteryType batteryType = getBatteryTypeFromName(type);
             if (batteryType != null) {
                 batteryManager.fireBattery(player, batteryType, data);
+                // BUG FIX: Ateşlendikten sonra bataryayı sil
+                batteryManager.removeBattery(player, slot);
             } else {
                 // Eski bataryalar (geriye dönük uyumluluk)
                 if (type.equals("Kara Delik")) {
                     batteryManager.fireBlackHole(player);
-        } else if (type.equals("Anlık Köprü")) {
-            batteryManager.createInstantBridge(player);
-        } else if (type.equals("Sığınak Küpü")) {
-            batteryManager.createInstantBunker(player);
-        } else if (type.equals("Yerçekimi Çapası")) {
-            batteryManager.fireGravityAnchor(player);
-        } else if (type.equals("Toprak Suru")) {
-            batteryManager.createEarthWall(player, data.getFuel());
-        } else if (type.equals("Manyetik Bozucu")) {
-            batteryManager.fireMagneticDisruptor(player);
-        } else if (type.equals("Sismik Çekiç")) {
-            batteryManager.fireSeismicHammer(player);
-        } else if (type.equals("Ozon Kalkanı")) {
-            batteryManager.activateOzoneShield(player, player.getLocation());
-        } else if (type.equals("Enerji Duvarı")) {
-            batteryManager.createEnergyWall(player);
-        } else if (type.equals("Lav Hendekçisi")) {
-            batteryManager.createLavaTrench(player, territoryManager);
+                } else if (type.equals("Anlık Köprü")) {
+                    batteryManager.createInstantBridge(player);
+                } else if (type.equals("Sığınak Küpü")) {
+                    batteryManager.createInstantBunker(player);
+                } else if (type.equals("Yerçekimi Çapası")) {
+                    batteryManager.fireGravityAnchor(player);
+                } else if (type.equals("Toprak Suru")) {
+                    batteryManager.createEarthWall(player, data.getFuel());
+                } else if (type.equals("Manyetik Bozucu")) {
+                    batteryManager.fireMagneticDisruptor(player);
+                } else if (type.equals("Sismik Çekiç")) {
+                    batteryManager.fireSeismicHammer(player);
+                } else if (type.equals("Ozon Kalkanı")) {
+                    batteryManager.activateOzoneShield(player, player.getLocation());
+                } else if (type.equals("Enerji Duvarı")) {
+                    batteryManager.createEnergyWall(player);
+                } else if (type.equals("Lav Hendekçisi")) {
+                    batteryManager.createLavaTrench(player, territoryManager);
+                }
+                
+                // Ateşlendikten sonra bataryayı sil
+                batteryManager.removeBattery(player, slot);
+            }
         }
         
-        // Ateşlendikten sonra bataryayı sil
-        batteryManager.removeBattery(player, slot);
+        // BUG FIX: "Ateş Topu" için de bataryayı sil
+        if (type.equals("Ateş Topu")) {
+            batteryManager.removeBattery(player, slot);
         }
-    }
     }
     
     /**
