@@ -1521,7 +1521,7 @@ public class ItemManager {
         TROLL_HEART = create(Material.HEART_OF_THE_SEA, "TROLL_HEART", "§5Troll Kralı Kalbi");
         
         // Seviye 3 Bosslar
-        DRAGON_SCALE = create(Material.DRAGON_SCALE, "DRAGON_SCALE", "§cEjderha Ölçeği");
+        DRAGON_SCALE = create(Material.SCUTE, "DRAGON_SCALE", "§cEjderha Ölçeği");
         TREX_TOOTH = create(Material.BONE, "TREX_TOOTH", "§7T-Rex Dişi");
         CYCLOPS_EYE = create(Material.ENDER_EYE, "CYCLOPS_EYE", "§5Cyclops Gözü");
         
@@ -1636,11 +1636,12 @@ public class ItemManager {
         registerSpecialArmorRecipe(3, 5, Material.NETHERITE_CHESTPLATE, Material.NETHERITE_INGOT, TREX_TOOTH);
         
         // Seviye 4 Zırh Tarifleri (Çok Zor - Titanyum + Seviye 4 boss itemi)
-        registerSpecialArmorRecipe(4, 1, Material.NETHERITE_HELMET, TITANIUM_INGOT, TITAN_CORE);
-        registerSpecialArmorRecipe(4, 2, Material.NETHERITE_CHESTPLATE, TITANIUM_INGOT, PHOENIX_FEATHER);
-        registerSpecialArmorRecipe(4, 3, Material.NETHERITE_LEGGINGS, TITANIUM_INGOT, KRAKEN_TENTACLE);
-        registerSpecialArmorRecipe(4, 4, Material.NETHERITE_BOOTS, TITANIUM_INGOT, TITAN_CORE);
-        registerSpecialArmorRecipe(4, 5, Material.NETHERITE_CHESTPLATE, TITANIUM_INGOT, PHOENIX_FEATHER);
+        // Not: TITANIUM_INGOT bir ItemStack, ama metod Material bekliyor. TITANIUM_INGOT Material.IRON_INGOT kullanıyor.
+        registerSpecialArmorRecipe(4, 1, Material.NETHERITE_HELMET, Material.IRON_INGOT, TITAN_CORE);
+        registerSpecialArmorRecipe(4, 2, Material.NETHERITE_CHESTPLATE, Material.IRON_INGOT, PHOENIX_FEATHER);
+        registerSpecialArmorRecipe(4, 3, Material.NETHERITE_LEGGINGS, Material.IRON_INGOT, KRAKEN_TENTACLE);
+        registerSpecialArmorRecipe(4, 4, Material.NETHERITE_BOOTS, Material.IRON_INGOT, TITAN_CORE);
+        registerSpecialArmorRecipe(4, 5, Material.NETHERITE_CHESTPLATE, Material.IRON_INGOT, PHOENIX_FEATHER);
         
         // Seviye 5 Zırh Tarifleri (Efsanevi - Netherite + Seviye 5 boss itemi)
         registerSpecialArmorRecipe(5, 1, Material.NETHERITE_HELMET, Material.NETHERITE_INGOT, DEMON_LORD_HORN);
@@ -1671,11 +1672,12 @@ public class ItemManager {
         registerSpecialWeaponRecipe(3, 5, Material.NETHERITE_PICKAXE, Material.NETHERITE_INGOT, TREX_TOOTH);
         
         // Seviye 4 Silah Tarifleri (Çok Zor - Titanyum + Seviye 4 boss itemi)
-        registerSpecialWeaponRecipe(4, 1, Material.NETHERITE_SWORD, TITANIUM_INGOT, TITAN_CORE);
-        registerSpecialWeaponRecipe(4, 2, Material.NETHERITE_AXE, TITANIUM_INGOT, PHOENIX_FEATHER);
-        registerSpecialWeaponRecipe(4, 3, Material.TRIDENT, TITANIUM_INGOT, KRAKEN_TENTACLE);
-        registerSpecialWeaponRecipe(4, 4, Material.BOW, TITANIUM_INGOT, TITAN_CORE);
-        registerSpecialWeaponRecipe(4, 5, Material.NETHERITE_PICKAXE, TITANIUM_INGOT, PHOENIX_FEATHER);
+        // Not: TITANIUM_INGOT bir ItemStack, ama metod Material bekliyor. TITANIUM_INGOT Material.IRON_INGOT kullanıyor.
+        registerSpecialWeaponRecipe(4, 1, Material.NETHERITE_SWORD, Material.IRON_INGOT, TITAN_CORE);
+        registerSpecialWeaponRecipe(4, 2, Material.NETHERITE_AXE, Material.IRON_INGOT, PHOENIX_FEATHER);
+        registerSpecialWeaponRecipe(4, 3, Material.TRIDENT, Material.IRON_INGOT, KRAKEN_TENTACLE);
+        registerSpecialWeaponRecipe(4, 4, Material.BOW, Material.IRON_INGOT, TITAN_CORE);
+        registerSpecialWeaponRecipe(4, 5, Material.NETHERITE_PICKAXE, Material.IRON_INGOT, PHOENIX_FEATHER);
         
         // Seviye 5 Silah Tarifleri (Efsanevi - Netherite + Seviye 5 boss itemi)
         registerSpecialWeaponRecipe(5, 1, Material.NETHERITE_SWORD, Material.NETHERITE_INGOT, DEMON_LORD_HORN);
