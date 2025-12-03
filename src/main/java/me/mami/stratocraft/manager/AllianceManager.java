@@ -190,10 +190,5 @@ public class AllianceManager {
             activeAlliances.add(alliance);
         }
     }
-    }
-    
-    public void loadAlliance(Alliance alliance) {
-        activeAlliances.add(alliance);
-    }
 }
 

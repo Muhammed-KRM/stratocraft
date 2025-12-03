@@ -130,6 +130,18 @@ public class DataManager {
         List<AllianceData> alliances = new ArrayList<>();
     }
     
+    private static class AllianceData {
+        String id;
+        String clan1Id;
+        String clan2Id;
+        String type;
+        long createdAt;
+        long expiresAt;
+        boolean active;
+        boolean broken;
+        String breakerClanId;
+    }
+    
     private static class DisasterSnapshot {
         DisasterStateData disaster = null;
     }
@@ -358,12 +370,14 @@ public class DataManager {
     
     public void loadAll(ClanManager clanManager, ContractManager contractManager,
                        ShopManager shopManager, VirtualStorageListener virtualStorage,
-                       AllianceManager allianceManager) {
+                       AllianceManager allianceManager, DisasterManager disasterManager) {
         try {
             loadClans(clanManager);
             loadContracts(contractManager);
             loadShops(shopManager);
             loadVirtualInventories(virtualStorage);
+            loadAlliances(allianceManager);
+            loadDisaster(disasterManager);
             plugin.getLogger().info("§aTüm veriler yüklendi!");
         } catch (Exception e) {
             plugin.getLogger().severe("§cVeri yükleme hatası: " + e.getMessage());

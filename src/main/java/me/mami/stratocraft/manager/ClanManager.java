@@ -34,6 +34,23 @@ public class ClanManager {
     public Collection<Clan> getAllClans() {
         return clans.values();
     }
+    
+    /**
+     * UUID ile klan getir
+     */
+    public Clan getClan(UUID clanId) {
+        return clans.get(clanId);
+    }
+    
+    /**
+     * İsim ile klan getir
+     */
+    public Clan getClanByName(String name) {
+        return clans.values().stream()
+            .filter(c -> c.getName().equalsIgnoreCase(name))
+            .findFirst()
+            .orElse(null);
+    }
 
     public void addMember(Clan clan, UUID memberId, Clan.Rank rank) {
         clan.addMember(memberId, rank);

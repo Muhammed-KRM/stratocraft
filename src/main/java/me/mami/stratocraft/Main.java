@@ -694,8 +694,4 @@ public class Main extends JavaPlugin {
     public me.mami.stratocraft.manager.BreedingManager getBreedingManager() {
         return breedingManager;
     }
-    
-    public me.mami.stratocraft.manager.AllianceManager getAllianceManager() {
-        return allianceManager;
-    }
 }
