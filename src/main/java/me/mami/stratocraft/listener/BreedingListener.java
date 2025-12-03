@@ -12,6 +12,7 @@ import org.bukkit.entity.Turtle;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -254,6 +255,22 @@ public class BreedingListener implements Listener {
         }
     }
 
+    /**
+     * Yumurta ölüm kontrolü (trackedEggs'den çıkar - memory leak önleme)
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onEggDeath(EntityDeathEvent event) {
+        if (!(event.getEntity() instanceof Turtle)) {
+            return;
+        }
+        
+        Turtle turtle = (Turtle) event.getEntity();
+        if (turtle.hasMetadata("EggOwner")) {
+            // Yumurta öldü, takipten çıkar (memory leak önleme)
+            breedingManager.removeTrackedEgg(turtle.getUniqueId());
+        }
+    }
+    
     /**
      * Yumurta çatlama kontrolü (EntityAgeEvent ile - opsiyonel)
      * Ana kontrol Main.java'daki task'ta yapılıyor

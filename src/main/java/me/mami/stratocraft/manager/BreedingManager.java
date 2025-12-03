@@ -30,6 +30,9 @@ public class BreedingManager {
 
     // Aktif çiftleştirmeler (Entity UUID -> BreedingData)
     private final Map<UUID, BreedingData> activeBreedings = new HashMap<>();
+    
+    // Aktif yumurtaları takip et (performans optimizasyonu - world.getEntities() yerine)
+    private final Set<UUID> trackedEggs = new HashSet<>();
 
     /**
      * Çiftleştirme tesisi verisi
@@ -626,6 +629,9 @@ public class BreedingManager {
         turtle.setMetadata("EggOwner", new org.bukkit.metadata.FixedMetadataValue(plugin, ownerId.toString()));
         turtle.setMetadata("EggParent",
                 new org.bukkit.metadata.FixedMetadataValue(plugin, parent.getUniqueId().toString()));
+        
+        // Aktif yumurtaları takip et (performans optimizasyonu)
+        trackedEggs.add(turtle.getUniqueId());
 
         // Efekt
         loc.getWorld().spawnParticle(org.bukkit.Particle.HEART, loc, 20, 1, 1, 1, 0.1);
@@ -801,13 +807,31 @@ public class BreedingManager {
     /**
      * Yumurta çatladı mı kontrol et
      */
+    /**
+     * Takip edilen aktif yumurtaları döndür (performans optimizasyonu)
+     */
+    public Set<UUID> getTrackedEggs() {
+        return new HashSet<>(trackedEggs); // Defensive copy
+    }
+    
+    /**
+     * Yumurtayı takipten çıkar (entity bulunamadığında veya öldüğünde)
+     */
+    public void removeTrackedEgg(UUID eggId) {
+        trackedEggs.remove(eggId);
+    }
+    
     public void checkEggHatching(org.bukkit.entity.Turtle turtle) {
         if (turtle == null || turtle.isDead()) {
+            if (turtle != null) {
+                trackedEggs.remove(turtle.getUniqueId());
+            }
             return;
         }
 
         // Yumurta mı?
         if (!turtle.hasMetadata("EggOwner") || !turtle.hasMetadata("EggParent")) {
+            trackedEggs.remove(turtle.getUniqueId());
             return;
         }
 
@@ -845,6 +869,7 @@ public class BreedingManager {
                 }
 
                 // Yumurtayı kaldır
+                trackedEggs.remove(turtle.getUniqueId());
                 turtle.remove();
             } catch (Exception e) {
                 plugin.getLogger().warning("Yumurta çatlama hatası: " + e.getMessage());

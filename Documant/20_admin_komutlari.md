@@ -287,6 +287,63 @@ solar_flare - Güneş Fırtınası
 
 ---
 
+### `/scadmin alliance <komut> [parametreler]`
+
+**Açıklama**: İttifak yönetimi (YENİ - Performans ve Veri Kaybı Düzeltmeleri)
+
+**KOD DOĞRULANDI**:
+```java
+// AdminCommandExecutor.java - handleAlliance() metodu
+// AllianceManager kullanır, DataManager ile kayıt/yükleme yapılır
+```
+
+**Komutlar**:
+```
+/scadmin alliance list
+→ Tüm aktif ittifakları listele
+
+/scadmin alliance create <klan1> <klan2> <tip> [süre_gün]
+→ İttifak oluştur (admin)
+→ Tip: defensive, offensive, trade, full
+→ Süre: 0 = süresiz, >0 = gün sayısı
+
+/scadmin alliance break <ittifak_id>
+→ İttifakı boz (admin)
+
+/scadmin alliance info <klan>
+→ Klanın ittifaklarını göster
+```
+
+**İttifak Tipleri**:
+```
+defensive - Savunma İttifakı: Birine saldırılırsa diğeri yardım eder
+offensive - Saldırı İttifakı: Birlikte saldırı yapılır
+trade - Ticaret İttifakı: Ticaret bonusları
+full - Tam İttifak: Her şey (en güçlü)
+```
+
+**Örnekler**:
+```
+/scadmin alliance list
+→ Tüm aktif ittifakları gösterir
+
+/scadmin alliance create KlanA KlanB defensive 7
+→ KlanA ve KlanB arasında 7 günlük savunma ittifakı
+
+/scadmin alliance create KlanA KlanB full 0
+→ KlanA ve KlanB arasında süresiz tam ittifak
+
+/scadmin alliance info KlanA
+→ KlanA'nın tüm ittifaklarını gösterir
+
+/scadmin alliance break <ittifak_id>
+→ Belirtilen ittifakı bozar
+```
+
+**Not**: İttifaklar artık otomatik olarak kaydediliyor ve sunucu restart'tan sonra yükleniyor (veri kaybı önlendi).
+
+---
+
 ### `/scadmin build <yapı_tipi> [seviye]`
 
 **Açıklama**: Yapı oluştur

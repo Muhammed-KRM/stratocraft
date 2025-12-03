@@ -66,6 +66,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return handleCaravan(p, args);
             case "contract":
                 return handleContract(p, args);
+            case "alliance":
+            case "ittifak":
+                return handleAlliance(p, args);
             case "build":
                 return handleBuild(p, args);
             case "trap":
@@ -767,6 +770,210 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             default:
                 p.sendMessage(langManager.getMessage("admin.list-invalid-type"));
                 return true;
+        }
+        return true;
+    }
+
+    /**
+     * İttifak yönetimi
+     */
+    private boolean handleAlliance(Player p, String[] args) {
+        if (args.length < 2) {
+            p.sendMessage("§cKullanım: /stratocraft alliance <komut>");
+            p.sendMessage("§7Komutlar:");
+            p.sendMessage("§7  list - Tüm aktif ittifakları listele");
+            p.sendMessage("§7  create <klan1> <klan2> <tip> [süre_gün] - İttifak oluştur");
+            p.sendMessage("§7  break <ittifak_id> - İttifakı boz (admin)");
+            p.sendMessage("§7  info <klan> - Klanın ittifaklarını göster");
+            p.sendMessage("§eİttifak Tipleri:");
+            p.sendMessage("§7  defensive - Savunma İttifakı");
+            p.sendMessage("§7  offensive - Saldırı İttifakı");
+            p.sendMessage("§7  trade - Ticaret İttifakı");
+            p.sendMessage("§7  full - Tam İttifak");
+            p.sendMessage("§eÖrnek:");
+            p.sendMessage("§7  /stratocraft alliance list");
+            p.sendMessage("§7  /stratocraft alliance create KlanA KlanB defensive 7");
+            p.sendMessage("§7  /stratocraft alliance info KlanA");
+            return true;
+        }
+
+        me.mami.stratocraft.manager.AllianceManager allianceManager = plugin.getAllianceManager();
+        if (allianceManager == null) {
+            p.sendMessage("§cAllianceManager bulunamadı!");
+            return true;
+        }
+
+        String command = args[1].toLowerCase();
+
+        switch (command) {
+            case "list":
+            case "liste":
+                return handleAllianceList(p, allianceManager);
+            case "create":
+            case "olustur":
+                return handleAllianceCreate(p, args, allianceManager);
+            case "break":
+            case "boz":
+                return handleAllianceBreak(p, args, allianceManager);
+            case "info":
+            case "bilgi":
+                return handleAllianceInfo(p, args, allianceManager);
+            default:
+                p.sendMessage("§cGeçersiz komut! /stratocraft alliance <list|create|break|info>");
+                return true;
+        }
+    }
+
+    private boolean handleAllianceList(Player p, me.mami.stratocraft.manager.AllianceManager allianceManager) {
+        java.util.List<me.mami.stratocraft.model.Alliance> alliances = allianceManager.getAllAlliances();
+        
+        if (alliances.isEmpty()) {
+            p.sendMessage("§eAktif ittifak yok.");
+            return true;
+        }
+
+        p.sendMessage("§6=== Aktif İttifaklar ===");
+        for (me.mami.stratocraft.model.Alliance alliance : alliances) {
+            if (!alliance.isActive()) continue;
+            
+            me.mami.stratocraft.model.Clan clan1 = plugin.getClanManager().getClan(alliance.getClan1Id());
+            me.mami.stratocraft.model.Clan clan2 = plugin.getClanManager().getClan(alliance.getClan2Id());
+            
+            String clan1Name = clan1 != null ? clan1.getName() : "Bilinmeyen";
+            String clan2Name = clan2 != null ? clan2.getName() : "Bilinmeyen";
+            String typeName = alliance.getType().name();
+            long remaining = alliance.getExpiresAt() > 0 ? 
+                (alliance.getExpiresAt() - System.currentTimeMillis()) / (24 * 60 * 60 * 1000) : -1;
+            
+            p.sendMessage("§7- §e" + clan1Name + " §7<-> §e" + clan2Name);
+            p.sendMessage("  §7Tip: §a" + typeName + " §7| ID: §f" + alliance.getId().toString().substring(0, 8));
+            if (remaining > 0) {
+                p.sendMessage("  §7Kalan Süre: §e" + remaining + " gün");
+            } else if (remaining == -1) {
+                p.sendMessage("  §7Süre: §aSüresiz");
+            }
+        }
+        return true;
+    }
+
+    private boolean handleAllianceCreate(Player p, String[] args, me.mami.stratocraft.manager.AllianceManager allianceManager) {
+        if (args.length < 5) {
+            p.sendMessage("§cKullanım: /stratocraft alliance create <klan1> <klan2> <tip> [süre_gün]");
+            return true;
+        }
+
+        String clan1Name = args[2];
+        String clan2Name = args[3];
+        String typeStr = args[4].toUpperCase();
+        long durationDays = args.length > 5 ? Long.parseLong(args[5]) : 0; // 0 = süresiz
+
+        me.mami.stratocraft.model.Clan clan1 = plugin.getClanManager().getClanByName(clan1Name);
+        me.mami.stratocraft.model.Clan clan2 = plugin.getClanManager().getClanByName(clan2Name);
+
+        if (clan1 == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clan1Name);
+            return true;
+        }
+        if (clan2 == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clan2Name);
+            return true;
+        }
+        if (clan1.getId().equals(clan2.getId())) {
+            p.sendMessage("§cAynı klan ile ittifak oluşturulamaz!");
+            return true;
+        }
+
+        me.mami.stratocraft.model.Alliance.Type type;
+        try {
+            type = me.mami.stratocraft.model.Alliance.Type.valueOf(typeStr);
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz ittifak tipi! (defensive, offensive, trade, full)");
+            return true;
+        }
+
+        if (allianceManager.hasAlliance(clan1.getId(), clan2.getId())) {
+            p.sendMessage("§cBu klanlar zaten ittifak içinde!");
+            return true;
+        }
+
+        me.mami.stratocraft.model.Alliance alliance = allianceManager.createAlliance(
+            clan1.getId(), clan2.getId(), type, durationDays
+        );
+
+        if (alliance != null) {
+            p.sendMessage("§aİttifak oluşturuldu!");
+            p.sendMessage("§7" + clan1.getName() + " <-> " + clan2.getName());
+            p.sendMessage("§7Tip: §e" + type.name() + " §7| Süre: §e" + (durationDays > 0 ? durationDays + " gün" : "Süresiz"));
+            org.bukkit.Bukkit.broadcastMessage("§6[İTTİFAK] §e" + clan1.getName() + " §7ve §e" + clan2.getName() + 
+                " §7ittifak kurdu! (§a" + type.name() + "§7)");
+        } else {
+            p.sendMessage("§cİttifak oluşturulamadı!");
+        }
+        return true;
+    }
+
+    private boolean handleAllianceBreak(Player p, String[] args, me.mami.stratocraft.manager.AllianceManager allianceManager) {
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft alliance break <ittifak_id>");
+            return true;
+        }
+
+        java.util.UUID allianceId;
+        try {
+            allianceId = java.util.UUID.fromString(args[2]);
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz ittifak ID!");
+            return true;
+        }
+
+        me.mami.stratocraft.model.Alliance alliance = allianceManager.getAlliance(allianceId);
+        if (alliance == null || !alliance.isActive()) {
+            p.sendMessage("§cAktif ittifak bulunamadı!");
+            return true;
+        }
+
+        // Admin olarak ittifakı boz
+        allianceManager.breakAlliance(allianceId, alliance.getClan1Id());
+        p.sendMessage("§aİttifak bozuldu!");
+        return true;
+    }
+
+    private boolean handleAllianceInfo(Player p, String[] args, me.mami.stratocraft.manager.AllianceManager allianceManager) {
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft alliance info <klan>");
+            return true;
+        }
+
+        String clanName = args[2];
+        me.mami.stratocraft.model.Clan clan = plugin.getClanManager().getClanByName(clanName);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clanName);
+            return true;
+        }
+
+        java.util.List<me.mami.stratocraft.model.Alliance> alliances = allianceManager.getAlliances(clan.getId());
+        
+        if (alliances.isEmpty()) {
+            p.sendMessage("§e" + clan.getName() + " klanının aktif ittifakı yok.");
+            return true;
+        }
+
+        p.sendMessage("§6=== " + clan.getName() + " İttifakları ===");
+        for (me.mami.stratocraft.model.Alliance alliance : alliances) {
+            me.mami.stratocraft.model.Clan otherClan = plugin.getClanManager().getClan(
+                alliance.getOtherClan(clan.getId())
+            );
+            String otherClanName = otherClan != null ? otherClan.getName() : "Bilinmeyen";
+            long remaining = alliance.getExpiresAt() > 0 ? 
+                (alliance.getExpiresAt() - System.currentTimeMillis()) / (24 * 60 * 60 * 1000) : -1;
+            
+            p.sendMessage("§7- §e" + otherClanName);
+            p.sendMessage("  §7Tip: §a" + alliance.getType().name());
+            if (remaining > 0) {
+                p.sendMessage("  §7Kalan Süre: §e" + remaining + " gün");
+            } else if (remaining == -1) {
+                p.sendMessage("  §7Süre: §aSüresiz");
+            }
         }
         return true;
     }
@@ -2584,6 +2791,78 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 .collect(Collectors.toList());
     }
 
+    private List<String> getAllianceTabComplete(String[] args, String input) {
+        List<String> completions = new ArrayList<>();
+        
+        if (args.length == 2) {
+            // Komutlar
+            String[] commands = {"list", "create", "break", "info"};
+            for (String cmd : commands) {
+                if (cmd.startsWith(input.toLowerCase())) {
+                    completions.add(cmd);
+                }
+            }
+        } else if (args.length == 3) {
+            String command = args[1].toLowerCase();
+            if (command.equals("create")) {
+                // Klan isimleri (ilk klan)
+                if (plugin.getClanManager() != null) {
+                    for (me.mami.stratocraft.model.Clan clan : plugin.getClanManager().getAllClans()) {
+                        if (clan.getName().toLowerCase().startsWith(input.toLowerCase())) {
+                            completions.add(clan.getName());
+                        }
+                    }
+                }
+            } else if (command.equals("break")) {
+                // İttifak ID'leri
+                if (plugin.getAllianceManager() != null) {
+                    for (me.mami.stratocraft.model.Alliance alliance : plugin.getAllianceManager().getAllAlliances()) {
+                        if (alliance.isActive()) {
+                            String id = alliance.getId().toString();
+                            if (id.startsWith(input.toLowerCase())) {
+                                completions.add(id);
+                            }
+                        }
+                    }
+                }
+            } else if (command.equals("info")) {
+                // Klan isimleri
+                if (plugin.getClanManager() != null) {
+                    for (me.mami.stratocraft.model.Clan clan : plugin.getClanManager().getAllClans()) {
+                        if (clan.getName().toLowerCase().startsWith(input.toLowerCase())) {
+                            completions.add(clan.getName());
+                        }
+                    }
+                }
+            }
+        } else if (args.length == 4) {
+            String command = args[1].toLowerCase();
+            if (command.equals("create")) {
+                // Klan isimleri (ikinci klan)
+                if (plugin.getClanManager() != null) {
+                    for (me.mami.stratocraft.model.Clan clan : plugin.getClanManager().getAllClans()) {
+                        if (clan.getName().toLowerCase().startsWith(input.toLowerCase())) {
+                            completions.add(clan.getName());
+                        }
+                    }
+                }
+            }
+        } else if (args.length == 5) {
+            String command = args[1].toLowerCase();
+            if (command.equals("create")) {
+                // İttifak tipleri
+                String[] types = {"defensive", "offensive", "trade", "full"};
+                for (String type : types) {
+                    if (type.startsWith(input.toLowerCase())) {
+                        completions.add(type);
+                    }
+                }
+            }
+        }
+        
+        return completions;
+    }
+    
     private List<String> getDungeonTabComplete(String[] args, String input) {
         if (args.length == 2) {
             // Komutlar: spawn, list, clear

@@ -167,21 +167,43 @@ public class Main extends JavaPlugin {
         // Çiftleştirme sistemi
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.BreedingListener(breedingManager, tamingManager, this), this);
         
-        // Yumurta çatlama kontrolü (her 5 saniyede bir)
+        // Yumurta çatlama kontrolü (her 5 saniyede bir) - PERFORMANS OPTİMİZASYONU
+        // world.getEntities() yerine sadece takip edilen yumurtaları kontrol et
         new org.bukkit.scheduler.BukkitRunnable() {
             @Override
             public void run() {
                 if (breedingManager == null) return;
                 
-                // Tüm dünyalarda kontrol et
-                for (org.bukkit.World world : org.bukkit.Bukkit.getWorlds()) {
-                    for (org.bukkit.entity.Entity entity : world.getEntities()) {
-                        if (entity instanceof org.bukkit.entity.Turtle) {
-                            org.bukkit.entity.Turtle turtle = (org.bukkit.entity.Turtle) entity;
-                            if (turtle.hasMetadata("EggOwner") && turtle.getAge() >= 0) {
-                                breedingManager.checkEggHatching(turtle);
-                            }
+                // Sadece takip edilen yumurtaları kontrol et (tüm entity'leri taramak yerine)
+                java.util.Set<java.util.UUID> trackedEggs = breedingManager.getTrackedEggs();
+                java.util.Set<java.util.UUID> toRemove = new java.util.HashSet<>(); // Bulunamayan yumurtalar
+                
+                for (java.util.UUID eggId : trackedEggs) {
+                    org.bukkit.entity.Entity entity = null;
+                    // Entity'yi UUID ile bul (sadece gerekli entity'yi yükle)
+                    for (org.bukkit.World world : org.bukkit.Bukkit.getWorlds()) {
+                        entity = world.getEntity(eggId);
+                        if (entity != null) break; // Bulundu, döngüden çık
+                    }
+                    
+                    if (entity == null || entity.isDead()) {
+                        // Entity bulunamadı veya öldü, takipten çıkar (memory leak önleme)
+                        toRemove.add(eggId);
+                        continue;
+                    }
+                    
+                    if (entity instanceof org.bukkit.entity.Turtle) {
+                        org.bukkit.entity.Turtle turtle = (org.bukkit.entity.Turtle) entity;
+                        if (turtle.hasMetadata("EggOwner") && turtle.getAge() >= 0) {
+                            breedingManager.checkEggHatching(turtle);
                         }
+                    }
+                }
+                
+                // Bulunamayan yumurtaları temizle (memory leak önleme)
+                if (!toRemove.isEmpty() && breedingManager != null) {
+                    for (java.util.UUID eggId : toRemove) {
+                        breedingManager.removeTrackedEgg(eggId);
                     }
                 }
             }
@@ -226,7 +248,7 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.WeaponArmorListener(), this);
 
         // Veri yükleme
-        dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener);
+        dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener, allianceManager, disasterManager);
 
         // 3. Zamanlayıcıları Başlat
         new BuffTask(territoryManager, siegeWeaponManager).runTaskTimer(this, 20L, 20L);
@@ -259,8 +281,9 @@ public class Main extends JavaPlugin {
         
         new me.mami.stratocraft.task.StructureEffectTask(clanManager).runTaskTimer(this, 20L, 20L); // YAPI EFEKTLERİ
 
-        // Casusluk Dürbünü için Scheduler (her 5 tickte bir çalışır - performans için)
-        // Bu sayede oyuncu durup kafasını çevirdiğinde de dürbün çalışır
+        // Casusluk Dürbünü için Scheduler - PERFORMANS OPTİMİZASYONU
+        // RayTrace ağır bir işlem olduğu için sıklığı azaltıldı (5 tick -> 20 tick = 1 saniye)
+        // Event bazlı kontrol için SpecialItemListener'da PlayerInteractEvent kullanılabilir
         new org.bukkit.scheduler.BukkitRunnable() {
             @Override
             public void run() {
@@ -274,7 +297,7 @@ public class Main extends JavaPlugin {
                     }
                 }
             }
-        }.runTaskTimer(this, 0L, 5L); // Her 5 tickte bir (0.25 saniye)
+        }.runTaskTimer(this, 0L, 20L); // Her 20 tickte bir (1 saniye) - ÖNCEKİ: 5 tick (0.25 saniye)
         new MobRideTask(mobManager).runTaskTimer(this, 5L, 5L); // Performans için 5 tick (0.25 saniye)
         new DrillTask(territoryManager).runTaskTimer(this, configManager.getDrillInterval(),
                 configManager.getDrillInterval());
@@ -530,9 +553,9 @@ public class Main extends JavaPlugin {
         // NOT: Sunucu kapanırken thread havuzları kapatılır, asenkron işlemler
         // tamamlanmayabilir
         if (dataManager != null && clanManager != null && contractManager != null &&
-                shopManager != null && virtualStorageListener != null) {
+                shopManager != null && virtualStorageListener != null && allianceManager != null && disasterManager != null) {
             // Kapanış işlemlerinde her zaman senkron kayıt
-            dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener, true);
+            dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener, allianceManager, disasterManager, true);
             getLogger().info("Stratocraft: Veriler kaydedildi.");
         }
 
@@ -670,5 +693,9 @@ public class Main extends JavaPlugin {
     
     public me.mami.stratocraft.manager.BreedingManager getBreedingManager() {
         return breedingManager;
+    }
+    
+    public me.mami.stratocraft.manager.AllianceManager getAllianceManager() {
+        return allianceManager;
     }
 }

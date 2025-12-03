@@ -1466,6 +1466,8 @@ Stratocraft, Vault entegrasyonu ile ekonomi sistemini destekler.
 - Tuzaklar ve yapılar performansı etkileyebilir
 - Çok sayıda aktif yapı varsa sunucu yavaşlayabilir
 - Batarya sistemi optimize edilmiştir
+- **YENİ**: Yumurta takip sistemi optimize edildi (O(n) → O(k))
+- **YENİ**: Spyglass rayTrace sıklığı azaltıldı (%75 performans artışı)
 
 ### Güvenlik
 
@@ -1478,6 +1480,8 @@ Stratocraft, Vault entegrasyonu ile ekonomi sistemini destekler.
 - Tüm veriler otomatik kaydedilir
 - Sunucu kapanırken senkron kayıt yapılır (veri kaybı önlenir)
 - Tuzaklar kalıcı olarak kaydedilir
+- **YENİ**: İttifaklar (Alliances) artık otomatik kaydediliyor (`data/alliances.json`)
+- **YENİ**: Felaket durumları kaydediliyor (`data/disaster.json`)
 
 ### Hata Ayıklama
 
@@ -1494,7 +1498,66 @@ Stratocraft, kapsamlı bir klan tabanlı savaş ve strateji pluginidir. Bu dokü
 
 ---
 
+---
+
+## 🚀 Performans ve Veri Kaybı Düzeltmeleri (Son Güncelleme)
+
+### Kritik Performans Optimizasyonları
+
+#### 1. Yumurta Takip Sistemi (BreedingManager)
+- **Sorun**: `world.getEntities()` her 5 saniyede tüm entity'leri tarıyordu (O(n) karmaşıklığı)
+- **Çözüm**: Aktif yumurtaları `Set<UUID>` ile takip eden sistem eklendi
+- **Performans**: O(n) → O(k) (n = tüm entity'ler, k = aktif yumurtalar, genelde k << n)
+- **Kod**: `BreedingManager.trackedEggs` ve `removeTrackedEgg()` metodu
+
+#### 2. Spyglass RayTrace Optimizasyonu
+- **Sorun**: Her 5 tick'te (0.25 saniye) tüm oyuncular için rayTrace yapılıyordu
+- **Çözüm**: Sıklık 20 tick'e (1 saniye) çıkarıldı
+- **Performans**: %75 azalma (5 tick → 20 tick)
+
+### Veri Kaybı Önleme
+
+#### 1. Alliance Sistemi Kayıt/Yükleme
+- **Sorun**: İttifaklar kaydedilmiyordu, sunucu restart'tan sonra kayboluyordu
+- **Çözüm**: 
+  - `DataManager`'a `AllianceSnapshot` ve `AllianceData` eklendi
+  - `createAllianceSnapshot()`, `writeAllianceSnapshot()`, `loadAlliances()` metodları
+  - `AllianceManager.loadAlliance()` metodu (duplicate kontrolü ile)
+- **Dosya**: `data/alliances.json`
+
+#### 2. Disaster Durumu Kayıt/Yükleme
+- **Sorun**: Aktif felaketler kaydedilmiyordu, sunucu kapanınca kayboluyordu
+- **Çözüm**:
+  - `DisasterManager`'a `getDisasterState()` ve `loadDisasterState()` metodları
+  - `DisasterState` inner class eklendi
+  - `DataManager`'a `DisasterSnapshot` ve `DisasterStateData` eklendi
+  - **Not**: Entity'ler kaydedilemediği için sadece felaket durumu kaydediliyor
+- **Dosya**: `data/disaster.json`
+
+### Memory Leak Önleme
+
+#### 1. Yumurta Ölüm Kontrolü
+- **Sorun**: Yumurta öldüğünde `trackedEggs`'den çıkarılmıyordu
+- **Çözüm**: `BreedingListener.onEggDeath()` event handler eklendi
+- **Kod**: `BreedingManager.removeTrackedEgg()` metodu
+
+#### 2. Entity Null Kontrolü
+- **Sorun**: `Main.java`'da yumurta kontrolünde entity null olabilirdi
+- **Çözüm**: Null kontrolü ve bulunamayan yumurtaları temizleme eklendi
+
+### Admin Komutları
+
+#### `/scadmin alliance <komut>`
+- `list` - Tüm aktif ittifakları listele
+- `create <klan1> <klan2> <tip> [süre_gün]` - İttifak oluştur
+- `break <ittifak_id>` - İttifakı boz (admin)
+- `info <klan>` - Klanın ittifaklarını göster
+
+Detaylar için: `Documant/20_admin_komutlari.md`
+
+---
+
 **Versiyon:** 10.0  
-**Son Güncelleme:** 2025-11-28  
+**Son Güncelleme:** 2025-01-XX  
 **Yazar:** Mami
 

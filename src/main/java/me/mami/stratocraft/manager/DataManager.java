@@ -9,6 +9,7 @@ import me.mami.stratocraft.model.Contract;
 import me.mami.stratocraft.model.Shop;
 import me.mami.stratocraft.model.Structure;
 import me.mami.stratocraft.model.Territory;
+import me.mami.stratocraft.model.Disaster;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.inventory.Inventory;
@@ -51,13 +52,16 @@ public class DataManager {
      * @param forceSync true ise async kullanmaz (onDisable için)
      */
     public void saveAll(ClanManager clanManager, ContractManager contractManager, 
-                       ShopManager shopManager, VirtualStorageListener virtualStorage, boolean forceSync) {
+                       ShopManager shopManager, VirtualStorageListener virtualStorage, 
+                       AllianceManager allianceManager, DisasterManager disasterManager, boolean forceSync) {
         try {
             // Önce tüm verileri snapshot al (sync thread'de)
             ClanSnapshot clanSnapshot = createClanSnapshot(clanManager);
             ContractSnapshot contractSnapshot = createContractSnapshot(contractManager);
             ShopSnapshot shopSnapshot = createShopSnapshot(shopManager);
             InventorySnapshot inventorySnapshot = createInventorySnapshot(virtualStorage);
+            AllianceSnapshot allianceSnapshot = createAllianceSnapshot(allianceManager);
+            DisasterSnapshot disasterSnapshot = createDisasterSnapshot(disasterManager);
             
             if (forceSync) {
                 // Sunucu kapanıyor - sync kayıt (onDisable)
@@ -66,6 +70,8 @@ public class DataManager {
                     writeContractSnapshot(contractSnapshot);
                     writeShopSnapshot(shopSnapshot);
                     writeInventorySnapshot(inventorySnapshot);
+                    writeAllianceSnapshot(allianceSnapshot);
+                    writeDisasterSnapshot(disasterSnapshot);
                     plugin.getLogger().info("§aTüm veriler kaydedildi!");
                 } catch (Exception e) {
                     plugin.getLogger().severe("§cVeri kaydetme hatası: " + e.getMessage());
@@ -79,6 +85,8 @@ public class DataManager {
                         writeContractSnapshot(contractSnapshot);
                         writeShopSnapshot(shopSnapshot);
                         writeInventorySnapshot(inventorySnapshot);
+                        writeAllianceSnapshot(allianceSnapshot);
+                        writeDisasterSnapshot(disasterSnapshot);
                         plugin.getLogger().info("§aTüm veriler kaydedildi!");
                     } catch (Exception e) {
                         plugin.getLogger().severe("§cVeri kaydetme hatası: " + e.getMessage());
@@ -96,8 +104,9 @@ public class DataManager {
      * Overload: Varsayılan olarak async kayıt
      */
     public void saveAll(ClanManager clanManager, ContractManager contractManager, 
-                       ShopManager shopManager, VirtualStorageListener virtualStorage) {
-        saveAll(clanManager, contractManager, shopManager, virtualStorage, false);
+                       ShopManager shopManager, VirtualStorageListener virtualStorage, 
+                       AllianceManager allianceManager, DisasterManager disasterManager) {
+        saveAll(clanManager, contractManager, shopManager, virtualStorage, allianceManager, disasterManager, false);
     }
     
     // Snapshot sınıfları
@@ -115,6 +124,14 @@ public class DataManager {
     
     private static class InventorySnapshot {
         Map<String, String> inventories = new HashMap<>();
+    }
+    
+    private static class AllianceSnapshot {
+        List<AllianceData> alliances = new ArrayList<>();
+    }
+    
+    private static class DisasterSnapshot {
+        DisasterStateData disaster = null;
     }
     
     /**
@@ -216,6 +233,52 @@ public class DataManager {
     }
     
     /**
+     * Alliance verilerini snapshot al
+     */
+    private AllianceSnapshot createAllianceSnapshot(AllianceManager allianceManager) {
+        AllianceSnapshot snapshot = new AllianceSnapshot();
+        
+        // AllianceManager'dan tüm ittifakları al
+        for (me.mami.stratocraft.model.Alliance alliance : allianceManager.getAllAlliances()) {
+            AllianceData data = new AllianceData();
+            data.id = alliance.getId().toString();
+            data.clan1Id = alliance.getClan1Id().toString();
+            data.clan2Id = alliance.getClan2Id().toString();
+            data.type = alliance.getType().name();
+            data.createdAt = alliance.getCreatedAt();
+            data.expiresAt = alliance.getExpiresAt();
+            data.active = alliance.isActive();
+            data.broken = alliance.isBroken();
+            data.breakerClanId = alliance.getBreakerClanId() != null ? 
+                alliance.getBreakerClanId().toString() : null;
+            snapshot.alliances.add(data);
+        }
+        
+        return snapshot;
+    }
+    
+    /**
+     * Disaster snapshot oluştur
+     */
+    private DisasterSnapshot createDisasterSnapshot(DisasterManager disasterManager) {
+        DisasterSnapshot snapshot = new DisasterSnapshot();
+        if (disasterManager != null) {
+            DisasterManager.DisasterState state = disasterManager.getDisasterState();
+            if (state != null) {
+                DisasterStateData data = new DisasterStateData();
+                data.type = state.type.name();
+                data.category = state.category.name();
+                data.level = state.level;
+                data.startTime = state.startTime;
+                data.duration = state.duration;
+                data.target = state.target != null ? serializeLocation(state.target) : null;
+                snapshot.disaster = data;
+            }
+        }
+        return snapshot;
+    }
+    
+    /**
      * Snapshot'ları diske yaz (async thread'de güvenli)
      */
     private void writeClanSnapshot(ClanSnapshot snapshot) throws IOException {
@@ -236,6 +299,20 @@ public class DataManager {
         File file = new File(dataFolder, "data/shops.json");
         try (FileWriter writer = new FileWriter(file)) {
             gson.toJson(snapshot.shops, writer);
+        }
+    }
+    
+    private void writeAllianceSnapshot(AllianceSnapshot snapshot) throws IOException {
+        File file = new File(dataFolder, "data/alliances.json");
+        try (FileWriter writer = new FileWriter(file)) {
+            gson.toJson(snapshot.alliances, writer);
+        }
+    }
+    
+    private void writeDisasterSnapshot(DisasterSnapshot snapshot) throws IOException {
+        File file = new File(dataFolder, "data/disaster.json");
+        try (FileWriter writer = new FileWriter(file)) {
+            gson.toJson(snapshot.disaster, writer);
         }
     }
     
@@ -280,7 +357,8 @@ public class DataManager {
     // ========== YÜKLEME METODLARI ==========
     
     public void loadAll(ClanManager clanManager, ContractManager contractManager,
-                       ShopManager shopManager, VirtualStorageListener virtualStorage) {
+                       ShopManager shopManager, VirtualStorageListener virtualStorage,
+                       AllianceManager allianceManager) {
         try {
             loadClans(clanManager);
             loadContracts(contractManager);
@@ -435,6 +513,61 @@ public class DataManager {
         }
     }
     
+    private void loadAlliances(AllianceManager allianceManager) throws IOException {
+        File file = new File(dataFolder, "data/alliances.json");
+        if (!file.exists()) return;
+        
+        try (FileReader reader = new FileReader(file)) {
+            List<AllianceData> allianceDataList = gson.fromJson(reader,
+                    new TypeToken<List<AllianceData>>(){}.getType());
+            
+            if (allianceDataList == null) return;
+            
+            for (AllianceData data : allianceDataList) {
+                me.mami.stratocraft.model.Alliance.Type type = 
+                    me.mami.stratocraft.model.Alliance.Type.valueOf(data.type);
+                long durationDays = data.expiresAt > 0 ? 
+                    (data.expiresAt - data.createdAt) / (24 * 60 * 60 * 1000) : 0;
+                
+                me.mami.stratocraft.model.Alliance alliance = new me.mami.stratocraft.model.Alliance(
+                    UUID.fromString(data.clan1Id),
+                    UUID.fromString(data.clan2Id),
+                    type,
+                    durationDays
+                );
+                alliance.setId(UUID.fromString(data.id));
+                alliance.setActive(data.active);
+                if (data.broken && data.breakerClanId != null) {
+                    alliance.breakAlliance(UUID.fromString(data.breakerClanId));
+                }
+                
+                // AllianceManager'a yükle
+                allianceManager.loadAlliance(alliance);
+            }
+        }
+    }
+    
+    private void loadDisaster(DisasterManager disasterManager) throws IOException {
+        File file = new File(dataFolder, "data/disaster.json");
+        if (!file.exists() || disasterManager == null) return;
+        
+        try (FileReader reader = new FileReader(file)) {
+            DisasterStateData data = gson.fromJson(reader, DisasterStateData.class);
+            
+            if (data == null) return;
+            
+            Disaster.Type type = Disaster.Type.valueOf(data.type);
+            Disaster.Category category = Disaster.Category.valueOf(data.category);
+            Location target = data.target != null ? deserializeLocation(data.target) : null;
+            
+            DisasterManager.DisasterState state = new DisasterManager.DisasterState(
+                type, category, data.level, data.startTime, data.duration, target
+            );
+            
+            disasterManager.loadDisasterState(state);
+        }
+    }
+    
     // ========== YARDIMCI METODLAR ==========
     
     private String serializeLocation(Location loc) {
@@ -560,6 +693,15 @@ public class DataManager {
         String sellItem;
         String priceItem;
         boolean protectedZone;
+    }
+    
+    private static class DisasterStateData {
+        String type;
+        String category;
+        int level;
+        long startTime;
+        long duration;
+        String target;
     }
     
     // Location adapter for Gson

@@ -173,7 +173,23 @@ public class AllianceManager {
     }
     
     public List<Alliance> getAllAlliances() {
-        return activeAlliances;
+        return new ArrayList<>(activeAlliances); // Defensive copy
+    }
+    
+    /**
+     * Alliance yükle (DataManager'dan çağrılır)
+     */
+    public void loadAlliance(Alliance alliance) {
+        if (alliance == null) return;
+        
+        // Duplicate kontrolü: Aynı ID'ye sahip alliance var mı?
+        boolean exists = activeAlliances.stream()
+            .anyMatch(a -> a.getId().equals(alliance.getId()));
+        
+        if (!exists) {
+            activeAlliances.add(alliance);
+        }
+    }
     }
     
     public void loadAlliance(Alliance alliance) {

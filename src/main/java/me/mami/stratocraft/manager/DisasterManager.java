@@ -32,6 +32,73 @@ public class DisasterManager {
     private Disaster activeDisaster = null;
     private long lastDisasterTime = System.currentTimeMillis();
     
+    /**
+     * Aktif felaket durumunu kaydet (DataManager için)
+     * Not: Entity'ler kaydedilemez, sadece felaket durumu kaydedilir
+     */
+    public DisasterState getDisasterState() {
+        if (activeDisaster == null || activeDisaster.isDead()) {
+            return null;
+        }
+        return new DisasterState(
+            activeDisaster.getType(),
+            activeDisaster.getCategory(),
+            activeDisaster.getLevel(),
+            activeDisaster.getStartTime(),
+            activeDisaster.getDuration(),
+            activeDisaster.getTarget() != null ? activeDisaster.getTarget() : null
+        );
+    }
+    
+    /**
+     * Felaket durumunu yükle (DataManager'dan çağrılır)
+     * Not: Entity'ler kaydedilemediği için, sadece süre kontrolü yapılır
+     * Eğer süre dolmamışsa felaket iptal edilir (entity olmadan devam edemez)
+     */
+    public void loadDisasterState(DisasterState state) {
+        if (state == null) return;
+        
+        // Süre kontrolü
+        long elapsed = System.currentTimeMillis() - state.startTime;
+        long remaining = state.duration - elapsed;
+        
+        if (remaining <= 0) {
+            // Süre dolmuş, felaket bitti
+            plugin.getLogger().info("Kaydedilmiş felaket süresi dolmuş, iptal edildi.");
+            return;
+        }
+        
+        // Entity'ler kaydedilemediği için felaketi iptal et
+        // (Entity olmadan felaket devam edemez)
+        plugin.getLogger().warning("Aktif felaket tespit edildi ancak entity'ler kaydedilemediği için iptal edildi: " + 
+            state.type.name() + " (Kalan süre: " + (remaining / 1000) + " saniye)");
+        
+        // İsteğe bağlı: Felaketi yeniden başlat (ancak bu karmaşık olabilir)
+        // Şimdilik sadece iptal ediyoruz
+    }
+    
+    /**
+     * Felaket durumu (kayıt için)
+     */
+    public static class DisasterState {
+        public final Disaster.Type type;
+        public final Disaster.Category category;
+        public final int level;
+        public final long startTime;
+        public final long duration;
+        public final Location target;
+        
+        public DisasterState(Disaster.Type type, Disaster.Category category, int level,
+                           long startTime, long duration, Location target) {
+            this.type = type;
+            this.category = category;
+            this.level = level;
+            this.startTime = startTime;
+            this.duration = duration;
+            this.target = target;
+        }
+    }
+    
     // Spawn zamanları (ms)
     private static final long LEVEL_1_INTERVAL = 86400000L;  // 1 gün
     private static final long LEVEL_2_INTERVAL = 259200000L; // 3 gün
