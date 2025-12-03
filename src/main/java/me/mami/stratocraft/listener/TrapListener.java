@@ -84,19 +84,49 @@ public class TrapListener implements Listener {
             return;
         }
 
-        // 2. LODESTONE'a yakıt ile sağ tık (tuzak aktifleştirme)
+        // 2. Tuzak aktifleştirme: Üstteki bloklardan birine shift+sağ tık + yakıt
+        // VEYA LODESTONE'a yakıt ile sağ tık (eski yöntem - geriye dönük uyumluluk)
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK)
             return;
 
         Block block = event.getClickedBlock();
         if (block == null)
             return;
+        
+        // Shift+sağ tık: Üstteki bloklardan birine tıklanınca, altındaki tuzak çekirdeğini bul
+        Block trapCoreBlock = null;
+        if (player.isSneaking()) {
+            // Tıklanan bloğun altında LODESTONE var mı? (1 veya 2 blok altında)
+            Block below1 = block.getRelative(0, -1, 0);
+            if (below1.getType() == Material.LODESTONE &&
+                    (below1.hasMetadata("TrapCoreItem") || trapManager.isInactiveTrapCore(below1.getLocation()))) {
+                trapCoreBlock = below1;
+            } else {
+                Block below2 = below1.getRelative(0, -1, 0);
+                if (below2.getType() == Material.LODESTONE &&
+                        (below2.hasMetadata("TrapCoreItem") || trapManager.isInactiveTrapCore(below2.getLocation()))) {
+                    trapCoreBlock = below2;
+                }
+            }
+            
+            if (trapCoreBlock == null) {
+                return; // Altında tuzak çekirdeği yok
+            }
+        } else {
+            // Shift yok: Direkt LODESTONE'a tıklama (eski yöntem - geriye dönük uyumluluk)
+            if (block.getType() == Material.LODESTONE &&
+                    (block.hasMetadata("TrapCoreItem") || trapManager.isInactiveTrapCore(block.getLocation()))) {
+                trapCoreBlock = block;
+            } else {
+                return; // Shift yok ve LODESTONE değil, işlem yapma
+            }
+        }
 
         // TrapCoreItem metadata'sı veya dosyadan yüklenen veri kontrolü
-        if (block.getType() == Material.LODESTONE &&
-                (block.hasMetadata("TrapCoreItem") || trapManager.isInactiveTrapCore(block.getLocation()))) {
+        if (trapCoreBlock != null &&
+                (trapCoreBlock.hasMetadata("TrapCoreItem") || trapManager.isInactiveTrapCore(trapCoreBlock.getLocation()))) {
             // Tuzak yapısı kontrolü (çerçeve tamamlanmış mı?)
-            if (!trapManager.isTrapStructure(block)) {
+            if (!trapManager.isTrapStructure(trapCoreBlock)) {
                 player.sendMessage("§cTuzak çerçevesi tamamlanmamış! Magma Block çerçevesi yap (3x3, 3x6, 5x5, vb.).");
                 event.setCancelled(true);
                 return;
@@ -134,7 +164,7 @@ public class TrapListener implements Listener {
             }
 
             // Tuzak oluştur
-            if (trapManager.createTrap(player, block, trapType, fuelMaterial)) {
+            if (trapManager.createTrap(player, trapCoreBlock, trapType, fuelMaterial)) {
                 // Yakıtı tüket (null kontrolü ile)
                 if (handItem != null && handItem.getAmount() > 0) {
                     handItem.setAmount(handItem.getAmount() - 1);
@@ -196,13 +226,20 @@ public class TrapListener implements Listener {
         Player player = event.getPlayer();
         Block standingBlock = event.getTo().getBlock();
 
-        // Tuzak tetikleme kontrolü - oyuncunun üzerinde durduğu blok
+        // Tuzak tetikleme kontrolü - oyuncunun üzerinde durduğu blok (üstteki bloklara basıldığında)
+        // Bu blok tuzağın üstündeki kapak bloğu olabilir
         trapManager.triggerTrap(standingBlock.getLocation(), player);
-
-        // Tuzak tetikleme kontrolü - oyuncunun altındaki blok (1 blok altında)
+        
+        // Ayrıca oyuncunun altındaki blokları da kontrol et (çerçeve bloklarına basıldığında)
         Block below = standingBlock.getRelative(0, -1, 0);
         if (below.getType() == Material.MAGMA_BLOCK || below.getType() == Material.LODESTONE) {
             trapManager.triggerTrap(below.getLocation(), player);
+        }
+        
+        // Çerçeve bloklarının üstündeki bloklara basıldığında da kontrol et
+        Block below2 = below.getRelative(0, -1, 0);
+        if (below2.getType() == Material.MAGMA_BLOCK) {
+            trapManager.triggerTrap(below2.getLocation(), player);
         }
 
         // Tuzak kapatma kontrolü (oyuncu üzerinde yürüyorsa, altındaki tuzakları kontrol et)

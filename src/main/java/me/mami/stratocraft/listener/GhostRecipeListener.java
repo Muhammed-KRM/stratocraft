@@ -73,12 +73,15 @@ public class GhostRecipeListener implements Listener {
         Location targetLocation;
         
         if (rayTrace != null && rayTrace.getHitBlock() != null) {
-            // Blok üzerine tıkladıysa, o blokun konumunu kullan
-            targetLocation = rayTrace.getHitBlock().getLocation();
+            // Blok üzerine tıkladıysa, o blokun bir blok üstünden başla (yer üstüne doğru)
+            org.bukkit.block.Block clickedBlock = rayTrace.getHitBlock();
+            targetLocation = clickedBlock.getRelative(org.bukkit.block.BlockFace.UP).getLocation();
         } else {
             // Havaya tıkladıysa, oyuncunun önüne 5 blok mesafede
             Location playerLoc = player.getLocation();
             targetLocation = playerLoc.clone().add(playerLoc.getDirection().multiply(5));
+            // Havaya tıklanınca da yer üstüne doğru yerleştir
+            targetLocation.setY(Math.floor(targetLocation.getY()) + 1);
         }
         
         // Yapı türü kontrolü ve uyarı
@@ -374,7 +377,9 @@ public class GhostRecipeListener implements Listener {
         // Aktif tarif var mı?
         if (!ghostRecipeManager.hasActiveRecipe(player.getUniqueId())) {
             // Aktif tarif yoksa, yeni bir tane göster ve sabitle
-            Location targetLocation = event.getClickedBlock().getLocation();
+            // Tıklanan bloğun bir blok üstünden başla (yer üstüne doğru)
+            org.bukkit.block.Block clickedBlock = event.getClickedBlock();
+            Location targetLocation = clickedBlock.getRelative(org.bukkit.block.BlockFace.UP).getLocation();
             ghostRecipeManager.showGhostRecipe(player, recipeId, targetLocation);
             ghostRecipeManager.fixGhostRecipe(player, targetLocation);
             event.setCancelled(true);
@@ -382,7 +387,9 @@ public class GhostRecipeListener implements Listener {
         }
         
         // Aktif tarifi sabitle
-        Location targetLocation = event.getClickedBlock().getLocation();
+        // Tıklanan bloğun bir blok üstünden başla (yer üstüne doğru)
+        org.bukkit.block.Block clickedBlock = event.getClickedBlock();
+        Location targetLocation = clickedBlock.getRelative(org.bukkit.block.BlockFace.UP).getLocation();
         ghostRecipeManager.fixGhostRecipe(player, targetLocation);
         event.setCancelled(true);
     }

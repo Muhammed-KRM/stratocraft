@@ -52,6 +52,8 @@ public class TrapManager {
     // Metadata kalıcı olmadığı için dosyaya kaydedilmeli
     private final Map<Location, UUID> inactiveTrapCores = new HashMap<>(); // Location -> Owner UUID
     private final Map<UUID, me.mami.stratocraft.model.Clan> clanCache = new HashMap<>(); // Performans optimizasyonu
+    // Performans optimizasyonu: Üstteki blok -> Tuzak çekirdeği mapping (O(1) lookup)
+    private final Map<Location, Location> coverBlockToTrapCore = new HashMap<>(); // Cover block location -> Trap core location
     private File trapsFile;
     private FileConfiguration trapsConfig;
 
@@ -289,6 +291,13 @@ public class TrapManager {
         }
 
         trap.setCovered(covered);
+        
+        // Performans optimizasyonu: Cover block mapping'ini güncelle
+        if (covered) {
+            updateCoverBlockMapping(coreLocation, trap);
+        } else {
+            removeCoverBlockMapping(coreLocation, trap);
+        }
     }
 
     /**
@@ -304,7 +313,7 @@ public class TrapManager {
         TrapData trap = null;
         Location trapCore = null;
 
-        // 1. Trigger bloğunun altında tuzak var mı? (1 blok altında)
+        // 1. Trigger bloğunun altında tuzak var mı? (1 blok altında - üstteki bloklara basıldığında)
         Block below = triggerBlock.getRelative(0, -1, 0);
         if (below.hasMetadata("TrapCore")) {
             trapCore = below.getLocation();
@@ -335,6 +344,18 @@ public class TrapManager {
                     }
                 }
                 if (trap != null) break;
+            }
+        }
+        
+        // 4. Eğer trigger bloğu tuzağın üstündeki kapak bloğu ise (üstteki bloklara basıldığında)
+        // PERFORMANS OPTİMİZASYONU: O(1) lookup kullan (tüm tuzakları döngüye alma)
+        if (trap == null) {
+            Location trapCoreFromMapping = coverBlockToTrapCore.get(triggerLocation);
+            if (trapCoreFromMapping != null) {
+                trap = activeTraps.get(trapCoreFromMapping);
+                if (trap != null) {
+                    trapCore = trapCoreFromMapping;
+                }
             }
         }
 
@@ -371,6 +392,11 @@ public class TrapManager {
             return; // Tuzak tamamen gizlenmemiş, çalışma
         }
 
+        // Owner kontrolü - Tuzak sahibi korunur
+        if (victim != null && victim.getUniqueId().equals(trap.getOwnerId())) {
+            return; // Tuzak sahibi, tuzak tetiklenmez
+        }
+        
         // Klan kontrolü - Dostlar korunur
         if (trap.getOwnerClanId() != null && victim != null) {
             if (clanManager.getClanByPlayer(victim.getUniqueId()) != null) {
@@ -498,7 +524,81 @@ public class TrapManager {
             Block coreBlock = coreLocation.getBlock();
             coreBlock.removeMetadata("TrapCore", plugin);
             coreBlock.removeMetadata("TrapOwner", plugin);
+            
+            // Performans optimizasyonu: Cover block mapping'ini temizle
+            removeCoverBlockMapping(coreLocation, trap);
+            
             saveTraps();
+        }
+    }
+    
+    /**
+     * Üstteki blok -> tuzak çekirdeği mapping'ini güncelle (performans optimizasyonu)
+     */
+    private void updateCoverBlockMapping(Location coreLoc, TrapData trap) {
+        if (coreLoc == null || trap == null || coreLoc.getWorld() == null) {
+            return; // Null kontrolü
+        }
+        
+        // Tuzağın üstündeki blok
+        Block coreBlock = coreLoc.getBlock();
+        if (coreBlock == null) return;
+        
+        Block coreAbove = coreBlock.getRelative(0, 1, 0);
+        if (coreAbove != null && coreAbove.getType() != Material.AIR && 
+            coreAbove.getType() != Material.CAVE_AIR && 
+            coreAbove.getType() != Material.VOID_AIR) {
+            coverBlockToTrapCore.put(coreAbove.getLocation(), coreLoc);
+        }
+        
+        // Çerçeve bloklarının üstündeki bloklar
+        if (trap.getFrameBlocks() != null) {
+            for (Location frameLoc : trap.getFrameBlocks()) {
+                if (frameLoc == null || frameLoc.getWorld() == null) continue;
+                
+                Block frameBlock = frameLoc.getBlock();
+                if (frameBlock == null) continue;
+                
+                Block frameAbove = frameBlock.getRelative(0, 1, 0);
+                if (frameAbove != null && frameAbove.getType() != Material.AIR && 
+                    frameAbove.getType() != Material.CAVE_AIR && 
+                    frameAbove.getType() != Material.VOID_AIR) {
+                    coverBlockToTrapCore.put(frameAbove.getLocation(), coreLoc);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Üstteki blok -> tuzak çekirdeği mapping'ini temizle
+     */
+    private void removeCoverBlockMapping(Location coreLoc, TrapData trap) {
+        if (coreLoc == null || trap == null || coreLoc.getWorld() == null) {
+            return; // Null kontrolü
+        }
+        
+        // Tuzağın üstündeki blok
+        Block coreBlock = coreLoc.getBlock();
+        if (coreBlock != null) {
+            Block coreAbove = coreBlock.getRelative(0, 1, 0);
+            if (coreAbove != null) {
+                coverBlockToTrapCore.remove(coreAbove.getLocation());
+            }
+        }
+        
+        // Çerçeve bloklarının üstündeki bloklar
+        if (trap.getFrameBlocks() != null) {
+            for (Location frameLoc : trap.getFrameBlocks()) {
+                if (frameLoc == null || frameLoc.getWorld() == null) continue;
+                
+                Block frameBlock = frameLoc.getBlock();
+                if (frameBlock != null) {
+                    Block frameAbove = frameBlock.getRelative(0, 1, 0);
+                    if (frameAbove != null) {
+                        coverBlockToTrapCore.remove(frameAbove.getLocation());
+                    }
+                }
+            }
         }
     }
 
@@ -595,6 +695,24 @@ public class TrapManager {
                         block.setMetadata("TrapCore", new FixedMetadataValue(plugin, true));
                         block.setMetadata("TrapOwner", new FixedMetadataValue(plugin, ownerId.toString()));
                     }
+                    
+                    // PERFORMANS OPTİMİZASYONU: Cover block mapping'ini yeniden oluştur (sunucu restart sonrası)
+                    // Çerçeve bloklarını tespit et (dosyadan okunmuyor, yeniden tespit edilmeli)
+                    List<Location> frameBlocks = new ArrayList<>();
+                    for (int x = -1; x <= 1; x++) {
+                        for (int z = -1; z <= 1; z++) {
+                            if (x == 0 && z == 0) continue; // Çekirdek blok
+                            Location frameLoc = loc.clone().add(x, 0, z);
+                            Block frameBlock = frameLoc.getBlock();
+                            if (frameBlock.getType() == Material.MAGMA_BLOCK) {
+                                frameBlocks.add(frameLoc);
+                            }
+                        }
+                    }
+                    trap.getFrameBlocks().addAll(frameBlocks);
+                    
+                    // Mapping'i oluşturmak için checkTrapCoverage çağrılır
+                    checkTrapCoverage(loc);
                 } catch (Exception e) {
                     plugin.getLogger().warning("Tuzak yüklenemedi: " + locStr + " - " + e.getMessage());
                 }
@@ -731,6 +849,9 @@ public class TrapManager {
         // Metadata'yı kaldır (artık aktif tuzak)
         coreBlock.removeMetadata("TrapCoreItem", plugin);
         inactiveTrapCores.remove(coreLoc);
+        
+        // Performans optimizasyonu: Üstteki blok -> tuzak çekirdeği mapping'i oluştur
+        updateCoverBlockMapping(coreLoc, trap);
 
         // Kaydet
         saveTraps();

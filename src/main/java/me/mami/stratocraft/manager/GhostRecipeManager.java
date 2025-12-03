@@ -336,6 +336,21 @@ public class GhostRecipeManager {
     }
     
     /**
+     * Tüm sabit tarifleri kaldır
+     */
+    public int clearAllFixedRecipes() {
+        int count = 0;
+        for (GhostRecipe recipe : fixedGhostRecipes.values()) {
+            for (ArmorStand ghost : recipe.getGhostBlocks()) {
+                ghost.remove();
+            }
+            count++;
+        }
+        fixedGhostRecipes.clear();
+        return count;
+    }
+    
+    /**
      * Oyuncu 50 bloktan uzaklaştı mı kontrol et
      */
     public void checkDistance(Player player) {

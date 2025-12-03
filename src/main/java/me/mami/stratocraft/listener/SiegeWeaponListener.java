@@ -67,8 +67,9 @@ public class SiegeWeaponListener implements Listener {
             } else {
                 // Normal Sağ Tık = Ateş et (biniliyken)
                 // Cooldown kontrolü
-                if (!manager.canFireCatapult(player)) {
-                    long remaining = manager.getCatapultCooldownRemaining(player);
+                org.bukkit.Location catapultLoc = block.getLocation();
+                if (!manager.canFireCatapult(catapultLoc)) {
+                    long remaining = manager.getCatapultCooldownRemaining(catapultLoc);
                     player.sendMessage("§cMancınık hazır değil! " + remaining + " saniye kaldı.");
                     event.setCancelled(true);
                     return;
@@ -120,8 +121,9 @@ public class SiegeWeaponListener implements Listener {
         }
 
         // Cooldown kontrolü
-        if (!manager.canFireCatapult(player)) {
-            long remaining = manager.getCatapultCooldownRemaining(player);
+        org.bukkit.Location catapultLoc = catapultBlock.getLocation();
+        if (!manager.canFireCatapult(catapultLoc)) {
+            long remaining = manager.getCatapultCooldownRemaining(catapultLoc);
             player.sendMessage("§cMancınık hazır değil! " + remaining + " saniye kaldı.");
             return;
         }
@@ -206,8 +208,9 @@ public class SiegeWeaponListener implements Listener {
             return;
 
         // Cooldown kontrolü
-        if (!manager.canFireCatapult(player)) {
-            long remaining = manager.getCatapultCooldownRemaining(player);
+        org.bukkit.Location catapultLoc = catapultBlock.getLocation();
+        if (!manager.canFireCatapult(catapultLoc)) {
+            long remaining = manager.getCatapultCooldownRemaining(catapultLoc);
             player.sendMessage("§cMancınık hazır değil! " + remaining + " saniye kaldı.");
             event.setCancelled(true);
             return;

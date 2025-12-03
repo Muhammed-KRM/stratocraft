@@ -474,6 +474,12 @@ public class BatteryManager {
 
     public void fireMagmaBattery(Player p, Material fuel, int alchemyLevel, boolean hasAmplifier,
             double trainingMultiplier, int batteryLevel) {
+        // Varsayılan: RED_DIAMOND ve DARK_MATTER false (geriye dönük uyumluluk)
+        fireMagmaBattery(p, fuel, alchemyLevel, hasAmplifier, trainingMultiplier, batteryLevel, false, false);
+    }
+    
+    public void fireMagmaBattery(Player p, Material fuel, int alchemyLevel, boolean hasAmplifier,
+            double trainingMultiplier, int batteryLevel, boolean isRedDiamond, boolean isDarkMatter) {
         // Seviyeye göre temel güç
         int baseCount;
         float baseYield;
@@ -511,16 +517,16 @@ public class BatteryManager {
                 levelMultiplier = 1.0;
         }
         
-        // Yakıt tipine göre çarpan
+        // Yakıt tipine göre çarpan (BatteryData'dan gelen bilgiyi kullan)
         double fuelMultiplier = 1.0;
-        if (fuel == Material.DIAMOND) {
-            fuelMultiplier = 2.5;
-        } else if (ItemManager.RED_DIAMOND != null &&
-                p.getInventory().getItemInMainHand().equals(ItemManager.RED_DIAMOND)) {
-            fuelMultiplier = 5.0;
-        } else if (ItemManager.DARK_MATTER != null &&
-                p.getInventory().getItemInMainHand().equals(ItemManager.DARK_MATTER)) {
-            fuelMultiplier = 10.0;
+        if (isDarkMatter) {
+            fuelMultiplier = 10.0; // Karanlık Madde = en güçlü
+        } else if (isRedDiamond) {
+            fuelMultiplier = 5.0; // Kızıl Elmas = çok güçlü
+        } else if (fuel == Material.DIAMOND) {
+            fuelMultiplier = 2.5; // Elmas = güçlü
+        } else if (fuel == Material.IRON_INGOT) {
+            fuelMultiplier = 1.0; // Demir = standart
         }
         
         int count = (int) (baseCount * fuelMultiplier * levelMultiplier);
@@ -615,47 +621,74 @@ public class BatteryManager {
         
         p.sendMessage("§c§lDAĞ YIKICI AKTİF! Büyük alan yıkımı başlıyor...");
         
-        // Optimize: Chunk kontrolü ve batch işlem
+        // PERFORMANS OPTİMİZASYONU: Chunk kontrolü ve batch işlem (daha az blok işle)
         new BukkitRunnable() {
             int processed = 0;
-            final int maxPerTick = 50; // Her tick'te maksimum 50 blok işle
+            final int maxPerTick = 20; // Her tick'te maksimum 20 blok işle (daha optimize)
+            int currentX = -radius;
+            int currentZ = -radius;
+            int currentY = -height/2;
             
             @Override
             public void run() {
+                if (!p.isOnline()) {
+                    cancel();
+                    return;
+                }
+                
                 int count = 0;
-                for (int x = -radius; x <= radius && count < maxPerTick; x++) {
-                    for (int z = -radius; z <= radius && count < maxPerTick; z++) {
-                        for (int y = -height/2; y <= height/2 && count < maxPerTick; y++) {
-                            Location loc = center.clone().add(x, y, z);
-                            
-                            // Chunk yüklü mü kontrol et
-                            if (!loc.getChunk().isLoaded()) {
-                                continue;
+                // Sadece yüklü chunk'ları işle
+                while (count < maxPerTick && currentY <= height/2) {
+                    Location loc = center.clone().add(currentX, currentY, currentZ);
+                    
+                    // Chunk yüklü mü kontrol et (performans için kritik)
+                    if (!loc.getChunk().isLoaded()) {
+                        // Chunk yüklü değilse, sonraki koordinata geç
+                        currentX++;
+                        if (currentX > radius) {
+                            currentX = -radius;
+                            currentZ++;
+                            if (currentZ > radius) {
+                                currentZ = -radius;
+                                currentY++;
                             }
+                        }
+                        continue;
+                    }
+                    
+                    double distance = Math.sqrt(currentX*currentX + currentZ*currentZ);
+                    if (distance <= radius) {
+                        Block block = loc.getBlock();
+                        Material type = block.getType();
+                        
+                        // Sadece doğal blokları yok et (yapıları koru)
+                        if (type != Material.AIR && 
+                            type != Material.BEDROCK &&
+                            type.isSolid() &&
+                            !type.name().contains("STRUCTURE") &&
+                            !type.name().contains("BARRIER")) {
                             
-                            double distance = center.distance(loc);
-                            if (distance <= radius) {
-                                Block block = loc.getBlock();
-                                Material type = block.getType();
-                                
-                                // Sadece doğal blokları yok et (yapıları koru)
-                                if (type != Material.AIR && 
-                                    type != Material.BEDROCK &&
-                                    !type.name().contains("STRUCTURE") &&
-                                    !type.name().contains("BARRIER")) {
-                                    
-                                    // Optimize: setType yerine breakNaturally (daha hızlı)
-                                    block.breakNaturally();
-                                    count++;
-                                    processed++;
-                                }
-                            }
+                            // PERFORMANS: setType kullan (breakNaturally daha yavaş)
+                            block.setType(Material.AIR);
+                            count++;
+                            processed++;
+                        }
+                    }
+                    
+                    // Sonraki koordinata geç
+                    currentX++;
+                    if (currentX > radius) {
+                        currentX = -radius;
+                        currentZ++;
+                        if (currentZ > radius) {
+                            currentZ = -radius;
+                            currentY++;
                         }
                     }
                 }
                 
-                // Partikül efekti (optimize: her 100 blokta bir)
-                if (processed % 100 == 0) {
+                // Partikül efekti (optimize: her 50 blokta bir)
+                if (processed > 0 && processed % 50 == 0) {
                     p.getWorld().spawnParticle(
                         org.bukkit.Particle.EXPLOSION_LARGE,
                         center.clone().add(
@@ -668,12 +701,12 @@ public class BatteryManager {
                 }
                 
                 // İşlem tamamlandı mı?
-                if (processed >= radius * radius * height * 0.3) { // %30'u yeterli
+                if (currentY > height/2) {
                     p.sendMessage("§c§lDağ yıkımı tamamlandı! " + processed + " blok yok edildi.");
                     cancel();
                 }
             }
-        }.runTaskTimer(plugin, 0L, 1L); // Her tick'te çalış
+        }.runTaskTimer(plugin, 0L, 2L); // Her 2 tick'te bir çalış (daha optimize)
     }
     
     /**
@@ -710,7 +743,7 @@ public class BatteryManager {
     }
     
     /**
-     * Optimize yapı yıkımı
+     * Optimize yapı yıkımı (Performans iyileştirildi)
      */
     private void destroyStructureOptimized(Location center, int radius) {
         // Chunk kontrolü
@@ -718,23 +751,36 @@ public class BatteryManager {
             return;
         }
         
+        // PERFORMANS OPTİMİZASYONU: Sadece yapı bloklarını yok et, daha az kontrol
+        int destroyed = 0;
+        final int maxBlocks = 100; // Maksimum 100 blok yok et (performans için)
+        
         // Batch işlem: sadece yapı bloklarını yok et
-        for (int x = -radius; x <= radius; x++) {
-            for (int y = -radius; y <= radius; y++) {
-                for (int z = -radius; z <= radius; z++) {
+        for (int x = -radius; x <= radius && destroyed < maxBlocks; x++) {
+            for (int y = -radius; y <= radius && destroyed < maxBlocks; y++) {
+                for (int z = -radius; z <= radius && destroyed < maxBlocks; z++) {
+                    double distance = Math.sqrt(x*x + y*y + z*z);
+                    if (distance > radius) continue; // Mesafe kontrolü (daha hızlı)
+                    
                     Location loc = center.clone().add(x, y, z);
-                    if (loc.distance(center) <= radius) {
-                        Block block = loc.getBlock();
-                        Material type = block.getType();
-                        
-                        // Yapı bloklarını yok et
-                        if (type != Material.AIR && 
-                            type != Material.BEDROCK &&
-                            (type.name().contains("BLOCK") || 
-                             type.name().contains("BRICK") ||
-                             type.name().contains("STONE"))) {
-                            block.setType(Material.AIR);
-                        }
+                    
+                    // Chunk yüklü mü kontrol et
+                    if (!loc.getChunk().isLoaded()) continue;
+                    
+                    Block block = loc.getBlock();
+                    Material type = block.getType();
+                    
+                    // Yapı bloklarını yok et (optimize: daha spesifik kontrol)
+                    if (type != Material.AIR && 
+                        type != Material.BEDROCK &&
+                        type.isSolid() &&
+                        (type.name().contains("BLOCK") || 
+                         type.name().contains("BRICK") ||
+                         type.name().contains("STONE") ||
+                         type.name().contains("WOOD") ||
+                         type.name().contains("PLANK"))) {
+                        block.setType(Material.AIR);
+                        destroyed++;
                     }
                 }
             }
@@ -742,7 +788,7 @@ public class BatteryManager {
     }
     
     /**
-     * Seviye 5 Özel Güç: Boss Yıkımı
+     * Seviye 5 Özel Güç: Boss Yıkımı (Optimize)
      */
     public void fireBossDestroyer(Player p, me.mami.stratocraft.manager.BossManager bossManager) {
         if (bossManager == null) return;
@@ -752,28 +798,49 @@ public class BatteryManager {
         
         Location target = targetBlock.getLocation();
         
-        // Yakındaki bossları bul
-        for (org.bukkit.entity.Entity entity : target.getWorld().getNearbyEntities(target, 50, 50, 50)) {
+        // PERFORMANS OPTİMİZASYONU: Daha küçük arama yarıçapı ve filtreleme
+        double searchRadius = 30.0; // 50'den 30'a düşürüldü
+        int foundCount = 0;
+        final int maxBosses = 3; // Maksimum 3 boss'a hasar ver (performans için)
+        
+        // Yakındaki bossları bul (optimize: sadece LivingEntity'leri kontrol et)
+        for (org.bukkit.entity.Entity entity : target.getWorld().getNearbyEntities(target, searchRadius, searchRadius, searchRadius)) {
+            if (foundCount >= maxBosses) break; // Maksimum sayıya ulaşıldı
+            
             if (entity instanceof LivingEntity) {
                 LivingEntity living = (LivingEntity) entity;
+                
+                // PERFORMANS: Önce mesafe kontrolü (getNearbyEntities zaten yapıyor ama ekstra güvenlik)
+                if (living.getLocation().distance(target) > searchRadius) continue;
+                
+                // Boss kontrolü
                 if (bossManager.getBossData(living.getUniqueId()) != null) {
                     // Boss'a büyük hasar ver
                     double maxHealth = living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue();
                     double damage = maxHealth * 0.5; // %50 hasar
                     living.damage(damage);
                     
-                    // Efekt
+                    // Efekt (optimize: daha az partikül)
                     living.getWorld().spawnParticle(
                         org.bukkit.Particle.EXPLOSION_HUGE,
                         living.getLocation(),
-                        10,
+                        5, // 10'dan 5'e düşürüldü
                         2, 2, 2,
                         0.1
                     );
                     
-                    p.sendMessage("§c§lBOSS YIKICI! " + living.getCustomName() + " büyük hasar aldı!");
+                    String bossName = living.getCustomName();
+                    if (bossName == null || bossName.isEmpty()) {
+                        bossName = living.getType().name();
+                    }
+                    p.sendMessage("§c§lBOSS YIKICI! " + bossName + " büyük hasar aldı!");
+                    foundCount++;
                 }
             }
+        }
+        
+        if (foundCount == 0) {
+            p.sendMessage("§cYakında boss bulunamadı!");
         }
     }
 

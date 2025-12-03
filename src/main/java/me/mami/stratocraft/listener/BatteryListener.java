@@ -568,10 +568,11 @@ public class BatteryListener implements Listener {
                 trainingManager.recordUse(player.getUniqueId(), "MAGMA_BATTERY");
             }
             
-            // BatteryManager metodunu çağır (seviye ile)
+            // BatteryManager metodunu çağır (seviye ile + yakıt tipi bilgisi)
             int batteryLevel = data.getBatteryLevel();
             batteryManager.fireMagmaBattery(player, data.getFuel(), data.getAlchemyLevel(), 
-                                          data.hasAmplifier(), data.getTrainingMultiplier(), batteryLevel);
+                                          data.hasAmplifier(), data.getTrainingMultiplier(), batteryLevel,
+                                          data.isRedDiamond(), data.isDarkMatter());
             
             // Seviye 5 özel güçler
             if (batteryLevel == 5) {

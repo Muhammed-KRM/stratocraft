@@ -448,37 +448,37 @@ public class TerritoryListener implements Listener {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         if (event.getClickedBlock() == null) return;
         
-        // Oyuncu shift'e basıyor mu ve elinde boş mu?
         Player player = event.getPlayer();
-        if (!player.isSneaking()) return;
-        
-        ItemStack handItem = player.getInventory().getItemInMainHand();
-        if (handItem != null && handItem.getType() != Material.AIR) return;
-        
-        // Önce kristalin yakınında mı kontrol et (5 blok mesafe)
         Block clicked = event.getClickedBlock();
+        
+        // ÖNCE: Oyuncunun klanı var mı ve kristal var mı kontrol et
         Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
         if (playerClan == null) return; // Oyuncunun klanı yok
         
-        // Lider kontrolü
-        if (playerClan.getRank(player.getUniqueId()) != Clan.Rank.LEADER) {
-            return; // Lider değil, devam etme
-        }
-        
         // Kristal var mı?
         if (playerClan.getCrystalLocation() == null || playerClan.getCrystalEntity() == null) {
-            return; // Kristal yok
+            return; // Kristal yok, devam etme
         }
         
         EnderCrystal crystal = playerClan.getCrystalEntity();
         Location crystalLoc = crystal.getLocation();
         
-        // Oyuncu kristale yakın mı? (5 blok mesafe)
+        // ÖNCE: Oyuncu kristale yakın mı? (5 blok mesafe) - Bu kontrol önce yapılmalı
         double distance = player.getLocation().distance(crystalLoc);
         if (distance > 5) {
-            player.sendMessage("§cKlan Kristalini taşımak için kristale yakın olmalısın! (5 blok)");
-            event.setCancelled(true);
+            // Kristale yakın değilse hiçbir şey yapma (mesaj gönderme, sadece return)
             return;
+        }
+        
+        // Şimdi shift+sağ tık ve elinde boş mu kontrolü (sadece kristale yakınsa)
+        if (!player.isSneaking()) return;
+        
+        ItemStack handItem = player.getInventory().getItemInMainHand();
+        if (handItem != null && handItem.getType() != Material.AIR) return;
+        
+        // Lider kontrolü
+        if (playerClan.getRank(player.getUniqueId()) != Clan.Rank.LEADER) {
+            return; // Lider değil, devam etme
         }
         
         // Tıklanan bloğun üstünde kristal var mı kontrol et

@@ -97,6 +97,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§7Komutlar:");
             p.sendMessage("§7  remove <oyuncu> - Oyuncunun aktif tarifini kaldır");
             p.sendMessage("§7  removeall - Tüm aktif tarifleri kaldır");
+            p.sendMessage("§7  clearall - Tüm aktif ve sabit tarifleri kaldır");
             p.sendMessage("§7  list - Aktif tarifleri listele");
             return true;
         }
@@ -126,6 +127,20 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     }
                 }
                 p.sendMessage("§a" + count + " aktif tarif kaldırıldı.");
+                return true;
+                
+            case "clearall":
+                // Tüm aktif ve sabit tarifleri kaldır
+                int activeCount = 0;
+                for (org.bukkit.entity.Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
+                    if (plugin.getGhostRecipeManager().hasActiveRecipe(player.getUniqueId())) {
+                        plugin.getGhostRecipeManager().removeGhostRecipe(player);
+                        activeCount++;
+                    }
+                }
+                // Sabit tarifleri de kaldır (tüm dünyalarda)
+                int fixedCount = plugin.getGhostRecipeManager().clearAllFixedRecipes();
+                p.sendMessage("§a" + activeCount + " aktif tarif ve " + fixedCount + " sabit tarif kaldırıldı.");
                 return true;
                 
             case "list":
@@ -232,6 +247,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
 
         MobManager mobManager = plugin.getMobManager();
+        if (mobManager == null) {
+            p.sendMessage("§cMobManager bulunamadı!");
+            return true;
+        }
         String mobDisplayName = "";
 
         switch (mobName) {
@@ -544,6 +563,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
 
         DisasterManager disasterManager = plugin.getDisasterManager();
+        if (disasterManager == null) {
+            p.sendMessage("§cDisasterManager bulunamadı!");
+            return true;
+        }
         String command = args[1].toLowerCase();
 
         switch (command) {
@@ -2201,10 +2224,26 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     p.sendMessage("§cKullanım: /stratocraft siege start <saldıran_klan> <savunan_klan>");
                     return true;
                 }
+                if (siegeManager == null) {
+                    p.sendMessage("§cSiegeManager bulunamadı!");
+                    return true;
+                }
+                if (territoryManager == null) {
+                    p.sendMessage("§cTerritoryManager bulunamadı!");
+                    return true;
+                }
                 return handleSiegeStart(p, args[2], args[3], siegeManager, territoryManager);
             case "surrender":
                 if (args.length < 3) {
                     p.sendMessage("§cKullanım: /stratocraft siege surrender <klan>");
+                    return true;
+                }
+                if (siegeManager == null) {
+                    p.sendMessage("§cSiegeManager bulunamadı!");
+                    return true;
+                }
+                if (territoryManager == null) {
+                    p.sendMessage("§cTerritoryManager bulunamadı!");
                     return true;
                 }
                 return handleSiegeSurrender(p, args[2], siegeManager, territoryManager);
@@ -2221,6 +2260,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                                      me.mami.stratocraft.manager.SiegeManager siegeManager,
                                      me.mami.stratocraft.manager.TerritoryManager territoryManager) {
         me.mami.stratocraft.manager.ClanManager clanManager = territoryManager.getClanManager();
+        if (clanManager == null) {
+            p.sendMessage("§cClanManager bulunamadı!");
+            return true;
+        }
         
         // Klanları bul
         me.mami.stratocraft.model.Clan attacker = null;
@@ -2266,6 +2309,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                                          me.mami.stratocraft.manager.SiegeManager siegeManager,
                                          me.mami.stratocraft.manager.TerritoryManager territoryManager) {
         me.mami.stratocraft.manager.ClanManager clanManager = territoryManager.getClanManager();
+        if (clanManager == null) {
+            p.sendMessage("§cClanManager bulunamadı!");
+            return true;
+        }
         
         me.mami.stratocraft.model.Clan clan = null;
         for (me.mami.stratocraft.model.Clan c : clanManager.getAllClans()) {
@@ -3404,7 +3451,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         dispenser.getRelative(org.bukkit.block.BlockFace.WEST).setType(Material.IRON_BARS);
 
         p.sendMessage("§a§lBALİSTA OLUŞTURULDU!");
-        plugin.getSiegeWeaponManager().playConstructionEffect(dispenser.getLocation());
+        me.mami.stratocraft.manager.SiegeWeaponManager siegeWeaponManager = plugin.getSiegeWeaponManager();
+        if (siegeWeaponManager != null) {
+            siegeWeaponManager.playConstructionEffect(dispenser.getLocation());
+        }
     }
 
     private void removeBallista(Player p) {
@@ -3414,7 +3464,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             return;
         }
 
-        if (!plugin.getSiegeWeaponManager().isBallistaStructure(target)) {
+        me.mami.stratocraft.manager.SiegeWeaponManager siegeWeaponManager = plugin.getSiegeWeaponManager();
+        if (siegeWeaponManager == null) {
+            p.sendMessage("§cSiegeWeaponManager bulunamadı!");
+            return;
+        }
+
+        if (!siegeWeaponManager.isBallistaStructure(target)) {
             p.sendMessage("§cBu geçerli bir Balista yapısı değil!");
             return;
         }
@@ -3437,7 +3493,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             return;
         }
 
-        if (!plugin.getSiegeWeaponManager().isBallistaStructure(target)) {
+        me.mami.stratocraft.manager.SiegeWeaponManager siegeWeaponManager = plugin.getSiegeWeaponManager();
+        if (siegeWeaponManager == null) {
+            p.sendMessage("§cSiegeWeaponManager bulunamadı!");
+            return;
+        }
+
+        if (!siegeWeaponManager.isBallistaStructure(target)) {
             p.sendMessage("§cBu geçerli bir Balista yapısı değil!");
             return;
         }

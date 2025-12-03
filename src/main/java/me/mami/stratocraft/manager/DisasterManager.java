@@ -301,8 +301,16 @@ public class DisasterManager {
             disasterBossBar.setTitle("§c§l" + getDisasterDisplayName(activeDisaster.getType()) + 
                                     " §7| §c" + healthText + " §7| §e" + timeLeft);
             
-            // Yeni oyuncuları ekle
-            for (Player player : Bukkit.getOnlinePlayers()) {
+            // ActionBar ile sağ üstte göster (her oyuncuya)
+            // PERFORMANS OPTİMİZASYONU: getOnlinePlayers()'ı bir kez çağır
+            java.util.Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+            String actionBarText = "§c§l" + getDisasterDisplayName(activeDisaster.getType()) + 
+                                 " §7| §c" + healthText + " §7| §e⏰ " + timeLeft;
+            for (Player player : onlinePlayers) {
+                player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                    net.md_5.bungee.api.chat.TextComponent.fromLegacyText(actionBarText));
+                
+                // Yeni oyuncuları ekle (aynı döngüde)
                 if (!disasterBossBar.getPlayers().contains(player)) {
                     disasterBossBar.addPlayer(player);
                 }
@@ -501,8 +509,15 @@ public class DisasterManager {
                     String levelText = "Seviye " + currentNextLevel;
                     countdownBossBar.setTitle("§e§l⏰ Sonraki Felaket: §6" + levelText + " §7| §e" + timeText);
                     
-                    // Yeni oyuncuları ekle
-                    for (Player player : Bukkit.getOnlinePlayers()) {
+                    // ActionBar ile sağ üstte göster (her oyuncuya)
+                    // PERFORMANS OPTİMİZASYONU: getOnlinePlayers()'ı bir kez çağır
+                    String actionBarText = "§e§l⏰ Sonraki Felaket: §6" + levelText + " §7| §e" + timeText;
+                    java.util.Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+                    for (Player player : onlinePlayers) {
+                        player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                            net.md_5.bungee.api.chat.TextComponent.fromLegacyText(actionBarText));
+                        
+                        // Yeni oyuncuları ekle (aynı döngüde)
                         if (!countdownBossBar.getPlayers().contains(player)) {
                             countdownBossBar.addPlayer(player);
                         }

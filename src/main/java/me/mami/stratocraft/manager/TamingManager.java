@@ -344,10 +344,10 @@ public class TamingManager {
                 };
                 
             case 2:
-                // 3x3 Stone + Merkez Carrot Block (Carrot yerine)
+                // 3x3 Stone + Merkez Orange Concrete (Carrot temsili - blok olarak)
                 return new Material[][] {
                     {Material.STONE, Material.STONE, Material.STONE},
-                    {Material.STONE, Material.CARROTS, Material.STONE},
+                    {Material.STONE, Material.ORANGE_CONCRETE, Material.STONE},
                     {Material.STONE, Material.STONE, Material.STONE}
                 };
                 

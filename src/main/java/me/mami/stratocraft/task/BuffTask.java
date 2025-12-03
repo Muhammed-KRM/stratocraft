@@ -42,19 +42,38 @@ public class BuffTask extends BukkitRunnable {
         // ========== KATEGORİ 2: KLAN ÖZEL YAPILAR (Klan alanı dışında da çalışır) ==========
         if (siegeWeaponManager != null) {
             // 1. CAN TAPINAĞI - İyileştirme
-            for (Map.Entry<Location, UUID> entry : siegeWeaponManager.getAllHealingShrines().entrySet()) {
-                Location shrineLoc = entry.getKey();
-                UUID ownerClanId = entry.getValue();
-                
+            // PERFORMANS OPTİMİZASYONU: Oyuncu bazlı iterasyon (O(n) yerine O(n*m))
+            java.util.Map<Location, UUID> healingShrines = siegeWeaponManager.getAllHealingShrines();
+            if (!healingShrines.isEmpty()) {
                 for (Player p : Bukkit.getOnlinePlayers()) {
-                    if (p.getLocation().distance(shrineLoc) <= 10) {
-                        Clan playerClan = clanManager.getClanByPlayer(p.getUniqueId());
-                        if (playerClan != null && playerClan.getId().equals(ownerClanId)) {
+                    if (p == null || !p.isOnline()) continue;
+                    
+                    Location playerLoc = p.getLocation();
+                    Clan playerClan = clanManager.getClanByPlayer(p.getUniqueId());
+                    if (playerClan == null) continue;
+                    
+                    // Oyuncunun yakınındaki şifa tapınaklarını kontrol et
+                    for (Map.Entry<Location, UUID> entry : healingShrines.entrySet()) {
+                        Location shrineLoc = entry.getKey();
+                        UUID ownerClanId = entry.getValue();
+                        
+                        // Mesafe kontrolü (10 blok yarıçap)
+                        if (playerLoc.distance(shrineLoc) > 10) continue;
+                        
+                        // Şifa tapınağı hala aktif mi kontrol et (blok var mı ve metadata var mı)
+                        org.bukkit.block.Block shrineBlock = shrineLoc.getBlock();
+                        if (shrineBlock.getType() != org.bukkit.Material.BEACON || !shrineBlock.hasMetadata("HealingShrine")) {
+                            continue; // Blok yok veya metadata yok
+                        }
+                        
+                        // Klan kontrolü
+                        if (playerClan.getId().equals(ownerClanId)) {
                             double maxHealth = p.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue();
                             if (p.getHealth() < maxHealth) {
                                 p.setHealth(Math.min(maxHealth, p.getHealth() + 2.0));
                                 p.spawnParticle(org.bukkit.Particle.HEART, p.getLocation().add(0, 2, 0), 1);
                             }
+                            break; // Bir tapınak bulundu, diğerlerini kontrol etme
                         }
                     }
                 }

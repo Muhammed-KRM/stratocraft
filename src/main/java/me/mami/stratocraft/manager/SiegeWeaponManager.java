@@ -31,7 +31,7 @@ public class SiegeWeaponManager {
 
     // KATEGORİ 1: Herkesin kullanabildiği yapılar
     private final Map<Location, List<Block>> activeShields = new HashMap<>();
-    private final Map<UUID, Long> catapultCooldowns = new HashMap<>();
+    private final Map<Location, Long> catapultCooldowns = new HashMap<>(); // Konum bazlı (balista gibi)
     private final Map<Location, Long> lavaFountainCooldowns = new HashMap<>();
     private final Map<Location, Long> poisonDispenserCooldowns = new HashMap<>();
 
@@ -49,6 +49,7 @@ public class SiegeWeaponManager {
 
     // KATEGORİ 2: Klan özel yapılar
     private final Map<Location, UUID> healingShrines = new HashMap<>();
+    private final Map<Location, List<Block>> healingShrineGlassBlocks = new HashMap<>(); // Şifa tapınağı glass blokları
     private final Map<Location, UUID> powerTotems = new HashMap<>();
     private final Map<Location, UUID> speedCircles = new HashMap<>();
     private final Map<Location, UUID> defenseWalls = new HashMap<>();
@@ -136,11 +137,49 @@ public class SiegeWeaponManager {
             return false;
         healingShrines.put(loc, clan.getId());
         loc.getBlock().setMetadata("HealingShrine", new FixedMetadataValue(plugin, true));
+        
+        // Şifa tapınağı etrafında görsel alan oluştur (10 blok yarıçap, sadece yatay düzlemde)
+        List<Block> glassBlocks = new ArrayList<>();
+        int radius = 10;
+        int centerY = loc.getBlockY();
+        
+        for (int x = -radius; x <= radius; x++) {
+            for (int z = -radius; z <= radius; z++) {
+                double distance = Math.sqrt(x * x + z * z);
+                // Sadece yatay düzlemde, 10 blok yarıçapında bir çember oluştur
+                if (distance >= radius - 0.5 && distance <= radius) {
+                    // 3 seviye yükseklikte glass bloklar oluştur (tapınağın etrafında görsel alan)
+                    for (int y = 0; y < 3; y++) {
+                        Block b = loc.getWorld().getBlockAt(loc.getBlockX() + x, centerY + y, loc.getBlockZ() + z);
+                        if (b.getType() == Material.AIR || b.getType() == Material.CAVE_AIR) {
+                            b.setType(Material.GLASS);
+                            glassBlocks.add(b);
+                            b.setMetadata("HealingShrineGlass", new FixedMetadataValue(plugin, true));
+                        }
+                    }
+                }
+            }
+        }
+        
+        healingShrineGlassBlocks.put(loc, glassBlocks);
         return true;
     }
 
     public void removeHealingShrine(Location loc) {
         healingShrines.remove(loc);
+        
+        // Glass blokları kaldır
+        List<Block> glassBlocks = healingShrineGlassBlocks.remove(loc);
+        if (glassBlocks != null) {
+            for (Block b : glassBlocks) {
+                if (b.getType() == Material.GLASS && b.hasMetadata("HealingShrineGlass")) {
+                    b.setType(Material.AIR);
+                    b.removeMetadata("HealingShrineGlass", plugin);
+                    b.getWorld().spawnParticle(org.bukkit.Particle.BLOCK_CRACK, b.getLocation().add(0.5, 0.5, 0.5), 5,
+                            Material.GLASS.createBlockData());
+                }
+            }
+        }
     }
 
     public boolean isTotemStructure(Block center, Material mat) {
@@ -375,17 +414,17 @@ public class SiegeWeaponManager {
         }
     }
 
-    public boolean canFireCatapult(Player player) {
-        if (!catapultCooldowns.containsKey(player.getUniqueId()))
+    public boolean canFireCatapult(Location loc) {
+        if (!catapultCooldowns.containsKey(loc))
             return true;
-        return System.currentTimeMillis() - catapultCooldowns.get(player.getUniqueId()) >= CATAPULT_COOLDOWN;
+        return System.currentTimeMillis() - catapultCooldowns.get(loc) >= CATAPULT_COOLDOWN;
     }
 
-    public long getCatapultCooldownRemaining(Player player) {
-        if (!catapultCooldowns.containsKey(player.getUniqueId()))
+    public long getCatapultCooldownRemaining(Location loc) {
+        if (!catapultCooldowns.containsKey(loc))
             return 0;
         return Math.max(0,
-                (CATAPULT_COOLDOWN - (System.currentTimeMillis() - catapultCooldowns.get(player.getUniqueId())))
+                (CATAPULT_COOLDOWN - (System.currentTimeMillis() - catapultCooldowns.get(loc)))
                         / 1000);
     }
 
@@ -398,8 +437,9 @@ public class SiegeWeaponManager {
             }
         }
 
-        if (!canFireCatapult(player)) {
-            player.sendMessage("§cMancınık soğumadı! " + getCatapultCooldownRemaining(player) + "s");
+        Location catapultLoc = catapult.getLocation();
+        if (!canFireCatapult(catapultLoc)) {
+            player.sendMessage("§cMancınık soğumadı! " + getCatapultCooldownRemaining(catapultLoc) + "s");
             return;
         }
 
@@ -457,7 +497,7 @@ public class SiegeWeaponManager {
 
         player.getWorld().playSound(spawnLoc, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.5f);
         player.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, spawnLoc, 1);
-        catapultCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
+        catapultCooldowns.put(catapultLoc, System.currentTimeMillis());
     }
 
     public boolean canFireBallista(Location loc) {
