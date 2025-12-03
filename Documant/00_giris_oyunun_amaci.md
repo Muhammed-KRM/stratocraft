@@ -150,9 +150,9 @@ Dünyada sadece zombiler yok. **Eğitilebilir Ejderhalar**, yer altı Solucanlar
 - **Nadir**: Ejderha, T-Rex, Griffin (300-500 HP)
 - **Efsanevi**: Titan Golem, Hydra, Behemoth (400-1000 HP)
 
-**Eğitme Sistemi**: Özel isimli tüm canlılar eğitilebilir! Ritüel platformu kur, aktivasyon itemi ile eğit, sahiplen, binebilir hale getir.
+**Eğitme Sistemi**: Özel isimli tüm canlılar eğitilebilir! **Eğitim Çekirdeği** (Beacon bloğu) kullanarak ritüel platformu kur, aktivasyon itemi ile eğit, sahiplen, binebilir hale getir. 5 zorluk seviyesine göre farklı platformlar.
 
-**Üreme Sistemi**: Eğitilmiş canlıları çiftleştir, yavru üret, ordu büyüt!
+**Üreme Sistemi**: Eğitilmiş canlıları **Üreme Çekirdeği** ile çiftleştir, yavru üret, ordu büyüt! Memeli canlılar direkt yavru doğurur, yumurtlayan canlılar (Ejderha, Griffin, Phoenix) yumurta bırakır. **Cinsiyet Tarayıcısı** ile canlıların cinsiyetini kontrol et!
 
 **Binme Mekaniği**: Ejderha, T-Rex, Griffin gibi canlılara bin, uç, savaş!
 
@@ -162,14 +162,14 @@ Dünyada sadece zombiler yok. **Eğitilebilir Ejderhalar**, yer altı Solucanlar
 
 Derinlerde sıradan elmas değil, **Titanyum** ve **Kızıl Elmas** gibi yeni cevherler bulunur. Bunlar olmadan güçlü zırhlar yapılamaz.
 
-**Zorluk Sistemi**: Merkezden uzaklaştıkça zorlaşır ve değerli madenler bulunur!
+**Zorluk Sistemi**: Merkezden uzaklaştıkça zorlaşır ve değerli madenler bulunur! Her zorluk seviyesinde farklı moblar spawn olur.
 
 **5 Zorluk Bölgesi**:
-- **Seviye 1** (200-1000 blok): Kükürt, Boksit, Tuz Kayası
-- **Seviye 2** (1000-3000 blok): Titanyum
-- **Seviye 3** (3000-5000 blok): Mithril
-- **Seviye 4** (5000-10000 blok): Astral Cevheri
-- **Seviye 5** (10000+ blok): Kızıl Elmas (en nadir!)
+- **Seviye 1** (200-1000 blok): Kükürt, Boksit, Tuz Kayası | Moblar: Goblin, Yaban Domuzu, Kurt
+- **Seviye 2** (1000-3000 blok): Titanyum | Moblar: Ork, Troll, Minotaur, Demir Golem, Buz Ejderi
+- **Seviye 3** (3000-5000 blok): Mithril | Moblar: T-Rex, Griffin, Phoenix, Gölge Ejderi, Fırtına Dev
+- **Seviye 4** (5000-10000 blok): Astral Cevheri | Moblar: Ejderha, Wyvern, Kızıl Şeytan, Kaos Ejderi
+- **Seviye 5** (10000+ blok): Kızıl Elmas (en nadir!) | Moblar: Titan Golem, Hydra, Efsanevi Ejder, Tanrı Katili
 
 **Özel Madenler**:
 - **Titanyum**: Y -40 altı, Netherite +%20 defans
@@ -208,7 +208,7 @@ Derinlerde sıradan elmas değil, **Titanyum** ve **Kızıl Elmas** gibi yeni ce
 
 **Tuzak Türleri**: Ateş, Şok, Zehir, Donma, Patlayıcı
 
-**Mayın Sistemi**: Görünmez tuzaklar, basınç plakası ile kurulur.
+**Mayın Sistemi**: Görünmez tuzaklar, basınç plakası ile kurulur. Mayın türleri: Patlama (TNT), Yıldırım (Lightning Core), Zehir (Spider Eye), Körlük (Ink Sac), Yorgunluk (Iron Pickaxe), Yavaşlık (Slime Ball). Kendi klan üyelerin mayınlarına basmaz!
 
 ---
 
@@ -232,14 +232,16 @@ Derinlerde sıradan elmas değil, **Titanyum** ve **Kızıl Elmas** gibi yeni ce
 - **Savunan Klan**: Karşı klandan en az 1 kişi online olmalı (offline baskın önleme)
 
 **Kuşatma Silahları**:
-- **Balista**: Hızlı atış, ok fırlatır
-- **Mancınık**: Alan hasarı, magma bloğu fırlatır
+- **Balista**: Stone Slab + Dispenser + 4 Iron Bars. Binilir, sol tıkla = ateş et. 30 mermi şarjör, 15sn yenileme.
+- **Mancınık**: 3x3 Stone Brick Stairs. Binilir, magma bloğu fırlatır, alan hasarı. 10sn cooldown.
 
 **Beyaz Bayrak - Pes Etme**:
 - Savaşta kaybetmek üzereyseniz pes edebilirsiniz
-- **Beyaz Bayrak** (White Banner) koy, Shift + Sağ tık
-- Klan yok olmaz ama sandıkların yarısı gider
+- **Beyaz Bayrak** (White Banner) klan bölgende koy, Shift + Sağ tık (boş elle)
+- Klan YOK OLMAZ (dağılmaz) ama sandıklardaki itemlerin YARISI gider
+- Kasanın %50'si kazanan klana gider
 - Sadece General ve Lider pes edebilir
+- Kristal kırılmasından daha iyi (klan dağılmaz!)
 
 **Zafer Ödülleri**: %50 kaybeden kasası + Fatih buff'ı (24 saat) + Yapı malzemeleri
 
@@ -266,6 +268,8 @@ Derinlerde sıradan elmas değil, **Titanyum** ve **Kızıl Elmas** gibi yeni ce
 - **Titan Kancası**: 40 blok menzil, Slow Falling buff, pahalı
 
 **Casusluk Dürbünü**: 3 saniye hedefe bak, can/zırh/envanter bilgisi al!
+
+**Cinsiyet Tarayıcısı**: Eğitilmiş canlıların cinsiyetini gösterir. Canlıya sağ tıkla, "♂ Erkek" veya "♀ Dişi" bilgisini al. Üreme için gerekli!
 
 ---
 
