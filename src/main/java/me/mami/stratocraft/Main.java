@@ -60,6 +60,10 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.TamingManager tamingManager;
     private me.mami.stratocraft.manager.BreedingManager breedingManager;
     private me.mami.stratocraft.listener.SpecialWeaponListener specialWeaponListener;
+    
+    public me.mami.stratocraft.listener.SpecialWeaponListener getSpecialWeaponListener() {
+        return specialWeaponListener;
+    }
 
     @Override
     public void onEnable() {

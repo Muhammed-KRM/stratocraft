@@ -69,11 +69,9 @@ public class WeaponModeCommand implements CommandExecutor, TabCompleter {
      * SpecialWeaponListener'ı bul
      */
     private SpecialWeaponListener getWeaponListener() {
-        // Plugin'den listener'ı al
-        for (org.bukkit.event.Listener listener : org.bukkit.Bukkit.getPluginManager().getRegisteredListeners(plugin)) {
-            if (listener instanceof SpecialWeaponListener) {
-                return (SpecialWeaponListener) listener;
-            }
+        // Main.java'dan listener'ı al
+        if (plugin.getSpecialWeaponListener() != null) {
+            return plugin.getSpecialWeaponListener();
         }
         return null;
     }

@@ -191,6 +191,90 @@ public class ItemManager {
     public static ItemStack WEAPON_L5_4; // Efsanevi Çok Modlu Yay
     public static ItemStack WEAPON_L5_5; // Efsanevi Çok Modlu Çekiç
 
+    // ========== BOSS İTEMLERİ ==========
+    public static ItemStack GOBLIN_CROWN;
+    public static ItemStack ORC_AMULET;
+    public static ItemStack TROLL_HEART;
+    public static ItemStack DRAGON_SCALE;
+    public static ItemStack TREX_TOOTH;
+    public static ItemStack CYCLOPS_EYE;
+    public static ItemStack TITAN_CORE;
+    public static ItemStack PHOENIX_FEATHER;
+    public static ItemStack KRAKEN_TENTACLE;
+    public static ItemStack DEMON_LORD_HORN;
+    public static ItemStack VOID_DRAGON_HEART;
+
+    // ========== ÖZEL ZIRH VE SİLAH TARİF KİTAPLARI ==========
+    // Seviye 1 Zırh Tarifleri
+    public static ItemStack RECIPE_ARMOR_L1_1;
+    public static ItemStack RECIPE_ARMOR_L1_2;
+    public static ItemStack RECIPE_ARMOR_L1_3;
+    public static ItemStack RECIPE_ARMOR_L1_4;
+    public static ItemStack RECIPE_ARMOR_L1_5;
+    
+    // Seviye 2 Zırh Tarifleri
+    public static ItemStack RECIPE_ARMOR_L2_1;
+    public static ItemStack RECIPE_ARMOR_L2_2;
+    public static ItemStack RECIPE_ARMOR_L2_3;
+    public static ItemStack RECIPE_ARMOR_L2_4;
+    public static ItemStack RECIPE_ARMOR_L2_5;
+    
+    // Seviye 3 Zırh Tarifleri
+    public static ItemStack RECIPE_ARMOR_L3_1;
+    public static ItemStack RECIPE_ARMOR_L3_2;
+    public static ItemStack RECIPE_ARMOR_L3_3;
+    public static ItemStack RECIPE_ARMOR_L3_4;
+    public static ItemStack RECIPE_ARMOR_L3_5;
+    
+    // Seviye 4 Zırh Tarifleri
+    public static ItemStack RECIPE_ARMOR_L4_1;
+    public static ItemStack RECIPE_ARMOR_L4_2;
+    public static ItemStack RECIPE_ARMOR_L4_3;
+    public static ItemStack RECIPE_ARMOR_L4_4;
+    public static ItemStack RECIPE_ARMOR_L4_5;
+    
+    // Seviye 5 Zırh Tarifleri
+    public static ItemStack RECIPE_ARMOR_L5_1;
+    public static ItemStack RECIPE_ARMOR_L5_2;
+    public static ItemStack RECIPE_ARMOR_L5_3;
+    public static ItemStack RECIPE_ARMOR_L5_4;
+    public static ItemStack RECIPE_ARMOR_L5_5;
+    
+    // Seviye 1 Silah Tarifleri
+    public static ItemStack RECIPE_WEAPON_L1_1;
+    public static ItemStack RECIPE_WEAPON_L1_2;
+    public static ItemStack RECIPE_WEAPON_L1_3;
+    public static ItemStack RECIPE_WEAPON_L1_4;
+    public static ItemStack RECIPE_WEAPON_L1_5;
+    
+    // Seviye 2 Silah Tarifleri
+    public static ItemStack RECIPE_WEAPON_L2_1;
+    public static ItemStack RECIPE_WEAPON_L2_2;
+    public static ItemStack RECIPE_WEAPON_L2_3;
+    public static ItemStack RECIPE_WEAPON_L2_4;
+    public static ItemStack RECIPE_WEAPON_L2_5;
+    
+    // Seviye 3 Silah Tarifleri
+    public static ItemStack RECIPE_WEAPON_L3_1;
+    public static ItemStack RECIPE_WEAPON_L3_2;
+    public static ItemStack RECIPE_WEAPON_L3_3;
+    public static ItemStack RECIPE_WEAPON_L3_4;
+    public static ItemStack RECIPE_WEAPON_L3_5;
+    
+    // Seviye 4 Silah Tarifleri
+    public static ItemStack RECIPE_WEAPON_L4_1;
+    public static ItemStack RECIPE_WEAPON_L4_2;
+    public static ItemStack RECIPE_WEAPON_L4_3;
+    public static ItemStack RECIPE_WEAPON_L4_4;
+    public static ItemStack RECIPE_WEAPON_L4_5;
+    
+    // Seviye 5 Silah Tarifleri
+    public static ItemStack RECIPE_WEAPON_L5_1;
+    public static ItemStack RECIPE_WEAPON_L5_2;
+    public static ItemStack RECIPE_WEAPON_L5_3;
+    public static ItemStack RECIPE_WEAPON_L5_4;
+    public static ItemStack RECIPE_WEAPON_L5_5;
+
     // ========== SEVİYE 1 MOB DROP İTEMLERİ ==========
     public static ItemStack WILD_BOAR_HIDE;
     public static ItemStack WILD_BOAR_MEAT;

@@ -104,7 +104,7 @@ public class ConsumableListener implements Listener {
                 EquipmentSlot.HAND
             );
             
-            p.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).addTemporaryModifier(damageMod);
+            p.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).addModifier(damageMod);
             p.sendMessage("§c§lGüç Meyvesi tüketildi! 30 saniye boyunca hasarın 5 katına çıktı!");
             
             // 30 saniye sonra kaldır

@@ -458,5 +458,153 @@ public class BossListener implements Listener {
                 return 1;
         }
     }
+    
+    /**
+     * Boss'tan özel zırh/silah tarif kitapları düşür
+     */
+    private void dropSpecialItemRecipeBooks(EntityDeathEvent event, BossManager.BossType bossType) {
+        int bossLevel = getBossLevel(bossType);
+        
+        // Boss seviyesine göre tarif seviyesi belirlenir
+        // Seviye 1 bosslar -> Seviye 1 tarifler
+        // Seviye 2 bosslar -> Seviye 2 tarifler
+        // vb.
+        
+        java.util.List<ItemStack> recipeBooks = new java.util.ArrayList<>();
+        
+        // Seviye 1 tarifler
+        if (bossLevel >= 1) {
+            if (ItemManager.RECIPE_ARMOR_L1_1 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L1_1);
+            if (ItemManager.RECIPE_ARMOR_L1_2 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L1_2);
+            if (ItemManager.RECIPE_ARMOR_L1_3 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L1_3);
+            if (ItemManager.RECIPE_ARMOR_L1_4 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L1_4);
+            if (ItemManager.RECIPE_ARMOR_L1_5 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L1_5);
+            if (ItemManager.RECIPE_WEAPON_L1_1 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L1_1);
+            if (ItemManager.RECIPE_WEAPON_L1_2 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L1_2);
+            if (ItemManager.RECIPE_WEAPON_L1_3 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L1_3);
+            if (ItemManager.RECIPE_WEAPON_L1_4 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L1_4);
+            if (ItemManager.RECIPE_WEAPON_L1_5 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L1_5);
+        }
+        
+        // Seviye 2 tarifler
+        if (bossLevel >= 2) {
+            if (ItemManager.RECIPE_ARMOR_L2_1 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L2_1);
+            if (ItemManager.RECIPE_ARMOR_L2_2 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L2_2);
+            if (ItemManager.RECIPE_ARMOR_L2_3 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L2_3);
+            if (ItemManager.RECIPE_ARMOR_L2_4 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L2_4);
+            if (ItemManager.RECIPE_ARMOR_L2_5 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L2_5);
+            if (ItemManager.RECIPE_WEAPON_L2_1 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L2_1);
+            if (ItemManager.RECIPE_WEAPON_L2_2 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L2_2);
+            if (ItemManager.RECIPE_WEAPON_L2_3 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L2_3);
+            if (ItemManager.RECIPE_WEAPON_L2_4 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L2_4);
+            if (ItemManager.RECIPE_WEAPON_L2_5 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L2_5);
+        }
+        
+        // Seviye 3 tarifler
+        if (bossLevel >= 3) {
+            if (ItemManager.RECIPE_ARMOR_L3_1 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L3_1);
+            if (ItemManager.RECIPE_ARMOR_L3_2 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L3_2);
+            if (ItemManager.RECIPE_ARMOR_L3_3 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L3_3);
+            if (ItemManager.RECIPE_ARMOR_L3_4 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L3_4);
+            if (ItemManager.RECIPE_ARMOR_L3_5 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L3_5);
+            if (ItemManager.RECIPE_WEAPON_L3_1 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L3_1);
+            if (ItemManager.RECIPE_WEAPON_L3_2 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L3_2);
+            if (ItemManager.RECIPE_WEAPON_L3_3 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L3_3);
+            if (ItemManager.RECIPE_WEAPON_L3_4 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L3_4);
+            if (ItemManager.RECIPE_WEAPON_L3_5 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L3_5);
+        }
+        
+        // Seviye 4 tarifler
+        if (bossLevel >= 4) {
+            if (ItemManager.RECIPE_ARMOR_L4_1 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L4_1);
+            if (ItemManager.RECIPE_ARMOR_L4_2 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L4_2);
+            if (ItemManager.RECIPE_ARMOR_L4_3 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L4_3);
+            if (ItemManager.RECIPE_ARMOR_L4_4 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L4_4);
+            if (ItemManager.RECIPE_ARMOR_L4_5 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L4_5);
+            if (ItemManager.RECIPE_WEAPON_L4_1 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L4_1);
+            if (ItemManager.RECIPE_WEAPON_L4_2 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L4_2);
+            if (ItemManager.RECIPE_WEAPON_L4_3 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L4_3);
+            if (ItemManager.RECIPE_WEAPON_L4_4 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L4_4);
+            if (ItemManager.RECIPE_WEAPON_L4_5 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L4_5);
+        }
+        
+        // Seviye 5 tarifler
+        if (bossLevel >= 5) {
+            if (ItemManager.RECIPE_ARMOR_L5_1 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L5_1);
+            if (ItemManager.RECIPE_ARMOR_L5_2 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L5_2);
+            if (ItemManager.RECIPE_ARMOR_L5_3 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L5_3);
+            if (ItemManager.RECIPE_ARMOR_L5_4 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L5_4);
+            if (ItemManager.RECIPE_ARMOR_L5_5 != null) recipeBooks.add(ItemManager.RECIPE_ARMOR_L5_5);
+            if (ItemManager.RECIPE_WEAPON_L5_1 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L5_1);
+            if (ItemManager.RECIPE_WEAPON_L5_2 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L5_2);
+            if (ItemManager.RECIPE_WEAPON_L5_3 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L5_3);
+            if (ItemManager.RECIPE_WEAPON_L5_4 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L5_4);
+            if (ItemManager.RECIPE_WEAPON_L5_5 != null) recipeBooks.add(ItemManager.RECIPE_WEAPON_L5_5);
+        }
+        
+        if (recipeBooks.isEmpty()) {
+            return;
+        }
+        
+        // Boss seviyesine göre düşürme şansı
+        double dropChance = 0.2 + (bossLevel * 0.1); // Seviye 1: %30, Seviye 5: %70
+        dropChance = Math.min(dropChance, 0.8); // Maksimum %80
+        
+        if (new java.util.Random().nextDouble() < dropChance) {
+            // Rastgele bir tarif seç
+            ItemStack randomRecipe = recipeBooks.get(new java.util.Random().nextInt(recipeBooks.size()));
+            event.getDrops().add(randomRecipe.clone());
+        }
+    }
+    
+    /**
+     * Boss'tan özel item düşür (her boss kendi itemini düşürür)
+     */
+    private void dropBossItems(EntityDeathEvent event, BossManager.BossType bossType) {
+        ItemStack bossItem = null;
+        
+        switch (bossType) {
+            case GOBLIN_KING:
+                bossItem = ItemManager.GOBLIN_CROWN;
+                break;
+            case ORC_CHIEF:
+                bossItem = ItemManager.ORC_AMULET;
+                break;
+            case TROLL_KING:
+                bossItem = ItemManager.TROLL_HEART;
+                break;
+            case DRAGON:
+            case HELL_DRAGON:
+                bossItem = ItemManager.DRAGON_SCALE;
+                break;
+            case TREX:
+                bossItem = ItemManager.TREX_TOOTH;
+                break;
+            case CYCLOPS:
+                bossItem = ItemManager.CYCLOPS_EYE;
+                break;
+            case TITAN_GOLEM:
+                bossItem = ItemManager.TITAN_CORE;
+                break;
+            case PHOENIX:
+                bossItem = ItemManager.PHOENIX_FEATHER;
+                break;
+            case HYDRA:
+                bossItem = ItemManager.KRAKEN_TENTACLE;
+                break;
+            case VOID_DRAGON:
+            case CHAOS_TITAN:
+            case CHAOS_GOD:
+                bossItem = ItemManager.DEMON_LORD_HORN;
+                break;
+            default:
+                return;
+        }
+        
+        if (bossItem != null) {
+            // %100 şansla boss item'i düşür
+            event.getDrops().add(bossItem.clone());
+        }
+    }
 }
 

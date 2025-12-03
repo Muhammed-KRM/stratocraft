@@ -99,7 +99,7 @@ public class TamingListener implements Listener {
         placeBlock.getWorld().spawnParticle(org.bukkit.Particle.VILLAGER_HAPPY, 
                 placeBlock.getLocation().add(0.5, 0.5, 0.5), 10, 0.3, 0.3, 0.3, 0.1);
         placeBlock.getWorld().playSound(placeBlock.getLocation(), 
-                org.bukkit.Sound.BLOCK_BEACON_PLACE, 1.0f, 1.0f);
+                org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.0f);
         
         event.setCancelled(true);
     }

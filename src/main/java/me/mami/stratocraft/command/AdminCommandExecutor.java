@@ -1536,6 +1536,196 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
     }
 
+    private ItemStack getItemByNameBossItem(String name) {
+        switch (name.toLowerCase()) {
+            case "goblin_crown":
+            case "goblin_krali_taci":
+            case "goblin_kralı_tacı":
+                return ItemManager.GOBLIN_CROWN != null ? ItemManager.GOBLIN_CROWN.clone() : null;
+            case "orc_amulet":
+            case "ork_sefi_amuleti":
+            case "ork_şefi_amuleti":
+                return ItemManager.ORC_AMULET != null ? ItemManager.ORC_AMULET.clone() : null;
+            case "troll_heart":
+            case "troll_krali_kalbi":
+            case "troll_kralı_kalbi":
+                return ItemManager.TROLL_HEART != null ? ItemManager.TROLL_HEART.clone() : null;
+            case "dragon_scale":
+            case "ejderha_olcegi":
+            case "ejderha_ölçeği":
+                return ItemManager.DRAGON_SCALE != null ? ItemManager.DRAGON_SCALE.clone() : null;
+            case "trex_tooth":
+            case "trex_disi":
+            case "t_rex_disi":
+                return ItemManager.TREX_TOOTH != null ? ItemManager.TREX_TOOTH.clone() : null;
+            case "cyclops_eye":
+            case "cyclops_gozu":
+            case "cyclops_gözü":
+                return ItemManager.CYCLOPS_EYE != null ? ItemManager.CYCLOPS_EYE.clone() : null;
+            case "titan_core":
+            case "titan_golem_cekirdegi":
+            case "titan_golem_çekirdeği":
+                return ItemManager.TITAN_CORE != null ? ItemManager.TITAN_CORE.clone() : null;
+            case "phoenix_feather":
+            case "phoenix_tuyu":
+            case "phoenix_tüyü":
+                return ItemManager.PHOENIX_FEATHER != null ? ItemManager.PHOENIX_FEATHER.clone() : null;
+            case "kraken_tentacle":
+            case "kraken_dokunaci":
+            case "kraken_dokunaçı":
+                return ItemManager.KRAKEN_TENTACLE != null ? ItemManager.KRAKEN_TENTACLE.clone() : null;
+            case "demon_lord_horn":
+            case "seytan_lordu_boynuzu":
+            case "şeytan_lordu_boynuzu":
+                return ItemManager.DEMON_LORD_HORN != null ? ItemManager.DEMON_LORD_HORN.clone() : null;
+            case "void_dragon_heart":
+            case "hiclik_ejderi_kalbi":
+            case "hiçlik_ejderi_kalbi":
+                return ItemManager.VOID_DRAGON_HEART != null ? ItemManager.VOID_DRAGON_HEART.clone() : null;
+            default:
+                return null;
+        }
+    }
+    
+    private ItemStack getItemByNameRecipeBook(String name) {
+        // Özel zırh tarifleri
+        if (name.toLowerCase().startsWith("recipe_armor_l")) {
+            String[] parts = name.toLowerCase().split("_");
+            if (parts.length >= 4) {
+                try {
+                    int level = Integer.parseInt(parts[3].replace("l", ""));
+                    int variant = Integer.parseInt(parts[4]);
+                    
+                    if (level >= 1 && level <= 5 && variant >= 1 && variant <= 5) {
+                        switch (level) {
+                            case 1:
+                                switch (variant) {
+                                    case 1: return ItemManager.RECIPE_ARMOR_L1_1 != null ? ItemManager.RECIPE_ARMOR_L1_1.clone() : null;
+                                    case 2: return ItemManager.RECIPE_ARMOR_L1_2 != null ? ItemManager.RECIPE_ARMOR_L1_2.clone() : null;
+                                    case 3: return ItemManager.RECIPE_ARMOR_L1_3 != null ? ItemManager.RECIPE_ARMOR_L1_3.clone() : null;
+                                    case 4: return ItemManager.RECIPE_ARMOR_L1_4 != null ? ItemManager.RECIPE_ARMOR_L1_4.clone() : null;
+                                    case 5: return ItemManager.RECIPE_ARMOR_L1_5 != null ? ItemManager.RECIPE_ARMOR_L1_5.clone() : null;
+                                }
+                                break;
+                            case 2:
+                                switch (variant) {
+                                    case 1: return ItemManager.RECIPE_ARMOR_L2_1 != null ? ItemManager.RECIPE_ARMOR_L2_1.clone() : null;
+                                    case 2: return ItemManager.RECIPE_ARMOR_L2_2 != null ? ItemManager.RECIPE_ARMOR_L2_2.clone() : null;
+                                    case 3: return ItemManager.RECIPE_ARMOR_L2_3 != null ? ItemManager.RECIPE_ARMOR_L2_3.clone() : null;
+                                    case 4: return ItemManager.RECIPE_ARMOR_L2_4 != null ? ItemManager.RECIPE_ARMOR_L2_4.clone() : null;
+                                    case 5: return ItemManager.RECIPE_ARMOR_L2_5 != null ? ItemManager.RECIPE_ARMOR_L2_5.clone() : null;
+                                }
+                                break;
+                            case 3:
+                                switch (variant) {
+                                    case 1: return ItemManager.RECIPE_ARMOR_L3_1 != null ? ItemManager.RECIPE_ARMOR_L3_1.clone() : null;
+                                    case 2: return ItemManager.RECIPE_ARMOR_L3_2 != null ? ItemManager.RECIPE_ARMOR_L3_2.clone() : null;
+                                    case 3: return ItemManager.RECIPE_ARMOR_L3_3 != null ? ItemManager.RECIPE_ARMOR_L3_3.clone() : null;
+                                    case 4: return ItemManager.RECIPE_ARMOR_L3_4 != null ? ItemManager.RECIPE_ARMOR_L3_4.clone() : null;
+                                    case 5: return ItemManager.RECIPE_ARMOR_L3_5 != null ? ItemManager.RECIPE_ARMOR_L3_5.clone() : null;
+                                }
+                                break;
+                            case 4:
+                                switch (variant) {
+                                    case 1: return ItemManager.RECIPE_ARMOR_L4_1 != null ? ItemManager.RECIPE_ARMOR_L4_1.clone() : null;
+                                    case 2: return ItemManager.RECIPE_ARMOR_L4_2 != null ? ItemManager.RECIPE_ARMOR_L4_2.clone() : null;
+                                    case 3: return ItemManager.RECIPE_ARMOR_L4_3 != null ? ItemManager.RECIPE_ARMOR_L4_3.clone() : null;
+                                    case 4: return ItemManager.RECIPE_ARMOR_L4_4 != null ? ItemManager.RECIPE_ARMOR_L4_4.clone() : null;
+                                    case 5: return ItemManager.RECIPE_ARMOR_L4_5 != null ? ItemManager.RECIPE_ARMOR_L4_5.clone() : null;
+                                }
+                                break;
+                            case 5:
+                                switch (variant) {
+                                    case 1: return ItemManager.RECIPE_ARMOR_L5_1 != null ? ItemManager.RECIPE_ARMOR_L5_1.clone() : null;
+                                    case 2: return ItemManager.RECIPE_ARMOR_L5_2 != null ? ItemManager.RECIPE_ARMOR_L5_2.clone() : null;
+                                    case 3: return ItemManager.RECIPE_ARMOR_L5_3 != null ? ItemManager.RECIPE_ARMOR_L5_3.clone() : null;
+                                    case 4: return ItemManager.RECIPE_ARMOR_L5_4 != null ? ItemManager.RECIPE_ARMOR_L5_4.clone() : null;
+                                    case 5: return ItemManager.RECIPE_ARMOR_L5_5 != null ? ItemManager.RECIPE_ARMOR_L5_5.clone() : null;
+                                }
+                                break;
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    // Geçersiz format
+                }
+            }
+        }
+        
+        // Özel silah tarifleri
+        if (name.toLowerCase().startsWith("recipe_weapon_l")) {
+            String[] parts = name.toLowerCase().split("_");
+            if (parts.length >= 4) {
+                try {
+                    int level = Integer.parseInt(parts[3].replace("l", ""));
+                    int variant = Integer.parseInt(parts[4]);
+                    
+                    if (level >= 1 && level <= 5 && variant >= 1 && variant <= 5) {
+                        switch (level) {
+                            case 1:
+                                switch (variant) {
+                                    case 1: return ItemManager.RECIPE_WEAPON_L1_1 != null ? ItemManager.RECIPE_WEAPON_L1_1.clone() : null;
+                                    case 2: return ItemManager.RECIPE_WEAPON_L1_2 != null ? ItemManager.RECIPE_WEAPON_L1_2.clone() : null;
+                                    case 3: return ItemManager.RECIPE_WEAPON_L1_3 != null ? ItemManager.RECIPE_WEAPON_L1_3.clone() : null;
+                                    case 4: return ItemManager.RECIPE_WEAPON_L1_4 != null ? ItemManager.RECIPE_WEAPON_L1_4.clone() : null;
+                                    case 5: return ItemManager.RECIPE_WEAPON_L1_5 != null ? ItemManager.RECIPE_WEAPON_L1_5.clone() : null;
+                                }
+                                break;
+                            case 2:
+                                switch (variant) {
+                                    case 1: return ItemManager.RECIPE_WEAPON_L2_1 != null ? ItemManager.RECIPE_WEAPON_L2_1.clone() : null;
+                                    case 2: return ItemManager.RECIPE_WEAPON_L2_2 != null ? ItemManager.RECIPE_WEAPON_L2_2.clone() : null;
+                                    case 3: return ItemManager.RECIPE_WEAPON_L2_3 != null ? ItemManager.RECIPE_WEAPON_L2_3.clone() : null;
+                                    case 4: return ItemManager.RECIPE_WEAPON_L2_4 != null ? ItemManager.RECIPE_WEAPON_L2_4.clone() : null;
+                                    case 5: return ItemManager.RECIPE_WEAPON_L2_5 != null ? ItemManager.RECIPE_WEAPON_L2_5.clone() : null;
+                                }
+                                break;
+                            case 3:
+                                switch (variant) {
+                                    case 1: return ItemManager.RECIPE_WEAPON_L3_1 != null ? ItemManager.RECIPE_WEAPON_L3_1.clone() : null;
+                                    case 2: return ItemManager.RECIPE_WEAPON_L3_2 != null ? ItemManager.RECIPE_WEAPON_L3_2.clone() : null;
+                                    case 3: return ItemManager.RECIPE_WEAPON_L3_3 != null ? ItemManager.RECIPE_WEAPON_L3_3.clone() : null;
+                                    case 4: return ItemManager.RECIPE_WEAPON_L3_4 != null ? ItemManager.RECIPE_WEAPON_L3_4.clone() : null;
+                                    case 5: return ItemManager.RECIPE_WEAPON_L3_5 != null ? ItemManager.RECIPE_WEAPON_L3_5.clone() : null;
+                                }
+                                break;
+                            case 4:
+                                switch (variant) {
+                                    case 1: return ItemManager.RECIPE_WEAPON_L4_1 != null ? ItemManager.RECIPE_WEAPON_L4_1.clone() : null;
+                                    case 2: return ItemManager.RECIPE_WEAPON_L4_2 != null ? ItemManager.RECIPE_WEAPON_L4_2.clone() : null;
+                                    case 3: return ItemManager.RECIPE_WEAPON_L4_3 != null ? ItemManager.RECIPE_WEAPON_L4_3.clone() : null;
+                                    case 4: return ItemManager.RECIPE_WEAPON_L4_4 != null ? ItemManager.RECIPE_WEAPON_L4_4.clone() : null;
+                                    case 5: return ItemManager.RECIPE_WEAPON_L4_5 != null ? ItemManager.RECIPE_WEAPON_L4_5.clone() : null;
+                                }
+                                break;
+                            case 5:
+                                switch (variant) {
+                                    case 1: return ItemManager.RECIPE_WEAPON_L5_1 != null ? ItemManager.RECIPE_WEAPON_L5_1.clone() : null;
+                                    case 2: return ItemManager.RECIPE_WEAPON_L5_2 != null ? ItemManager.RECIPE_WEAPON_L5_2.clone() : null;
+                                    case 3: return ItemManager.RECIPE_WEAPON_L5_3 != null ? ItemManager.RECIPE_WEAPON_L5_3.clone() : null;
+                                    case 4: return ItemManager.RECIPE_WEAPON_L5_4 != null ? ItemManager.RECIPE_WEAPON_L5_4.clone() : null;
+                                    case 5: return ItemManager.RECIPE_WEAPON_L5_5 != null ? ItemManager.RECIPE_WEAPON_L5_5.clone() : null;
+                                }
+                                break;
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    // Geçersiz format
+                }
+            }
+        }
+        
+        // Diğer tarif kitapları (mevcut sistem)
+        switch (name.toLowerCase()) {
+            case "recipe_core":
+            case "tarif_cekirdek":
+            case "tarif_çekirdek":
+                return ItemManager.RECIPE_CORE != null ? ItemManager.RECIPE_CORE.clone() : null;
+            // ... diğer tarif kitapları buraya eklenebilir
+            default:
+                return null;
+        }
+    }
+
     // Eski metod - geriye uyumluluk için (getItemByNameAllCategories'yi çağırır)
     private ItemStack getItemByName(String name) {
         return getItemByNameAllCategories(name);
