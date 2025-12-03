@@ -27,9 +27,72 @@ import org.bukkit.potion.PotionEffectType;
  */
 public class BossListener implements Listener {
     private final BossManager bossManager;
+    private final me.mami.stratocraft.Main plugin;
     
-    public BossListener(BossManager bossManager) {
+    public BossListener(BossManager bossManager, me.mami.stratocraft.Main plugin) {
         this.bossManager = bossManager;
+        this.plugin = plugin;
+    }
+    
+    /**
+     * Çağırma Çekirdeği yerleştirme (item ile bloğa sağ tık)
+     * Yüksek priority ile önce çalışır, böylece ritüel aktifleştirme ile çakışmaz
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onSummonCorePlace(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
+        
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
+        
+        Block clickedBlock = event.getClickedBlock();
+        if (clickedBlock == null) {
+            return;
+        }
+        
+        Player player = event.getPlayer();
+        ItemStack item = player.getInventory().getItemInMainHand();
+        
+        if (item == null || item.getType() == Material.AIR) {
+            return;
+        }
+        
+        // Çağırma Çekirdeği kontrolü
+        if (!ItemManager.isCustomItem(item, "SUMMON_CORE")) {
+            return;
+        }
+        
+        // Bloğun üstüne yerleştir
+        Block targetBlock = clickedBlock.getRelative(org.bukkit.block.BlockFace.UP);
+        if (targetBlock.getType() != Material.AIR) {
+            player.sendMessage("§cBuraya yerleştirilemez! Blok boş olmalı.");
+            event.setCancelled(true);
+            return;
+        }
+        
+        // Çağırma Çekirdeği olarak işaretle
+        targetBlock.setType(Material.END_CRYSTAL);
+        targetBlock.setMetadata("SummonCore", new org.bukkit.metadata.FixedMetadataValue(plugin, true));
+        
+        // Item tüket
+        if (item.getAmount() > 1) {
+            item.setAmount(item.getAmount() - 1);
+        } else {
+            player.getInventory().setItemInMainHand(null);
+        }
+        
+        player.sendMessage("§a§lÇağırma Çekirdeği yerleştirildi!");
+        player.sendMessage("§7Etrafına boss seviyesine göre yapıları yap ve aktifleştirme itemi ile sağ tıkla.");
+        
+        // Efekt
+        org.bukkit.Location loc = targetBlock.getLocation().add(0.5, 0.5, 0.5);
+        loc.getWorld().spawnParticle(org.bukkit.Particle.ENCHANTMENT_TABLE, loc, 20, 0.5, 0.5, 0.5, 0.3);
+        loc.getWorld().playSound(loc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.0f);
+        
+        event.setCancelled(true);
     }
     
     /**
@@ -57,8 +120,13 @@ public class BossListener implements Listener {
             return;
         }
         
-        // Hangi boss için ritüel?
+        // Merkez bloğun Çağırma Çekirdeği olup olmadığını kontrol et
         Block centerBlock = clickedBlock;
+        if (!centerBlock.hasMetadata("SummonCore")) {
+            return;
+        }
+        
+        // Hangi boss için ritüel? (aktifleştirme item'ına göre)
         BossManager.BossType bossType = getBossTypeFromItem(item.getType(), centerBlock);
         
         // NETHER_STAR için özel kontrol (ritüel desenine göre boss tipi belirlenir)
@@ -284,9 +352,13 @@ public class BossListener implements Listener {
         });
         
         // ========== TARİF KİTAPLARI DÜŞÜRME ==========
-        // Bosslardan sadece gerekli tarifler (aktifleştirme için gerekenler) düşer
-        // Boss seviyesine göre tarif seviyesi artar
+        // Bosslardan hem yapı tarifleri hem de özel zırh/silah tarifleri düşer
         dropRequiredRecipeBook(event, bossData.getType());
+        dropSpecialItemRecipeBooks(event, bossData.getType());
+        
+        // ========== BOSS ÖZEL İTEMLERİ DÜŞÜRME ==========
+        // Her boss kendi özel itemini düşürür
+        dropBossItems(event, bossData.getType());
         
         // Boss'u listeden kaldır
         bossManager.removeBoss(entity.getUniqueId());
@@ -375,9 +447,12 @@ public class BossListener implements Listener {
                 return 3;
             case TITAN_GOLEM:
             case PHOENIX:
+            case HYDRA:
+            case HELL_DRAGON:
                 return 4;
             case VOID_DRAGON:
             case CHAOS_TITAN:
+            case CHAOS_GOD:
                 return 5;
             default:
                 return 1;

@@ -18,6 +18,10 @@ commands:
     description: Admin test komutları (item, mob, disaster çağırma)
     usage: /stratocraft <give|spawn|disaster|list|help>
     aliases: [sc, stratocraft]
+  weaponmode:
+    description: Silah modu değiştirme komutu
+    usage: /weaponmode <1|2|3>
+    aliases: [wm, weaponmode]
 permissions:
   stratocraft.*:
     description: Tüm Stratocraft yetkileri

@@ -2,6 +2,7 @@ package me.mami.stratocraft.listener;
 
 import me.mami.stratocraft.manager.BreedingManager;
 import me.mami.stratocraft.manager.TamingManager;
+import me.mami.stratocraft.manager.ItemManager;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -26,10 +27,12 @@ import org.bukkit.inventory.ItemStack;
 public class BreedingListener implements Listener {
     private final BreedingManager breedingManager;
     private final TamingManager tamingManager;
+    private final me.mami.stratocraft.Main plugin;
 
-    public BreedingListener(BreedingManager breedingManager, TamingManager tamingManager) {
+    public BreedingListener(BreedingManager breedingManager, TamingManager tamingManager, me.mami.stratocraft.Main plugin) {
         this.breedingManager = breedingManager;
         this.tamingManager = tamingManager;
+        this.plugin = plugin;
     }
 
     /**
@@ -86,7 +89,117 @@ public class BreedingListener implements Listener {
     }
 
     /**
-     * Çiftleştirme tesisi etkileşimi
+     * Üreme Çekirdeği yerleştirme (item ile bloğa sağ tık)
+     * Yüksek priority ile önce çalışır
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onBreedingCorePlace(PlayerInteractEvent event) {
+        if (event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
+        
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
+        
+        Block clickedBlock = event.getClickedBlock();
+        if (clickedBlock == null) {
+            return;
+        }
+        
+        Player player = event.getPlayer();
+        ItemStack item = player.getInventory().getItemInMainHand();
+        
+        if (item == null || item.getType() == Material.AIR) {
+            return;
+        }
+        
+        // Üreme Çekirdeği kontrolü
+        if (!ItemManager.isCustomItem(item, "BREEDING_CORE")) {
+            return;
+        }
+        
+        // Bloğun üstüne yerleştir
+        Block targetBlock = clickedBlock.getRelative(org.bukkit.block.BlockFace.UP);
+        if (targetBlock.getType() != Material.AIR) {
+            player.sendMessage("§cBuraya yerleştirilemez! Blok boş olmalı.");
+            event.setCancelled(true);
+            return;
+        }
+        
+        // Üreme Çekirdeği olarak işaretle
+        targetBlock.setType(Material.BEACON);
+        targetBlock.setMetadata("BreedingCore", new org.bukkit.metadata.FixedMetadataValue(plugin, true));
+        
+        // Item tüket
+        if (item.getAmount() > 1) {
+            item.setAmount(item.getAmount() - 1);
+        } else {
+            player.getInventory().setItemInMainHand(null);
+        }
+        
+        player.sendMessage("§a§lÜreme Çekirdeği yerleştirildi!");
+        player.sendMessage("§7Etrafına seviyeye göre yapıları yap ve aktifleştirme için sağ tıkla.");
+        
+        // Efekt
+        org.bukkit.Location loc = targetBlock.getLocation().add(0.5, 0.5, 0.5);
+        loc.getWorld().spawnParticle(org.bukkit.Particle.HEART, loc, 20, 0.5, 0.5, 0.5, 0.1);
+        loc.getWorld().playSound(loc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.0f);
+        
+        event.setCancelled(true);
+    }
+    
+    /**
+     * Cinsiyet kontrolü (item ile canlıya sağ tık)
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onGenderCheck(PlayerInteractEntityEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
+        
+        if (!(event.getRightClicked() instanceof LivingEntity)) {
+            return;
+        }
+        
+        LivingEntity entity = (LivingEntity) event.getRightClicked();
+        Player player = event.getPlayer();
+        ItemStack item = player.getInventory().getItemInMainHand();
+        
+        if (item == null || item.getType() == Material.AIR) {
+            return;
+        }
+        
+        // Cinsiyet Ayırıcı kontrolü
+        if (!ItemManager.isCustomItem(item, "GENDER_SCANNER")) {
+            return;
+        }
+        
+        // Eğitilmiş mi?
+        if (!tamingManager.isTamed(entity)) {
+            player.sendMessage("§cBu canlı eğitilmemiş!");
+            return;
+        }
+        
+        // Cinsiyet kontrolü
+        TamingManager.Gender gender = tamingManager.getGender(entity);
+        if (gender == null) {
+            player.sendMessage("§cCanlının cinsiyeti belirlenemiyor!");
+            return;
+        }
+        
+        String genderText = gender == TamingManager.Gender.MALE ? "§b♂ Erkek" : "§d♀ Dişi";
+        String creatureName = entity.getCustomName() != null ? entity.getCustomName() : "Bilinmeyen Canlı";
+        
+        player.sendMessage("§6=== CİNSİYET BİLGİSİ ===");
+        player.sendMessage("§7Canlı: §e" + creatureName);
+        player.sendMessage("§7Cinsiyet: " + genderText);
+        
+        event.setCancelled(true);
+    }
+    
+    /**
+     * Çiftleştirme tesisi etkileşimi (Üreme Çekirdeği aktifleştirme)
      */
     @EventHandler(priority = EventPriority.HIGH)
     public void onBreedingFacilityInteract(PlayerInteractEvent event) {
@@ -103,7 +216,17 @@ public class BreedingListener implements Listener {
             return;
         }
 
-        // Çiftleştirme tesisi mi? (Beacon bloğu)
+        // Üreme Çekirdeği mi?
+        if (block.hasMetadata("BreedingCore")) {
+            Player player = event.getPlayer();
+            // Üreme çekirdeğini aktifleştir
+            if (breedingManager.activateBreedingCore(block, player)) {
+                event.setCancelled(true);
+            }
+            return;
+        }
+
+        // Eski sistem (Beacon bloğu) - geriye dönük uyumluluk
         if (block.getType() != Material.BEACON) {
             return;
         }

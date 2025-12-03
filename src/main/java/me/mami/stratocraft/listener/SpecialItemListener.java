@@ -110,8 +110,8 @@ public class SpecialItemListener implements Listener {
     /**
      * Düşme hasarını engelle (kanca kullanıldıktan sonra)
      */
-    @EventHandler
-    public void onEntityDamage(EntityDamageEvent event) {
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST)
+    public void onEntityDamage(org.bukkit.event.entity.EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player)) {
             return;
         }
@@ -119,10 +119,11 @@ public class SpecialItemListener implements Listener {
         Player player = (Player) event.getEntity();
         
         // Sadece düşme hasarını engelle
-        if (event.getCause() == EntityDamageEvent.DamageCause.FALL) {
+        if (event.getCause() == org.bukkit.event.entity.EntityDamageEvent.DamageCause.FALL) {
             // Kanca koruması var mı kontrol et
             if (specialItemManager.hasFallDamageProtection(player)) {
                 event.setCancelled(true);
+                player.sendMessage("§aKanca koruması aktif! Düşme hasarı engellendi.");
             }
         }
     }

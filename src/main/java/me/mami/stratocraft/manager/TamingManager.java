@@ -306,8 +306,14 @@ public class TamingManager {
     
     /**
      * Ritüel deseni kontrol et (seviyeye göre)
+     * Merkez bloğun Eğitim Çekirdeği olup olmadığını kontrol eder
      */
     public boolean checkRitualPattern(Block centerBlock, int difficultyLevel) {
+        // Merkez bloğun Eğitim Çekirdeği olup olmadığını kontrol et (metadata ile)
+        if (!centerBlock.hasMetadata("TamingCore")) {
+            return false;
+        }
+        
         Material[][] pattern = getRitualPatternForLevel(difficultyLevel);
         if (pattern == null) {
             return false;
@@ -332,52 +338,53 @@ public class TamingManager {
     
     /**
      * Seviyeye göre ritüel deseni (public - listener için)
+     * Merkezde Eğitim Çekirdeği olacak, seviyeye göre malzemeler zorlaşacak
      */
     public Material[][] getRitualPatternForLevel(int level) {
         switch (level) {
             case 1:
-                // 3x3 Cobblestone + Merkez Hay Bale (Wheat yerine)
+                // 3x3 Dirt/Grass Block + Merkez Eğitim Çekirdeği (basit malzemeler)
                 return new Material[][] {
-                    {Material.COBBLESTONE, Material.COBBLESTONE, Material.COBBLESTONE},
-                    {Material.COBBLESTONE, Material.HAY_BLOCK, Material.COBBLESTONE},
-                    {Material.COBBLESTONE, Material.COBBLESTONE, Material.COBBLESTONE}
+                    {Material.DIRT, Material.GRASS_BLOCK, Material.DIRT},
+                    {Material.GRASS_BLOCK, null, Material.GRASS_BLOCK}, // Merkez Eğitim Çekirdeği (blok olarak kontrol edilir)
+                    {Material.DIRT, Material.GRASS_BLOCK, Material.DIRT}
                 };
                 
             case 2:
-                // 3x3 Stone + Merkez Orange Concrete (Carrot temsili - blok olarak)
+                // 3x3 Cobblestone + Merkez Eğitim Çekirdeği
                 return new Material[][] {
-                    {Material.STONE, Material.STONE, Material.STONE},
-                    {Material.STONE, Material.ORANGE_CONCRETE, Material.STONE},
-                    {Material.STONE, Material.STONE, Material.STONE}
+                    {Material.COBBLESTONE, Material.COBBLESTONE, Material.COBBLESTONE},
+                    {Material.COBBLESTONE, null, Material.COBBLESTONE}, // Merkez Eğitim Çekirdeği
+                    {Material.COBBLESTONE, Material.COBBLESTONE, Material.COBBLESTONE}
                 };
                 
             case 3:
-                // 5x5 Stone Bricks + Merkez Gold Block (Golden Apple yerine)
+                // 5x5 Stone Bricks + Merkez Eğitim Çekirdeği
                 return new Material[][] {
                     {Material.STONE_BRICKS, Material.STONE_BRICKS, Material.STONE_BRICKS, Material.STONE_BRICKS, Material.STONE_BRICKS},
                     {Material.STONE_BRICKS, null, null, null, Material.STONE_BRICKS},
-                    {Material.STONE_BRICKS, null, Material.GOLD_BLOCK, null, Material.STONE_BRICKS},
+                    {Material.STONE_BRICKS, null, null, null, Material.STONE_BRICKS}, // Merkez Eğitim Çekirdeği
                     {Material.STONE_BRICKS, null, null, null, Material.STONE_BRICKS},
                     {Material.STONE_BRICKS, Material.STONE_BRICKS, Material.STONE_BRICKS, Material.STONE_BRICKS, Material.STONE_BRICKS}
                 };
                 
             case 4:
-                // 5x5 Obsidian + Merkez Emerald Block (Enchanted Golden Apple yerine)
+                // 5x5 Obsidian + Merkez Eğitim Çekirdeği
                 return new Material[][] {
                     {Material.OBSIDIAN, Material.OBSIDIAN, Material.OBSIDIAN, Material.OBSIDIAN, Material.OBSIDIAN},
                     {Material.OBSIDIAN, null, null, null, Material.OBSIDIAN},
-                    {Material.OBSIDIAN, null, Material.EMERALD_BLOCK, null, Material.OBSIDIAN},
+                    {Material.OBSIDIAN, null, null, null, Material.OBSIDIAN}, // Merkez Eğitim Çekirdeği
                     {Material.OBSIDIAN, null, null, null, Material.OBSIDIAN},
                     {Material.OBSIDIAN, Material.OBSIDIAN, Material.OBSIDIAN, Material.OBSIDIAN, Material.OBSIDIAN}
                 };
                 
             case 5:
-                // 7x7 Bedrock + Merkez Beacon (Nether Star temsili)
+                // 7x7 Bedrock + Merkez Eğitim Çekirdeği
                 return new Material[][] {
                     {Material.BEDROCK, Material.BEDROCK, Material.BEDROCK, Material.BEDROCK, Material.BEDROCK, Material.BEDROCK, Material.BEDROCK},
                     {Material.BEDROCK, null, null, null, null, null, Material.BEDROCK},
                     {Material.BEDROCK, null, null, null, null, null, Material.BEDROCK},
-                    {Material.BEDROCK, null, null, Material.BEACON, null, null, Material.BEDROCK},
+                    {Material.BEDROCK, null, null, null, null, null, Material.BEDROCK}, // Merkez Eğitim Çekirdeği
                     {Material.BEDROCK, null, null, null, null, null, Material.BEDROCK},
                     {Material.BEDROCK, null, null, null, null, null, Material.BEDROCK},
                     {Material.BEDROCK, Material.BEDROCK, Material.BEDROCK, Material.BEDROCK, Material.BEDROCK, Material.BEDROCK, Material.BEDROCK}
@@ -389,15 +396,15 @@ public class TamingManager {
     }
     
     /**
-     * Ritüel aktifleştirme itemi (seviyeye göre)
+     * Ritüel aktifleştirme itemi (seviyeye göre - zorlaşacak)
      */
     public Material getRitualActivationItem(int difficultyLevel) {
         switch (difficultyLevel) {
-            case 1: return Material.WHEAT;
-            case 2: return Material.CARROT;
-            case 3: return Material.GOLDEN_APPLE;
-            case 4: return Material.ENCHANTED_GOLDEN_APPLE;
-            case 5: return Material.NETHER_STAR;
+            case 1: return Material.WHEAT; // En basit
+            case 2: return Material.BREAD; // Biraz daha zor
+            case 3: return Material.GOLDEN_APPLE; // Orta seviye
+            case 4: return Material.ENCHANTED_GOLDEN_APPLE; // Zor
+            case 5: return Material.NETHER_STAR; // En zor
             default: return Material.WHEAT;
         }
     }

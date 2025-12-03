@@ -199,6 +199,12 @@ public class SpecialItemManager {
                 String.format("%.1f",
                         target.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue()));
 
+        // Açlık durumu
+        int foodLevel = target.getFoodLevel();
+        double saturation = target.getSaturation();
+        String hungerColor = foodLevel >= 18 ? "§a" : foodLevel >= 12 ? "§e" : foodLevel >= 6 ? "§6" : "§c";
+        spy.sendMessage("§7Açlık: " + hungerColor + foodLevel + "§7/20 §7(Doygunluk: §e" + String.format("%.1f", saturation) + "§7)");
+
         // Zırh durumu
         org.bukkit.inventory.PlayerInventory inv = target.getInventory();
         int armorPoints = 0;

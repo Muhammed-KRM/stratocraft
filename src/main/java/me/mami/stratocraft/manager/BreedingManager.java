@@ -229,6 +229,64 @@ public class BreedingManager {
     }
 
     /**
+     * Seviyeye göre tesis yapı deseni al
+     */
+    public Material[][] getBreedingFacilityPattern(int level) {
+        switch (level) {
+            case 1:
+                // 3x3 Dirt/Grass Block + Merkez Üreme Çekirdeği (basit)
+                return new Material[][] {
+                    {Material.DIRT, Material.GRASS_BLOCK, Material.DIRT},
+                    {Material.GRASS_BLOCK, null, Material.GRASS_BLOCK}, // Merkez Üreme Çekirdeği
+                    {Material.DIRT, Material.GRASS_BLOCK, Material.DIRT}
+                };
+                
+            case 2:
+                // 3x3 Cobblestone + Merkez Üreme Çekirdeği
+                return new Material[][] {
+                    {Material.COBBLESTONE, Material.COBBLESTONE, Material.COBBLESTONE},
+                    {Material.COBBLESTONE, null, Material.COBBLESTONE}, // Merkez Üreme Çekirdeği
+                    {Material.COBBLESTONE, Material.COBBLESTONE, Material.COBBLESTONE}
+                };
+                
+            case 3:
+                // 5x5 Stone Bricks + Merkez Üreme Çekirdeği
+                return new Material[][] {
+                    {Material.STONE_BRICKS, Material.STONE_BRICKS, Material.STONE_BRICKS, Material.STONE_BRICKS, Material.STONE_BRICKS},
+                    {Material.STONE_BRICKS, null, null, null, Material.STONE_BRICKS},
+                    {Material.STONE_BRICKS, null, null, null, Material.STONE_BRICKS}, // Merkez Üreme Çekirdeği
+                    {Material.STONE_BRICKS, null, null, null, Material.STONE_BRICKS},
+                    {Material.STONE_BRICKS, Material.STONE_BRICKS, Material.STONE_BRICKS, Material.STONE_BRICKS, Material.STONE_BRICKS}
+                };
+                
+            case 4:
+                // 5x5 Obsidian + Merkez Üreme Çekirdeği
+                return new Material[][] {
+                    {Material.OBSIDIAN, Material.OBSIDIAN, Material.OBSIDIAN, Material.OBSIDIAN, Material.OBSIDIAN},
+                    {Material.OBSIDIAN, null, null, null, Material.OBSIDIAN},
+                    {Material.OBSIDIAN, null, null, null, Material.OBSIDIAN}, // Merkez Üreme Çekirdeği
+                    {Material.OBSIDIAN, null, null, null, Material.OBSIDIAN},
+                    {Material.OBSIDIAN, Material.OBSIDIAN, Material.OBSIDIAN, Material.OBSIDIAN, Material.OBSIDIAN}
+                };
+                
+            case 5:
+                // 7x7 Bedrock + Merkez Üreme Çekirdeği
+                return new Material[][] {
+                    {Material.BEDROCK, Material.BEDROCK, Material.BEDROCK, Material.BEDROCK, Material.BEDROCK, Material.BEDROCK, Material.BEDROCK},
+                    {Material.BEDROCK, null, null, null, null, null, Material.BEDROCK},
+                    {Material.BEDROCK, null, null, null, null, null, Material.BEDROCK},
+                    {Material.BEDROCK, null, null, null, null, null, Material.BEDROCK}, // Merkez Üreme Çekirdeği
+                    {Material.BEDROCK, null, null, null, null, null, Material.BEDROCK},
+                    {Material.BEDROCK, null, null, null, null, null, Material.BEDROCK},
+                    {Material.BEDROCK, Material.BEDROCK, Material.BEDROCK, Material.BEDROCK, Material.BEDROCK, Material.BEDROCK, Material.BEDROCK}
+                };
+                
+            default:
+                return null;
+        }
+    }
+    
+    /**
      * Çiftleştirme tesisi oluştur
      */
     public boolean createBreedingFacility(Location location, Player player, int level) {
@@ -249,6 +307,145 @@ public class BreedingManager {
         player.sendMessage("§7Tesise 1 dişi ve 1 erkek canlı getirin ve yiyecek bırakın.");
 
         return true;
+    }
+    
+    /**
+     * Üreme çekirdeğini aktifleştir (içindeki canlıları otomatik bul ve çiftleştir)
+     */
+    public boolean activateBreedingCore(Block coreBlock, Player player) {
+        if (coreBlock == null || !coreBlock.hasMetadata("BreedingCore")) {
+            return false;
+        }
+        
+        Location facilityLoc = coreBlock.getLocation();
+        BreedingFacility facility = breedingFacilities.get(facilityLoc);
+        
+        // Tesis yoksa oluştur (seviye 1 varsayılan, veya çekirdeğin metadata'sından al)
+        int level = 1;
+        if (coreBlock.hasMetadata("BreedingFacilityLevel")) {
+            level = coreBlock.getMetadata("BreedingFacilityLevel").get(0).asInt();
+        }
+        
+        if (facility == null) {
+            // Tesis oluştur
+            facility = new BreedingFacility(facilityLoc, player.getUniqueId(), level);
+            breedingFacilities.put(facilityLoc, facility);
+            player.sendMessage("§aÜreme tesisi otomatik oluşturuldu! (Seviye " + level + ")");
+        }
+        
+        // Tesis zaten aktif mi?
+        if (facility.isBreeding()) {
+            player.sendMessage("§cTesis zaten çiftleştirme yapıyor!");
+            return false;
+        }
+        
+        // Sahip kontrolü
+        if (!facility.getOwnerId().equals(player.getUniqueId())) {
+            player.sendMessage("§cBu tesis sana ait değil!");
+            return false;
+        }
+        
+        // İçindeki canlıları bul (5 blok yarıçap)
+        List<LivingEntity> nearbyCreatures = findNearbyTamedCreatures(facilityLoc, 5.0, facility.getOwnerId());
+        
+        if (nearbyCreatures.size() < 2) {
+            player.sendMessage("§cTesis içinde en az 2 eğitilmiş canlı olmalı!");
+            return false;
+        }
+        
+        // Aynı türden canlıları grupla
+        Map<String, List<LivingEntity>> creaturesByType = groupCreaturesByType(nearbyCreatures);
+        
+        // Her tür için erkek ve dişi bul
+        for (Map.Entry<String, List<LivingEntity>> entry : creaturesByType.entrySet()) {
+            List<LivingEntity> sameType = entry.getValue();
+            if (sameType.size() < 2) {
+                continue; // Bu tür için yeterli canlı yok
+            }
+            
+            // Eğer 2'den fazla varsa rastgele 2 tanesi seçilecek
+            // Ama önce erkek ve dişi bul
+            List<LivingEntity> females = new ArrayList<>();
+            List<LivingEntity> males = new ArrayList<>();
+            
+            for (LivingEntity creature : sameType) {
+                TamingManager.Gender gender = tamingManager.getGender(creature);
+                if (gender == TamingManager.Gender.FEMALE) {
+                    females.add(creature);
+                } else if (gender == TamingManager.Gender.MALE) {
+                    males.add(creature);
+                }
+            }
+            
+            // En az bir erkek ve bir dişi var mı?
+            if (females.isEmpty() || males.isEmpty()) {
+                continue; // Bu tür için uygun cinsiyet yok
+            }
+            
+            // Rastgele bir dişi ve bir erkek seç
+            LivingEntity female = females.get(new java.util.Random().nextInt(females.size()));
+            LivingEntity male = males.get(new java.util.Random().nextInt(males.size()));
+            
+            // Çiftleştirme için canlıları seç
+            facility.setFemale(female);
+            facility.setMale(male);
+            
+            // Çiftleştirmeyi başlat
+            startBreedingInFacility(facility, player);
+            player.sendMessage("§a§lÇiftleştirme başladı!");
+            player.sendMessage("§7Dişi: §e" + (female.getCustomName() != null ? female.getCustomName() : "Bilinmeyen"));
+            player.sendMessage("§7Erkek: §e" + (male.getCustomName() != null ? male.getCustomName() : "Bilinmeyen"));
+            return true;
+        }
+        
+        player.sendMessage("§cTesis içinde aynı türden bir erkek ve bir dişi canlı bulunamadı!");
+        return false;
+    }
+    
+    /**
+     * Yakındaki eğitilmiş canlıları bul
+     */
+    private List<LivingEntity> findNearbyTamedCreatures(Location loc, double radius, UUID ownerId) {
+        List<LivingEntity> creatures = new ArrayList<>();
+        for (org.bukkit.entity.Entity nearby : loc.getWorld().getNearbyEntities(loc, radius, radius, radius)) {
+            if (nearby instanceof LivingEntity && !(nearby instanceof Player)) {
+                LivingEntity entity = (LivingEntity) nearby;
+                if (tamingManager.isTamed(entity) && tamingManager.getOwner(entity).equals(ownerId)) {
+                    creatures.add(entity);
+                }
+            }
+        }
+        return creatures;
+    }
+    
+    /**
+     * Canlıları türlerine göre grupla
+     */
+    private Map<String, List<LivingEntity>> groupCreaturesByType(List<LivingEntity> creatures) {
+        Map<String, List<LivingEntity>> grouped = new HashMap<>();
+        for (LivingEntity creature : creatures) {
+            String type = getCreatureType(creature);
+            grouped.computeIfAbsent(type, k -> new ArrayList<>()).add(creature);
+        }
+        return grouped;
+    }
+    
+    /**
+     * Canlının türünü belirle
+     */
+    private String getCreatureType(LivingEntity creature) {
+        String customName = creature.getCustomName();
+        if (customName == null) {
+            return "UNKNOWN";
+        }
+        
+        // Cinsiyet işaretlerini ve eğitilmiş etiketini temizle
+        String cleanName = customName.replace(" [Eğitilmiş]", "")
+                .replace(" §b♂", "")
+                .replace(" §d♀", "")
+                .trim();
+        
+        return cleanName.toUpperCase();
     }
 
     /**

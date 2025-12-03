@@ -35,6 +35,12 @@ public class ItemManager {
     public static ItemStack WAR_FAN;
     public static ItemStack TOWER_SHIELD;
     public static ItemStack HELL_FRUIT;
+    // Güçlü Yiyecekler
+    public static ItemStack LIFE_ELIXIR; // Canı fulleyen
+    public static ItemStack POWER_FRUIT; // Hasarı 5 kat arttıran
+    public static ItemStack SPEED_ELIXIR; // Hızı arttıran
+    public static ItemStack REGENERATION_ELIXIR; // Hızlı can yenileme
+    public static ItemStack STRENGTH_ELIXIR; // Güç artışı
 
     // ========== TARİF KİTAPLARI - YAPILAR ==========
     // Sadece bazı yapılar tarif gerektirir (aktifleştirme için)
@@ -108,6 +114,82 @@ public class ItemManager {
     public static ItemStack GOLDEN_HOOK; // YENİ: Orta kademe kanca
     public static ItemStack TITAN_GRAPPLE;
     public static ItemStack TRAP_CORE;
+    public static ItemStack TAMING_CORE; // Eğitim Çekirdeği
+    public static ItemStack SUMMON_CORE; // Çağırma Çekirdeği (Boss çağırma için)
+    public static ItemStack BREEDING_CORE; // Üreme Çekirdeği
+    public static ItemStack GENDER_SCANNER; // Cinsiyet Ayırıcı
+
+    // ========== ÖZEL ZIRHLAR (5 Seviye x 5 Zırh = 25 Zırh) ==========
+    // Seviye 1 Zırhlar
+    public static ItemStack ARMOR_L1_1; // Demir Savaşçı Zırhı
+    public static ItemStack ARMOR_L1_2; // Demir Koruyucu Zırhı
+    public static ItemStack ARMOR_L1_3; // Demir Avcı Zırhı
+    public static ItemStack ARMOR_L1_4; // Demir Kaşif Zırhı
+    public static ItemStack ARMOR_L1_5; // Demir Şövalye Zırhı
+    
+    // Seviye 2 Zırhlar (Diken Etkisi)
+    public static ItemStack ARMOR_L2_1; // Elmas Diken Zırhı
+    public static ItemStack ARMOR_L2_2; // Elmas Zehir Diken Zırhı
+    public static ItemStack ARMOR_L2_3; // Elmas Ateş Diken Zırhı
+    public static ItemStack ARMOR_L2_4; // Elmas Buz Diken Zırhı
+    public static ItemStack ARMOR_L2_5; // Elmas Yıldırım Diken Zırhı
+    
+    // Seviye 3 Zırhlar (2x Hız, Yüksek Zıplama, Aşırı Koruma)
+    public static ItemStack ARMOR_L3_1; // Netherite Hız Zırhı
+    public static ItemStack ARMOR_L3_2; // Netherite Zıplama Zırhı
+    public static ItemStack ARMOR_L3_3; // Netherite Savunma Zırhı
+    public static ItemStack ARMOR_L3_4; // Netherite Savaşçı Zırhı
+    public static ItemStack ARMOR_L3_5; // Netherite Efsane Zırhı
+    
+    // Seviye 4 Zırhlar (Sürekli Can Yenileme)
+    public static ItemStack ARMOR_L4_1; // Titanyum Yaşam Zırhı
+    public static ItemStack ARMOR_L4_2; // Titanyum Ölümsüzlük Zırhı
+    public static ItemStack ARMOR_L4_3; // Titanyum Yenilenme Zırhı
+    public static ItemStack ARMOR_L4_4; // Titanyum Kutsal Zırhı
+    public static ItemStack ARMOR_L4_5; // Titanyum Ebedi Zırhı
+    
+    // Seviye 5 Zırhlar (Uçma Gücü)
+    public static ItemStack ARMOR_L5_1; // Efsanevi Uçan Zırhı
+    public static ItemStack ARMOR_L5_2; // Efsanevi Gökyüzü Zırhı
+    public static ItemStack ARMOR_L5_3; // Efsanevi Bulut Zırhı
+    public static ItemStack ARMOR_L5_4; // Efsanevi Yıldız Zırhı
+    public static ItemStack ARMOR_L5_5; // Efsanevi Tanrı Zırhı
+
+    // ========== ÖZEL SİLAHLAR (5 Seviye x 5 Silah = 25 Silah) ==========
+    // Seviye 1 Silahlar
+    public static ItemStack WEAPON_L1_1; // Demir Kılıç
+    public static ItemStack WEAPON_L1_2; // Demir Balta
+    public static ItemStack WEAPON_L1_3; // Demir Mızrak
+    public static ItemStack WEAPON_L1_4; // Demir Yay
+    public static ItemStack WEAPON_L1_5; // Demir Çekiç
+    
+    // Seviye 2 Silahlar
+    public static ItemStack WEAPON_L2_1; // Elmas Kılıç
+    public static ItemStack WEAPON_L2_2; // Elmas Balta
+    public static ItemStack WEAPON_L2_3; // Elmas Mızrak
+    public static ItemStack WEAPON_L2_4; // Elmas Yay
+    public static ItemStack WEAPON_L2_5; // Elmas Çekiç
+    
+    // Seviye 3 Silahlar (Patlama Atabilme - 20 blok menzil)
+    public static ItemStack WEAPON_L3_1; // Netherite Patlama Kılıcı
+    public static ItemStack WEAPON_L3_2; // Netherite Patlama Baltası
+    public static ItemStack WEAPON_L3_3; // Netherite Patlama Mızrağı
+    public static ItemStack WEAPON_L3_4; // Netherite Patlama Yayı
+    public static ItemStack WEAPON_L3_5; // Netherite Patlama Çekici
+    
+    // Seviye 4 Silahlar (Devamlı Lazer - Yüksek Hasar)
+    public static ItemStack WEAPON_L4_1; // Titanyum Lazer Kılıcı
+    public static ItemStack WEAPON_L4_2; // Titanyum Lazer Baltası
+    public static ItemStack WEAPON_L4_3; // Titanyum Lazer Mızrağı
+    public static ItemStack WEAPON_L4_4; // Titanyum Lazer Yayı
+    public static ItemStack WEAPON_L4_5; // Titanyum Lazer Çekici
+    
+    // Seviye 5 Silahlar (Çok Modlu: Blok Fırlatma, Duvar Yapma, Atılma/Patlama)
+    public static ItemStack WEAPON_L5_1; // Efsanevi Çok Modlu Kılıç
+    public static ItemStack WEAPON_L5_2; // Efsanevi Çok Modlu Balta
+    public static ItemStack WEAPON_L5_3; // Efsanevi Çok Modlu Mızrak
+    public static ItemStack WEAPON_L5_4; // Efsanevi Çok Modlu Yay
+    public static ItemStack WEAPON_L5_5; // Efsanevi Çok Modlu Çekiç
 
     // ========== SEVİYE 1 MOB DROP İTEMLERİ ==========
     public static ItemStack WILD_BOAR_HIDE;
@@ -186,6 +268,18 @@ public class ItemManager {
         WAR_FAN = create(Material.FEATHER, "WAR_FAN", "§eSavaş Yelpazesi");
         TOWER_SHIELD = create(Material.SHIELD, "TOWER_SHIELD", "§7Kule Kalkanı");
         HELL_FRUIT = create(Material.APPLE, "HELL_FRUIT", "§cCehennem Meyvesi");
+        // Güçlü Yiyecekler
+        LIFE_ELIXIR = create(Material.GOLDEN_APPLE, "LIFE_ELIXIR", "§a§lYaşam İksiri");
+        POWER_FRUIT = create(Material.ENCHANTED_GOLDEN_APPLE, "POWER_FRUIT", "§c§lGüç Meyvesi");
+        SPEED_ELIXIR = create(Material.SUGAR, "SPEED_ELIXIR", "§b§lHız İksiri");
+        REGENERATION_ELIXIR = create(Material.GLISTERING_MELON_SLICE, "REGENERATION_ELIXIR", "§d§lYenilenme İksiri");
+        STRENGTH_ELIXIR = create(Material.BLAZE_POWDER, "STRENGTH_ELIXIR", "§6§lGüç İksiri");
+        // Güçlü Yiyecekler
+        LIFE_ELIXIR = create(Material.GOLDEN_APPLE, "LIFE_ELIXIR", "§a§lYaşam İksiri");
+        POWER_FRUIT = create(Material.ENCHANTED_GOLDEN_APPLE, "POWER_FRUIT", "§c§lGüç Meyvesi");
+        SPEED_ELIXIR = create(Material.SUGAR, "SPEED_ELIXIR", "§b§lHız İksiri");
+        REGENERATION_ELIXIR = create(Material.GLISTERING_MELON_SLICE, "REGENERATION_ELIXIR", "§d§lYenilenme İksiri");
+        STRENGTH_ELIXIR = create(Material.BLAZE_POWDER, "STRENGTH_ELIXIR", "§6§lGüç İksiri");
 
         // ========== TARİF KİTAPLARI - YAPILAR ==========
         RECIPE_CORE = createRecipeBook("RECIPE_CORE", "§bTarif: Ana Kristal");
@@ -257,6 +351,22 @@ public class ItemManager {
         GOLDEN_HOOK = create(Material.FISHING_ROD, "GOLDEN_HOOK", "§6Altın Kanca");
         TITAN_GRAPPLE = create(Material.FISHING_ROD, "TITAN_GRAPPLE", "§6§lTitan Kancası");
         TRAP_CORE = create(Material.LODESTONE, "TRAP_CORE", "§cTuzak Çekirdeği");
+        TAMING_CORE = create(Material.HEART_OF_THE_SEA, "TAMING_CORE", "§a§lEğitim Çekirdeği");
+        SUMMON_CORE = create(Material.END_CRYSTAL, "SUMMON_CORE", "§5§lÇağırma Çekirdeği");
+        BREEDING_CORE = create(Material.BEACON, "BREEDING_CORE", "§d§lÜreme Çekirdeği");
+        GENDER_SCANNER = create(Material.SPYGLASS, "GENDER_SCANNER", "§bCinsiyet Ayırıcı");
+
+        // ========== ÖZEL ZIRHLAR ==========
+        initSpecialArmors();
+        
+        // ========== ÖZEL SİLAHLAR ==========
+        initSpecialWeapons();
+        
+        // ========== BOSS ÖZEL İTEMLERİ ==========
+        initBossItems();
+        
+        // ========== TARİF KİTAPLARI - ÖZEL ZIRH VE SİLAHLAR ==========
+        initSpecialItemRecipeBooks();
 
         // ========== SEVİYE 1 MOB DROP İTEMLERİ ==========
         WILD_BOAR_HIDE = create(Material.LEATHER, "WILD_BOAR_HIDE", "§6Yaban Domuzu Postu");
@@ -317,6 +427,10 @@ public class ItemManager {
         FATE_STONE = create(Material.AMETHYST_SHARD, "FATE_STONE", "§d§lKader Taşı");
         FATE_FRAGMENT = create(Material.ECHO_SHARD, "FATE_FRAGMENT", "§d§lKader Parçası");
 
+        // ========== BOSS ÖZEL İTEMLERİ ==========
+        // Her boss için özel itemler (tarif zorlaştırma için)
+        initBossItems();
+
         registerRecipes();
     }
 
@@ -344,6 +458,21 @@ public class ItemManager {
         
         // Seviyeli silah ve zırh tarifleri
         registerLeveledWeaponsAndArmor();
+        
+        // Özel zırh ve silah tarifleri (boss itemleri ile)
+        registerSpecialWeaponAndArmorRecipes();
+        
+        // Çekirdekler ve özel eşyalar için tarifler
+        registerCoreRecipes();
+        
+        // Güçlü yiyecekler için tarifler
+        registerConsumableRecipes();
+        
+        // Özel silah ve kalkanlar için tarifler
+        registerSpecialWeaponAndShieldRecipes();
+        
+        // Kanca tarifleri (Golden Hook eksikti)
+        registerGoldenHookRecipe();
     }
     
     /**
@@ -1083,5 +1212,728 @@ public class ItemManager {
      */
     public enum ArmorType {
         HELMET, CHESTPLATE, LEGGINGS, BOOTS
+    }
+    
+    /**
+     * Özel zırhları başlat
+     */
+    private void initSpecialArmors() {
+        // Seviye 1 Zırhlar (Sadece koruma)
+        ARMOR_L1_1 = createSpecialArmor(1, 1, Material.IRON_HELMET, "Demir Savaşçı Zırhı", "§f");
+        ARMOR_L1_2 = createSpecialArmor(1, 2, Material.IRON_CHESTPLATE, "Demir Koruyucu Zırhı", "§f");
+        ARMOR_L1_3 = createSpecialArmor(1, 3, Material.IRON_LEGGINGS, "Demir Avcı Zırhı", "§f");
+        ARMOR_L1_4 = createSpecialArmor(1, 4, Material.IRON_BOOTS, "Demir Kaşif Zırhı", "§f");
+        ARMOR_L1_5 = createSpecialArmor(1, 5, Material.IRON_CHESTPLATE, "Demir Şövalye Zırhı", "§f");
+        
+        // Seviye 2 Zırhlar (Diken Etkisi)
+        ARMOR_L2_1 = createSpecialArmor(2, 1, Material.DIAMOND_HELMET, "Elmas Diken Zırhı", "§b");
+        ARMOR_L2_2 = createSpecialArmor(2, 2, Material.DIAMOND_CHESTPLATE, "Elmas Zehir Diken Zırhı", "§b");
+        ARMOR_L2_3 = createSpecialArmor(2, 3, Material.DIAMOND_LEGGINGS, "Elmas Ateş Diken Zırhı", "§b");
+        ARMOR_L2_4 = createSpecialArmor(2, 4, Material.DIAMOND_BOOTS, "Elmas Buz Diken Zırhı", "§b");
+        ARMOR_L2_5 = createSpecialArmor(2, 5, Material.DIAMOND_CHESTPLATE, "Elmas Yıldırım Diken Zırhı", "§b");
+        
+        // Seviye 3 Zırhlar (2x Hız, Yüksek Zıplama, Aşırı Koruma)
+        ARMOR_L3_1 = createSpecialArmor(3, 1, Material.NETHERITE_HELMET, "Netherite Hız Zırhı", "§5");
+        ARMOR_L3_2 = createSpecialArmor(3, 2, Material.NETHERITE_CHESTPLATE, "Netherite Zıplama Zırhı", "§5");
+        ARMOR_L3_3 = createSpecialArmor(3, 3, Material.NETHERITE_LEGGINGS, "Netherite Savunma Zırhı", "§5");
+        ARMOR_L3_4 = createSpecialArmor(3, 4, Material.NETHERITE_BOOTS, "Netherite Savaşçı Zırhı", "§5");
+        ARMOR_L3_5 = createSpecialArmor(3, 5, Material.NETHERITE_CHESTPLATE, "Netherite Efsane Zırhı", "§5");
+        
+        // Seviye 4 Zırhlar (Sürekli Can Yenileme)
+        ARMOR_L4_1 = createSpecialArmor(4, 1, Material.NETHERITE_HELMET, "Titanyum Yaşam Zırhı", "§6");
+        ARMOR_L4_2 = createSpecialArmor(4, 2, Material.NETHERITE_CHESTPLATE, "Titanyum Ölümsüzlük Zırhı", "§6");
+        ARMOR_L4_3 = createSpecialArmor(4, 3, Material.NETHERITE_LEGGINGS, "Titanyum Yenilenme Zırhı", "§6");
+        ARMOR_L4_4 = createSpecialArmor(4, 4, Material.NETHERITE_BOOTS, "Titanyum Kutsal Zırhı", "§6");
+        ARMOR_L4_5 = createSpecialArmor(4, 5, Material.NETHERITE_CHESTPLATE, "Titanyum Ebedi Zırhı", "§6");
+        
+        // Seviye 5 Zırhlar (Uçma Gücü)
+        ARMOR_L5_1 = createSpecialArmor(5, 1, Material.NETHERITE_HELMET, "Efsanevi Uçan Zırhı", "§d§l");
+        ARMOR_L5_2 = createSpecialArmor(5, 2, Material.NETHERITE_CHESTPLATE, "Efsanevi Gökyüzü Zırhı", "§d§l");
+        ARMOR_L5_3 = createSpecialArmor(5, 3, Material.NETHERITE_LEGGINGS, "Efsanevi Bulut Zırhı", "§d§l");
+        ARMOR_L5_4 = createSpecialArmor(5, 4, Material.NETHERITE_BOOTS, "Efsanevi Yıldız Zırhı", "§d§l");
+        ARMOR_L5_5 = createSpecialArmor(5, 5, Material.NETHERITE_CHESTPLATE, "Efsanevi Tanrı Zırhı", "§d§l");
+    }
+    
+    /**
+     * Özel silahları başlat
+     */
+    private void initSpecialWeapons() {
+        // Seviye 1 Silahlar
+        WEAPON_L1_1 = createSpecialWeapon(1, 1, Material.IRON_SWORD, "Demir Kılıç", "§f");
+        WEAPON_L1_2 = createSpecialWeapon(1, 2, Material.IRON_AXE, "Demir Balta", "§f");
+        WEAPON_L1_3 = createSpecialWeapon(1, 3, Material.TRIDENT, "Demir Mızrak", "§f");
+        WEAPON_L1_4 = createSpecialWeapon(1, 4, Material.BOW, "Demir Yay", "§f");
+        WEAPON_L1_5 = createSpecialWeapon(1, 5, Material.IRON_PICKAXE, "Demir Çekiç", "§f");
+        
+        // Seviye 2 Silahlar
+        WEAPON_L2_1 = createSpecialWeapon(2, 1, Material.DIAMOND_SWORD, "Elmas Kılıç", "§b");
+        WEAPON_L2_2 = createSpecialWeapon(2, 2, Material.DIAMOND_AXE, "Elmas Balta", "§b");
+        WEAPON_L2_3 = createSpecialWeapon(2, 3, Material.TRIDENT, "Elmas Mızrak", "§b");
+        WEAPON_L2_4 = createSpecialWeapon(2, 4, Material.BOW, "Elmas Yay", "§b");
+        WEAPON_L2_5 = createSpecialWeapon(2, 5, Material.DIAMOND_PICKAXE, "Elmas Çekiç", "§b");
+        
+        // Seviye 3 Silahlar (Patlama Atabilme - 20 blok menzil)
+        WEAPON_L3_1 = createSpecialWeapon(3, 1, Material.NETHERITE_SWORD, "Netherite Patlama Kılıcı", "§5");
+        WEAPON_L3_2 = createSpecialWeapon(3, 2, Material.NETHERITE_AXE, "Netherite Patlama Baltası", "§5");
+        WEAPON_L3_3 = createSpecialWeapon(3, 3, Material.TRIDENT, "Netherite Patlama Mızrağı", "§5");
+        WEAPON_L3_4 = createSpecialWeapon(3, 4, Material.BOW, "Netherite Patlama Yayı", "§5");
+        WEAPON_L3_5 = createSpecialWeapon(3, 5, Material.NETHERITE_PICKAXE, "Netherite Patlama Çekici", "§5");
+        
+        // Seviye 4 Silahlar (Devamlı Lazer - Yüksek Hasar)
+        WEAPON_L4_1 = createSpecialWeapon(4, 1, Material.NETHERITE_SWORD, "Titanyum Lazer Kılıcı", "§6");
+        WEAPON_L4_2 = createSpecialWeapon(4, 2, Material.NETHERITE_AXE, "Titanyum Lazer Baltası", "§6");
+        WEAPON_L4_3 = createSpecialWeapon(4, 3, Material.TRIDENT, "Titanyum Lazer Mızrağı", "§6");
+        WEAPON_L4_4 = createSpecialWeapon(4, 4, Material.BOW, "Titanyum Lazer Yayı", "§6");
+        WEAPON_L4_5 = createSpecialWeapon(4, 5, Material.NETHERITE_PICKAXE, "Titanyum Lazer Çekici", "§6");
+        
+        // Seviye 5 Silahlar (Çok Modlu: Blok Fırlatma, Duvar Yapma, Atılma/Patlama)
+        WEAPON_L5_1 = createSpecialWeapon(5, 1, Material.NETHERITE_SWORD, "Efsanevi Çok Modlu Kılıç", "§d§l");
+        WEAPON_L5_2 = createSpecialWeapon(5, 2, Material.NETHERITE_AXE, "Efsanevi Çok Modlu Balta", "§d§l");
+        WEAPON_L5_3 = createSpecialWeapon(5, 3, Material.TRIDENT, "Efsanevi Çok Modlu Mızrak", "§d§l");
+        WEAPON_L5_4 = createSpecialWeapon(5, 4, Material.BOW, "Efsanevi Çok Modlu Yay", "§d§l");
+        WEAPON_L5_5 = createSpecialWeapon(5, 5, Material.NETHERITE_PICKAXE, "Efsanevi Çok Modlu Çekiç", "§d§l");
+    }
+    
+    /**
+     * Özel zırh oluştur
+     */
+    private ItemStack createSpecialArmor(int level, int variant, Material material, String name, String color) {
+        ItemStack armor = new ItemStack(material);
+        ItemMeta meta = armor.getItemMeta();
+        meta.setDisplayName(color + "§l" + name);
+        
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Seviye: §e" + level);
+        double armorPoints = 6.0 + (level - 1) * 4.0; // Seviye 1: 6, Seviye 2: 10, Seviye 3: 14, Seviye 4: 18, Seviye 5: 22
+        lore.add("§7Koruma: §b" + String.format("%.1f", armorPoints));
+        lore.add("");
+        
+        // Özel güçler
+        if (level >= 2) {
+            lore.add("§6§lÖzel Güçler:");
+            if (level == 2) {
+                lore.add("§e• Güçlü Diken Etkisi");
+                lore.add("§7  Saldırıya uğradığında saldırana hasar verir");
+            } else if (level == 3) {
+                lore.add("§e• 2x Hız Artışı");
+                lore.add("§e• Yüksek Zıplama Gücü");
+                lore.add("§e• Aşırı Güçlü Koruma");
+            } else if (level == 4) {
+                lore.add("§e• Sürekli Can Yenileme");
+                lore.add("§7  Her saniye can yenilenir");
+            } else if (level == 5) {
+                lore.add("§e• Uçma Gücü");
+                lore.add("§7  Çift zıplama ile uçabilirsin");
+            }
+        }
+        
+        lore.add("");
+        lore.add("§7Stratocraft Özel Zırhı");
+        meta.setLore(lore);
+        
+        // Zırh modifier ekle
+        EquipmentSlot slot = material.name().contains("HELMET") ? EquipmentSlot.HEAD :
+                            material.name().contains("CHESTPLATE") ? EquipmentSlot.CHEST :
+                            material.name().contains("LEGGINGS") ? EquipmentSlot.LEGS :
+                            EquipmentSlot.FEET;
+        
+        AttributeModifier armorMod = new AttributeModifier(
+            UUID.randomUUID(),
+            "special_armor_" + level + "_" + variant,
+            armorPoints,
+            AttributeModifier.Operation.ADD_NUMBER,
+            slot
+        );
+        meta.addAttributeModifier(Attribute.GENERIC_ARMOR, armorMod);
+        
+        // Özel ID kaydet
+        meta.getPersistentDataContainer().set(
+            new NamespacedKey(Main.getInstance(), "special_armor_id"),
+            PersistentDataType.STRING,
+            "ARMOR_L" + level + "_" + variant
+        );
+        meta.getPersistentDataContainer().set(
+            new NamespacedKey(Main.getInstance(), "armor_level"),
+            PersistentDataType.INTEGER,
+            level
+        );
+        
+        armor.setItemMeta(meta);
+        return armor;
+    }
+    
+    /**
+     * Özel silah oluştur
+     */
+    private ItemStack createSpecialWeapon(int level, int variant, Material material, String name, String color) {
+        ItemStack weapon = new ItemStack(material);
+        ItemMeta meta = weapon.getItemMeta();
+        meta.setDisplayName(color + "§l" + name);
+        
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Seviye: §e" + level);
+        double baseDamage = 5.0 + (level - 1) * 3.0; // Seviye 1: 5, Seviye 2: 8, Seviye 3: 11, Seviye 4: 14, Seviye 5: 17
+        lore.add("§7Hasar: §c" + String.format("%.1f", baseDamage));
+        lore.add("");
+        
+        // Özel yetenekler
+        if (level >= 3) {
+            lore.add("§6§lÖzel Yetenekler:");
+            if (level == 3) {
+                lore.add("§e• Patlama Atabilme");
+                lore.add("§7  Sağ tık ile 20 blok menzile patlama at");
+            } else if (level == 4) {
+                lore.add("§e• Devamlı Lazer");
+                lore.add("§7  Sağ tık ile yüksek hasarlı lazer at");
+            } else if (level == 5) {
+                lore.add("§e• Çok Modlu Silah");
+                lore.add("§7  Q: Blok Fırlatma");
+                lore.add("§7  F: Duvar Yapma");
+                lore.add("§7  Shift+Sağ Tık: Atılma/Patlama");
+            }
+        }
+        
+        lore.add("");
+        lore.add("§7Stratocraft Özel Silahı");
+        meta.setLore(lore);
+        
+        // Hasar modifier ekle (sadece kılıç ve balta için)
+        if (material.name().contains("SWORD") || material.name().contains("AXE")) {
+            AttributeModifier damageMod = new AttributeModifier(
+                UUID.randomUUID(),
+                "special_weapon_damage_" + level + "_" + variant,
+                baseDamage - 1.0,
+                AttributeModifier.Operation.ADD_NUMBER,
+                EquipmentSlot.HAND
+            );
+            meta.addAttributeModifier(Attribute.GENERIC_ATTACK_DAMAGE, damageMod);
+        }
+        
+        // Özel ID kaydet
+        meta.getPersistentDataContainer().set(
+            new NamespacedKey(Main.getInstance(), "special_weapon_id"),
+            PersistentDataType.STRING,
+            "WEAPON_L" + level + "_" + variant
+        );
+        meta.getPersistentDataContainer().set(
+            new NamespacedKey(Main.getInstance(), "weapon_level"),
+            PersistentDataType.INTEGER,
+            level
+        );
+        
+        weapon.setItemMeta(meta);
+        return weapon;
+    }
+    
+    /**
+     * Boss özel itemlerini başlat
+     */
+    private void initBossItems() {
+        // Seviye 1 Bosslar
+        GOBLIN_CROWN = create(Material.GOLDEN_HELMET, "GOBLIN_CROWN", "§6Goblin Kralı Taçı");
+        ORC_AMULET = create(Material.GOLDEN_APPLE, "ORC_AMULET", "§6Ork Şefi Amuleti");
+        
+        // Seviye 2 Bosslar
+        TROLL_HEART = create(Material.HEART_OF_THE_SEA, "TROLL_HEART", "§5Troll Kralı Kalbi");
+        
+        // Seviye 3 Bosslar
+        DRAGON_SCALE = create(Material.DRAGON_SCALE, "DRAGON_SCALE", "§cEjderha Ölçeği");
+        TREX_TOOTH = create(Material.BONE, "TREX_TOOTH", "§7T-Rex Dişi");
+        CYCLOPS_EYE = create(Material.ENDER_EYE, "CYCLOPS_EYE", "§5Cyclops Gözü");
+        
+        // Seviye 4 Bosslar
+        TITAN_CORE = create(Material.NETHER_STAR, "TITAN_CORE", "§6Titan Golem Çekirdeği");
+        PHOENIX_FEATHER = create(Material.FEATHER, "PHOENIX_FEATHER", "§cPhoenix Tüyü");
+        KRAKEN_TENTACLE = create(Material.KELP, "KRAKEN_TENTACLE", "§9Kraken Dokunaçı");
+        
+        // Seviye 5 Bosslar
+        DEMON_LORD_HORN = create(Material.GOAT_HORN, "DEMON_LORD_HORN", "§4§lŞeytan Lordu Boynuzu");
+        VOID_DRAGON_HEART = create(Material.ECHO_SHARD, "VOID_DRAGON_HEART", "§5§lHiçlik Ejderi Kalbi");
+    }
+    
+    /**
+     * Özel zırh ve silah tarif kitaplarını başlat
+     */
+    private void initSpecialItemRecipeBooks() {
+        // Seviye 1 Zırh Tarifleri
+        RECIPE_ARMOR_L1_1 = createRecipeBook("RECIPE_ARMOR_L1_1", "§fTarif: Demir Savaşçı Zırhı");
+        RECIPE_ARMOR_L1_2 = createRecipeBook("RECIPE_ARMOR_L1_2", "§fTarif: Demir Koruyucu Zırhı");
+        RECIPE_ARMOR_L1_3 = createRecipeBook("RECIPE_ARMOR_L1_3", "§fTarif: Demir Avcı Zırhı");
+        RECIPE_ARMOR_L1_4 = createRecipeBook("RECIPE_ARMOR_L1_4", "§fTarif: Demir Kaşif Zırhı");
+        RECIPE_ARMOR_L1_5 = createRecipeBook("RECIPE_ARMOR_L1_5", "§fTarif: Demir Şövalye Zırhı");
+        
+        // Seviye 2 Zırh Tarifleri
+        RECIPE_ARMOR_L2_1 = createRecipeBook("RECIPE_ARMOR_L2_1", "§bTarif: Elmas Diken Zırhı");
+        RECIPE_ARMOR_L2_2 = createRecipeBook("RECIPE_ARMOR_L2_2", "§bTarif: Elmas Zehir Diken Zırhı");
+        RECIPE_ARMOR_L2_3 = createRecipeBook("RECIPE_ARMOR_L2_3", "§bTarif: Elmas Ateş Diken Zırhı");
+        RECIPE_ARMOR_L2_4 = createRecipeBook("RECIPE_ARMOR_L2_4", "§bTarif: Elmas Buz Diken Zırhı");
+        RECIPE_ARMOR_L2_5 = createRecipeBook("RECIPE_ARMOR_L2_5", "§bTarif: Elmas Yıldırım Diken Zırhı");
+        
+        // Seviye 3 Zırh Tarifleri
+        RECIPE_ARMOR_L3_1 = createRecipeBook("RECIPE_ARMOR_L3_1", "§5Tarif: Netherite Hız Zırhı");
+        RECIPE_ARMOR_L3_2 = createRecipeBook("RECIPE_ARMOR_L3_2", "§5Tarif: Netherite Zıplama Zırhı");
+        RECIPE_ARMOR_L3_3 = createRecipeBook("RECIPE_ARMOR_L3_3", "§5Tarif: Netherite Savunma Zırhı");
+        RECIPE_ARMOR_L3_4 = createRecipeBook("RECIPE_ARMOR_L3_4", "§5Tarif: Netherite Savaşçı Zırhı");
+        RECIPE_ARMOR_L3_5 = createRecipeBook("RECIPE_ARMOR_L3_5", "§5Tarif: Netherite Efsane Zırhı");
+        
+        // Seviye 4 Zırh Tarifleri
+        RECIPE_ARMOR_L4_1 = createRecipeBook("RECIPE_ARMOR_L4_1", "§6Tarif: Titanyum Yaşam Zırhı");
+        RECIPE_ARMOR_L4_2 = createRecipeBook("RECIPE_ARMOR_L4_2", "§6Tarif: Titanyum Ölümsüzlük Zırhı");
+        RECIPE_ARMOR_L4_3 = createRecipeBook("RECIPE_ARMOR_L4_3", "§6Tarif: Titanyum Yenilenme Zırhı");
+        RECIPE_ARMOR_L4_4 = createRecipeBook("RECIPE_ARMOR_L4_4", "§6Tarif: Titanyum Kutsal Zırhı");
+        RECIPE_ARMOR_L4_5 = createRecipeBook("RECIPE_ARMOR_L4_5", "§6Tarif: Titanyum Ebedi Zırhı");
+        
+        // Seviye 5 Zırh Tarifleri
+        RECIPE_ARMOR_L5_1 = createRecipeBook("RECIPE_ARMOR_L5_1", "§d§lTarif: Efsanevi Uçan Zırhı");
+        RECIPE_ARMOR_L5_2 = createRecipeBook("RECIPE_ARMOR_L5_2", "§d§lTarif: Efsanevi Gökyüzü Zırhı");
+        RECIPE_ARMOR_L5_3 = createRecipeBook("RECIPE_ARMOR_L5_3", "§d§lTarif: Efsanevi Bulut Zırhı");
+        RECIPE_ARMOR_L5_4 = createRecipeBook("RECIPE_ARMOR_L5_4", "§d§lTarif: Efsanevi Yıldız Zırhı");
+        RECIPE_ARMOR_L5_5 = createRecipeBook("RECIPE_ARMOR_L5_5", "§d§lTarif: Efsanevi Tanrı Zırhı");
+        
+        // Seviye 1 Silah Tarifleri
+        RECIPE_WEAPON_L1_1 = createRecipeBook("RECIPE_WEAPON_L1_1", "§fTarif: Demir Kılıç");
+        RECIPE_WEAPON_L1_2 = createRecipeBook("RECIPE_WEAPON_L1_2", "§fTarif: Demir Balta");
+        RECIPE_WEAPON_L1_3 = createRecipeBook("RECIPE_WEAPON_L1_3", "§fTarif: Demir Mızrak");
+        RECIPE_WEAPON_L1_4 = createRecipeBook("RECIPE_WEAPON_L1_4", "§fTarif: Demir Yay");
+        RECIPE_WEAPON_L1_5 = createRecipeBook("RECIPE_WEAPON_L1_5", "§fTarif: Demir Çekiç");
+        
+        // Seviye 2 Silah Tarifleri
+        RECIPE_WEAPON_L2_1 = createRecipeBook("RECIPE_WEAPON_L2_1", "§bTarif: Elmas Kılıç");
+        RECIPE_WEAPON_L2_2 = createRecipeBook("RECIPE_WEAPON_L2_2", "§bTarif: Elmas Balta");
+        RECIPE_WEAPON_L2_3 = createRecipeBook("RECIPE_WEAPON_L2_3", "§bTarif: Elmas Mızrak");
+        RECIPE_WEAPON_L2_4 = createRecipeBook("RECIPE_WEAPON_L2_4", "§bTarif: Elmas Yay");
+        RECIPE_WEAPON_L2_5 = createRecipeBook("RECIPE_WEAPON_L2_5", "§bTarif: Elmas Çekiç");
+        
+        // Seviye 3 Silah Tarifleri
+        RECIPE_WEAPON_L3_1 = createRecipeBook("RECIPE_WEAPON_L3_1", "§5Tarif: Netherite Patlama Kılıcı");
+        RECIPE_WEAPON_L3_2 = createRecipeBook("RECIPE_WEAPON_L3_2", "§5Tarif: Netherite Patlama Baltası");
+        RECIPE_WEAPON_L3_3 = createRecipeBook("RECIPE_WEAPON_L3_3", "§5Tarif: Netherite Patlama Mızrağı");
+        RECIPE_WEAPON_L3_4 = createRecipeBook("RECIPE_WEAPON_L3_4", "§5Tarif: Netherite Patlama Yayı");
+        RECIPE_WEAPON_L3_5 = createRecipeBook("RECIPE_WEAPON_L3_5", "§5Tarif: Netherite Patlama Çekici");
+        
+        // Seviye 4 Silah Tarifleri
+        RECIPE_WEAPON_L4_1 = createRecipeBook("RECIPE_WEAPON_L4_1", "§6Tarif: Titanyum Lazer Kılıcı");
+        RECIPE_WEAPON_L4_2 = createRecipeBook("RECIPE_WEAPON_L4_2", "§6Tarif: Titanyum Lazer Baltası");
+        RECIPE_WEAPON_L4_3 = createRecipeBook("RECIPE_WEAPON_L4_3", "§6Tarif: Titanyum Lazer Mızrağı");
+        RECIPE_WEAPON_L4_4 = createRecipeBook("RECIPE_WEAPON_L4_4", "§6Tarif: Titanyum Lazer Yayı");
+        RECIPE_WEAPON_L4_5 = createRecipeBook("RECIPE_WEAPON_L4_5", "§6Tarif: Titanyum Lazer Çekici");
+        
+        // Seviye 5 Silah Tarifleri
+        RECIPE_WEAPON_L5_1 = createRecipeBook("RECIPE_WEAPON_L5_1", "§d§lTarif: Efsanevi Çok Modlu Kılıç");
+        RECIPE_WEAPON_L5_2 = createRecipeBook("RECIPE_WEAPON_L5_2", "§d§lTarif: Efsanevi Çok Modlu Balta");
+        RECIPE_WEAPON_L5_3 = createRecipeBook("RECIPE_WEAPON_L5_3", "§d§lTarif: Efsanevi Çok Modlu Mızrak");
+        RECIPE_WEAPON_L5_4 = createRecipeBook("RECIPE_WEAPON_L5_4", "§d§lTarif: Efsanevi Çok Modlu Yay");
+        RECIPE_WEAPON_L5_5 = createRecipeBook("RECIPE_WEAPON_L5_5", "§d§lTarif: Efsanevi Çok Modlu Çekiç");
+    }
+    
+    /**
+     * Özel zırh ve silah tariflerini kaydet (boss itemleri ile zorlaştırılmış)
+     */
+    private void registerSpecialWeaponAndArmorRecipes() {
+        // Seviye 1 Zırh Tarifleri (Kolay - Sadece demir)
+        registerSpecialArmorRecipe(1, 1, Material.IRON_HELMET, Material.IRON_INGOT, null);
+        registerSpecialArmorRecipe(1, 2, Material.IRON_CHESTPLATE, Material.IRON_INGOT, null);
+        registerSpecialArmorRecipe(1, 3, Material.IRON_LEGGINGS, Material.IRON_INGOT, null);
+        registerSpecialArmorRecipe(1, 4, Material.IRON_BOOTS, Material.IRON_INGOT, null);
+        registerSpecialArmorRecipe(1, 5, Material.IRON_CHESTPLATE, Material.IRON_INGOT, null);
+        
+        // Seviye 2 Zırh Tarifleri (Orta - Elmas + Goblin/Ork itemi)
+        registerSpecialArmorRecipe(2, 1, Material.DIAMOND_HELMET, Material.DIAMOND, GOBLIN_CROWN);
+        registerSpecialArmorRecipe(2, 2, Material.DIAMOND_CHESTPLATE, Material.DIAMOND, ORC_AMULET);
+        registerSpecialArmorRecipe(2, 3, Material.DIAMOND_LEGGINGS, Material.DIAMOND, GOBLIN_CROWN);
+        registerSpecialArmorRecipe(2, 4, Material.DIAMOND_BOOTS, Material.DIAMOND, ORC_AMULET);
+        registerSpecialArmorRecipe(2, 5, Material.DIAMOND_CHESTPLATE, Material.DIAMOND, TROLL_HEART);
+        
+        // Seviye 3 Zırh Tarifleri (Zor - Netherite + Seviye 3 boss itemi)
+        registerSpecialArmorRecipe(3, 1, Material.NETHERITE_HELMET, Material.NETHERITE_INGOT, DRAGON_SCALE);
+        registerSpecialArmorRecipe(3, 2, Material.NETHERITE_CHESTPLATE, Material.NETHERITE_INGOT, TREX_TOOTH);
+        registerSpecialArmorRecipe(3, 3, Material.NETHERITE_LEGGINGS, Material.NETHERITE_INGOT, CYCLOPS_EYE);
+        registerSpecialArmorRecipe(3, 4, Material.NETHERITE_BOOTS, Material.NETHERITE_INGOT, DRAGON_SCALE);
+        registerSpecialArmorRecipe(3, 5, Material.NETHERITE_CHESTPLATE, Material.NETHERITE_INGOT, TREX_TOOTH);
+        
+        // Seviye 4 Zırh Tarifleri (Çok Zor - Titanyum + Seviye 4 boss itemi)
+        registerSpecialArmorRecipe(4, 1, Material.NETHERITE_HELMET, TITANIUM_INGOT, TITAN_CORE);
+        registerSpecialArmorRecipe(4, 2, Material.NETHERITE_CHESTPLATE, TITANIUM_INGOT, PHOENIX_FEATHER);
+        registerSpecialArmorRecipe(4, 3, Material.NETHERITE_LEGGINGS, TITANIUM_INGOT, KRAKEN_TENTACLE);
+        registerSpecialArmorRecipe(4, 4, Material.NETHERITE_BOOTS, TITANIUM_INGOT, TITAN_CORE);
+        registerSpecialArmorRecipe(4, 5, Material.NETHERITE_CHESTPLATE, TITANIUM_INGOT, PHOENIX_FEATHER);
+        
+        // Seviye 5 Zırh Tarifleri (Efsanevi - Netherite + Seviye 5 boss itemi)
+        registerSpecialArmorRecipe(5, 1, Material.NETHERITE_HELMET, Material.NETHERITE_INGOT, DEMON_LORD_HORN);
+        registerSpecialArmorRecipe(5, 2, Material.NETHERITE_CHESTPLATE, Material.NETHERITE_INGOT, VOID_DRAGON_HEART);
+        registerSpecialArmorRecipe(5, 3, Material.NETHERITE_LEGGINGS, Material.NETHERITE_INGOT, DEMON_LORD_HORN);
+        registerSpecialArmorRecipe(5, 4, Material.NETHERITE_BOOTS, Material.NETHERITE_INGOT, VOID_DRAGON_HEART);
+        registerSpecialArmorRecipe(5, 5, Material.NETHERITE_CHESTPLATE, Material.NETHERITE_INGOT, DEMON_LORD_HORN);
+        
+        // Seviye 1 Silah Tarifleri (Kolay - Sadece demir)
+        registerSpecialWeaponRecipe(1, 1, Material.IRON_SWORD, Material.IRON_INGOT, null);
+        registerSpecialWeaponRecipe(1, 2, Material.IRON_AXE, Material.IRON_INGOT, null);
+        registerSpecialWeaponRecipe(1, 3, Material.TRIDENT, Material.IRON_INGOT, null);
+        registerSpecialWeaponRecipe(1, 4, Material.BOW, Material.IRON_INGOT, null);
+        registerSpecialWeaponRecipe(1, 5, Material.IRON_PICKAXE, Material.IRON_INGOT, null);
+        
+        // Seviye 2 Silah Tarifleri (Orta - Elmas + Goblin/Ork itemi)
+        registerSpecialWeaponRecipe(2, 1, Material.DIAMOND_SWORD, Material.DIAMOND, GOBLIN_CROWN);
+        registerSpecialWeaponRecipe(2, 2, Material.DIAMOND_AXE, Material.DIAMOND, ORC_AMULET);
+        registerSpecialWeaponRecipe(2, 3, Material.TRIDENT, Material.DIAMOND, GOBLIN_CROWN);
+        registerSpecialWeaponRecipe(2, 4, Material.BOW, Material.DIAMOND, ORC_AMULET);
+        registerSpecialWeaponRecipe(2, 5, Material.DIAMOND_PICKAXE, Material.DIAMOND, TROLL_HEART);
+        
+        // Seviye 3 Silah Tarifleri (Zor - Netherite + Seviye 3 boss itemi)
+        registerSpecialWeaponRecipe(3, 1, Material.NETHERITE_SWORD, Material.NETHERITE_INGOT, DRAGON_SCALE);
+        registerSpecialWeaponRecipe(3, 2, Material.NETHERITE_AXE, Material.NETHERITE_INGOT, TREX_TOOTH);
+        registerSpecialWeaponRecipe(3, 3, Material.TRIDENT, Material.NETHERITE_INGOT, CYCLOPS_EYE);
+        registerSpecialWeaponRecipe(3, 4, Material.BOW, Material.NETHERITE_INGOT, DRAGON_SCALE);
+        registerSpecialWeaponRecipe(3, 5, Material.NETHERITE_PICKAXE, Material.NETHERITE_INGOT, TREX_TOOTH);
+        
+        // Seviye 4 Silah Tarifleri (Çok Zor - Titanyum + Seviye 4 boss itemi)
+        registerSpecialWeaponRecipe(4, 1, Material.NETHERITE_SWORD, TITANIUM_INGOT, TITAN_CORE);
+        registerSpecialWeaponRecipe(4, 2, Material.NETHERITE_AXE, TITANIUM_INGOT, PHOENIX_FEATHER);
+        registerSpecialWeaponRecipe(4, 3, Material.TRIDENT, TITANIUM_INGOT, KRAKEN_TENTACLE);
+        registerSpecialWeaponRecipe(4, 4, Material.BOW, TITANIUM_INGOT, TITAN_CORE);
+        registerSpecialWeaponRecipe(4, 5, Material.NETHERITE_PICKAXE, TITANIUM_INGOT, PHOENIX_FEATHER);
+        
+        // Seviye 5 Silah Tarifleri (Efsanevi - Netherite + Seviye 5 boss itemi)
+        registerSpecialWeaponRecipe(5, 1, Material.NETHERITE_SWORD, Material.NETHERITE_INGOT, DEMON_LORD_HORN);
+        registerSpecialWeaponRecipe(5, 2, Material.NETHERITE_AXE, Material.NETHERITE_INGOT, VOID_DRAGON_HEART);
+        registerSpecialWeaponRecipe(5, 3, Material.TRIDENT, Material.NETHERITE_INGOT, DEMON_LORD_HORN);
+        registerSpecialWeaponRecipe(5, 4, Material.BOW, Material.NETHERITE_INGOT, VOID_DRAGON_HEART);
+        registerSpecialWeaponRecipe(5, 5, Material.NETHERITE_PICKAXE, Material.NETHERITE_INGOT, DEMON_LORD_HORN);
+    }
+    
+    /**
+     * Özel zırh tarifi kaydet
+     */
+    private void registerSpecialArmorRecipe(int level, int variant, Material armorMaterial, Material baseMaterial, ItemStack bossItem) {
+        ItemStack armor = null;
+        switch (level) {
+            case 1:
+                switch (variant) {
+                    case 1: armor = ARMOR_L1_1; break;
+                    case 2: armor = ARMOR_L1_2; break;
+                    case 3: armor = ARMOR_L1_3; break;
+                    case 4: armor = ARMOR_L1_4; break;
+                    case 5: armor = ARMOR_L1_5; break;
+                }
+                break;
+            case 2:
+                switch (variant) {
+                    case 1: armor = ARMOR_L2_1; break;
+                    case 2: armor = ARMOR_L2_2; break;
+                    case 3: armor = ARMOR_L2_3; break;
+                    case 4: armor = ARMOR_L2_4; break;
+                    case 5: armor = ARMOR_L2_5; break;
+                }
+                break;
+            case 3:
+                switch (variant) {
+                    case 1: armor = ARMOR_L3_1; break;
+                    case 2: armor = ARMOR_L3_2; break;
+                    case 3: armor = ARMOR_L3_3; break;
+                    case 4: armor = ARMOR_L3_4; break;
+                    case 5: armor = ARMOR_L3_5; break;
+                }
+                break;
+            case 4:
+                switch (variant) {
+                    case 1: armor = ARMOR_L4_1; break;
+                    case 2: armor = ARMOR_L4_2; break;
+                    case 3: armor = ARMOR_L4_3; break;
+                    case 4: armor = ARMOR_L4_4; break;
+                    case 5: armor = ARMOR_L4_5; break;
+                }
+                break;
+            case 5:
+                switch (variant) {
+                    case 1: armor = ARMOR_L5_1; break;
+                    case 2: armor = ARMOR_L5_2; break;
+                    case 3: armor = ARMOR_L5_3; break;
+                    case 4: armor = ARMOR_L5_4; break;
+                    case 5: armor = ARMOR_L5_5; break;
+                }
+                break;
+        }
+        
+        if (armor == null) return;
+        
+        // Zırh tipine göre şekil belirle
+        String shape1, shape2, shape3;
+        if (armorMaterial.name().contains("HELMET")) {
+            shape1 = "MMM";
+            shape2 = "M M";
+            shape3 = "   ";
+        } else if (armorMaterial.name().contains("CHESTPLATE")) {
+            shape1 = "M M";
+            shape2 = "MMM";
+            shape3 = "MMM";
+        } else if (armorMaterial.name().contains("LEGGINGS")) {
+            shape1 = "MMM";
+            shape2 = "M M";
+            shape3 = "M M";
+        } else { // BOOTS
+            shape1 = "   ";
+            shape2 = "M M";
+            shape3 = "M M";
+        }
+        
+        ShapedRecipe recipe = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "special_armor_l" + level + "_" + variant),
+            armor.clone()
+        );
+        recipe.shape(shape1, shape2, shape3);
+        recipe.setIngredient('M', baseMaterial);
+        
+        // Boss itemi varsa ortaya ekle (custom item kontrolü ResearchListener'da yapılacak)
+        // Şimdilik sadece base material ile tarif oluşturuluyor
+        
+        Bukkit.addRecipe(recipe);
+    }
+    
+    /**
+     * Özel silah tarifi kaydet
+     */
+    private void registerSpecialWeaponRecipe(int level, int variant, Material weaponMaterial, Material baseMaterial, ItemStack bossItem) {
+        ItemStack weapon = null;
+        switch (level) {
+            case 1:
+                switch (variant) {
+                    case 1: weapon = WEAPON_L1_1; break;
+                    case 2: weapon = WEAPON_L1_2; break;
+                    case 3: weapon = WEAPON_L1_3; break;
+                    case 4: weapon = WEAPON_L1_4; break;
+                    case 5: weapon = WEAPON_L1_5; break;
+                }
+                break;
+            case 2:
+                switch (variant) {
+                    case 1: weapon = WEAPON_L2_1; break;
+                    case 2: weapon = WEAPON_L2_2; break;
+                    case 3: weapon = WEAPON_L2_3; break;
+                    case 4: weapon = WEAPON_L2_4; break;
+                    case 5: weapon = WEAPON_L2_5; break;
+                }
+                break;
+            case 3:
+                switch (variant) {
+                    case 1: weapon = WEAPON_L3_1; break;
+                    case 2: weapon = WEAPON_L3_2; break;
+                    case 3: weapon = WEAPON_L3_3; break;
+                    case 4: weapon = WEAPON_L3_4; break;
+                    case 5: weapon = WEAPON_L3_5; break;
+                }
+                break;
+            case 4:
+                switch (variant) {
+                    case 1: weapon = WEAPON_L4_1; break;
+                    case 2: weapon = WEAPON_L4_2; break;
+                    case 3: weapon = WEAPON_L4_3; break;
+                    case 4: weapon = WEAPON_L4_4; break;
+                    case 5: weapon = WEAPON_L4_5; break;
+                }
+                break;
+            case 5:
+                switch (variant) {
+                    case 1: weapon = WEAPON_L5_1; break;
+                    case 2: weapon = WEAPON_L5_2; break;
+                    case 3: weapon = WEAPON_L5_3; break;
+                    case 4: weapon = WEAPON_L5_4; break;
+                    case 5: weapon = WEAPON_L5_5; break;
+                }
+                break;
+        }
+        
+        if (weapon == null) return;
+        
+        // Silah tipine göre şekil belirle
+        String shape1, shape2, shape3;
+        if (weaponMaterial.name().contains("SWORD") || weaponMaterial.name().contains("AXE") || weaponMaterial.name().contains("PICKAXE")) {
+            shape1 = " M ";
+            shape2 = " M ";
+            shape3 = " S ";
+        } else if (weaponMaterial == Material.BOW) {
+            shape1 = " MS";
+            shape2 = "M S";
+            shape3 = " MS";
+        } else { // TRIDENT
+            shape1 = " M ";
+            shape2 = " M ";
+            shape3 = " S ";
+        }
+        
+        ShapedRecipe recipe = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "special_weapon_l" + level + "_" + variant),
+            weapon.clone()
+        );
+        recipe.shape(shape1, shape2, shape3);
+        recipe.setIngredient('M', baseMaterial);
+        recipe.setIngredient('S', Material.STICK);
+        
+        // Boss itemi varsa ortaya ekle (custom item kontrolü ResearchListener'da yapılacak)
+        // Şimdilik sadece base material ile tarif oluşturuluyor
+        
+        Bukkit.addRecipe(recipe);
+    }
+    
+    /**
+     * Çekirdekler ve özel eşyalar için tarifler
+     */
+    private void registerCoreRecipes() {
+        // Eğitim Çekirdeği: 4 Demir + 1 Altın Elma + 4 Yem
+        ShapedRecipe tamingCore = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "craft_taming_core"),
+            TAMING_CORE.clone()
+        );
+        tamingCore.shape("III", "IGI", "III");
+        tamingCore.setIngredient('I', Material.IRON_INGOT);
+        tamingCore.setIngredient('G', Material.GOLDEN_APPLE);
+        Bukkit.addRecipe(tamingCore);
+        
+        // Çağırma Çekirdeği: 4 Obsidyen + 1 Ender İncisi + 4 Netherite
+        ShapedRecipe summonCore = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "craft_summon_core"),
+            SUMMON_CORE.clone()
+        );
+        summonCore.shape("ONO", "NEN", "ONO");
+        summonCore.setIngredient('O', Material.OBSIDIAN);
+        summonCore.setIngredient('N', Material.NETHERITE_INGOT);
+        summonCore.setIngredient('E', Material.ENDER_PEARL);
+        Bukkit.addRecipe(summonCore);
+        
+        // Üreme Çekirdeği: 4 Elmas + 1 Altın Elma + 4 Altın
+        ShapedRecipe breedingCore = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "craft_breeding_core"),
+            BREEDING_CORE.clone()
+        );
+        breedingCore.shape("DGD", "GAG", "DGD");
+        breedingCore.setIngredient('D', Material.DIAMOND);
+        breedingCore.setIngredient('G', Material.GOLD_INGOT);
+        breedingCore.setIngredient('A', Material.GOLDEN_APPLE);
+        Bukkit.addRecipe(breedingCore);
+        
+        // Cinsiyet Ayırıcı: 3 Cam + 1 Kırmızı Taş + 3 Altın
+        ShapedRecipe genderScanner = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "craft_gender_scanner"),
+            GENDER_SCANNER.clone()
+        );
+        genderScanner.shape("GGG", "GRG", "GGG");
+        genderScanner.setIngredient('G', Material.GOLD_INGOT);
+        genderScanner.setIngredient('R', Material.REDSTONE);
+        Bukkit.addRecipe(genderScanner);
+    }
+    
+    /**
+     * Güçlü yiyecekler için tarifler
+     */
+    private void registerConsumableRecipes() {
+        // Yaşam İksiri: 3 Altın Elma + 1 Altın + 5 Cam Şişe
+        ShapelessRecipe lifeElixir = new ShapelessRecipe(
+            new NamespacedKey(Main.getInstance(), "craft_life_elixir"),
+            LIFE_ELIXIR.clone()
+        );
+        lifeElixir.addIngredient(Material.GOLDEN_APPLE);
+        lifeElixir.addIngredient(Material.GOLDEN_APPLE);
+        lifeElixir.addIngredient(Material.GOLDEN_APPLE);
+        lifeElixir.addIngredient(Material.GOLD_INGOT);
+        lifeElixir.addIngredient(Material.GLASS_BOTTLE);
+        lifeElixir.addIngredient(Material.GLASS_BOTTLE);
+        lifeElixir.addIngredient(Material.GLASS_BOTTLE);
+        lifeElixir.addIngredient(Material.GLASS_BOTTLE);
+        lifeElixir.addIngredient(Material.GLASS_BOTTLE);
+        Bukkit.addRecipe(lifeElixir);
+        
+        // Güç Meyvesi: 1 Altın Elma + 8 Netherite
+        ShapedRecipe powerFruit = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "craft_power_fruit"),
+            POWER_FRUIT.clone()
+        );
+        powerFruit.shape("NNN", "NGN", "NNN");
+        powerFruit.setIngredient('N', Material.NETHERITE_INGOT);
+        powerFruit.setIngredient('G', Material.GOLDEN_APPLE);
+        Bukkit.addRecipe(powerFruit);
+        
+        // Hız İksiri: 2 Şeker + 1 Kırmızı Taş + 1 Cam Şişe
+        ShapelessRecipe speedElixir = new ShapelessRecipe(
+            new NamespacedKey(Main.getInstance(), "craft_speed_elixir"),
+            SPEED_ELIXIR.clone()
+        );
+        speedElixir.addIngredient(Material.SUGAR);
+        speedElixir.addIngredient(Material.SUGAR);
+        speedElixir.addIngredient(Material.REDSTONE);
+        speedElixir.addIngredient(Material.GLASS_BOTTLE);
+        Bukkit.addRecipe(speedElixir);
+        
+        // Yenilenme İksiri: 1 Altın Havuç + 1 Kırmızı Taş + 1 Cam Şişe
+        ShapelessRecipe regenElixir = new ShapelessRecipe(
+            new NamespacedKey(Main.getInstance(), "craft_regeneration_elixir"),
+            REGENERATION_ELIXIR.clone()
+        );
+        regenElixir.addIngredient(Material.GOLDEN_CARROT);
+        regenElixir.addIngredient(Material.REDSTONE);
+        regenElixir.addIngredient(Material.GLASS_BOTTLE);
+        Bukkit.addRecipe(regenElixir);
+        
+        // Güç İksiri: 1 Blaze Tozu + 1 Kırmızı Taş + 1 Cam Şişe
+        ShapelessRecipe strengthElixir = new ShapelessRecipe(
+            new NamespacedKey(Main.getInstance(), "craft_strength_elixir"),
+            STRENGTH_ELIXIR.clone()
+        );
+        strengthElixir.addIngredient(Material.BLAZE_POWDER);
+        strengthElixir.addIngredient(Material.REDSTONE);
+        strengthElixir.addIngredient(Material.GLASS_BOTTLE);
+        Bukkit.addRecipe(strengthElixir);
+    }
+    
+    /**
+     * Özel silah ve kalkanlar için tarifler
+     */
+    private void registerSpecialWeaponAndShieldRecipes() {
+        // Savaş Yelpazesi: 3 Demir + 2 İp + 4 Altın
+        ShapedRecipe warFan = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "craft_war_fan"),
+            WAR_FAN.clone()
+        );
+        warFan.shape("IGI", "S S", "IGI");
+        warFan.setIngredient('I', Material.IRON_INGOT);
+        warFan.setIngredient('G', Material.GOLD_INGOT);
+        warFan.setIngredient('S', Material.STRING);
+        Bukkit.addRecipe(warFan);
+        
+        // Kule Kalkanı: 6 Demir + 1 Elmas + 2 Tahta
+        ShapedRecipe towerShield = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "craft_tower_shield"),
+            TOWER_SHIELD.clone()
+        );
+        towerShield.shape("IDI", "IWI", "IWI");
+        towerShield.setIngredient('I', Material.IRON_INGOT);
+        towerShield.setIngredient('D', Material.DIAMOND);
+        towerShield.setIngredient('W', Material.OAK_PLANKS);
+        Bukkit.addRecipe(towerShield);
+        
+        // Cehennem Meyvesi: 1 Elma + 4 Netherite + 4 Alev Tozu
+        ShapedRecipe hellFruit = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "craft_hell_fruit"),
+            HELL_FRUIT.clone()
+        );
+        hellFruit.shape("NFN", "FAF", "NFN");
+        hellFruit.setIngredient('N', Material.NETHERITE_INGOT);
+        hellFruit.setIngredient('F', Material.BLAZE_POWDER);
+        hellFruit.setIngredient('A', Material.APPLE);
+        Bukkit.addRecipe(hellFruit);
+    }
+    
+    /**
+     * Altın Kanca tarifi
+     */
+    private void registerGoldenHookRecipe() {
+        // Altın Kanca: 2 Altın + 1 İp + 1 Demir
+        ShapedRecipe goldenHook = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "craft_golden_hook"),
+            GOLDEN_HOOK.clone()
+        );
+        goldenHook.shape(" G ", " G ", "IS ");
+        goldenHook.setIngredient('G', Material.GOLD_INGOT);
+        goldenHook.setIngredient('I', Material.IRON_INGOT);
+        goldenHook.setIngredient('S', Material.STRING);
+        Bukkit.addRecipe(goldenHook);
     }
 }

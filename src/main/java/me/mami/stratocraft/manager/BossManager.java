@@ -877,6 +877,11 @@ public class BossManager {
      * Ritüel deseni kontrol et
      */
     public boolean checkRitualPattern(Block centerBlock, BossType type) {
+        // Merkez bloğun Çağırma Çekirdeği olup olmadığını kontrol et
+        if (!centerBlock.hasMetadata("SummonCore")) {
+            return false;
+        }
+        
         Material[][] pattern = getRitualPattern(type);
         if (pattern == null) {
             return false;

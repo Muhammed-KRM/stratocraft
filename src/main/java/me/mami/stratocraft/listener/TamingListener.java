@@ -37,6 +37,74 @@ public class TamingListener implements Listener {
     }
 
     /**
+     * Eğitim Çekirdeği yerleştirme (item ile bloğa sağ tık)
+     * Yüksek priority ile önce çalışır, böylece ritüel aktifleştirme ile çakışmaz
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onTamingCorePlace(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.RIGHT_CLICK_AIR) {
+            return;
+        }
+
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
+
+        Player player = event.getPlayer();
+        ItemStack handItem = player.getInventory().getItemInMainHand();
+        
+        // Eğitim Çekirdeği item'ı mı?
+        if (handItem == null || !me.mami.stratocraft.manager.ItemManager.isCustomItem(handItem, "TAMING_CORE")) {
+            return;
+        }
+
+        // RayTrace ile baktığı yöndeki bloğu bul
+        Block targetBlock = player.getTargetBlockExact(5);
+        if (targetBlock == null) {
+            return;
+        }
+
+        // Alttan koymayı engelle
+        if (event.getBlockFace() == org.bukkit.block.BlockFace.DOWN) {
+            return;
+        }
+
+        Block placeBlock = targetBlock.getRelative(event.getBlockFace());
+
+        // Altında solid blok olmalı
+        if (!placeBlock.getRelative(org.bukkit.block.BlockFace.DOWN).getType().isSolid()) {
+            player.sendMessage("§cEğitim Çekirdeği havaya koyulamaz! Altında blok olmalı.");
+            return;
+        }
+
+        // Üstünde blok olmamalı
+        if (placeBlock.getType().isSolid()) {
+            player.sendMessage("§cBuraya Eğitim Çekirdeği koyulamaz! Blok dolu.");
+            return;
+        }
+
+        // Eğitim Çekirdeği yerleştir
+        placeBlock.setType(Material.BEACON);
+        placeBlock.setMetadata("TamingCore", new org.bukkit.metadata.FixedMetadataValue(
+                me.mami.stratocraft.Main.getInstance(), true));
+
+        // Item'ı tüket (1 adet)
+        if (handItem.getAmount() > 1) {
+            handItem.setAmount(handItem.getAmount() - 1);
+        } else {
+            player.getInventory().setItemInMainHand(null);
+        }
+
+        player.sendMessage("§a§lEğitim Çekirdeği yerleştirildi!");
+        placeBlock.getWorld().spawnParticle(org.bukkit.Particle.VILLAGER_HAPPY, 
+                placeBlock.getLocation().add(0.5, 0.5, 0.5), 10, 0.3, 0.3, 0.3, 0.1);
+        placeBlock.getWorld().playSound(placeBlock.getLocation(), 
+                org.bukkit.Sound.BLOCK_BEACON_PLACE, 1.0f, 1.0f);
+        
+        event.setCancelled(true);
+    }
+
+    /**
      * Ritüel aktifleştirme (blok deseni + item ile sağ tık)
      */
     @EventHandler(priority = EventPriority.HIGH)
@@ -59,6 +127,11 @@ public class TamingListener implements Listener {
 
         if (item == null || item.getType() == Material.AIR) {
             return;
+        }
+
+        // Eğitim Çekirdeği yerleştirme işlemi değilse devam et
+        if (me.mami.stratocraft.manager.ItemManager.isCustomItem(item, "TAMING_CORE")) {
+            return; // Bu durum onTamingCorePlace'de handle edilir
         }
 
         // Yakındaki canlıyı bul (3 blok yarıçap)
@@ -93,6 +166,12 @@ public class TamingListener implements Listener {
      */
     private void handleNormalTamingRitual(Player player, Block centerBlock, LivingEntity entity,
             int difficultyLevel, ItemStack item) {
+        // Merkez bloğun Eğitim Çekirdeği olup olmadığını kontrol et
+        if (!centerBlock.hasMetadata("TamingCore")) {
+            player.sendMessage("§cMerkez bloğa Eğitim Çekirdeği yerleştirmelisin!");
+            return;
+        }
+        
         // Ritüel deseni kontrol et
         if (!tamingManager.checkRitualPattern(centerBlock, difficultyLevel)) {
             player.sendMessage("§cRitüel deseni yanlış! Seviye " + difficultyLevel + " için doğru deseni yapmalısın.");

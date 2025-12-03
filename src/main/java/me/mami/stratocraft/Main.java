@@ -59,6 +59,7 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.BossManager bossManager;
     private me.mami.stratocraft.manager.TamingManager tamingManager;
     private me.mami.stratocraft.manager.BreedingManager breedingManager;
+    private me.mami.stratocraft.listener.SpecialWeaponListener specialWeaponListener;
 
     @Override
     public void onEnable() {
@@ -139,8 +140,11 @@ public class Main extends JavaPlugin {
             new me.mami.stratocraft.listener.GhostRecipeListener(ghostRecipeManager, researchManager);
         ghostRecipeListener.setTerritoryManager(territoryManager);
         Bukkit.getPluginManager().registerEvents(ghostRecipeListener, this);
-        Bukkit.getPluginManager().registerEvents(new ConsumableListener(), this);
+        Bukkit.getPluginManager().registerEvents(new ConsumableListener(this), this);
         Bukkit.getPluginManager().registerEvents(new VillagerListener(), this);
+        Bukkit.getPluginManager().registerEvents(new SpecialArmorListener(this), this);
+        specialWeaponListener = new SpecialWeaponListener(this);
+        Bukkit.getPluginManager().registerEvents(specialWeaponListener, this);
         Bukkit.getPluginManager().registerEvents(new GriefProtectionListener(territoryManager), this);
         virtualStorageListener = new VirtualStorageListener(territoryManager);
         Bukkit.getPluginManager().registerEvents(virtualStorageListener, this);
@@ -151,13 +155,13 @@ public class Main extends JavaPlugin {
                 new me.mami.stratocraft.listener.WorldGenerationListener(territoryManager, mobManager, difficultyManager, dungeonManager, bossManager), this);
         
         // Boss sistemi
-        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.BossListener(bossManager), this);
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.BossListener(bossManager, this), this);
         
         // Canlı eğitme sistemi
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.TamingListener(tamingManager, difficultyManager, bossManager), this);
         
         // Çiftleştirme sistemi
-        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.BreedingListener(breedingManager, tamingManager), this);
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.BreedingListener(breedingManager, tamingManager, this), this);
         
         // Yumurta çatlama kontrolü (her 5 saniyede bir)
         new org.bukkit.scheduler.BukkitRunnable() {
@@ -275,6 +279,13 @@ public class Main extends JavaPlugin {
         // 4. Tab Completers
         getCommand("klan").setTabCompleter(new me.mami.stratocraft.command.ClanTabCompleter());
         getCommand("kontrat").setTabCompleter(new me.mami.stratocraft.command.ContractTabCompleter());
+        
+        // Silah modu komutu
+        if (getCommand("weaponmode") != null) {
+            me.mami.stratocraft.command.WeaponModeCommand weaponModeCmd = new me.mami.stratocraft.command.WeaponModeCommand(this);
+            getCommand("weaponmode").setExecutor(weaponModeCmd);
+            getCommand("weaponmode").setTabCompleter(weaponModeCmd);
+        }
 
         // 7. Komutlar (Sadece Admin için - Oyuncular ritüelleri kullanır)
         getCommand("klan").setExecutor(new CommandExecutor() {
