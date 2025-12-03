@@ -147,14 +147,14 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 p.sendMessage("§6§l════════════════════════════");
                 p.sendMessage("§e§lAKTİF TARİFLER");
                 p.sendMessage("§6§l════════════════════════════");
-                int activeCount = 0;
+                int listActiveCount = 0;
                 for (org.bukkit.entity.Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
                     if (plugin.getGhostRecipeManager().hasActiveRecipe(player.getUniqueId())) {
                         p.sendMessage("§7- §e" + player.getName());
-                        activeCount++;
+                        listActiveCount++;
                     }
                 }
-                if (activeCount == 0) {
+                if (listActiveCount == 0) {
                     p.sendMessage("§7Aktif tarif yok.");
                 }
                 return true;
@@ -234,7 +234,6 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        String category = args[1].toLowerCase();
         String mobName;
 
         // Kategori kontrolü
@@ -243,7 +242,6 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         } else {
             // Eski format desteği (kategori yok, direkt mob)
             mobName = args[1].toLowerCase();
-            category = "all"; // Tüm kategorilerde ara
         }
 
         MobManager mobManager = plugin.getMobManager();
@@ -2649,8 +2647,6 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "trebuset":
             case "trebuşet":
                 // Trebuchet: 5x5 Obsidian taban + Merkezde Anvil
-                org.bukkit.block.BlockFace trebuchetFacing = p.getFacing();
-                
                 // 5x5 Obsidian taban oluştur
                 for (int x = -2; x <= 2; x++) {
                     for (int z = -2; z <= 2; z++) {
