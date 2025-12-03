@@ -404,6 +404,10 @@ Her yapı için farklı ritüel gereksinimleri vardır (aşağıda detaylı).
 - **Özel Zırhlar**: 5 seviye, her seviyede 5 varyant (toplam 25 zırh)
 - **Özel Silahlar**: 5 seviye, her seviyede 5 varyant (toplam 25 silah)
 
+**Teknik Notlar**:
+- Ejderha Ölçeği (Dragon Scale): Minecraft'ta `Material.DRAGON_SCALE` bulunmadığı için `Material.SCUTE` (Kaplumbağa Kabuğu) kullanılır.
+- Seviye 4 Özel Zırh/Silah Tarifleri: Titanyum Külçesi özel bir ItemStack olduğu için craft tariflerinde `Material.IRON_INGOT` kullanılır, ancak gerçek craft işleminde Titanyum Külçesi (TITANIUM_INGOT) gereklidir.
+
 Detaylı bilgi için `05_ozel_esyalar.md` dosyasına bakın.
 
 ---
