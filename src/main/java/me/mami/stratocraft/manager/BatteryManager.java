@@ -1,6 +1,7 @@
 package me.mami.stratocraft.manager;
 
 import me.mami.stratocraft.Main;
+import me.mami.stratocraft.model.BossData;
 import me.mami.stratocraft.model.Clan;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -2318,8 +2319,14 @@ public class BatteryManager {
         
         for (Entity entity : player.getWorld().getNearbyEntities(target, radius, radius, radius)) {
             if (entity instanceof LivingEntity && entity != player) {
-                // Boss kontrolü
-                if (bossManager != null && bossManager.isBoss(entity)) {
+                // Boss kontrolü - getBossData ile kontrol et
+                boolean isBoss = false;
+                if (bossManager != null) {
+                    BossData bossData = bossManager.getBossData(entity.getUniqueId());
+                    isBoss = (bossData != null);
+                }
+                
+                if (isBoss) {
                     ((LivingEntity) entity).damage(bossDamage);
                     player.sendMessage("§c§lBOSS HASARI: " + bossDamage + " kalp!");
                 } else {

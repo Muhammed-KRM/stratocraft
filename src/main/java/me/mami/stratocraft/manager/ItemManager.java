@@ -667,8 +667,10 @@ public class ItemManager {
     
     private void registerArmorRecipe(int level, ArmorType type, Material baseMaterial) {
         ItemStack armor = createLeveledArmor(level, type);
+        // BUG FIX: Türkçe karakter sorunu - Locale.ENGLISH kullan
+        String keyName = "level" + level + "_" + type.name().toLowerCase(java.util.Locale.ENGLISH);
         ShapedRecipe recipe = new ShapedRecipe(
-            new NamespacedKey(Main.getInstance(), "level" + level + "_" + type.name().toLowerCase()),
+            new NamespacedKey(Main.getInstance(), keyName),
             armor
         );
         
