@@ -28,6 +28,358 @@ Yüklü Slot Seç + Sol Tık = Ateşleme
 
 ---
 
+## 📜 STRATOCRAFT BATARYA ANAYASASI (SON HALİ)
+
+**Tüm bataryalar bu kurallara göre tasarlanır ve çalışır!**
+
+---
+
+### 📋 KURALLAR ÖZETİ (Kısa Versiyon)
+
+**Kural 1 (Tek Kimlik)**: Bir blok türü (örneğin Demir Bloğu) sadece TEK BİR batarya yapımında kullanılabilir.
+
+**Kural 2 (Rütbe/Seviye Sistemi)**: Seviye, bir bataryanın ne kadar güçlü/karmaşık olduğunu gösteren sabit bir sayıdır.
+- Örnek: 3 blokluk basit bir batarya "Seviye 1"dir.
+- Örnek: 9 blokluk ve yapımı zor malzemeden (Netherite vb.) yapılan batarya "Seviye 5"tir.
+
+**Kural 3 (Yakıt Etkisi)**: Bataryayı çalıştıran yakıt (Demir/Elmas), o bataryanın etkisini (süresini/hasarını) geçici olarak artırır.
+
+**Kural 4 (Hibrit Yapılar)**: Farklı blokların karışımı (Örn: Magma+Obsidyen) tamamen yeni ve benzersiz bir batarya sayılır.
+
+**Kural 5 (Benzersizlik)**: Hiçbir batarya, başka bir batarya ile aynı işlevi yapamaz.
+- ✅ **Doğru**: Biri baktığın yere yıldırım atar (Nişanlı), diğeri etrafta rastgele yıldırım yağdırır (Alan etkili).
+- ❌ **Yanlış**: İkisi de baktığın yere yıldırım atar ama biri daha güçlüdür. (BU YASAK)
+
+**Not**: Bataryalar 3 kategoride dir:
+- **Saldırı Bataryaları**: Hasar veren, blok yok eden
+- **Oluşturma Bataryaları**: Blok oluşturan, yapı yapan
+- **Destek Bataryaları**: Kendine ve klanına yardım eden, şifa hız gibi efekt veren
+
+---
+
+### 📋 KURALLAR ÖZETİ (Kısa Versiyon)
+
+**Kural 1 (Tek Kimlik)**: Bir blok türü (örneğin Demir Bloğu) sadece TEK BİR batarya yapımında kullanılabilir.
+
+**Kural 2 (Rütbe/Seviye Sistemi)**: Seviye, bir bataryanın ne kadar güçlü/karmaşık olduğunu gösteren sabit bir sayıdır.
+- Örnek: 3 blokluk basit bir batarya "Seviye 1"dir.
+- Örnek: 9 blokluk ve yapımı zor malzemeden (Netherite vb.) yapılan batarya "Seviye 5"tir.
+
+**Kural 3 (Yakıt Etkisi)**: Bataryayı çalıştıran yakıt (Demir/Elmas), o bataryanın etkisini (süresini/hasarını) geçici olarak artırır.
+
+**Kural 4 (Hibrit Yapılar)**: Farklı blokların karışımı (Örn: Magma+Obsidyen) tamamen yeni ve benzersiz bir batarya sayılır.
+
+**Kural 5 (Benzersizlik)**: Hiçbir batarya, başka bir batarya ile aynı işlevi yapamaz.
+- ✅ **Doğru**: Biri baktığın yere yıldırım atar (Nişanlı), diğeri etrafta rastgele yıldırım yağdırır (Alan etkili).
+- ❌ **Yanlış**: İkisi de baktığın yere yıldırım atar ama biri daha güçlüdür. (BU YASAK)
+
+**Not**: Bataryalar 3 kategoride dir:
+- **Saldırı Bataryaları**: Hasar veren, blok yok eden
+- **Oluşturma Bataryaları**: Blok oluşturan, yapı yapan
+- **Destek Bataryaları**: Kendine ve klanına yardım eden, şifa hız gibi efekt veren
+
+---
+
+### Kural 1: Tek Kimlik (Unique Block Identity)
+
+**Bir blok türü (örneğin Demir Bloğu) sadece TEK BİR batarya yapımında kullanılabilir.**
+
+**Örnek:**
+- ✅ **Doğru**: Demir Bloğu → Sadece "Yıldırım Asası" bataryasında kullanılır
+- ❌ **Yanlış**: Demir Bloğu → Hem "Yıldırım Asası" hem de "Zırh Artışı" bataryasında kullanılamaz
+
+**Sonuç**: Her blok türü için sadece bir batarya tipi olabilir. Bu, bataryaların birbirinden net bir şekilde ayrılmasını sağlar.
+
+---
+
+### Kural 2: Rütbe/Seviye Sistemi (Tier System)
+
+**Seviye, bir bataryanın ne kadar güçlü/karmaşık olduğunu gösteren sabit bir sayıdır.**
+
+**Seviye Belirleme:**
+- **Seviye 1**: 3 blok üst üste (basit, temel)
+- **Seviye 2**: 5 blok üst üste + yan blok (gelişmiş)
+- **Seviye 3**: 7 blok üst üste + yan blok (güçlü)
+- **Seviye 4**: 9 blok üst üste + yan blok (çok güçlü)
+- **Seviye 5**: 11 blok üst üste + altında Beacon + üstünde özel blok (efsanevi)
+
+**Örnekler:**
+- **3 blokluk basit bir batarya** → **Seviye 1**
+  - Örnek: Yıldırım Asası (3x Demir Bloğu) = Seviye 1
+  - Örnek: Cehennem Topu (3x Magma Bloğu) = Seviye 1
+
+- **9 blokluk ve yapımı zor malzemeden (Netherite vb.) yapılan batarya** → **Seviye 5**
+  - Örnek: Kıyamet Reaktörü (5x Obsidyen + Beacon) = Seviye 5 (karmaşık yapı)
+
+**Önemli**: Seviye yükseldikçe batarya daha güçlü olur, ama **işlevi değişmez**. Sadece güç/hasar/süre artar.
+
+**Gerçek Örnek:**
+```
+Seviye 1: Yıldırım Asası (3x Demir Bloğu) → Basit, temel
+Seviye 2: Çift Ateş Topu (5x Magma + Nethrack) → Gelişmiş
+Seviye 3: Meteor Yağmuru (7x Obsidyen + Magma) → Güçlü
+Seviye 4: Tesla Kulesi (7x Bakır + Redstone) → Çok güçlü
+Seviye 5: Kıyamet Reaktörü (5x Obsidyen + Beacon) → Efsanevi
+```
+
+---
+
+### Kural 3: Yakıt Etkisi (Fuel Effect)
+
+**Bataryayı çalıştıran yakıt (Demir/Elmas), o bataryanın etkisini (süresini/hasarını) geçici olarak artırır.**
+
+**Yakıt Hiyerarşisi:**
+- **Demir Külçe** → Standart güç (1x)
+- **Elmas** → 2.5x güç
+- **Kızıl Elmas** → 5x güç
+- **Karanlık Madde** → 10x güç
+
+**Etki:**
+- Hasar miktarı artar
+- Süre uzar (destek bataryaları için)
+- Mermi sayısı artar (saldırı bataryaları için)
+- Yapı boyutu artar (oluşturma bataryaları için)
+
+**Önemli**: Yakıt etkisi **geçicidir**. Batarya yüklendikten sonra yakıt tüketilir ve etki kaybolur. Yeni yakıt ile tekrar yüklenmelidir.
+
+**Örnekler:**
+- **Cehennem Topu (Demir)** → 3 ateş topu, 2 kalp hasar
+- **Cehennem Topu (Elmas)** → 10 ateş topu, 3 kalp hasar
+- **Cehennem Topu (Karanlık Madde)** → 50 ateş topu, 8 kalp hasar
+
+**Gerçek Örnek:**
+```
+Yıldırım Asası:
+- Demir yakıt → 1 yıldırım, 10 kalp hasar
+- Elmas yakıt → 1 yıldırım, 15 kalp hasar (geçici güç artışı)
+- Karanlık Madde → 1 yıldırım, 30 kalp hasar (geçici güç artışı)
+
+Tesla Kulesi:
+- Demir yakıt → 15 saniye süre
+- Elmas yakıt → 30 saniye süre (geçici süre artışı)
+- Karanlık Madde → 60 saniye süre (geçici süre artışı)
+```
+
+---
+
+### Kural 4: Hibrit Yapılar (Hybrid Structures)
+
+**Farklı blokların karışımı (Örn: Magma+Obsidyen) tamamen yeni ve benzersiz bir batarya sayılır.**
+
+**Örnekler:**
+- ✅ **Hibrit**: 5x Obsidyen + 1x Magma Block (yan blok) → "Meteor Yağmuru" (yeni batarya)
+- ✅ **Hibrit**: 7x Bakır Bloğu + 1x Redstone Block (yan blok) → "Tesla Kulesi" (yeni batarya)
+
+**Kural**: Aynı blok türü farklı kombinasyonlarda kullanılabilir, ama **her kombinasyon yeni bir batarya** sayılır.
+
+**Önemli**: Hibrit yapılar, farklı elementlerin birleşimiyle yeni güçler yaratır.
+
+**Gerçek Örnek:**
+```
+✅ DOĞRU HİBRİT YAPILAR:
+- 3x Magma Bloğu → "Cehennem Topu" (basit)
+- 5x Obsidyen + 1x Magma Bloğu (yan) → "Meteor Yağmuru" (hibrit, yeni batarya!)
+- 7x Bakır Bloğu + 1x Redstone Bloğu (yan) → "Tesla Kulesi" (hibrit, yeni batarya!)
+
+❌ YANLIŞ:
+- 3x Magma Bloğu → "Cehennem Topu"
+- 5x Magma Bloğu → "Güçlü Cehennem Topu" (Aynı blok, sadece sayı farkı = YASAK!)
+  → Doğrusu: 5x Magma Bloğu + yan blok ekle = Hibrit yapı (yeni batarya)
+```
+
+---
+
+### Kural 5: Benzersizlik (Uniqueness)
+
+**Hiçbir batarya, başka bir batarya ile aynı işlevi yapamaz.**
+
+**Doğru Örnekler:**
+- ✅ **Yıldırım Asası**: Baktığın tek bir noktaya yıldırım düşürür (Nişanlı)
+- ✅ **Tesla Kulesi**: Etraftaki düşmanlara 30sn boyunca elektrik verir (Alan etkili)
+- ✅ **Cehennem Topu**: Dümdüz giden bir ateş topu fırlatır (Atış)
+- ✅ **Kıyamet Reaktörü**: Gökyüzünden meteor yağdırır (Felaket)
+
+**Yanlış Örnekler:**
+- ❌ **Yıldırım Asası**: Baktığın yere yıldırım atar
+- ❌ **Güçlü Yıldırım Asası**: Baktığın yere yıldırım atar (ama daha güçlü) → **YASAK!**
+
+**Sonuç**: Her batarya **benzersiz bir işlev** yapmalı. Güç farkı seviye sistemi ile sağlanır, işlev farkı ile değil.
+
+**Gerçek Örnekler:**
+
+**✅ DOĞRU - Farklı İşlevler:**
+```
+1. Yıldırım Asası (3x Demir Bloğu)
+   → İşlev: Baktığın yere yıldırım atar (Nişanlı)
+   
+2. Tesla Kulesi (7x Bakır Bloğu + Redstone)
+   → İşlev: Etrafta rastgele yıldırım yağdırır (Alan etkili)
+   
+✅ İKİSİ DE FARKLI İŞLEV YAPIYOR → İZİN VERİLİR!
+```
+
+**❌ YANLIŞ - Aynı İşlev:**
+```
+1. Yıldırım Asası (3x Demir Bloğu)
+   → İşlev: Baktığın yere yıldırım atar
+   
+2. Güçlü Yıldırım Asası (5x Demir Bloğu)
+   → İşlev: Baktığın yere yıldırım atar (ama daha güçlü)
+   
+❌ İKİSİ DE AYNI İŞLEVİ YAPIYOR → YASAK!
+```
+
+**✅ DOĞRU - Ateş Örnekleri:**
+```
+1. Cehennem Topu (3x Magma Bloğu)
+   → İşlev: Dümdüz giden bir ateş topu fırlatır (Atış)
+   
+2. Kıyamet Reaktörü (5x Obsidyen + Beacon)
+   → İşlev: Gökyüzünden meteor yağdırır (Felaket)
+   
+✅ İKİSİ DE FARKLI İŞLEV YAPIYOR → İZİN VERİLİR!
+   (Ateş topundan tamamen farklı - gökyüzünden düşen meteor)
+```
+
+**Kullanıcının Verdiği Örnekler:**
+
+**✅ DOĞRU ÖRNEKLER:**
+- **Yıldırım Asası**: Biri baktığın yere yıldırım atar (Nişanlı)
+- **Tesla Kulesi**: Diğeri etrafta rastgele yıldırım yağdırır (Alan etkili)
+
+**❌ YANLIŞ ÖRNEK:**
+- **Yıldırım Asası**: Baktığın yere yıldırım atar
+- **Güçlü Yıldırım Asası**: Baktığın yere yıldırım atar (ama daha güçlü) → **BU YASAK!**
+
+---
+
+### 🔋 Örnek Tasarımlar (Kurallara Uygun)
+
+Bu tasarımlar, **Stratocraft Batarya Anayasası** kurallarına göre hazırlanmıştır:
+
+#### 1. Yıldırım Asası (Lightning Staff)
+
+**Seviye**: 1  
+**Blok Yapısı**: 3x **Demir Bloğu** (üst üste)  
+**İşlevi**: Manuel nişanlı yıldırım
+
+**Açıklama**:
+- Oyuncunun baktığı **tek bir noktaya** yıldırım düşürür
+- RayTrace ile hedef belirlenir
+- Tek vuruş, güçlü hasar
+- **Benzersizlik**: Nişanlı yıldırım (Tesla Kulesi'nden farklı - o otomatik alan etkili)
+
+**Kullanım**:
+```
+1. 3 Demir Bloğu üst üste diz
+2. Elinde yakıt al (Demir/Elmas)
+3. Shift + Sağ Tık (en üst bloğa)
+4. Slot seç + Sol Tık = Yıldırım düşer!
+```
+
+---
+
+#### 2. Tesla Kulesi (Tesla Tower)
+
+**Seviye**: 4  
+**Blok Yapısı**: 7x **Bakır Bloğu** (üst üste) + **Redstone Bloğu** (yan blok)  
+**İşlevi**: Otomatik alan etkili elektrik
+
+**Açıklama**:
+- Oyuncunun etrafındaki **düşmanlara otomatik** elektrik verir
+- 30 saniye süre
+- Sürekli hasar (her 2 saniyede bir)
+- **Benzersizlik**: Otomatik alan etkili (Yıldırım Asası'ndan farklı - o manuel nişanlı)
+
+**Kullanım**:
+```
+1. 7 Bakır Bloğu üst üste diz
+2. Yanına Redstone Bloğu koy
+3. Elinde yakıt al
+4. Shift + Sağ Tık
+5. Slot seç + Sol Tık = 30 sn otomatik elektrik!
+```
+
+---
+
+#### 3. Cehennem Topu (Hellfire Ball)
+
+**Seviye**: 1  
+**Blok Yapısı**: 3x **Magma Bloğu** (üst üste)  
+**İşlevi**: Düz atış ateş topu
+
+**Açıklama**:
+- Dümdüz giden bir **ateş topu** fırlatır
+- Oyuncunun baktığı yöne doğru uçar
+- Patlama hasarı verir
+- **Benzersizlik**: Düz atış (Kıyamet Reaktörü'nden farklı - o gökyüzünden meteor yağdırır)
+
+**Kullanım**:
+```
+1. 3 Magma Bloğu üst üste diz
+2. Elinde yakıt al
+3. Shift + Sağ Tık
+4. Slot seç + Sol Tık = Ateş topu fırlat!
+```
+
+---
+
+#### 4. Kıyamet Reaktörü (Apocalypse Reactor)
+
+**Seviye**: 5  
+**Blok Yapısı**: 5x **Obsidyen** (üst üste) + **Beacon** (yan blok)  
+**İşlevi**: Gökyüzünden meteor yağdırma
+
+**Açıklama**:
+- **Gökyüzünden meteor** yağdırır
+- Hedef noktanın üzerinden meteor düşer
+- Çoklu meteor (yakıt ile artar)
+- Blok kırar (savaşta olan klan alanlarında)
+- **Benzersizlik**: Gökyüzünden düşen meteor (Cehennem Topu'ndan tamamen farklı - o düz atış)
+
+**Kullanım**:
+```
+1. 5 Obsidyen üst üste diz
+2. Yanına Beacon koy
+3. Elinde yakıt al (Karanlık Madde önerilir)
+4. Shift + Sağ Tık
+5. Slot seç + Sol Tık = Meteor yağmuru!
+```
+
+---
+
+### 📊 Örnek Karşılaştırması
+
+**Aynı Element, Farklı İşlevler**:
+
+| Batarya | Blok | İşlev | Benzersizlik |
+|---------|------|-------|--------------|
+| **Yıldırım Asası** | 3x Demir | Manuel nişanlı tek nokta | Nişanlı |
+| **Tesla Kulesi** | 7x Bakır | Otomatik alan etkili | Otomatik |
+| **Cehennem Topu** | 3x Magma | Düz atış ateş topu | Atış |
+| **Kıyamet Reaktörü** | 5x Obsidyen | Gökyüzünden meteor | Felaket |
+
+**Önemli**: Her batarya **farklı bir işlev** yapar. Güç farkı seviye sistemi ile sağlanır!
+
+---
+
+### Kategori Sistemi
+
+**Bataryalar 3 kategoride toplanır:**
+
+1. **⚔️ Saldırı Bataryaları**: Hasar veren, blok yok eden, düşman öldüren
+2. **🏗️ Oluşturma Bataryaları**: Blok oluşturan, yapı yapan, engel kuran
+3. **💚 Destek Bataryaları**: Kendine ve klanına yardım eden, şifa/hız gibi efekt veren
+
+**Her kategori kendi kurallarına göre çalışır:**
+- **Saldırı**: Oyuncunun baktığı yöne ateşlenir (RayTrace)
+- **Oluşturma**: Sadece savaşta olan klan alanlarında çalışır
+- **Destek**: Kendine + yakındaki klan üyelerine efekt verir
+
+---
+
+---
+
 ## 🔋 YÜKLEME SİSTEMİ
 
 ### Adım 1: Batarya Yapısını Kur
@@ -317,37 +669,44 @@ Efsanevi (Karanlık Madde):
 
 Tüm saldırı bataryaları **oyuncunun baktığı yöne** ateşlenir (RayTrace).
 
-#### Seviye 1 - Temel Saldırı (5 Batarya)
+**📋 KURALLARA UYUM**: Her batarya benzersiz blok türü ve benzersiz işlev kullanır.
 
-**1. Ateş Topu Bataryası** (`attack_fireball_l1`)
-- **Blok**: 3x Magma Block (üst üste)
-- **Menzil**: 8 blok
-- **Hasar**: 2 kalp
-- **Etki**: Ateş topu atar, yanma verir
+#### Seviye 1 - Temel Saldırı (3 Blok, 5 Batarya)
 
-**2. Yıldırım Bataryası** (`attack_lightning_l1`)
-- **Blok**: 3x Iron Block (üst üste)
+**1. Yıldırım Asası** (`ATTACK_LIGHTNING_STAFF_L1`)
+- **Blok**: 3x **IRON_BLOCK** (üst üste)
 - **Menzil**: 8 blok
 - **Hasar**: 5 kalp
-- **Etki**: Yıldırım düşürür
+- **İşlev**: Manuel nişanlı tek nokta yıldırım
+- **Benzersizlik**: Nişanlı (Tesla Kulesi'nden farklı - o otomatik alan)
 
-**3. Buz Topu Bataryası** (`attack_ice_ball_l1`)
-- **Blok**: 3x Packed Ice (üst üste)
+**2. Cehennem Topu** (`ATTACK_HELLFIRE_BALL_L1`)
+- **Blok**: 3x **MAGMA_BLOCK** (üst üste)
 - **Menzil**: 8 blok
 - **Hasar**: 2 kalp
-- **Etki**: Buz topu atar, dondurma verir
+- **İşlev**: Düz atış ateş topu
+- **Benzersizlik**: Düz atış (Meteor Yağmuru'ndan farklı - o gökyüzünden düşer)
 
-**4. Zehir Oku Bataryası** (`attack_poison_arrow_l1`)
-- **Blok**: 3x Emerald Block (üst üste)
+**3. Buz Topu** (`ATTACK_ICE_BALL_L1`)
+- **Blok**: 3x **PACKED_ICE** (üst üste)
 - **Menzil**: 8 blok
 - **Hasar**: 2 kalp
-- **Etki**: Zehir oku atar, 3 saniye zehir
+- **İşlev**: Düz atış buz topu (yavaşlatma)
+- **Benzersizlik**: Düz atış buz (Buz Fırtınası'ndan farklı - o alan yağmuru)
 
-**5. Şok Bataryası** (`attack_shock_l1`)
-- **Blok**: 3x Redstone Block (üst üste)
+**4. Zehir Oku** (`ATTACK_POISON_ARROW_L1`)
+- **Blok**: 3x **EMERALD_BLOCK** (üst üste)
+- **Menzil**: 8 blok
+- **Hasar**: 2 kalp
+- **İşlev**: Zehirli ok atışı
+- **Benzersizlik**: Ok atışı (Asit Yağmuru'ndan farklı - o alan yağmuru)
+
+**5. Şok Dalgası** (`ATTACK_SHOCK_WAVE_L1`)
+- **Blok**: 3x **REDSTONE_BLOCK** (üst üste)
 - **Menzil**: 8 blok
 - **Hasar**: 3 kalp
-- **Etki**: Elektrik şoku verir
+- **İşlev**: Elektrik şok dalgası (dairesel)
+- **Benzersizlik**: Dairesel şok (Elektrik Ağı'ndan farklı - o ağ şekli)
 
 #### Seviye 2 - Gelişmiş Saldırı (5 Batarya)
 
@@ -421,17 +780,19 @@ Tüm saldırı bataryaları **oyuncunun baktığı yöne** ateşlenir (RayTrace)
 - **Hasar**: Sürekli (10 saniye)
 - **Etki**: 10 saniye sürekli yanma, blok kırar
 
-**2. Gök Gürültüsü Bataryası** (`attack_thunder_l4`)
-- **Blok**: 9x Iron Block + Beacon (yan blok)
+**2. Tesla Kulesi** (`ATTACK_TESLA_TOWER_L4`)
+- **Blok**: 9x **COPPER_BLOCK** + **REDSTONE_BLOCK** (yan blok)
 - **Menzil**: 20 blok
-- **Hasar**: 20 kalp
-- **Etki**: Dev yıldırım + patlama
+- **Hasar**: 5 kalp (30 saniye, her 2 saniyede bir)
+- **İşlev**: Otomatik alan etkili elektrik (30 saniye)
+- **Benzersizlik**: Otomatik alan (Yıldırım Asası'ndan farklı - o manuel nişanlı)
 
-**3. Buz Çağı Bataryası** (`attack_ice_age_l4`)
-- **Blok**: 9x Packed Ice + Frosted Ice (yan blok)
+**3. Buz Kalesi** (`ATTACK_ICE_FORTRESS_L4`)
+- **Blok**: 9x **PACKED_ICE** + **SNOW_BLOCK** (yan blok)
 - **Menzil**: 20 blok
-- **Hasar**: 10 kalp (10 saniye)
-- **Etki**: 10 saniye sürekli dondurma
+- **Hasar**: 10 kalp
+- **İşlev**: Buz duvarları oluşturma (savunma)
+- **Benzersizlik**: Buz yapı (Buz Çağı'ndan farklı - o dondurma)
 
 **4. Ölüm Bulutu Bataryası** (`attack_death_cloud_l4`)
 - **Blok**: 9x Emerald Block + Wither Skeleton Skull (yan blok)
@@ -471,11 +832,12 @@ Tüm saldırı bataryaları **oyuncunun baktığı yöne** ateşlenir (RayTrace)
 - **Hasar**: 500 kalp (30x30 alan)
 - **Etki**: 30x30 alan yok eder, blok kırar
 
-**5. Kıyamet Bataryası** (`attack_apocalypse_l5`)
-- **Blok**: 11x Bedrock + End Crystal (üstte)
+**5. Kıyamet Reaktörü** (`ATTACK_APOCALYPSE_REACTOR_L5`)
+- **Blok**: 11x **BEDROCK** + **END_CRYSTAL** (üstte) + **BEACON** (altta)
 - **Menzil**: 40 blok
 - **Hasar**: 600 kalp (40x40 alan)
-- **Etki**: Tüm elementlerin kombinasyonu (meteor, fırtına, ölüm bulutu, buz çağı)
+- **İşlev**: Tüm elementlerin kombinasyonu (meteor + yıldırım + ölüm + buz)
+- **Benzersizlik**: Kombinasyon felaket (benzersiz)
 
 ---
 
@@ -643,75 +1005,112 @@ Tüm destek bataryaları **kendine + yakındaki klan üyelerine** efekt verir.
 - **Yarıçap**: 10 blok
 - **Etki**: Strength I (10 saniye)
 
-**4. Zırh Artışı Bataryası** (`support_armor_l1`)
-- **Blok**: 3x Iron Block (üst üste)
+**4. Zırh Artışı** (`SUPPORT_ARMOR_L1`)
+- **Blok**: 3x **IRON_BARS** (üst üste)
 - **Yarıçap**: 10 blok
-- **Etki**: Damage Resistance I (10 saniye)
+- **İşlev**: Damage Resistance II (10 saniye)
+- **Benzersizlik**: Zırh artışı
 
 **5. Yenilenme Bataryası** (`support_regeneration_l1`)
 - **Blok**: 3x Lapis Block (üst üste)
 - **Yarıçap**: 10 blok
 - **Etki**: Regeneration I (10 saniye)
 
-#### Seviye 2 - Gelişmiş Destek (5 Batarya)
+#### Seviye 2 - Kombinasyonlar (5 Blok + Yan Blok, 5 Batarya)
 
-**1. Can Yenileme Bataryası (Gelişmiş)** (`support_heal_l2`)
-- **Blok**: 5x Gold Block + Gold Ingot (yan blok)
+**1. Can + Hız Kombinasyonu** (`SUPPORT_HEAL_SPEED_COMBO_L2`)
+- **Blok**: 5x **GOLD_BLOCK** + **EMERALD** (yan blok)
 - **Yarıçap**: 15 blok
-- **Etki**: 10 kalp can verir
+- **İşlev**: 5 kalp can + Speed II (15 saniye) - İKİ EFEKT BİRLİKTE
+- **Benzersizlik**: Kombinasyon (Can Yenileme'den farklı)
 
-**2. Hız Artışı Bataryası (Gelişmiş)** (`support_speed_l2`)
-- **Blok**: 5x Emerald Block + Emerald (yan blok)
+**2. Hasar + Zırh Kombinasyonu** (`SUPPORT_DAMAGE_ARMOR_COMBO_L2`)
+- **Blok**: 5x **DIAMOND_BLOCK** + **IRON_INGOT** (yan blok)
 - **Yarıçap**: 15 blok
-- **Etki**: Speed III (15 saniye)
+- **İşlev**: Strength II + Damage Resistance II (15 saniye) - İKİ EFEKT BİRLİKTE
+- **Benzersizlik**: Kombinasyon (Hasar Artışı'ndan farklı)
 
-**3. Hasar Artışı Bataryası (Gelişmiş)** (`support_damage_l2`)
-- **Blok**: 5x Diamond Block + Diamond (yan blok)
+**3. Yenilenme + Can Kombinasyonu** (`SUPPORT_REGENERATION_HEAL_COMBO_L2`)
+- **Blok**: 5x **LAPIS_BLOCK** + **GOLD_INGOT** (yan blok)
 - **Yarıçap**: 15 blok
-- **Etki**: Strength II (15 saniye)
+- **İşlev**: Regeneration II + 3 kalp can (15 saniye) - İKİ EFEKT BİRLİKTE
+- **Benzersizlik**: Kombinasyon (Yenilenme'den farklı)
 
-**4. Zırh Artışı Bataryası (Gelişmiş)** (`support_armor_l2`)
-- **Blok**: 5x Iron Block + Iron Ingot (yan blok)
+**4. Hız + Hasar Kombinasyonu** (`SUPPORT_SPEED_DAMAGE_COMBO_L2`)
+- **Blok**: 5x **EMERALD_BLOCK** + **DIAMOND** (yan blok)
 - **Yarıçap**: 15 blok
-- **Etki**: Damage Resistance II (15 saniye)
+- **İşlev**: Speed II + Strength II (15 saniye) - İKİ EFEKT BİRLİKTE
+- **Benzersizlik**: Kombinasyon (Hız Artışı'ndan farklı)
 
-**5. Yenilenme Bataryası (Gelişmiş)** (`support_regeneration_l2`)
-- **Blok**: 5x Lapis Block + Lapis Lazuli (yan blok)
+**5. Zırh + Yenilenme Kombinasyonu** (`SUPPORT_ARMOR_REGENERATION_COMBO_L2`)
+- **Blok**: 5x **IRON_BARS** + **LAPIS_LAZULI** (yan blok)
 - **Yarıçap**: 15 blok
-- **Etki**: Regeneration II (15 saniye)
+- **İşlev**: Damage Resistance II + Regeneration II (15 saniye) - İKİ EFEKT BİRLİKTE
+- **Benzersizlik**: Kombinasyon (Zırh Artışı'ndan farklı)
 
-#### Seviye 3 - Güçlü Destek (5 Batarya)
+#### Seviye 3 - Özel İşlevler (7 Blok + Yan Blok, 5 Batarya)
 
-**1. Can Yenileme Bataryası (Güçlü)** (`support_heal_l3`)
-- **Blok**: 7x Gold Block + Golden Apple (yan blok)
+**1. Absorption Kalkanı** (`SUPPORT_ABSORPTION_SHIELD_L3`)
+- **Blok**: 7x **GOLD_BLOCK** + **GOLDEN_APPLE** (yan blok)
 - **Yarıçap**: 20 blok
-- **Etki**: 20 kalp can verir
+- **İşlev**: 10 kalp absorption (20 saniye) - SADECE ABSORPTION
+- **Benzersizlik**: Absorption (Can Yenileme'den farklı)
 
-**2. Hız Artışı Bataryası (Güçlü)** (`support_speed_l3`)
-- **Blok**: 7x Emerald Block + Emerald Block (yan blok)
+**2. Uçma Yeteneği** (`SUPPORT_FLIGHT_L3`)
+- **Blok**: 7x **EMERALD_BLOCK** + **FEATHER** (yan blok)
 - **Yarıçap**: 20 blok
-- **Etki**: Speed IV (20 saniye)
+- **İşlev**: Uçma yeteneği (10 saniye) - TAMAMEN FARKLI İŞLEV
+- **Benzersizlik**: Uçma (Hız Artışı'ndan farklı)
 
-**3. Hasar Artışı Bataryası (Güçlü)** (`support_damage_l3`)
-- **Blok**: 7x Diamond Block + Diamond Block (yan blok)
+**3. Kritik Vuruş Artışı** (`SUPPORT_CRITICAL_STRIKE_L3`)
+- **Blok**: 7x **DIAMOND_BLOCK** + **DIAMOND_SWORD** (yan blok)
 - **Yarıçap**: 20 blok
-- **Etki**: Strength III (20 saniye)
+- **İşlev**: Kritik vuruş şansı %50 artışı (20 saniye) - FARKLI İŞLEV
+- **Benzersizlik**: Kritik vuruş (Hasar Artışı'ndan farklı)
 
-**4. Zırh Artışı Bataryası (Güçlü)** (`support_armor_l3`)
-- **Blok**: 7x Iron Block + Iron Block (yan blok)
+**4. Yansıtma Kalkanı** (`SUPPORT_REFLECTION_SHIELD_L3`)
+- **Blok**: 7x **IRON_BARS** + **SHIELD** (yan blok)
 - **Yarıçap**: 20 blok
-- **Etki**: Damage Resistance III (20 saniye)
+- **İşlev**: Gelen hasarın %30'unu yansıtma (20 saniye) - FARKLI İŞLEV
+- **Benzersizlik**: Yansıtma (Zırh Artışı'ndan farklı)
 
-**5. Yenilenme Bataryası (Güçlü)** (`support_regeneration_l3`)
-- **Blok**: 7x Lapis Block + Lapis Block (yan blok)
+**5. Can Çalma** (`SUPPORT_LIFE_STEAL_L3`)
+- **Blok**: 7x **LAPIS_BLOCK** + **ROTTEN_FLESH** (yan blok)
 - **Yarıçap**: 20 blok
-- **Etki**: Regeneration III (20 saniye)
+- **İşlev**: Vurduğun hasarın %20'si can olarak geri gelir (20 saniye) - FARKLI İŞLEV
+- **Benzersizlik**: Can çalma (Yenilenme'den farklı)
 
-#### Seviye 4 - Çok Güçlü Destek (5 Batarya)
+#### Seviye 4 - Güçlü Özel İşlevler (9 Blok + Yan Blok, 5 Batarya)
 
-**1. Can Yenileme Bataryası (Çok Güçlü)** (`support_heal_l4`)
-- **Blok**: 9x Gold Block + Enchanted Golden Apple (yan blok)
+**1. Tam Can + Absorption** (`SUPPORT_FULL_HEAL_ABSORPTION_L4`)
+- **Blok**: 9x **GOLD_BLOCK** + **ENCHANTED_GOLDEN_APPLE** (yan blok)
 - **Yarıçap**: 25 blok
+- **İşlev**: Tam can + 20 kalp absorption - İKİ EFEKT BİRLİKTE
+- **Benzersizlik**: Tam can + absorption (Absorption Kalkanı'ndan farklı)
+
+**2. Zaman Yavaşlatma** (`SUPPORT_TIME_SLOW_L4`)
+- **Blok**: 9x **EMERALD_BLOCK** + **CLOCK** (yan blok)
+- **Yarıçap**: 25 blok
+- **İşlev**: Etraftaki düşmanları yavaşlatma (Slow V) (30 saniye) - FARKLI İŞLEV
+- **Benzersizlik**: Zaman yavaşlatma (Uçma'dan farklı)
+
+**3. Yıldırım Vuruşu** (`SUPPORT_LIGHTNING_STRIKE_L4`)
+- **Blok**: 9x **DIAMOND_BLOCK** + **LIGHTNING_ROD** (yan blok)
+- **Yarıçap**: 25 blok
+- **İşlev**: Her vuruşta yıldırım düşer (30 saniye) - FARKLI İŞLEV
+- **Benzersizlik**: Yıldırım vuruşu (Kritik Vuruş'tan farklı)
+
+**4. Görünmezlik Kalkanı** (`SUPPORT_INVISIBILITY_SHIELD_L4`)
+- **Blok**: 9x **IRON_BARS** + **GLASS_PANE** (yan blok)
+- **Yarıçap**: 25 blok
+- **İşlev**: Invisibility + Damage Resistance III (30 saniye) - İKİ EFEKT BİRLİKTE
+- **Benzersizlik**: Görünmezlik (Yansıtma Kalkanı'ndan farklı)
+
+**5. Ölümsüzlük Anı** (`SUPPORT_IMMORTALITY_MOMENT_L4`)
+- **Blok**: 9x **LAPIS_BLOCK** + **TOTEM_OF_UNDYING** (yan blok)
+- **Yarıçap**: 25 blok
+- **İşlev**: 3 saniye ölümsüzlük (sadece bir kez) - FARKLI İŞLEV
+- **Benzersizlik**: Ölümsüzlük (Can Çalma'dan farklı)
 - **Etki**: 30 kalp can verir
 
 **2. Hız Artışı Bataryası (Çok Güçlü)** (`support_speed_l4`)
@@ -734,32 +1133,37 @@ Tüm destek bataryaları **kendine + yakındaki klan üyelerine** efekt verir.
 - **Yarıçap**: 25 blok
 - **Etki**: Regeneration IV (30 saniye)
 
-#### Seviye 5 - Efsanevi Destek (5 Batarya)
+#### Seviye 5 - Efsanevi İşlevler (11 Blok + Özel Bloklar, 5 Batarya)
 
-**1. Can Yenileme Bataryası (Efsanevi)** (`support_heal_l5`)
-- **Blok**: 11x Bedrock + Nether Star (üstte)
+**1. Efsanevi Can Yenileme** (`SUPPORT_LEGENDARY_HEAL_L5`)
+- **Blok**: 11x **BEDROCK** + **NETHER_STAR** (üstte) + **BEACON** (altta)
 - **Yarıçap**: 30 blok
-- **Etki**: Tam can + 50 kalp ekstra (absorption)
+- **İşlev**: Tam can + 50 kalp absorption + Regeneration V (60 saniye) - ÜÇ EFEKT BİRLİKTE
+- **Benzersizlik**: Üçlü kombinasyon (benzersiz)
 
-**2. Hız Artışı Bataryası (Efsanevi)** (`support_speed_l5`)
-- **Blok**: 11x Bedrock + Nether Star (üstte)
+**2. Zaman Durdurma** (`SUPPORT_TIME_STOP_L5`)
+- **Blok**: 11x **BEDROCK** + **NETHER_STAR** (üstte) + **BEACON** (altta)
 - **Yarıçap**: 30 blok
-- **Etki**: Speed VI (60 saniye)
+- **İşlev**: Etraftaki tüm düşmanları dondurma (AI kapatma) (10 saniye) - FARKLI İŞLEV
+- **Benzersizlik**: Zaman durdurma (Zaman Yavaşlatma'dan farklı)
 
-**3. Hasar Artışı Bataryası (Efsanevi)** (`support_damage_l5`)
-- **Blok**: 11x Bedrock + Nether Star (üstte)
+**3. Ölüm Dokunuşu** (`SUPPORT_DEATH_TOUCH_L5`)
+- **Blok**: 11x **BEDROCK** + **NETHER_STAR** (üstte) + **BEACON** (altta)
 - **Yarıçap**: 30 blok
-- **Etki**: Strength V (60 saniye)
+- **İşlev**: Her vuruşta %25 can hasarı (60 saniye) - FARKLI İŞLEV
+- **Benzersizlik**: Yüzde hasar (Yıldırım Vuruşu'ndan farklı)
 
-**4. Zırh Artışı Bataryası (Efsanevi)** (`support_armor_l5`)
-- **Blok**: 11x Bedrock + Nether Star (üstte)
+**4. Faz Değiştirme** (`SUPPORT_PHASE_SHIFT_L5`)
+- **Blok**: 11x **BEDROCK** + **NETHER_STAR** (üstte) + **BEACON** (altta)
 - **Yarıçap**: 30 blok
-- **Etki**: Damage Resistance V (60 saniye)
+- **İşlev**: 5 saniye boyunca tüm hasarlardan geçirmez (60 saniye cooldown) - FARKLI İŞLEV
+- **Benzersizlik**: Faz değiştirme (Görünmezlik Kalkanı'ndan farklı)
 
-**5. Yenilenme Bataryası (Efsanevi)** (`support_regeneration_l5`)
-- **Blok**: 11x Bedrock + Nether Star (üstte)
+**5. Yeniden Doğuş** (`SUPPORT_REBIRTH_L5`)
+- **Blok**: 11x **BEDROCK** + **NETHER_STAR** (üstte) + **BEACON** (altta)
 - **Yarıçap**: 30 blok
-- **Etki**: Regeneration V (60 saniye)
+- **İşlev**: Öldüğünde otomatik canlanma (1 kez, 60 saniye içinde) - FARKLI İŞLEV
+- **Benzersizlik**: Yeniden doğuş (Ölümsüzlük Anı'ndan farklı)
 
 ---
 
@@ -791,3 +1195,15 @@ Tüm destek bataryaları **kendine + yakındaki klan üyelerine** efekt verir.
 ---
 
 **🎮 Bataryalarla savaşı domine et, fiziksel büyülerle düşmanları yok et!**
+
+---
+
+## 📚 EK KAYNAKLAR
+
+Detaylı tasarım raporu ve kod mantığı için `BATARYA_SISTEMI_TASARIM_RAPORU.md` dosyasına bakın.
+
+Bu rapor şunları içerir:
+- Her kategori için 5 seviye örnek batarya tasarımları
+- Kod mantığı ve yapısı
+- Mevcut sistemdeki sorunlar ve çözümler
+- Önerilen kod yapısı

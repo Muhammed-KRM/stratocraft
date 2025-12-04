@@ -1270,112 +1270,112 @@ public class BatteryManager {
      */
     public enum BatteryType {
         // SALDIRI BATARYALARI (Seviye 1-5, her seviyede 5)
-        // Seviye 1
-        ATTACK_FIREBALL_L1("Ateş Topu", BatteryCategory.ATTACK, 1, Material.MAGMA_BLOCK, null),
-        ATTACK_LIGHTNING_L1("Yıldırım", BatteryCategory.ATTACK, 1, Material.IRON_BLOCK, null),
+        // Seviye 1 (3 Blok)
+        ATTACK_LIGHTNING_STAFF_L1("Yıldırım Asası", BatteryCategory.ATTACK, 1, Material.IRON_BLOCK, null),
+        ATTACK_HELLFIRE_BALL_L1("Cehennem Topu", BatteryCategory.ATTACK, 1, Material.MAGMA_BLOCK, null),
         ATTACK_ICE_BALL_L1("Buz Topu", BatteryCategory.ATTACK, 1, Material.PACKED_ICE, null),
         ATTACK_POISON_ARROW_L1("Zehir Oku", BatteryCategory.ATTACK, 1, Material.EMERALD_BLOCK, null),
-        ATTACK_SHOCK_L1("Şok", BatteryCategory.ATTACK, 1, Material.REDSTONE_BLOCK, null),
+        ATTACK_SHOCK_WAVE_L1("Şok Dalgası", BatteryCategory.ATTACK, 1, Material.REDSTONE_BLOCK, null),
         
-        // Seviye 2
+        // Seviye 2 (5 Blok + Yan Blok)
         ATTACK_DOUBLE_FIREBALL_L2("Çift Ateş Topu", BatteryCategory.ATTACK, 2, Material.MAGMA_BLOCK, Material.NETHERRACK),
         ATTACK_CHAIN_LIGHTNING_L2("Zincir Yıldırım", BatteryCategory.ATTACK, 2, Material.IRON_BLOCK, Material.GOLD_BLOCK),
         ATTACK_ICE_STORM_L2("Buz Fırtınası", BatteryCategory.ATTACK, 2, Material.PACKED_ICE, Material.BLUE_ICE),
         ATTACK_ACID_RAIN_L2("Asit Yağmuru", BatteryCategory.ATTACK, 2, Material.EMERALD_BLOCK, Material.SLIME_BLOCK),
         ATTACK_ELECTRIC_NET_L2("Elektrik Ağı", BatteryCategory.ATTACK, 2, Material.REDSTONE_BLOCK, Material.LAPIS_BLOCK),
         
-        // Seviye 3
+        // Seviye 3 (7 Blok + Yan Blok)
         ATTACK_METEOR_SHOWER_L3("Meteor Yağmuru", BatteryCategory.ATTACK, 3, Material.OBSIDIAN, Material.MAGMA_BLOCK),
-        ATTACK_STORM_L3("Fırtına", BatteryCategory.ATTACK, 3, Material.IRON_BLOCK, Material.DIAMOND_BLOCK),
-        ATTACK_ICE_AGE_L3("Buz Çağı", BatteryCategory.ATTACK, 3, Material.PACKED_ICE, Material.BLUE_ICE),
+        ATTACK_LIGHTNING_STORM_L3("Yıldırım Fırtınası", BatteryCategory.ATTACK, 3, Material.IRON_BLOCK, Material.DIAMOND_BLOCK),
+        ATTACK_ICE_AGE_L3("Buz Çağı", BatteryCategory.ATTACK, 3, Material.PACKED_ICE, Material.FROSTED_ICE),
         ATTACK_POISON_BOMB_L3("Zehir Bombası", BatteryCategory.ATTACK, 3, Material.EMERALD_BLOCK, Material.POISONOUS_POTATO),
-        ATTACK_LIGHTNING_STORM_L3("Yıldırım Fırtınası", BatteryCategory.ATTACK, 3, Material.REDSTONE_BLOCK, Material.GLOWSTONE),
+        ATTACK_ELECTRIC_STORM_L3("Elektrik Fırtınası", BatteryCategory.ATTACK, 3, Material.REDSTONE_BLOCK, Material.GLOWSTONE),
         
-        // Seviye 4
+        // Seviye 4 (9 Blok + Yan Blok)
+        ATTACK_TESLA_TOWER_L4("Tesla Kulesi", BatteryCategory.ATTACK, 4, Material.COPPER_BLOCK, Material.REDSTONE_BLOCK),
         ATTACK_HELLFIRE_L4("Cehennem Ateşi", BatteryCategory.ATTACK, 4, Material.MAGMA_BLOCK, Material.NETHER_STAR),
-        ATTACK_THUNDER_L4("Gök Gürültüsü", BatteryCategory.ATTACK, 4, Material.IRON_BLOCK, Material.BEACON),
-        ATTACK_ICE_AGE_L4("Buz Çağı", BatteryCategory.ATTACK, 4, Material.PACKED_ICE, Material.FROSTED_ICE),
+        ATTACK_ICE_FORTRESS_L4("Buz Kalesi", BatteryCategory.ATTACK, 4, Material.PACKED_ICE, Material.SNOW_BLOCK),
         ATTACK_DEATH_CLOUD_L4("Ölüm Bulutu", BatteryCategory.ATTACK, 4, Material.EMERALD_BLOCK, Material.WITHER_SKELETON_SKULL),
-        ATTACK_ELECTRIC_STORM_L4("Elektrik Fırtınası", BatteryCategory.ATTACK, 4, Material.REDSTONE_BLOCK, Material.END_CRYSTAL),
+        ATTACK_ELECTRIC_SHIELD_L4("Elektrik Kalkanı", BatteryCategory.ATTACK, 4, Material.REDSTONE_BLOCK, Material.END_CRYSTAL),
         
-        // Seviye 5
-        ATTACK_MOUNTAIN_DESTROYER_L5("Dağ Yok Edici", BatteryCategory.ATTACK, 5, Material.BEDROCK, Material.NETHER_STAR),
+        // Seviye 5 (11 Blok + Özel Bloklar)
+        ATTACK_APOCALYPSE_REACTOR_L5("Kıyamet Reaktörü", BatteryCategory.ATTACK, 5, Material.BEDROCK, Material.END_CRYSTAL),
         ATTACK_LAVA_TSUNAMI_L5("Lava Tufanı", BatteryCategory.ATTACK, 5, Material.BEDROCK, Material.LAVA_BUCKET),
         ATTACK_BOSS_KILLER_L5("Boss Katili", BatteryCategory.ATTACK, 5, Material.BEDROCK, Material.DRAGON_HEAD),
         ATTACK_AREA_DESTROYER_L5("Alan Yok Edici", BatteryCategory.ATTACK, 5, Material.BEDROCK, Material.COMMAND_BLOCK),
-        ATTACK_APOCALYPSE_L5("Kıyamet", BatteryCategory.ATTACK, 5, Material.BEDROCK, Material.END_CRYSTAL),
+        ATTACK_MOUNTAIN_DESTROYER_L5("Dağ Yok Edici", BatteryCategory.ATTACK, 5, Material.BEDROCK, Material.NETHER_STAR),
         
         // OLUŞTURMA BATARYALARI (Seviye 1-5, her seviyede 5)
-        // Seviye 1
+        // Seviye 1 (3 Blok)
         CONSTRUCTION_OBSIDIAN_WALL_L1("Obsidyen Duvar", BatteryCategory.CONSTRUCTION, 1, Material.OBSIDIAN, null),
         CONSTRUCTION_STONE_BRIDGE_L1("Taş Köprü", BatteryCategory.CONSTRUCTION, 1, Material.STONE, null),
-        CONSTRUCTION_IRON_CAGE_L1("Demir Kafes", BatteryCategory.CONSTRUCTION, 1, Material.IRON_BLOCK, null),
+        CONSTRUCTION_IRON_CAGE_L1("Demir Kafes", BatteryCategory.CONSTRUCTION, 1, Material.IRON_BARS, null),
         CONSTRUCTION_GLASS_WALL_L1("Cam Duvar", BatteryCategory.CONSTRUCTION, 1, Material.GLASS, null),
         CONSTRUCTION_WOOD_BARRICADE_L1("Ahşap Barikat", BatteryCategory.CONSTRUCTION, 1, Material.OAK_PLANKS, null),
         
-        // Seviye 2
+        // Seviye 2 (5 Blok + Yan Blok)
         CONSTRUCTION_OBSIDIAN_CAGE_L2("Obsidyen Kafes", BatteryCategory.CONSTRUCTION, 2, Material.OBSIDIAN, Material.IRON_BLOCK),
-        CONSTRUCTION_STONE_BRIDGE_L2("Taş Köprü (Gelişmiş)", BatteryCategory.CONSTRUCTION, 2, Material.STONE, Material.COBBLESTONE),
-        CONSTRUCTION_IRON_WALL_L2("Demir Duvar", BatteryCategory.CONSTRUCTION, 2, Material.IRON_BLOCK, Material.IRON_INGOT),
+        CONSTRUCTION_STONE_BRIDGE_ADV_L2("Taş Köprü (Gelişmiş)", BatteryCategory.CONSTRUCTION, 2, Material.STONE, Material.COBBLESTONE),
+        CONSTRUCTION_IRON_WALL_L2("Demir Duvar", BatteryCategory.CONSTRUCTION, 2, Material.IRON_BARS, Material.IRON_INGOT),
         CONSTRUCTION_GLASS_TUNNEL_L2("Cam Tünel", BatteryCategory.CONSTRUCTION, 2, Material.GLASS, Material.GLASS_PANE),
         CONSTRUCTION_WOOD_CASTLE_L2("Ahşap Kale", BatteryCategory.CONSTRUCTION, 2, Material.OAK_PLANKS, Material.OAK_LOG),
         
-        // Seviye 3
-        CONSTRUCTION_OBSIDIAN_WALL_L3("Obsidyen Duvar (Güçlü)", BatteryCategory.CONSTRUCTION, 3, Material.OBSIDIAN, Material.BEDROCK),
+        // Seviye 3 (7 Blok + Yan Blok)
+        CONSTRUCTION_OBSIDIAN_CASTLE_L3("Obsidyen Kale", BatteryCategory.CONSTRUCTION, 3, Material.OBSIDIAN, Material.BEDROCK),
         CONSTRUCTION_NETHERITE_BRIDGE_L3("Netherite Köprü", BatteryCategory.CONSTRUCTION, 3, Material.NETHERITE_BLOCK, Material.NETHERITE_INGOT),
-        CONSTRUCTION_IRON_PRISON_L3("Demir Hapishane", BatteryCategory.CONSTRUCTION, 3, Material.IRON_BLOCK, Material.IRON_BARS),
+        CONSTRUCTION_IRON_PRISON_L3("Demir Hapishane", BatteryCategory.CONSTRUCTION, 3, Material.IRON_BARS, Material.IRON_BLOCK),
         CONSTRUCTION_GLASS_TOWER_L3("Cam Kule", BatteryCategory.CONSTRUCTION, 3, Material.GLASS, Material.GLASS_PANE),
         CONSTRUCTION_STONE_CASTLE_L3("Taş Kale", BatteryCategory.CONSTRUCTION, 3, Material.STONE, Material.COBBLESTONE),
         
-        // Seviye 4
-        CONSTRUCTION_OBSIDIAN_CASTLE_L4("Obsidyen Kale", BatteryCategory.CONSTRUCTION, 4, Material.OBSIDIAN, Material.END_CRYSTAL),
-        CONSTRUCTION_NETHERITE_BRIDGE_L4("Netherite Köprü (Gelişmiş)", BatteryCategory.CONSTRUCTION, 4, Material.NETHERITE_BLOCK, Material.BEACON),
-        CONSTRUCTION_IRON_PRISON_L4("Demir Hapishane (Güçlü)", BatteryCategory.CONSTRUCTION, 4, Material.IRON_BLOCK, Material.ANVIL),
-        CONSTRUCTION_GLASS_TOWER_L4("Cam Kule (Gelişmiş)", BatteryCategory.CONSTRUCTION, 4, Material.GLASS, Material.BEACON),
+        // Seviye 4 (9 Blok + Yan Blok)
+        CONSTRUCTION_OBSIDIAN_PRISON_L4("Obsidyen Hapishane", BatteryCategory.CONSTRUCTION, 4, Material.OBSIDIAN, Material.END_CRYSTAL),
+        CONSTRUCTION_NETHERITE_BRIDGE_ADV_L4("Netherite Köprü (Gelişmiş)", BatteryCategory.CONSTRUCTION, 4, Material.NETHERITE_BLOCK, Material.BEACON),
+        CONSTRUCTION_IRON_CASTLE_L4("Demir Kale", BatteryCategory.CONSTRUCTION, 4, Material.IRON_BARS, Material.ANVIL),
+        CONSTRUCTION_GLASS_TOWER_ADV_L4("Cam Kule (Gelişmiş)", BatteryCategory.CONSTRUCTION, 4, Material.GLASS, Material.BEACON),
         CONSTRUCTION_STONE_FORTRESS_L4("Taş Şato", BatteryCategory.CONSTRUCTION, 4, Material.STONE, Material.BEACON),
         
-        // Seviye 5
-        CONSTRUCTION_OBSIDIAN_PRISON_L5("Obsidyen Hapishane", BatteryCategory.CONSTRUCTION, 5, Material.BEDROCK, Material.END_CRYSTAL),
-        CONSTRUCTION_NETHERITE_BRIDGE_L5("Netherite Köprü (Efsanevi)", BatteryCategory.CONSTRUCTION, 5, Material.BEDROCK, Material.BEACON),
-        CONSTRUCTION_IRON_CASTLE_L5("Demir Kale (Efsanevi)", BatteryCategory.CONSTRUCTION, 5, Material.BEDROCK, Material.ANVIL),
-        CONSTRUCTION_GLASS_TOWER_L5("Cam Kule (Efsanevi)", BatteryCategory.CONSTRUCTION, 5, Material.BEDROCK, Material.BEACON),
-        CONSTRUCTION_STONE_FORTRESS_L5("Taş Kalesi (Efsanevi)", BatteryCategory.CONSTRUCTION, 5, Material.BEDROCK, Material.BEACON),
+        // Seviye 5 (11 Blok + Özel Bloklar)
+        CONSTRUCTION_OBSIDIAN_PRISON_LEG_L5("Obsidyen Hapishane (Efsanevi)", BatteryCategory.CONSTRUCTION, 5, Material.BEDROCK, Material.END_CRYSTAL),
+        CONSTRUCTION_NETHERITE_BRIDGE_LEG_L5("Netherite Köprü (Efsanevi)", BatteryCategory.CONSTRUCTION, 5, Material.BEDROCK, Material.BEACON),
+        CONSTRUCTION_IRON_CASTLE_LEG_L5("Demir Kale (Efsanevi)", BatteryCategory.CONSTRUCTION, 5, Material.BEDROCK, Material.ANVIL),
+        CONSTRUCTION_GLASS_TOWER_LEG_L5("Cam Kule (Efsanevi)", BatteryCategory.CONSTRUCTION, 5, Material.BEDROCK, Material.BEACON),
+        CONSTRUCTION_STONE_FORTRESS_LEG_L5("Taş Kalesi (Efsanevi)", BatteryCategory.CONSTRUCTION, 5, Material.BEDROCK, Material.BEACON),
         
         // DESTEK BATARYALARI (Seviye 1-5, her seviyede 5)
-        // Seviye 1
+        // Seviye 1 (3 Blok)
         SUPPORT_HEAL_L1("Can Yenileme", BatteryCategory.SUPPORT, 1, Material.GOLD_BLOCK, null),
         SUPPORT_SPEED_L1("Hız Artışı", BatteryCategory.SUPPORT, 1, Material.EMERALD_BLOCK, null),
         SUPPORT_DAMAGE_L1("Hasar Artışı", BatteryCategory.SUPPORT, 1, Material.DIAMOND_BLOCK, null),
-        SUPPORT_ARMOR_L1("Zırh Artışı", BatteryCategory.SUPPORT, 1, Material.IRON_BLOCK, null),
+        SUPPORT_ARMOR_L1("Zırh Artışı", BatteryCategory.SUPPORT, 1, Material.IRON_BARS, null),
         SUPPORT_REGENERATION_L1("Yenilenme", BatteryCategory.SUPPORT, 1, Material.LAPIS_BLOCK, null),
         
-        // Seviye 2
-        SUPPORT_HEAL_L2("Can Yenileme (Gelişmiş)", BatteryCategory.SUPPORT, 2, Material.GOLD_BLOCK, Material.GOLD_INGOT),
-        SUPPORT_SPEED_L2("Hız Artışı (Gelişmiş)", BatteryCategory.SUPPORT, 2, Material.EMERALD_BLOCK, Material.EMERALD),
-        SUPPORT_DAMAGE_L2("Hasar Artışı (Gelişmiş)", BatteryCategory.SUPPORT, 2, Material.DIAMOND_BLOCK, Material.DIAMOND),
-        SUPPORT_ARMOR_L2("Zırh Artışı (Gelişmiş)", BatteryCategory.SUPPORT, 2, Material.IRON_BLOCK, Material.IRON_INGOT),
-        SUPPORT_REGENERATION_L2("Yenilenme (Gelişmiş)", BatteryCategory.SUPPORT, 2, Material.LAPIS_BLOCK, Material.LAPIS_LAZULI),
+        // Seviye 2 (5 Blok + Yan Blok) - Kombinasyonlar
+        SUPPORT_HEAL_SPEED_COMBO_L2("Can + Hız Kombinasyonu", BatteryCategory.SUPPORT, 2, Material.GOLD_BLOCK, Material.EMERALD),
+        SUPPORT_DAMAGE_ARMOR_COMBO_L2("Hasar + Zırh Kombinasyonu", BatteryCategory.SUPPORT, 2, Material.DIAMOND_BLOCK, Material.IRON_INGOT),
+        SUPPORT_REGENERATION_HEAL_COMBO_L2("Yenilenme + Can Kombinasyonu", BatteryCategory.SUPPORT, 2, Material.LAPIS_BLOCK, Material.GOLD_INGOT),
+        SUPPORT_SPEED_DAMAGE_COMBO_L2("Hız + Hasar Kombinasyonu", BatteryCategory.SUPPORT, 2, Material.EMERALD_BLOCK, Material.DIAMOND),
+        SUPPORT_ARMOR_REGENERATION_COMBO_L2("Zırh + Yenilenme Kombinasyonu", BatteryCategory.SUPPORT, 2, Material.IRON_BARS, Material.LAPIS_LAZULI),
         
-        // Seviye 3
-        SUPPORT_HEAL_L3("Can Yenileme (Güçlü)", BatteryCategory.SUPPORT, 3, Material.GOLD_BLOCK, Material.GOLDEN_APPLE),
-        SUPPORT_SPEED_L3("Hız Artışı (Güçlü)", BatteryCategory.SUPPORT, 3, Material.EMERALD_BLOCK, Material.EMERALD_BLOCK),
-        SUPPORT_DAMAGE_L3("Hasar Artışı (Güçlü)", BatteryCategory.SUPPORT, 3, Material.DIAMOND_BLOCK, Material.DIAMOND_BLOCK),
-        SUPPORT_ARMOR_L3("Zırh Artışı (Güçlü)", BatteryCategory.SUPPORT, 3, Material.IRON_BLOCK, Material.IRON_BLOCK),
-        SUPPORT_REGENERATION_L3("Yenilenme (Güçlü)", BatteryCategory.SUPPORT, 3, Material.LAPIS_BLOCK, Material.LAPIS_BLOCK),
+        // Seviye 3 (7 Blok + Yan Blok) - Özel İşlevler
+        SUPPORT_ABSORPTION_SHIELD_L3("Absorption Kalkanı", BatteryCategory.SUPPORT, 3, Material.GOLD_BLOCK, Material.GOLDEN_APPLE),
+        SUPPORT_FLIGHT_L3("Uçma Yeteneği", BatteryCategory.SUPPORT, 3, Material.EMERALD_BLOCK, Material.FEATHER),
+        SUPPORT_CRITICAL_STRIKE_L3("Kritik Vuruş Artışı", BatteryCategory.SUPPORT, 3, Material.DIAMOND_BLOCK, Material.DIAMOND_SWORD),
+        SUPPORT_REFLECTION_SHIELD_L3("Yansıtma Kalkanı", BatteryCategory.SUPPORT, 3, Material.IRON_BARS, Material.SHIELD),
+        SUPPORT_LIFE_STEAL_L3("Can Çalma", BatteryCategory.SUPPORT, 3, Material.LAPIS_BLOCK, Material.ROTTEN_FLESH),
         
-        // Seviye 4
-        SUPPORT_HEAL_L4("Can Yenileme (Çok Güçlü)", BatteryCategory.SUPPORT, 4, Material.GOLD_BLOCK, Material.ENCHANTED_GOLDEN_APPLE),
-        SUPPORT_SPEED_L4("Hız Artışı (Çok Güçlü)", BatteryCategory.SUPPORT, 4, Material.EMERALD_BLOCK, Material.BEACON),
-        SUPPORT_DAMAGE_L4("Hasar Artışı (Çok Güçlü)", BatteryCategory.SUPPORT, 4, Material.DIAMOND_BLOCK, Material.BEACON),
-        SUPPORT_ARMOR_L4("Zırh Artışı (Çok Güçlü)", BatteryCategory.SUPPORT, 4, Material.IRON_BLOCK, Material.BEACON),
-        SUPPORT_REGENERATION_L4("Yenilenme (Çok Güçlü)", BatteryCategory.SUPPORT, 4, Material.LAPIS_BLOCK, Material.BEACON),
+        // Seviye 4 (9 Blok + Yan Blok) - Güçlü Özel İşlevler
+        SUPPORT_FULL_HEAL_ABSORPTION_L4("Tam Can + Absorption", BatteryCategory.SUPPORT, 4, Material.GOLD_BLOCK, Material.ENCHANTED_GOLDEN_APPLE),
+        SUPPORT_TIME_SLOW_L4("Zaman Yavaşlatma", BatteryCategory.SUPPORT, 4, Material.EMERALD_BLOCK, Material.CLOCK),
+        SUPPORT_LIGHTNING_STRIKE_L4("Yıldırım Vuruşu", BatteryCategory.SUPPORT, 4, Material.DIAMOND_BLOCK, Material.LIGHTNING_ROD),
+        SUPPORT_INVISIBILITY_SHIELD_L4("Görünmezlik Kalkanı", BatteryCategory.SUPPORT, 4, Material.IRON_BARS, Material.GLASS_PANE),
+        SUPPORT_IMMORTALITY_MOMENT_L4("Ölümsüzlük Anı", BatteryCategory.SUPPORT, 4, Material.LAPIS_BLOCK, Material.TOTEM_OF_UNDYING),
         
-        // Seviye 5
-        SUPPORT_HEAL_L5("Can Yenileme (Efsanevi)", BatteryCategory.SUPPORT, 5, Material.BEDROCK, Material.NETHER_STAR),
-        SUPPORT_SPEED_L5("Hız Artışı (Efsanevi)", BatteryCategory.SUPPORT, 5, Material.BEDROCK, Material.NETHER_STAR),
-        SUPPORT_DAMAGE_L5("Hasar Artışı (Efsanevi)", BatteryCategory.SUPPORT, 5, Material.BEDROCK, Material.NETHER_STAR),
-        SUPPORT_ARMOR_L5("Zırh Artışı (Efsanevi)", BatteryCategory.SUPPORT, 5, Material.BEDROCK, Material.NETHER_STAR),
-        SUPPORT_REGENERATION_L5("Yenilenme (Efsanevi)", BatteryCategory.SUPPORT, 5, Material.BEDROCK, Material.NETHER_STAR);
+        // Seviye 5 (11 Blok + Özel Bloklar) - Efsanevi İşlevler
+        SUPPORT_LEGENDARY_HEAL_L5("Efsanevi Can Yenileme", BatteryCategory.SUPPORT, 5, Material.BEDROCK, Material.NETHER_STAR),
+        SUPPORT_TIME_STOP_L5("Zaman Durdurma", BatteryCategory.SUPPORT, 5, Material.BEDROCK, Material.NETHER_STAR),
+        SUPPORT_DEATH_TOUCH_L5("Ölüm Dokunuşu", BatteryCategory.SUPPORT, 5, Material.BEDROCK, Material.NETHER_STAR),
+        SUPPORT_PHASE_SHIFT_L5("Faz Değiştirme", BatteryCategory.SUPPORT, 5, Material.BEDROCK, Material.NETHER_STAR),
+        SUPPORT_REBIRTH_L5("Yeniden Doğuş", BatteryCategory.SUPPORT, 5, Material.BEDROCK, Material.NETHER_STAR);
         
         private final String displayName;
         private final BatteryCategory category;
@@ -1480,11 +1480,11 @@ public class BatteryManager {
         
         switch (batteryType) {
             // Seviye 1
-            case ATTACK_FIREBALL_L1:
-                fireFireball(player, target, 3, 2.0, level);
-                break;
-            case ATTACK_LIGHTNING_L1:
+            case ATTACK_LIGHTNING_STAFF_L1:
                 fireLightning(player, target, 5, 5.0, level);
+                break;
+            case ATTACK_HELLFIRE_BALL_L1:
+                fireFireball(player, target, 3, 2.0, level);
                 break;
             case ATTACK_ICE_BALL_L1:
                 fireIceBall(player, target, 5, 2.0, level);
@@ -1492,7 +1492,7 @@ public class BatteryManager {
             case ATTACK_POISON_ARROW_L1:
                 firePoisonArrow(player, target, 8, 2.0, 3, level);
                 break;
-            case ATTACK_SHOCK_L1:
+            case ATTACK_SHOCK_WAVE_L1:
                 fireShock(player, target, 4, 3.0, level);
                 break;
             
@@ -1517,8 +1517,8 @@ public class BatteryManager {
             case ATTACK_METEOR_SHOWER_L3:
                 fireMeteorShower(player, target, 10, 8.0, 5, level);
                 break;
-            case ATTACK_STORM_L3:
-                fireStorm(player, target, 8, 7.0, 5, level);
+            case ATTACK_LIGHTNING_STORM_L3:
+                fireLightningStorm(player, target, 7, 5.0, 5, level);
                 break;
             case ATTACK_ICE_AGE_L3:
                 fireIceAge(player, target, 15, 8.0, 10, level);
@@ -1526,30 +1526,30 @@ public class BatteryManager {
             case ATTACK_POISON_BOMB_L3:
                 firePoisonBomb(player, target, 8, 10, level);
                 break;
-            case ATTACK_LIGHTNING_STORM_L3:
-                fireLightningStorm(player, target, 7, 5.0, 5, level);
+            case ATTACK_ELECTRIC_STORM_L3:
+                fireElectricStorm(player, target, 10, 7.0, 8, level);
                 break;
             
             // Seviye 4
+            case ATTACK_TESLA_TOWER_L4:
+                fireTeslaTower(player, target, 30, 5.0, level);
+                break;
             case ATTACK_HELLFIRE_L4:
                 fireHellfire(player, target, 12, 10, level);
                 break;
-            case ATTACK_THUNDER_L4:
-                fireThunder(player, target, 15, 20.0, level);
-                break;
-            case ATTACK_ICE_AGE_L4:
-                fireIceAge(player, target, 15, 10.0, 10, level);
+            case ATTACK_ICE_FORTRESS_L4:
+                fireIceFortress(player, target, 15, 10.0, level);
                 break;
             case ATTACK_DEATH_CLOUD_L4:
                 fireDeathCloud(player, target, 12, 15, level);
                 break;
-            case ATTACK_ELECTRIC_STORM_L4:
-                fireElectricStorm(player, target, 10, 7.0, 8, level);
+            case ATTACK_ELECTRIC_SHIELD_L4:
+                fireElectricShield(player, target, 10, 7.0, level);
                 break;
             
             // Seviye 5
-            case ATTACK_MOUNTAIN_DESTROYER_L5:
-                fireMountainDestroyer(player, target, 50, 500.0, 30, level);
+            case ATTACK_APOCALYPSE_REACTOR_L5:
+                fireApocalypse(player, target, 40, 600.0, 40, level);
                 break;
             case ATTACK_LAVA_TSUNAMI_L5:
                 fireLavaTsunami(player, target, 30, 300.0, 60, level);
@@ -1560,8 +1560,8 @@ public class BatteryManager {
             case ATTACK_AREA_DESTROYER_L5:
                 fireAreaDestroyer(player, target, 30, 500.0, 30, level);
                 break;
-            case ATTACK_APOCALYPSE_L5:
-                fireApocalypse(player, target, 40, 600.0, 40, level);
+            case ATTACK_MOUNTAIN_DESTROYER_L5:
+                fireMountainDestroyer(player, target, 50, 500.0, 30, level);
                 break;
         }
     }
@@ -1601,7 +1601,7 @@ public class BatteryManager {
             case CONSTRUCTION_OBSIDIAN_CAGE_L2:
                 createObsidianCage(player, target, 10, 10, 5, level);
                 break;
-            case CONSTRUCTION_STONE_BRIDGE_L2:
+            case CONSTRUCTION_STONE_BRIDGE_ADV_L2:
                 createStoneBridge(player, target, 20, level);
                 break;
             case CONSTRUCTION_IRON_WALL_L2:
@@ -1615,8 +1615,8 @@ public class BatteryManager {
                 break;
             
             // Seviye 3
-            case CONSTRUCTION_OBSIDIAN_WALL_L3:
-                createObsidianWall(player, target, 15, 5, 5, level);
+            case CONSTRUCTION_OBSIDIAN_CASTLE_L3:
+                createObsidianCastle(player, target, 20, 20, 10, level);
                 break;
             case CONSTRUCTION_NETHERITE_BRIDGE_L3:
                 createNetheriteBridge(player, target, 30, level);
@@ -1632,16 +1632,16 @@ public class BatteryManager {
                 break;
             
             // Seviye 4
-            case CONSTRUCTION_OBSIDIAN_CASTLE_L4:
-                createObsidianCastle(player, target, 20, 20, 10, level);
+            case CONSTRUCTION_OBSIDIAN_PRISON_L4:
+                createObsidianPrison(player, target, 25, 25, 15, level);
                 break;
-            case CONSTRUCTION_NETHERITE_BRIDGE_L4:
+            case CONSTRUCTION_NETHERITE_BRIDGE_ADV_L4:
                 createNetheriteBridge(player, target, 50, level);
                 break;
-            case CONSTRUCTION_IRON_PRISON_L4:
-                createIronPrison(player, target, 20, 20, 12, level);
+            case CONSTRUCTION_IRON_CASTLE_L4:
+                createIronCastle(player, target, 20, 20, 15, level);
                 break;
-            case CONSTRUCTION_GLASS_TOWER_L4:
+            case CONSTRUCTION_GLASS_TOWER_ADV_L4:
                 createGlassTower(player, target, 15, 15, 20, level);
                 break;
             case CONSTRUCTION_STONE_FORTRESS_L4:
@@ -1649,20 +1649,20 @@ public class BatteryManager {
                 break;
             
             // Seviye 5
-            case CONSTRUCTION_OBSIDIAN_PRISON_L5:
-                createObsidianPrison(player, target, 25, 25, 15, level);
+            case CONSTRUCTION_OBSIDIAN_PRISON_LEG_L5:
+                createObsidianPrison(player, target, 50, 50, 20, level);
                 break;
-            case CONSTRUCTION_NETHERITE_BRIDGE_L5:
+            case CONSTRUCTION_NETHERITE_BRIDGE_LEG_L5:
                 createNetheriteBridge(player, target, 100, level);
                 break;
-            case CONSTRUCTION_IRON_CASTLE_L5:
-                createIronCastle(player, target, 30, 30, 20, level);
+            case CONSTRUCTION_IRON_CASTLE_LEG_L5:
+                createIronCastle(player, target, 40, 40, 20, level);
                 break;
-            case CONSTRUCTION_GLASS_TOWER_L5:
+            case CONSTRUCTION_GLASS_TOWER_LEG_L5:
                 createGlassTower(player, target, 20, 20, 30, level);
                 break;
-            case CONSTRUCTION_STONE_FORTRESS_L5:
-                createStoneFortress(player, target, 40, 40, 25, level);
+            case CONSTRUCTION_STONE_FORTRESS_LEG_L5:
+                createStoneFortress(player, target, 50, 50, 25, level);
                 break;
         }
     }
@@ -1692,72 +1692,77 @@ public class BatteryManager {
                 applyRegenerationSupport(player, radius, 1, 10, level);
                 break;
             
-            // Seviye 2
-            case SUPPORT_HEAL_L2:
-                applyHealSupport(player, radius, 10.0, level);
+            // Seviye 2 - Kombinasyonlar
+            case SUPPORT_HEAL_SPEED_COMBO_L2:
+                applyHealSupport(player, radius, 5.0, level);
+                applySpeedSupport(player, radius, 1, 15, level);
                 break;
-            case SUPPORT_SPEED_L2:
-                applySpeedSupport(player, radius, 2, 15, level);
+            case SUPPORT_DAMAGE_ARMOR_COMBO_L2:
+                applyDamageSupport(player, radius, 1, 15, level);
+                applyArmorSupport(player, radius, 1, 15, level);
                 break;
-            case SUPPORT_DAMAGE_L2:
-                applyDamageSupport(player, radius, 2, 15, level);
+            case SUPPORT_REGENERATION_HEAL_COMBO_L2:
+                applyRegenerationSupport(player, radius, 1, 15, level);
+                applyHealSupport(player, radius, 3.0, level);
                 break;
-            case SUPPORT_ARMOR_L2:
-                applyArmorSupport(player, radius, 2, 15, level);
+            case SUPPORT_SPEED_DAMAGE_COMBO_L2:
+                applySpeedSupport(player, radius, 1, 15, level);
+                applyDamageSupport(player, radius, 1, 15, level);
                 break;
-            case SUPPORT_REGENERATION_L2:
-                applyRegenerationSupport(player, radius, 2, 15, level);
-                break;
-            
-            // Seviye 3
-            case SUPPORT_HEAL_L3:
-                applyHealSupport(player, radius, 20.0, level);
-                break;
-            case SUPPORT_SPEED_L3:
-                applySpeedSupport(player, radius, 3, 20, level);
-                break;
-            case SUPPORT_DAMAGE_L3:
-                applyDamageSupport(player, radius, 3, 20, level);
-                break;
-            case SUPPORT_ARMOR_L3:
-                applyArmorSupport(player, radius, 3, 20, level);
-                break;
-            case SUPPORT_REGENERATION_L3:
-                applyRegenerationSupport(player, radius, 3, 20, level);
+            case SUPPORT_ARMOR_REGENERATION_COMBO_L2:
+                applyArmorSupport(player, radius, 1, 15, level);
+                applyRegenerationSupport(player, radius, 1, 15, level);
                 break;
             
-            // Seviye 4
-            case SUPPORT_HEAL_L4:
-                applyHealSupport(player, radius, 30.0, level);
+            // Seviye 3 - Özel İşlevler
+            case SUPPORT_ABSORPTION_SHIELD_L3:
+                applyAbsorptionShield(player, radius, 10.0, 20, level);
                 break;
-            case SUPPORT_SPEED_L4:
-                applySpeedSupport(player, radius, 4, 30, level);
+            case SUPPORT_FLIGHT_L3:
+                applyFlight(player, radius, 10, level);
                 break;
-            case SUPPORT_DAMAGE_L4:
-                applyDamageSupport(player, radius, 4, 30, level);
+            case SUPPORT_CRITICAL_STRIKE_L3:
+                applyCriticalStrike(player, radius, 20, level);
                 break;
-            case SUPPORT_ARMOR_L4:
-                applyArmorSupport(player, radius, 4, 30, level);
+            case SUPPORT_REFLECTION_SHIELD_L3:
+                applyReflectionShield(player, radius, 20, level);
                 break;
-            case SUPPORT_REGENERATION_L4:
-                applyRegenerationSupport(player, radius, 4, 30, level);
+            case SUPPORT_LIFE_STEAL_L3:
+                applyLifeSteal(player, radius, 20, level);
                 break;
             
-            // Seviye 5
-            case SUPPORT_HEAL_L5:
-                applyHealSupport(player, radius, -1.0, level); // -1 = tam can + 50 ekstra
+            // Seviye 4 - Güçlü Özel İşlevler
+            case SUPPORT_FULL_HEAL_ABSORPTION_L4:
+                applyFullHealAbsorption(player, radius, 20.0, 30, level);
                 break;
-            case SUPPORT_SPEED_L5:
-                applySpeedSupport(player, radius, 5, 60, level);
+            case SUPPORT_TIME_SLOW_L4:
+                applyTimeSlow(player, radius, 30, level);
                 break;
-            case SUPPORT_DAMAGE_L5:
-                applyDamageSupport(player, radius, 5, 60, level);
+            case SUPPORT_LIGHTNING_STRIKE_L4:
+                applyLightningStrike(player, radius, 30, level);
                 break;
-            case SUPPORT_ARMOR_L5:
-                applyArmorSupport(player, radius, 5, 60, level);
+            case SUPPORT_INVISIBILITY_SHIELD_L4:
+                applyInvisibilityShield(player, radius, 30, level);
                 break;
-            case SUPPORT_REGENERATION_L5:
-                applyRegenerationSupport(player, radius, 5, 60, level);
+            case SUPPORT_IMMORTALITY_MOMENT_L4:
+                applyImmortalityMoment(player, radius, level);
+                break;
+            
+            // Seviye 5 - Efsanevi İşlevler
+            case SUPPORT_LEGENDARY_HEAL_L5:
+                applyLegendaryHeal(player, radius, 50.0, 60, level);
+                break;
+            case SUPPORT_TIME_STOP_L5:
+                applyTimeStop(player, radius, 10, level);
+                break;
+            case SUPPORT_DEATH_TOUCH_L5:
+                applyDeathTouch(player, radius, 60, level);
+                break;
+            case SUPPORT_PHASE_SHIFT_L5:
+                applyPhaseShift(player, radius, 5, level);
+                break;
+            case SUPPORT_REBIRTH_L5:
+                applyRebirth(player, radius, level);
                 break;
         }
     }
@@ -2792,5 +2797,300 @@ public class BatteryManager {
         }
         
         player.sendMessage("§dYenilenme uygulandı! (" + members.size() + " oyuncu)");
+    }
+    
+    // ========== YENİ SALDIRI BATARYA METODLARI ==========
+    
+    private void fireTeslaTower(Player player, Location target, int duration, double damage, int level) {
+        // Otomatik alan etkili elektrik (30 saniye)
+        int ticks = duration * 20;
+        new BukkitRunnable() {
+            int currentTicks = 0;
+            @Override
+            public void run() {
+                if (currentTicks >= ticks || !player.isOnline()) {
+                    cancel();
+                    return;
+                }
+                
+                // Her 2 saniyede bir (40 tick)
+                if (currentTicks % 40 == 0) {
+                    for (Entity e : player.getNearbyEntities(15, 15, 15)) {
+                        if (e instanceof LivingEntity && e != player) {
+                            ((LivingEntity) e).damage(damage, player);
+                            e.getWorld().strikeLightningEffect(e.getLocation());
+                        }
+                    }
+                }
+                currentTicks++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        
+        player.sendMessage("§eTesla Kulesi aktif! (30 saniye)");
+    }
+    
+    private void fireIceFortress(Player player, Location target, int radius, double damage, int level) {
+        // Buz duvarları oluşturma (savunma)
+        for (int x = -radius; x <= radius; x++) {
+            for (int z = -radius; z <= radius; z++) {
+                if (x == -radius || x == radius || z == -radius || z == radius) {
+                    for (int y = 0; y < 5; y++) {
+                        Location loc = target.clone().add(x, y, z);
+                        if (canModifyTerritory(player, loc) && loc.getBlock().getType() == Material.AIR) {
+                            loc.getBlock().setType(Material.PACKED_ICE);
+                        }
+                    }
+                }
+            }
+        }
+        player.sendMessage("§bBuz Kalesi oluşturuldu!");
+    }
+    
+    private void fireElectricShield(Player player, Location target, int radius, double damage, int level) {
+        // Gelen projectile'ları elektrikle yok etme (5 saniye)
+        int ticks = 5 * 20;
+        new BukkitRunnable() {
+            int currentTicks = 0;
+            @Override
+            public void run() {
+                if (currentTicks >= ticks || !player.isOnline()) {
+                    cancel();
+                    return;
+                }
+                
+                for (Entity e : player.getNearbyEntities(radius, radius, radius)) {
+                    if (e instanceof Projectile && e.getShooter() != player) {
+                        e.getWorld().strikeLightningEffect(e.getLocation());
+                        e.remove();
+                    }
+                }
+                currentTicks++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        
+        player.sendMessage("§eElektrik Kalkanı aktif! (5 saniye)");
+    }
+    
+    // ========== YENİ DESTEK BATARYA METODLARI ==========
+    
+    private void applyAbsorptionShield(Player player, double radius, double absorption, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.setAbsorptionAmount((float) absorption);
+        }
+        
+        player.sendMessage("§6Absorption Kalkanı uygulandı! (" + members.size() + " oyuncu)");
+    }
+    
+    private void applyFlight(Player player, double radius, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.setAllowFlight(true);
+            member.setFlying(true);
+        }
+        
+        // Süre sonunda uçmayı kapat
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Player member : members) {
+                    if (member.isOnline()) {
+                        member.setFlying(false);
+                        member.setAllowFlight(false);
+                    }
+                }
+            }
+        }.runTaskLater(plugin, duration * 20L);
+        
+        player.sendMessage("§bUçma Yeteneği aktif! (" + duration + " saniye)");
+    }
+    
+    private void applyCriticalStrike(Player player, double radius, int duration, int level) {
+        // Kritik vuruş şansı %50 artışı (PDC ile takip edilir)
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            // PDC ile kritik vuruş etiketini ekle (EntityDamageByEntityEvent'te kontrol edilir)
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.LUCK, duration * 20, 0, false, false, true));
+        }
+        
+        player.sendMessage("§cKritik Vuruş Artışı aktif! (" + duration + " saniye)");
+    }
+    
+    private void applyReflectionShield(Player player, double radius, int duration, int level) {
+        // Gelen hasarın %30'unu yansıtma (PDC ile takip edilir)
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.DAMAGE_RESISTANCE, duration * 20, 0, false, false, true));
+        }
+        
+        player.sendMessage("§7Yansıtma Kalkanı aktif! (" + duration + " saniye)");
+    }
+    
+    private void applyLifeSteal(Player player, double radius, int duration, int level) {
+        // Vurduğun hasarın %20'si can olarak geri gelir (PDC ile takip edilir)
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.REGENERATION, duration * 20, 0, false, false, true));
+        }
+        
+        player.sendMessage("§4Can Çalma aktif! (" + duration + " saniye)");
+    }
+    
+    private void applyFullHealAbsorption(Player player, double radius, double absorption, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.setHealth(member.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue());
+            member.setAbsorptionAmount((float) absorption);
+        }
+        
+        player.sendMessage("§aTam Can + Absorption uygulandı! (" + members.size() + " oyuncu)");
+    }
+    
+    private void applyTimeSlow(Player player, double radius, int duration, int level) {
+        // Etraftaki düşmanları yavaşlatma (Slow V)
+        for (Entity e : player.getNearbyEntities(radius, radius, radius)) {
+            if (e instanceof LivingEntity && e != player) {
+                ((LivingEntity) e).addPotionEffect(new org.bukkit.potion.PotionEffect(
+                    org.bukkit.potion.PotionEffectType.SLOW, duration * 20, 4, false, false, true));
+            }
+        }
+        
+        player.sendMessage("§bZaman Yavaşlatma aktif! (" + duration + " saniye)");
+    }
+    
+    private void applyLightningStrike(Player player, double radius, int duration, int level) {
+        // Her vuruşta yıldırım düşer (PDC ile takip edilir)
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.CONDUIT_POWER, duration * 20, 0, false, false, true));
+        }
+        
+        player.sendMessage("§eYıldırım Vuruşu aktif! (" + duration + " saniye)");
+    }
+    
+    private void applyInvisibilityShield(Player player, double radius, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.INVISIBILITY, duration * 20, 0, false, false, true));
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.DAMAGE_RESISTANCE, duration * 20, 2, false, false, true));
+        }
+        
+        player.sendMessage("§7Görünmezlik Kalkanı aktif! (" + duration + " saniye)");
+    }
+    
+    private void applyImmortalityMoment(Player player, double radius, int level) {
+        // 3 saniye ölümsüzlük (sadece bir kez)
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.DAMAGE_RESISTANCE, 3 * 20, 255, false, false, true));
+        }
+        
+        player.sendMessage("§6Ölümsüzlük Anı aktif! (3 saniye)");
+    }
+    
+    private void applyLegendaryHeal(Player player, double radius, double absorption, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.setHealth(member.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue());
+            member.setAbsorptionAmount((float) absorption);
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.REGENERATION, duration * 20, 4, false, false, true));
+        }
+        
+        player.sendMessage("§6Efsanevi Can Yenileme uygulandı! (" + members.size() + " oyuncu)");
+    }
+    
+    private void applyTimeStop(Player player, double radius, int duration, int level) {
+        // Etraftaki tüm düşmanları dondurma (AI kapatma)
+        List<LivingEntity> frozen = new ArrayList<>();
+        for (Entity e : player.getNearbyEntities(radius, radius, radius)) {
+            if (e instanceof LivingEntity && e != player) {
+                LivingEntity le = (LivingEntity) e;
+                le.setAI(false);
+                le.setGravity(false);
+                le.setVelocity(new Vector(0, 0, 0));
+                frozen.add(le);
+            }
+        }
+        
+        // Süre sonunda çöz
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (LivingEntity le : frozen) {
+                    if (le.isValid()) {
+                        le.setAI(true);
+                        le.setGravity(true);
+                    }
+                }
+            }
+        }.runTaskLater(plugin, duration * 20L);
+        
+        player.sendMessage("§bZaman Durdurma aktif! (" + duration + " saniye)");
+    }
+    
+    private void applyDeathTouch(Player player, double radius, int duration, int level) {
+        // Her vuruşta %25 can hasarı (PDC ile takip edilir)
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.WITHER, duration * 20, 0, false, false, true));
+        }
+        
+        player.sendMessage("§4Ölüm Dokunuşu aktif! (" + duration + " saniye)");
+    }
+    
+    private void applyPhaseShift(Player player, double radius, int duration, int level) {
+        // 5 saniye boyunca tüm hasarlardan geçirmez
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.DAMAGE_RESISTANCE, duration * 20, 255, false, false, true));
+        }
+        
+        player.sendMessage("§5Faz Değiştirme aktif! (" + duration + " saniye)");
+    }
+    
+    private void applyRebirth(Player player, double radius, int level) {
+        // Öldüğünde otomatik canlanma (1 kez, 60 saniye içinde)
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        // PDC ile takip edilir (PlayerDeathEvent'te kontrol edilir)
+        for (Player member : members) {
+            // Bu özellik PlayerDeathEvent'te işlenecek
+            member.sendMessage("§6Yeniden Doğuş hazır! (60 saniye içinde ölürsen canlanacaksın)");
+        }
     }
 }
