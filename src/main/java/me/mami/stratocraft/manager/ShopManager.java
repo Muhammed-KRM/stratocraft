@@ -63,7 +63,7 @@ public class ShopManager {
         // KRİTİK: Anlık bölge kontrolü (vergi kaçırma önleme)
         boolean isProtectedZone = false;
         if (plugin != null && plugin.getTerritoryManager() != null) {
-            org.bukkit.entity.Clan territoryOwner = plugin.getTerritoryManager().getTerritoryOwner(shop.getLocation());
+            me.mami.stratocraft.model.Clan territoryOwner = plugin.getTerritoryManager().getTerritoryOwner(shop.getLocation());
             isProtectedZone = (territoryOwner != null);
         }
 

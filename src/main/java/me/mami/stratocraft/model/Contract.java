@@ -106,12 +106,19 @@ public class Contract {
     public int getDelivered() { return delivered; }
     public void setDelivered(int delivered) { this.delivered = delivered; }
     public void addDelivered(int amount) { this.delivered += amount; }
+    private boolean completed = false; // Tamamlandı mı?
+    
     public boolean isCompleted() { 
+        if (completed) return true;
         if (type == ContractType.MATERIAL_DELIVERY) {
             return delivered >= amount;
         }
         // Diğer tipler için özel kontrol gerekebilir
         return false;
+    }
+    
+    public void setCompleted(boolean completed) {
+        this.completed = completed;
     }
     
     // PLAYER_KILL için

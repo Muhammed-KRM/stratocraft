@@ -559,7 +559,7 @@ public class DataManager {
                 }
                 
                 // Teklif ayarlarını yükle
-                shop.setAcceptsOffers(data.acceptOffers);
+                shop.setAcceptOffers(data.acceptOffers);
                 shop.setMaxOffers(data.maxOffers);
                 
                 shopManager.loadShop(shop);

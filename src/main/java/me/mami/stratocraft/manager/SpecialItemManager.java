@@ -201,6 +201,85 @@ public class SpecialItemManager {
             spyTargets.remove(player);
         }
     }
+    
+    /**
+     * Casusluk Dürbünü GUI Menüsünü Aç
+     */
+    public void openSpyMenu(Player player, Player target) {
+        if (player == null || target == null || !target.isOnline()) {
+            player.sendMessage("§cHedef oyuncu artık online değil!");
+            return;
+        }
+        
+        // 27 slot GUI oluştur
+        Inventory gui = Bukkit.createInventory(null, 27, 
+            net.kyori.adventure.text.Component.text("§e§lCasusluk: §f" + target.getName()));
+        
+        // Butonlar
+        // Can (Kırmızı Kırmızı Taş)
+        ItemStack healthBtn = new ItemStack(Material.REDSTONE);
+        org.bukkit.inventory.meta.ItemMeta healthMeta = healthBtn.getItemMeta();
+        healthMeta.displayName(net.kyori.adventure.text.Component.text("§c§lCAN DURUMU"));
+        java.util.List<net.kyori.adventure.text.Component> healthLore = new java.util.ArrayList<>();
+        healthLore.add(net.kyori.adventure.text.Component.text("§7Tıklayarak detaylı can bilgisi görüntüle"));
+        healthMeta.lore(healthLore);
+        healthBtn.setItemMeta(healthMeta);
+        gui.setItem(10, healthBtn);
+        
+        // Açlık (Ekmek)
+        ItemStack hungerBtn = new ItemStack(Material.BREAD);
+        org.bukkit.inventory.meta.ItemMeta hungerMeta = hungerBtn.getItemMeta();
+        hungerMeta.displayName(net.kyori.adventure.text.Component.text("§e§lAÇLIK DURUMU"));
+        java.util.List<net.kyori.adventure.text.Component> hungerLore = new java.util.ArrayList<>();
+        hungerLore.add(net.kyori.adventure.text.Component.text("§7Tıklayarak detaylı açlık bilgisi görüntüle"));
+        hungerMeta.lore(hungerLore);
+        hungerBtn.setItemMeta(hungerMeta);
+        gui.setItem(12, hungerBtn);
+        
+        // Zırh (Demir Göğüslük)
+        ItemStack armorBtn = new ItemStack(Material.IRON_CHESTPLATE);
+        org.bukkit.inventory.meta.ItemMeta armorMeta = armorBtn.getItemMeta();
+        armorMeta.displayName(net.kyori.adventure.text.Component.text("§b§lZIRH DURUMU"));
+        java.util.List<net.kyori.adventure.text.Component> armorLore = new java.util.ArrayList<>();
+        armorLore.add(net.kyori.adventure.text.Component.text("§7Tıklayarak detaylı zırh bilgisi görüntüle"));
+        armorMeta.lore(armorLore);
+        armorBtn.setItemMeta(armorMeta);
+        gui.setItem(14, armorBtn);
+        
+        // Envanter (Sandık)
+        ItemStack invBtn = new ItemStack(Material.CHEST);
+        org.bukkit.inventory.meta.ItemMeta invMeta = invBtn.getItemMeta();
+        invMeta.displayName(net.kyori.adventure.text.Component.text("§e§lENVANTER DURUMU"));
+        java.util.List<net.kyori.adventure.text.Component> invLore = new java.util.ArrayList<>();
+        invLore.add(net.kyori.adventure.text.Component.text("§7Tıklayarak envanter doluluk bilgisi görüntüle"));
+        invMeta.lore(invLore);
+        invBtn.setItemMeta(invMeta);
+        gui.setItem(16, invBtn);
+        
+        // Efektler (İksir)
+        ItemStack effectBtn = new ItemStack(Material.POTION);
+        org.bukkit.inventory.meta.ItemMeta effectMeta = effectBtn.getItemMeta();
+        effectMeta.displayName(net.kyori.adventure.text.Component.text("§d§lAKTİF EFEKTLER"));
+        java.util.List<net.kyori.adventure.text.Component> effectLore = new java.util.ArrayList<>();
+        effectLore.add(net.kyori.adventure.text.Component.text("§7Tıklayarak aktif efektleri görüntüle"));
+        effectMeta.lore(effectLore);
+        effectBtn.setItemMeta(effectMeta);
+        gui.setItem(22, effectBtn);
+        
+        // Kapat (Bariyer)
+        ItemStack closeBtn = new ItemStack(Material.BARRIER);
+        org.bukkit.inventory.meta.ItemMeta closeMeta = closeBtn.getItemMeta();
+        closeMeta.displayName(net.kyori.adventure.text.Component.text("§c§lKAPAT"));
+        java.util.List<net.kyori.adventure.text.Component> closeLore = new java.util.ArrayList<>();
+        closeLore.add(net.kyori.adventure.text.Component.text("§7Menüyü kapat"));
+        closeMeta.lore(closeLore);
+        closeBtn.setItemMeta(closeMeta);
+        gui.setItem(26, closeBtn);
+        
+        // GUI'yi aç
+        player.openInventory(gui);
+        player.playSound(player.getLocation(), org.bukkit.Sound.UI_TOAST_IN, 1.0f, 1.0f);
+    }
 
     /**
      * Oyuncu bilgilerini göster (Casusluk Dürbünü)

@@ -38,8 +38,8 @@ public class SpecialWeaponListener implements Listener {
     private final NamespacedKey itemKey;
     private final Map<UUID, String> weaponMode = new HashMap<>(); // Seviye 5 silahlar için mod
     private final Map<UUID, Long> lastLaserTime = new HashMap<>(); // Seviye 4 lazer cooldown
-    private final Map<UUID, Long> lastModeChangeTime = new HashMap<>(); // Mod değiştirme cooldown
-    private final Map<UUID, Boolean> modeSelectionActive = new HashMap<>(); // Mod seçim ekranı aktif mi
+    // private final Map<UUID, Long> lastModeChangeTime = new HashMap<>(); // Mod değiştirme cooldown - Kullanılmıyor
+    // private final Map<UUID, Boolean> modeSelectionActive = new HashMap<>(); // Mod seçim ekranı aktif mi - Kullanılmıyor
     private final Map<UUID, Long> cooldowns = new HashMap<>(); // Cooldown sistemi
     private final Map<UUID, java.util.List<EntityType>> killedMobs = new HashMap<>(); // L5_4 için öldürülen moblar
     private final Map<UUID, Location> lastLocation = new HashMap<>(); // L5_5 Geri Sar için konum

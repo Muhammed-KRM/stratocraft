@@ -181,7 +181,7 @@ public class ContractManager {
         permanentHealthLoss.put(player.getUniqueId(), newLoss);
         
         // Maksimum canı düşür
-        Attribute maxHealthAttr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        org.bukkit.attribute.AttributeInstance maxHealthAttr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
         if (maxHealthAttr != null) {
             double currentMax = maxHealthAttr.getBaseValue();
             double newMax = Math.max(1.0, currentMax - (hearts * 2.0)); // Her kalp = 2 can
@@ -245,7 +245,7 @@ public class ContractManager {
         // Oyuncu online ise canı geri ver
         Player player = Bukkit.getPlayer(playerId);
         if (player != null && player.isOnline()) {
-            Attribute maxHealthAttr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+            org.bukkit.attribute.AttributeInstance maxHealthAttr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
             if (maxHealthAttr != null) {
                 double baseMax = 20.0; // Varsayılan maksimum can
                 double newMax = Math.max(1.0, baseMax - (newLoss * 2.0)); // Her kalp = 2 can
@@ -270,7 +270,7 @@ public class ContractManager {
             int currentLoss = permanentHealthLoss.getOrDefault(player.getUniqueId(), 0);
             if (currentLoss > 0) {
                 // Maksimum canı düşür
-                Attribute maxHealthAttr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+                org.bukkit.attribute.AttributeInstance maxHealthAttr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
                 if (maxHealthAttr != null) {
                     double baseMax = 20.0; // Varsayılan maksimum can
                     double newMax = Math.max(1.0, baseMax - (currentLoss * 2.0)); // Her kalp = 2 can
