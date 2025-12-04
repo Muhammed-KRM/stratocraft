@@ -188,7 +188,15 @@ public class WeaponModeManager implements Listener {
     }
     
     /**
-     * Statik metod - dışarıdan çağrılabilir
+     * Instance metod - bu sınıf içinde kullanılır (this.modeKey kullanır)
+     */
+    private int getWeaponMode(ItemStack item) {
+        if (item == null || item.getItemMeta() == null) return 1;
+        return item.getItemMeta().getPersistentDataContainer().getOrDefault(modeKey, PersistentDataType.INTEGER, 1);
+    }
+    
+    /**
+     * Statik metod - dışarıdan çağrılabilir (SpecialWeaponListener vb. için)
      */
     public static int getWeaponMode(ItemStack item) {
         if (item == null || item.getItemMeta() == null) return 1;

@@ -10,9 +10,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
@@ -106,8 +104,6 @@ public class SpecialWeaponListener implements Listener {
                 if (player.isSneaking() && event.getAction().toString().contains("RIGHT")) return;
                 
                 if (!item.getItemMeta().getPersistentDataContainer().has(itemKey, PersistentDataType.STRING)) return;
-                
-                int mode = WeaponModeManager.getWeaponMode(item);
                 
                 if (event.getAction().toString().contains("RIGHT") || event.getAction() == Action.PHYSICAL) {
                     handleNewSystemWeapons(player, specialItemId, event);
@@ -298,7 +294,6 @@ public class SpecialWeaponListener implements Listener {
         String weaponId = getSpecialWeaponId(item);
         if (weaponId == null || !weaponId.startsWith("WEAPON_L5")) return;
         
-        String[] availableModes = getAvailableModesForWeapon(weaponId);
         // WeaponModeManager'dan modu al
         int modeInt = WeaponModeManager.getWeaponMode(item);
         String mode = getModeStringFromInt(weaponId, modeInt);
@@ -463,10 +458,11 @@ public class SpecialWeaponListener implements Listener {
      */
     private void handleNewSystemWeapons(Player player, String itemId, PlayerInteractEvent event) {
         // Önce event.getItem() kontrol et, yoksa elindeki item'ı al
-        ItemStack item = event.getItem();
-        if (item == null || item.getType() == Material.AIR) {
-            item = player.getInventory().getItemInMainHand();
+        ItemStack tempItem = event.getItem();
+        if (tempItem == null || tempItem.getType() == Material.AIR) {
+            tempItem = player.getInventory().getItemInMainHand();
         }
+        final ItemStack item = tempItem;
         if (item == null || item.getItemMeta() == null) return;
         
         if (!item.getItemMeta().getPersistentDataContainer().has(itemKey, PersistentDataType.STRING)) return;
@@ -649,6 +645,7 @@ public class SpecialWeaponListener implements Listener {
                     player.getInventory().setItemInMainHand(null);
                     
                     // Geri dönme mantığı (optimize edilmiş - her 5 tick'te bir kontrol)
+                    final ItemStack returnItem = item.clone(); // Final kopya oluştur
                     new BukkitRunnable() {
                         @Override
                         public void run() {
@@ -660,9 +657,9 @@ public class SpecialWeaponListener implements Listener {
                             projectile.setVelocity(dir.multiply(1.5));
                             if (projectile.getLocation().distance(player.getLocation()) < 1.5) {
                                 if (player.getInventory().firstEmpty() != -1) {
-                                    player.getInventory().addItem(item);
+                                    player.getInventory().addItem(returnItem);
                                 } else {
-                                    player.getWorld().dropItem(player.getLocation(), item);
+                                    player.getWorld().dropItem(player.getLocation(), returnItem);
                                 }
                                 projectile.remove();
                                 player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RETURN, 1f, 1f);
