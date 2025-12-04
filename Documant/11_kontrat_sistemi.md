@@ -4,6 +4,8 @@
 
 Kontratlar, oyuncular arasında **koda dayalı** anlaşmalardır. Sözleşmeyi bozan otomatik cezalandırılır!
 
+**GÜVENLİK**: Performans optimizasyonları (1 saniye cooldown) ve can kaybı geri kazanım sistemi eklendi.
+
 ---
 
 ## 📋 İÇİNDEKİLER
@@ -499,6 +501,39 @@ Bir oyuncu bir klanla kontrat yapar
 ```
 Bir klan bir oyuncuyla kontrat yapar
 ```
+
+---
+
+## 🔒 GÜVENLİK VE PERFORMANS
+
+### Performans Optimizasyonları
+
+**Bölge Yasağı Kontrolü**:
+- **1 saniye cooldown**: Spam önleme için kontrol sıklığı sınırlandırıldı
+- **Blok değişimi kontrolü**: Sadece blok değiştiğinde kontrol yapılır
+- **Cache kullanımı**: Kontrat listesi cache'den okunur
+
+### Can Kaybı Sistemi
+
+**Kan İmzası Mekaniği**:
+```
+Kontrat İmzalanınca: -3 kalp (kan imzası)
+Kontrat Tamamlanınca: +1 kalp geri (kan imzası geri ödeniyor)
+Kontrat İhlal Edilince: -2 kalp kalıcı (ceza, geri verilmez)
+```
+
+**Örnek Senaryo**:
+```
+1. Oyuncu 3 kontrat imzalar: -9 kalp (11 kalp kaldı)
+2. 2 kontrat tamamlar: +2 kalp (13 kalp)
+3. 1 kontrat ihlal eder: -2 kalp kalıcı (11 kalp, geri verilmez)
+4. Sonuç: 11 kalp maksimum can
+```
+
+**Önemli**: 
+- Can kaybı kalıcıdır (ihlal cezası)
+- Kan imzası geri ödenir (kontrat tamamlandığında)
+- Maksimum can 1 kalpe kadar düşebilir (oyun oynanamaz hale gelir)
 
 ---
 

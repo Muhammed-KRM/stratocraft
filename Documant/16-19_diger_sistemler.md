@@ -24,6 +24,8 @@ Bu dokümanda 6 sistem var:
 
 **KOD DOĞRULANDI**: Tüm görev tipleri, GUI menü, ilerleme takibi ve ödül sistemi aktif.
 
+**GÜVENLİK**: Envanter kontrolü ve ödül yere düşme sistemi eklendi.
+
 ---
 
 ### 🎮 Nasıl Çalışır?
@@ -231,6 +233,22 @@ Hedef: Belirli mesafeyi kat et
 - PlayerMoveEvent optimizasyonu: Her 10 blokta bir kontrol
 - Chunk-based cache: Performans için chunk bazlı veri saklama
 - Event priority: NORMAL (diğer sistemlerle uyumlu)
+- Blok değişimi kontrolü: Sadece blok değiştiğinde işlem yapılır
+
+### 🔒 Güvenlik Özellikleri
+
+**Ödül Sistemi**:
+- Envanter kontrolü: Ödül verilmeden önce envanter kontrol edilir
+- Yere düşme: Envanter doluysa ödül yere düşer
+- Uyarı mesajı: Oyuncuya envanter durumu bildirilir
+
+**Örnek Senaryo**:
+```
+1. Görev tamamlandı
+2. Envanter kontrolü yapılır
+3. Doluysa: Ödül yere düşer + "Envanterin dolu! Ödül yere düştü." mesajı
+4. Boşsa: Ödül envantere eklenir
+```
 
 ---
 

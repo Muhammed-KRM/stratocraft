@@ -6,6 +6,8 @@ Market sistemi, oyuncuların **eşya satıp alabileceği** ve **teklif verebilec
 
 **KOD DOĞRULANDI**: `ShopManager.java`, `ShopListener.java`, `ShopMenu.java` - Tüm mekanikler aktif.
 
+**GÜVENLİK**: Tüm kritik güvenlik açıkları kapatıldı (dupe önleme, vergi kaçırma önleme, stok senkronizasyonu).
+
 ---
 
 ## 📋 İÇİNDEKİLER
@@ -254,6 +256,24 @@ Koruma bölgesi dışında:
 3. **Stok Kontrolü**: Stok bitince satış yapılamaz
 4. **Ödeme Kontrolü**: Yeterli ödeme yoksa satın alınamaz
 5. **Teklif Limiti**: Maksimum 10 teklif per market
+6. **Kendinle Ticaret**: Kendi marketinden alışveriş yapılamaz
+7. **Anlık Vergi**: Vergi hesaplama satın alma anında yapılır (bölge kontrolü)
+
+### 🔒 Güvenlik Özellikleri
+
+**Dupe Önleme**:
+- Fiziksel sandık kontrolü: Her satın alma işleminde sandık tekrar kontrol edilir
+- Stok senkronizasyonu: Ödeme alındıktan sonra stok tekrar kontrol edilir
+- Race condition koruması: Stok tükendiyse ödeme iade edilir
+
+**Vergi Sistemi**:
+- Anlık bölge kontrolü: Satın alma anında bölge durumu kontrol edilir
+- Vergi kaçırma önleme: Market kurulduğu andaki duruma güvenilmez
+- Otomatik vergi: Koruma bölgesinde %5 vergi otomatik alınır
+
+**Envanter Kontrolü**:
+- Ödül yere düşebilir: Envanter doluysa ödül yere düşer
+- Uyarı mesajı: Oyuncuya envanter durumu bildirilir
 
 ### Güvenlik
 

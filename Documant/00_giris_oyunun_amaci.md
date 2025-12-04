@@ -112,14 +112,23 @@ Klan A (Seviye 5) → Klan B (Seviye 1):
 
 Felaketler **doğa olaylarıdır**, normal boss değil! Merkezden uzakta spawn olur ve merkeze doğru ilerleyerek yoldaki baseleri yok eder.
 
-**5 Felaket Tipi**:
+**9 Felaket Tipi**:
 1. **Yürüyen Dağ (Titan Golem)**: Dev Giant, toprak fırlatır, zıplar, şok dalgası yaratır
 2. **Hiçlik Solucanı (Abyssal Worm)**: Yeraltından ilerler, temelleri kazar
 3. **Güneş Fırtınası (Solar Flare)**: 10 dakika süren olay, yüzeydekiler yanar
 4. **Buzul Leviathan**: Suda yüzer, baseleri dondurur
 5. **Meteor Yağmuru**: Gökyüzünden anvil düşer
+6. **Kaos Ejderi (Chaos Dragon)**: Uçan ejderha, kaos enerjisi yayar
+7. **Hiçlik Titanı (Void Titan)**: Dev yaratık, hiçlik patlamaları yaratır
+8. **Deprem (Earthquake)**: Yeri sarsar, binaları yıkar
+9. **Volkanik Patlama (Volcanic Eruption)**: Lav fışkırır, kül bulutu yayar
 
 **Dinamik Güç Sistemi**: Felaketler, oyuncu sayısı ve klan seviyelerine göre güçlenir!
+
+**BossBar Görüntüsü**: 
+- **Yaratık Felaketleri** (Titan Golem, Abyssal Worm, Chaos Dragon, Void Titan, Ice Leviathan): Ekranın üstünde can ve kalan süre gösterilir
+- **Doğal Felaketler** (Solar Flare, Meteor Shower, Earthquake, Volcanic Eruption): ActionBar'da kalan süre gösterilir
+- **Bosslar**: Tüm bossların canı ve fazı (multi-phase bosslar için) ekranın üstünde gösterilir
 
 ---
 
@@ -132,12 +141,28 @@ Savaşçı olmak zorunda değilsiniz. Klanınıza destek olmak için şu yollar�
 **Kontrat Sistemi**: Panodaki "Bize 500 Titanyum Getir" görevlerini alıp, teslimat yaparak zengin olabilirsiniz.
 
 **Nasıl Çalışır?**:
-- Kontrat panosuna görev asılır
+- `/kontrat` komutu ile GUI menü açılır
+- Kontrat seçilir ve "Kabul Et" butonuna tıklanır
 - Kan imzası ile sözleşme imzalanır (-3 kalp can kaybı)
-- Süre içinde tamamlanmazsa → Hain damgası + otomatik tazminat
+- Kontrat tamamlandığında → +1 kalp geri (kan imzası geri ödeniyor)
+- Süre içinde tamamlanmazsa → Hain damgası + otomatik tazminat + kalıcı can kaybı
 - Başarılı olursa → Ödül kazanırsın
 
+**Güvenlik**: Performans optimizasyonları (1 saniye cooldown) ve can kaybı geri kazanım sistemi aktif.
+
 **Kervan Sistemi**: Uzak bölgelere malzeme taşı, x1.5 değer kazan!
+
+**Market Sistemi**: Eşya satıp alabileceğin ve teklif verebileceğin ticaret sistemi.
+- Sandık + Tabela ile market kur
+- GUI menü ile alışveriş yap
+- Teklif sistemi ile alternatif ödeme yap
+- Koruma bölgesinde %5 vergi
+
+**Görev Sistemi**: Totem'e sağ tık yaparak görev al, tamamla, ödül kazan!
+- 8 farklı görev tipi (Mob Avı, Malzeme Toplama, Lokasyon Ziyareti, vb.)
+- 4 zorluk seviyesi (Kolay, Orta, Zor, Uzman)
+- GUI menü ile görev takibi
+- Otomatik ilerleme takibi
 
 ---
 
@@ -150,9 +175,15 @@ Dünyada sadece zombiler yok. **Eğitilebilir Ejderhalar**, yer altı Solucanlar
 - **Nadir**: Ejderha, T-Rex, Griffin (300-500 HP)
 - **Efsanevi**: Titan Golem, Hydra, Behemoth (400-1000 HP)
 
-**Eğitme Sistemi**: Özel isimli tüm canlılar eğitilebilir! **Eğitim Çekirdeği** (Beacon bloğu) kullanarak ritüel platformu kur, aktivasyon itemi ile eğit, sahiplen, binebilir hale getir. 5 zorluk seviyesine göre farklı platformlar.
+**Boss Sistemi**: 
+- **11 Farklı Boss**: Goblin King, Orc King, Troll King, Dragon, T-Rex, Cyclops, Titan Golem, Phoenix, Kraken, Demon Lord, Void Dragon
+- **BossBar Görüntüsü**: Tüm bossların canı ve fazı (multi-phase bosslar için) ekranın üstünde gösterilir
+- **Boss Drops**: Her boss özel item düşürür (Goblin Crown, Troll Heart, Titan Core, Void Dragon Heart vb.)
+- **Boss Item Gereksinimleri**: Özel silah ve zırhlar craft etmek için boss item'ları gerekir
 
-**Üreme Sistemi**: Eğitilmiş canlıları **Üreme Çekirdeği** ile çiftleştir, yavru üret, ordu büyüt! Memeli canlılar direkt yavru doğurur, yumurtlayan canlılar (Ejderha, Griffin, Phoenix) yumurta bırakır. **Cinsiyet Tarayıcısı** ile canlıların cinsiyetini kontrol et!
+**Eğitme Sistemi**: Özel isimli tüm canlılar eğitilebilir! **Eğitim Çekirdeği** (`TAMING_CORE`) kullanarak ritüel platformu kur, aktivasyon itemi ile eğit, sahiplen, binebilir hale getir. 5 zorluk seviyesine göre farklı platformlar. Eğitim Çekirdeği merkez bloğa yerleştirilir ve ritüel deseni çekirdeğin altına yapılır.
+
+**Üreme Sistemi**: Eğitilmiş canlıları **Üreme Çekirdeği** (`BREEDING_CORE`) ile çiftleştir, yavru üret, ordu büyüt! Memeli canlılar direkt yavru doğurur, yumurtlayan canlılar (Ejderha, Griffin, Phoenix) yumurta bırakır. **Cinsiyet Tarayıcısı** (`GENDER_SCANNER`) ile canlıların cinsiyetini kontrol et!
 
 **Binme Mekaniği**: Ejderha, T-Rex, Griffin gibi canlılara bin, uç, savaş!
 
@@ -192,7 +223,16 @@ Derinlerde sıradan elmas değil, **Titanyum** ve **Kızıl Elmas** gibi yeni ce
 **Örnekler**: 
 - "Tektonik Sabitleyici" yapmak için Titan Golem'den tarif kitabı gerekli!
 - "Hiperiyon Kılıcı" (Seviye 5 silah) yapmak için Void Dragon'dan tarif kitabı gerekli!
-- Tüm 25 özel silah için boss'lardan tarif kitapları düşer
+- Tüm 25 özel silah ve 25 özel zırh için boss'lardan tarif kitapları düşer
+
+**Boss Item Gereksinimleri**:
+- **Seviye 1 Silah/Zırh**: Goblin Crown (Goblin King)
+- **Seviye 2 Silah/Zırh**: Troll Heart (Troll King)
+- **Seviye 3 Silah/Zırh**: T-Rex Tooth (T-Rex)
+- **Seviye 4 Silah/Zırh**: Titan Core (Titan Golem)
+- **Seviye 5 Silah/Zırh**: Void Dragon Heart (Void Dragon)
+
+**Güvenlik**: Boss item doğrulama sistemi aktif - Sadece gerçek boss item'ları (NBT kontrolü) craft için kullanılabilir!
 
 ---
 
@@ -266,9 +306,11 @@ Derinlerde sıradan elmas değil, **Titanyum** ve **Kızıl Elmas** gibi yeni ce
 
 ### 8. Özel Silahlar ve Araçlar
 
-#### 🗡️ Özel Silahlar (25 Silah - 5 Seviye)
+#### 🗡️ Özel Silahlar ve Zırhlar (25 Silah + 25 Zırh - 5 Seviye)
 
-Stratocraft'ta **25 özel silah** bulunur. Her silahın benzersiz yetenekleri vardır ve **Boss Item'ları** ile craft edilir.
+Stratocraft'ta **25 özel silah** ve **25 özel zırh** bulunur. Her silah ve zırhın benzersiz yetenekleri vardır ve **Boss Item'ları** ile craft edilir.
+
+**Özel Zırhlar**: Her seviyede 5 farklı zırh seti (Helmet, Chestplate, Leggings, Boots) bulunur. Zırhlar, silahlarla birlikte kullanıldığında set bonusları verir.
 
 **Seviye 1 Silahlar** (Goblin Kralı Taçı gerekir):
 - **Hız Hançeri**: Elinde tutarken %20 hız verir, yüksek saldırı hızı
@@ -317,7 +359,7 @@ Stratocraft'ta **25 özel silah** bulunur. Her silahın benzersiz yetenekleri va
 - **Paslı Kanca**: 7 blok menzil, ucuz
 - **Titan Kancası**: 40 blok menzil, Slow Falling buff, pahalı
 
-**Casusluk Dürbünü**: 3 saniye hedefe bak, can/zırh/envanter bilgisi al!
+**Casusluk Dürbünü**: 3 saniye hedefe bak, GUI menü açılır! Can, zırh, açlık, envanter ve aktif iksir efektlerini görüntüle.
 
 **Cinsiyet Tarayıcısı**: Eğitilmiş canlıların cinsiyetini gösterir. Canlıya sağ tıkla, "♂ Erkek" veya "♀ Dişi" bilgisini al. Üreme için gerekli!
 
@@ -451,7 +493,11 @@ Seviye 5 (10000+): Efsanevi moblar, Kızıl Elmas
 - **Bataryalar**: Yakıt hazır tut (Elmas, Kızıl Elmas, Karanlık Madde)
 - **Yapılar**: Boss malzemeleri topla
 
-**Ekonomi**: Kontratlar ve kervanlar ile para kazan!
+**Ekonomi**: Kontratlar, kervanlar, marketler ve görevler ile para kazan!
+- **Kontratlar**: `/kontrat` komutu ile GUI menüden kontrat al (Güvenlik: Performans optimizasyonları, can kaybı geri kazanım)
+- **Kervanlar**: Uzak bölgelere malzeme taşı
+- **Marketler**: Eşya satıp al, teklif ver (Güvenlik: Dupe önleme, vergi kaçırma önleme, stok senkronizasyonu)
+- **Görevler**: Totem'e sağ tık yap, görev al, tamamla (Güvenlik: Envanter kontrolü, ödül yere düşme)
 
 ---
 
@@ -483,8 +529,9 @@ Bu döküman, Stratocraft'ın temel felsefesini ve amacını anlatır. Detaylı 
 - **12_kervan_sistemi.md**: Kervan oluşturma, yolculuk, riskler
 - **13_ozel_araclar.md**: Kancalar, dürbün, stratejik kullanım
 - **14_supply_drop.md**: Supply drop mekaniği, yarışma, ödüller
-- **15_arastirma_sistemi.md**: Tarif kitabı sistemi, araştırma masası
-- **16-19_diger_sistemler.md**: Görev, antrenman, lojistik, ekonomi
+- **15_arastirma_sistemi.md**: Tarif kitabı sistemi, araştırma masası, boss item doğrulama
+- **16-19_diger_sistemler.md**: Görev sistemi (GUI menü, 8 görev tipi), antrenman, lojistik, ekonomi
+- **21_market_sistemi.md**: Market kurulumu, teklif sistemi, alışveriş, güvenlik özellikleri
 - **17_egitme_sistemi.md**: Canlı eğitme, ritüeller, binme
 - **18_ureme_sistemi.md**: Çiftleştirme, üreme tesisleri, yumurta
 - **19_zorluk_sistemi.md**: Zorluk bölgeleri, mob/maden kısıtlamaları

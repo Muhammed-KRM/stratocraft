@@ -53,8 +53,12 @@ public class ContractListener implements Listener {
     
     /**
      * Oyuncu Hareket Takibi - Bölge Yasağı Kontrolü
-     * PERFORMANS OPTİMİZASYONU: Sadece blok değiştiyse çalış
+     * PERFORMANS OPTİMİZASYONU: Sadece blok değiştiyse çalış + Cache kullanımı
      */
+    // PERFORMANS: Cache - Her oyuncu için son kontrol zamanı (spam önleme)
+    private final java.util.Map<java.util.UUID, Long> lastTerritoryCheck = new java.util.HashMap<>();
+    private static final long TERRITORY_CHECK_COOLDOWN = 1000L; // 1 saniye cooldown
+    
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerMove(PlayerMoveEvent event) {
         // PERFORMANS FİLTRESİ: Sadece blok değiştiyse çalış (X, Y, Z kontrolü)
@@ -68,7 +72,15 @@ public class ContractListener implements Listener {
         Location to = event.getTo();
         if (to == null) return;
         
-        // Oyuncunun aktif kontratlarını al
+        // PERFORMANS: Cooldown kontrolü (spam önleme)
+        long currentTime = System.currentTimeMillis();
+        Long lastCheck = lastTerritoryCheck.get(player.getUniqueId());
+        if (lastCheck != null && (currentTime - lastCheck) < TERRITORY_CHECK_COOLDOWN) {
+            return; // Çok sık kontrol etme
+        }
+        lastTerritoryCheck.put(player.getUniqueId(), currentTime);
+        
+        // Oyuncunun aktif kontratlarını al (cache'den)
         List<Contract> contracts = contractManager.getPlayerContracts(player.getUniqueId());
         
         for (Contract contract : contracts) {

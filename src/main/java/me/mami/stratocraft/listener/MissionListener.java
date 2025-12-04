@@ -153,9 +153,15 @@ public class MissionListener implements Listener {
                 clicked.getItemMeta() != null && 
                 clicked.getItemMeta().getDisplayName().equals("§a[Teslim Et]")) {
                 if (mission.isCompleted()) {
-                    // Ödül ver
+                    // KRİTİK: Envanter kontrolü - Ödül yere düşebilir
                     if (mission.getReward() != null) {
-                        player.getInventory().addItem(mission.getReward());
+                        if (player.getInventory().firstEmpty() == -1) {
+                            // Envanter dolu, yere düşür
+                            player.getWorld().dropItemNaturally(player.getLocation(), mission.getReward());
+                            player.sendMessage("§eEnvanterin dolu! Ödül yere düştü. Yer aç ve tekrar dene.");
+                        } else {
+                            player.getInventory().addItem(mission.getReward());
+                        }
                     }
                     if (mission.getRewardMoney() > 0) {
                         // EconomyManager kullan

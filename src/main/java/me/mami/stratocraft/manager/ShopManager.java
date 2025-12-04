@@ -30,10 +30,26 @@ public class ShopManager {
     public Shop getShop(Location loc) { return shops.get(loc); }
 
     public void handlePurchase(Player buyer, Shop shop) {
-        Block b = shop.getLocation().getBlock();
-        if (b.getType() != Material.CHEST) return;
-        Chest chest = (Chest) b.getState();
+        // KRİTİK: Kendinle ticaret engelleme
+        if (shop.getOwnerId().equals(buyer.getUniqueId())) {
+            buyer.sendMessage("§cKendi marketinden alışveriş yapamazsın!");
+            return;
+        }
         
+        Block b = shop.getLocation().getBlock();
+        if (b.getType() != Material.CHEST) {
+            buyer.sendMessage("§cMarket sandığı bulunamadı!");
+            return;
+        }
+        
+        // KRİTİK: Fiziksel sandığı tekrar kontrol et (dupe önleme)
+        Chest chest = (Chest) b.getState();
+        if (chest == null) {
+            buyer.sendMessage("§cMarket sandığı erişilemez!");
+            return;
+        }
+        
+        // KRİTİK: Stok kontrolü - GUI snapshot yerine anlık kontrol
         if (!chest.getInventory().containsAtLeast(shop.getSellingItem(), shop.getSellingItem().getAmount())) {
             buyer.sendMessage("§cMarket stoğu tükenmiş!");
             return;
@@ -44,10 +60,17 @@ public class ShopManager {
             return;
         }
 
+        // KRİTİK: Anlık bölge kontrolü (vergi kaçırma önleme)
+        boolean isProtectedZone = false;
+        if (plugin != null && plugin.getTerritoryManager() != null) {
+            org.bukkit.entity.Clan territoryOwner = plugin.getTerritoryManager().getTerritoryOwner(shop.getLocation());
+            isProtectedZone = (territoryOwner != null);
+        }
+
         buyer.getInventory().removeItem(shop.getPriceItem()); 
         
-        // Vergi hesaplama (%5)
-        if (shop.isProtectedZone()) {
+        // Vergi hesaplama (%5) - Anlık bölge kontrolüne göre
+        if (isProtectedZone) {
             ItemStack taxItem = shop.getPriceItem().clone();
             taxItem.setAmount((int) Math.ceil(taxItem.getAmount() * 0.05));
             chest.getInventory().addItem(taxItem);
@@ -59,10 +82,26 @@ public class ShopManager {
             chest.getInventory().addItem(shop.getPriceItem());
         }
         
-        chest.getInventory().removeItem(shop.getSellingItem());
-        buyer.getInventory().addItem(shop.getSellingItem());    
+        // KRİTİK: Stok tekrar kontrolü (race condition önleme)
+        if (!chest.getInventory().containsAtLeast(shop.getSellingItem(), shop.getSellingItem().getAmount())) {
+            // Stok tükendi, ödemeyi geri ver
+            buyer.getInventory().addItem(shop.getPriceItem());
+            buyer.sendMessage("§cMarket stoğu tükenmiş! Ödemeniz iade edildi.");
+            return;
+        }
         
-        buyer.sendMessage("§aSatın alma başarılı!" + (shop.isProtectedZone() ? " §7(%5 vergi alındı)" : ""));
+        chest.getInventory().removeItem(shop.getSellingItem());
+        
+        // KRİTİK: Envanter kontrolü - Ödül yere düşebilir
+        if (buyer.getInventory().firstEmpty() == -1) {
+            // Envanter dolu, yere düşür
+            buyer.getWorld().dropItemNaturally(buyer.getLocation(), shop.getSellingItem());
+            buyer.sendMessage("§eEnvanterin dolu! Ödül yere düştü.");
+        } else {
+            buyer.getInventory().addItem(shop.getSellingItem());
+        }
+        
+        buyer.sendMessage("§aSatın alma başarılı!" + (isProtectedZone ? " §7(%5 vergi alındı)" : ""));
     }
     
     // DataManager için

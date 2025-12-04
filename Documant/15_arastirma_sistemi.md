@@ -317,6 +317,51 @@ Lectern'den kitabı alırsan:
 → Tekrar koy
 ```
 
+### 🔒 Güvenlik Özellikleri
+
+**Boss Item Doğrulama**:
+- **NBT Kontrolü**: Sadece tip kontrolü yapılmaz, NBT (PersistentDataContainer) kontrolü yapılır
+- **Özel Item Zorunlu**: Normal item'lar (örn: sıradan Nether Star) kabul edilmez
+- **Craft Anında Kontrol**: `CraftItemEvent` içinde doğrulama yapılır
+
+**Nasıl Çalışır?**:
+```java
+// ResearchListener.java
+// Boss item kontrolü (seviye 2+ için)
+if (level >= 2) {
+    ItemStack[] matrix = event.getInventory().getMatrix();
+    boolean hasBossItem = false;
+    
+    // Gerekli boss item'ı belirle
+    ItemStack requiredBossItem = getRequiredBossItemForWeapon(level, variant);
+    
+    if (requiredBossItem != null) {
+        for (ItemStack item : matrix) {
+            // NBT kontrolü yapılır
+            if (item != null && ItemManager.isCustomItem(item, getBossItemId(requiredBossItem))) {
+                hasBossItem = true;
+                break;
+            }
+        }
+        
+        if (!hasBossItem) {
+            event.setCancelled(true);
+            p.sendMessage("§cBu silahı yapmak için gerekli boss item'ına sahip değilsin!");
+            return;
+        }
+    }
+}
+```
+
+**Örnek Senaryo**:
+```
+1. Oyuncu "Titan Golem Çekirdeği" (Nether Star) yerine normal "Nether Star" koyar
+2. Craft yapmaya çalışır
+3. Sistem NBT kontrolü yapar
+4. Normal Nether Star'da "TITAN_CORE" NBT tag'i yok
+5. Craft iptal edilir: "Bu silahı yapmak için gerekli boss item'ına sahip değilsin!"
+```
+
 ---
 
 ## 🎯 HIZLI ARAŞTIRMA REHBERİ

@@ -230,6 +230,24 @@ public class DataManager {
                     data.sellItem = serializeItemStack(shop.getSellingItem());
                     data.priceItem = serializeItemStack(shop.getPriceItem());
                     data.protectedZone = shop.isProtectedZone();
+                    
+                    // KRİTİK: Teklifleri kaydet (veri kaybı önleme)
+                    data.offers = shop.getOffers().stream()
+                            .map(offer -> {
+                                OfferData offerData = new OfferData();
+                                offerData.offerer = offer.getOfferer().toString();
+                                offerData.offerItem = serializeItemStack(offer.getOfferItem());
+                                offerData.offerAmount = offer.getOfferAmount();
+                                offerData.offerTime = offer.getOfferTime();
+                                offerData.accepted = offer.isAccepted();
+                                offerData.rejected = offer.isRejected();
+                                return offerData;
+                            })
+                            .collect(Collectors.toList());
+                    
+                    data.acceptOffers = shop.isAcceptOffers();
+                    data.maxOffers = shop.getMaxOffers();
+                    
                     return data;
                 })
                 .collect(Collectors.toList());
@@ -524,6 +542,26 @@ public class DataManager {
                         deserializeItemStack(data.priceItem),
                         data.protectedZone
                 );
+                
+                // KRİTİK: Teklifleri yükle (veri kaybı önleme)
+                if (data.offers != null) {
+                    for (OfferData offerData : data.offers) {
+                        // Sadece kabul/reddedilmemiş teklifleri yükle
+                        if (!offerData.accepted && !offerData.rejected) {
+                            Shop.Offer offer = new Shop.Offer(
+                                    UUID.fromString(offerData.offerer),
+                                    deserializeItemStack(offerData.offerItem),
+                                    offerData.offerAmount
+                            );
+                            shop.addOffer(offer);
+                        }
+                    }
+                }
+                
+                // Teklif ayarlarını yükle
+                shop.setAcceptsOffers(data.acceptOffers);
+                shop.setMaxOffers(data.maxOffers);
+                
                 shopManager.loadShop(shop);
             }
         }
@@ -727,6 +765,19 @@ public class DataManager {
         String sellItem;
         String priceItem;
         boolean protectedZone;
+        // KRİTİK: Teklif sistemi verileri
+        List<OfferData> offers = new ArrayList<>();
+        boolean acceptOffers = true;
+        int maxOffers = 10;
+    }
+    
+    private static class OfferData {
+        String offerer;
+        String offerItem;
+        int offerAmount;
+        long offerTime;
+        boolean accepted = false;
+        boolean rejected = false;
     }
     
     private static class DisasterStateData {

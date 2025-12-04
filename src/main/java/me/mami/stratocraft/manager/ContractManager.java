@@ -67,6 +67,11 @@ public class ContractManager {
         if (contract != null && !contract.isCompleted()) {
             contract.addDelivered(amount);
             if (contract.isCompleted()) {
+                // KRİTİK: Kontrat tamamlandığında kan imzası canını geri ver (1 kalp = 2 can)
+                if (contract.getAcceptor() != null) {
+                    restorePermanentHealth(contract.getAcceptor(), 1); // Kan imzası için 1 kalp geri ver
+                }
+                
                 Player acceptor = Bukkit.getPlayer(contract.getAcceptor());
                 if (acceptor != null && acceptor.isOnline()) {
                     Clan issuerClan = clanManager.getClanByPlayer(contract.getIssuer());
@@ -228,6 +233,33 @@ public class ContractManager {
     }
     
     /**
+     * KRİTİK: Kalıcı can kaybını geri ver (kontrat tamamlandığında veya iptal edildiğinde)
+     */
+    public void restorePermanentHealth(UUID playerId, int hearts) {
+        int currentLoss = permanentHealthLoss.getOrDefault(playerId, 0);
+        if (currentLoss <= 0) return; // Zaten can kaybı yok
+        
+        int newLoss = Math.max(0, currentLoss - hearts);
+        permanentHealthLoss.put(playerId, newLoss);
+        
+        // Oyuncu online ise canı geri ver
+        Player player = Bukkit.getPlayer(playerId);
+        if (player != null && player.isOnline()) {
+            Attribute maxHealthAttr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+            if (maxHealthAttr != null) {
+                double baseMax = 20.0; // Varsayılan maksimum can
+                double newMax = Math.max(1.0, baseMax - (newLoss * 2.0)); // Her kalp = 2 can
+                maxHealthAttr.setBaseValue(newMax);
+                
+                // Canı yeni maksimuma ayarla (eğer düşükse)
+                if (player.getHealth() < newMax) {
+                    player.setHealth(Math.min(player.getHealth() + (hearts * 2.0), newMax));
+                }
+            }
+        }
+    }
+    
+    /**
      * Oyuncu giriş yaptığında kalıcı cezaları uygula
      */
     public void onPlayerJoin(Player player) {
@@ -340,6 +372,11 @@ public class ContractManager {
         if (contract == null || contract.isCompleted()) return;
         
         contract.setCompleted(true);
+        
+        // KRİTİK: Kontrat tamamlandığında kan imzası canını geri ver (1 kalp = 2 can)
+        if (contract.getAcceptor() != null) {
+            restorePermanentHealth(contract.getAcceptor(), 1); // Kan imzası için 1 kalp geri ver
+        }
         
         // Ödülü öde (EconomyManager kullan)
         me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
