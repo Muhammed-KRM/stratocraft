@@ -1403,5 +1403,11 @@ public class BossManager {
      */
     public void removeBoss(UUID entityId) {
         activeBosses.remove(entityId);
+        
+        // BossBar'ı da kaldır
+        org.bukkit.boss.BossBar bossBar = bossBars.remove(entityId);
+        if (bossBar != null) {
+            bossBar.removeAll();
+        }
     }
 }

@@ -994,7 +994,7 @@ public class ItemManager {
     /**
      * Tarif bilgilerini döndür
      */
-    private RecipeInfo getRecipeInfo(String recipeId) {
+    public static RecipeInfo getRecipeInfo(String recipeId) {
         // Yapılar
         switch (recipeId) {
             case "CORE":
@@ -1298,7 +1298,7 @@ public class ItemManager {
     /**
      * Tarif bilgisi sınıfı
      */
-    private static class RecipeInfo {
+    public static class RecipeInfo {
         private final String displayName;
         private final String locationInfo;
         private final String functionInfo;

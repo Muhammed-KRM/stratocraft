@@ -16,9 +16,14 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.Bukkit;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.RayTraceResult;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * GhostRecipeListener - Hayalet tarif sistemi listener'ı
@@ -55,13 +60,20 @@ public class GhostRecipeListener implements Listener {
         String recipeId = getRecipeIdFromItem(item);
         if (recipeId == null) return;
         
-        // Shift+Sağ tık: Item tariflerinde crafting recipe göster
-        if (player.isSneaking() && isItemRecipe(recipeId)) {
-            showCraftingRecipe(player, recipeId);
+        // Item tarifleri için: Normal sağ tık → GUI menü, Shift+Sağ tık → Chat
+        if (isItemRecipe(recipeId)) {
+            if (player.isSneaking()) {
+                // Shift+Sağ tık: Chat'te göster (eski sistem)
+                showCraftingRecipe(player, recipeId);
+            } else {
+                // Normal sağ tık: GUI menü aç
+                openRecipeMenu(player, recipeId);
+            }
             event.setCancelled(true);
             return;
         }
         
+        // Yapı tarifleri için: Hayalet yapı göster
         // Oyuncunun bu tarife sahip olduğunu kontrol et
         if (!researchManager.hasRecipeBook(player, recipeId)) {
             player.sendMessage("§cBu tarif kitabına sahip değilsin!");
@@ -166,6 +178,120 @@ public class GhostRecipeListener implements Listener {
         }
         
         player.sendMessage("§6§l════════════════════════════");
+    }
+    
+    /**
+     * Tarif kitabı GUI menüsünü aç
+     */
+    private void openRecipeMenu(Player player, String recipeId) {
+        String recipeIdUpper = recipeId.toUpperCase().replace("RECIPE_", "");
+        ItemManager.RecipeInfo info = ItemManager.getRecipeInfo(recipeIdUpper);
+        
+        if (info == null) {
+            player.sendMessage("§cBu tarif için bilgi bulunamadı!");
+            return;
+        }
+        
+        Inventory menu = Bukkit.createInventory(null, 27, "§eTarif: " + info.getDisplayName());
+        
+        // Crafting grid gösterimi (Slot 10-16: 3x3 grid)
+        // Slot 10-12: İlk satır
+        // Slot 13-15: İkinci satır
+        // Slot 16-18: Üçüncü satır (ama 27 slot'ta 16-18 yok, 16-17-18 kullanacağız)
+        // Daha iyi: Slot 10-18 kullan (3x3 grid)
+        
+        // Crafting recipe bilgisi varsa göster
+        if (info.getCraftingRecipe() != null && !info.getCraftingRecipe().isEmpty()) {
+            // Crafting recipe'yi parse et ve göster
+            List<String> recipeLines = info.getCraftingRecipe();
+            // İlk 3 satır crafting grid'i
+            int slot = 10;
+            for (int i = 0; i < Math.min(3, recipeLines.size()); i++) {
+                String line = recipeLines.get(i);
+                // Basit bir parsing (örnek: "[G][E][G]" -> G, E, G)
+                // Daha gelişmiş parsing için ItemManager'dan malzeme bilgisi alınabilir
+                ItemStack gridItem = createRecipeGridItem(line);
+                menu.setItem(slot, gridItem);
+                slot++;
+            }
+        } else {
+            // Crafting recipe yoksa bilgi göster
+            ItemStack infoItem = new ItemStack(Material.CRAFTING_TABLE);
+            ItemMeta meta = infoItem.getItemMeta();
+            meta.setDisplayName("§eCrafting Tarifi");
+            List<String> lore = new ArrayList<>();
+            lore.add("§7" + info.getFunctionInfo());
+            if (info.getLocationInfo() != null) {
+                lore.add("");
+                lore.add("§7" + info.getLocationInfo());
+            }
+            meta.setLore(lore);
+            infoItem.setItemMeta(meta);
+            menu.setItem(13, infoItem);
+        }
+        
+        // Sonuç item (Slot 22)
+        ItemStack resultItem = getResultItem(recipeIdUpper);
+        if (resultItem != null) {
+            menu.setItem(22, resultItem);
+        }
+        
+        // Malzeme listesi (Slot 0-8: Lore'da gösterilecek, burada bilgi item'ı)
+        ItemStack materialItem = new ItemStack(Material.BOOK);
+        ItemMeta materialMeta = materialItem.getItemMeta();
+        materialMeta.setDisplayName("§6Gerekli Malzemeler");
+        List<String> materialLore = new ArrayList<>();
+        if (info.getCraftingRecipe() != null && info.getCraftingRecipe().size() > 3) {
+            // 4. satırdan itibaren malzeme açıklamaları
+            for (int i = 3; i < info.getCraftingRecipe().size(); i++) {
+                materialLore.add("§7" + info.getCraftingRecipe().get(i));
+            }
+        } else {
+            materialLore.add("§7Detaylı bilgi için Shift+Sağ Tık yapın");
+        }
+        materialMeta.setLore(materialLore);
+        materialItem.setItemMeta(materialMeta);
+        menu.setItem(4, materialItem);
+        
+        // Kapat butonu (Slot 26)
+        ItemStack closeItem = new ItemStack(Material.BARRIER);
+        ItemMeta closeMeta = closeItem.getItemMeta();
+        closeMeta.setDisplayName("§cKapat");
+        closeItem.setItemMeta(closeMeta);
+        menu.setItem(26, closeItem);
+        
+        player.openInventory(menu);
+    }
+    
+    /**
+     * Crafting grid item'ı oluştur (basit gösterim)
+     */
+    private ItemStack createRecipeGridItem(String line) {
+        // Basit gösterim için crafting table ikonu
+        ItemStack item = new ItemStack(Material.CRAFTING_TABLE);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName("§7" + line);
+        item.setItemMeta(meta);
+        return item;
+    }
+    
+    /**
+     * Recipe ID'ye göre sonuç item'ı al
+     */
+    private ItemStack getResultItem(String recipeId) {
+        // ItemManager'dan static field'ları kullan
+        switch (recipeId) {
+            case "LIGHTNING_CORE":
+                return ItemManager.LIGHTNING_CORE;
+            case "TITANIUM_INGOT":
+                return ItemManager.TITANIUM_INGOT;
+            case "TRAP_CORE":
+                return ItemManager.TRAP_CORE;
+            case "RUSTY_HOOK":
+                return ItemManager.RUSTY_HOOK;
+            default:
+                return new ItemStack(Material.BOOK);
+        }
     }
     
     /**

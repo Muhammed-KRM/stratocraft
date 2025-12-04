@@ -197,7 +197,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 p.sendMessage("§cKullanım: /stratocraft give " + category + " <seviye> <tip> [miktar]");
                 if (category.equals("weapon")) {
                     p.sendMessage("§7Seviye: 1-5");
-                    p.sendMessage("§7Tipler: sword, axe, spear, bow, hammer");
+                    p.sendMessage("§7Tipler: sword/kılıç, axe/balta, spear/mızrak, bow/yay, hammer/çekiç");
                 } else {
                     p.sendMessage("§7Seviye: 1-5");
                     p.sendMessage("§7Tipler: helmet, chestplate, leggings, boots");
@@ -2063,12 +2063,17 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "l4_2_life_death":
             case "yasam_olum":
             case "yaşam_ölüm":
+            case "yasam_ve_olum":
+            case "yaşam_ve_ölüm":
+            case "life_and_death":
                 return plugin.getSpecialItemManager() != null ? 
                     plugin.getSpecialItemManager().getTier4Weapon("l4_2") : null;
             case "l4_3":
             case "l4_3_mjolnir_v2":
             case "mjolnir":
             case "mjölnir":
+            case "mjolnir_v2":
+            case "mjölnir_v2":
                 return plugin.getSpecialItemManager() != null ? 
                     plugin.getSpecialItemManager().getTier4Weapon("l4_3") : null;
             case "l4_4":
@@ -2086,12 +2091,14 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "l5_1":
             case "l5_1_void_walker":
             case "hiperiyon_kilici":
+            case "hiperiyon_kılıcı":
             case "hiperiyon":
                 return plugin.getSpecialItemManager() != null ? 
                     plugin.getSpecialItemManager().getTier5Weapon("l5_1") : null;
             case "l5_2":
             case "l5_2_meteor_caller":
             case "meteor_cagiran":
+            case "meteor_çağıran":
             case "meteor":
                 return plugin.getSpecialItemManager() != null ? 
                     plugin.getSpecialItemManager().getTier5Weapon("l5_2") : null;
@@ -2110,7 +2117,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "l5_5":
             case "l5_5_time_keeper":
             case "zamani_buken":
+            case "zamanı_büken":
             case "zaman":
+            case "zaman_buken":
+            case "zaman_büken":
                 return plugin.getSpecialItemManager() != null ? 
                     plugin.getSpecialItemManager().getTier5Weapon("l5_5") : null;
             default:
@@ -2902,6 +2912,164 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         if (lowerName.contains("gender_scanner") || lowerName.contains("cinsiyet_ayirici") || lowerName.contains("cinsiyet_ayırıcı")) {
             return "Cinsiyet Ayırıcı";
         }
+        
+        // Batarya İsimleri
+        // Saldırı Bataryaları - Seviye 1
+        if (lowerName.contains("attack_lightning_staff_l1") || lowerName.contains("yildirim_asasi") || lowerName.contains("yıldırım_asası")) {
+            return "Yıldırım Asası";
+        }
+        if (lowerName.contains("attack_hellfire_ball_l1") || lowerName.contains("cehennem_topu")) {
+            return "Cehennem Topu";
+        }
+        if (lowerName.contains("attack_ice_ball_l1") || lowerName.contains("buz_topu")) {
+            return "Buz Topu";
+        }
+        if (lowerName.contains("attack_poison_arrow_l1") || lowerName.contains("zehir_oku")) {
+            return "Zehir Oku";
+        }
+        if (lowerName.contains("attack_shock_wave_l1") || lowerName.contains("sok_dalgasi") || lowerName.contains("şok_dalgası")) {
+            return "Şok Dalgası";
+        }
+        // Saldırı Bataryaları - Seviye 4
+        if (lowerName.contains("attack_tesla_tower_l4") || lowerName.contains("tesla_kulesi")) {
+            return "Tesla Kulesi";
+        }
+        if (lowerName.contains("attack_ice_fortress_l4") || lowerName.contains("buz_kalesi")) {
+            return "Buz Kalesi";
+        }
+        // Saldırı Bataryaları - Seviye 5
+        if (lowerName.contains("attack_apocalypse_reactor_l5") || lowerName.contains("kiyamet_reaktoru") || lowerName.contains("kıyamet_reaktörü")) {
+            return "Kıyamet Reaktörü";
+        }
+        // Destek Bataryaları - Seviye 2
+        if (lowerName.contains("support_heal_speed_combo_l2") || lowerName.contains("can_hiz_kombinasyonu") || lowerName.contains("can_hız_kombinasyonu")) {
+            return "Can + Hız Kombinasyonu";
+        }
+        if (lowerName.contains("support_damage_armor_combo_l2") || lowerName.contains("hasar_zirh_kombinasyonu") || lowerName.contains("hasar_zırh_kombinasyonu")) {
+            return "Hasar + Zırh Kombinasyonu";
+        }
+        // Destek Bataryaları - Seviye 3
+        if (lowerName.contains("support_absorption_shield_l3") || lowerName.contains("absorption_kalkani") || lowerName.contains("absorption_kalkanı")) {
+            return "Absorption Kalkanı";
+        }
+        if (lowerName.contains("support_flight_l3") || lowerName.contains("ucma_yeteneği") || lowerName.contains("uçma_yeteneği")) {
+            return "Uçma Yeteneği";
+        }
+        if (lowerName.contains("support_critical_strike_l3") || lowerName.contains("kritik_vurus_artisi") || lowerName.contains("kritik_vuruş_artışı")) {
+            return "Kritik Vuruş Artışı";
+        }
+        // Destek Bataryaları - Seviye 4
+        if (lowerName.contains("support_full_heal_absorption_l4") || lowerName.contains("tam_can_absorption")) {
+            return "Tam Can + Absorption";
+        }
+        if (lowerName.contains("support_time_slow_l4") || lowerName.contains("zaman_yavaslatma") || lowerName.contains("zaman_yavaşlatma")) {
+            return "Zaman Yavaşlatma";
+        }
+        if (lowerName.contains("support_lightning_strike_l4") || lowerName.contains("yildirim_vurusu") || lowerName.contains("yıldırım_vuruşu")) {
+            return "Yıldırım Vuruşu";
+        }
+        // Destek Bataryaları - Seviye 5
+        if (lowerName.contains("support_legendary_heal_l5") || lowerName.contains("efsanevi_can_yenileme")) {
+            return "Efsanevi Can Yenileme";
+        }
+        if (lowerName.contains("support_time_stop_l5") || lowerName.contains("zaman_durdurma")) {
+            return "Zaman Durdurma";
+        }
+        if (lowerName.contains("support_death_touch_l5") || lowerName.contains("olum_dokunusu") || lowerName.contains("ölüm_dokunuşu")) {
+            return "Ölüm Dokunuşu";
+        }
+        if (lowerName.contains("support_phase_shift_l5") || lowerName.contains("faz_degistirme") || lowerName.contains("faz_değiştirme")) {
+            return "Faz Değiştirme";
+        }
+        if (lowerName.contains("support_rebirth_l5") || lowerName.contains("yeniden_dogus") || lowerName.contains("yeniden_doğuş")) {
+            return "Yeniden Doğuş";
+        }
+        
+        // Seviye 1 Silahlar
+        if (lowerName.contains("l1_1") || lowerName.contains("hiz_hanceri") || lowerName.contains("hız_hançeri") || lowerName.contains("rogue_dagger")) {
+            return "Hız Hançeri";
+        }
+        if (lowerName.contains("l1_2") || lowerName.contains("ciftci_tirpani") || lowerName.contains("çiftçi_tırpanı") || lowerName.contains("harvest_scythe")) {
+            return "Çiftçi Tırpanı";
+        }
+        if (lowerName.contains("l1_3") || lowerName.contains("yercekimi_gurzu") || lowerName.contains("yerçekimi_gürzü") || lowerName.contains("gravity_mace")) {
+            return "Yerçekimi Gürzü";
+        }
+        if (lowerName.contains("l1_4") || lowerName.contains("patlayici_yay") || lowerName.contains("patlayıcı_yay") || lowerName.contains("boom_bow")) {
+            return "Patlayıcı Yay";
+        }
+        if (lowerName.contains("l1_5") || lowerName.contains("vampir_disi") || lowerName.contains("vampir_dişi") || lowerName.contains("vampire_blade")) {
+            return "Vampir Dişi";
+        }
+        
+        // Seviye 2 Silahlar
+        if (lowerName.contains("l2_1") || lowerName.contains("alev_kilici") || lowerName.contains("alev_kılıcı") || lowerName.contains("inferno_sword")) {
+            return "Alev Kılıcı";
+        }
+        if (lowerName.contains("l2_2") || lowerName.contains("buz_asasi") || lowerName.contains("buz_asası") || lowerName.contains("frost_wand")) {
+            return "Buz Asası";
+        }
+        if (lowerName.contains("l2_3") || lowerName.contains("zehirli_mizrak") || lowerName.contains("zehirli_mızrak") || lowerName.contains("venom_spear")) {
+            return "Zehirli Mızrak";
+        }
+        if (lowerName.contains("l2_4") || lowerName.contains("golem_kalkani") || lowerName.contains("golem_kalkanı") || lowerName.contains("guardian_shield")) {
+            return "Golem Kalkanı";
+        }
+        if (lowerName.contains("l2_5") || lowerName.contains("sok_baltasi") || lowerName.contains("şok_baltası") || lowerName.contains("thunder_axe")) {
+            return "Şok Baltası";
+        }
+        
+        // Seviye 3 Silahlar
+        if (lowerName.contains("l3_1") || lowerName.contains("golge_katanasi") || lowerName.contains("gölge_katanası") || lowerName.contains("shadow_katana")) {
+            return "Gölge Katanası";
+        }
+        if (lowerName.contains("l3_2") || lowerName.contains("deprem_cekici") || lowerName.contains("deprem_çekici") || lowerName.contains("earthshaker")) {
+            return "Deprem Çekici";
+        }
+        if (lowerName.contains("l3_3") || lowerName.contains("taramali_yay") || lowerName.contains("taramalı_yay") || lowerName.contains("machine_crossbow")) {
+            return "Taramalı Yay";
+        }
+        if (lowerName.contains("l3_4") || lowerName.contains("buyucu_kuresi") || lowerName.contains("büyücü_küresi") || lowerName.contains("witch_orb")) {
+            return "Büyücü Küresi";
+        }
+        if (lowerName.contains("l3_5") || lowerName.contains("hayalet_hanceri") || lowerName.contains("hayalet_hançeri") || lowerName.contains("phantom_dagger")) {
+            return "Hayalet Hançeri";
+        }
+        
+        // Seviye 4 Silahlar
+        if (lowerName.contains("l4_1") || lowerName.contains("element_kilici") || lowerName.contains("element_kılıcı") || lowerName.contains("elementalist")) {
+            return "Element Kılıcı";
+        }
+        if (lowerName.contains("l4_2") || lowerName.contains("yasam_olum") || lowerName.contains("yaşam_ölüm") || lowerName.contains("life_death")) {
+            return "Yaşam ve Ölüm";
+        }
+        if (lowerName.contains("l4_3") || lowerName.contains("mjolnir") || lowerName.contains("mjölnir")) {
+            return "Mjölnir V2";
+        }
+        if (lowerName.contains("l4_4") || lowerName.contains("avci_yayi") || lowerName.contains("avcı_yayı") || lowerName.contains("ranger_pride")) {
+            return "Avcı Yayı";
+        }
+        if (lowerName.contains("l4_5") || lowerName.contains("manyetik_eldiven") || lowerName.contains("magnetic_glove")) {
+            return "Manyetik Eldiven";
+        }
+        
+        // Seviye 5 Silahlar
+        if (lowerName.contains("l5_1") || lowerName.contains("hiperiyon_kilici") || lowerName.contains("hiperiyon_kılıcı") || lowerName.contains("void_walker")) {
+            return "Hiperiyon Kılıcı";
+        }
+        if (lowerName.contains("l5_2") || lowerName.contains("meteor_cagiran") || lowerName.contains("meteor_çağıran") || lowerName.contains("meteor_caller")) {
+            return "Meteor Çağıran";
+        }
+        if (lowerName.contains("l5_3") || lowerName.contains("titan_katili") || lowerName.contains("titan_slayer")) {
+            return "Titan Katili";
+        }
+        if (lowerName.contains("l5_4") || lowerName.contains("ruh_bicen") || lowerName.contains("ruh_biçen") || lowerName.contains("soul_reaper")) {
+            return "Ruh Biçen";
+        }
+        if (lowerName.contains("l5_5") || lowerName.contains("zamani_buken") || lowerName.contains("zamanı_büken") || lowerName.contains("time_keeper")) {
+            return "Zamanı Büken";
+        }
+        
         return name;
     }
 
@@ -3215,7 +3383,14 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     int level = Integer.parseInt(levelStr);
                     if (level >= 1 && level <= 5) {
                         if (category.equals("weapon")) {
-                            List<String> weaponTypes = Arrays.asList("sword", "axe", "spear", "bow", "hammer");
+                            // Türkçe ve İngilizce isimler
+                            List<String> weaponTypes = Arrays.asList(
+                                "sword", "kılıç", "kilic",
+                                "axe", "balta",
+                                "spear", "mızrak", "mizrak", "trident",
+                                "bow", "yay",
+                                "hammer", "çekiç", "cekiç", "pickaxe"
+                            );
                             if (input.isEmpty()) {
                                 return weaponTypes;
                             }
@@ -3539,12 +3714,12 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 // Yeni batarya sistemi - kategorize edilmiş
                 List<String> batteries = new ArrayList<>();
                 
-                // Saldırı Bataryaları
-                batteries.add("attack_fireball_l1");
-                batteries.add("attack_lightning_l1");
+                // Saldırı Bataryaları - Seviye 1
+                batteries.add("attack_lightning_staff_l1");
+                batteries.add("attack_hellfire_ball_l1");
                 batteries.add("attack_ice_ball_l1");
                 batteries.add("attack_poison_arrow_l1");
-                batteries.add("attack_shock_l1");
+                batteries.add("attack_shock_wave_l1");
                 batteries.add("attack_double_fireball_l2");
                 batteries.add("attack_chain_lightning_l2");
                 batteries.add("attack_ice_storm_l2");
@@ -3556,14 +3731,15 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 batteries.add("attack_poison_bomb_l3");
                 batteries.add("attack_lightning_storm_l3");
                 batteries.add("attack_hellfire_l4");
-                batteries.add("attack_thunder_l4");
+                batteries.add("attack_tesla_tower_l4");
+                batteries.add("attack_ice_fortress_l4");
                 batteries.add("attack_death_cloud_l4");
                 batteries.add("attack_electric_storm_l4");
                 batteries.add("attack_mountain_destroyer_l5");
                 batteries.add("attack_lava_tsunami_l5");
                 batteries.add("attack_boss_killer_l5");
                 batteries.add("attack_area_destroyer_l5");
-                batteries.add("attack_apocalypse_l5");
+                batteries.add("attack_apocalypse_reactor_l5");
                 
                 // Oluşturma Bataryaları
                 batteries.add("construction_obsidian_wall_l1");
@@ -4638,16 +4814,26 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             // ========== YENİ BATARYA SİSTEMİ (75 BATARYA) ==========
             
             // SALDIRI BATARYALARI (25 batarya)
-            case "attack_fireball_l1":
-                return buildNewBattery(p, loc, Material.MAGMA_BLOCK, null, 1, "Ateş Topu", BatteryManager.BatteryCategory.ATTACK);
-            case "attack_lightning_l1":
-                return buildNewBattery(p, loc, Material.IRON_BLOCK, null, 1, "Yıldırım", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_lightning_staff_l1":
+            case "attack_lightning_l1": // Geriye dönük uyumluluk
+            case "yildirim_asasi":
+            case "yıldırım_asası":
+                return buildNewBattery(p, loc, Material.IRON_BLOCK, null, 1, "Yıldırım Asası", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_hellfire_ball_l1":
+            case "attack_fireball_l1": // Geriye dönük uyumluluk
+            case "cehennem_topu":
+                return buildNewBattery(p, loc, Material.MAGMA_BLOCK, null, 1, "Cehennem Topu", BatteryManager.BatteryCategory.ATTACK);
             case "attack_ice_ball_l1":
+            case "buz_topu":
                 return buildNewBattery(p, loc, Material.PACKED_ICE, null, 1, "Buz Topu", BatteryManager.BatteryCategory.ATTACK);
             case "attack_poison_arrow_l1":
+            case "zehir_oku":
                 return buildNewBattery(p, loc, Material.EMERALD_BLOCK, null, 1, "Zehir Oku", BatteryManager.BatteryCategory.ATTACK);
-            case "attack_shock_l1":
-                return buildNewBattery(p, loc, Material.REDSTONE_BLOCK, null, 1, "Şok", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_shock_wave_l1":
+            case "attack_shock_l1": // Geriye dönük uyumluluk
+            case "sok_dalgasi":
+            case "şok_dalgası":
+                return buildNewBattery(p, loc, Material.REDSTONE_BLOCK, null, 1, "Şok Dalgası", BatteryManager.BatteryCategory.ATTACK);
             
             case "attack_double_fireball_l2":
                 return buildNewBattery(p, loc, Material.MAGMA_BLOCK, Material.NETHERRACK, 2, "Çift Ateş Topu", BatteryManager.BatteryCategory.ATTACK);
@@ -4672,14 +4858,24 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return buildNewBattery(p, loc, Material.REDSTONE_BLOCK, Material.GLOWSTONE, 3, "Yıldırım Fırtınası", BatteryManager.BatteryCategory.ATTACK);
             
             case "attack_hellfire_l4":
+            case "cehennem_atesi":
+            case "cehennem_ateşi":
                 return buildNewBattery(p, loc, Material.MAGMA_BLOCK, Material.NETHER_STAR, 4, "Cehennem Ateşi", BatteryManager.BatteryCategory.ATTACK);
-            case "attack_thunder_l4":
-                return buildNewBattery(p, loc, Material.IRON_BLOCK, Material.BEACON, 4, "Gök Gürültüsü", BatteryManager.BatteryCategory.ATTACK);
-            case "attack_ice_age_l4":
-                return buildNewBattery(p, loc, Material.PACKED_ICE, Material.FROSTED_ICE, 4, "Buz Çağı", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_tesla_tower_l4":
+            case "attack_thunder_l4": // Geriye dönük uyumluluk
+            case "tesla_kulesi":
+                return buildNewBattery(p, loc, Material.COPPER_BLOCK, Material.REDSTONE_BLOCK, 4, "Tesla Kulesi", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_ice_fortress_l4":
+            case "attack_ice_age_l4": // Geriye dönük uyumluluk
+            case "buz_kalesi":
+                return buildNewBattery(p, loc, Material.PACKED_ICE, Material.SNOW_BLOCK, 4, "Buz Kalesi", BatteryManager.BatteryCategory.ATTACK);
             case "attack_death_cloud_l4":
+            case "olum_bulutu":
+            case "ölüm_bulutu":
                 return buildNewBattery(p, loc, Material.EMERALD_BLOCK, Material.WITHER_SKELETON_SKULL, 4, "Ölüm Bulutu", BatteryManager.BatteryCategory.ATTACK);
             case "attack_electric_storm_l4":
+            case "elektrik_firtinasi":
+            case "elektrik_fırtınası":
                 return buildNewBattery(p, loc, Material.REDSTONE_BLOCK, Material.END_CRYSTAL, 4, "Elektrik Fırtınası", BatteryManager.BatteryCategory.ATTACK);
             
             case "attack_mountain_destroyer_l5":
@@ -4690,8 +4886,11 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return buildNewBattery(p, loc, Material.BEDROCK, Material.DRAGON_HEAD, 5, "Boss Katili", BatteryManager.BatteryCategory.ATTACK);
             case "attack_area_destroyer_l5":
                 return buildNewBattery(p, loc, Material.BEDROCK, Material.COMMAND_BLOCK, 5, "Alan Yok Edici", BatteryManager.BatteryCategory.ATTACK);
-            case "attack_apocalypse_l5":
-                return buildNewBattery(p, loc, Material.BEDROCK, Material.END_CRYSTAL, 5, "Kıyamet", BatteryManager.BatteryCategory.ATTACK);
+            case "attack_apocalypse_reactor_l5":
+            case "attack_apocalypse_l5": // Geriye dönük uyumluluk
+            case "kiyamet_reaktoru":
+            case "kıyamet_reaktörü":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.END_CRYSTAL, 5, "Kıyamet Reaktörü", BatteryManager.BatteryCategory.ATTACK);
             
             // OLUŞTURMA BATARYALARI (25 batarya)
             case "construction_obsidian_wall_l1":
@@ -4761,49 +4960,85 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "support_regeneration_l1":
                 return buildNewBattery(p, loc, Material.LAPIS_BLOCK, null, 1, "Yenilenme", BatteryManager.BatteryCategory.SUPPORT);
             
-            case "support_heal_l2":
-                return buildNewBattery(p, loc, Material.GOLD_BLOCK, Material.GOLD_INGOT, 2, "Can Yenileme (Gelişmiş)", BatteryManager.BatteryCategory.SUPPORT);
-            case "support_speed_l2":
-                return buildNewBattery(p, loc, Material.EMERALD_BLOCK, Material.EMERALD, 2, "Hız Artışı (Gelişmiş)", BatteryManager.BatteryCategory.SUPPORT);
-            case "support_damage_l2":
-                return buildNewBattery(p, loc, Material.DIAMOND_BLOCK, Material.DIAMOND, 2, "Hasar Artışı (Gelişmiş)", BatteryManager.BatteryCategory.SUPPORT);
-            case "support_armor_l2":
-                return buildNewBattery(p, loc, Material.IRON_BLOCK, Material.IRON_INGOT, 2, "Zırh Artışı (Gelişmiş)", BatteryManager.BatteryCategory.SUPPORT);
-            case "support_regeneration_l2":
-                return buildNewBattery(p, loc, Material.LAPIS_BLOCK, Material.LAPIS_LAZULI, 2, "Yenilenme (Gelişmiş)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_heal_speed_combo_l2":
+            case "can_hiz_kombinasyonu":
+            case "can_hız_kombinasyonu":
+                return buildNewBattery(p, loc, Material.GOLD_BLOCK, Material.EMERALD, 2, "Can + Hız Kombinasyonu", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_damage_armor_combo_l2":
+            case "hasar_zirh_kombinasyonu":
+            case "hasar_zırh_kombinasyonu":
+                return buildNewBattery(p, loc, Material.DIAMOND_BLOCK, Material.IRON_INGOT, 2, "Hasar + Zırh Kombinasyonu", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_regeneration_heal_combo_l2":
+            case "yenilenme_can_kombinasyonu":
+                return buildNewBattery(p, loc, Material.LAPIS_BLOCK, Material.GOLD_INGOT, 2, "Yenilenme + Can Kombinasyonu", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_speed_damage_combo_l2":
+            case "hiz_hasar_kombinasyonu":
+            case "hız_hasar_kombinasyonu":
+                return buildNewBattery(p, loc, Material.EMERALD_BLOCK, Material.DIAMOND, 2, "Hız + Hasar Kombinasyonu", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_armor_regeneration_combo_l2":
+            case "zirh_yenilenme_kombinasyonu":
+            case "zırh_yenilenme_kombinasyonu":
+                return buildNewBattery(p, loc, Material.IRON_BARS, Material.LAPIS_LAZULI, 2, "Zırh + Yenilenme Kombinasyonu", BatteryManager.BatteryCategory.SUPPORT);
             
-            case "support_heal_l3":
-                return buildNewBattery(p, loc, Material.GOLD_BLOCK, Material.GOLDEN_APPLE, 3, "Can Yenileme (Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
-            case "support_speed_l3":
-                return buildNewBattery(p, loc, Material.EMERALD_BLOCK, Material.EMERALD_BLOCK, 3, "Hız Artışı (Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
-            case "support_damage_l3":
-                return buildNewBattery(p, loc, Material.DIAMOND_BLOCK, Material.DIAMOND_BLOCK, 3, "Hasar Artışı (Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
-            case "support_armor_l3":
-                return buildNewBattery(p, loc, Material.IRON_BLOCK, Material.IRON_BLOCK, 3, "Zırh Artışı (Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
-            case "support_regeneration_l3":
-                return buildNewBattery(p, loc, Material.LAPIS_BLOCK, Material.LAPIS_BLOCK, 3, "Yenilenme (Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_absorption_shield_l3":
+            case "absorption_kalkani":
+            case "absorption_kalkanı":
+                return buildNewBattery(p, loc, Material.GOLD_BLOCK, Material.GOLDEN_APPLE, 3, "Absorption Kalkanı", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_flight_l3":
+            case "ucma_yeteneği":
+            case "uçma_yeteneği":
+                return buildNewBattery(p, loc, Material.EMERALD_BLOCK, Material.FEATHER, 3, "Uçma Yeteneği", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_critical_strike_l3":
+            case "kritik_vurus_artisi":
+            case "kritik_vuruş_artışı":
+                return buildNewBattery(p, loc, Material.DIAMOND_BLOCK, Material.DIAMOND_SWORD, 3, "Kritik Vuruş Artışı", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_reflection_shield_l3":
+            case "yanstirma_kalkani":
+            case "yansıtma_kalkanı":
+                return buildNewBattery(p, loc, Material.IRON_BARS, Material.SHIELD, 3, "Yansıtma Kalkanı", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_life_steal_l3":
+            case "can_calma":
+            case "can_çalma":
+                return buildNewBattery(p, loc, Material.LAPIS_BLOCK, Material.ROTTEN_FLESH, 3, "Can Çalma", BatteryManager.BatteryCategory.SUPPORT);
             
-            case "support_heal_l4":
-                return buildNewBattery(p, loc, Material.GOLD_BLOCK, Material.ENCHANTED_GOLDEN_APPLE, 4, "Can Yenileme (Çok Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
-            case "support_speed_l4":
-                return buildNewBattery(p, loc, Material.EMERALD_BLOCK, Material.BEACON, 4, "Hız Artışı (Çok Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
-            case "support_damage_l4":
-                return buildNewBattery(p, loc, Material.DIAMOND_BLOCK, Material.BEACON, 4, "Hasar Artışı (Çok Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
-            case "support_armor_l4":
-                return buildNewBattery(p, loc, Material.IRON_BLOCK, Material.BEACON, 4, "Zırh Artışı (Çok Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
-            case "support_regeneration_l4":
-                return buildNewBattery(p, loc, Material.LAPIS_BLOCK, Material.BEACON, 4, "Yenilenme (Çok Güçlü)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_full_heal_absorption_l4":
+            case "tam_can_absorption":
+                return buildNewBattery(p, loc, Material.GOLD_BLOCK, Material.ENCHANTED_GOLDEN_APPLE, 4, "Tam Can + Absorption", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_time_slow_l4":
+            case "zaman_yavaslatma":
+            case "zaman_yavaşlatma":
+                return buildNewBattery(p, loc, Material.EMERALD_BLOCK, Material.CLOCK, 4, "Zaman Yavaşlatma", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_lightning_strike_l4":
+            case "yildirim_vurusu":
+            case "yıldırım_vuruşu":
+                return buildNewBattery(p, loc, Material.DIAMOND_BLOCK, Material.LIGHTNING_ROD, 4, "Yıldırım Vuruşu", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_invisibility_shield_l4":
+            case "gorunmezlik_kalkani":
+            case "görünmezlik_kalkanı":
+                return buildNewBattery(p, loc, Material.IRON_BARS, Material.GLASS_PANE, 4, "Görünmezlik Kalkanı", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_immortality_moment_l4":
+            case "olumsuzluk_ani":
+            case "ölümsüzlük_anı":
+                return buildNewBattery(p, loc, Material.LAPIS_BLOCK, Material.TOTEM_OF_UNDYING, 4, "Ölümsüzlük Anı", BatteryManager.BatteryCategory.SUPPORT);
             
-            case "support_heal_l5":
-                return buildNewBattery(p, loc, Material.BEDROCK, Material.NETHER_STAR, 5, "Can Yenileme (Efsanevi)", BatteryManager.BatteryCategory.SUPPORT);
-            case "support_speed_l5":
-                return buildNewBattery(p, loc, Material.BEDROCK, Material.NETHER_STAR, 5, "Hız Artışı (Efsanevi)", BatteryManager.BatteryCategory.SUPPORT);
-            case "support_damage_l5":
-                return buildNewBattery(p, loc, Material.BEDROCK, Material.NETHER_STAR, 5, "Hasar Artışı (Efsanevi)", BatteryManager.BatteryCategory.SUPPORT);
-            case "support_armor_l5":
-                return buildNewBattery(p, loc, Material.BEDROCK, Material.NETHER_STAR, 5, "Zırh Artışı (Efsanevi)", BatteryManager.BatteryCategory.SUPPORT);
-            case "support_regeneration_l5":
-                return buildNewBattery(p, loc, Material.BEDROCK, Material.NETHER_STAR, 5, "Yenilenme (Efsanevi)", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_legendary_heal_l5":
+            case "efsanevi_can_yenileme":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.NETHER_STAR, 5, "Efsanevi Can Yenileme", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_time_stop_l5":
+            case "zaman_durdurma":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.NETHER_STAR, 5, "Zaman Durdurma", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_death_touch_l5":
+            case "olum_dokunusu":
+            case "ölüm_dokunuşu":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.NETHER_STAR, 5, "Ölüm Dokunuşu", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_phase_shift_l5":
+            case "faz_degistirme":
+            case "faz_değiştirme":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.NETHER_STAR, 5, "Faz Değiştirme", BatteryManager.BatteryCategory.SUPPORT);
+            case "support_rebirth_l5":
+            case "yeniden_dogus":
+            case "yeniden_doğuş":
+                return buildNewBattery(p, loc, Material.BEDROCK, Material.NETHER_STAR, 5, "Yeniden Doğuş", BatteryManager.BatteryCategory.SUPPORT);
             
             default:
                 p.sendMessage("§cBilinmeyen batarya tipi: " + type);

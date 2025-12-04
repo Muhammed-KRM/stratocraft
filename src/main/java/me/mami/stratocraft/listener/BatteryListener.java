@@ -475,7 +475,7 @@ public class BatteryListener implements Listener {
     }
     
     /**
-     * Bataryayı yükleme işlemi (3 blok üst üste)
+     * Bataryayı yükleme işlemi (tüm blokları kaldır - seviyeye göre)
      */
     private void loadBattery(Player player, Block center, Block below, Block above, 
                             ItemStack handItem, int slot, BatteryData data, PlayerInteractEvent event) {
@@ -486,10 +486,73 @@ public class BatteryListener implements Listener {
             handItem.setAmount(handItem.getAmount() - 1);
         }
         
-        // 2. Yapıyı yok et (Blokları kır)
-        center.setType(Material.AIR);
-        if (below != null) below.setType(Material.AIR);
-        if (above != null) above.setType(Material.AIR);
+        // 2. Yapıyı yok et - TÜM BLOKLARI KALDIR (seviyeye göre)
+        int batteryLevel = data.getBatteryLevel();
+        Material baseBlock = center.getType();
+        
+        // Tüm baseBlock bloklarını kaldır (yukarı ve aşağı)
+        Block current = center;
+        int removed = 0;
+        
+        // Yukarı doğru tüm blokları kaldır
+        while (current.getType() == baseBlock && removed < 20) { // Güvenlik için maksimum 20
+            current.setType(Material.AIR);
+            removed++;
+            current = current.getRelative(BlockFace.UP);
+        }
+        
+        // Aşağı doğru tüm blokları kaldır
+        current = center.getRelative(BlockFace.DOWN);
+        while (current.getType() == baseBlock && removed < 20) { // Güvenlik için maksimum 20
+            current.setType(Material.AIR);
+            removed++;
+            current = current.getRelative(BlockFace.DOWN);
+        }
+        
+        // Seviye 5 için özel blokları da kaldır (BEACON altında, NETHER_STAR/BEDROCK üstte)
+        if (batteryLevel == 5) {
+            Block bottom = center;
+            while (bottom.getRelative(BlockFace.DOWN).getType() == baseBlock) {
+                bottom = bottom.getRelative(BlockFace.DOWN);
+            }
+            Block top = center;
+            while (top.getRelative(BlockFace.UP).getType() == baseBlock) {
+                top = top.getRelative(BlockFace.UP);
+            }
+            
+            // Altındaki BEACON'u kaldır
+            Block belowSpecial = bottom.getRelative(BlockFace.DOWN);
+            if (belowSpecial.getType() == Material.BEACON) {
+                belowSpecial.setType(Material.AIR);
+            }
+            
+            // Üstündeki NETHER_STAR veya BEDROCK'u kaldır
+            Block aboveSpecial = top.getRelative(BlockFace.UP);
+            if (aboveSpecial.getType() == Material.NETHER_STAR || aboveSpecial.getType() == Material.BEDROCK) {
+                aboveSpecial.setType(Material.AIR);
+            }
+        }
+        
+        // Yan blokları kaldır (seviye 2+ için)
+        if (batteryLevel >= 2) {
+            Block east = center.getRelative(BlockFace.EAST);
+            Block west = center.getRelative(BlockFace.WEST);
+            Block north = center.getRelative(BlockFace.NORTH);
+            Block south = center.getRelative(BlockFace.SOUTH);
+            
+            // Yan blokların türünü kontrol et (sideBlock olabilir)
+            Material sideBlock = null;
+            if (east.getType() != baseBlock && east.getType() != Material.AIR) sideBlock = east.getType();
+            if (west.getType() != baseBlock && west.getType() != Material.AIR) sideBlock = west.getType();
+            
+            if (sideBlock != null) {
+                // Tüm yan blokları kaldır
+                if (east.getType() == sideBlock) east.setType(Material.AIR);
+                if (west.getType() == sideBlock) west.setType(Material.AIR);
+                if (north.getType() == sideBlock) north.setType(Material.AIR);
+                if (south.getType() == sideBlock) south.setType(Material.AIR);
+            }
+        }
         
         // Efektler
         org.bukkit.Location effectLoc = center.getLocation().add(0.5, 0.5, 0.5);
@@ -684,6 +747,24 @@ public class BatteryListener implements Listener {
             int batteryLevel = batteryManager.detectBatteryLevel(centerBlock, baseBlock);
             if (batteryLevel != batteryType.getLevel()) continue;
             
+            // Seviye 5 için özel blok kontrolü (altında BEACON, üstünde NETHER_STAR)
+            if (batteryLevel == 5) {
+                Block bottom = centerBlock;
+                while (bottom.getRelative(BlockFace.DOWN).getType() == baseBlock) {
+                    bottom = bottom.getRelative(BlockFace.DOWN);
+                }
+                Block top = centerBlock;
+                while (top.getRelative(BlockFace.UP).getType() == baseBlock) {
+                    top = top.getRelative(BlockFace.UP);
+                }
+                Block belowSpecial = bottom.getRelative(BlockFace.DOWN);
+                Block aboveSpecial = top.getRelative(BlockFace.UP);
+                
+                // Seviye 5 için: altında BEACON, üstünde NETHER_STAR veya BEDROCK olmalı
+                if (belowSpecial.getType() != Material.BEACON) continue;
+                if (aboveSpecial.getType() != Material.NETHER_STAR && aboveSpecial.getType() != Material.BEDROCK) continue;
+            }
+            
             // Yan blok kontrolü (seviye 2+ için)
             if (sideBlock != null && batteryLevel >= 2) {
                 boolean hasSideBlock = east.getType() == sideBlock || west.getType() == sideBlock ||
@@ -692,13 +773,24 @@ public class BatteryListener implements Listener {
                 if (!hasSideBlock) continue;
             }
             
-            // Yakıt kontrolü
+            // Yakıt kontrolü - Seviye 5 için DARK_MATTER zorunlu
             Material fuel = handItem.getType();
-            boolean isValidFuel = fuel == Material.DIAMOND || fuel == Material.IRON_INGOT ||
-                                 ItemManager.isCustomItem(handItem, "RED_DIAMOND") ||
-                                 ItemManager.isCustomItem(handItem, "DARK_MATTER");
+            boolean isDarkMatter = ItemManager.isCustomItem(handItem, "DARK_MATTER");
+            boolean isRedDiamond = ItemManager.isCustomItem(handItem, "RED_DIAMOND");
             
-            if (!isValidFuel) continue;
+            if (batteryLevel == 5) {
+                // Seviye 5 için sadece DARK_MATTER kabul edilir
+                if (!isDarkMatter) {
+                    player.sendMessage("§c§lSeviye 5 bataryalar için §5§lKaranlık Madde §cgerekli!");
+                    event.setCancelled(true);
+                    return true;
+                }
+            } else {
+                // Diğer seviyeler için normal yakıt kontrolü
+                boolean isValidFuel = fuel == Material.DIAMOND || fuel == Material.IRON_INGOT ||
+                                     isRedDiamond || isDarkMatter;
+                if (!isValidFuel) continue;
+            }
             
             // Zaten yüklü batarya var mı?
             if (batteryManager.hasLoadedBattery(player, slot)) {
