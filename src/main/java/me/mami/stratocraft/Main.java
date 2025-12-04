@@ -108,7 +108,8 @@ public class Main extends JavaPlugin {
         mobManager = new MobManager();
         shopManager = new ShopManager();
         researchManager = new ResearchManager();
-        missionManager = new MissionManager();
+        // MissionManager DifficultyManager'dan sonra başlatılmalı
+        // missionManager = new MissionManager(); // Aşağıda difficultyManager'dan sonra başlatılacak
         ghostRecipeManager = new me.mami.stratocraft.manager.GhostRecipeManager();
         trainingManager = new me.mami.stratocraft.manager.TrainingManager();
         buffManager = new BuffManager();
@@ -124,6 +125,9 @@ public class Main extends JavaPlugin {
         bossManager = new me.mami.stratocraft.manager.BossManager(this);
         tamingManager = new me.mami.stratocraft.manager.TamingManager(this);
         breedingManager = new me.mami.stratocraft.manager.BreedingManager(this);
+        
+        // MissionManager'ı DifficultyManager ile başlat
+        missionManager = new me.mami.stratocraft.manager.MissionManager(difficultyManager, this);
 
         // Manager bağlantıları
         siegeManager.setBuffManager(buffManager);
@@ -284,12 +288,18 @@ public class Main extends JavaPlugin {
             }
         }, 40L); // 2 saniye sonra (sunucu tamamen yüklendikten sonra)
         
-        // PlayerJoinEvent listener - BossBar'a yeni oyuncuları ekle
+        // PlayerJoinEvent listener - BossBar'a yeni oyuncuları ekle ve kontrat cezalarını uygula
         Bukkit.getPluginManager().registerEvents(new org.bukkit.event.Listener() {
             @org.bukkit.event.EventHandler
             public void onPlayerJoin(org.bukkit.event.player.PlayerJoinEvent event) {
                 if (disasterManager != null) {
                     disasterManager.onPlayerJoin(event.getPlayer());
+                }
+                if (contractManager != null) {
+                    contractManager.onPlayerJoin(event.getPlayer());
+                }
+                if (bossManager != null) {
+                    bossManager.onPlayerJoin(event.getPlayer());
                 }
             }
         }, this);
@@ -304,7 +314,9 @@ public class Main extends JavaPlugin {
             public void run() {
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     ItemStack item = player.getInventory().getItemInMainHand();
-                    if (item != null && item.getType() == org.bukkit.Material.SPYGLASS) {
+                    // Özel Casusluk Dürbünü kontrolü
+                    if (item != null && item.getType() == org.bukkit.Material.SPYGLASS && 
+                        me.mami.stratocraft.manager.ItemManager.isCustomItem(item, "CASUSLUK_DURBUN")) {
                         org.bukkit.util.RayTraceResult result = player.rayTraceEntities(50);
                         // Null kontrolü: Oyuncu boşluğa bakıyorsa result null olabilir
                         if (result != null) {

@@ -161,8 +161,9 @@ public class SurvivalListener implements Listener {
             }
         }
         
-        // Görev takibi: Maden toplama
+        // Görev takibi: Maden toplama ve blok kazma
         missionManager.handleGather(p, event.getBlock().getType());
+        missionManager.handleMine(p, event.getBlock().getType());
     }
 }
 

@@ -314,6 +314,18 @@ public class DisasterManager {
                 wither.setHealth(power.health);
                 return wither;
                 
+            case ICE_LEVIATHAN:
+                ElderGuardian leviathan = (ElderGuardian) world.spawnEntity(loc, EntityType.ELDER_GUARDIAN);
+                leviathan.setCustomName("§b§lBUZUL LEVİATHAN");
+                if (leviathan.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH) != null) {
+                    leviathan.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(power.health);
+                }
+                leviathan.setHealth(power.health);
+                // Buz efekti
+                leviathan.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                    org.bukkit.potion.PotionEffectType.SLOW, 999999, 0, false, false));
+                return leviathan;
+                
             default:
                 return null;
         }
@@ -323,10 +335,25 @@ public class DisasterManager {
      * BossBar oluştur ve güncelle
      */
     private void createBossBar(Disaster disaster) {
-        // BossBar'ı kaldır (sadece ActionBar kullanılacak)
+        // Eski BossBar'ı temizle
         if (disasterBossBar != null) {
             disasterBossBar.removeAll();
             disasterBossBar = null;
+        }
+        
+        // Canlı felaketler için BossBar oluştur
+        if (disaster.getCategory() == Disaster.Category.CREATURE && disaster.getEntity() != null) {
+            String disasterName = getDisasterDisplayName(disaster.getType());
+            disasterBossBar = Bukkit.createBossBar(
+                "§c§l" + disasterName,
+                BarColor.RED,
+                BarStyle.SOLID
+            );
+            
+            // Tüm oyunculara ekle
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                disasterBossBar.addPlayer(player);
+            }
         }
         
         // Güncelleme task'ı
@@ -336,6 +363,10 @@ public class DisasterManager {
         
         bossBarUpdateTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             if (activeDisaster == null || activeDisaster.isDead()) {
+                if (disasterBossBar != null) {
+                    disasterBossBar.removeAll();
+                    disasterBossBar = null;
+                }
                 if (bossBarUpdateTask != null) {
                     bossBarUpdateTask.cancel();
                     bossBarUpdateTask = null;
@@ -348,17 +379,41 @@ public class DisasterManager {
             // Can ve zaman bilgisi
             double health = activeDisaster.getCurrentHealth();
             double maxHealth = activeDisaster.getMaxHealth();
+            double healthPercent = Math.max(0.0, Math.min(1.0, health / maxHealth));
             String timeLeft = formatTime(activeDisaster.getRemainingTime());
-            String healthText = String.format("%.0f/%.0f", health, maxHealth);
+            String disasterName = getDisasterDisplayName(activeDisaster.getType());
             
-            // ActionBar ile sağ üstte göster (her oyuncuya)
-            // PERFORMANS OPTİMİZASYONU: getOnlinePlayers()'ı bir kez çağır
-            java.util.Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
-            String actionBarText = "§c§l" + getDisasterDisplayName(activeDisaster.getType()) + 
-                                 " §7| §c" + healthText + " §7| §e⏰ " + timeLeft;
-            for (Player player : onlinePlayers) {
-                player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
-                    net.md_5.bungee.api.chat.TextComponent.fromLegacyText(actionBarText));
+            // Canlı felaketler için BossBar güncelle
+            if (activeDisaster.getCategory() == Disaster.Category.CREATURE && disasterBossBar != null) {
+                String bossBarTitle = "§c§l" + disasterName + " §7| §c" + 
+                    String.format("%.0f/%.0f", health, maxHealth) + " §7| §e⏰ " + timeLeft;
+                disasterBossBar.setTitle(bossBarTitle);
+                disasterBossBar.setProgress(healthPercent);
+                
+                // Can durumuna göre renk değiştir
+                if (healthPercent > 0.6) {
+                    disasterBossBar.setColor(BarColor.RED);
+                } else if (healthPercent > 0.3) {
+                    disasterBossBar.setColor(BarColor.YELLOW);
+                } else {
+                    disasterBossBar.setColor(BarColor.GREEN);
+                }
+                
+                // Yeni oyuncuları ekle (optimizasyon: sadece yeni oyuncular varsa)
+                java.util.Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+                for (Player player : onlinePlayers) {
+                    if (!disasterBossBar.getPlayers().contains(player)) {
+                        disasterBossBar.addPlayer(player);
+                    }
+                }
+            } else {
+                // Doğa olayları için ActionBar kullan
+                java.util.Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+                String actionBarText = "§c§l" + disasterName + " §7| §e⏰ " + timeLeft;
+                for (Player player : onlinePlayers) {
+                    player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                        net.md_5.bungee.api.chat.TextComponent.fromLegacyText(actionBarText));
+                }
             }
         }, 0L, 20L); // Her saniye
     }
@@ -393,6 +448,7 @@ public class DisasterManager {
             case ABYSSAL_WORM: return "Hiçlik Solucanı";
             case CHAOS_DRAGON: return "Khaos Ejderi";
             case VOID_TITAN: return "Boşluk Titanı";
+            case ICE_LEVIATHAN: return "Buzul Leviathan";
             case SOLAR_FLARE: return "Güneş Patlaması";
             case EARTHQUAKE: return "Deprem";
             case METEOR_SHOWER: return "Meteor Yağmuru";

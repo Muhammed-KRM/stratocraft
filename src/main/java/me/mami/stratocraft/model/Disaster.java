@@ -22,6 +22,7 @@ public class Disaster {
         ABYSSAL_WORM,       // Seviye 2 - Hiçlik Solucanı
         CHAOS_DRAGON,       // Seviye 3 - Khaos Ejderi
         VOID_TITAN,         // Seviye 3 - Boşluk Titanı
+        ICE_LEVIATHAN,      // Seviye 2 - Buzul Leviathan (opsiyonel)
         
         // Doğa Olayları
         SOLAR_FLARE,        // Seviye 1 - Güneş Patlaması
@@ -125,6 +126,7 @@ public class Disaster {
             case ABYSSAL_WORM:
             case CHAOS_DRAGON:
             case VOID_TITAN:
+            case ICE_LEVIATHAN:
                 return Category.CREATURE;
             case SOLAR_FLARE:
             case EARTHQUAKE:
@@ -146,6 +148,7 @@ public class Disaster {
             case ABYSSAL_WORM:
             case EARTHQUAKE:
             case METEOR_SHOWER:
+            case ICE_LEVIATHAN:
                 return 2;
             case TITAN_GOLEM:
             case CHAOS_DRAGON:

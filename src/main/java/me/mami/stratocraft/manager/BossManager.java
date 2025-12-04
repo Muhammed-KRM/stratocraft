@@ -32,6 +32,10 @@ public class BossManager {
 
     // Aktif bosslar (Entity -> BossData)
     private final Map<UUID, BossData> activeBosses = new HashMap<>();
+    
+    // BossBar'lar (Entity UUID -> BossBar)
+    private final Map<UUID, org.bukkit.boss.BossBar> bossBars = new HashMap<>();
+    private org.bukkit.scheduler.BukkitTask bossBarUpdateTask = null;
 
     // Ritüel cooldown (Location -> Long)
     private final Map<Location, Long> ritualCooldowns = new HashMap<>();
@@ -544,6 +548,9 @@ public class BossManager {
         // BossData oluştur
         BossData bossData = createBossData(type, bossEntity, ownerId);
         activeBosses.put(bossEntity.getUniqueId(), bossData);
+        
+        // BossBar oluştur
+        createBossBar(bossEntity, type);
 
         // Cooldown kaydet
         ritualCooldowns.put(ritualLoc, System.currentTimeMillis());
@@ -556,6 +563,11 @@ public class BossManager {
                 p.playSound(p.getLocation(), org.bukkit.Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 0.5f);
             }
         });
+
+        // BossBar güncelleme task'ını başlat (eğer başlatılmamışsa)
+        if (bossBarUpdateTask == null) {
+            startBossBarUpdateTask();
+        }
 
         saveBosses();
         return true;
@@ -840,6 +852,120 @@ public class BossManager {
     /**
      * Boss display name
      */
+    /**
+     * Boss için BossBar oluştur
+     */
+    private void createBossBar(LivingEntity bossEntity, BossType type) {
+        String bossName = getBossDisplayName(type);
+        org.bukkit.boss.BossBar bossBar = org.bukkit.Bukkit.createBossBar(
+            "§c§l" + bossName,
+            org.bukkit.boss.BarColor.RED,
+            org.bukkit.boss.BarStyle.SOLID
+        );
+        
+        // Tüm oyunculara ekle
+        for (org.bukkit.entity.Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
+            bossBar.addPlayer(player);
+        }
+        
+        bossBars.put(bossEntity.getUniqueId(), bossBar);
+    }
+    
+    /**
+     * BossBar güncelleme task'ını başlat
+     */
+    private void startBossBarUpdateTask() {
+        if (bossBarUpdateTask != null) {
+            return; // Zaten çalışıyor
+        }
+        
+        bossBarUpdateTask = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            // Ölü bossları temizle
+            java.util.Iterator<java.util.Map.Entry<UUID, BossData>> iterator = activeBosses.entrySet().iterator();
+            while (iterator.hasNext()) {
+                java.util.Map.Entry<UUID, BossData> entry = iterator.next();
+                BossData bossData = entry.getValue();
+                
+                if (bossData.getEntity() == null || bossData.getEntity().isDead()) {
+                    // Boss öldü, BossBar'ı temizle
+                    org.bukkit.boss.BossBar bossBar = bossBars.remove(entry.getKey());
+                    if (bossBar != null) {
+                        bossBar.removeAll();
+                    }
+                    iterator.remove();
+                    continue;
+                }
+                
+                // BossBar güncelle
+                org.bukkit.boss.BossBar bossBar = bossBars.get(entry.getKey());
+                if (bossBar != null) {
+                    LivingEntity entity = bossData.getEntity();
+                    if (entity == null || entity.isDead()) {
+                        continue; // Entity null veya ölü, zaten yukarıda temizlenecek
+                    }
+                    
+                    // Null check için attribute kontrolü
+                    org.bukkit.attribute.AttributeInstance maxHealthAttr = entity.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
+                    if (maxHealthAttr == null) {
+                        continue; // Attribute yok, atla
+                    }
+                    
+                    double health = entity.getHealth();
+                    double maxHealth = maxHealthAttr.getValue();
+                    if (maxHealth <= 0) {
+                        continue; // Geçersiz max health
+                    }
+                    
+                    double healthPercent = Math.max(0.0, Math.min(1.0, health / maxHealth));
+                    
+                    String bossName = getBossDisplayName(bossData.getType());
+                    String phaseText = bossData.getMaxPhase() > 1 ? " §7(Faz " + bossData.getPhase() + "/" + bossData.getMaxPhase() + ")" : "";
+                    String bossBarTitle = "§c§l" + bossName + phaseText + " §7| §c" + 
+                        String.format("%.0f/%.0f", health, maxHealth);
+                    
+                    bossBar.setTitle(bossBarTitle);
+                    bossBar.setProgress(healthPercent);
+                    
+                    // Can durumuna göre renk değiştir
+                    if (healthPercent > 0.6) {
+                        bossBar.setColor(org.bukkit.boss.BarColor.RED);
+                    } else if (healthPercent > 0.3) {
+                        bossBar.setColor(org.bukkit.boss.BarColor.YELLOW);
+                    } else {
+                        bossBar.setColor(org.bukkit.boss.BarColor.GREEN);
+                    }
+                    
+                    // Yeni oyuncuları ekle (optimizasyon: sadece yeni oyuncular varsa)
+                    java.util.Collection<? extends org.bukkit.entity.Player> onlinePlayers = org.bukkit.Bukkit.getOnlinePlayers();
+                    for (org.bukkit.entity.Player player : onlinePlayers) {
+                        if (!bossBar.getPlayers().contains(player)) {
+                            bossBar.addPlayer(player);
+                        }
+                    }
+                }
+            }
+            
+            // Eğer aktif boss yoksa task'ı durdur
+            if (activeBosses.isEmpty()) {
+                if (bossBarUpdateTask != null) {
+                    bossBarUpdateTask.cancel();
+                    bossBarUpdateTask = null;
+                }
+            }
+        }, 0L, 20L); // Her saniye
+    }
+    
+    /**
+     * Oyuncu giriş yaptığında tüm BossBar'lara ekle
+     */
+    public void onPlayerJoin(org.bukkit.entity.Player player) {
+        for (org.bukkit.boss.BossBar bossBar : bossBars.values()) {
+            if (!bossBar.getPlayers().contains(player)) {
+                bossBar.addPlayer(player);
+            }
+        }
+    }
+    
     public String getBossDisplayName(BossType type) {
         switch (type) {
             case GOBLIN_KING:
@@ -1176,6 +1302,14 @@ public class BossManager {
         if (bossEntity != null) {
             BossData bossData = createBossData(bossType, bossEntity, null);
             activeBosses.put(bossEntity.getUniqueId(), bossData);
+            
+            // BossBar oluştur
+            createBossBar(bossEntity, bossType);
+            
+            // BossBar güncelleme task'ını başlat (eğer başlatılmamışsa)
+            if (bossBarUpdateTask == null) {
+                startBossBarUpdateTask();
+            }
 
             plugin.getLogger().info(
                     "Doğada boss spawn edildi: " + getBossDisplayName(bossType) + " (Seviye " + difficultyLevel + ")");

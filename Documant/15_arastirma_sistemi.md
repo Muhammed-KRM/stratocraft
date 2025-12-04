@@ -113,6 +113,48 @@ Kitap olmadan:
 
 ---
 
+## 📖 TARİF AÇMA SİSTEMİ (Crafting Recipe Gösterimi)
+
+### Shift + Sağ Tık ile Tarif Görüntüleme
+
+**Nasıl Çalışır?**:
+```
+1. Tarif kitabını eline al
+2. Shift + Sağ Tık yap
+3. Crafting tarifi chat'te gösterilir
+4. 3x3 crafting grid görsel olarak gösterilir
+```
+
+**Özellikler**:
+- **Görsel Grid**: 3x3 crafting table düzeni
+- **Malzeme Açıklamaları**: Her malzeme detaylı açıklanır
+- **Boss Item Gereksinimleri**: Hangi boss item'ı gerektiği gösterilir
+- **Renkli Format**: Kolay okunabilir format
+
+**Örnek Çıktı**:
+```
+════════════════════════════
+CRAFTİNG TARİFİ
+════════════════════════════
+Hız Hançeri (Tier 1):
+[G][E][G]
+[E][C][E]    G = Goblin Crown
+[G][E][G]    E = Empty
+             C = Iron Sword
+```
+
+**Kod Doğrulandı**:
+```java
+// GhostRecipeListener.java satır 58-63
+if (player.isSneaking() && isItemRecipe(recipeId)) {
+    showCraftingRecipe(player, recipeId);
+    event.setCancelled(true);
+    return;
+}
+```
+
+---
+
 ## ⚖️ GEREKLİ/GEREKSİZ TARİFLER
 
 ### Tarif Kitabı GEREKLİ (Çok Güçlü Eşyalar)

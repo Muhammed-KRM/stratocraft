@@ -141,6 +141,11 @@ public class DisasterTask extends BukkitRunnable {
         else if (disaster.getType() == Disaster.Type.VOID_TITAN && entity instanceof org.bukkit.entity.Wither) {
             handleVoidTitan(disaster, (org.bukkit.entity.Wither) entity, current, target, damageMultiplier);
         }
+        
+        // BUZUL LEVİATHAN
+        else if (disaster.getType() == Disaster.Type.ICE_LEVIATHAN && entity instanceof org.bukkit.entity.ElderGuardian) {
+            handleIceLeviathan(disaster, (org.bukkit.entity.ElderGuardian) entity, current, target, damageMultiplier);
+        }
     }
     
     /**
@@ -322,6 +327,43 @@ public class DisasterTask extends BukkitRunnable {
                 (random.nextDouble() - 0.5) * 10
             );
             explosionLoc.getWorld().createExplosion(explosionLoc, (float)(4.0 * damageMultiplier), false, true);
+        }
+    }
+    
+    /**
+     * Buzul Leviathan işle
+     */
+    private void handleIceLeviathan(Disaster disaster, org.bukkit.entity.ElderGuardian leviathan, Location current, Location target, double damageMultiplier) {
+        Vector direction = target.toVector().subtract(current.toVector()).normalize();
+        leviathan.setVelocity(direction.multiply(0.3));
+        
+        // Buz donma efekti - etrafındaki blokları ve oyuncuları dondur
+        if (random.nextInt(100) < 5) { // %5 şans
+            for (Player player : current.getWorld().getPlayers()) {
+                if (player.getLocation().distance(current) <= 30) {
+                    // Oyuncuyu dondur
+                    player.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                        org.bukkit.potion.PotionEffectType.SLOW, 100, 3, false, false));
+                    player.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                        org.bukkit.potion.PotionEffectType.MINING_FATIGUE, 100, 2, false, false));
+                    player.damage(3.0 * damageMultiplier, leviathan);
+                }
+            }
+            
+            // Etrafındaki blokları buz yap
+            for (int x = -5; x <= 5; x++) {
+                for (int z = -5; z <= 5; z++) {
+                    for (int y = -2; y <= 2; y++) {
+                        Block block = current.clone().add(x, y, z).getBlock();
+                        if (block.getType() != Material.AIR && block.getType() != Material.BEDROCK && 
+                            block.getType() != Material.ICE && block.getType() != Material.PACKED_ICE) {
+                            if (random.nextDouble() < 0.3) { // %30 şans
+                                block.setType(Material.ICE);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
     

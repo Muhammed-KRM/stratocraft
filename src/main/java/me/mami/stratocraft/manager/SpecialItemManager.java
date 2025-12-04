@@ -19,6 +19,8 @@ import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.Vector;
+import org.bukkit.Bukkit;
+import org.bukkit.inventory.Inventory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -193,8 +195,8 @@ public class SpecialItemManager {
         long elapsed = System.currentTimeMillis() - startTime;
 
         if (elapsed >= SPY_DURATION) {
-            // Bilgileri göster
-            showPlayerInfo(player, target);
+            // GUI menüsü aç
+            openSpyMenu(player, target);
             spyStartTimes.remove(player);
             spyTargets.remove(player);
         }
@@ -242,7 +244,109 @@ public class SpecialItemManager {
 
         spy.sendMessage("§7Envanter: §e" + filledSlots + "§7/§e" + totalSlots +
                 " §7(§e" + String.format("%.0f", fillPercent) + "%§7)");
+        
+        // Aktif Potion Efektleri
+        java.util.Collection<org.bukkit.potion.PotionEffect> effects = target.getActivePotionEffects();
+        if (effects.isEmpty()) {
+            spy.sendMessage("§7Efektler: §8Yok");
+        } else {
+            spy.sendMessage("§7Efektler:");
+            for (org.bukkit.potion.PotionEffect effect : effects) {
+                String effectName = getEffectDisplayName(effect.getType());
+                int level = effect.getAmplifier() + 1; // Amplifier 0-based, level 1-based
+                int duration = effect.getDuration() / 20; // Tick'ten saniyeye
+                String color = getEffectColor(effect.getType());
+                spy.sendMessage("  " + color + effectName + " §7" + level + " §8(" + duration + "s)");
+            }
+        }
+        
         spy.sendMessage("§6§l═══════════════════════════");
+    }
+    
+    /**
+     * Potion efekt ismini Türkçe'ye çevir
+     */
+    public String getEffectDisplayName(org.bukkit.potion.PotionEffectType type) {
+        if (type == null) return "Bilinmeyen";
+        
+        switch (type.getName().toLowerCase()) {
+            case "speed": return "Hız";
+            case "slowness": return "Yavaşlık";
+            case "haste": return "Çabukluk";
+            case "mining_fatigue": return "Yorgunluk";
+            case "strength": return "Güç";
+            case "instant_health": return "Anında Can";
+            case "instant_damage": return "Anında Hasar";
+            case "jump_boost": return "Zıplama";
+            case "nausea": return "Mide Bulantısı";
+            case "regeneration": return "Yenilenme";
+            case "resistance": return "Direnç";
+            case "fire_resistance": return "Ateş Direnci";
+            case "water_breathing": return "Su Nefesi";
+            case "invisibility": return "Görünmezlik";
+            case "blindness": return "Körlük";
+            case "night_vision": return "Gece Görüşü";
+            case "hunger": return "Açlık";
+            case "weakness": return "Zayıflık";
+            case "poison": return "Zehir";
+            case "wither": return "Solma";
+            case "health_boost": return "Can Artışı";
+            case "absorption": return "Emilim";
+            case "saturation": return "Doygunluk";
+            case "glowing": return "Parlama";
+            case "levitation": return "Yükselme";
+            case "luck": return "Şans";
+            case "unluck": return "Şanssızlık";
+            case "slow_falling": return "Yavaş Düşüş";
+            case "conduit_power": return "Deniz Feneri Gücü";
+            case "dolphins_grace": return "Yunus Zarafeti";
+            case "bad_omen": return "Kötü Alâmet";
+            case "hero_of_the_village": return "Köy Kahramanı";
+            default: return type.getName();
+        }
+    }
+    
+    /**
+     * Potion efekt rengini belirle
+     */
+    public String getEffectColor(org.bukkit.potion.PotionEffectType type) {
+        if (type == null) return "§7";
+        
+        switch (type.getName().toLowerCase()) {
+            case "speed": return "§b";
+            case "slowness": return "§8";
+            case "haste": return "§e";
+            case "mining_fatigue": return "§8";
+            case "strength": return "§c";
+            case "instant_health": return "§a";
+            case "instant_damage": return "§4";
+            case "jump_boost": return "§a";
+            case "nausea": return "§5";
+            case "regeneration": return "§d";
+            case "resistance": return "§9";
+            case "fire_resistance": return "§6";
+            case "water_breathing": return "§b";
+            case "invisibility": return "§7";
+            case "blindness": return "§8";
+            case "night_vision": return "§e";
+            case "hunger": return "§6";
+            case "weakness": return "§7";
+            case "poison": return "§5";
+            case "wither": return "§8";
+            case "health_boost": return "§c";
+            case "absorption": return "§e";
+            case "saturation": return "§a";
+            case "glowing": return "§b";
+            case "levitation": return "§d";
+            case "luck": return "§a";
+            case "unluck": return "§c";
+            case "slow_falling": return "§b";
+            case "conduit_power": return "§3";
+            case "dolphins_grace": return "§b";
+            case "bad_omen": return "§4";
+            case "hero_of_the_village": return "§e";
+            default: return "§7";
+        }
     }
 
     /**
@@ -281,7 +385,7 @@ public class SpecialItemManager {
     /**
      * Zırh puanını hesapla
      */
-    private int getArmorPoints(Material armorType) {
+    public int getArmorPoints(Material armorType) {
         switch (armorType) {
             case LEATHER_HELMET:
             case LEATHER_CHESTPLATE:

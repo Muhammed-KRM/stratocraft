@@ -282,38 +282,68 @@ phoenix
 hydra
 behemoth
 
-Felaketler:
-titan_golem
-abyssal_worm, hiclik_solucani
+Felaketler (9 tip):
+TITAN_GOLEM, ABYSSAL_WORM, CHAOS_DRAGON, VOID_TITAN, ICE_LEVIATHAN
+SOLAR_FLARE, EARTHQUAKE, METEOR_SHOWER, VOLCANIC_ERUPTION
 ```
 
 ---
 
 ## ⚙️ SİSTEM KOMUTLARI
 
-### `/scadmin disaster <tip>`
+### `/scadmin disaster <komut>`
 
-**Açıklama**: Felaket tetikle
+**Açıklama**: Felaket yönetimi
 
 **KOD DOĞRULANDI**:
 ```java
-// AdminCommandExecutor.java satır 250-280
+// AdminCommandExecutor.java satır 609-793
 // DisasterManager kullanır
+```
+
+**Alt Komutlar**:
+```
+start <type> [level] [konum] - Felaket başlat
+stop - Felaketi durdur
+info - Aktif felaket bilgisi
+list - Tüm felaket tiplerini listele
+clear - Felaketi yok et
 ```
 
 **Kullanım**:
 ```
-/scadmin disaster titan_golem
-/scadmin disaster abyssal_worm
-/scadmin disaster solar_flare
+/scadmin disaster start titan_golem 3
+/scadmin disaster start solar_flare 1 ben
+/scadmin disaster start abyssal_worm 2 1000 64 1000
+/scadmin disaster stop
+/scadmin disaster info
+/scadmin disaster list
 ```
 
-**Feladet Tipleri**:
+**Felaket Tipleri** (9 adet):
+
+**Canlı Felaketler**:
 ```
-titan_golem - Yürüyen Dağ
-abyssal_worm - Hiçlik Solucanı
-solar_flare - Güneş Fırtınası
+TITAN_GOLEM - Titan Golem (Seviye 3)
+ABYSSAL_WORM - Hiçlik Solucanı (Seviye 2)
+CHAOS_DRAGON - Khaos Ejderi (Seviye 3)
+VOID_TITAN - Boşluk Titanı (Seviye 3)
+ICE_LEVIATHAN - Buzul Leviathan (Seviye 2)
 ```
+
+**Doğa Olayları**:
+```
+SOLAR_FLARE - Güneş Fırtınası (Seviye 1)
+EARTHQUAKE - Deprem (Seviye 2)
+METEOR_SHOWER - Meteor Yağmuru (Seviye 2)
+VOLCANIC_ERUPTION - Volkanik Patlama (Seviye 3)
+```
+
+**Notlar**:
+- `[level]`: 1-3 arası (varsayılan: tip'e göre)
+- `[konum]`: `ben` (oyuncunun yanında) veya `X Y Z` (koordinat)
+- Canlı felaketler için **BossBar** gösterilir (can ve süre)
+- Doğa olayları için **ActionBar** gösterilir (sadece süre)
 
 ---
 
@@ -530,9 +560,10 @@ explosive - Patlayıcı Tuzak
 ```
 /scadmin boss build <boss_tipi>  → Boss ritüeli yapısını otomatik oluştur
 /scadmin boss spawn <boss_tipi>  → Boss spawn et
+/scadmin boss list               → Boss tiplerini listele
 ```
 
-**Boss Tipleri**:
+**Boss Tipleri** (13 adet):
 ```
 goblin_king, orc_chief, troll_king
 dragon, trex, cyclops
@@ -543,8 +574,17 @@ void_dragon, chaos_titan, chaos_god
 **Örnekler**:
 ```
 /scadmin boss build goblin_king  → Goblin Kralı ritüeli yapısı
-/scadmin boss build dragon       → Ejderha ritüeli yapısı
+/scadmin boss spawn dragon       → Ejderha spawn et
+/scadmin boss list               → Tüm boss tiplerini göster
 ```
+
+**BossBar Özelliği**:
+- Tüm bosslar spawn edildiğinde **BossBar** gösterilir
+- Ekranın üst kısmında görünür
+- Boss ismi ve faz bilgisi (çok fazlı bosslar için)
+- Can gösterimi: `Can/Maksimum Can` (örn: `200/200`)
+- Progress bar: Can yüzdesine göre
+- Renk değişimi: Kırmızı (>%60), Sarı (%30-60), Yeşil (<%30)
 
 ---
 

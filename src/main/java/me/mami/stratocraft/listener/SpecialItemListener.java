@@ -140,8 +140,13 @@ public class SpecialItemListener implements Listener {
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
 
-        // Dürbün kontrolü
+        // Dürbün kontrolü - Özel Casusluk Dürbünü olmalı
         if (item == null || item.getType() != org.bukkit.Material.SPYGLASS) {
+            return;
+        }
+        
+        // Özel Casusluk Dürbünü kontrolü
+        if (!ItemManager.isCustomItem(item, "CASUSLUK_DURBUN")) {
             return;
         }
 
@@ -158,6 +163,132 @@ public class SpecialItemListener implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         // Oyuncu çıkışında casusluk verilerini temizle
         specialItemManager.clearSpyData(event.getPlayer());
+    }
+    
+    // ========== CASUSLUK DÜRBÜNÜ GUI MENÜSÜ ==========
+    
+    @EventHandler
+    public void onSpyMenuClick(org.bukkit.event.inventory.InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        if (event.getView().title() == null) return;
+        
+        String title = ((net.kyori.adventure.text.TextComponent)event.getView().title()).content();
+        if (!title.contains("Casusluk:")) return;
+        
+        event.setCancelled(true); // Eşya çıkarılmasını engelle
+        
+        Player player = (Player) event.getWhoClicked();
+        ItemStack clicked = event.getCurrentItem();
+        
+        if (clicked == null || clicked.getType() == Material.AIR) return;
+        
+        // Tıklama sesi
+        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
+        
+        // Hedef oyuncuyu bul (menü başlığından)
+        String targetName = title.replace("§e§lCasusluk: §f", "").trim();
+        Player target = org.bukkit.Bukkit.getPlayer(targetName);
+        
+        if (target == null || !target.isOnline()) {
+            player.sendMessage("§cHedef oyuncu artık online değil!");
+            player.closeInventory();
+            return;
+        }
+        
+        // Buton tıklamaları
+        switch (clicked.getType()) {
+            case REDSTONE:
+                // Can detayları
+                player.sendMessage("§6§l═══════════════════════════");
+                player.sendMessage("§c§lCAN DURUMU: §f" + target.getName());
+                player.sendMessage("§7Mevcut: §c" + String.format("%.1f", target.getHealth()) + "❤");
+                player.sendMessage("§7Maksimum: §c" + String.format("%.1f", 
+                    target.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue()) + "❤");
+                double healthPercent = (target.getHealth() / target.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue()) * 100;
+                player.sendMessage("§7Yüzde: §c" + String.format("%.0f", healthPercent) + "%");
+                player.sendMessage("§6§l═══════════════════════════");
+                break;
+                
+            case BREAD:
+                // Açlık detayları
+                player.sendMessage("§6§l═══════════════════════════");
+                player.sendMessage("§e§lAÇLIK DURUMU: §f" + target.getName());
+                int foodLevel = target.getFoodLevel();
+                double saturation = target.getSaturation();
+                String hungerColor = foodLevel >= 18 ? "§a" : foodLevel >= 12 ? "§e" : foodLevel >= 6 ? "§6" : "§c";
+                player.sendMessage("§7Seviye: " + hungerColor + foodLevel + "§7/20");
+                player.sendMessage("§7Doygunluk: §e" + String.format("%.1f", saturation));
+                player.sendMessage("§6§l═══════════════════════════");
+                break;
+                
+            case IRON_CHESTPLATE:
+                // Zırh detayları
+                player.sendMessage("§6§l═══════════════════════════");
+                player.sendMessage("§b§lZIRH DURUMU: §f" + target.getName());
+                org.bukkit.inventory.PlayerInventory inv = target.getInventory();
+                int armorPoints = 0;
+                if (inv.getHelmet() != null) {
+                    armorPoints += specialItemManager.getArmorPoints(inv.getHelmet().getType());
+                    player.sendMessage("§7Miğfer: §b" + inv.getHelmet().getType().name());
+                }
+                if (inv.getChestplate() != null) {
+                    armorPoints += specialItemManager.getArmorPoints(inv.getChestplate().getType());
+                    player.sendMessage("§7Göğüslük: §b" + inv.getChestplate().getType().name());
+                }
+                if (inv.getLeggings() != null) {
+                    armorPoints += specialItemManager.getArmorPoints(inv.getLeggings().getType());
+                    player.sendMessage("§7Pantolon: §b" + inv.getLeggings().getType().name());
+                }
+                if (inv.getBoots() != null) {
+                    armorPoints += specialItemManager.getArmorPoints(inv.getBoots().getType());
+                    player.sendMessage("§7Bot: §b" + inv.getBoots().getType().name());
+                }
+                player.sendMessage("§7Toplam: §b" + armorPoints + "§7/20 puan");
+                player.sendMessage("§6§l═══════════════════════════");
+                break;
+                
+            case CHEST:
+                // Envanter detayları
+                player.sendMessage("§6§l═══════════════════════════");
+                player.sendMessage("§e§lENVANTER DURUMU: §f" + target.getName());
+                int filledSlots = 0;
+                for (ItemStack item : inv.getStorageContents()) {
+                    if (item != null && item.getType() != Material.AIR) {
+                        filledSlots++;
+                    }
+                }
+                int totalSlots = 36;
+                double fillPercent = (filledSlots * 100.0) / totalSlots;
+                player.sendMessage("§7Dolu Slot: §e" + filledSlots + "§7/§e" + totalSlots);
+                player.sendMessage("§7Doluluk: §e" + String.format("%.0f", fillPercent) + "%");
+                player.sendMessage("§6§l═══════════════════════════");
+                break;
+                
+            case POTION:
+                // Efekt detayları
+                player.sendMessage("§6§l═══════════════════════════");
+                player.sendMessage("§d§lAKTİF EFEKTLER: §f" + target.getName());
+                java.util.Collection<org.bukkit.potion.PotionEffect> effects = target.getActivePotionEffects();
+                if (effects.isEmpty()) {
+                    player.sendMessage("§8Aktif efekt yok");
+                } else {
+                    for (org.bukkit.potion.PotionEffect effect : effects) {
+                        String effectName = specialItemManager.getEffectDisplayName(effect.getType());
+                        int level = effect.getAmplifier() + 1;
+                        int duration = effect.getDuration() / 20;
+                        String color = specialItemManager.getEffectColor(effect.getType());
+                        player.sendMessage("  " + color + effectName + " §7" + level + " §8(" + duration + "s)");
+                    }
+                }
+                player.sendMessage("§6§l═══════════════════════════");
+                break;
+                
+            case BARRIER:
+                // Kapat
+                player.closeInventory();
+                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 0.5f);
+                break;
+        }
     }
 
     // ========== SAVAŞ YELPAZESİ ==========

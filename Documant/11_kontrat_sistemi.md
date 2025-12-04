@@ -92,9 +92,9 @@ Kontratlar, oyuncular arasında **koda dayalı** anlaşmalardır. Sözleşmeyi b
 
 ---
 
-## 📋 KONTRAT TİPLERİ
+## 📋 KONTRAT TİPLERİ (6 Tip)
 
-### 1. Malzeme Temini Kontratı
+### 1. Malzeme Temini Kontratı (MATERIAL_DELIVERY)
 
 **Şablon**:
 ```
@@ -160,15 +160,65 @@ SÜRE: 24 saat
 
 ---
 
-### 4. İnşaat Kontratı
+### 4. Bölge Yasağı Kontratı (TERRITORY_RESTRICT)
 
 **Şablon**:
 ```
-ŞART: 10x10 ev yap
-SÜRE: 2 gün
-ÖDÜL: 800 Altın
+ŞART: Belirli bölgelere girme
+SÜRE: 7 gün
+ÖDÜL: 2000 Altın
 
-Kanıt: Screenshot + koordinat
+İhlal: Yasak bölgeye girildiğinde otomatik ceza
+```
+
+**İşleyiş**:
+```
+1. Kontrat imzalanır
+2. Yasak bölgeler belirlenir (koordinat + yarıçap)
+3. Oyuncu yasak bölgeye girerse → İhlal
+4. Otomatik ceza uygulanır
+```
+
+---
+
+### 5. Saldırmama Anlaşması (NON_AGGRESSION)
+
+**Şablon**:
+```
+ŞART: Belirli oyuncuya/klana saldırma
+SÜRE: 14 gün
+ÖDÜL: 5000 Altın
+
+İhlal: Saldırıldığında otomatik ceza
+```
+
+**İşleyiş**:
+```
+1. Kontrat imzalanır
+2. Hedef oyuncu/klan belirlenir
+3. Saldırı yapılırsa → İhlal
+4. Otomatik ceza uygulanır
+```
+
+---
+
+### 6. Yapı İnşa Kontratı (STRUCTURE_BUILD)
+
+**Şablon**:
+```
+ŞART: Belirli yapıyı inşa et
+SÜRE: 5 gün
+ÖDÜL: 3000 Altın
+
+Kanıt: Yapı inşa edildiğinde otomatik kontrol
+```
+
+**İşleyiş**:
+```
+1. Kontrat imzalanır
+2. Yapı tipi belirlenir
+3. Yapı inşa edilirse → Tamamlandı
+4. Ödül transfer edilir
 ```
 
 ---
@@ -227,7 +277,19 @@ Sistem:
 
 ---
 
-#### **3. Envanter Kilidi** (Para Yoksa)
+#### **3. Kalıcı Can Kaybı** (Permanent Health Loss)
+
+```
+İhlal eden oyuncu:
+- Maksimum can -2 kalp (kalıcı)
+- Attribute modifier ile uygulanır
+- Oyuncu giriş yaptığında otomatik uygulanır
+- Tazminat ödense bile can geri gelmez
+```
+
+---
+
+#### **4. Envanter Kilidi** (Para Yoksa)
 
 ```
 Durum: Bankada para yok ama ihlal var
@@ -344,12 +406,98 @@ Tek oyuncuya zor ama:
 ### Kontrat Kabul Etme
 
 ```
-1. Contract Board bul
-2. Sağ tık → Kontrat listesi
-3. Uygun olanı seç
-4. "Kabul Et"
-5. -3 kalp can kaybı (Kan imzası)
-6. BAŞLA! (süre işliyor)
+1. /kontrat komutunu kullan
+2. GUI menü açılır (54 slot, sayfalama)
+3. Aktif kontratları görüntüle
+4. İstediğin kontratı seç
+5. Detay menüsünde "Kabul Et" butonuna tıkla
+6. -3 kalp can kaybı (Kan imzası)
+7. BAŞLA! (süre işliyor)
+```
+
+---
+
+## 🖥️ GUI MENÜ SİSTEMİ
+
+### Ana Kontrat Menüsü (54 Slot)
+
+**Özellikler**:
+```
+- Sayfalama: Her sayfada 45 kontrat
+- Kontrat ikonları: Tip'e göre farklı materyaller
+- Detay görüntüleme: Kontrata tıkla → Detay menüsü
+- Önceki/Sonraki sayfa butonları
+```
+
+**Kontrat İkonları**:
+```
+- MATERIAL_DELIVERY → Material icon (örn: Iron Ingot)
+- PLAYER_KILL → Player Head (bounty)
+- TERRITORY_RESTRICT → Barrier (yasak)
+- NON_AGGRESSION → Shield (saldırmama)
+- BASE_PROTECTION → Chest (koruma)
+- STRUCTURE_BUILD → Structure Block (yapı)
+```
+
+### Detay Menüsü (27 Slot)
+
+**Özellikler**:
+```
+- Slot 13: Kontrat bilgileri (tip, issuer, ödül, ceza, süre)
+- Slot 11: "Kabul Et" butonu (yeşil emerald block)
+- Slot 15: "Reddet" butonu (kırmızı redstone block)
+- Slot 22: "Geri" butonu (ana menüye dön)
+```
+
+**Kontrat Bilgileri**:
+```
+- Tip: Kontrat tipi (Türkçe)
+- Issuer: Kontratı veren oyuncu
+- Ödül: Para miktarı
+- Ceza: İhlal cezası
+- Süre: Kalan süre (gün/saat/dakika)
+- Tip'e özel bilgiler (hedef, malzeme, vb.)
+```
+
+---
+
+## 🎮 KOMUT SİSTEMİ
+
+### `/kontrat` Komutu
+
+**Kullanım**:
+```
+/kontrat
+```
+
+**Özellikler**:
+- GUI menü açar
+- Aktif kontratları listeler
+- Sayfalama desteği
+- Detay görüntüleme
+
+---
+
+## 🔄 KONTRAT KAPSAMI (Scope)
+
+### Oyuncu → Oyuncu (PLAYER_TO_PLAYER)
+```
+İki oyuncu arasında bireysel kontrat
+```
+
+### Klan → Klan (CLAN_TO_CLAN)
+```
+İki klan arasında toplu kontrat
+```
+
+### Oyuncu → Klan (PLAYER_TO_CLAN)
+```
+Bir oyuncu bir klanla kontrat yapar
+```
+
+### Klan → Oyuncu (CLAN_TO_PLAYER)
+```
+Bir klan bir oyuncuyla kontrat yapar
 ```
 
 ---

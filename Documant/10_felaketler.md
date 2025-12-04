@@ -109,18 +109,21 @@ Koşullar:
 
 **Felaket sırasında ekranda sayaç!**
 
-```
-BossBar Görünümü:
-┌─────────────────────────────────┐
-│ 🔥 Titan Golem - Kalan: 5:23   │
-│ ████████████░░░░░░░░░░░░ 50%   │
-└─────────────────────────────────┘
-
-Bilgiler:
+**Canlı Felaketler** (Titan Golem, Hiçlik Solucanı, vb.) için:
+- Ekranın üst kısmında **BossBar** gösterilir
 - Felaket ismi
-- Kalan süre (dakika:saniye)
-- Can barı (%)
-```
+- Can gösterimi: `Can/Maksimum Can` (örn: `500/500`)
+- Kalan süre: `⏰ 5:23` formatında
+- Can barı: Progress bar ile görsel gösterim
+- Renk değişimi: 
+  - Kırmızı (>%60 can)
+  - Sarı (%30-60 can)
+  - Yeşil (<%30 can)
+
+**Doğa Olayları** (Güneş Fırtınası, Deprem, vb.) için:
+- Ekranın alt kısmında **ActionBar** gösterilir
+- Felaket ismi
+- Kalan süre: `⏰ 5:23` formatında
 
 ---
 
@@ -178,7 +181,7 @@ STRATEJI: Felaket merkezden uzaklaştıkça zayıflar
 
 ---
 
-## 🗿 5 FELAKET TİPİ
+## 🗿 9 FELAKET TİPİ
 
 ### 1. Yürüyen Dağ (TITAN GOLEM)
 
@@ -288,15 +291,66 @@ Başlamadan 2 dakika önce:
 
 ---
 
-### 4. Buzul Leviathan (ICE LEVIATHAN) - Opsiyonel
+### 4. Khaos Ejderi (CHAOS_DRAGON)
+
+**Görünüm**: Dev Ender Dragon
+
+**İstatistikler**:
+```
+Can: 600 HP (300 kalp)
+Hasar: 30 (15 kalp/vuruş)
+Hız: Hızlı (uçuyor)
+```
+
+**Özel Yetenekler**:
+```
+- Ateş püskürtme (50 blok menzil)
+- Oyuncuları yakma
+- Yüksek hasar
+```
+
+**Spawn**: Gökyüzünde, merkeze doğru uçar
+
+---
+
+### 5. Boşluk Titanı (VOID_TITAN)
+
+**Görünüm**: Dev Wither
+
+**İstatistikler**:
+```
+Can: 700 HP (350 kalp)
+Hasar: 35 (17.5 kalp/vuruş)
+Hız: Orta
+```
+
+**Özel Yetenekler**:
+```
+- Boşluk patlaması (rastgele konumlarda)
+- Yüksek patlama hasarı
+- Blok yıkma
+```
+
+**Spawn**: Yer seviyesinde, merkeze doğru ilerler
+
+---
+
+### 6. Buzul Leviathan (ICE_LEVIATHAN)
 
 **Görünüm**: Dev Elder Guardian (buzda)
 
 **İstatistikler**:
 ```
-Can: 400 HP
-Hasar: Donma + hasar
+Can: 400 HP (200 kalp)
+Hasar: Donma + 20 (10 kalp/vuruş)
 Hız: Suda/buzda hızlı
+```
+
+**Özel Yetenekler**:
+```
+- Etrafındaki oyuncuları dondurma (30 blok menzil)
+- Blokları buz yapma
+- Mining Fatigue efekti
 ```
 
 **Etki**:
@@ -311,9 +365,9 @@ Hız: Suda/buzda hızlı
 
 ---
 
-### 5. Meteor Yağmuru (METEOR SHOWER) - Opsiyonel
+### 7. Meteor Yağmuru (METEOR_SHOWER)
 
-**Tip**: Olay (30 dakika)
+**Tip**: Doğa Olayı (20 dakika)
 
 **Etki**:
 ```
@@ -324,6 +378,33 @@ Hız: Suda/buzda hızlı
 ```
 
 **Hayatta Kalma**: Çatı yap (Obsidian)
+
+---
+
+### 8. Deprem (EARTHQUAKE)
+
+**Tip**: Doğa Olayı (5 dakika)
+
+**Etki**:
+```
+- Yer sarsılır
+- Bloklar düşer
+- Yapılara hasar
+```
+
+---
+
+### 9. Volkanik Patlama (VOLCANIC_ERUPTION)
+
+**Tip**: Doğa Olayı (60 dakika)
+
+**Etki**:
+```
+- Lav akışı
+- Kül bulutu
+- Çok yüksek hasar (yanma)
+- Geniş alan etkisi
+```
 
 ---
 
@@ -450,11 +531,44 @@ AMAÇ: İntikam almak için güçlenirler!
 ## ⚠️ ÖNEMLİ NOTLAR
 
 1. **Tek Başına Yenilemez**: Tüm felaketler takım gerektirir (minimum 3-5 oyuncu)
-2. **Merkezden Uzak**: Feladetler 5000+ blok uzakta spawn olur
+2. **Merkezden Uzak**: Felaketler 5000+ blok uzakta spawn olur
 3. **Merkeze Doğru**: Sürekli merkeze ilerlerler
 4. **Base Bulursa**: O base'i yok edene kadar durmaz
 5. **Enkaz Topla**: Öldükten sonra enkaz kazı, çok değerli!
+6. **BossBar Görüntüsü**: Canlı felaketler için ekranın üst kısmında can ve süre gösterilir
+7. **9 Felaket Tipi**: 5 canlı felaket + 4 doğa olayı
 
 ---
 
-**🎮 Feladetlere karşı takımla birleş, dropları topla, Kahraman ol!**
+**🎮 Felaketlere karşı takımla birleş, dropları topla, Kahraman ol!**
+
+---
+
+## 📊 BOSSBAR GÖRÜNTÜSÜ
+
+### Canlı Felaketler İçin BossBar
+
+Tüm canlı felaketler (Titan Golem, Hiçlik Solucanı, vb.) spawn edildiğinde:
+- Ekranın **üst kısmında** BossBar gösterilir
+- **Can gösterimi**: `Can/Maksimum Can` formatında
+- **Kalan süre**: `⏰ 5:23` formatında
+- **Progress bar**: Can yüzdesine göre görsel gösterim
+- **Renk değişimi**: 
+  - 🔴 Kırmızı: >%60 can
+  - 🟡 Sarı: %30-60 can
+  - 🟢 Yeşil: <%30 can
+
+### Doğa Olayları İçin ActionBar
+
+Doğa olayları (Güneş Fırtınası, Deprem, vb.) için:
+- Ekranın **alt kısmında** ActionBar gösterilir
+- **Felaket ismi** ve **kalan süre** gösterilir
+
+### Tüm Bosslar İçin BossBar
+
+Tüm bosslar spawn edildiğinde:
+- Ekranın **üst kısmında** BossBar gösterilir
+- **Boss ismi** ve **faz bilgisi** (çok fazlı bosslar için)
+- **Can gösterimi**: `Can/Maksimum Can` formatında
+- **Progress bar**: Can yüzdesine göre görsel gösterim
+- **Renk değişimi**: Can durumuna göre otomatik

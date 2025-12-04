@@ -135,6 +135,7 @@ public class ItemManager {
     public static ItemStack SUMMON_CORE; // Çağırma Çekirdeği (Boss çağırma için)
     public static ItemStack BREEDING_CORE; // Üreme Çekirdeği
     public static ItemStack GENDER_SCANNER; // Cinsiyet Ayırıcı
+    public static ItemStack CASUSLUK_DURBUN; // Casusluk Dürbünü
 
     // ========== ÖZEL ZIRHLAR (5 Seviye x 5 Zırh = 25 Zırh) ==========
     // Seviye 1 Zırhlar
@@ -475,6 +476,7 @@ public class ItemManager {
         SUMMON_CORE = create(Material.END_CRYSTAL, "SUMMON_CORE", "§5§lÇağırma Çekirdeği");
         BREEDING_CORE = create(Material.BEACON, "BREEDING_CORE", "§d§lÜreme Çekirdeği");
         GENDER_SCANNER = create(Material.SPYGLASS, "GENDER_SCANNER", "§bCinsiyet Ayırıcı");
+        CASUSLUK_DURBUN = create(Material.SPYGLASS, "CASUSLUK_DURBUN", "§eCasusluk Dürbünü");
 
         // ========== ÖZEL ZIRHLAR ==========
         initSpecialArmors();
@@ -868,9 +870,63 @@ public class ItemManager {
             lore.add("§7Crafting masasında yapılır.");
             if (info.getCraftingRecipe() != null && !info.getCraftingRecipe().isEmpty()) {
                 lore.add("");
-                lore.add("§e§lCrafting Tarifi:");
+                lore.add("§e§l═══════════════════════");
+                lore.add("§e§l   CRAFTING TARİFİ");
+                lore.add("§e§l═══════════════════════");
+                lore.add("");
+                
+                // Crafting table görüntüsü oluştur
+                List<String> recipeLines = new ArrayList<>();
+                String line1 = "", line2 = "", line3 = "";
+                List<String> ingredients = new ArrayList<>();
+                
                 for (String line : info.getCraftingRecipe()) {
-                    lore.add("§7" + line);
+                    if (line.startsWith("Satır 1:")) {
+                        line1 = line.replace("Satır 1:", "").trim();
+                    } else if (line.startsWith("Satır 2:")) {
+                        line2 = line.replace("Satır 2:", "").trim();
+                    } else if (line.startsWith("Satır 3:")) {
+                        line3 = line.replace("Satır 3:", "").trim();
+                    } else if (line.contains("=")) {
+                        ingredients.add(line.trim());
+                    }
+                }
+                
+                // Crafting table görseli
+                if (!line1.isEmpty() || !line2.isEmpty() || !line3.isEmpty()) {
+                    lore.add("§7┌─────┬─────┬─────┐");
+                    if (!line1.isEmpty()) {
+                        lore.add("§7│" + formatCraftingLine(line1) + "│");
+                    } else {
+                        lore.add("§7│     │     │     │");
+                    }
+                    lore.add("§7├─────┼─────┼─────┤");
+                    if (!line2.isEmpty()) {
+                        lore.add("§7│" + formatCraftingLine(line2) + "│");
+                    } else {
+                        lore.add("§7│     │     │     │");
+                    }
+                    lore.add("§7├─────┼─────┼─────┤");
+                    if (!line3.isEmpty()) {
+                        lore.add("§7│" + formatCraftingLine(line3) + "│");
+                    } else {
+                        lore.add("§7│     │     │     │");
+                    }
+                    lore.add("§7└─────┴─────┴─────┘");
+                    lore.add("");
+                    
+                    // Malzeme açıklamaları
+                    if (!ingredients.isEmpty()) {
+                        lore.add("§7§lMalzemeler:");
+                        for (String ingredient : ingredients) {
+                            lore.add("§7  " + ingredient);
+                        }
+                    }
+                } else {
+                    // Eski format (fallback)
+                    for (String line : info.getCraftingRecipe()) {
+                        lore.add("§7" + line);
+                    }
                 }
             } else {
                 lore.add("§7Tarif detayları için kitaba");
@@ -891,6 +947,48 @@ public class ItemManager {
                 PersistentDataType.STRING, id);
         item.setItemMeta(meta);
         return item;
+    }
+    
+    /**
+     * Crafting satırını formatla (3x3 grid için)
+     * Örnek: "[I] [F] [I]" -> "  I  │  F  │  I  "
+     */
+    private String formatCraftingLine(String line) {
+        // [I] [F] [I] formatını parse et
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[([^\\]]+)\\]");
+        java.util.regex.Matcher matcher = pattern.matcher(line);
+        java.util.List<String> items = new java.util.ArrayList<>();
+        
+        while (matcher.find()) {
+            items.add(matcher.group(1).trim());
+        }
+        
+        // 3 slot için formatla
+        StringBuilder formatted = new StringBuilder();
+        for (int i = 0; i < 3; i++) {
+            String item = " ";
+            if (i < items.size() && !items.get(i).isEmpty()) {
+                item = items.get(i);
+            }
+            
+            // 5 karakter genişlik (ortala)
+            if (item.length() == 1) {
+                item = "  " + item + "  ";
+            } else if (item.length() == 2) {
+                item = " " + item + "  ";
+            } else if (item.length() == 3) {
+                item = " " + item + " ";
+            } else {
+                // Daha uzunsa kısalt
+                item = item.substring(0, Math.min(3, item.length()));
+                item = " " + item + " ";
+            }
+            
+            formatted.append(item);
+            if (i < 2) formatted.append("│");
+        }
+        
+        return formatted.toString();
     }
     
     /**

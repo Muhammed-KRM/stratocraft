@@ -18,33 +18,219 @@ Bu dokümanda 6 sistem var:
 
 ### Durum
 
-**Kod Dosyası**: `MissionManager.java`, `MissionListener.java`, `Mission.java`
+**Kod Dosyası**: `MissionManager.java`, `MissionListener.java`, `Mission.java`, `MissionMenu.java`
 
-**Mevcut Durum**: **Placeholder - Henüz tam implement edilmemiş**
+**Mevcut Durum**: **✅ TAM İMPLEMENT EDİLMİŞ - ÇALIŞIYOR**
 
-**Şu an**: Basit bir görev yapısı var ama tam çalışmıyor.
+**KOD DOĞRULANDI**: Tüm görev tipleri, GUI menü, ilerleme takibi ve ödül sistemi aktif.
 
-###Expectations Beklenen İşleyiş (Kod'dan)
+---
 
-**Görev Loncasıgibi çalışacaktı**:
+### 🎮 Nasıl Çalışır?
+
+**Görev Loncası (Totem)**:
 ```
-1. Totem koy
-2. Sağ tık → Görev al
-3. Görevi tamamla
-4. Ödül kazantanı
-
-Görev Tipleri:
-- Malzeme getir (örn: 64 Demir)
-- Mob öldür (örn: 10 Zombie)
-- Boss öldür (örn: 1 Titan Golem)
+1. Totem (Totem of Undying) koy
+2. Totem'e SAĞ TIK → Görev menüsü açılır
+3. Yeni görev al veya aktif görevi görüntüle
+4. Görevi tamamla
+5. Menüden "Teslim Et" butonuna tıkla
+6. Ödülü al!
 ```
 
-**Ödüller**:
-- Para (Gold)
-- Özel eşyalar
-- Tarif Kitapları
+---
 
-**NOT**: Şu an **kullanılabilir değil**. Gelecekte güncellenebilir.
+### 📋 Görev Tipleri (8 Tip)
+
+**1. Mob Avı (KILL_MOB)**
+```
+Hedef: Belirli mobları öldür
+Örnek: "10 Zombie öldür"
+İlerleme: Otomatik takip (EntityDeathEvent)
+```
+
+**2. Malzeme Toplama (GATHER_ITEM)**
+```
+Hedef: Belirli malzemeleri topla
+Örnek: "64 Demir topla"
+İlerleme: Otomatik takip (BlockBreakEvent)
+```
+
+**3. Lokasyon Ziyareti (VISIT_LOCATION)**
+```
+Hedef: Belirli bir koordinata git
+Örnek: "X: 1000, Z: 2000 koordinatına git"
+İlerleme: Otomatik takip (PlayerMoveEvent - 10 blok optimizasyonu)
+```
+
+**4. Yapı İnşa (BUILD_STRUCTURE)**
+```
+Hedef: Belirli bir yapıyı inşa et
+Örnek: "Alchemy Tower inşa et"
+İlerleme: Otomatik takip (BlockPlaceEvent)
+```
+
+**5. Oyuncu Avı (KILL_PLAYER)**
+```
+Hedef: Belirli bir oyuncuyu öldür
+Örnek: "OyuncuX'i öldür"
+İlerleme: Otomatik takip (PlayerDeathEvent)
+```
+
+**6. Item Craft (CRAFT_ITEM)**
+```
+Hedef: Belirli bir item craft et
+Örnek: "Titanyum Kılıç craft et"
+İlerleme: Otomatik takip (CraftItemEvent)
+```
+
+**7. Blok Kazma (MINE_BLOCK)**
+```
+Hedef: Belirli blokları kaz
+Örnek: "50 Titanyum Ore kaz"
+İlerleme: Otomatik takip (BlockBreakEvent)
+```
+
+**8. Mesafe Kat Etme (TRAVEL_DISTANCE)**
+```
+Hedef: Belirli mesafeyi kat et
+Örnek: "1000 blok yol kat et"
+İlerleme: Otomatik takip (PlayerMoveEvent - 10 blok optimizasyonu)
+```
+
+---
+
+### 🎚️ Zorluk Seviyeleri
+
+**Kolay (EASY)** - Seviye 1 oyuncular için:
+```
+- Düşük hedef miktarı
+- Kısa süre (1-2 gün)
+- Düşük ödül (100-500 Altın)
+```
+
+**Orta (MEDIUM)** - Seviye 2-3 oyuncular için:
+```
+- Orta hedef miktarı
+- Orta süre (3-5 gün)
+- Orta ödül (500-2000 Altın)
+```
+
+**Zor (HARD)** - Seviye 4-5 oyuncular için:
+```
+- Yüksek hedef miktarı
+- Uzun süre (5-7 gün)
+- Yüksek ödül (2000-5000 Altın)
+```
+
+**Uzman (EXPERT)** - Seviye 5+ oyuncular için:
+```
+- Çok yüksek hedef miktarı
+- Çok uzun süre (7-10 gün)
+- Çok yüksek ödül (5000-10000 Altın)
+```
+
+---
+
+### 🖥️ GUI Menü Sistemi
+
+**Görev Menüsü** (27 slot):
+```
+- Slot 0-8: İlerleme barı (yeşil/gri cam paneller)
+- Slot 13: Görev bilgisi (tip, zorluk, hedef, süre)
+- Slot 15: Ödül önizleme (item)
+- Slot 22: "Teslim Et" butonu (görev tamamlandıysa)
+- Slot 26: "Kapat" butonu
+```
+
+**Menü Özellikleri**:
+- İlerleme barı: Görsel progress gösterimi
+- Süre gösterimi: Kalan süre (gün/saat/dakika)
+- Ödül önizleme: Para ve item ödülleri
+- Otomatik güncelleme: İlerleme anlık güncellenir
+
+---
+
+### 💰 Ödül Sistemi
+
+**Para Ödülü**:
+```
+- Zorluğa göre değişir
+- Otomatik bankaya yatırılır (Vault)
+- Görev tamamlandığında anında ödenir
+```
+
+**Item Ödülü**:
+```
+- Zorluğa göre rastgele item
+- Envantere eklenir
+- Eğer envanter doluysa yere düşer
+```
+
+---
+
+### ⚙️ Otomatik İlerleme Takibi
+
+**Event-Based Tracking**:
+```java
+// MissionListener.java
+- EntityDeathEvent → KILL_MOB
+- BlockBreakEvent → GATHER_ITEM, MINE_BLOCK
+- PlayerMoveEvent → VISIT_LOCATION, TRAVEL_DISTANCE (10 blok optimizasyonu)
+- BlockPlaceEvent → BUILD_STRUCTURE
+- PlayerDeathEvent → KILL_PLAYER
+- CraftItemEvent → CRAFT_ITEM
+```
+
+**Performans Optimizasyonu**:
+```
+- PlayerMoveEvent: Her 10 blokta bir kontrol (lag önleme)
+- Chunk-based cache: Chunk bazlı veri saklama
+- Event priority: NORMAL (diğer sistemlerle uyumlu)
+```
+
+---
+
+### 🎯 Görev Stratejileri
+
+**Yeni Başlayanlar İçin**:
+```
+1. Totem bul veya craft et
+2. Kolay görevler al (EASY)
+3. Malzeme toplama görevleri (en kolay)
+4. Para biriktir
+5. Zor görevlere geç
+```
+
+**Para Kazanma**:
+```
+- Günlük 5-10 görev yap
+- Orta zorluk görevler (en verimli)
+- Günlük kazanç: 2000-5000 Altın
+```
+
+**Klan İçin**:
+```
+- Tüm klan üyeleri görev yapsın
+- Zor görevleri takım halinde tamamla
+- Klan kasasına para aktar
+```
+
+---
+
+### ⚠️ ÖNEMLİ NOTLAR
+
+**Görev Kuralları**:
+1. **Tek Aktif Görev**: Aynı anda sadece 1 görev aktif
+2. **Süre Sınırı**: Süre dolduğunda görev iptal olur
+3. **Otomatik Takip**: İlerleme otomatik güncellenir
+4. **GUI Menü**: Totem'e sağ tık ile menü açılır
+5. **Ödül Anında**: Görev tamamlandığında ödül anında verilir
+
+**Performans**:
+- PlayerMoveEvent optimizasyonu: Her 10 blokta bir kontrol
+- Chunk-based cache: Performans için chunk bazlı veri saklama
+- Event priority: NORMAL (diğer sistemlerle uyumlu)
 
 ---
 

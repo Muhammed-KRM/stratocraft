@@ -663,13 +663,21 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        String disasterName = args[2].toUpperCase(java.util.Locale.ENGLISH);
+        // Felaket tipini parse et (titan_golem -> TITAN_GOLEM)
+        String disasterName = args[2].toUpperCase(java.util.Locale.ENGLISH).replace(" ", "_");
         Disaster.Type type;
         try {
             type = Disaster.Type.valueOf(disasterName);
         } catch (IllegalArgumentException e) {
-            p.sendMessage("§cGeçersiz felaket tipi: §e" + args[2]);
-            return true;
+            // Alternatif isimler dene
+            disasterName = disasterName.replace("_", "");
+            try {
+                type = Disaster.Type.valueOf(disasterName);
+            } catch (IllegalArgumentException e2) {
+                p.sendMessage("§cGeçersiz felaket tipi: §e" + args[2]);
+                p.sendMessage("§7Kullanılabilir tipler: §eTITAN_GOLEM, ABYSSAL_WORM, SOLAR_FLARE, EARTHQUAKE, METEOR_SHOWER, VOLCANIC_ERUPTION, CHAOS_DRAGON, VOID_TITAN, ICE_LEVIATHAN");
+                return true;
+            }
         }
 
         // Seviye belirleme
@@ -775,6 +783,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§7  §eTITAN_GOLEM §7- Seviye 3 - Titan Golem");
         p.sendMessage("§7  §eABYSSAL_WORM §7- Seviye 2 - Hiçlik Solucanı");
         p.sendMessage("§7  §eCHAOS_DRAGON §7- Seviye 3 - Khaos Ejderi");
+        p.sendMessage("§7  §eVOID_TITAN §7- Seviye 3 - Boşluk Titanı");
+        p.sendMessage("§7  §eICE_LEVIATHAN §7- Seviye 2 - Buzul Leviathan");
+        p.sendMessage("§7§lDoğa Olayları:");
+        p.sendMessage("§7  §eSOLAR_FLARE §7- Seviye 1 - Güneş Patlaması");
+        p.sendMessage("§7  §eEARTHQUAKE §7- Seviye 2 - Deprem");
+        p.sendMessage("§7  §eMETEOR_SHOWER §7- Seviye 2 - Meteor Yağmuru");
+        p.sendMessage("§7  §eVOLCANIC_ERUPTION §7- Seviye 3 - Volkanik Patlama");
         p.sendMessage("§7  §eVOID_TITAN §7- Seviye 3 - Boşluk Titanı");
         p.sendMessage("§7§lDoğa Olayları:");
         p.sendMessage("§7  §eSOLAR_FLARE §7- Seviye 1 - Güneş Patlaması");
@@ -1160,9 +1175,17 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
     private void showDisastersList(Player p) {
         p.sendMessage("§6§l=== FELAKETLER ===");
-        p.sendMessage("§e1. §7titan_golem §7- Titan Golem");
-        p.sendMessage("§e2. §7abyssal_worm §7- Hiçlik Solucanı");
-        p.sendMessage("§e3. §7solar_flare §7- Güneş Fırtınası");
+        p.sendMessage("§7§lCanlı Felaketler:");
+        p.sendMessage("§e1. §7titan_golem §7- Titan Golem (Seviye 3)");
+        p.sendMessage("§e2. §7abyssal_worm §7- Hiçlik Solucanı (Seviye 2)");
+        p.sendMessage("§e3. §7chaos_dragon §7- Khaos Ejderi (Seviye 3)");
+        p.sendMessage("§e4. §7void_titan §7- Boşluk Titanı (Seviye 3)");
+        p.sendMessage("§e5. §7ice_leviathan §7- Buzul Leviathan (Seviye 2)");
+        p.sendMessage("§7§lDoğa Olayları:");
+        p.sendMessage("§e6. §7solar_flare §7- Güneş Fırtınası (Seviye 1)");
+        p.sendMessage("§e7. §7earthquake §7- Deprem (Seviye 2)");
+        p.sendMessage("§e8. §7meteor_shower §7- Meteor Yağmuru (Seviye 2)");
+        p.sendMessage("§e9. §7volcanic_eruption §7- Volkanik Patlama (Seviye 3)");
     }
 
     /**
@@ -3164,7 +3187,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 case "disaster":
                     // Disaster start komutu için felaket tipleri
                     if (category.equalsIgnoreCase("start")) {
-                        List<String> disasterTypes = Arrays.asList("TITAN_GOLEM", "ABYSSAL_WORM", "SOLAR_FLARE");
+                        List<String> disasterTypes = Arrays.asList(
+                            "TITAN_GOLEM", "ABYSSAL_WORM", "CHAOS_DRAGON", "VOID_TITAN", "ICE_LEVIATHAN",
+                            "SOLAR_FLARE", "EARTHQUAKE", "METEOR_SHOWER", "VOLCANIC_ERUPTION"
+                        );
                         if (input.isEmpty()) {
                             return disasterTypes;
                         }
@@ -3214,9 +3240,16 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 String disasterType = args[2];
                 String input = args[3].toLowerCase();
                 
+                // Tüm felaket tipleri için seviye öner
                 if (disasterType.equalsIgnoreCase("TITAN_GOLEM") || 
                     disasterType.equalsIgnoreCase("ABYSSAL_WORM") || 
-                    disasterType.equalsIgnoreCase("SOLAR_FLARE")) {
+                    disasterType.equalsIgnoreCase("SOLAR_FLARE") ||
+                    disasterType.equalsIgnoreCase("CHAOS_DRAGON") ||
+                    disasterType.equalsIgnoreCase("VOID_TITAN") ||
+                    disasterType.equalsIgnoreCase("ICE_LEVIATHAN") ||
+                    disasterType.equalsIgnoreCase("EARTHQUAKE") ||
+                    disasterType.equalsIgnoreCase("METEOR_SHOWER") ||
+                    disasterType.equalsIgnoreCase("VOLCANIC_ERUPTION")) {
                     List<String> levels = Arrays.asList("1", "2", "3");
                     if (input.isEmpty()) {
                         return levels;
