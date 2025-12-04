@@ -2859,7 +2859,7 @@ public class BatteryManager {
                 }
                 
                 for (Entity e : player.getNearbyEntities(radius, radius, radius)) {
-                    if (e instanceof Projectile && e.getShooter() != player) {
+                    if (e instanceof Projectile && ((Projectile) e).getShooter() != player) {
                         e.getWorld().strikeLightningEffect(e.getLocation());
                         e.remove();
                     }

@@ -13,11 +13,11 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 import org.bukkit.NamespacedKey;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -502,7 +502,7 @@ public class SpecialWeaponListener implements Listener {
                             }
                             // Yakındaki okları ve projectile'ları em
                             for (Entity e : player.getNearbyEntities(5, 5, 5)) {
-                                if (e instanceof Projectile && e.getShooter() != player) {
+                                if (e instanceof Projectile && ((Projectile) e).getShooter() != player) {
                                     double heal = 1.0; // Her ok için 1 can
                                     double maxHealth = player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
                                     player.setHealth(Math.min(maxHealth, player.getHealth() + heal));
@@ -1466,7 +1466,6 @@ public class SpecialWeaponListener implements Listener {
     @EventHandler
     public void onProjectileHit(ProjectileHitEvent event) {
         if (!(event.getEntity().getShooter() instanceof Player)) return;
-        Player shooter = (Player) event.getEntity().getShooter();
         
         // Kartopu (Buz Asası) - 3 saniye donma
         if (event.getEntity() instanceof Snowball && event.getEntity().getScoreboardTags().contains("frost_bolt")) {
@@ -1503,7 +1502,6 @@ public class SpecialWeaponListener implements Listener {
     @EventHandler
     public void onShoot(EntityShootBowEvent event) {
         if (!(event.getEntity() instanceof Player)) return;
-        Player player = (Player) event.getEntity();
         ItemStack bow = event.getBow();
         if (bow == null) return;
         
