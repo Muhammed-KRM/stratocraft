@@ -84,13 +84,15 @@ public class Main extends JavaPlugin {
         }
 
         // 1. Yöneticileri Başlat
-        // Önce SpecialItemManager'ı başlat (ItemManager buna ihtiyaç duyuyor)
+        // Önce SpecialItemManager'ı oluştur (ItemManager buna ihtiyaç duyuyor)
         specialItemManager = new me.mami.stratocraft.manager.SpecialItemManager();
-        specialItemManager.registerRecipes();
         
-        // Sonra ItemManager'ı başlat ve init() çağır
+        // Sonra ItemManager'ı başlat ve init() çağır (kanca item'larını oluşturur)
         itemManager = new ItemManager();
         itemManager.init(); // Artık SpecialItemManager'a erişebilir
+        
+        // Şimdi recipe'leri kaydet (ItemManager.RUSTY_HOOK vb. artık null değil)
+        specialItemManager.registerRecipes();
         clanManager = new ClanManager();
         territoryManager = new TerritoryManager(clanManager);
         clanManager.setTerritoryManager(territoryManager); // Cache güncellemesi için
