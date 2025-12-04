@@ -1447,6 +1447,14 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         if (item != null)
             return item;
 
+        item = getItemByNameBossItem(name);
+        if (item != null)
+            return item;
+
+        item = getItemByNameRecipeBook(name);
+        if (item != null)
+            return item;
+
         return null;
     }
 
@@ -2353,13 +2361,212 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             }
         }
         
-        // Diğer tarif kitapları (mevcut sistem)
+        // Yapı tarif kitapları
         switch (name.toLowerCase()) {
             case "recipe_core":
             case "tarif_cekirdek":
             case "tarif_çekirdek":
+            case "tarif_ana_kristal":
                 return ItemManager.RECIPE_CORE != null ? ItemManager.RECIPE_CORE.clone() : null;
-            // ... diğer tarif kitapları buraya eklenebilir
+            case "recipe_alchemy_tower":
+            case "tarif_simya_kulesi":
+                return ItemManager.RECIPE_ALCHEMY_TOWER != null ? ItemManager.RECIPE_ALCHEMY_TOWER.clone() : null;
+            case "recipe_poison_reactor":
+            case "tarif_zehir_reaktoru":
+                return ItemManager.RECIPE_POISON_REACTOR != null ? ItemManager.RECIPE_POISON_REACTOR.clone() : null;
+            case "recipe_siege_factory":
+            case "tarif_kuşatma_fabrikasi":
+                return ItemManager.RECIPE_SIEGE_FACTORY != null ? ItemManager.RECIPE_SIEGE_FACTORY.clone() : null;
+            case "recipe_wall_generator":
+            case "tarif_duvar_uretici":
+                return ItemManager.RECIPE_WALL_GENERATOR != null ? ItemManager.RECIPE_WALL_GENERATOR.clone() : null;
+            case "recipe_gravity_well":
+            case "tarif_yercekimi_kuyusu":
+                return ItemManager.RECIPE_GRAVITY_WELL != null ? ItemManager.RECIPE_GRAVITY_WELL.clone() : null;
+            case "recipe_lava_trencher":
+            case "tarif_lav_hendegi":
+                return ItemManager.RECIPE_LAVA_TRENCHER != null ? ItemManager.RECIPE_LAVA_TRENCHER.clone() : null;
+            case "recipe_watchtower":
+            case "tarif_gozetleme_kulesi":
+                return ItemManager.RECIPE_WATCHTOWER != null ? ItemManager.RECIPE_WATCHTOWER.clone() : null;
+            case "recipe_drone_station":
+            case "tarif_drone_istasyonu":
+                return ItemManager.RECIPE_DRONE_STATION != null ? ItemManager.RECIPE_DRONE_STATION.clone() : null;
+            case "recipe_auto_turret":
+            case "tarif_otomatik_taret":
+                return ItemManager.RECIPE_AUTO_TURRET != null ? ItemManager.RECIPE_AUTO_TURRET.clone() : null;
+            case "recipe_global_market_gate":
+            case "tarif_global_pazar_kapisi":
+                return ItemManager.RECIPE_GLOBAL_MARKET_GATE != null ? ItemManager.RECIPE_GLOBAL_MARKET_GATE.clone() : null;
+            case "recipe_auto_drill":
+            case "tarif_otomatik_matkap":
+                return ItemManager.RECIPE_AUTO_DRILL != null ? ItemManager.RECIPE_AUTO_DRILL.clone() : null;
+            case "recipe_xp_bank":
+            case "tarif_xp_bankasi":
+                return ItemManager.RECIPE_XP_BANK != null ? ItemManager.RECIPE_XP_BANK.clone() : null;
+            case "recipe_mag_rail":
+            case "tarif_manyetik_ray":
+                return ItemManager.RECIPE_MAG_RAIL != null ? ItemManager.RECIPE_MAG_RAIL.clone() : null;
+            case "recipe_teleporter":
+            case "tarif_isinlayici":
+                return ItemManager.RECIPE_TELEPORTER != null ? ItemManager.RECIPE_TELEPORTER.clone() : null;
+            case "recipe_food_silo":
+            case "tarif_yemek_silosu":
+                return ItemManager.RECIPE_FOOD_SILO != null ? ItemManager.RECIPE_FOOD_SILO.clone() : null;
+            case "recipe_oil_refinery":
+            case "tarif_petrol_rafinerisi":
+                return ItemManager.RECIPE_OIL_REFINERY != null ? ItemManager.RECIPE_OIL_REFINERY.clone() : null;
+            case "recipe_healing_beacon":
+            case "tarif_iyilestirme_isareti":
+                return ItemManager.RECIPE_HEALING_BEACON != null ? ItemManager.RECIPE_HEALING_BEACON.clone() : null;
+            case "recipe_weather_machine":
+            case "tarif_hava_makinesi":
+                return ItemManager.RECIPE_WEATHER_MACHINE != null ? ItemManager.RECIPE_WEATHER_MACHINE.clone() : null;
+            case "recipe_crop_accelerator":
+            case "tarif_urun_hizlandirici":
+                return ItemManager.RECIPE_CROP_ACCELERATOR != null ? ItemManager.RECIPE_CROP_ACCELERATOR.clone() : null;
+            case "recipe_mob_grinder":
+            case "tarif_mob_ogutucu":
+                return ItemManager.RECIPE_MOB_GRINDER != null ? ItemManager.RECIPE_MOB_GRINDER.clone() : null;
+            case "recipe_invisibility_cloak":
+            case "tarif_gorunmezlik_pelerini":
+                return ItemManager.RECIPE_INVISIBILITY_CLOAK != null ? ItemManager.RECIPE_INVISIBILITY_CLOAK.clone() : null;
+            case "recipe_armory":
+            case "tarif_cephane":
+                return ItemManager.RECIPE_ARMORY != null ? ItemManager.RECIPE_ARMORY.clone() : null;
+            case "recipe_library":
+            case "tarif_kutuphane":
+                return ItemManager.RECIPE_LIBRARY != null ? ItemManager.RECIPE_LIBRARY.clone() : null;
+            case "recipe_warning_sign":
+            case "tarif_uyari_tabelasi":
+                return ItemManager.RECIPE_WARNING_SIGN != null ? ItemManager.RECIPE_WARNING_SIGN.clone() : null;
+            // Özel eşya tarif kitapları
+            case "recipe_lightning_core":
+            case "tarif_yildirim_cekirdegi":
+                return ItemManager.RECIPE_LIGHTNING_CORE != null ? ItemManager.RECIPE_LIGHTNING_CORE.clone() : null;
+            case "recipe_titanium_ingot":
+            case "tarif_titanyum_kulcesi":
+                return ItemManager.RECIPE_TITANIUM_INGOT != null ? ItemManager.RECIPE_TITANIUM_INGOT.clone() : null;
+            case "recipe_dark_matter":
+            case "tarif_karanlik_madde":
+                return ItemManager.RECIPE_DARK_MATTER != null ? ItemManager.RECIPE_DARK_MATTER.clone() : null;
+            case "recipe_red_diamond":
+            case "tarif_kizil_elmas":
+                return ItemManager.RECIPE_RED_DIAMOND != null ? ItemManager.RECIPE_RED_DIAMOND.clone() : null;
+            case "recipe_ruby":
+            case "tarif_yakut":
+                return ItemManager.RECIPE_RUBY != null ? ItemManager.RECIPE_RUBY.clone() : null;
+            case "recipe_adamantite":
+            case "tarif_adamantite":
+                return ItemManager.RECIPE_ADAMANTITE != null ? ItemManager.RECIPE_ADAMANTITE.clone() : null;
+            case "recipe_star_core":
+            case "tarif_yildiz_cekirdegi":
+                return ItemManager.RECIPE_STAR_CORE != null ? ItemManager.RECIPE_STAR_CORE.clone() : null;
+            case "recipe_flame_amplifier":
+            case "tarif_alev_amplifikatoru":
+                return ItemManager.RECIPE_FLAME_AMPLIFIER != null ? ItemManager.RECIPE_FLAME_AMPLIFIER.clone() : null;
+            case "recipe_devil_horn":
+            case "tarif_seytan_boynuzu":
+                return ItemManager.RECIPE_DEVIL_HORN != null ? ItemManager.RECIPE_DEVIL_HORN.clone() : null;
+            case "recipe_devil_snake_eye":
+            case "tarif_iblis_yilanin_gozu":
+                return ItemManager.RECIPE_DEVIL_SNAKE_EYE != null ? ItemManager.RECIPE_DEVIL_SNAKE_EYE.clone() : null;
+            case "recipe_war_fan":
+            case "tarif_savas_yelpazesi":
+                return ItemManager.RECIPE_WAR_FAN != null ? ItemManager.RECIPE_WAR_FAN.clone() : null;
+            case "recipe_tower_shield":
+            case "tarif_kule_kalkani":
+                return ItemManager.RECIPE_TOWER_SHIELD != null ? ItemManager.RECIPE_TOWER_SHIELD.clone() : null;
+            case "recipe_hell_fruit":
+            case "tarif_cehennem_meyvesi":
+                return ItemManager.RECIPE_HELL_FRUIT != null ? ItemManager.RECIPE_HELL_FRUIT.clone() : null;
+            case "recipe_sulfur":
+            case "tarif_kukurt":
+                return ItemManager.RECIPE_SULFUR != null ? ItemManager.RECIPE_SULFUR.clone() : null;
+            case "recipe_bauxite_ingot":
+            case "tarif_boksit_kulcesi":
+                return ItemManager.RECIPE_BAUXITE_INGOT != null ? ItemManager.RECIPE_BAUXITE_INGOT.clone() : null;
+            case "recipe_rock_salt":
+            case "tarif_tuz":
+                return ItemManager.RECIPE_ROCK_SALT != null ? ItemManager.RECIPE_ROCK_SALT.clone() : null;
+            case "recipe_mithril_ingot":
+            case "tarif_mithril_kulcesi":
+                return ItemManager.RECIPE_MITHRIL_INGOT != null ? ItemManager.RECIPE_MITHRIL_INGOT.clone() : null;
+            case "recipe_mithril_string":
+            case "tarif_mithril_ipi":
+                return ItemManager.RECIPE_MITHRIL_STRING != null ? ItemManager.RECIPE_MITHRIL_STRING.clone() : null;
+            case "recipe_astral_ore":
+            case "tarif_astral_ceheri":
+                return ItemManager.RECIPE_ASTRAL_ORE != null ? ItemManager.RECIPE_ASTRAL_ORE.clone() : null;
+            case "recipe_astral_crystal":
+            case "tarif_astral_kristali":
+                return ItemManager.RECIPE_ASTRAL_CRYSTAL != null ? ItemManager.RECIPE_ASTRAL_CRYSTAL.clone() : null;
+            case "recipe_rusty_hook":
+            case "tarif_pasli_kanca":
+                return ItemManager.RECIPE_RUSTY_HOOK != null ? ItemManager.RECIPE_RUSTY_HOOK.clone() : null;
+            case "recipe_golden_hook":
+            case "tarif_altin_kanca":
+                return ItemManager.RECIPE_GOLDEN_HOOK != null ? ItemManager.RECIPE_GOLDEN_HOOK.clone() : null;
+            case "recipe_titan_grapple":
+            case "tarif_titan_kancasi":
+                return ItemManager.RECIPE_TITAN_GRAPPLE != null ? ItemManager.RECIPE_TITAN_GRAPPLE.clone() : null;
+            case "recipe_trap_core":
+            case "tarif_tuzak_cekirdegi":
+                return ItemManager.RECIPE_TRAP_CORE != null ? ItemManager.RECIPE_TRAP_CORE.clone() : null;
+            // Yiyecek tarifleri
+            case "recipe_life_elixir":
+            case "tarif_yasam_iksiri":
+                return ItemManager.RECIPE_LIFE_ELIXIR != null ? ItemManager.RECIPE_LIFE_ELIXIR.clone() : null;
+            case "recipe_power_fruit":
+            case "tarif_guc_meyvesi":
+                return ItemManager.RECIPE_POWER_FRUIT != null ? ItemManager.RECIPE_POWER_FRUIT.clone() : null;
+            case "recipe_speed_elixir":
+            case "tarif_hiz_iksiri":
+                return ItemManager.RECIPE_SPEED_ELIXIR != null ? ItemManager.RECIPE_SPEED_ELIXIR.clone() : null;
+            case "recipe_regeneration_elixir":
+            case "tarif_yenilenme_iksiri":
+                return ItemManager.RECIPE_REGENERATION_ELIXIR != null ? ItemManager.RECIPE_REGENERATION_ELIXIR.clone() : null;
+            case "recipe_strength_elixir":
+            case "tarif_guc_iksiri":
+                return ItemManager.RECIPE_STRENGTH_ELIXIR != null ? ItemManager.RECIPE_STRENGTH_ELIXIR.clone() : null;
+            // Maden tarifleri
+            case "recipe_sulfur_ore":
+            case "tarif_kukurt_ceheri":
+                return ItemManager.RECIPE_SULFUR_ORE != null ? ItemManager.RECIPE_SULFUR_ORE.clone() : null;
+            case "recipe_bauxite_ore":
+            case "tarif_boksit_ceheri":
+                return ItemManager.RECIPE_BAUXITE_ORE != null ? ItemManager.RECIPE_BAUXITE_ORE.clone() : null;
+            case "recipe_rock_salt_ore":
+            case "tarif_tuz_kayasi":
+                return ItemManager.RECIPE_ROCK_SALT_ORE != null ? ItemManager.RECIPE_ROCK_SALT_ORE.clone() : null;
+            case "recipe_mithril_ore":
+            case "tarif_mithril_ceheri":
+                return ItemManager.RECIPE_MITHRIL_ORE != null ? ItemManager.RECIPE_MITHRIL_ORE.clone() : null;
+            // Çekirdek tarifleri
+            case "recipe_taming_core":
+            case "tarif_egitim_cekirdegi":
+                return ItemManager.RECIPE_TAMING_CORE != null ? ItemManager.RECIPE_TAMING_CORE.clone() : null;
+            case "recipe_summon_core":
+            case "tarif_cagirma_cekirdegi":
+                return ItemManager.RECIPE_SUMMON_CORE != null ? ItemManager.RECIPE_SUMMON_CORE.clone() : null;
+            case "recipe_breeding_core":
+            case "tarif_ureme_cekirdegi":
+                return ItemManager.RECIPE_BREEDING_CORE != null ? ItemManager.RECIPE_BREEDING_CORE.clone() : null;
+            case "recipe_gender_scanner":
+            case "tarif_cinsiyet_ayirici":
+                return ItemManager.RECIPE_GENDER_SCANNER != null ? ItemManager.RECIPE_GENDER_SCANNER.clone() : null;
+            // Diğer
+            case "recipe_blueprint_paper":
+            case "recipe_blueprint":
+            case "tarif_muhendis_semasi":
+                return ItemManager.RECIPE_BLUEPRINT_PAPER != null ? ItemManager.RECIPE_BLUEPRINT_PAPER.clone() : null;
+            case "recipe_titanium_ore":
+            case "tarif_titanyum_parcasi":
+                return ItemManager.RECIPE_TITANIUM_ORE != null ? ItemManager.RECIPE_TITANIUM_ORE.clone() : null;
+            case "recipe_tectonic":
+            case "recipe_tectonic_stabilizer":
+            case "tarif_tektonik_sabitleyici":
+                return ItemManager.RECIPE_TECTONIC_STABILIZER != null ? ItemManager.RECIPE_TECTONIC_STABILIZER.clone() : null;
             default:
                 return null;
         }
@@ -2736,7 +2943,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 case "give":
                     // Kategoriler
                     List<String> giveCategories = Arrays.asList("weapon", "armor", "material", "mobdrop", "special",
-                            "ore", "tool");
+                            "ore", "tool", "bossitem", "recipebook");
                     if (input.isEmpty()) {
                         return giveCategories;
                     }
@@ -3168,22 +3375,46 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return filterList(bossItems, input);
             case "recipebook":
                 List<String> recipeBooks = new ArrayList<>();
-                // Özel zırh tarif kitapları
+                // Silah tarifleri
                 for (int level = 1; level <= 5; level++) {
                     for (int variant = 1; variant <= 5; variant++) {
-                        recipeBooks.add("armor_l" + level + "_" + variant);
-                        recipeBooks.add("weapon_l" + level + "_" + variant);
+                        recipeBooks.add("recipe_weapon_l" + level + "_" + variant);
                     }
                 }
-                // Yapı tarif kitapları
+                // Zırh tarifleri
+                for (int level = 1; level <= 5; level++) {
+                    for (int variant = 1; variant <= 5; variant++) {
+                        recipeBooks.add("recipe_armor_l" + level + "_" + variant);
+                    }
+                }
+                // Yapı tarifleri
                 recipeBooks.addAll(Arrays.asList(
                     "recipe_core", "recipe_alchemy_tower", "recipe_poison_reactor",
                     "recipe_siege_factory", "recipe_wall_generator", "recipe_gravity_well",
                     "recipe_lava_trencher", "recipe_watchtower", "recipe_drone_station",
                     "recipe_auto_turret", "recipe_global_market_gate", "recipe_auto_drill",
                     "recipe_xp_bank", "recipe_mag_rail", "recipe_teleporter",
-                    "recipe_tectonic", "recipe_healing_beacon", "recipe_weather_machine",
-                    "recipe_invisibility_cloak", "recipe_armory", "recipe_library"
+                    "recipe_food_silo", "recipe_oil_refinery", "recipe_healing_beacon",
+                    "recipe_weather_machine", "recipe_crop_accelerator", "recipe_mob_grinder",
+                    "recipe_invisibility_cloak", "recipe_armory", "recipe_library",
+                    "recipe_warning_sign", "recipe_tectonic"
+                ));
+                // Özel eşya tarifleri
+                recipeBooks.addAll(Arrays.asList(
+                    "recipe_blueprint_paper", "recipe_lightning_core", "recipe_titanium_ore",
+                    "recipe_titanium_ingot", "recipe_dark_matter", "recipe_red_diamond",
+                    "recipe_ruby", "recipe_adamantite", "recipe_star_core",
+                    "recipe_flame_amplifier", "recipe_devil_horn", "recipe_devil_snake_eye",
+                    "recipe_war_fan", "recipe_tower_shield", "recipe_hell_fruit",
+                    "recipe_life_elixir", "recipe_power_fruit", "recipe_speed_elixir",
+                    "recipe_regeneration_elixir", "recipe_strength_elixir",
+                    "recipe_sulfur_ore", "recipe_sulfur", "recipe_bauxite_ore",
+                    "recipe_bauxite_ingot", "recipe_rock_salt_ore", "recipe_rock_salt",
+                    "recipe_mithril_ore", "recipe_mithril_ingot", "recipe_mithril_string",
+                    "recipe_astral_ore", "recipe_astral_crystal", "recipe_rusty_hook",
+                    "recipe_golden_hook", "recipe_titan_grapple", "recipe_trap_core",
+                    "recipe_taming_core", "recipe_summon_core", "recipe_breeding_core",
+                    "recipe_gender_scanner", "recipe_tectonic"
                 ));
                 return filterList(recipeBooks, input);
             case "material":

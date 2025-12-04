@@ -440,7 +440,7 @@ public class SpecialItemManager {
             case "l1_1": // Hız Hançeri
                 ItemStack dagger = createSpecialItemWithTier("l1_1_rogue_dagger", "Hız Hançeri", Material.IRON_SWORD, "Hafif ve ölümcül.", 1);
                 ItemMeta meta = dagger.getItemMeta();
-                // Elinde tutarken %20 Hız Verir (Attribute)
+                // Elinde tutarken Speed II verir (Attribute)
                 AttributeModifier speedMod = new AttributeModifier(
                     UUID.randomUUID(), 
                     "generic.movementSpeed", 
@@ -449,6 +449,15 @@ public class SpecialItemManager {
                     EquipmentSlot.HAND
                 );
                 meta.addAttributeModifier(Attribute.GENERIC_MOVEMENT_SPEED, speedMod);
+                // Attack Speed yüksek (hızlı vuruş)
+                AttributeModifier attackSpeedMod = new AttributeModifier(
+                    UUID.randomUUID(),
+                    "generic.attackSpeed",
+                    2.0, // +2.0 attack speed (daha hızlı vuruş)
+                    AttributeModifier.Operation.ADD_NUMBER,
+                    EquipmentSlot.HAND
+                );
+                meta.addAttributeModifier(Attribute.GENERIC_ATTACK_SPEED, attackSpeedMod);
                 meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
                 dagger.setItemMeta(meta);
                 return dagger;

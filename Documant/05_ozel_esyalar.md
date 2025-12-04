@@ -867,195 +867,401 @@ Bosslar öldürüldüğünde **%100 şansla** kendi özel itemlerini düşürür
 
 ---
 
-### ⚔️ Özel Silahlar
+### ⚔️ ÖZEL SİLAHLAR SİSTEMİ (25 SİLAH)
 
 **Toplam**: 25 silah (5 seviye × 5 varyant)
 
-Her silahın **benzersiz özellikleri** vardır ve farklı durumlarda kullanılır.
+Her silahın **benzersiz özellikleri** vardır ve farklı durumlarda kullanılır. Tüm silahlar crafting masasında yapılabilir ve **Boss Item'ları** gerektirir.
+
+**Mod Değiştirme Sistemi**: Tier 4 ve Tier 5 silahlar **Shift+Sağ Tık** ile mod seçim menüsü açılır.
 
 ---
 
-#### 🗡️ Seviye 1 Silahlar (Hasar: 5.0)
+#### 🗡️ SEVİYE 1 SİLAHLAR (Çaylak - Goblin Kralı Taçı Gerektirir)
 
-**1. Demir Hız Kılıcı** (`weapon_l1_1`)
-- **Özellik**: Hız Artışı (Sağ Tık)
-- **Etki**: 3 saniye Speed I
-- **Kullanım**: Saldırıda %20 hız artışı
+**1. Hız Hançeri** (`l1_1_rogue_dagger` / `weapon_l1_1`)
+- **Tür**: Demir Kılıç
+- **Özellik**: 
+  - Elinde tutarken %20 Hız verir (Speed II)
+  - Yüksek Attack Speed
+  - Vurduğunda rakibi hafifçe geriye iter
+- **Craft Tarifi**:
+  ```
+  [I][F][I]    I = Demir Külçe
+  [ ][B][ ]    F = Tüy
+  [ ][S][ ]    B = Goblin Kralı Taçı
+               S = Çubuk
+  ```
 
-**2. Demir Kritik Baltası** (`weapon_l1_2`)
-- **Özellik**: Kritik Vuruş (Pasif)
-- **Etki**: %15 şansla 2x hasar
-- **Kullanım**: Otomatik çalışır, saldırıda aktif
+**2. Çiftçi Tırpanı** (`l1_2_harvest_scythe` / `weapon_l1_2`)
+- **Tür**: Demir Çapa
+- **Özellik**: 
+  - Alan Hasarı (AoE): Bir moba vurduğunda 3 blok yarıçapındaki tüm moblara %50 hasar yansır
+- **Craft Tarifi**:
+  ```
+  [W][W][ ]    W = Buğday
+  [ ][B][ ]    B = Goblin Kralı Taçı
+  [ ][S][ ]    S = Çubuk
+  ```
 
-**3. Demir Savunma Mızrağı** (`weapon_l1_3`)
-- **Özellik**: Savunma Bonusu (Sağ Tık)
-- **Etki**: 3 saniye Damage Resistance I
-- **Kullanım**: Saldırıda %10 hasar azaltma
+**3. Yerçekimi Gürzü** (`l1_3_gravity_mace` / `weapon_l1_3`)
+- **Tür**: Demir Kürek
+- **Özellik**: 
+  - Sağ tıkla önündeki bloğa 5 blok yukarı fırlatır (Roket gibi)
+  - Kaçış için ideal
+- **Craft Tarifi**:
+  ```
+  [ ][P][ ]    P = Barut
+  [ ][B][ ]    B = Goblin Kralı Taçı
+  [ ][S][ ]    S = Çubuk
+  ```
 
-**4. Demir Hızlı Yayı** (`weapon_l1_4`)
-- **Özellik**: Hızlı Çekim (Pasif)
-- **Etki**: %30 daha hızlı ok atışı
-- **Kullanım**: Ok atışında otomatik çalışır
+**4. Patlayıcı Yay** (`l1_4_boom_bow` / `weapon_l1_4`)
+- **Tür**: Yay
+- **Özellik**: 
+  - Attığı oklar çarptığı yerde blok kırmayan ufak bir patlama yaratır (TNT hasarının 4'te 1'i)
+- **Craft Tarifi**:
+  ```
+  [ ][T][ ]    T = TNT
+  [A][B][A]    A = İp
+  [ ][T][ ]    B = Goblin Kralı Taçı
+  ```
 
-**5. Demir Güç Çekici** (`weapon_l1_5`)
-- **Özellik**: Güç Artışı (Sağ Tık)
-- **Etki**: 3 saniye Strength I
-- **Kullanım**: +2 ekstra hasar
-
----
-
-#### 💎 Seviye 2 Silahlar (Hasar: 8.0)
-
-**1. Elmas Zehir Kılıcı** (`weapon_l2_1`)
-- **Özellik**: Zehir Etkisi (Pasif)
-- **Etki**: Saldırıda 3 saniye Poison
-- **Kullanım**: Otomatik çalışır, saldırıda aktif
-
-**2. Elmas Yavaşlatma Baltası** (`weapon_l2_2`)
-- **Özellik**: Yavaşlatma (Pasif)
-- **Etki**: Saldırıda 3 saniye Slowness
-- **Kullanım**: Otomatik çalışır, saldırıda aktif
-
-**3. Elmas Ateş Mızrağı** (`weapon_l2_3`)
-- **Özellik**: Ateş Etkisi (Pasif)
-- **Etki**: Saldırıda 5 saniye Fire
-- **Kullanım**: Otomatik çalışır, saldırıda aktif
-
-**4. Elmas Buz Yayı** (`weapon_l2_4`)
-- **Özellik**: Buz Etkisi (Pasif)
-- **Etki**: Ok ile dondurma etkisi
-- **Kullanım**: Ok atışında otomatik çalışır
-
-**5. Elmas Şok Çekici** (`weapon_l2_5`)
-- **Özellik**: Şok Etkisi (Pasif)
-- **Etki**: Saldırıda yakındaki düşmanlara hasar
-- **Kullanım**: Otomatik çalışır, saldırıda aktif
-
----
-
-#### 🔥 Seviye 3 Silahlar (Hasar: 11.0)
-
-**Özellik**: Patlama Atabilme
-- **Aktivasyon**: Sağ Tık (Hava veya Blok)
-- **Menzil**: 20 blok
-- **Hasar**: 10 kalp (5 blok yarıçap)
-- **Etki**: Patlama oluşturur, yakındaki canlılara hasar verir
-
-**Varyantlar**:
-- `weapon_l3_1` - Netherite Patlama Kılıcı
-- `weapon_l3_2` - Netherite Patlama Baltası
-- `weapon_l3_3` - Netherite Patlama Mızrağı
-- `weapon_l3_4` - Netherite Patlama Yayı
-- `weapon_l3_5` - Netherite Patlama Çekici
+**5. Vampir Dişi** (`l1_5_vampire_blade` / `weapon_l1_5`)
+- **Tür**: Altın Kılıç
+- **Özellik**: 
+  - Vurduğun hasarın %20'si kadar seni iyileştirir
+  - Dayanıksızdır, çabuk kırılır
+- **Craft Tarifi**:
+  ```
+  [ ][R][ ]    R = Redstone
+  [ ][B][ ]    B = Goblin Kralı Taçı
+  [ ][G][ ]    G = Altın Külçe
+  ```
 
 ---
 
-#### ⚡ Seviye 4 Silahlar (Hasar: 14.0)
+#### 💎 SEVİYE 2 SİLAHLAR (Asker - Troll Kralı Kalbi Gerektirir)
 
-**Özellik**: Devamlı Lazer
-- **Aktivasyon**: Sağ Tık (Hava veya Blok)
-- **Menzil**: 30 blok
-- **Hasar**: 5 kalp/saniye (sürekli)
-- **Cooldown**: 0.5 saniye
-- **Etki**: Sürekli lazer atar, yüksek hasar verir
+**1. Alev Kılıcı** (`l2_1_inferno_sword` / `weapon_l2_1`)
+- **Tür**: Altın Kılıç
+- **Özellik**: 
+  - Sağ tıkla ileriye Alev Dalgası atar
+  - Önündeki koni şeklindeki alandaki herkes yanar
+- **Craft Tarifi**:
+  ```
+  [ ][F][ ]    F = Alev Tozu
+  [ ][B][ ]    B = Troll Kralı Kalbi
+  [ ][G][ ]    G = Altın Külçe
+  ```
 
-**Varyantlar**:
-- `weapon_l4_1` - Titanyum Lazer Kılıcı
-- `weapon_l4_2` - Titanyum Lazer Baltası
-- `weapon_l4_3` - Titanyum Lazer Mızrağı
-- `weapon_l4_4` - Titanyum Lazer Yayı
-- `weapon_l4_5` - Titanyum Lazer Çekici
+**2. Buz Asası** (`l2_2_frost_wand` / `weapon_l2_2`)
+- **Tür**: Çubuk
+- **Özellik**: 
+  - Sağ tıkla hedefi 3 saniyeliğine dondurur (Hareket edemezler)
+- **Craft Tarifi**:
+  ```
+  [ ][I][ ]    I = Buz
+  [ ][B][ ]    B = Troll Kralı Kalbi
+  [ ][S][ ]    S = Çubuk
+  ```
+
+**3. Zehirli Mızrak** (`l2_3_venom_spear` / `weapon_l2_3`)
+- **Tür**: Trident (Mızrak)
+- **Özellik**: 
+  - Fırlatıldığında düştüğü yerde bir zehir bulutu oluşturur (Lingering Potion etkisi)
+- **Craft Tarifi**:
+  ```
+  [ ][E][ ]    E = Örümcek Gözü
+  [ ][B][ ]    B = Troll Kralı Kalbi
+  [ ][S][ ]    S = Çubuk
+  ```
+
+**4. Golem Kalkanı** (`l2_4_guardian_shield` / `weapon_l2_4`)
+- **Tür**: Kalkan
+- **Özellik**: 
+  - Kalkanı kaldırdığında (Sneak + Sağ Tık), etrafındaki dost oyunculara Resistance I ve Regeneration I verir
+  - Tanklar için
+- **Craft Tarifi**:
+  ```
+  [ ][I][ ]    I = Demir Blok
+  [I][B][I]    B = Troll Kralı Kalbi
+  [I][I][I]
+  ```
+
+**5. Şok Baltası** (`l2_5_thunder_axe` / `weapon_l2_5`)
+- **Tür**: Demir Balta
+- **Özellik**: 
+  - Kritik vuruş yaparsan (zıplayıp vurursan) hedefe yıldırım düşürür (Hasar vermeyen görsel yıldırım + Gerçek hasar)
+- **Craft Tarifi**:
+  ```
+  [L][L][ ]    L = Paratoner
+  [L][B][ ]    B = Troll Kralı Kalbi
+  [ ][S][ ]    S = Çubuk
+  ```
 
 ---
 
-#### 🌟 Seviye 5 Silahlar (Hasar: 17.0)
+#### 🔥 SEVİYE 3 SİLAHLAR (Elit - T-Rex Dişi Gerektirir)
 
-**Özellik**: Çok Modlu Silah
+**1. Gölge Katanası** (`l3_1_shadow_katana` / `weapon_l3_1`)
+- **Tür**: Demir Kılıç
+- **Özellik**: 
+  - Sağ tıkla bakılan yöne 6 blok Dash (Atılma) atar ve yoluna çıkan her şeye hasar verir
+- **Craft Tarifi**:
+  ```
+  [ ][C][ ]    C = Kömür Bloğu
+  [ ][B][ ]    B = T-Rex Dişi
+  [ ][S][ ]    S = Çubuk
+  ```
 
-Her Seviye 5 silahın **farklı mod kombinasyonları** vardır:
+**2. Deprem Çekici** (`l3_2_earthshaker` / `weapon_l3_2`)
+- **Tür**: Netherite Kürek
+- **Özellik**: 
+  - Sağ tıkla (Cooldown: 10sn) yeri sarstırır
+  - 5 blok çevrendeki tüm mobları havaya fırlatır ve yere düştüklerinde hasar alırlar
+- **Craft Tarifi**:
+  ```
+  [O][O][O]    O = Obsidyen
+  [ ][B][ ]    B = T-Rex Dişi
+  [ ][S][ ]    S = Çubuk
+  ```
 
-**1. Efsanevi Savaş Kılıcı** (`weapon_l5_1`)
-- **Mod 1**: Blok Fırlatma (Q tuşu)
-- **Mod 2**: Duvar Yapma (Sağ Tık)
-- **Mod 3**: Atılma/Patlama (Sağ Tık)
+**3. Taramalı Yay** (`l3_3_machine_crossbow` / `weapon_l3_3`)
+- **Tür**: Arbalet
+- **Özellik**: 
+  - Sağ tık basılı tutulduğunda, ok harcamadan saniyede 5 tane enerji oku atar
+- **Craft Tarifi**:
+  ```
+  [ ][R][ ]    R = Redstone Bloğu
+  [A][B][A]    A = İp
+  [ ][R][ ]    B = T-Rex Dişi
+  ```
 
-**2. Efsanevi Yıkım Baltası** (`weapon_l5_2`)
-- **Mod 1**: Blok Fırlatma (Q tuşu)
-- **Mod 2**: Dash/Patlama (Sağ Tık)
-- **Mod 3**: Atılma/Patlama (Sağ Tık)
+**4. Büyücü Küresi** (`l3_4_witch_orb` / `weapon_l3_4`)
+- **Tür**: Magma Kremi
+- **Özellik**: 
+  - Sağ tıkla en yakındaki 3 düşmana güdümlü (takip eden) büyü mermileri atar
+- **Craft Tarifi**:
+  ```
+  [ ][G][ ]    G = Magma Kremi
+  [G][B][G]    B = T-Rex Dişi
+  [ ][G][ ]
+  ```
 
-**3. Efsanevi Savunma Mızrağı** (`weapon_l5_3`)
-- **Mod 1**: Duvar Yapma (Sağ Tık)
-- **Mod 2**: Dash/Patlama (Sağ Tık)
-- **Mod 3**: Atılma/Patlama (Sağ Tık)
+**5. Hayalet Hançeri** (`l3_5_phantom_dagger` / `weapon_l3_5`)
+- **Tür**: Tüy
+- **Özellik**: 
+  - Sağ tıkla 5 saniyeliğine Görünmez olursun
+  - Saldırı yaparsan görünmezlik bozulur ama ilk vuruşun 3 kat hasar verir (Suikast)
+- **Craft Tarifi**:
+  ```
+  [ ][P][ ]    P = Hayalet Zarı
+  [ ][B][ ]    B = T-Rex Dişi
+  [ ][F][ ]    F = Tüy
+  ```
 
-**4. Efsanevi Çoklu Yay** (`weapon_l5_4`)
-- **Mod 1**: Blok Fırlatma (Q tuşu)
-- **Mod 2**: Dash/Patlama (Sağ Tık)
-- **Mod 3**: Duvar Yapma (Sağ Tık)
+---
 
-**5. Efsanevi Kaos Çekici** (`weapon_l5_5`)
-- **Mod 1**: Atılma/Patlama (Sağ Tık)
-- **Mod 2**: Dash/Patlama (Sağ Tık)
-- **Mod 3**: Blok Fırlatma (Q tuşu)
+#### ⚡ SEVİYE 4 SİLAHLAR (Efsanevi - Modlu - Titan Golem Çekirdeği Gerektirir)
 
-**Mod Açıklamaları**:
-- **Blok Fırlatma**: Q tuşu ile bakılan bloğu fırlat (10 blok menzil)
-- **Duvar Yapma**: Sağ Tık ile 3x3 obsidyen duvar yap
-- **Atılma/Patlama**: Sağ Tık ile silahı at, 2 saniye sonra patlar (5.0 patlama gücü)
-- **Dash/Patlama**: Sağ Tık ile hızlı ileri atıl, 1 saniye sonra patlar (4.0 patlama gücü, 15 kalp hasar)
+**Mod Değiştirme**: Shift+Sağ Tık ile mod seçim menüsü açılır
 
-**Mod Değiştirme**:
-- **Komut**: `/weaponmode <1|2|3>`
-- **Menü**: Shift+Sağ Tık ile mod seçim menüsü açılır
-- **ActionBar**: Mevcut mod ActionBar'da gösterilir
+**1. Element Kılıcı** (`l4_1_elementalist` / `weapon_l4_1`)
+- **Tür**: Elmas Kılıç
+- **Mod 1 (Ateş)**: Her vuruşta etrafa alev saçar
+- **Mod 2 (Buz)**: Her vuruşta rakipleri yavaşlatır (Slowness III)
+- **Craft Tarifi**:
+  ```
+  [ ][F][ ]    F = Alev Amplifikatörü
+  [ ][B][ ]    B = Titan Golem Çekirdeği
+  [ ][D][ ]    D = Elmas Kılıç
+  ```
 
-**Admin Komutu**: `/scadmin give weapon weapon_l<seviye>_<varyant>`
+**2. Yaşam ve Ölüm** (`l4_2_life_death` / `weapon_l4_2`)
+- **Tür**: Kemik
+- **Mod 1 (Ölüm)**: Uzaktan Wither kafası fırlatır
+- **Mod 2 (Yaşam)**: Sağ tıkla kendine ve etrafına 4 kalp can basar
+- **Craft Tarifi**:
+  ```
+  [ ][W][ ]    W = Wither Kafası
+  [ ][B][ ]    B = Titan Golem Çekirdeği
+  [ ][K][ ]    K = Kemik
+  ```
+
+**3. Mjölnir V2** (`l4_3_mjolnir_v2` / `weapon_l4_3`)
+- **Tür**: Demir Balta
+- **Mod 1 (Melee)**: Vurduğun her şey zincirleme yıldırım yer (Sekerek 3 moba daha vurur)
+- **Mod 2 (Throw)**: Baltayı fırlatırsın, düştüğü yeri patlatır ve eline geri döner
+- **Craft Tarifi**:
+  ```
+  [ ][L][ ]    L = Yıldırım Çekirdeği
+  [ ][B][ ]    B = Titan Golem Çekirdeği
+  [ ][A][ ]    A = Demir Balta
+  ```
+
+**4. Avcı Yayı** (`l4_4_ranger_pride` / `weapon_l4_4`)
+- **Tür**: Yay
+- **Mod 1 (Sniper)**: Ok dümdüz gider (yerçekimi yok) ve 50 blok öteden vurursa x2 hasar verir
+- **Mod 2 (Shotgun)**: Tek seferde 5 ok birden atar ama menzili kısadır
+- **Craft Tarifi**:
+  ```
+  [ ][S][ ]    S = Dürbün
+  [A][B][A]    A = İp
+  [ ][ ][ ]    B = Titan Golem Çekirdeği
+  ```
+
+**5. Manyetik Eldiven** (`l4_5_magnetic_glove` / `weapon_l4_5`)
+- **Tür**: Olta
+- **Mod 1 (Çek)**: Hedefi kendine çeker (Get over here!)
+- **Mod 2 (İt)**: Hedefi çok uzağa fırlatır (Fus-Ro-Dah)
+- **Craft Tarifi**:
+  ```
+  [ ][ ][I]    I = Demir Külçe
+  [ ][I][B]    B = Titan Golem Çekirdeği
+  [I][A][ ]    A = Olta
+  ```
+
+---
+
+#### 🌟 SEVİYE 5 SİLAHLAR (Tanrısal - Modlu - Void Dragon Heart Gerektirir)
+
+**Mod Değiştirme**: Shift+Sağ Tık ile mod seçim menüsü açılır
+
+**1. Hiperiyon Kılıcı** (`l5_1_void_walker` / `weapon_l5_1`)
+- **Tür**: Netherite Kılıç
+- **Mod 1 (Işınlanma)**: Sağ tıkla 8 blok ileri ışınlanır ve ışınlandığı noktada muazzam bir patlama yaratır (Wither patlaması gibi)
+- **Mod 2 (Kara Delik Kalkanı)**: Sana gelen tüm okları ve büyüleri 3 saniyeliğine emer, canına ekler
+- **Craft Tarifi**:
+  ```
+  [ ][E][ ]    E = Ender Gözü
+  [ ][B][ ]    B = Void Dragon Heart
+  [ ][N][ ]    N = Netherite Kılıç
+  ```
+
+**2. Meteor Çağıran** (`l5_2_meteor_caller` / `weapon_l5_2`)
+- **Tür**: Altın Balta
+- **Mod 1 (Kıyamet)**: Gökyüzünden baktığın yere 3 tane ateş topu (Meteor) düşürür
+- **Mod 2 (Yer Yaran)**: Yere vurduğunda (Shift+Sağ Tık) önünde bir yarık açılır ve içinden lavlar fışkırır
+- **Craft Tarifi**:
+  ```
+  [ ][F][ ]    F = Ateş Topu
+  [ ][B][ ]    B = Void Dragon Heart
+  [ ][G][ ]    G = Altın Balta
+  ```
+
+**3. Titan Katili** (`l5_3_titan_slayer` / `weapon_l5_3`)
+- **Tür**: Mızrak (Trident)
+- **Mod 1 (Yüzdelik Hasar)**: Bu silah Bosslara Mevcut Canının %5'i kadar vurur. (Örn: 5000 canlı moba tek vuruşta 250 hasar)
+- **Mod 2 (Mızrak Yağmuru)**: Fırlatıldığında havada çoğalır ve tek bir noktaya 10 mızrak düşer
+- **Craft Tarifi**:
+  ```
+  [ ][D][ ]    D = Elmas Blok
+  [ ][B][ ]    B = Void Dragon Heart
+  [ ][S][ ]    S = Çubuk
+  ```
+
+**4. Ruh Biçen** (`l5_4_soul_reaper` / `weapon_l5_4`)
+- **Tür**: Wither Gülü
+- **Mod 1 (Çağır)**: Öldürdüğün son 3 mobu "Hortlak" olarak senin safında savaşması için geri çağırır
+- **Mod 2 (Ruh Patlaması)**: Çağırdığın hortlakları patlatarak etrafa büyük alan hasarı verir
+- **Craft Tarifi**:
+  ```
+  [ ][W][ ]    W = Wither Gülü
+  [ ][B][ ]    B = Void Dragon Heart
+  [ ][S][ ]    S = Ruh Kumu
+  ```
+
+**5. Zamanı Büken** (`l5_5_time_keeper` / `weapon_l5_5`)
+- **Tür**: Saat
+- **Mod 1 (Zamanı Durdur)**: 10 saniye boyunca Dünyadaki tüm moblar donar (Hareket edemez, vuramaz). Sadece sen hareket edebilirsin. (Boss'a serbestçe vurmak için)
+- **Mod 2 (Geri Sar)**: Seni 5 saniye önceki konumuna ve can değerine geri döndürür (Ölümden kaçış)
+- **Craft Tarifi**:
+  ```
+  [ ][S][ ]    S = Saat
+  [C][B][C]    B = Void Dragon Heart
+  [ ][S][ ]    C = Yıldız Çekirdeği
+  ```
+
+---
+
+### 🔧 ÖZEL SİLAH TARİFLERİ VE BOSS İTEMLERİ
+
+Tüm özel silahlar crafting masasında yapılabilir ve **belirli Boss Item'ları** gerektirir:
+
+#### Seviye 1 Silahlar
+- **Boss İtem**: Goblin Kralı Taçı (Goblin Kralı'ndan düşer)
+- **Craft**: Standart malzemeler + Goblin Kralı Taçı
+
+#### Seviye 2 Silahlar
+- **Boss İtem**: Troll Kralı Kalbi (Troll Kralı'ndan düşer)
+- **Craft**: Standart malzemeler + Troll Kralı Kalbi
+
+#### Seviye 3 Silahlar
+- **Boss İtem**: T-Rex Dişi (T-Rex'ten düşer)
+- **Craft**: Standart malzemeler + T-Rex Dişi
+
+#### Seviye 4 Silahlar
+- **Boss İtem**: Titan Golem Çekirdeği (Titan Golem'den düşer)
+- **Craft**: Standart malzemeler + Titan Golem Çekirdeği
+
+#### Seviye 5 Silahlar
+- **Boss İtem**: Void Dragon Heart (Void Dragon'dan düşer)
+- **Craft**: Standart malzemeler + Void Dragon Heart
+
+**Admin Komutu**: `/stratocraft give weapon <seviye> <varyant>` veya `/stratocraft give weapon weapon_l<seviye>_<varyant>`
 
 **Örnekler**:
 ```
-/scadmin give weapon weapon_l1_1  → Demir Hız Kılıcı
-/scadmin give weapon weapon_l2_3  → Elmas Ateş Mızrağı
-/scadmin give weapon weapon_l3_4  → Netherite Patlama Yayı
-/scadmin give weapon weapon_l4_2  → Titanyum Lazer Baltası
-/scadmin give weapon weapon_l5_1  → Efsanevi Savaş Kılıcı
+/stratocraft give weapon 1 1  → Hız Hançeri
+/stratocraft give weapon 2 3  → Zehirli Mızrak
+/stratocraft give weapon 3 4  → Büyücü Küresi
+/stratocraft give weapon 4 2  → Yaşam ve Ölüm
+/stratocraft give weapon 5 5  → Zamanı Büken
 ```
 
 ---
 
-### 🔧 Özel Zırh ve Silah Tarifleri
+### 📖 TARİF KİTAPLARI
 
-Özel zırh ve silahlar craft edilirken belirli malzemeler ve boss item'ları gerektirir:
+Tüm özel silahlar, zırhlar, yapılar ve özel eşyalar için **Tarif Kitapları** mevcuttur. Bu kitaplar bosslardan düşer ve crafting tariflerini gösterir.
 
-#### Seviye 1 Tarifleri
-- **Malzeme**: Demir Külçe (Iron Ingot)
-- **Boss İtem**: Gerekmez
-- **Craft**: Standart zırh/silah craft şekli
+#### Silah Tarif Kitapları (25 adet)
+- `recipe_weapon_l1_1` ila `recipe_weapon_l1_5` - Seviye 1 Silah Tarifleri
+- `recipe_weapon_l2_1` ila `recipe_weapon_l2_5` - Seviye 2 Silah Tarifleri
+- `recipe_weapon_l3_1` ila `recipe_weapon_l3_5` - Seviye 3 Silah Tarifleri
+- `recipe_weapon_l4_1` ila `recipe_weapon_l4_5` - Seviye 4 Silah Tarifleri
+- `recipe_weapon_l5_1` ila `recipe_weapon_l5_5` - Seviye 5 Silah Tarifleri
 
-#### Seviye 2 Tarifleri
-- **Malzeme**: Elmas (Diamond)
-- **Boss İtem**: Goblin Kralı Taçı, Ork Şefi Amuleti veya Troll Kralı Kalbi
-- **Craft**: Elmas zırh/silah + Boss itemi
+Her tarif kitabı şunları içerir:
+- **Yerleşim**: Crafting masasında yapılır
+- **İşlev**: Silahın özellikleri ve yetenekleri
+- **Crafting Tarifi**: Masaya nasıl dizileceği (Satır 1, Satır 2, Satır 3)
+- **Malzeme Açıklamaları**: Her harf için ne gerektiği
 
-#### Seviye 3 Tarifleri
-- **Malzeme**: Netherite Külçe (Netherite Ingot)
-- **Boss İtem**: Ejderha Ölçeği, T-Rex Dişi veya Cyclops Gözü
-- **Craft**: Netherite zırh/silah + Boss itemi
+#### Zırh Tarif Kitapları (25 adet)
+- `recipe_armor_l1_1` ila `recipe_armor_l1_5` - Seviye 1 Zırh Tarifleri
+- `recipe_armor_l2_1` ila `recipe_armor_l2_5` - Seviye 2 Zırh Tarifleri
+- `recipe_armor_l3_1` ila `recipe_armor_l3_5` - Seviye 3 Zırh Tarifleri
+- `recipe_armor_l4_1` ila `recipe_armor_l4_5` - Seviye 4 Zırh Tarifleri
+- `recipe_armor_l5_1` ila `recipe_armor_l5_5` - Seviye 5 Zırh Tarifleri
 
-#### Seviye 4 Tarifleri
-- **Malzeme**: Demir Külçe (Iron Ingot) - *Not: Titanyum Külçesi özel bir ItemStack olduğu için craft tarifinde Material.IRON_INGOT kullanılır*
-- **Boss İtem**: Titan Golem Çekirdeği, Phoenix Tüyü veya Kraken Dokunaçı
-- **Craft**: Netherite zırh/silah + Titanyum Külçesi (görünüm olarak Demir Külçe) + Boss itemi
-- **Önemli**: Tarif sisteminde Titanyum Külçesi özel bir item olduğu için, craft tarifinde Material.IRON_INGOT kullanılır. Ancak gerçek craft işleminde Titanyum Külçesi (TITANIUM_INGOT ItemStack) gereklidir.
+#### Diğer Tarif Kitapları
+- **Yapı Tarifleri**: Core, Alchemy Tower, Siege Factory, vb. (24 adet)
+- **Özel Eşya Tarifleri**: Lightning Core, Titanium Ingot, Dark Matter, vb. (30+ adet)
+- **Yiyecek Tarifleri**: Life Elixir, Power Fruit, Speed Elixir, vb. (5 adet)
+- **Maden Tarifleri**: Sulfur Ore, Bauxite Ore, Mithril Ore, vb. (5 adet)
+- **Çekirdek Tarifleri**: Taming Core, Summon Core, Breeding Core, vb. (4 adet)
 
-#### Seviye 5 Tarifleri
-- **Malzeme**: Netherite Külçe (Netherite Ingot)
-- **Boss İtem**: Şeytan Lordu Boynuzu veya Hiçlik Ejderi Kalbi
-- **Craft**: Netherite zırh/silah + Boss itemi
+**Admin Komutu**: `/stratocraft give recipebook <tarif_ismi>`
 
-**Teknik Notlar**:
-- **Ejderha Ölçeği**: Minecraft'ta `Material.DRAGON_SCALE` bulunmadığı için `Material.SCUTE` (Kaplumbağa Kabuğu) kullanılır. Oyunda görünüm olarak kaplumbağa kabuğu gibi görünür.
-- **Titanyum Külçesi**: Özel bir ItemStack olduğu için craft tariflerinde Material.IRON_INGOT kullanılır, ancak gerçek craft işleminde Titanyum Külçesi (TITANIUM_INGOT) gereklidir.
+**Örnekler**:
+```
+/stratocraft give recipebook recipe_weapon_l1_1
+/stratocraft give recipebook recipe_armor_l5_5
+/stratocraft give recipebook recipe_core
+/stratocraft give recipebook recipe_lightning_core
+```
 
 ---
 

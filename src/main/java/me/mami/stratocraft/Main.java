@@ -84,8 +84,13 @@ public class Main extends JavaPlugin {
         }
 
         // 1. Yöneticileri Başlat
+        // Önce SpecialItemManager'ı başlat (ItemManager buna ihtiyaç duyuyor)
+        specialItemManager = new me.mami.stratocraft.manager.SpecialItemManager();
+        specialItemManager.registerRecipes();
+        
+        // Sonra ItemManager'ı başlat ve init() çağır
         itemManager = new ItemManager();
-        itemManager.init();
+        itemManager.init(); // Artık SpecialItemManager'a erişebilir
         clanManager = new ClanManager();
         territoryManager = new TerritoryManager(clanManager);
         clanManager.setTerritoryManager(territoryManager); // Cache güncellemesi için
@@ -243,9 +248,7 @@ public class Main extends JavaPlugin {
         mineManager = new me.mami.stratocraft.manager.MineManager(this);
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.MineListener(mineManager), this);
 
-        // Özel Eşyalar (Kanca, Casusluk Dürbünü)
-        specialItemManager = new me.mami.stratocraft.manager.SpecialItemManager();
-        specialItemManager.registerRecipes(); // Yapım tariflerini kaydet
+        // SpecialItemManager zaten yukarıda başlatıldı (ItemManager için gerekli)
         Bukkit.getPluginManager()
                 .registerEvents(new me.mami.stratocraft.listener.SpecialItemListener(specialItemManager), this);
 

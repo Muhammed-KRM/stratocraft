@@ -14,6 +14,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -72,7 +73,9 @@ public class ItemManager {
     public static ItemStack RECIPE_WARNING_SIGN;
 
     // ========== TARİF KİTAPLARI - ÖZEL EŞYALAR ==========
+    public static ItemStack RECIPE_BLUEPRINT_PAPER;
     public static ItemStack RECIPE_LIGHTNING_CORE;
+    public static ItemStack RECIPE_TITANIUM_ORE;
     public static ItemStack RECIPE_TITANIUM_INGOT;
     public static ItemStack RECIPE_DARK_MATTER;
     public static ItemStack RECIPE_RED_DIAMOND;
@@ -85,16 +88,30 @@ public class ItemManager {
     public static ItemStack RECIPE_WAR_FAN;
     public static ItemStack RECIPE_TOWER_SHIELD;
     public static ItemStack RECIPE_HELL_FRUIT;
+    public static ItemStack RECIPE_LIFE_ELIXIR;
+    public static ItemStack RECIPE_POWER_FRUIT;
+    public static ItemStack RECIPE_SPEED_ELIXIR;
+    public static ItemStack RECIPE_REGENERATION_ELIXIR;
+    public static ItemStack RECIPE_STRENGTH_ELIXIR;
+    public static ItemStack RECIPE_SULFUR_ORE;
     public static ItemStack RECIPE_SULFUR;
+    public static ItemStack RECIPE_BAUXITE_ORE;
     public static ItemStack RECIPE_BAUXITE_INGOT;
+    public static ItemStack RECIPE_ROCK_SALT_ORE;
     public static ItemStack RECIPE_ROCK_SALT;
+    public static ItemStack RECIPE_MITHRIL_ORE;
     public static ItemStack RECIPE_MITHRIL_INGOT;
     public static ItemStack RECIPE_MITHRIL_STRING;
+    public static ItemStack RECIPE_ASTRAL_ORE;
     public static ItemStack RECIPE_ASTRAL_CRYSTAL;
     public static ItemStack RECIPE_RUSTY_HOOK;
     public static ItemStack RECIPE_GOLDEN_HOOK;
     public static ItemStack RECIPE_TITAN_GRAPPLE;
     public static ItemStack RECIPE_TRAP_CORE;
+    public static ItemStack RECIPE_TAMING_CORE;
+    public static ItemStack RECIPE_SUMMON_CORE;
+    public static ItemStack RECIPE_BREEDING_CORE;
+    public static ItemStack RECIPE_GENDER_SCANNER;
 
     // Yeni Madenler
     public static ItemStack SULFUR_ORE;
@@ -393,7 +410,9 @@ public class ItemManager {
         RECIPE_WARNING_SIGN = createRecipeBook("RECIPE_WARNING_SIGN", "§cTarif: Yasaklı Bölge Tabelası");
 
         // ========== TARİF KİTAPLARI - ÖZEL EŞYALAR ==========
+        RECIPE_BLUEPRINT_PAPER = createRecipeBook("RECIPE_BLUEPRINT_PAPER", "§bTarif: Mühendis Şeması");
         RECIPE_LIGHTNING_CORE = createRecipeBook("RECIPE_LIGHTNING_CORE", "§eTarif: Yıldırım Çekirdeği");
+        RECIPE_TITANIUM_ORE = createRecipeBook("RECIPE_TITANIUM_ORE", "§fTarif: Titanyum Parçası");
         RECIPE_TITANIUM_INGOT = createRecipeBook("RECIPE_TITANIUM_INGOT", "§fTarif: Titanyum Külçesi");
         RECIPE_DARK_MATTER = createRecipeBook("RECIPE_DARK_MATTER", "§0Tarif: Karanlık Madde");
         RECIPE_RED_DIAMOND = createRecipeBook("RECIPE_RED_DIAMOND", "§cTarif: Kızıl Elmas");
@@ -416,6 +435,23 @@ public class ItemManager {
         RECIPE_GOLDEN_HOOK = createRecipeBook("RECIPE_GOLDEN_HOOK", "§6Tarif: Altın Kanca");
         RECIPE_TITAN_GRAPPLE = createRecipeBook("RECIPE_TITAN_GRAPPLE", "§6§lTarif: Titan Kancası");
         RECIPE_TRAP_CORE = createRecipeBook("RECIPE_TRAP_CORE", "§cTarif: Tuzak Çekirdeği");
+        // Yiyecek tarif kitapları
+        RECIPE_LIFE_ELIXIR = createRecipeBook("RECIPE_LIFE_ELIXIR", "§a§lTarif: Yaşam İksiri");
+        RECIPE_POWER_FRUIT = createRecipeBook("RECIPE_POWER_FRUIT", "§c§lTarif: Güç Meyvesi");
+        RECIPE_SPEED_ELIXIR = createRecipeBook("RECIPE_SPEED_ELIXIR", "§b§lTarif: Hız İksiri");
+        RECIPE_REGENERATION_ELIXIR = createRecipeBook("RECIPE_REGENERATION_ELIXIR", "§d§lTarif: Yenilenme İksiri");
+        RECIPE_STRENGTH_ELIXIR = createRecipeBook("RECIPE_STRENGTH_ELIXIR", "§6§lTarif: Güç İksiri");
+        // Maden tarif kitapları
+        RECIPE_SULFUR_ORE = createRecipeBook("RECIPE_SULFUR_ORE", "§eTarif: Kükürt Cevheri");
+        RECIPE_BAUXITE_ORE = createRecipeBook("RECIPE_BAUXITE_ORE", "§6Tarif: Boksit Cevheri");
+        RECIPE_ROCK_SALT_ORE = createRecipeBook("RECIPE_ROCK_SALT_ORE", "§fTarif: Tuz Kayası");
+        RECIPE_MITHRIL_ORE = createRecipeBook("RECIPE_MITHRIL_ORE", "§bTarif: Mithril Cevheri");
+        RECIPE_ASTRAL_ORE = createRecipeBook("RECIPE_ASTRAL_ORE", "§5Tarif: Astral Cevheri");
+        // Çekirdek tarif kitapları
+        RECIPE_TAMING_CORE = createRecipeBook("RECIPE_TAMING_CORE", "§a§lTarif: Eğitim Çekirdeği");
+        RECIPE_SUMMON_CORE = createRecipeBook("RECIPE_SUMMON_CORE", "§5§lTarif: Çağırma Çekirdeği");
+        RECIPE_BREEDING_CORE = createRecipeBook("RECIPE_BREEDING_CORE", "§d§lTarif: Üreme Çekirdeği");
+        RECIPE_GENDER_SCANNER = createRecipeBook("RECIPE_GENDER_SCANNER", "§bTarif: Cinsiyet Ayırıcı");
 
         // Yeni Madenler
         SULFUR_ORE = create(Material.YELLOW_CONCRETE_POWDER, "SULFUR_ORE", "§eKükürt Cevheri");
@@ -443,14 +479,17 @@ public class ItemManager {
         // ========== ÖZEL ZIRHLAR ==========
         initSpecialArmors();
         
-        // ========== ÖZEL SİLAHLAR ==========
-        initSpecialWeapons();
-        
         // ========== BOSS ÖZEL İTEMLERİ ==========
         initBossItems();
         
+        // ========== ÖZEL SİLAHLAR ==========
+        initSpecialWeapons(); // SpecialItemManager'dan silahları çek
+        
         // ========== TARİF KİTAPLARI - ÖZEL ZIRH VE SİLAHLAR ==========
         initSpecialItemRecipeBooks();
+        
+        // ========== ÖZEL SİLAH TARİFLERİ (BOSS EŞYALARI İLE) ==========
+        registerSpecialWeaponRecipes();
 
         // ========== SEVİYE 1 MOB DROP İTEMLERİ ==========
         WILD_BOAR_HIDE = create(Material.LEATHER, "WILD_BOAR_HIDE", "§6Yaban Domuzu Postu");
@@ -557,6 +596,9 @@ public class ItemManager {
         
         // Kanca tarifleri (Golden Hook eksikti)
         registerGoldenHookRecipe();
+        
+        // Özel silah tarifleri (25 silah - Boss itemleri ile)
+        registerSpecialWeaponRecipes();
     }
     
     /**
@@ -824,8 +866,16 @@ public class ItemManager {
         if (info.isItemRecipe()) {
             lore.add("§7§l🔨 Yapılış:");
             lore.add("§7Crafting masasında yapılır.");
-            lore.add("§7Tarif detayları için kitaba");
-            lore.add("§7Shift+Sağ tıklayın.");
+            if (info.getCraftingRecipe() != null && !info.getCraftingRecipe().isEmpty()) {
+                lore.add("");
+                lore.add("§e§lCrafting Tarifi:");
+                for (String line : info.getCraftingRecipe()) {
+                    lore.add("§7" + line);
+                }
+            } else {
+                lore.add("§7Tarif detayları için kitaba");
+                lore.add("§7Shift+Sağ tıklayın.");
+            }
         } else {
             lore.add("§7§l📖 Kullanım:");
             lore.add("§7Sağ tık: Hayalet yapı göster");
@@ -951,6 +1001,196 @@ public class ItemManager {
                 return new RecipeInfo("Titan Kancası", "§7Crafting masasında", "40 blok menzilli kanca + Slow Falling.", true);
             case "TRAP_CORE":
                 return new RecipeInfo("Tuzak Çekirdeği", "§7Crafting masasında", "Tuzak kurmak için çekirdek.", true);
+            // Yeni eklenen tarif kitapları
+            case "BLUEPRINT_PAPER":
+                return new RecipeInfo("Mühendis Şeması", "§7Crafting masasında", "Yapı tasarımı için şema.", true);
+            case "TITANIUM_ORE":
+                return new RecipeInfo("Titanyum Parçası", "§7Crafting masasında", "Titanyum külçesi için ham madde.", true);
+            case "LIFE_ELIXIR":
+                return new RecipeInfo("Yaşam İksiri", "§7Crafting masasında", "Canı tamamen doldurur.", true);
+            case "POWER_FRUIT":
+                return new RecipeInfo("Güç Meyvesi", "§7Crafting masasında", "Hasarı 5 kat arttırır.", true);
+            case "SPEED_ELIXIR":
+                return new RecipeInfo("Hız İksiri", "§7Crafting masasında", "Hareket hızını arttırır.", true);
+            case "REGENERATION_ELIXIR":
+                return new RecipeInfo("Yenilenme İksiri", "§7Crafting masasında", "Hızlı can yenileme sağlar.", true);
+            case "STRENGTH_ELIXIR":
+                return new RecipeInfo("Güç İksiri", "§7Crafting masasında", "Saldırı gücünü arttırır.", true);
+            case "SULFUR_ORE":
+                return new RecipeInfo("Kükürt Cevheri", "§7Crafting masasında", "Kükürt için ham madde.", true);
+            case "BAUXITE_ORE":
+                return new RecipeInfo("Boksit Cevheri", "§7Crafting masasında", "Boksit külçesi için ham madde.", true);
+            case "ROCK_SALT_ORE":
+                return new RecipeInfo("Tuz Kayası", "§7Crafting masasında", "Tuz için ham madde.", true);
+            case "MITHRIL_ORE":
+                return new RecipeInfo("Mithril Cevheri", "§7Crafting masasında", "Mithril külçesi için ham madde.", true);
+            case "ASTRAL_ORE":
+                return new RecipeInfo("Astral Cevheri", "§7Crafting masasında", "Astral kristali için ham madde.", true);
+            case "TAMING_CORE":
+                return new RecipeInfo("Eğitim Çekirdeği", "§7Crafting masasında", "Mobları eğitmek için çekirdek.", true);
+            case "SUMMON_CORE":
+                return new RecipeInfo("Çağırma Çekirdeği", "§7Crafting masasında", "Boss çağırmak için çekirdek.", true);
+            case "BREEDING_CORE":
+                return new RecipeInfo("Üreme Çekirdeği", "§7Crafting masasında", "Mob üretimi için çekirdek.", true);
+            case "GENDER_SCANNER":
+                return new RecipeInfo("Cinsiyet Ayırıcı", "§7Crafting masasında", "Mob cinsiyetini tespit eder.", true);
+            // Silah tarif kitapları - Her silah için özel tarif
+            case "WEAPON_L1_1":
+                return new RecipeInfo("Hız Hançeri Tarifi", "§7Crafting masasında", 
+                    "Hızlı ve ölümcül hançer. Elinde tutarken hız verir.", true,
+                    Arrays.asList("Satır 1: [I] [F] [I]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [S] [ ]",
+                        "I = Demir Külçe", "F = Tüy", "B = Goblin Kralı Taçı", "S = Çubuk"));
+            case "WEAPON_L1_2":
+                return new RecipeInfo("Çiftçi Tırpanı Tarifi", "§7Crafting masasında",
+                    "Alan hasarı veren tırpan. Kalabalık gruplara etkili.", true,
+                    Arrays.asList("Satır 1: [W] [W] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [S] [ ]",
+                        "W = Buğday", "B = Goblin Kralı Taçı", "S = Çubuk"));
+            case "WEAPON_L1_3":
+                return new RecipeInfo("Yerçekimi Gürzü Tarifi", "§7Crafting masasında",
+                    "Sağ tıkla havaya fırlatır. Kaçış için ideal.", true,
+                    Arrays.asList("Satır 1: [ ] [P] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [S] [ ]",
+                        "P = Barut", "B = Goblin Kralı Taçı", "S = Çubuk"));
+            case "WEAPON_L1_4":
+                return new RecipeInfo("Patlayıcı Yay Tarifi", "§7Crafting masasında",
+                    "Okları patlar. Blok kırmayan patlama yaratır.", true,
+                    Arrays.asList("Satır 1: [ ] [T] [ ]", "Satır 2: [A] [B] [A]", "Satır 3: [ ] [T] [ ]",
+                        "T = TNT", "A = İp", "B = Goblin Kralı Taçı"));
+            case "WEAPON_L1_5":
+                return new RecipeInfo("Vampir Dişi Tarifi", "§7Crafting masasında",
+                    "Vurduğun hasarın %20'si kadar can verir.", true,
+                    Arrays.asList("Satır 1: [ ] [R] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [G] [ ]",
+                        "R = Redstone", "B = Goblin Kralı Taçı", "G = Altın Külçe"));
+            case "WEAPON_L2_1":
+                return new RecipeInfo("Alev Kılıcı Tarifi", "§7Crafting masasında",
+                    "Sağ tıkla alev dalgası atar. Önündeki alanı yakar.", true,
+                    Arrays.asList("Satır 1: [ ] [F] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [G] [ ]",
+                        "F = Alev Tozu", "B = Troll Kralı Kalbi", "G = Altın Külçe"));
+            case "WEAPON_L2_2":
+                return new RecipeInfo("Buz Asası Tarifi", "§7Crafting masasında",
+                    "Sağ tıkla hedefi 3 saniye dondurur.", true,
+                    Arrays.asList("Satır 1: [ ] [I] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [S] [ ]",
+                        "I = Buz", "B = Troll Kralı Kalbi", "S = Çubuk"));
+            case "WEAPON_L2_3":
+                return new RecipeInfo("Zehirli Mızrak Tarifi", "§7Crafting masasında",
+                    "Fırlatıldığında zehir bulutu oluşturur.", true,
+                    Arrays.asList("Satır 1: [ ] [E] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [S] [ ]",
+                        "E = Örümcek Gözü", "B = Troll Kralı Kalbi", "S = Çubuk"));
+            case "WEAPON_L2_4":
+                return new RecipeInfo("Golem Kalkanı Tarifi", "§7Crafting masasında",
+                    "Eğilince dostları iyileştirir ve korur.", true,
+                    Arrays.asList("Satır 1: [ ] [I] [ ]", "Satır 2: [I] [B] [I]", "Satır 3: [I] [I] [I]",
+                        "I = Demir Blok", "B = Troll Kralı Kalbi"));
+            case "WEAPON_L2_5":
+                return new RecipeInfo("Şok Baltası Tarifi", "§7Crafting masasında",
+                    "Kritik vuruşta yıldırım düşürür.", true,
+                    Arrays.asList("Satır 1: [L] [L] [ ]", "Satır 2: [L] [B] [ ]", "Satır 3: [ ] [S] [ ]",
+                        "L = Paratoner", "B = Troll Kralı Kalbi", "S = Çubuk"));
+            case "WEAPON_L3_1":
+                return new RecipeInfo("Gölge Katanası Tarifi", "§7Crafting masasında",
+                    "Sağ tıkla 6 blok dash atar ve yoluna çıkanlara hasar verir.", true,
+                    Arrays.asList("Satır 1: [ ] [C] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [S] [ ]",
+                        "C = Kömür Bloğu", "B = T-Rex Dişi", "S = Çubuk"));
+            case "WEAPON_L3_2":
+                return new RecipeInfo("Deprem Çekici Tarifi", "§7Crafting masasında",
+                    "Sağ tıkla yeri sarstırır ve herkesi havaya fırlatır.", true,
+                    Arrays.asList("Satır 1: [O] [O] [O]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [S] [ ]",
+                        "O = Obsidyen", "B = T-Rex Dişi", "S = Çubuk"));
+            case "WEAPON_L3_3":
+                return new RecipeInfo("Taramalı Yay Tarifi", "§7Crafting masasında",
+                    "Sağ tık basılı tutulduğunda saniyede 5 ok atar.", true,
+                    Arrays.asList("Satır 1: [ ] [R] [ ]", "Satır 2: [A] [B] [A]", "Satır 3: [ ] [R] [ ]",
+                        "R = Redstone Bloğu", "A = İp", "B = T-Rex Dişi"));
+            case "WEAPON_L3_4":
+                return new RecipeInfo("Büyücü Küresi Tarifi", "§7Crafting masasında",
+                    "Sağ tıkla en yakın 3 düşmana güdümlü mermi atar.", true,
+                    Arrays.asList("Satır 1: [ ] [G] [ ]", "Satır 2: [G] [B] [G]", "Satır 3: [ ] [G] [ ]",
+                        "G = Magma Kremi", "B = T-Rex Dişi"));
+            case "WEAPON_L3_5":
+                return new RecipeInfo("Hayalet Hançeri Tarifi", "§7Crafting masasında",
+                    "Sağ tıkla 5 saniye görünmez ol. İlk vuruş 3x hasar.", true,
+                    Arrays.asList("Satır 1: [ ] [P] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [F] [ ]",
+                        "P = Hayalet Zarı", "B = T-Rex Dişi", "F = Tüy"));
+            case "WEAPON_L4_1":
+                return new RecipeInfo("Element Kılıcı Tarifi", "§7Crafting masasında",
+                    "Mod 1: Her vuruşta alev saçar | Mod 2: Her vuruşta yavaşlatır.", true,
+                    Arrays.asList("Satır 1: [ ] [F] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [D] [ ]",
+                        "F = Alev Amplifikatörü", "B = Titan Golem Çekirdeği", "D = Elmas Kılıç"));
+            case "WEAPON_L4_2":
+                return new RecipeInfo("Yaşam ve Ölüm Tarifi", "§7Crafting masasında",
+                    "Mod 1: Wither kafası fırlatır | Mod 2: Can basar.", true,
+                    Arrays.asList("Satır 1: [ ] [W] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [K] [ ]",
+                        "W = Wither Kafası", "B = Titan Golem Çekirdeği", "K = Kemik"));
+            case "WEAPON_L4_3":
+                return new RecipeInfo("Mjölnir V2 Tarifi", "§7Crafting masasında",
+                    "Mod 1: Zincirleme yıldırım | Mod 2: Fırlat ve geri dön.", true,
+                    Arrays.asList("Satır 1: [ ] [L] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [A] [ ]",
+                        "L = Yıldırım Çekirdeği", "B = Titan Golem Çekirdeği", "A = Demir Balta"));
+            case "WEAPON_L4_4":
+                return new RecipeInfo("Avcı Yayı Tarifi", "§7Crafting masasında",
+                    "Mod 1: Sniper (50 blok x2 hasar) | Mod 2: Shotgun (5 ok).", true,
+                    Arrays.asList("Satır 1: [ ] [S] [ ]", "Satır 2: [A] [B] [A]", "Satır 3: [ ] [ ] [ ]",
+                        "S = Dürbün", "A = İp", "B = Titan Golem Çekirdeği"));
+            case "WEAPON_L4_5":
+                return new RecipeInfo("Manyetik Eldiven Tarifi", "§7Crafting masasında",
+                    "Mod 1: Hedefi çek | Mod 2: Hedefi fırlat.", true,
+                    Arrays.asList("Satır 1: [ ] [ ] [I]", "Satır 2: [ ] [I] [B]", "Satır 3: [I] [A] [ ]",
+                        "I = Demir Külçe", "B = Titan Golem Çekirdeği", "A = Olta"));
+            case "WEAPON_L5_1":
+                return new RecipeInfo("Hiperiyon Kılıcı Tarifi", "§7Crafting masasında",
+                    "Mod 1: Işınlan ve patlat | Mod 2: Kara delik kalkanı.", true,
+                    Arrays.asList("Satır 1: [ ] [E] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [N] [ ]",
+                        "E = Ender Gözü", "B = Void Dragon Heart", "N = Netherite Kılıç"));
+            case "WEAPON_L5_2":
+                return new RecipeInfo("Meteor Çağıran Tarifi", "§7Crafting masasında",
+                    "Mod 1: Meteor yağdır | Mod 2: Yer yarıp lav çıkart.", true,
+                    Arrays.asList("Satır 1: [ ] [F] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [G] [ ]",
+                        "F = Ateş Topu", "B = Void Dragon Heart", "G = Altın Balta"));
+            case "WEAPON_L5_3":
+                return new RecipeInfo("Titan Katili Tarifi", "§7Crafting masasında",
+                    "Mod 1: %5 hasar | Mod 2: Mızrak yağmuru (10 mızrak).", true,
+                    Arrays.asList("Satır 1: [ ] [D] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [S] [ ]",
+                        "D = Elmas Blok", "B = Void Dragon Heart", "S = Çubuk"));
+            case "WEAPON_L5_4":
+                return new RecipeInfo("Ruh Biçen Tarifi", "§7Crafting masasında",
+                    "Mod 1: Öldürdüğün mobları çağır | Mod 2: Hortlakları patlat.", true,
+                    Arrays.asList("Satır 1: [ ] [W] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [S] [ ]",
+                        "W = Wither Gülü", "B = Void Dragon Heart", "S = Ruh Kumu"));
+            case "WEAPON_L5_5":
+                return new RecipeInfo("Zamanı Büken Tarifi", "§7Crafting masasında",
+                    "Mod 1: Zamanı durdur (10 sn) | Mod 2: Geri sar (5 sn önce).", true,
+                    Arrays.asList("Satır 1: [ ] [S] [ ]", "Satır 2: [C] [B] [C]", "Satır 3: [ ] [S] [ ]",
+                        "S = Saat", "B = Void Dragon Heart", "C = Yıldız Çekirdeği"));
+            // Zırh tarif kitapları (RECIPE_ARMOR_L1_1 -> ARMOR_L1_1)
+            case "ARMOR_L1_1":
+            case "ARMOR_L1_2":
+            case "ARMOR_L1_3":
+            case "ARMOR_L1_4":
+            case "ARMOR_L1_5":
+                return new RecipeInfo("Seviye 1 Zırh Tarifi", "§7Crafting masasında", "Goblin Kralı Taçı gerektirir.", true);
+            case "ARMOR_L2_1":
+            case "ARMOR_L2_2":
+            case "ARMOR_L2_3":
+            case "ARMOR_L2_4":
+            case "ARMOR_L2_5":
+                return new RecipeInfo("Seviye 2 Zırh Tarifi", "§7Crafting masasında", "Troll Kralı Kalbi gerektirir.", true);
+            case "ARMOR_L3_1":
+            case "ARMOR_L3_2":
+            case "ARMOR_L3_3":
+            case "ARMOR_L3_4":
+            case "ARMOR_L3_5":
+                return new RecipeInfo("Seviye 3 Zırh Tarifi", "§7Crafting masasında", "T-Rex Dişi gerektirir.", true);
+            case "ARMOR_L4_1":
+            case "ARMOR_L4_2":
+            case "ARMOR_L4_3":
+            case "ARMOR_L4_4":
+            case "ARMOR_L4_5":
+                return new RecipeInfo("Seviye 4 Zırh Tarifi", "§7Crafting masasında", "Titan Golem Çekirdeği gerektirir.", true);
+            case "ARMOR_L5_1":
+            case "ARMOR_L5_2":
+            case "ARMOR_L5_3":
+            case "ARMOR_L5_4":
+            case "ARMOR_L5_5":
+                return new RecipeInfo("Seviye 5 Zırh Tarifi", "§7Crafting masasında", "Void Dragon Heart gerektirir.", true);
             
             default:
                 return new RecipeInfo("Bilinmeyen Tarif", "§7Bilinmeyen", "Açıklama yok.");
@@ -965,22 +1205,29 @@ public class ItemManager {
         private final String locationInfo;
         private final String functionInfo;
         private final boolean isItemRecipe;
+        private final List<String> craftingRecipe;
         
         public RecipeInfo(String displayName, String locationInfo, String functionInfo) {
-            this(displayName, locationInfo, functionInfo, false);
+            this(displayName, locationInfo, functionInfo, false, null);
         }
         
         public RecipeInfo(String displayName, String locationInfo, String functionInfo, boolean isItemRecipe) {
+            this(displayName, locationInfo, functionInfo, isItemRecipe, null);
+        }
+        
+        public RecipeInfo(String displayName, String locationInfo, String functionInfo, boolean isItemRecipe, List<String> craftingRecipe) {
             this.displayName = displayName;
             this.locationInfo = locationInfo;
             this.functionInfo = functionInfo;
             this.isItemRecipe = isItemRecipe;
+            this.craftingRecipe = craftingRecipe != null ? craftingRecipe : new ArrayList<>();
         }
         
         public String getDisplayName() { return displayName; }
         public String getLocationInfo() { return locationInfo; }
         public String getFunctionInfo() { return functionInfo; }
         public boolean isItemRecipe() { return isItemRecipe; }
+        public List<String> getCraftingRecipe() { return craftingRecipe; }
     }
 
     public static boolean isCustomItem(ItemStack item, String id) {
@@ -1343,63 +1590,49 @@ public class ItemManager {
     }
     
     /**
-     * Özel silahları başlat
+     * Özel Silahları Başlat (SpecialItemManager üzerinden)
      */
     private void initSpecialWeapons() {
-        // Seviye 1 Silahlar (Her birinin farklı özelliği var)
-        WEAPON_L1_1 = createSpecialWeapon(1, 1, Material.IRON_SWORD, "Demir Hız Kılıcı", "§f", 
-            "§e• Hız Artışı", "§7  Saldırıda %20 hız artışı");
-        WEAPON_L1_2 = createSpecialWeapon(1, 2, Material.IRON_AXE, "Demir Kritik Baltası", "§f",
-            "§e• Kritik Vuruş", "§7  %15 şansla 2x hasar");
-        WEAPON_L1_3 = createSpecialWeapon(1, 3, Material.TRIDENT, "Demir Savunma Mızrağı", "§f",
-            "§e• Savunma Bonusu", "§7  Saldırıda %10 hasar azaltma");
-        WEAPON_L1_4 = createSpecialWeapon(1, 4, Material.BOW, "Demir Hızlı Yayı", "§f",
-            "§e• Hızlı Çekim", "§7  %30 daha hızlı ok atışı");
-        WEAPON_L1_5 = createSpecialWeapon(1, 5, Material.IRON_PICKAXE, "Demir Güç Çekici", "§f",
-            "§e• Güç Artışı", "§7  +2 ekstra hasar");
-        
-        // Seviye 2 Silahlar (Her birinin farklı özelliği var)
-        WEAPON_L2_1 = createSpecialWeapon(2, 1, Material.DIAMOND_SWORD, "Elmas Zehir Kılıcı", "§b",
-            "§e• Zehir Etkisi", "§7  Saldırıda 3 saniye zehir");
-        WEAPON_L2_2 = createSpecialWeapon(2, 2, Material.DIAMOND_AXE, "Elmas Yavaşlatma Baltası", "§b",
-            "§e• Yavaşlatma", "§7  Saldırıda 3 saniye yavaşlatma");
-        WEAPON_L2_3 = createSpecialWeapon(2, 3, Material.TRIDENT, "Elmas Ateş Mızrağı", "§b",
-            "§e• Ateş Etkisi", "§7  Saldırıda 5 saniye ateş");
-        WEAPON_L2_4 = createSpecialWeapon(2, 4, Material.BOW, "Elmas Buz Yayı", "§b",
-            "§e• Buz Etkisi", "§7  Ok ile dondurma etkisi");
-        WEAPON_L2_5 = createSpecialWeapon(2, 5, Material.DIAMOND_PICKAXE, "Elmas Şok Çekici", "§b",
-            "§e• Şok Etkisi", "§7  Saldırıda yakındaki düşmanlara hasar");
-        
-        // Seviye 3 Silahlar (Patlama Atabilme - 20 blok menzil)
-        WEAPON_L3_1 = createSpecialWeapon(3, 1, Material.NETHERITE_SWORD, "Netherite Patlama Kılıcı", "§5");
-        WEAPON_L3_2 = createSpecialWeapon(3, 2, Material.NETHERITE_AXE, "Netherite Patlama Baltası", "§5");
-        WEAPON_L3_3 = createSpecialWeapon(3, 3, Material.TRIDENT, "Netherite Patlama Mızrağı", "§5");
-        WEAPON_L3_4 = createSpecialWeapon(3, 4, Material.BOW, "Netherite Patlama Yayı", "§5");
-        WEAPON_L3_5 = createSpecialWeapon(3, 5, Material.NETHERITE_PICKAXE, "Netherite Patlama Çekici", "§5");
-        
-        // Seviye 4 Silahlar (Devamlı Lazer - Yüksek Hasar)
-        WEAPON_L4_1 = createSpecialWeapon(4, 1, Material.NETHERITE_SWORD, "Titanyum Lazer Kılıcı", "§6");
-        WEAPON_L4_2 = createSpecialWeapon(4, 2, Material.NETHERITE_AXE, "Titanyum Lazer Baltası", "§6");
-        WEAPON_L4_3 = createSpecialWeapon(4, 3, Material.TRIDENT, "Titanyum Lazer Mızrağı", "§6");
-        WEAPON_L4_4 = createSpecialWeapon(4, 4, Material.BOW, "Titanyum Lazer Yayı", "§6");
-        WEAPON_L4_5 = createSpecialWeapon(4, 5, Material.NETHERITE_PICKAXE, "Titanyum Lazer Çekici", "§6");
-        
-        // Seviye 5 Silahlar (Her birinin farklı mod kombinasyonları var)
-        WEAPON_L5_1 = createSpecialWeapon(5, 1, Material.NETHERITE_SWORD, "Efsanevi Savaş Kılıcı", "§d§l",
-            "§e• Çok Modlu Silah", "§7  Shift+Sağ Tık: Mod Seçimi",
-            "§7  Mod 1: Blok Fırlatma (Q)", "§7  Mod 2: Duvar Yapma (Sağ Tık)", "§7  Mod 3: Atılma/Patlama (Sağ Tık)");
-        WEAPON_L5_2 = createSpecialWeapon(5, 2, Material.NETHERITE_AXE, "Efsanevi Yıkım Baltası", "§d§l",
-            "§e• Çok Modlu Silah", "§7  Shift+Sağ Tık: Mod Seçimi",
-            "§7  Mod 1: Blok Fırlatma (Q)", "§7  Mod 2: Dash/Patlama (Sağ Tık)", "§7  Mod 3: Atılma/Patlama (Sağ Tık)");
-        WEAPON_L5_3 = createSpecialWeapon(5, 3, Material.TRIDENT, "Efsanevi Savunma Mızrağı", "§d§l",
-            "§e• Çok Modlu Silah", "§7  Shift+Sağ Tık: Mod Seçimi",
-            "§7  Mod 1: Duvar Yapma (Sağ Tık)", "§7  Mod 2: Dash/Patlama (Sağ Tık)", "§7  Mod 3: Atılma/Patlama (Sağ Tık)");
-        WEAPON_L5_4 = createSpecialWeapon(5, 4, Material.BOW, "Efsanevi Çoklu Yay", "§d§l",
-            "§e• Çok Modlu Silah", "§7  Shift+Sağ Tık: Mod Seçimi",
-            "§7  Mod 1: Blok Fırlatma (Q)", "§7  Mod 2: Dash/Patlama (Sağ Tık)", "§7  Mod 3: Duvar Yapma (Sağ Tık)");
-        WEAPON_L5_5 = createSpecialWeapon(5, 5, Material.NETHERITE_PICKAXE, "Efsanevi Kaos Çekici", "§d§l",
-            "§e• Çok Modlu Silah", "§7  Shift+Sağ Tık: Mod Seçimi",
-            "§7  Mod 1: Atılma/Patlama (Sağ Tık)", "§7  Mod 2: Dash/Patlama (Sağ Tık)", "§7  Mod 3: Blok Fırlatma (Q)");
+        me.mami.stratocraft.manager.SpecialItemManager sim = Main.getInstance().getSpecialItemManager();
+        if (sim == null) {
+            Main.getInstance().getLogger().severe("HATA: SpecialItemManager başlatılamadı! Silahlar yüklenemiyor.");
+            return;
+        }
+
+        // --- SEVİYE 1 (Çaylak) ---
+        WEAPON_L1_1 = sim.getTier1Weapon("l1_1"); // Hız Hançeri
+        WEAPON_L1_2 = sim.getTier1Weapon("l1_2"); // Çiftçi Tırpanı
+        WEAPON_L1_3 = sim.getTier1Weapon("l1_3"); // Yerçekimi Gürzü
+        WEAPON_L1_4 = sim.getTier1Weapon("l1_4"); // Patlayıcı Yay
+        WEAPON_L1_5 = sim.getTier1Weapon("l1_5"); // Vampir Dişi
+
+        // --- SEVİYE 2 (Asker) ---
+        WEAPON_L2_1 = sim.getTier2Weapon("l2_1"); // Alev Kılıcı
+        WEAPON_L2_2 = sim.getTier2Weapon("l2_2"); // Buz Asası
+        WEAPON_L2_3 = sim.getTier2Weapon("l2_3"); // Zehirli Mızrak
+        WEAPON_L2_4 = sim.getTier2Weapon("l2_4"); // Golem Kalkanı
+        WEAPON_L2_5 = sim.getTier2Weapon("l2_5"); // Şok Baltası
+
+        // --- SEVİYE 3 (Elit) ---
+        WEAPON_L3_1 = sim.getTier3Weapon("l3_1"); // Gölge Katanası
+        WEAPON_L3_2 = sim.getTier3Weapon("l3_2"); // Deprem Çekici
+        WEAPON_L3_3 = sim.getTier3Weapon("l3_3"); // Taramalı Yay
+        WEAPON_L3_4 = sim.getTier3Weapon("l3_4"); // Büyücü Küresi
+        WEAPON_L3_5 = sim.getTier3Weapon("l3_5"); // Hayalet Hançeri
+
+        // --- SEVİYE 4 (Efsanevi) ---
+        WEAPON_L4_1 = sim.getTier4Weapon("l4_1"); // Element Kılıcı
+        WEAPON_L4_2 = sim.getTier4Weapon("l4_2"); // Yaşam ve Ölüm
+        WEAPON_L4_3 = sim.getTier4Weapon("l4_3"); // Mjölnir V2
+        WEAPON_L4_4 = sim.getTier4Weapon("l4_4"); // Avcı Yayı
+        WEAPON_L4_5 = sim.getTier4Weapon("l4_5"); // Manyetik Eldiven
+
+        // --- SEVİYE 5 (Tanrısal) ---
+        WEAPON_L5_1 = sim.getTier5Weapon("l5_1"); // Hiperiyon Kılıcı
+        WEAPON_L5_2 = sim.getTier5Weapon("l5_2"); // Meteor Çağıran
+        WEAPON_L5_3 = sim.getTier5Weapon("l5_3"); // Titan Katili
+        WEAPON_L5_4 = sim.getTier5Weapon("l5_4"); // Ruh Biçen
+        WEAPON_L5_5 = sim.getTier5Weapon("l5_5"); // Zamanı Büken
     }
     
     /**
@@ -1725,6 +1958,142 @@ public class ItemManager {
         registerSpecialWeaponRecipe(5, 3, Material.TRIDENT, Material.NETHERITE_INGOT, DEMON_LORD_HORN);
         registerSpecialWeaponRecipe(5, 4, Material.BOW, Material.NETHERITE_INGOT, VOID_DRAGON_HEART);
         registerSpecialWeaponRecipe(5, 5, Material.NETHERITE_PICKAXE, Material.NETHERITE_INGOT, DEMON_LORD_HORN);
+    }
+    
+    /**
+     * Tüm Özel Silah Tariflerini Kaydet (Boss İtemleri ile)
+     */
+    private void registerSpecialWeaponRecipes() {
+        // --- SEVİYE 1: GOBLIN CROWN GEREKTİRİR ---
+        // L1_1: Hız Hançeri (Demir Kılıç + Tüy + Goblin Tacı)
+        registerRecipe("craft_l1_1", WEAPON_L1_1, "IFI", " B ", " S ", 
+            'I', Material.IRON_INGOT, 'F', Material.FEATHER, 'B', GOBLIN_CROWN, 'S', Material.STICK);
+
+        // L1_2: Çiftçi Tırpanı (Demir Çapa + Buğday + Goblin Tacı)
+        registerRecipe("craft_l1_2", WEAPON_L1_2, "WW ", " B ", " S ", 
+            'W', Material.WHEAT, 'B', GOBLIN_CROWN, 'S', Material.STICK);
+
+        // L1_3: Yerçekimi Gürzü (Demir Kürek + Barut + Goblin Tacı)
+        registerRecipe("craft_l1_3", WEAPON_L1_3, " P ", " B ", " S ", 
+            'P', Material.GUNPOWDER, 'B', GOBLIN_CROWN, 'S', Material.STICK);
+
+        // L1_4: Patlayıcı Yay (Yay + TNT + Goblin Tacı)
+        registerRecipe("craft_l1_4", WEAPON_L1_4, " T ", "ABA", " T ", 
+            'A', Material.STRING, 'B', GOBLIN_CROWN, 'T', Material.TNT);
+
+        // L1_5: Vampir Dişi (Altın Kılıç + Redstone + Goblin Tacı)
+        registerRecipe("craft_l1_5", WEAPON_L1_5, " R ", " B ", " G ", 
+            'R', Material.REDSTONE, 'B', GOBLIN_CROWN, 'G', Material.GOLD_INGOT);
+
+        // --- SEVİYE 2: TROLL HEART GEREKTİRİR ---
+        // L2_1: Alev Kılıcı (Altın Kılıç + Blaze Powder + Troll Kalbi)
+        registerRecipe("craft_l2_1", WEAPON_L2_1, " F ", " B ", " G ", 
+            'F', Material.BLAZE_POWDER, 'B', TROLL_HEART, 'G', Material.GOLD_INGOT);
+
+        // L2_2: Buz Asası (Çubuk + Buz + Troll Kalbi)
+        registerRecipe("craft_l2_2", WEAPON_L2_2, " I ", " B ", " S ", 
+            'I', Material.PACKED_ICE, 'B', TROLL_HEART, 'S', Material.STICK);
+
+        // L2_3: Zehirli Mızrak (Trident yoksa Demir Mızrak + Örümcek Gözü + Troll Kalbi)
+        registerRecipe("craft_l2_3", WEAPON_L2_3, " E ", " B ", " S ", 
+            'E', Material.SPIDER_EYE, 'B', TROLL_HEART, 'S', Material.STICK);
+
+        // L2_4: Golem Kalkanı (Kalkan + Demir Blok + Troll Kalbi)
+        registerRecipe("craft_l2_4", WEAPON_L2_4, " I ", "IBI", " I ", 
+            'I', Material.IRON_BLOCK, 'B', TROLL_HEART);
+
+        // L2_5: Şok Baltası (Demir Balta + Paratoner + Troll Kalbi)
+        registerRecipe("craft_l2_5", WEAPON_L2_5, "LL ", "LB ", " S ", 
+            'L', Material.LIGHTNING_ROD, 'B', TROLL_HEART, 'S', Material.STICK);
+
+        // --- SEVİYE 3: TREX TOOTH GEREKTİRİR ---
+        // L3_1: Gölge Katanası (Demir Kılıç + Kömür Bloğu + T-Rex Dişi)
+        registerRecipe("craft_l3_1", WEAPON_L3_1, " C ", " B ", " S ", 
+            'C', Material.COAL_BLOCK, 'B', TREX_TOOTH, 'S', Material.STICK);
+
+        // L3_2: Deprem Çekici (Netherite Kürek/Elmas Kürek + Obsidyen + T-Rex Dişi)
+        registerRecipe("craft_l3_2", WEAPON_L3_2, "OOO", " B ", " S ", 
+            'O', Material.OBSIDIAN, 'B', TREX_TOOTH, 'S', Material.STICK);
+
+        // L3_3: Taramalı Yay (Arbalet + Redstone Blok + T-Rex Dişi)
+        registerRecipe("craft_l3_3", WEAPON_L3_3, " R ", "ABA", " R ", 
+            'R', Material.REDSTONE_BLOCK, 'A', Material.STRING, 'B', TREX_TOOTH);
+
+        // L3_4: Büyücü Küresi (Magma Kremi + Işıktaşı + T-Rex Dişi)
+        registerRecipe("craft_l3_4", WEAPON_L3_4, " G ", "GBG", " G ", 
+            'G', Material.MAGMA_CREAM, 'B', TREX_TOOTH);
+
+        // L3_5: Hayalet Hançeri (Tüy + Hayalet Zarı + T-Rex Dişi)
+        registerRecipe("craft_l3_5", WEAPON_L3_5, " P ", " B ", " F ", 
+            'P', Material.PHANTOM_MEMBRANE, 'B', TREX_TOOTH, 'F', Material.FEATHER);
+
+        // --- SEVİYE 4: TITAN CORE GEREKTİRİR ---
+        // L4_1: Element Kılıcı (Elmas Kılıç + Alev Amplifikatörü + Titan Çekirdeği)
+        registerRecipe("craft_l4_1", WEAPON_L4_1, " F ", " B ", " D ", 
+            'F', FLAME_AMPLIFIER, 'B', TITAN_CORE, 'D', Material.DIAMOND_SWORD);
+
+        // L4_2: Yaşam ve Ölüm (Kemik + Wither Kafası + Titan Çekirdeği)
+        registerRecipe("craft_l4_2", WEAPON_L4_2, " W ", " B ", " K ", 
+            'W', Material.WITHER_SKELETON_SKULL, 'B', TITAN_CORE, 'K', Material.BONE);
+
+        // L4_3: Mjölnir V2 (Demir Balta + Yıldırım Çekirdeği + Titan Çekirdeği)
+        registerRecipe("craft_l4_3", WEAPON_L4_3, " L ", " B ", " A ", 
+            'L', LIGHTNING_CORE, 'B', TITAN_CORE, 'A', Material.IRON_AXE);
+
+        // L4_4: Avcı Yayı (Yay + Dürbün + Titan Çekirdeği)
+        registerRecipe("craft_l4_4", WEAPON_L4_4, " S ", "ABA", "   ", 
+            'S', Material.SPYGLASS, 'A', Material.STRING, 'B', TITAN_CORE);
+
+        // L4_5: Manyetik Eldiven (Olta + Demir Külçe + Titan Çekirdeği)
+        registerRecipe("craft_l4_5", WEAPON_L4_5, "  I", " IB", "I A", 
+            'I', Material.IRON_INGOT, 'B', TITAN_CORE, 'A', Material.FISHING_ROD);
+
+        // --- SEVİYE 5: VOID DRAGON HEART GEREKTİRİR ---
+        // L5_1: Hiperiyon Kılıcı (Netherite Kılıç + Ender Gözü + Void Dragon Heart)
+        registerRecipe("craft_l5_1", WEAPON_L5_1, " E ", " B ", " N ", 
+            'E', Material.ENDER_EYE, 'B', VOID_DRAGON_HEART, 'N', Material.NETHERITE_SWORD);
+
+        // L5_2: Meteor Çağıran (Altın Balta + Ateş Topu + Void Dragon Heart)
+        registerRecipe("craft_l5_2", WEAPON_L5_2, " F ", " B ", " G ", 
+            'F', Material.FIRE_CHARGE, 'B', VOID_DRAGON_HEART, 'G', Material.GOLDEN_AXE);
+
+        // L5_3: Titan Katili (Mızrak + Elmas Blok + Void Dragon Heart)
+        registerRecipe("craft_l5_3", WEAPON_L5_3, " D ", " B ", " S ", 
+            'D', Material.DIAMOND_BLOCK, 'B', VOID_DRAGON_HEART, 'S', Material.STICK);
+
+        // L5_4: Ruh Biçen (Wither Gülü + Ruh Kumu + Void Dragon Heart)
+        registerRecipe("craft_l5_4", WEAPON_L5_4, " W ", " B ", " S ", 
+            'W', Material.WITHER_ROSE, 'B', VOID_DRAGON_HEART, 'S', Material.SOUL_SAND);
+
+        // L5_5: Zamanı Büken (Saat + Yıldız Çekirdeği + Void Dragon Heart)
+        registerRecipe("craft_l5_5", WEAPON_L5_5, " S ", "CBC", " S ", 
+            'S', Material.CLOCK, 'B', VOID_DRAGON_HEART, 'C', STAR_CORE);
+    }
+    
+    /**
+     * Yardımcı Metod: Özel Eşyalı Tarif Kaydetme
+     */
+    private void registerRecipe(String key, ItemStack result, String line1, String line2, String line3, Object... ingredients) {
+        if (result == null) return;
+        
+        org.bukkit.inventory.ShapedRecipe recipe = new org.bukkit.inventory.ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), key), result);
+            
+        recipe.shape(line1, line2, line3);
+        
+        for (int i = 0; i < ingredients.length; i += 2) {
+            char keyChar = (char) ingredients[i];
+            Object ingredient = ingredients[i + 1];
+            
+            if (ingredient instanceof Material) {
+                recipe.setIngredient(keyChar, (Material) ingredient);
+            } else if (ingredient instanceof ItemStack) {
+                // Boss itemleri gibi özel itemler için ExactChoice kullanıyoruz
+                recipe.setIngredient(keyChar, new org.bukkit.inventory.RecipeChoice.ExactChoice((ItemStack) ingredient));
+            }
+        }
+        
+        Bukkit.addRecipe(recipe);
     }
     
     /**

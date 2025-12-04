@@ -160,7 +160,7 @@ Dünyada sadece zombiler yok. **Eğitilebilir Ejderhalar**, yer altı Solucanlar
 
 ### 3. Madencilik ve Kaynak Toplama
 
-Derinlerde sıradan elmas değil, **Titanyum** ve **Kızıl Elmas** gibi yeni cevherler bulunur. Bunlar olmadan güçlü zırhlar yapılamaz.
+Derinlerde sıradan elmas değil, **Titanyum** ve **Kızıl Elmas** gibi yeni cevherler bulunur. Bunlar olmadan güçlü zırhlar ve özel silahlar yapılamaz.
 
 **Zorluk Sistemi**: Merkezden uzaklaştıkça zorlaşır ve değerli madenler bulunur! Her zorluk seviyesinde farklı moblar spawn olur.
 
@@ -189,7 +189,10 @@ Derinlerde sıradan elmas değil, **Titanyum** ve **Kızıl Elmas** gibi yeni ce
 - 10 blok yarıçapta herkes o tarifi kullanabilir
 - Kitap olmadan craft EDİLEMEZ
 
-**Örnek**: "Tektonik Sabitleyici" yapmak için Titan Golem'den tarif kitabı gerekli!
+**Örnekler**: 
+- "Tektonik Sabitleyici" yapmak için Titan Golem'den tarif kitabı gerekli!
+- "Hiperiyon Kılıcı" (Seviye 5 silah) yapmak için Void Dragon'dan tarif kitabı gerekli!
+- Tüm 25 özel silah için boss'lardan tarif kitapları düşer
 
 ---
 
@@ -261,7 +264,54 @@ Derinlerde sıradan elmas değil, **Titanyum** ve **Kızıl Elmas** gibi yeni ce
 
 ---
 
-### 8. Özel Araçlar
+### 8. Özel Silahlar ve Araçlar
+
+#### 🗡️ Özel Silahlar (25 Silah - 5 Seviye)
+
+Stratocraft'ta **25 özel silah** bulunur. Her silahın benzersiz yetenekleri vardır ve **Boss Item'ları** ile craft edilir.
+
+**Seviye 1 Silahlar** (Goblin Kralı Taçı gerekir):
+- **Hız Hançeri**: Elinde tutarken %20 hız verir, yüksek saldırı hızı
+- **Çiftçi Tırpanı**: Alan hasarı (AoE) - 3 blok yarıçapındaki tüm moblara hasar
+- **Yerçekimi Gürzü**: Sağ tıkla 5 blok yukarı fırlatır (kaçış için)
+- **Patlayıcı Yay**: Okları patlar, blok kırmayan patlama
+- **Vampir Dişi**: Vurduğun hasarın %20'si kadar can verir
+
+**Seviye 2 Silahlar** (Troll Kralı Kalbi gerekir):
+- **Alev Kılıcı**: Sağ tıkla alev dalgası atar, önündeki herkes yanar
+- **Buz Asası**: Sağ tıkla hedefi 3 saniye dondurur
+- **Zehirli Mızrak**: Fırlatıldığında zehir bulutu oluşturur
+- **Golem Kalkanı**: Sneak+Sağ Tık ile dostları iyileştirir
+- **Şok Baltası**: Kritik vuruşta yıldırım düşürür
+
+**Seviye 3 Silahlar** (T-Rex Dişi gerekir):
+- **Gölge Katanası**: Sağ tıkla 6 blok dash atar, yoluna çıkan her şeye hasar
+- **Deprem Çekici**: Sağ tıkla yeri sarstırır, 5 blok çevredeki mobları havaya fırlatır
+- **Taramalı Yay**: Sağ tık basılı tutulduğunda saniyede 5 ok atar
+- **Büyücü Küresi**: Sağ tıkla en yakındaki 3 düşmana güdümlü mermi atar
+- **Hayalet Hançeri**: Sağ tıkla 5 saniye görünmez olursun, ilk vuruş 3x hasar
+
+**Seviye 4 Silahlar** (Titan Golem Çekirdeği gerekir - **Modlu**):
+- **Element Kılıcı**: Mod 1 (Ateş) - Her vuruşta alev saçar | Mod 2 (Buz) - Yavaşlatır
+- **Yaşam ve Ölüm**: Mod 1 (Ölüm) - Wither kafası fırlatır | Mod 2 (Yaşam) - Can basar
+- **Mjölnir V2**: Mod 1 (Melee) - Zincirleme yıldırım | Mod 2 (Throw) - Fırlat ve geri döner
+- **Avcı Yayı**: Mod 1 (Sniper) - 50 blok öteden x2 hasar | Mod 2 (Shotgun) - 5 ok birden
+- **Manyetik Eldiven**: Mod 1 (Çek) - Hedefi kendine çeker | Mod 2 (İt) - Uzağa fırlatır
+
+**Seviye 5 Silahlar** (Void Dragon Heart gerekir - **Modlu**):
+- **Hiperiyon Kılıcı**: Mod 1 (Işınlanma) - 8 blok ışınlan ve patlat | Mod 2 (Kara Delik) - Gelen okları emer
+- **Meteor Çağıran**: Mod 1 (Kıyamet) - Gökyüzünden 3 meteor | Mod 2 (Yer Yaran) - Lav yarığı aç
+- **Titan Katili**: Mod 1 (%5 Hasar) - Bosslara mevcut canının %5'i | Mod 2 (Mızrak Yağmuru) - 10 mızrak düşer
+- **Ruh Biçen**: Mod 1 (Çağır) - Öldürdüğün 3 mobu hortlak olarak çağır | Mod 2 (Patlat) - Hortlakları patlat
+- **Zamanı Büken**: Mod 1 (Durdur) - 10 saniye tüm moblar donar | Mod 2 (Geri Sar) - 5 saniye önceki konuma dön
+
+**Mod Değiştirme**: Tier 4 ve Tier 5 silahlar için **Shift+Sağ Tık** ile mod seçim menüsü açılır!
+
+**Crafting**: Tüm silahlar crafting masasında yapılabilir. Her silah için **Boss Item** ve **Tarif Kitabı** gerekir. Detaylar için `05_ozel_esyalar.md` dosyasına bakın.
+
+---
+
+#### 🔧 Diğer Özel Araçlar
 
 **Kancalar**:
 - **Paslı Kanca**: 7 blok menzil, ucuz
@@ -323,6 +373,8 @@ Seviye 5 (10000+): Efsanevi moblar, Kızıl Elmas
 2. Merkeze yakın kal (güvenli)
 3. Klan kurmayı planla
 4. Temel madenler topla (Kükürt, Boksit)
+5. Goblin Kralı avla → Goblin Kralı Taçı al
+6. İlk özel silahı craft et (Hız Hançeri, Çiftçi Tırpanı vb.)
 ```
 
 ---
@@ -335,6 +387,8 @@ Seviye 5 (10000+): Efsanevi moblar, Kızıl Elmas
 3. Titanyum madenciliğine başla
 4. İlk bataryaları öğren (Ateş Topu)
 5. Ork ve Troll eğit
+6. Troll Kralı avla → Troll Kralı Kalbi al
+7. Seviye 2 silahları craft et (Alev Kılıcı, Buz Asası vb.)
 ```
 
 ---
@@ -345,8 +399,10 @@ Seviye 5 (10000+): Efsanevi moblar, Kızıl Elmas
 1. Mithril topla
 2. Yapıları geliştir (Lv3-4)
 3. Ejderha ve Griffin avla
-4. Kuşatma silahları kur (Balista, Mancınık)
-5. Klan savaşlarına hazırlan
+4. T-Rex avla → T-Rex Dişi al
+5. Seviye 3 silahları craft et (Gölge Katanası, Deprem Çekici vb.)
+6. Kuşatma silahları kur (Balista, Mancınık)
+7. Klan savaşlarına hazırlan
 ```
 
 ---
@@ -356,9 +412,13 @@ Seviye 5 (10000+): Efsanevi moblar, Kızıl Elmas
 ```
 1. Astral Cevheri ve Kızıl Elmas ara
 2. Tektonik Sabitleyici kur (Felaket koruması)
-3. Titan Golem ve Hydra eğit
-4. Efsanevi ekipman craft et
-5. Felaketlere karşı savaş!
+3. Titan Golem avla → Titan Golem Çekirdeği al
+4. Seviye 4 modlu silahları craft et (Element Kılıcı, Mjölnir V2 vb.)
+5. Void Dragon avla → Void Dragon Heart al
+6. Seviye 5 modlu silahları craft et (Hiperiyon Kılıcı, Zamanı Büken vb.)
+7. Titan Golem ve Hydra eğit
+8. Efsanevi ekipman craft et
+9. Felaketlere karşı savaş!
 ```
 
 ---
@@ -413,7 +473,7 @@ Bu döküman, Stratocraft'ın temel felsefesini ve amacını anlatır. Detaylı 
 - **02_bolge_sistemi.md**: Bölge oluşturma, genişletme, korumalar
 - **03_rituel_sistemi.md**: Tüm ritüeller (üye, terfi, savaş) - Not: Klan kurma artık sadece Klan Kristali ile yapılır
 - **04_batarya_sistemi.md**: Büyü sistemi, batarya türleri, stratejiler
-- **05_ozel_esyalar.md**: Yeni madenler, silahlar, eşyalar
+- **05_ozel_esyalar.md**: Yeni madenler, **25 özel silah** (detaylı açıklamalar, crafting tarifleri, mod sistemi), eşyalar
 - **06_ozel_moblar.md**: Özel moblar, eğitme, binme
 - **07_yapilar.md**: Yapı kategorileri, seviyeler, stratejiler
 - **08_tuzak_sistemi.md**: Tuzak kurulumu, türleri, mayınlar

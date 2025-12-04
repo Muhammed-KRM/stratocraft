@@ -58,8 +58,8 @@ if (amount > 2304) {
 - `special` - Özel eşyalar
 - `ore` - Cevherler
 - `tool` - Araçlar
-- `bossitem` - Boss özel itemleri
-- `recipebook` - Tarif kitapları
+- `bossitem` - Boss özel itemleri (11 adet)
+- `recipebook` - Tarif kitapları (70+ adet)
 
 **Kullanım**:
 ```
@@ -112,8 +112,60 @@ speed_elixir - Hız İksiri (hız artışı, 2 dakika)
 regeneration_elixir - Yenilenme İksiri (can yenileme, 1 dakika)
 strength_elixir - Güç İksiri (güç artışı, 2 dakika)
 
-Tarif Kitapları:
-recipe_tectonic - Tarif: Tektonik Sabitleyici
+Boss İtemleri (bossitem kategorisi):
+goblin_crown - Goblin Kralı Taçı
+orc_amulet - Ork Şefi Amuleti
+troll_heart - Troll Kralı Kalbi
+dragon_scale - Ejderha Ölçeği
+trex_tooth - T-Rex Dişi
+cyclops_eye - Cyclops Gözü
+titan_core - Titan Golem Çekirdeği
+phoenix_feather - Phoenix Tüyü
+kraken_tentacle - Kraken Dokunaçı
+demon_lord_horn - Şeytan Lordu Boynuzu
+void_dragon_heart - Void Dragon Heart
+
+Tarif Kitapları (recipebook kategorisi - 70+ adet):
+Silah Tarifleri (25 adet):
+recipe_weapon_l1_1 ila recipe_weapon_l1_5 - Seviye 1 Silah Tarifleri
+recipe_weapon_l2_1 ila recipe_weapon_l2_5 - Seviye 2 Silah Tarifleri
+recipe_weapon_l3_1 ila recipe_weapon_l3_5 - Seviye 3 Silah Tarifleri
+recipe_weapon_l4_1 ila recipe_weapon_l4_5 - Seviye 4 Silah Tarifleri
+recipe_weapon_l5_1 ila recipe_weapon_l5_5 - Seviye 5 Silah Tarifleri
+
+Zırh Tarifleri (25 adet):
+recipe_armor_l1_1 ila recipe_armor_l1_5 - Seviye 1 Zırh Tarifleri
+recipe_armor_l2_1 ila recipe_armor_l2_5 - Seviye 2 Zırh Tarifleri
+recipe_armor_l3_1 ila recipe_armor_l3_5 - Seviye 3 Zırh Tarifleri
+recipe_armor_l4_1 ila recipe_armor_l4_5 - Seviye 4 Zırh Tarifleri
+recipe_armor_l5_1 ila recipe_armor_l5_5 - Seviye 5 Zırh Tarifleri
+
+Yapı Tarifleri (24 adet):
+recipe_core - Ana Kristal
+recipe_alchemy_tower - Simya Kulesi
+recipe_siege_factory - Kuşatma Fabrikası
+recipe_wall_generator - Sur Jeneratörü
+... (diğer yapılar)
+
+Özel Eşya Tarifleri (30+ adet):
+recipe_lightning_core - Yıldırım Çekirdeği
+recipe_titanium_ingot - Titanyum Külçesi
+recipe_dark_matter - Karanlık Madde
+recipe_blueprint_paper - Mühendis Şeması
+recipe_life_elixir - Yaşam İksiri
+recipe_power_fruit - Güç Meyvesi
+recipe_speed_elixir - Hız İksiri
+recipe_regeneration_elixir - Yenilenme İksiri
+recipe_strength_elixir - Güç İksiri
+recipe_sulfur_ore - Kükürt Cevheri
+recipe_bauxite_ore - Boksit Cevheri
+recipe_mithril_ore - Mithril Cevheri
+recipe_astral_ore - Astral Cevheri
+recipe_taming_core - Eğitim Çekirdeği
+recipe_summon_core - Çağırma Çekirdeği
+recipe_breeding_core - Üreme Çekirdeği
+recipe_gender_scanner - Cinsiyet Ayırıcı
+... (diğer özel eşyalar)
 ```
 
 **Yeni Özel Çekirdekler ve Araçlar** (tool kategorisi):
@@ -137,11 +189,44 @@ Toplam: 25 zırh
 **Özel Silahlar** (weapon kategorisi):
 ```
 weapon_l1_1 ila weapon_l1_5 - Seviye 1 Silahlar (5 varyant)
+  l1_1: Hız Hançeri
+  l1_2: Çiftçi Tırpanı
+  l1_3: Yerçekimi Gürzü
+  l1_4: Patlayıcı Yay
+  l1_5: Vampir Dişi
+
 weapon_l2_1 ila weapon_l2_5 - Seviye 2 Silahlar (5 varyant)
+  l2_1: Alev Kılıcı
+  l2_2: Buz Asası
+  l2_3: Zehirli Mızrak
+  l2_4: Golem Kalkanı
+  l2_5: Şok Baltası
+
 weapon_l3_1 ila weapon_l3_5 - Seviye 3 Silahlar (5 varyant)
-weapon_l4_1 ila weapon_l4_5 - Seviye 4 Silahlar (5 varyant)
-weapon_l5_1 ila weapon_l5_5 - Seviye 5 Silahlar (5 varyant)
+  l3_1: Gölge Katanası
+  l3_2: Deprem Çekici
+  l3_3: Taramalı Yay
+  l3_4: Büyücü Küresi
+  l3_5: Hayalet Hançeri
+
+weapon_l4_1 ila weapon_l4_5 - Seviye 4 Silahlar (5 varyant - Modlu)
+  l4_1: Element Kılıcı (Mod 1: Ateş, Mod 2: Buz)
+  l4_2: Yaşam ve Ölüm (Mod 1: Ölüm, Mod 2: Yaşam)
+  l4_3: Mjölnir V2 (Mod 1: Melee, Mod 2: Throw)
+  l4_4: Avcı Yayı (Mod 1: Sniper, Mod 2: Shotgun)
+  l4_5: Manyetik Eldiven (Mod 1: Çek, Mod 2: İt)
+
+weapon_l5_1 ila weapon_l5_5 - Seviye 5 Silahlar (5 varyant - Modlu)
+  l5_1: Hiperiyon Kılıcı (Mod 1: Işınlanma, Mod 2: Kara Delik Kalkanı)
+  l5_2: Meteor Çağıran (Mod 1: Kıyamet, Mod 2: Yer Yaran)
+  l5_3: Titan Katili (Mod 1: %5 Hasar, Mod 2: Mızrak Yağmuru)
+  l5_4: Ruh Biçen (Mod 1: Çağır, Mod 2: Ruh Patlaması)
+  l5_5: Zamanı Büken (Mod 1: Zamanı Durdur, Mod 2: Geri Sar)
+
 Toplam: 25 silah
+
+Kullanım: /stratocraft give weapon <seviye> <varyant>
+Örnek: /stratocraft give weapon 1 1 → Hız Hançeri
 ```
 
 **Limit**: Maksimum 2304 adet (36 slot × 64)

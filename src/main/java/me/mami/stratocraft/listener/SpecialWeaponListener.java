@@ -488,9 +488,30 @@ public class SpecialWeaponListener implements Listener {
                         player.getWorld().createExplosion(loc, 4F, false, false); // Blok kırmayan patlama
                         player.playSound(loc, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1f);
                     }
-                } else { // Kara Delik Kalkanı
-                    player.sendMessage("§5Kara Delik Kalkanı Aktif! (Kodlanacak)");
-                    // Buraya hasar emme mantığı eklenebilir.
+                } else { // Kara Delik Kalkanı - 3 saniyeliğine okları ve büyüleri emer
+                    if (checkCooldown(player, 10000)) return; // 10 saniye cooldown
+                    player.sendMessage("§5Kara Delik Kalkanı Aktif! 3 saniye boyunca okları ve büyüleri emiyor...");
+                    // Projectile ve potion effect emme sistemi
+                    final long startTime = System.currentTimeMillis();
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            if (System.currentTimeMillis() - startTime > 3000 || !player.isOnline()) {
+                                player.sendMessage("§5Kara Delik Kalkanı kapandı.");
+                                cancel();
+                                return;
+                            }
+                            // Yakındaki okları ve projectile'ları em
+                            for (Entity e : player.getNearbyEntities(5, 5, 5)) {
+                                if (e instanceof Projectile && e.getShooter() != player) {
+                                    double heal = 1.0; // Her ok için 1 can
+                                    double maxHealth = player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+                                    player.setHealth(Math.min(maxHealth, player.getHealth() + heal));
+                                    e.remove();
+                                }
+                            }
+                        }
+                    }.runTaskTimer(plugin, 0L, 5L); // Her 0.25 saniyede bir kontrol
                 }
             }
 
@@ -508,13 +529,26 @@ public class SpecialWeaponListener implements Listener {
                         fireball.setYield(3F); // Patlama gücü
                         player.sendMessage("§6Meteor çağırıldı!");
                     }
-                } else { // Yer Yaran
+                } else { // Yer Yaran - Shift+Sağ Tık ile yarık açılır
+                    // Shift kontrolü
+                    if (!player.isSneaking()) {
+                        return; // Shift basılı değilse çalışmasın
+                    }
                     if (checkCooldown(player, 4000)) return; // 4 saniye cooldown
-                    // Önündeki blokları lav yapma mantığı
+                    // Önünde bir yarık açılır ve içinden lavlar fışkırır
                     Block target = player.getTargetBlockExact(5);
                     if(target != null) {
-                        target.setType(Material.LAVA);
-                        player.sendMessage("§cYer yarıldı!");
+                        // Yarık oluştur (3x3 alan)
+                        for (int x = -1; x <= 1; x++) {
+                            for (int z = -1; z <= 1; z++) {
+                                Block b = target.getRelative(x, 0, z);
+                                if (b.getType() != Material.BEDROCK) {
+                                    b.setType(Material.LAVA);
+                                }
+                            }
+                        }
+                        player.sendMessage("§cYer yarıldı! Lavlar fışkırıyor!");
+                        player.getWorld().playSound(target.getLocation(), Sound.BLOCK_LAVA_POP, 1f, 1f);
                     }
                 }
             }
@@ -527,14 +561,17 @@ public class SpecialWeaponListener implements Listener {
                     player.sendMessage("§bZaman Durdu!");
                     player.getWorld().playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 2f, 0.5f);
                     
-                    // 5 Saniye boyunca yakındaki mobları dondur (optimize edilmiş - her 10 tick'te bir kontrol)
+                    // 10 Saniye boyunca Dünyadaki tüm mobları dondur (optimize edilmiş)
                     java.util.List<LivingEntity> frozenEntities = new java.util.ArrayList<>();
-                    for (Entity e : player.getNearbyEntities(20, 20, 20)) {
-                        if (e instanceof LivingEntity && e != player) {
-                            ((LivingEntity) e).setAI(false);
-                            e.setVelocity(new Vector(0,0,0));
-                            e.setGravity(false);
-                            frozenEntities.add((LivingEntity) e);
+                    // Tüm dünyadaki mobları bul (chunk bazlı optimize edilmiş)
+                    for (Chunk chunk : player.getWorld().getLoadedChunks()) {
+                        for (Entity e : chunk.getEntities()) {
+                            if (e instanceof LivingEntity && e != player && !(e instanceof Player)) {
+                                ((LivingEntity) e).setAI(false);
+                                e.setVelocity(new Vector(0,0,0));
+                                e.setGravity(false);
+                                frozenEntities.add((LivingEntity) e);
+                            }
                         }
                     }
                     
@@ -542,7 +579,7 @@ public class SpecialWeaponListener implements Listener {
                         int ticks = 0;
                         @Override
                         public void run() {
-                            if (ticks >= 100 || !player.isOnline()) { // 5 saniye (20 tick * 5)
+                            if (ticks >= 200 || !player.isOnline()) { // 10 saniye (20 tick * 10)
                                 // Mobları çöz
                                 for (LivingEntity e : frozenEntities) {
                                     if (e.isValid()) {
@@ -642,7 +679,7 @@ public class SpecialWeaponListener implements Listener {
                 event.setCancelled(true);
                 if (checkCooldown(player, 1000)) return;
                 
-                if (mode == 1) { // SNIPER (Hitscan)
+                if (mode == 1) { // SNIPER (Hitscan) - 50 blok öteden x2 hasar
                     Location eye = player.getEyeLocation();
                     RayTraceResult result = player.getWorld().rayTraceEntities(eye, eye.getDirection(), 100, 0.5, e -> e != player && e instanceof LivingEntity);
                     
@@ -654,8 +691,15 @@ public class SpecialWeaponListener implements Listener {
                     player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1f, 2f);
                     
                     if (result != null && result.getHitEntity() != null) {
-                        ((LivingEntity) result.getHitEntity()).damage(15, player);
-                        player.sendMessage("§cTam isabet!");
+                        double baseDamage = 15;
+                        // 50 blok öteden vurursa x2 hasar
+                        if (distance >= 50) {
+                            baseDamage *= 2;
+                            player.sendMessage("§c§lUZAK MESAFE İSABET! x2 Hasar!");
+                        } else {
+                            player.sendMessage("§cTam isabet!");
+                        }
+                        ((LivingEntity) result.getHitEntity()).damage(baseDamage, player);
                     }
                 } else { // SHOTGUN (Çoklu Ok)
                     for (int i = 0; i < 5; i++) {
@@ -784,10 +828,12 @@ public class SpecialWeaponListener implements Listener {
     private void handleTier1To3Interact(Player player, String itemId, PlayerInteractEvent event) {
         if (!event.getAction().toString().contains("RIGHT")) return;
         
-        // Tier 1: Yerçekimi Gürzü
+        // Tier 1: Yerçekimi Gürzü - 5 blok yukarı fırlatır
         if (itemId.equals("l1_3_gravity_mace")) {
             if (checkCooldown(player, 5000)) return;
-            player.setVelocity(player.getLocation().getDirection().multiply(1.5).setY(1.2));
+            Vector direction = player.getLocation().getDirection().multiply(1.5);
+            direction.setY(2.0); // 5 blok yukarı için daha yüksek (1.2'den 2.0'a çıkarıldı)
+            player.setVelocity(direction);
             player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1f, 1f);
             player.setFallDistance(-100); // Düşüş hasarını engelle
         }
@@ -860,7 +906,7 @@ public class SpecialWeaponListener implements Listener {
             createEarthquake(player);
         }
         
-        // Tier 3: Taramalı Yay
+        // Tier 3: Taramalı Yay - Saniyede 5 ok
         else if (itemId.equals("l3_3_machine_crossbow")) {
             if (checkCooldown(player, 5000)) return;
             new BukkitRunnable() {
@@ -874,7 +920,7 @@ public class SpecialWeaponListener implements Listener {
                     player.playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 1f, 2f);
                     count++;
                 }
-            }.runTaskTimer(plugin, 0L, 2L); // Her 0.1 saniyede bir atış
+            }.runTaskTimer(plugin, 0L, 4L); // Her 0.2 saniyede bir atış (saniyede 5 ok için 2L'den 4L'ye çıkarıldı)
         }
         
         // Tier 3: Büyücü Küresi (Güdümlü Mermiler)
@@ -1423,13 +1469,13 @@ public class SpecialWeaponListener implements Listener {
         if (!(event.getEntity().getShooter() instanceof Player)) return;
         Player shooter = (Player) event.getEntity().getShooter();
         
-        // Kartopu (Buz Asası)
+        // Kartopu (Buz Asası) - 3 saniye donma
         if (event.getEntity() instanceof Snowball && event.getEntity().getScoreboardTags().contains("frost_bolt")) {
             if (event.getHitEntity() instanceof LivingEntity) {
                 LivingEntity target = (LivingEntity) event.getHitEntity();
-                target.setFreezeTicks(100); // 5 saniye donma (1.17+)
+                target.setFreezeTicks(60); // 3 saniye donma (100'den 60'a düşürüldü)
                 target.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 60, 4)); // Hareket edemez
-                target.getWorld().spawnParticle(Particle.SNOWFLAKE, target.getLocation(), 10, 0.5, 1, 0.5, 0.1); // 20'den 10'a düşürüldü
+                target.getWorld().spawnParticle(Particle.SNOWFLAKE, target.getLocation(), 10, 0.5, 1, 0.5, 0.1);
             }
         }
         
