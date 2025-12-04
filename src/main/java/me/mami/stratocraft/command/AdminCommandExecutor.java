@@ -171,13 +171,17 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
     private boolean handleGive(Player p, String[] args) {
         if (args.length < 2) {
-            p.sendMessage("§cKullanım: /stratocraft give <kategori> <item> [miktar]");
+            p.sendMessage("§cKullanım: /stratocraft give <kategori> [seviye] <item> [miktar]");
             p.sendMessage("§7Kategoriler: weapon, armor, material, mobdrop, special, ore, tool, bossitem, recipebook");
-            p.sendMessage("§7Örnek: /stratocraft give weapon war_fan");
-            p.sendMessage("§7Örnek: /stratocraft give mobdrop level1 wild_boar_hide");
+            p.sendMessage("§7Seviyeli itemler (weapon, armor):");
+            p.sendMessage("§7  /stratocraft give weapon <seviye> <silah_tipi> [miktar]");
+            p.sendMessage("§7  /stratocraft give armor <seviye> <zırh_tipi> [miktar]");
+            p.sendMessage("§7  Silah tipleri: sword, axe, spear, bow, hammer");
+            p.sendMessage("§7  Zırh tipleri: helmet, chestplate, leggings, boots");
+            p.sendMessage("§7Örnek: /stratocraft give weapon 1 sword");
+            p.sendMessage("§7Örnek: /stratocraft give armor 3 chestplate");
             p.sendMessage("§7Örnek: /stratocraft give material blueprint 64");
             p.sendMessage("§7Örnek: /stratocraft give bossitem goblin_crown");
-            p.sendMessage("§7Örnek: /stratocraft give recipebook armor_l1_1");
             return true;
         }
 
@@ -185,15 +189,52 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         String category = args[1].toLowerCase();
         String itemName;
         int amount;
+        int level = -1;
 
-        if (args.length >= 3) {
-            itemName = args[2].toLowerCase();
-            amount = args.length > 3 ? parseInt(args[3], 1) : 1;
+        // Seviyeli kategoriler için özel işlem (weapon, armor)
+        if (category.equals("weapon") || category.equals("armor")) {
+            if (args.length < 3) {
+                p.sendMessage("§cKullanım: /stratocraft give " + category + " <seviye> <tip> [miktar]");
+                if (category.equals("weapon")) {
+                    p.sendMessage("§7Seviye: 1-5");
+                    p.sendMessage("§7Tipler: sword, axe, spear, bow, hammer");
+                } else {
+                    p.sendMessage("§7Seviye: 1-5");
+                    p.sendMessage("§7Tipler: helmet, chestplate, leggings, boots");
+                }
+                return true;
+            }
+            
+            // Seviye kontrolü
+            try {
+                level = Integer.parseInt(args[2]);
+                if (level < 1 || level > 5) {
+                    p.sendMessage("§cSeviye 1-5 arası olmalı!");
+                    return true;
+                }
+            } catch (NumberFormatException e) {
+                p.sendMessage("§cGeçersiz seviye: §e" + args[2]);
+                return true;
+            }
+            
+            // Item tipi
+            if (args.length < 4) {
+                p.sendMessage("§cKullanım: /stratocraft give " + category + " <seviye> <tip> [miktar]");
+                return true;
+            }
+            itemName = args[3].toLowerCase();
+            amount = args.length > 4 ? parseInt(args[4], 1) : 1;
         } else {
-            // Eski format desteği (kategori yok, direkt item)
-            itemName = args[1].toLowerCase();
-            amount = args.length > 2 ? parseInt(args[2], 1) : 1;
-            category = "all"; // Tüm kategorilerde ara
+            // Diğer kategoriler için eski format
+            if (args.length >= 3) {
+                itemName = args[2].toLowerCase();
+                amount = args.length > 3 ? parseInt(args[3], 1) : 1;
+            } else {
+                // Eski format desteği (kategori yok, direkt item)
+                itemName = args[1].toLowerCase();
+                amount = args.length > 2 ? parseInt(args[2], 1) : 1;
+                category = "all"; // Tüm kategorilerde ara
+            }
         }
 
         // Miktar kontrolü
@@ -205,17 +246,33 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        ItemStack item = getItemByName(itemName, category);
+        ItemStack item;
+        if (level > 0) {
+            // Seviyeli item için özel metod
+            item = getLeveledItemByName(category, level, itemName);
+        } else {
+            item = getItemByName(itemName, category);
+        }
+        
         if (item == null) {
             p.sendMessage("§cGeçersiz item: §e" + itemName);
             if (!category.equals("all")) {
                 p.sendMessage("§7Kategori: §e" + category);
+                if (level > 0) {
+                    p.sendMessage("§7Seviye: §e" + level);
+                }
             }
-            p.sendMessage("§7Kullanım: /stratocraft give <kategori> <item> [miktar]");
+            p.sendMessage("§7Kullanım: /stratocraft give <kategori> [seviye] <item> [miktar]");
             return true;
         }
 
         item.setAmount(amount);
+        
+        // Item ismini al
+        String displayName = getItemDisplayNameFromStack(item);
+        if (displayName == null || displayName.isEmpty()) {
+            displayName = itemName;
+        }
 
         // Envanter doluysa yere düşür
         java.util.HashMap<Integer, ItemStack> overflow = p.getInventory().addItem(item);
@@ -223,9 +280,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             for (ItemStack drop : overflow.values()) {
                 p.getWorld().dropItemNaturally(p.getLocation(), drop);
             }
-            p.sendMessage("§a" + amount + "x " + getItemDisplayName(itemName) + " verildi (yere düştü)");
+            p.sendMessage("§a" + amount + "x " + displayName + " verildi (yere düştü)");
         } else {
-            p.sendMessage("§a" + amount + "x " + getItemDisplayName(itemName) + " verildi");
+            p.sendMessage("§a" + amount + "x " + displayName + " verildi");
         }
         return true;
     }
@@ -1106,6 +1163,171 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§e1. §7titan_golem §7- Titan Golem");
         p.sendMessage("§e2. §7abyssal_worm §7- Hiçlik Solucanı");
         p.sendMessage("§e3. §7solar_flare §7- Güneş Fırtınası");
+    }
+
+    /**
+     * Seviyeli item al (yeni format: weapon/armor seviye tip)
+     */
+    private ItemStack getLeveledItemByName(String category, int level, String type) {
+        if (category.equals("weapon")) {
+            // Silah tipleri: sword(1), axe(2), spear(3), bow(4), hammer(5)
+            int variant = -1;
+            switch (type.toLowerCase()) {
+                case "sword":
+                case "kılıç":
+                case "kilic":
+                    variant = 1;
+                    break;
+                case "axe":
+                case "balta":
+                    variant = 2;
+                    break;
+                case "spear":
+                case "mızrak":
+                case "mizrak":
+                case "trident":
+                    variant = 3;
+                    break;
+                case "bow":
+                case "yay":
+                    variant = 4;
+                    break;
+                case "hammer":
+                case "çekiç":
+                case "cekiç":
+                case "pickaxe":
+                    variant = 5;
+                    break;
+                default:
+                    return null;
+            }
+            
+            // Seviye ve variant'a göre item döndür
+            switch (level) {
+                case 1:
+                    switch (variant) {
+                        case 1: return ItemManager.WEAPON_L1_1 != null ? ItemManager.WEAPON_L1_1.clone() : null;
+                        case 2: return ItemManager.WEAPON_L1_2 != null ? ItemManager.WEAPON_L1_2.clone() : null;
+                        case 3: return ItemManager.WEAPON_L1_3 != null ? ItemManager.WEAPON_L1_3.clone() : null;
+                        case 4: return ItemManager.WEAPON_L1_4 != null ? ItemManager.WEAPON_L1_4.clone() : null;
+                        case 5: return ItemManager.WEAPON_L1_5 != null ? ItemManager.WEAPON_L1_5.clone() : null;
+                    }
+                    break;
+                case 2:
+                    switch (variant) {
+                        case 1: return ItemManager.WEAPON_L2_1 != null ? ItemManager.WEAPON_L2_1.clone() : null;
+                        case 2: return ItemManager.WEAPON_L2_2 != null ? ItemManager.WEAPON_L2_2.clone() : null;
+                        case 3: return ItemManager.WEAPON_L2_3 != null ? ItemManager.WEAPON_L2_3.clone() : null;
+                        case 4: return ItemManager.WEAPON_L2_4 != null ? ItemManager.WEAPON_L2_4.clone() : null;
+                        case 5: return ItemManager.WEAPON_L2_5 != null ? ItemManager.WEAPON_L2_5.clone() : null;
+                    }
+                    break;
+                case 3:
+                    switch (variant) {
+                        case 1: return ItemManager.WEAPON_L3_1 != null ? ItemManager.WEAPON_L3_1.clone() : null;
+                        case 2: return ItemManager.WEAPON_L3_2 != null ? ItemManager.WEAPON_L3_2.clone() : null;
+                        case 3: return ItemManager.WEAPON_L3_3 != null ? ItemManager.WEAPON_L3_3.clone() : null;
+                        case 4: return ItemManager.WEAPON_L3_4 != null ? ItemManager.WEAPON_L3_4.clone() : null;
+                        case 5: return ItemManager.WEAPON_L3_5 != null ? ItemManager.WEAPON_L3_5.clone() : null;
+                    }
+                    break;
+                case 4:
+                    switch (variant) {
+                        case 1: return ItemManager.WEAPON_L4_1 != null ? ItemManager.WEAPON_L4_1.clone() : null;
+                        case 2: return ItemManager.WEAPON_L4_2 != null ? ItemManager.WEAPON_L4_2.clone() : null;
+                        case 3: return ItemManager.WEAPON_L4_3 != null ? ItemManager.WEAPON_L4_3.clone() : null;
+                        case 4: return ItemManager.WEAPON_L4_4 != null ? ItemManager.WEAPON_L4_4.clone() : null;
+                        case 5: return ItemManager.WEAPON_L4_5 != null ? ItemManager.WEAPON_L4_5.clone() : null;
+                    }
+                    break;
+                case 5:
+                    switch (variant) {
+                        case 1: return ItemManager.WEAPON_L5_1 != null ? ItemManager.WEAPON_L5_1.clone() : null;
+                        case 2: return ItemManager.WEAPON_L5_2 != null ? ItemManager.WEAPON_L5_2.clone() : null;
+                        case 3: return ItemManager.WEAPON_L5_3 != null ? ItemManager.WEAPON_L5_3.clone() : null;
+                        case 4: return ItemManager.WEAPON_L5_4 != null ? ItemManager.WEAPON_L5_4.clone() : null;
+                        case 5: return ItemManager.WEAPON_L5_5 != null ? ItemManager.WEAPON_L5_5.clone() : null;
+                    }
+                    break;
+            }
+        } else if (category.equals("armor")) {
+            // Zırh tipleri: helmet(1), chestplate(2), leggings(3), boots(4)
+            int variant = -1;
+            switch (type.toLowerCase()) {
+                case "helmet":
+                case "kask":
+                case "başlık":
+                case "baslik":
+                    variant = 1;
+                    break;
+                case "chestplate":
+                case "göğüslük":
+                case "gogusluk":
+                case "zırh":
+                case "zirh":
+                    variant = 2;
+                    break;
+                case "leggings":
+                case "pantolon":
+                case "dizlik":
+                    variant = 3;
+                    break;
+                case "boots":
+                case "bot":
+                case "çizme":
+                case "cizme":
+                    variant = 4;
+                    break;
+                default:
+                    return null;
+            }
+            
+            // Seviye ve variant'a göre item döndür
+            switch (level) {
+                case 1:
+                    switch (variant) {
+                        case 1: return ItemManager.ARMOR_L1_1 != null ? ItemManager.ARMOR_L1_1.clone() : null;
+                        case 2: return ItemManager.ARMOR_L1_2 != null ? ItemManager.ARMOR_L1_2.clone() : null;
+                        case 3: return ItemManager.ARMOR_L1_3 != null ? ItemManager.ARMOR_L1_3.clone() : null;
+                        case 4: return ItemManager.ARMOR_L1_4 != null ? ItemManager.ARMOR_L1_4.clone() : null;
+                    }
+                    break;
+                case 2:
+                    switch (variant) {
+                        case 1: return ItemManager.ARMOR_L2_1 != null ? ItemManager.ARMOR_L2_1.clone() : null;
+                        case 2: return ItemManager.ARMOR_L2_2 != null ? ItemManager.ARMOR_L2_2.clone() : null;
+                        case 3: return ItemManager.ARMOR_L2_3 != null ? ItemManager.ARMOR_L2_3.clone() : null;
+                        case 4: return ItemManager.ARMOR_L2_4 != null ? ItemManager.ARMOR_L2_4.clone() : null;
+                    }
+                    break;
+                case 3:
+                    switch (variant) {
+                        case 1: return ItemManager.ARMOR_L3_1 != null ? ItemManager.ARMOR_L3_1.clone() : null;
+                        case 2: return ItemManager.ARMOR_L3_2 != null ? ItemManager.ARMOR_L3_2.clone() : null;
+                        case 3: return ItemManager.ARMOR_L3_3 != null ? ItemManager.ARMOR_L3_3.clone() : null;
+                        case 4: return ItemManager.ARMOR_L3_4 != null ? ItemManager.ARMOR_L3_4.clone() : null;
+                    }
+                    break;
+                case 4:
+                    switch (variant) {
+                        case 1: return ItemManager.ARMOR_L4_1 != null ? ItemManager.ARMOR_L4_1.clone() : null;
+                        case 2: return ItemManager.ARMOR_L4_2 != null ? ItemManager.ARMOR_L4_2.clone() : null;
+                        case 3: return ItemManager.ARMOR_L4_3 != null ? ItemManager.ARMOR_L4_3.clone() : null;
+                        case 4: return ItemManager.ARMOR_L4_4 != null ? ItemManager.ARMOR_L4_4.clone() : null;
+                    }
+                    break;
+                case 5:
+                    switch (variant) {
+                        case 1: return ItemManager.ARMOR_L5_1 != null ? ItemManager.ARMOR_L5_1.clone() : null;
+                        case 2: return ItemManager.ARMOR_L5_2 != null ? ItemManager.ARMOR_L5_2.clone() : null;
+                        case 3: return ItemManager.ARMOR_L5_3 != null ? ItemManager.ARMOR_L5_3.clone() : null;
+                        case 4: return ItemManager.ARMOR_L5_4 != null ? ItemManager.ARMOR_L5_4.clone() : null;
+                    }
+                    break;
+            }
+        }
+        
+        return null;
     }
 
     private ItemStack getItemByName(String name, String category) {
@@ -2112,6 +2334,21 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         return fence;
     }
 
+    /**
+     * ItemStack'ten display name al
+     */
+    private String getItemDisplayNameFromStack(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) {
+            return null;
+        }
+        if (item.getItemMeta().hasDisplayName()) {
+            // Renk kodlarını temizle
+            return item.getItemMeta().getDisplayName().replaceAll("§[0-9a-fk-or]", "");
+        }
+        // Material ismini kullan
+        return item.getType().name().toLowerCase().replace("_", " ");
+    }
+    
     private String getItemDisplayName(String name) {
         String lowerName = name.toLowerCase();
         // Alternatif isimleri de kontrol et
@@ -2310,12 +2547,12 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                             .collect(Collectors.toList());
 
                 case "disaster":
-                    // Felaket tipleri + clear
-                    List<String> disasters = Arrays.asList("titan_golem", "abyssal_worm", "solar_flare", "clear");
+                    // Disaster alt komutları
+                    List<String> disasterCommands = Arrays.asList("start", "stop", "info", "list", "clear");
                     if (input.isEmpty()) {
-                        return disasters;
+                        return disasterCommands;
                     }
-                    return disasters.stream()
+                    return disasterCommands.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
 
@@ -2485,6 +2722,16 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
             switch (commandName) {
                 case "give":
+                    // Seviyeli kategoriler için seviye öner
+                    if (category.equals("weapon") || category.equals("armor")) {
+                        List<String> levels = Arrays.asList("1", "2", "3", "4", "5");
+                        if (input.isEmpty()) {
+                            return levels;
+                        }
+                        return levels.stream()
+                                .filter(s -> s.startsWith(input))
+                                .collect(Collectors.toList());
+                    }
                     return getGiveTabComplete(category, input);
                 case "spawn":
                     return getSpawnTabComplete(category, input);
@@ -2499,29 +2746,95 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 case "tame":
                     return getTameTabComplete(args, input);
                 case "disaster":
-                    // Disaster için koordinat tamamlama
-                    if (category.equalsIgnoreCase("titan_golem") ||
-                            category.equalsIgnoreCase("abyssal_worm") ||
-                            category.equalsIgnoreCase("solar_flare")) {
-                        // Koordinat önerileri: "ben", "me", "self" veya sayılar
-                        if (input.isEmpty() || input.equals("b") || input.equals("m") || input.equals("s")) {
-                            return Arrays.asList("ben", "me", "self");
+                    // Disaster start komutu için felaket tipleri
+                    if (category.equalsIgnoreCase("start")) {
+                        List<String> disasterTypes = Arrays.asList("TITAN_GOLEM", "ABYSSAL_WORM", "SOLAR_FLARE");
+                        if (input.isEmpty()) {
+                            return disasterTypes;
                         }
-                        // Sayısal koordinat için boş liste (kullanıcı kendisi yazacak)
-                        return new ArrayList<>();
+                        return disasterTypes.stream()
+                                .filter(s -> s.toLowerCase().startsWith(input.toLowerCase()))
+                                .collect(Collectors.toList());
                     }
                     break;
             }
         }
+        
+        // Dördüncü argüman (seviyeli itemler için tip öner)
+        if (args.length == 4) {
+            String commandName = args[0].toLowerCase();
+            String category = args[1].toLowerCase();
+            
+            if (commandName.equals("give") && (category.equals("weapon") || category.equals("armor"))) {
+                String levelStr = args[2];
+                String input = args[3].toLowerCase();
+                
+                try {
+                    int level = Integer.parseInt(levelStr);
+                    if (level >= 1 && level <= 5) {
+                        if (category.equals("weapon")) {
+                            List<String> weaponTypes = Arrays.asList("sword", "axe", "spear", "bow", "hammer");
+                            if (input.isEmpty()) {
+                                return weaponTypes;
+                            }
+                            return weaponTypes.stream()
+                                    .filter(s -> s.toLowerCase().startsWith(input))
+                                    .collect(Collectors.toList());
+                        } else if (category.equals("armor")) {
+                            List<String> armorTypes = Arrays.asList("helmet", "chestplate", "leggings", "boots");
+                            if (input.isEmpty()) {
+                                return armorTypes;
+                            }
+                            return armorTypes.stream()
+                                    .filter(s -> s.toLowerCase().startsWith(input))
+                                    .collect(Collectors.toList());
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    // Geçersiz seviye
+                }
+            } else if (commandName.equals("disaster") && args[1].equalsIgnoreCase("start")) {
+                // Disaster start için seviye öner
+                String disasterType = args[2];
+                String input = args[3].toLowerCase();
+                
+                if (disasterType.equalsIgnoreCase("TITAN_GOLEM") || 
+                    disasterType.equalsIgnoreCase("ABYSSAL_WORM") || 
+                    disasterType.equalsIgnoreCase("SOLAR_FLARE")) {
+                    List<String> levels = Arrays.asList("1", "2", "3");
+                    if (input.isEmpty()) {
+                        return levels;
+                    }
+                    return levels.stream()
+                            .filter(s -> s.startsWith(input))
+                            .collect(Collectors.toList());
+                }
+            }
+        }
 
-        // Dördüncü argüman (disaster koordinatları)
-        if (args.length == 4 && args[0].equalsIgnoreCase("disaster")) {
+        // Beşinci argüman (disaster koordinatları veya give miktar)
+        if (args.length == 5) {
+            if (args[0].equalsIgnoreCase("disaster") && args[1].equalsIgnoreCase("start")) {
+                // Disaster start için konum öner
+                String input = args[4].toLowerCase();
+                if (input.isEmpty() || input.equals("b") || input.equals("m") || input.equals("s")) {
+                    return Arrays.asList("ben", "me", "self");
+                }
+                return new ArrayList<>();
+            } else if (args[0].equalsIgnoreCase("give")) {
+                // Miktar için boş liste
+                return new ArrayList<>();
+            }
+        }
+        
+        // Altıncı argüman (disaster koordinatları)
+        if (args.length == 6 && args[0].equalsIgnoreCase("disaster") && args[1].equalsIgnoreCase("start")) {
             // Y koordinatı için boş liste
             return new ArrayList<>();
         }
-
-        // Beşinci argüman (disaster koordinatları)
-        if (args.length == 5 && args[0].equalsIgnoreCase("disaster")) {
+        
+        // Yedinci argüman (disaster koordinatları)
+        if (args.length == 7 && args[0].equalsIgnoreCase("disaster") && args[1].equalsIgnoreCase("start")) {
             // Z koordinatı için boş liste
             return new ArrayList<>();
         }
@@ -2607,22 +2920,6 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             return filterList(playerNames, args[2].toLowerCase());
         }
 
-        // Dördüncü argüman (give komutu için miktar - kategorize edilmiş format)
-        if (args.length == 4 && args[0].equalsIgnoreCase("give")) {
-            // Miktar için tab completion gerekmez, boş liste döndür
-            return new ArrayList<>();
-        }
-
-        // Üçüncü argüman (give komutu için miktar - eski format)
-        if (args.length == 3 && args[0].equalsIgnoreCase("give")) {
-            String category = args[1].toLowerCase();
-            // Eğer kategori değilse (eski format), miktar için boş liste
-            if (!category.equals("weapon") && !category.equals("armor") && !category.equals("material") &&
-                    !category.equals("mobdrop") && !category.equals("special") && !category.equals("ore") &&
-                    !category.equals("tool")) {
-                return new ArrayList<>();
-            }
-        }
 
         // Diğer durumlar için boş liste
         return new ArrayList<>();
