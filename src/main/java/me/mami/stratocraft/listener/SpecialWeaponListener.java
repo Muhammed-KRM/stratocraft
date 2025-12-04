@@ -18,7 +18,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 import org.bukkit.NamespacedKey;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -301,7 +300,7 @@ public class SpecialWeaponListener implements Listener {
         
         String[] availableModes = getAvailableModesForWeapon(weaponId);
         // WeaponModeManager'dan modu al
-        int modeInt = WeaponModeManager.getWeaponMode(item, plugin);
+        int modeInt = WeaponModeManager.getWeaponMode(item);
         String mode = getModeStringFromInt(weaponId, modeInt);
         
         // Sadece blok fırlatma modunda Q tuşu çalışsın

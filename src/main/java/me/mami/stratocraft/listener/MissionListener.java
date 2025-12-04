@@ -18,6 +18,7 @@ import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.inventory.ItemStack;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -102,7 +103,6 @@ public class MissionListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onStructureBuild(BlockPlaceEvent event) {
         Player player = event.getPlayer();
-        Material placed = event.getBlockPlaced().getType();
         
         // Yapı pattern kontrolü (StructureActivationListener'dan)
         // Eğer yapı aktive edildiyse, MissionManager'a bildir
@@ -138,9 +138,9 @@ public class MissionListener implements Listener {
     public void onMissionMenuClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
-        String title = event.getView().getTitle();
+        String title = event.getView().title().toString();
         
-        if (title.equals("§eGörev Menüsü")) {
+        if (title.contains("Görev Menüsü")) {
             event.setCancelled(true);
             ItemStack clicked = event.getCurrentItem();
             if (clicked == null || clicked.getType() == Material.AIR) return;

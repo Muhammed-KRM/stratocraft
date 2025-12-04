@@ -251,8 +251,9 @@ public class SpecialItemListener implements Listener {
                 // Envanter detayları
                 player.sendMessage("§6§l═══════════════════════════");
                 player.sendMessage("§e§lENVANTER DURUMU: §f" + target.getName());
+                org.bukkit.inventory.PlayerInventory targetInv = target.getInventory();
                 int filledSlots = 0;
-                for (ItemStack item : inv.getStorageContents()) {
+                for (ItemStack item : targetInv.getStorageContents()) {
                     if (item != null && item.getType() != Material.AIR) {
                         filledSlots++;
                     }
