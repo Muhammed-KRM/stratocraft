@@ -188,14 +188,6 @@ public class WeaponModeManager implements Listener {
     }
     
     /**
-     * Bir silahın o anki modunu öğrenmek için yardımcı metod
-     */
-    private int getWeaponMode(ItemStack item) {
-        if (item == null || item.getItemMeta() == null) return 1;
-        return item.getItemMeta().getPersistentDataContainer().getOrDefault(modeKey, PersistentDataType.INTEGER, 1);
-    }
-    
-    /**
      * Statik metod - dışarıdan çağrılabilir
      */
     public static int getWeaponMode(ItemStack item) {

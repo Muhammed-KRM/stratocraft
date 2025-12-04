@@ -345,7 +345,7 @@ public class DisasterTask extends BukkitRunnable {
                     player.addPotionEffect(new org.bukkit.potion.PotionEffect(
                         org.bukkit.potion.PotionEffectType.SLOW, 100, 3, false, false));
                     player.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                        org.bukkit.potion.PotionEffectType.MINING_FATIGUE, 100, 2, false, false));
+                        org.bukkit.potion.PotionEffectType.SLOW_DIGGING, 100, 2, false, false));
                     player.damage(3.0 * damageMultiplier, leviathan);
                 }
             }
