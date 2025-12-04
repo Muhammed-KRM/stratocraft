@@ -1,6 +1,7 @@
 package me.mami.stratocraft.listener;
 
 import me.mami.stratocraft.Main;
+import me.mami.stratocraft.manager.WeaponModeManager;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.*;
@@ -16,6 +17,14 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
+import org.bukkit.NamespacedKey;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.entity.EntityShootBowEvent;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,13 +35,16 @@ import java.util.UUID;
  */
 public class SpecialWeaponListener implements Listener {
     private final Main plugin;
+    private final NamespacedKey itemKey;
     private final Map<UUID, String> weaponMode = new HashMap<>(); // Seviye 5 silahlar için mod
     private final Map<UUID, Long> lastLaserTime = new HashMap<>(); // Seviye 4 lazer cooldown
     private final Map<UUID, Long> lastModeChangeTime = new HashMap<>(); // Mod değiştirme cooldown
     private final Map<UUID, Boolean> modeSelectionActive = new HashMap<>(); // Mod seçim ekranı aktif mi
+    private final Map<UUID, Long> cooldowns = new HashMap<>(); // Cooldown sistemi
     
     public SpecialWeaponListener(Main plugin) {
         this.plugin = plugin;
+        this.itemKey = new NamespacedKey(plugin, "special_item_id");
     }
     
     /**
@@ -55,27 +67,65 @@ public class SpecialWeaponListener implements Listener {
     }
     
     /**
+     * Özel item ID'sini kontrol et (yeni sistem)
+     */
+    private String getSpecialItemId(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return null;
+        return item.getItemMeta().getPersistentDataContainer()
+            .get(new org.bukkit.NamespacedKey(Main.getInstance(), "special_item_id"), PersistentDataType.STRING);
+    }
+    
+    /**
      * Seviye 3: Patlama Atabilme - Sağ tık ile 20 blok menzile patlama at
      */
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
-        ItemStack item = player.getInventory().getItemInMainHand();
+        // Önce event.getItem() kontrol et, yoksa elindeki item'ı al
+        ItemStack item = event.getItem();
+        if (item == null || item.getType() == Material.AIR) {
+            item = player.getInventory().getItemInMainHand();
+        }
+        if (item == null || item.getType() == Material.AIR) return;
         
-        if (item == null) return;
+        // YENİ SİSTEM: special_item_id kontrolü (önce yeni sistemi kontrol et)
+        String specialItemId = getSpecialItemId(item);
+        if (specialItemId != null) {
+            // Tier 1-3 silahlar için yetenekleri işle
+            if (specialItemId.startsWith("l1_") || specialItemId.startsWith("l2_") || specialItemId.startsWith("l3_")) {
+                handleTier1To3Interact(player, specialItemId, event);
+                return;
+            }
+            
+            // Tier 4-5 silahlar için
+            if (specialItemId.startsWith("l4_") || specialItemId.startsWith("l5_")) {
+                // Shift basılıyken menü açılır (WeaponModeManager hallediyor), burada işleme
+                if (player.isSneaking() && event.getAction().toString().contains("RIGHT")) return;
+                
+                if (!item.getItemMeta().getPersistentDataContainer().has(itemKey, PersistentDataType.STRING)) return;
+                
+                int mode = WeaponModeManager.getWeaponMode(item);
+                
+                if (event.getAction().toString().contains("RIGHT") || event.getAction() == Action.PHYSICAL) {
+                    handleNewSystemWeapons(player, specialItemId, event);
+                }
+                return; // Yeni sistem silahları için eski sisteme geçme
+            }
+        }
         
+        // ESKİ SİSTEM: WEAPON_L formatı
         int weaponLevel = getWeaponLevel(item);
         String weaponId = getSpecialWeaponId(item);
         
         // Özel silah kontrolü - sadece özel silahlar için çalışsın
         if (weaponId == null || !weaponId.startsWith("WEAPON_L")) return;
         
-        // Seviye 5 silahlar için özel kontrol - Shift+Sağ Tık her zaman mod menüsü açsın
-        if (weaponLevel == 5 && player.isSneaking() && 
+        // Shift+Sağ Tık kontrolü WeaponModeManager tarafından yapılıyor (GUI sistemi)
+        // Burada sadece normal sağ tık yeteneklerini işle
+        if (player.isSneaking() && 
             (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK)) {
-            event.setCancelled(true);
-            showModeSelectionMenu(player);
-            return; // Diğer kontrolleri atla
+            // WeaponModeManager bu işlemi hallediyor, burada sadece return et
+            return;
         }
         
         // Seviye 1-2: Özel yetenekler (saldırıda pasif olarak çalışır, sağ tık ile aktif edilebilir)
@@ -142,7 +192,9 @@ public class SpecialWeaponListener implements Listener {
             }
             
             // Normal Sağ Tık: Mod'a göre farklı işlemler
-            String mode = weaponMode.getOrDefault(player.getUniqueId(), getAvailableModesForWeapon(weaponId)[0]);
+            // WeaponModeManager'dan modu al (integer)
+            int modeInt = WeaponModeManager.getWeaponMode(item);
+            String mode = getModeStringFromInt(weaponId, modeInt);
             
             if (mode.equals("throw") && (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK)) {
                 event.setCancelled(true);
@@ -244,7 +296,9 @@ public class SpecialWeaponListener implements Listener {
         if (weaponId == null || !weaponId.startsWith("WEAPON_L5")) return;
         
         String[] availableModes = getAvailableModesForWeapon(weaponId);
-        String mode = weaponMode.getOrDefault(player.getUniqueId(), availableModes[0]);
+        // WeaponModeManager'dan modu al
+        int modeInt = WeaponModeManager.getWeaponMode(item, plugin);
+        String mode = getModeStringFromInt(weaponId, modeInt);
         
         // Sadece blok fırlatma modunda Q tuşu çalışsın
         if (mode.equals("block_throw")) {
@@ -351,6 +405,17 @@ public class SpecialWeaponListener implements Listener {
     }
     
     /**
+     * Integer mod numarasını string mod ismine çevir
+     */
+    private String getModeStringFromInt(String weaponId, int modeInt) {
+        String[] availableModes = getAvailableModesForWeapon(weaponId);
+        if (modeInt < 1 || modeInt > availableModes.length) {
+            return availableModes[0]; // Varsayılan mod
+        }
+        return availableModes[modeInt - 1];
+    }
+    
+    /**
      * Silah ID'sine göre kullanılabilir modları döndür
      */
     private String[] getAvailableModesForWeapon(String weaponId) {
@@ -387,6 +452,448 @@ public class SpecialWeaponListener implements Listener {
                 return new String[]{"§dAtılma/Patlama", "§cDash/Patlama", "§eBlok Fırlatma"};
             default:
                 return new String[]{"§eBlok Fırlatma", "§aDuvar Yapma", "§dAtılma/Patlama"};
+        }
+    }
+    
+    /**
+     * Yeni sistem silahlarını işle (special_item_id ile)
+     */
+    private void handleNewSystemWeapons(Player player, String itemId, PlayerInteractEvent event) {
+        // Önce event.getItem() kontrol et, yoksa elindeki item'ı al
+        ItemStack item = event.getItem();
+        if (item == null || item.getType() == Material.AIR) {
+            item = player.getInventory().getItemInMainHand();
+        }
+        if (item == null || item.getItemMeta() == null) return;
+        
+        if (!item.getItemMeta().getPersistentDataContainer().has(itemKey, PersistentDataType.STRING)) return;
+        
+        int mode = WeaponModeManager.getWeaponMode(item);
+
+        if (event.getAction().toString().contains("RIGHT") || event.getAction() == Action.PHYSICAL) {
+            
+            // --- L5_1: HİPERİYON KILICI ---
+            if (itemId.equals("l5_1_void_walker")) {
+                if (mode == 1) { // Işınlanma ve Patlama
+                    if (checkCooldown(player, 3000)) return; // 3 saniye cooldown
+                    Block target = player.getTargetBlockExact(8);
+                    if (target != null && target.getType() != Material.AIR) {
+                        Location loc = target.getLocation().add(0, 1, 0);
+                        loc.setDirection(player.getLocation().getDirection());
+                        player.teleport(loc);
+                        player.getWorld().createExplosion(loc, 4F, false, false); // Blok kırmayan patlama
+                        player.playSound(loc, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1f);
+                    }
+                } else { // Kara Delik Kalkanı
+                    player.sendMessage("§5Kara Delik Kalkanı Aktif! (Kodlanacak)");
+                    // Buraya hasar emme mantığı eklenebilir.
+                }
+            }
+
+            // --- L5_2: METEOR ÇAĞIRAN ---
+            else if (itemId.equals("l5_2_meteor_caller")) {
+                if (checkCooldown(player, 5000)) return; // 5 Saniye cooldown
+
+                if (mode == 1) { // Meteor
+                    Block target = player.getTargetBlockExact(50);
+                    if (target != null) {
+                        Location skyLoc = target.getLocation().add(0, 30, 0);
+                        Fireball fireball = player.getWorld().spawn(skyLoc, Fireball.class);
+                        fireball.setDirection(new Vector(0, -1, 0)); // Aşağı doğru
+                        fireball.setShooter(player);
+                        fireball.setYield(3F); // Patlama gücü
+                        player.sendMessage("§6Meteor çağırıldı!");
+                    }
+                } else { // Yer Yaran
+                    if (checkCooldown(player, 4000)) return; // 4 saniye cooldown
+                    // Önündeki blokları lav yapma mantığı
+                    Block target = player.getTargetBlockExact(5);
+                    if(target != null) {
+                        target.setType(Material.LAVA);
+                        player.sendMessage("§cYer yarıldı!");
+                    }
+                }
+            }
+            
+            // --- L5_5: ZAMANI BÜKEN ---
+            else if (itemId.equals("l5_5_time_keeper")) {
+                if (mode == 1) { // Zamanı Durdur
+                    if (checkCooldown(player, 20000)) return; // 20 sn cooldown
+                    
+                    player.sendMessage("§bZaman Durdu!");
+                    player.getWorld().playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 2f, 0.5f);
+                    
+                    // 5 Saniye boyunca yakındaki mobları dondur (optimize edilmiş - her 10 tick'te bir kontrol)
+                    java.util.List<LivingEntity> frozenEntities = new java.util.ArrayList<>();
+                    for (Entity e : player.getNearbyEntities(20, 20, 20)) {
+                        if (e instanceof LivingEntity && e != player) {
+                            ((LivingEntity) e).setAI(false);
+                            e.setVelocity(new Vector(0,0,0));
+                            e.setGravity(false);
+                            frozenEntities.add((LivingEntity) e);
+                        }
+                    }
+                    
+                    new BukkitRunnable() {
+                        int ticks = 0;
+                        @Override
+                        public void run() {
+                            if (ticks >= 100 || !player.isOnline()) { // 5 saniye (20 tick * 5)
+                                // Mobları çöz
+                                for (LivingEntity e : frozenEntities) {
+                                    if (e.isValid()) {
+                                        e.setAI(true);
+                                        e.setGravity(true);
+                                    }
+                                }
+                                this.cancel();
+                                player.sendMessage("§bZaman akmaya devam ediyor.");
+                                return;
+                            }
+                            ticks += 10; // Her 10 tick'te bir kontrol et (optimizasyon)
+                        }
+                    }.runTaskTimer(plugin, 0L, 10L); // 10 tick'te bir çalış (0.5 saniye)
+                    
+                } else { // Mod 2: Geri Sar
+                    if (checkCooldown(player, 15000)) return; // 15 saniye cooldown
+                    // Canını ve yerini geri sar (basit implementasyon)
+                    player.sendMessage("§eGeri Sar aktif! (Kodlanacak)");
+                    // Buraya can ve konum geri sarma mantığı eklenebilir
+                }
+            }
+            
+            // --- TIER 4 SİLAHLAR ---
+            
+            // L4_1: Element Kılıcı
+            else if (itemId.equals("l4_1_elementalist")) {
+                if (mode == 1) { // ATEŞ MODU
+                    if (checkCooldown(player, 2000)) return; // 2 saniye cooldown
+                    player.getWorld().playSound(player.getLocation(), Sound.ENTITY_GHAST_SHOOT, 0.5f, 1f);
+                    player.swingMainHand();
+                    // Önündeki koni şeklindeki alana alev atar
+                    for (Entity e : player.getNearbyEntities(4, 2, 4)) {
+                        Vector dir = e.getLocation().toVector().subtract(player.getLocation().toVector()).normalize();
+                        if (player.getLocation().getDirection().dot(dir) > 0.5) { // Önünde mi?
+                            e.setFireTicks(60);
+                            if (e instanceof LivingEntity) {
+                                ((LivingEntity)e).damage(4, player);
+                            }
+                        }
+                    }
+                    player.getWorld().spawnParticle(Particle.FLAME, player.getEyeLocation().add(player.getLocation().getDirection()), 10, 0.2, 0.2, 0.2, 0.1);
+                } else { // BUZ MODU
+                    if (checkCooldown(player, 3000)) return; // 3 saniye cooldown
+                    // Etrafındaki herkesi dondur
+                    player.getWorld().playSound(player.getLocation(), Sound.BLOCK_GLASS_BREAK, 1f, 0.5f);
+                    for (Entity e : player.getNearbyEntities(4, 2, 4)) {
+                        if (e instanceof LivingEntity && e != player) {
+                            ((LivingEntity) e).addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 60, 4));
+                            player.getWorld().spawnParticle(Particle.SNOWFLAKE, e.getLocation().add(0,1,0), 5); // 10'dan 5'e düşürüldü
+                        }
+                    }
+                }
+            }
+            
+            // L4_2: Yaşam ve Ölüm
+            else if (itemId.equals("l4_2_life_death")) {
+                if (checkCooldown(player, 2000)) return;
+                if (mode == 1) { // ÖLÜM (Wither Skull)
+                    player.launchProjectile(WitherSkull.class);
+                    player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SHOOT, 1f, 1f);
+                } else { // YAŞAM (Heal)
+                    double maxHealth = player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+                    player.setHealth(Math.min(maxHealth, player.getHealth() + 4));
+                    player.getWorld().spawnParticle(Particle.HEART, player.getLocation().add(0,2,0), 5);
+                    player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 2f);
+                }
+            }
+            
+            // L4_3: Mjölnir V2
+            else if (itemId.equals("l4_3_mjolnir_v2")) {
+                if (mode == 1) { // ZİNCİRLEME ŞİMŞEK (Vuruş eventi ile tetiklenir)
+                    player.sendMessage("§eŞimşek modu aktif! Vurunca çarpar.");
+                } else { // FIRLAT
+                    if (checkCooldown(player, 5000)) return;
+                    Item projectile = player.getWorld().dropItem(player.getEyeLocation(), item.clone());
+                    projectile.setVelocity(player.getLocation().getDirection().multiply(1.5));
+                    projectile.setPickupDelay(1000);
+                    projectile.addScoreboardTag("mjolnir_throw");
+                    player.getInventory().setItemInMainHand(null);
+                    
+                    // Geri dönme mantığı (optimize edilmiş - her 5 tick'te bir kontrol)
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            if (!projectile.isValid() || !player.isOnline()) { 
+                                cancel(); 
+                                return; 
+                            }
+                            Vector dir = player.getEyeLocation().toVector().subtract(projectile.getLocation().toVector()).normalize();
+                            projectile.setVelocity(dir.multiply(1.5));
+                            if (projectile.getLocation().distance(player.getLocation()) < 1.5) {
+                                if (player.getInventory().firstEmpty() != -1) {
+                                    player.getInventory().addItem(item);
+                                } else {
+                                    player.getWorld().dropItem(player.getLocation(), item);
+                                }
+                                projectile.remove();
+                                player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RETURN, 1f, 1f);
+                                cancel();
+                            }
+                        }
+                    }.runTaskTimer(plugin, 20L, 5L); // 2L'den 5L'ye çıkarıldı (optimizasyon)
+                }
+            }
+            
+            // L4_4: Avcı Yayı
+            else if (itemId.equals("l4_4_ranger_pride")) {
+                event.setCancelled(true);
+                if (checkCooldown(player, 1000)) return;
+                
+                if (mode == 1) { // SNIPER (Hitscan)
+                    Location eye = player.getEyeLocation();
+                    RayTraceResult result = player.getWorld().rayTraceEntities(eye, eye.getDirection(), 100, 0.5, e -> e != player && e instanceof LivingEntity);
+                    
+                    double distance = (result != null && result.getHitEntity() != null) ? 
+                        eye.distance(result.getHitEntity().getLocation()) : 50;
+                    // Optimize edilmiş: Sadece hedefe kadar particle göster
+                    int particleDistance = Math.min((int)distance, 50); // Maksimum 50 blok
+                    spawnParticleLine(player, Particle.CRIT, particleDistance);
+                    player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1f, 2f);
+                    
+                    if (result != null && result.getHitEntity() != null) {
+                        ((LivingEntity) result.getHitEntity()).damage(15, player);
+                        player.sendMessage("§cTam isabet!");
+                    }
+                } else { // SHOTGUN (Çoklu Ok)
+                    for (int i = 0; i < 5; i++) {
+                        Arrow arrow = player.launchProjectile(Arrow.class);
+                        Vector spread = new Vector((Math.random()-0.5)*0.3, (Math.random()-0.5)*0.3, (Math.random()-0.5)*0.3);
+                        arrow.setVelocity(player.getLocation().getDirection().add(spread).multiply(1.5));
+                        arrow.setDamage(4);
+                    }
+                    player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.5f, 2f);
+                }
+            }
+            
+            // L4_5: Manyetik Eldiven
+            else if (itemId.equals("l4_5_magnetic_glove")) {
+                event.setCancelled(true);
+                if (checkCooldown(player, 2000)) return;
+                
+                Entity target = getTargetEntity(player, 15);
+                if (target != null) {
+                    Vector dir = player.getLocation().toVector().subtract(target.getLocation().toVector()).normalize();
+                    if (mode == 1) { // ÇEK
+                        target.setVelocity(dir.multiply(1.5));
+                        player.sendMessage("§aGel buraya!");
+                    } else { // İT
+                        target.setVelocity(dir.multiply(-2.0));
+                        player.sendMessage("§cUza!");
+                    }
+                }
+            }
+            
+            // --- TIER 5 SİLAHLAR (Eksik olanlar) ---
+            
+            // L5_3: Titan Katili
+            else if (itemId.equals("l5_3_titan_slayer")) {
+                if (mode == 2) { // MIZRAK YAĞMURU
+                    if (checkCooldown(player, 5000)) return;
+                    Block targetBlock = player.getTargetBlockExact(30);
+                    if (targetBlock != null) {
+                        Location sky = targetBlock.getLocation().add(0, 15, 0);
+                        for(int i=0; i<5; i++) {
+                            final int index = i;
+                            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                                Trident tr = player.getWorld().spawn(sky.clone().add(Math.random()*4-2, 0, Math.random()*4-2), Trident.class);
+                                tr.setShooter(player);
+                            }, index*5L);
+                        }
+                    }
+                }
+                // Mod 1 (Yüzde hasar) onDamage eventinde işlenir
+            }
+            
+            // L5_4: Ruh Biçen
+            else if (itemId.equals("l5_4_soul_reaper")) {
+                if (checkCooldown(player, 10000)) return;
+                if (mode == 1) { // ÇAĞIR
+                    Zombie zombie = player.getWorld().spawn(player.getLocation().add(1,0,0), Zombie.class);
+                    zombie.setCustomName("§2Hortlak");
+                    zombie.setTarget(null);
+                    player.sendMessage("§5Hortlaklar yükseliyor...");
+                } else { // PATLAT
+                    for (Entity e : player.getNearbyEntities(10, 10, 10)) {
+                        if (e instanceof Zombie) {
+                            e.getWorld().createExplosion(e.getLocation(), 2f, false, false);
+                            e.remove();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Hedef entity bul
+     */
+    private Entity getTargetEntity(Player p, int range) {
+        RayTraceResult res = p.getWorld().rayTraceEntities(p.getEyeLocation(), p.getEyeLocation().getDirection(), range, 1.0, e -> e != p && e instanceof LivingEntity);
+        return res != null ? res.getHitEntity() : null;
+    }
+    
+    /**
+     * Cooldown kontrolü
+     */
+    private boolean checkCooldown(Player player, long timeMillis) {
+        if (cooldowns.containsKey(player.getUniqueId())) {
+            long timeLeft = (cooldowns.get(player.getUniqueId()) + timeMillis) - System.currentTimeMillis();
+            if (timeLeft > 0) {
+                player.sendMessage("§cBekle: " + String.format("%.1f", timeLeft / 1000.0) + "sn");
+                return true;
+            }
+        }
+        cooldowns.put(player.getUniqueId(), System.currentTimeMillis());
+        return false;
+    }
+    
+    /**
+     * Tier 1-3 silahlar için sağ tık yetenekleri
+     */
+    private void handleTier1To3Interact(Player player, String itemId, PlayerInteractEvent event) {
+        if (!event.getAction().toString().contains("RIGHT")) return;
+        
+        // Tier 1: Yerçekimi Gürzü
+        if (itemId.equals("l1_3_gravity_mace")) {
+            if (checkCooldown(player, 5000)) return;
+            player.setVelocity(player.getLocation().getDirection().multiply(1.5).setY(1.2));
+            player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1f, 1f);
+            player.setFallDistance(-100); // Düşüş hasarını engelle
+        }
+        
+        // Tier 2: Alev Kılıcı
+        else if (itemId.equals("l2_1_inferno_sword")) {
+            if (checkCooldown(player, 4000)) return;
+            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_BLAZE_SHOOT, 1f, 1f);
+            spawnParticleLine(player, Particle.FLAME, 10);
+            for (Entity e : player.getNearbyEntities(5, 2, 5)) {
+                if (e instanceof LivingEntity && e != player) {
+                    // Basit bir görüş açısı kontrolü (Önünde mi?)
+                    Vector toEntity = e.getLocation().toVector().subtract(player.getLocation().toVector());
+                    if (player.getLocation().getDirection().angle(toEntity) < 0.5) {
+                        e.setFireTicks(100); // 5 saniye yak
+                        ((LivingEntity) e).damage(4, player);
+                    }
+                }
+            }
+        }
+        
+        // Tier 2: Buz Asası
+        else if (itemId.equals("l2_2_frost_wand")) {
+            if (checkCooldown(player, 6000)) return;
+            Snowball snowball = player.launchProjectile(Snowball.class);
+            snowball.setShooter(player);
+            // Kartopu metadata'sına işaret koy
+            snowball.addScoreboardTag("frost_bolt");
+            player.playSound(player.getLocation(), Sound.BLOCK_GLASS_BREAK, 1f, 2f);
+        }
+        
+        // Tier 2: Golem Kalkanı (Eğilme Kontrolü)
+        else if (itemId.equals("l2_4_guardian_shield") && player.isSneaking()) {
+            if (checkCooldown(player, 10000)) return;
+            player.getWorld().spawnParticle(Particle.HEART, player.getLocation().add(0,1,0), 10, 2, 0.5, 2);
+            for(Entity e : player.getNearbyEntities(5, 5, 5)) {
+                if(e instanceof Player && e != player) {
+                    ((Player) e).addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 100, 1));
+                    ((Player) e).addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 100, 0));
+                    player.sendMessage("§aTakım arkadaşların korundu!");
+                }
+            }
+        }
+        
+        // Tier 3: Gölge Katanası (Dash)
+        else if (itemId.equals("l3_1_shadow_katana")) {
+            if (checkCooldown(player, 3000)) return;
+            Vector dash = player.getLocation().getDirection().multiply(2.5);
+            player.setVelocity(dash);
+            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1.5f);
+                    player.getWorld().spawnParticle(Particle.SMOKE_LARGE, player.getLocation(), 10, 0.5, 1, 0.5, 0); // 20'den 10'a düşürüldü
+            
+            // Yoldaki moblara hasar ver
+            for(Entity e : player.getNearbyEntities(2, 2, 2)) {
+                if(e instanceof LivingEntity && e != player) {
+                    ((LivingEntity) e).damage(6, player);
+                }
+            }
+        }
+        
+        // Tier 3: Deprem Çekici
+        else if (itemId.equals("l3_2_earthshaker")) {
+            if (checkCooldown(player, 8000)) return;
+            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 1f, 0.5f);
+            createEarthquake(player);
+        }
+        
+        // Tier 3: Taramalı Yay
+        else if (itemId.equals("l3_3_machine_crossbow")) {
+            if (checkCooldown(player, 5000)) return;
+            new BukkitRunnable() {
+                int count = 0;
+                @Override
+                public void run() {
+                    if (count >= 5) { cancel(); return; }
+                    Arrow arrow = player.launchProjectile(Arrow.class);
+                    arrow.setVelocity(player.getLocation().getDirection().multiply(2.5));
+                    arrow.setDamage(2); // Düşük hasar ama seri
+                    player.playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 1f, 2f);
+                    count++;
+                }
+            }.runTaskTimer(plugin, 0L, 2L); // Her 0.1 saniyede bir atış
+        }
+        
+        // Tier 3: Hayalet Hançeri (Görünmezlik)
+        else if (itemId.equals("l3_5_phantom_dagger")) {
+            if (checkCooldown(player, 15000)) return;
+            player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 100, 0, false, false)); // 5 sn
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 100, 1));
+            player.sendMessage("§7Gölgeye karıştın...");
+            player.getWorld().playSound(player.getLocation(), Sound.AMBIENT_CAVE, 1f, 2f);
+        }
+    }
+    
+    /**
+     * Partikül çizgisi oluştur
+     */
+    private void spawnParticleLine(Player player, Particle particle, int distance) {
+        // Optimize edilmiş: Her 2 blokta bir particle spawn et (lag azaltma)
+        Location start = player.getEyeLocation();
+        Vector direction = start.getDirection().normalize();
+        int step = Math.max(2, distance / 25); // Maksimum 25 particle
+        for (int i = 0; i < distance; i += step) {
+            Location loc = start.clone().add(direction.clone().multiply(i));
+            player.getWorld().spawnParticle(particle, loc, 1, 0, 0, 0, 0);
+        }
+    }
+    
+    /**
+     * Deprem efekti oluştur
+     */
+    private void createEarthquake(Player player) {
+        for (Entity e : player.getNearbyEntities(5, 5, 5)) {
+            if (e instanceof LivingEntity && e != player) {
+                e.setVelocity(new Vector(0, 1.5, 0)); // Havaya fırlat
+                ((LivingEntity) e).damage(4, player);
+            }
+        }
+        // Yerdeki blok efekti
+        Location loc = player.getLocation();
+        for (int x = -3; x <= 3; x++) {
+            for (int z = -3; z <= 3; z++) {
+                if (Math.random() > 0.7) {
+                    player.getWorld().spawnParticle(Particle.BLOCK_CRACK, loc.clone().add(x, 0, z), 5, Bukkit.createBlockData(Material.DIRT));
+                }
+            }
         }
     }
     
@@ -521,7 +1028,9 @@ public class SpecialWeaponListener implements Listener {
         String weaponId = getSpecialWeaponId(item);
         if (weaponId == null || !weaponId.startsWith("WEAPON_L5")) return;
         
-        String mode = weaponMode.getOrDefault(player.getUniqueId(), getAvailableModesForWeapon(weaponId)[0]);
+        // WeaponModeManager'dan modu al
+        int modeInt = WeaponModeManager.getWeaponMode(item);
+        String mode = getModeStringFromInt(weaponId, modeInt);
         
         // Duvar yapma modu
         if (mode.equals("wall_build") && event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null) {
@@ -559,7 +1068,7 @@ public class SpecialWeaponListener implements Listener {
         
         // Dash efekti
         player.setVelocity(direction.multiply(2.0));
-        player.getWorld().spawnParticle(Particle.CLOUD, startLoc, 20, 0.5, 0.5, 0.5, 0.1);
+        player.getWorld().spawnParticle(Particle.CLOUD, startLoc, 10, 0.5, 0.5, 0.5, 0.1); // 20'den 10'a düşürüldü
         player.getWorld().playSound(startLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.5f);
         
         // 1 saniye sonra patlama
@@ -646,10 +1155,10 @@ public class SpecialWeaponListener implements Listener {
     }
     
     /**
-     * Seviye 1-2: Saldırıda pasif yetenekleri işle
+     * Vuruş yetenekleri (Tier 1-3 ve eski sistem)
      */
     @EventHandler(priority = EventPriority.HIGH)
-    public void onEntityDamageByEntity(org.bukkit.event.entity.EntityDamageByEntityEvent event) {
+    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player)) return;
         
         Player player = (Player) event.getDamager();
@@ -657,6 +1166,20 @@ public class SpecialWeaponListener implements Listener {
         
         if (item == null) return;
         
+        // YENİ SİSTEM: Tier 1-5 silahlar
+        String specialItemId = getSpecialItemId(item);
+        if (specialItemId != null) {
+            if (specialItemId.startsWith("l1_") || specialItemId.startsWith("l2_") || specialItemId.startsWith("l3_")) {
+                handleTier1To3Damage(player, specialItemId, event);
+                return;
+            }
+            if (specialItemId.startsWith("l4_") || specialItemId.startsWith("l5_")) {
+                handleTier4To5Damage(player, specialItemId, event);
+                return;
+            }
+        }
+        
+        // ESKİ SİSTEM: WEAPON_L formatı
         int weaponLevel = getWeaponLevel(item);
         String weaponId = getSpecialWeaponId(item);
         
@@ -687,13 +1210,11 @@ public class SpecialWeaponListener implements Listener {
         if (weaponLevel == 2) {
             switch (weaponId) {
                 case "WEAPON_L2_1": // Zehir Kılıcı - 3 saniye zehir
-                    livingTarget.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                        org.bukkit.potion.PotionEffectType.POISON, 60, 0, false, false, true));
+                    livingTarget.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 60, 0, false, false, true));
                     player.sendMessage("§2Zehir etkisi uygulandı!");
                     break;
                 case "WEAPON_L2_2": // Yavaşlatma Baltası - 3 saniye yavaşlatma
-                    livingTarget.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                        org.bukkit.potion.PotionEffectType.SLOW, 60, 0, false, false, true));
+                    livingTarget.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 60, 0, false, false, true));
                     player.sendMessage("§bYavaşlatma etkisi uygulandı!");
                     break;
                 case "WEAPON_L2_3": // Ateş Mızrağı - 5 saniye ateş
@@ -710,6 +1231,142 @@ public class SpecialWeaponListener implements Listener {
                     player.sendMessage("§eŞok etkisi uygulandı!");
                     break;
             }
+        }
+    }
+    
+    /**
+     * Tier 1-3 silahlar için vuruş yetenekleri
+     */
+    private void handleTier1To3Damage(Player player, String itemId, EntityDamageByEntityEvent event) {
+        Entity target = event.getEntity();
+        if (!(target instanceof LivingEntity)) return;
+        
+        // Tier 1: Çiftçi Tırpanı (Alan Hasarı)
+        if (itemId.equals("l1_2_harvest_scythe")) {
+            for (Entity e : target.getNearbyEntities(3, 2, 3)) {
+                if (e instanceof LivingEntity && e != player) {
+                    ((LivingEntity) e).damage(event.getDamage() * 0.5, player);
+                }
+            }
+            player.getWorld().spawnParticle(Particle.SWEEP_ATTACK, target.getLocation(), 1);
+        }
+        
+        // Tier 1: Vampir Dişi (Can Çalma)
+        else if (itemId.equals("l1_5_vampire_blade")) {
+            double heal = event.getDamage() * 0.20;
+            double maxHealth = player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+            if (player.getHealth() + heal > maxHealth) player.setHealth(maxHealth);
+            else player.setHealth(player.getHealth() + heal);
+        }
+        
+        // Tier 2: Şok Baltası (Kritik Yıldırım)
+        else if (itemId.equals("l2_5_thunder_axe")) {
+            // Kritik vuruş kontrolü (Oyuncu düşerken vurursa)
+            if (player.getVelocity().getY() < -0.08 && !player.isOnGround()) {
+                target.getWorld().strikeLightningEffect(target.getLocation());
+                event.setDamage(event.getDamage() + 5); // +5 Gerçek Hasar
+            }
+        }
+        
+        // Tier 3: Hayalet Hançeri (Suikast Bonusu)
+        else if (itemId.equals("l3_5_phantom_dagger")) {
+            if (player.hasPotionEffect(PotionEffectType.INVISIBILITY)) {
+                event.setDamage(event.getDamage() * 3); // x3 Hasar
+                player.removePotionEffect(PotionEffectType.INVISIBILITY); // Görünmezlik bozulur
+                player.sendMessage("§cSUİKAST!");
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1f, 0.5f);
+            }
+        }
+    }
+    
+    /**
+     * Tier 4-5 silahlar için vuruş yetenekleri
+     */
+    private void handleTier4To5Damage(Player player, String itemId, EntityDamageByEntityEvent event) {
+        Entity target = event.getEntity();
+        if (!(target instanceof LivingEntity)) return;
+        
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (item == null || item.getItemMeta() == null) return;
+        
+        // itemId'yi item'dan kontrol et (güvenlik için)
+        String actualItemId = getSpecialItemId(item);
+        if (actualItemId == null || !actualItemId.equals(itemId)) return;
+        
+        int mode = WeaponModeManager.getWeaponMode(item);
+        
+        // L4_3: Mjölnir Zincirleme Şimşek
+        if (itemId.equals("l4_3_mjolnir_v2") && mode == 1) {
+            int jumps = 0;
+            Entity current = target;
+            for(Entity nearby : current.getNearbyEntities(5, 5, 5)) {
+                if(nearby instanceof LivingEntity && nearby != player && jumps < 3) {
+                    ((LivingEntity) nearby).damage(5, player);
+                    nearby.getWorld().strikeLightningEffect(nearby.getLocation());
+                    jumps++;
+                }
+            }
+        }
+        
+        // L5_3: Titan Katili (Yüzdelik Hasar)
+        else if (itemId.equals("l5_3_titan_slayer") && mode == 1) {
+            LivingEntity livingTarget = (LivingEntity) target;
+            double damage = livingTarget.getHealth() * 0.05; // Mevcut canın %5'i
+            event.setDamage(event.getDamage() + damage);
+            player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 0.5f, 2f);
+        }
+    }
+    
+    /**
+     * Mermi isabet yetenekleri
+     */
+    @EventHandler
+    public void onProjectileHit(ProjectileHitEvent event) {
+        if (!(event.getEntity().getShooter() instanceof Player)) return;
+        Player shooter = (Player) event.getEntity().getShooter();
+        
+        // Kartopu (Buz Asası)
+        if (event.getEntity() instanceof Snowball && event.getEntity().getScoreboardTags().contains("frost_bolt")) {
+            if (event.getHitEntity() instanceof LivingEntity) {
+                LivingEntity target = (LivingEntity) event.getHitEntity();
+                target.setFreezeTicks(100); // 5 saniye donma (1.17+)
+                target.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 60, 4)); // Hareket edemez
+                target.getWorld().spawnParticle(Particle.SNOWFLAKE, target.getLocation(), 10, 0.5, 1, 0.5, 0.1); // 20'den 10'a düşürüldü
+            }
+        }
+        
+        // Ok (Patlayıcı Yay)
+        if (event.getEntity() instanceof Arrow && event.getEntity().getScoreboardTags().contains("boom_arrow")) {
+            event.getEntity().getWorld().createExplosion(event.getEntity().getLocation(), 2F, false, false);
+        }
+        
+        // Mızrak (Zehirli Mızrak)
+        if (event.getEntity() instanceof Trident) {
+            // Trident yere düştüyse veya birine çarptıysa zehir bulutu
+            if (event.getHitBlock() != null || event.getHitEntity() != null) {
+                AreaEffectCloud cloud = (AreaEffectCloud) event.getEntity().getWorld().spawnEntity(
+                    event.getEntity().getLocation(), EntityType.AREA_EFFECT_CLOUD);
+                cloud.setRadius(3f);
+                cloud.setDuration(100); // 5 sn
+                cloud.addCustomEffect(new PotionEffect(PotionEffectType.POISON, 100, 1), true);
+                cloud.setParticle(Particle.SLIME);
+            }
+        }
+    }
+    
+    /**
+     * Yay atışı - Mermiye tag ekle
+     */
+    @EventHandler
+    public void onShoot(EntityShootBowEvent event) {
+        if (!(event.getEntity() instanceof Player)) return;
+        Player player = (Player) event.getEntity();
+        ItemStack bow = event.getBow();
+        if (bow == null) return;
+        
+        String id = getSpecialItemId(bow);
+        if ("l1_4_boom_bow".equals(id)) {
+            event.getProjectile().addScoreboardTag("boom_arrow");
         }
     }
 }

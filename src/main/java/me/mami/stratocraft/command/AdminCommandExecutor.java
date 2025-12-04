@@ -1205,6 +1205,17 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             // Seviye ve variant'a göre item döndür
             switch (level) {
                 case 1:
+                    // Yeni sistem: SpecialItemManager kullan
+                    if (plugin.getSpecialItemManager() != null) {
+                        switch (variant) {
+                            case 1: return plugin.getSpecialItemManager().getTier1Weapon("l1_1");
+                            case 2: return plugin.getSpecialItemManager().getTier1Weapon("l1_2");
+                            case 3: return plugin.getSpecialItemManager().getTier1Weapon("l1_3");
+                            case 4: return plugin.getSpecialItemManager().getTier1Weapon("l1_4");
+                            case 5: return plugin.getSpecialItemManager().getTier1Weapon("l1_5");
+                        }
+                    }
+                    // Eski sistem: ItemManager fallback
                     switch (variant) {
                         case 1: return ItemManager.WEAPON_L1_1 != null ? ItemManager.WEAPON_L1_1.clone() : null;
                         case 2: return ItemManager.WEAPON_L1_2 != null ? ItemManager.WEAPON_L1_2.clone() : null;
@@ -1214,6 +1225,17 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     }
                     break;
                 case 2:
+                    // Yeni sistem: SpecialItemManager kullan
+                    if (plugin.getSpecialItemManager() != null) {
+                        switch (variant) {
+                            case 1: return plugin.getSpecialItemManager().getTier2Weapon("l2_1");
+                            case 2: return plugin.getSpecialItemManager().getTier2Weapon("l2_2");
+                            case 3: return plugin.getSpecialItemManager().getTier2Weapon("l2_3");
+                            case 4: return plugin.getSpecialItemManager().getTier2Weapon("l2_4");
+                            case 5: return plugin.getSpecialItemManager().getTier2Weapon("l2_5");
+                        }
+                    }
+                    // Eski sistem: ItemManager fallback
                     switch (variant) {
                         case 1: return ItemManager.WEAPON_L2_1 != null ? ItemManager.WEAPON_L2_1.clone() : null;
                         case 2: return ItemManager.WEAPON_L2_2 != null ? ItemManager.WEAPON_L2_2.clone() : null;
@@ -1223,6 +1245,17 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     }
                     break;
                 case 3:
+                    // Yeni sistem: SpecialItemManager kullan
+                    if (plugin.getSpecialItemManager() != null) {
+                        switch (variant) {
+                            case 1: return plugin.getSpecialItemManager().getTier3Weapon("l3_1");
+                            case 2: return plugin.getSpecialItemManager().getTier3Weapon("l3_2");
+                            case 3: return plugin.getSpecialItemManager().getTier3Weapon("l3_3");
+                            case 4: return plugin.getSpecialItemManager().getTier3Weapon("l3_4");
+                            case 5: return plugin.getSpecialItemManager().getTier3Weapon("l3_5");
+                        }
+                    }
+                    // Eski sistem: ItemManager fallback
                     switch (variant) {
                         case 1: return ItemManager.WEAPON_L3_1 != null ? ItemManager.WEAPON_L3_1.clone() : null;
                         case 2: return ItemManager.WEAPON_L3_2 != null ? ItemManager.WEAPON_L3_2.clone() : null;
@@ -1232,6 +1265,17 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     }
                     break;
                 case 4:
+                    // Yeni sistem: SpecialItemManager kullan
+                    if (plugin.getSpecialItemManager() != null) {
+                        switch (variant) {
+                            case 1: return plugin.getSpecialItemManager().getTier4Weapon("l4_1");
+                            case 2: return plugin.getSpecialItemManager().getTier4Weapon("l4_2");
+                            case 3: return plugin.getSpecialItemManager().getTier4Weapon("l4_3");
+                            case 4: return plugin.getSpecialItemManager().getTier4Weapon("l4_4");
+                            case 5: return plugin.getSpecialItemManager().getTier4Weapon("l4_5");
+                        }
+                    }
+                    // Eski sistem: ItemManager fallback
                     switch (variant) {
                         case 1: return ItemManager.WEAPON_L4_1 != null ? ItemManager.WEAPON_L4_1.clone() : null;
                         case 2: return ItemManager.WEAPON_L4_2 != null ? ItemManager.WEAPON_L4_2.clone() : null;
@@ -1241,6 +1285,17 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     }
                     break;
                 case 5:
+                    // Yeni sistem: SpecialItemManager kullan
+                    if (plugin.getSpecialItemManager() != null) {
+                        switch (variant) {
+                            case 1: return plugin.getSpecialItemManager().getTier5Weapon("l5_1");
+                            case 2: return plugin.getSpecialItemManager().getTier5Weapon("l5_2");
+                            case 3: return plugin.getSpecialItemManager().getTier5Weapon("l5_3");
+                            case 4: return plugin.getSpecialItemManager().getTier5Weapon("l5_4");
+                            case 5: return plugin.getSpecialItemManager().getTier5Weapon("l5_5");
+                        }
+                    }
+                    // Eski sistem: ItemManager fallback
                     switch (variant) {
                         case 1: return ItemManager.WEAPON_L5_1 != null ? ItemManager.WEAPON_L5_1.clone() : null;
                         case 2: return ItemManager.WEAPON_L5_2 != null ? ItemManager.WEAPON_L5_2.clone() : null;
@@ -1873,6 +1928,160 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "guc_iksiri":
             case "güç_iksiri":
                 return ItemManager.STRENGTH_ELIXIR != null ? ItemManager.STRENGTH_ELIXIR.clone() : null;
+            // Tier 1 Silahlar
+            case "l1_1":
+            case "l1_1_rogue_dagger":
+            case "hiz_hanceri":
+            case "hız_hançeri":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier1Weapon("l1_1") : null;
+            case "l1_2":
+            case "l1_2_harvest_scythe":
+            case "ciftci_tirpani":
+            case "çiftçi_tırpanı":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier1Weapon("l1_2") : null;
+            case "l1_3":
+            case "l1_3_gravity_mace":
+            case "yercekimi_gurzu":
+            case "yerçekimi_gürzü":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier1Weapon("l1_3") : null;
+            case "l1_4":
+            case "l1_4_boom_bow":
+            case "patlayici_yay":
+            case "patlayıcı_yay":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier1Weapon("l1_4") : null;
+            case "l1_5":
+            case "l1_5_vampire_blade":
+            case "vampir_disi":
+            case "vampir_dişi":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier1Weapon("l1_5") : null;
+            // Tier 2 Silahlar
+            case "l2_1":
+            case "l2_1_inferno_sword":
+            case "alev_kilici":
+            case "alev_kılıcı":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier2Weapon("l2_1") : null;
+            case "l2_2":
+            case "l2_2_frost_wand":
+            case "buz_asasi":
+            case "buz_asası":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier2Weapon("l2_2") : null;
+            case "l2_3":
+            case "l2_3_venom_spear":
+            case "zehirli_mizrak":
+            case "zehirli_mızrak":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier2Weapon("l2_3") : null;
+            case "l2_4":
+            case "l2_4_guardian_shield":
+            case "golem_kalkani":
+            case "golem_kalkanı":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier2Weapon("l2_4") : null;
+            case "l2_5":
+            case "l2_5_thunder_axe":
+            case "sok_baltasi":
+            case "şok_baltası":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier2Weapon("l2_5") : null;
+            // Tier 3 Silahlar
+            case "l3_1":
+            case "l3_1_shadow_katana":
+            case "golge_katanasi":
+            case "gölge_katanası":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier3Weapon("l3_1") : null;
+            case "l3_2":
+            case "l3_2_earthshaker":
+            case "deprem_cekici":
+            case "deprem_çekici":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier3Weapon("l3_2") : null;
+            case "l3_3":
+            case "l3_3_machine_crossbow":
+            case "taramali_yay":
+            case "taramalı_yay":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier3Weapon("l3_3") : null;
+            case "l3_4":
+            case "l3_4_witch_orb":
+            case "buyucu_kuresi":
+            case "büyücü_küresi":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier3Weapon("l3_4") : null;
+            case "l3_5":
+            case "l3_5_phantom_dagger":
+            case "hayalet_hanceri":
+            case "hayalet_hançeri":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier3Weapon("l3_5") : null;
+            // Tier 4 Silahlar
+            case "l4_1":
+            case "l4_1_elementalist":
+            case "element_kilici":
+            case "element_kılıcı":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier4Weapon("l4_1") : null;
+            case "l4_2":
+            case "l4_2_life_death":
+            case "yasam_olum":
+            case "yaşam_ölüm":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier4Weapon("l4_2") : null;
+            case "l4_3":
+            case "l4_3_mjolnir_v2":
+            case "mjolnir":
+            case "mjölnir":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier4Weapon("l4_3") : null;
+            case "l4_4":
+            case "l4_4_ranger_pride":
+            case "avci_yayi":
+            case "avcı_yayı":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier4Weapon("l4_4") : null;
+            case "l4_5":
+            case "l4_5_magnetic_glove":
+            case "manyetik_eldiven":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier4Weapon("l4_5") : null;
+            // Tier 5 Silahlar
+            case "l5_1":
+            case "l5_1_void_walker":
+            case "hiperiyon_kilici":
+            case "hiperiyon":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier5Weapon("l5_1") : null;
+            case "l5_2":
+            case "l5_2_meteor_caller":
+            case "meteor_cagiran":
+            case "meteor":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier5Weapon("l5_2") : null;
+            case "l5_3":
+            case "l5_3_titan_slayer":
+            case "titan_katili":
+            case "titan":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier5Weapon("l5_3") : null;
+            case "l5_4":
+            case "l5_4_soul_reaper":
+            case "ruh_bicen":
+            case "ruh_biçen":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier5Weapon("l5_4") : null;
+            case "l5_5":
+            case "l5_5_time_keeper":
+            case "zamani_buken":
+            case "zaman":
+                return plugin.getSpecialItemManager() != null ? 
+                    plugin.getSpecialItemManager().getTier5Weapon("l5_5") : null;
             default:
                 return null;
         }

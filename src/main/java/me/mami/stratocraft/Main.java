@@ -157,6 +157,10 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new SpecialArmorListener(this), this);
         specialWeaponListener = new SpecialWeaponListener(this);
         Bukkit.getPluginManager().registerEvents(specialWeaponListener, this);
+        
+        // Silah Mod Değiştirme Sistemi (GUI)
+        WeaponModeManager weaponModeManager = new WeaponModeManager(this);
+        Bukkit.getPluginManager().registerEvents(weaponModeManager, this);
         Bukkit.getPluginManager().registerEvents(new GriefProtectionListener(territoryManager), this);
         virtualStorageListener = new VirtualStorageListener(territoryManager);
         Bukkit.getPluginManager().registerEvents(virtualStorageListener, this);

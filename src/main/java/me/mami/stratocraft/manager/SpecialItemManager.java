@@ -1,7 +1,18 @@
 package me.mami.stratocraft.manager;
 
 import me.mami.stratocraft.Main;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemFlag;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
+
+import java.util.UUID;
 import org.bukkit.entity.FishHook;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerFishEvent;
@@ -365,5 +376,202 @@ public class SpecialItemManager {
         }
         
         return true;
+    }
+    
+    /**
+     * Özel silah oluştur (Tier 4 ve Tier 5 silahlar için)
+     */
+    public ItemStack createSpecialItem(String id, String name, Material material, String description) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        
+        // ID'den tier'ı belirle
+        int tier = 4; // Varsayılan
+        if (id.startsWith("l5_")) {
+            tier = 5;
+        } else if (id.startsWith("l4_")) {
+            tier = 4;
+        }
+        
+        // Tier'a göre renk ve isim
+        NamedTextColor nameColor = tier == 4 ? NamedTextColor.LIGHT_PURPLE : NamedTextColor.RED;
+        String tierName = tier == 4 ? "4 (Efsanevi)" : "5 (Tanrısal)";
+        
+        meta.displayName(Component.text(name).color(nameColor));
+        
+        java.util.List<Component> lore = new java.util.ArrayList<>();
+        lore.add(Component.text(description).color(NamedTextColor.GRAY));
+        lore.add(Component.text("Tier: " + tierName).color(NamedTextColor.GOLD));
+        lore.add(Component.text("Mod Değiştirmek için Shift+Sağ Tık").color(NamedTextColor.YELLOW));
+        meta.lore(lore);
+
+        NamespacedKey key = new NamespacedKey(Main.getInstance(), "special_item_id");
+        meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, id);
+        
+        // Tier bilgisini kaydet (weapon_level)
+        NamespacedKey tierKey = new NamespacedKey(Main.getInstance(), "weapon_level");
+        meta.getPersistentDataContainer().set(tierKey, PersistentDataType.INTEGER, tier);
+        
+        // Varsayılan Mod 1
+        NamespacedKey modeKey = new NamespacedKey(Main.getInstance(), "weapon_mode");
+        meta.getPersistentDataContainer().set(modeKey, PersistentDataType.INTEGER, 1);
+        
+        // Kırılmazlık
+        meta.setUnbreakable(true);
+
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    /**
+     * God Tier silahı al (Eski metod - getTier5Weapon kullanılmalı)
+     * @deprecated Use getTier5Weapon instead
+     */
+    @Deprecated
+    public ItemStack getGodTierWeapon(String weaponCode) {
+        return getTier5Weapon(weaponCode);
+    }
+    
+    /**
+     * Tier 1 silahı oluştur (Çaylak)
+     */
+    public ItemStack getTier1Weapon(String id) {
+        switch (id) {
+            case "l1_1": // Hız Hançeri
+                ItemStack dagger = createSpecialItemWithTier("l1_1_rogue_dagger", "Hız Hançeri", Material.IRON_SWORD, "Hafif ve ölümcül.", 1);
+                ItemMeta meta = dagger.getItemMeta();
+                // Elinde tutarken %20 Hız Verir (Attribute)
+                AttributeModifier speedMod = new AttributeModifier(
+                    UUID.randomUUID(), 
+                    "generic.movementSpeed", 
+                    0.05, 
+                    AttributeModifier.Operation.ADD_NUMBER, 
+                    EquipmentSlot.HAND
+                );
+                meta.addAttributeModifier(Attribute.GENERIC_MOVEMENT_SPEED, speedMod);
+                meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+                dagger.setItemMeta(meta);
+                return dagger;
+            case "l1_2": 
+                return createSpecialItemWithTier("l1_2_harvest_scythe", "Çiftçi Tırpanı", Material.IRON_HOE, "Alan hasarı vurur.", 1);
+            case "l1_3": 
+                return createSpecialItemWithTier("l1_3_gravity_mace", "Yerçekimi Gürzü", Material.IRON_SHOVEL, "Sağ tıkla havaya fırla!", 1);
+            case "l1_4": 
+                return createSpecialItemWithTier("l1_4_boom_bow", "Patlayıcı Yay", Material.BOW, "Okları patlar.", 1);
+            case "l1_5": 
+                return createSpecialItemWithTier("l1_5_vampire_blade", "Vampir Dişi", Material.GOLDEN_SWORD, "Can çalar.", 1);
+            default: 
+                return null;
+        }
+    }
+
+    /**
+     * Tier 2 silahı oluştur (Asker)
+     */
+    public ItemStack getTier2Weapon(String id) {
+        switch (id) {
+            case "l2_1": 
+                return createSpecialItemWithTier("l2_1_inferno_sword", "Alev Kılıcı", Material.GOLDEN_SWORD, "Alev dalgası atar.", 2);
+            case "l2_2": 
+                return createSpecialItemWithTier("l2_2_frost_wand", "Buz Asası", Material.STICK, "Düşmanı dondurur.", 2);
+            case "l2_3": 
+                return createSpecialItemWithTier("l2_3_venom_spear", "Zehirli Mızrak", Material.TRIDENT, "Zehir bulutu oluşturur.", 2);
+            case "l2_4": 
+                return createSpecialItemWithTier("l2_4_guardian_shield", "Golem Kalkanı", Material.SHIELD, "Eğilince dostları iyileştirir.", 2);
+            case "l2_5": 
+                return createSpecialItemWithTier("l2_5_thunder_axe", "Şok Baltası", Material.IRON_AXE, "Kritik vuruşta çarpar.", 2);
+            default: 
+                return null;
+        }
+    }
+
+    /**
+     * Tier 3 silahı oluştur (Elit)
+     */
+    public ItemStack getTier3Weapon(String id) {
+        switch (id) {
+            case "l3_1": 
+                return createSpecialItemWithTier("l3_1_shadow_katana", "Gölge Katanası", Material.IRON_SWORD, "İleri atıl (Dash).", 3);
+            case "l3_2": 
+                return createSpecialItemWithTier("l3_2_earthshaker", "Deprem Çekici", Material.NETHERITE_SHOVEL, "Yeri sars ve herkesi fırlat.", 3);
+            case "l3_3": 
+                return createSpecialItemWithTier("l3_3_machine_crossbow", "Taramalı Yay", Material.CROSSBOW, "Seri atış yapar.", 3);
+            case "l3_4": 
+                return createSpecialItemWithTier("l3_4_witch_orb", "Büyücü Küresi", Material.MAGMA_CREAM, "Güdümlü mermiler atar.", 3);
+            case "l3_5": 
+                return createSpecialItemWithTier("l3_5_phantom_dagger", "Hayalet Hançeri", Material.FEATHER, "Görünmez ol ve suikast yap.", 3);
+            default: 
+                return null;
+        }
+    }
+    
+    /**
+     * Tier 4 silahı oluştur (Efsanevi - Modlu)
+     */
+    public ItemStack getTier4Weapon(String id) {
+        switch (id) {
+            case "l4_1": 
+                return createSpecialItem("l4_1_elementalist", "Element Kılıcı", Material.DIAMOND_SWORD, "Mod 1: Ateş | Mod 2: Buz");
+            case "l4_2": 
+                return createSpecialItem("l4_2_life_death", "Yaşam ve Ölüm", Material.BONE, "Mod 1: Wither | Mod 2: Can Bas");
+            case "l4_3": 
+                return createSpecialItem("l4_3_mjolnir_v2", "Mjölnir V2", Material.IRON_AXE, "Mod 1: Zincirleme Şimşek | Mod 2: Fırlat");
+            case "l4_4": 
+                return createSpecialItem("l4_4_ranger_pride", "Avcı Yayı", Material.BOW, "Mod 1: Sniper | Mod 2: Pompalı");
+            case "l4_5": 
+                return createSpecialItem("l4_5_magnetic_glove", "Manyetik Eldiven", Material.FISHING_ROD, "Mod 1: Çek | Mod 2: İt");
+            default: 
+                return null;
+        }
+    }
+
+    /**
+     * Tier 5 silahı oluştur (Tanrısal - Modlu)
+     */
+    public ItemStack getTier5Weapon(String id) {
+        switch (id) {
+            case "l5_1": 
+                return createSpecialItem("l5_1_void_walker", "Hiperiyon Kılıcı", Material.NETHERITE_SWORD, "Mod 1: Işınlan Patlat | Mod 2: Kara Kalkan");
+            case "l5_2": 
+                return createSpecialItem("l5_2_meteor_caller", "Meteor Çağıran", Material.GOLDEN_AXE, "Mod 1: Kıyamet | Mod 2: Yer Yaran");
+            case "l5_3": 
+                return createSpecialItem("l5_3_titan_slayer", "Titan Katili", Material.TRIDENT, "Mod 1: %5 Gerçek Hasar | Mod 2: Mızrak Yağmuru");
+            case "l5_4": 
+                return createSpecialItem("l5_4_soul_reaper", "Ruh Biçen", Material.WITHER_ROSE, "Mod 1: Hortlak Çağır | Mod 2: Ruh Patlaması");
+            case "l5_5": 
+                return createSpecialItem("l5_5_time_keeper", "Zamanı Büken", Material.CLOCK, "Mod 1: Zamanı Durdur | Mod 2: Geri Sar");
+            default: 
+                return null;
+        }
+    }
+    
+    /**
+     * createSpecialItem metodunu Tier 1-3 için güncelle (Tier bilgisi ekle)
+     */
+    private ItemStack createSpecialItemWithTier(String id, String name, Material material, String description, int tier) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        
+        // Tier'a göre renk
+        NamedTextColor nameColor = tier == 1 ? NamedTextColor.GRAY : 
+                                   tier == 2 ? NamedTextColor.BLUE : 
+                                   tier == 3 ? NamedTextColor.DARK_PURPLE : NamedTextColor.RED;
+        
+        meta.displayName(Component.text(name).color(nameColor));
+        
+        java.util.List<Component> lore = new java.util.ArrayList<>();
+        lore.add(Component.text(description).color(NamedTextColor.GRAY));
+        lore.add(Component.text("Tier: " + tier).color(NamedTextColor.GOLD));
+        meta.lore(lore);
+
+        NamespacedKey key = new NamespacedKey(Main.getInstance(), "special_item_id");
+        meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, id);
+        
+        // Tier bilgisini de kaydet
+        NamespacedKey tierKey = new NamespacedKey(Main.getInstance(), "weapon_level");
+        meta.getPersistentDataContainer().set(tierKey, PersistentDataType.INTEGER, tier);
+
+        item.setItemMeta(meta);
+        return item;
     }
 }
