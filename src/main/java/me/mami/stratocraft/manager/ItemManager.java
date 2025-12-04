@@ -599,8 +599,8 @@ public class ItemManager {
         // Kanca tarifleri (Golden Hook eksikti)
         registerGoldenHookRecipe();
         
-        // Özel silah tarifleri (25 silah - Boss itemleri ile)
-        registerSpecialWeaponRecipes();
+        // NOT: Özel silah tarifleri (registerSpecialWeaponRecipes) init() içinde zaten çağrılıyor (satır 494)
+        // Burada tekrar çağrılmamalı, duplicate recipe hatasına neden olur
     }
     
     /**
