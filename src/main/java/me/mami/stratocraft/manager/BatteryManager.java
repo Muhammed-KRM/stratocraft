@@ -445,24 +445,33 @@ public class BatteryManager {
         
         // Seviye belirleme
         if (count >= 11) {
-            // Seviye 5: 11 blok + özel kontrol (alt ve üstte özel bloklar)
-            Block bottom = centerBlock;
-            while (bottom.getRelative(BlockFace.DOWN).getType() == blockType) {
-                bottom = bottom.getRelative(BlockFace.DOWN);
+            // Seviye 5: 11 blok + BEDROCK baseBlock + özel kontrol (alt ve üstte özel bloklar)
+            // Seviye 5 bataryalar sadece BEDROCK kullanır
+            if (blockType == Material.BEDROCK) {
+                Block bottom = centerBlock;
+                while (bottom.getRelative(BlockFace.DOWN).getType() == blockType) {
+                    bottom = bottom.getRelative(BlockFace.DOWN);
+                }
+                Block top = centerBlock;
+                while (top.getRelative(BlockFace.UP).getType() == blockType) {
+                    top = top.getRelative(BlockFace.UP);
+                }
+                // Alt ve üstte özel blok kontrolü (altında BEACON, üstünde özel blok)
+                Block belowSpecial = bottom.getRelative(BlockFace.DOWN);
+                Block aboveSpecial = top.getRelative(BlockFace.UP);
+                if (belowSpecial.getType() == Material.BEACON && 
+                    (aboveSpecial.getType() == Material.NETHER_STAR || 
+                     aboveSpecial.getType() == Material.BEDROCK ||
+                     aboveSpecial.getType() == Material.END_CRYSTAL ||
+                     aboveSpecial.getType() == Material.DRAGON_HEAD ||
+                     aboveSpecial.getType() == Material.COMMAND_BLOCK ||
+                     aboveSpecial.getType() == Material.LAVA_BUCKET ||
+                     aboveSpecial.getType() == Material.BEACON ||
+                     aboveSpecial.getType() == Material.ANVIL)) {
+                    return 5;
+                }
             }
-            Block top = centerBlock;
-            while (top.getRelative(BlockFace.UP).getType() == blockType) {
-                top = top.getRelative(BlockFace.UP);
-            }
-            // Alt ve üstte özel blok kontrolü (örneğin: altında BEACON, üstünde NETHER_STAR)
-            Block belowSpecial = bottom.getRelative(BlockFace.DOWN);
-            Block aboveSpecial = top.getRelative(BlockFace.UP);
-            if (belowSpecial.getType() == Material.BEACON && 
-                (aboveSpecial.getType() == Material.NETHER_STAR || 
-                 aboveSpecial.getType() == Material.BEDROCK)) {
-                return 5;
-            }
-            return 4; // 11+ blok ama özel blok yok = Seviye 4
+            return 4; // 11+ blok ama seviye 5 koşulları sağlanmıyor = Seviye 4
         } else if (count >= 9) {
             return 4;
         } else if (count >= 7) {

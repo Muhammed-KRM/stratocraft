@@ -3343,6 +3343,16 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 case "spawn":
                     return getSpawnTabComplete(category, input);
                 case "build":
+                    // Batarya için özel kontrol: önce seviye öner
+                    if (category.equals("battery")) {
+                        List<String> levels = Arrays.asList("1", "2", "3", "4", "5");
+                        if (input.isEmpty()) {
+                            return levels;
+                        }
+                        return levels.stream()
+                                .filter(s -> s.startsWith(input))
+                                .collect(Collectors.toList());
+                    }
                     return getBuildTabComplete(category, input);
                 case "dungeon":
                     return getDungeonTabComplete(args, input);
@@ -3406,6 +3416,20 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                                     .filter(s -> s.toLowerCase().startsWith(input))
                                     .collect(Collectors.toList());
                         }
+                    }
+                } catch (NumberFormatException e) {
+                    // Geçersiz seviye
+                }
+            } else if (commandName.equals("build") && category.equals("battery")) {
+                // Build battery için: build battery <seviye> <isim>
+                String levelStr = args[2];
+                String input = args[3].toLowerCase();
+                
+                try {
+                    int level = Integer.parseInt(levelStr);
+                    if (level >= 1 && level <= 5) {
+                        // Seviyeye göre batarya isimlerini öner
+                        return getBatteryNamesByLevel(level, input);
                     }
                 } catch (NumberFormatException e) {
                     // Geçersiz seviye
@@ -3830,6 +3854,40 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         return list.stream()
                 .filter(s -> s.toLowerCase().startsWith(input))
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * Seviyeye göre batarya isimlerini döndür
+     */
+    private List<String> getBatteryNamesByLevel(int level, String input) {
+        List<String> batteries = new ArrayList<>();
+        
+        // BatteryType enum'undan seviyeye göre filtrele
+        for (BatteryManager.BatteryType batteryType : BatteryManager.BatteryType.values()) {
+            if (batteryType.getLevel() == level) {
+                // Enum ismini daha okunabilir hale getir
+                String name = batteryType.name().toLowerCase();
+                batteries.add(name);
+            }
+        }
+        
+        // Eski bataryalar (seviye yok, sadece seviye 1 olarak kabul edilir)
+        if (level == 1) {
+            batteries.add("magma_battery");
+            batteries.add("lightning_battery");
+            batteries.add("black_hole");
+            batteries.add("bridge");
+            batteries.add("shelter");
+            batteries.add("gravity_anchor");
+            batteries.add("seismic_hammer");
+            batteries.add("magnetic_disruptor");
+            batteries.add("ozone_shield");
+            batteries.add("earth_wall");
+            batteries.add("energy_wall");
+            batteries.add("lava_trencher_battery");
+        }
+        
+        return filterList(batteries, input);
     }
 
     private List<String> getAllianceTabComplete(String[] args, String input) {
@@ -4323,6 +4381,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§7Örnek: /stratocraft build weapon catapult");
             p.sendMessage("§7Örnek: /stratocraft build structure alchemy_tower 3");
             p.sendMessage("§7Batarya: /stratocraft build battery <seviye> <isim>");
+            p.sendMessage("§7Örnek: /stratocraft build battery 5 support_heal_l5");
             p.sendMessage("§7Eski format: /stratocraft build <type> [level] (hala çalışıyor)");
             return true;
         }
@@ -4334,12 +4393,29 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         // Kategori kontrolü
         if (args.length >= 3
                 && (category.equals("weapon") || category.equals("battery") || category.equals("structure"))) {
-            // Yeni format: build weapon catapult veya build battery <seviye> <isim>
-            if (category.equals("battery") && args.length >= 4) {
-                // Batarya formatı: build battery <seviye> <isim>
-                level = parseInt(args[2], 1);
-                buildType = args[3].toLowerCase();
-                return buildBatteryByLevelAndName(p, level, buildType);
+            // Batarya için özel kontrol: build battery <seviye> <isim> (seviye zorunlu)
+            if (category.equals("battery")) {
+                if (args.length < 4) {
+                    p.sendMessage("§cKullanım: /stratocraft build battery <seviye> <isim>");
+                    p.sendMessage("§7Seviye: 1-5 arası bir sayı");
+                    p.sendMessage("§7Örnek: /stratocraft build battery 5 support_heal_l5");
+                    return true;
+                }
+                // Format: build battery <seviye> <isim>
+                try {
+                    level = Integer.parseInt(args[2]);
+                    if (level < 1 || level > 5) {
+                        p.sendMessage("§cSeviye 1-5 arası olmalı!");
+                        return true;
+                    }
+                    // Tüm argümanları birleştir (isim boşluk içerebilir)
+                    buildType = String.join("_", java.util.Arrays.copyOfRange(args, 3, args.length)).toLowerCase();
+                    return buildBatteryByLevelAndName(p, level, buildType);
+                } catch (NumberFormatException e) {
+                    p.sendMessage("§cSeviye bir sayı olmalı! (1-5)");
+                    p.sendMessage("§7Kullanım: /stratocraft build battery <seviye> <isim>");
+                    return true;
+                }
             }
             buildType = args[2].toLowerCase();
             level = args.length > 3 ? parseInt(args[3], 1) : 1;
@@ -5068,10 +5144,11 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         
         // Seviye 5 için özel bloklar
         if (level == 5) {
+            // Altında BEACON
             loc.clone().add(0, -1, 0).getBlock().setType(Material.BEACON);
-            if (sideBlock != null) {
-                loc.clone().add(0, blockCount, 0).getBlock().setType(sideBlock);
-            }
+            // Üstünde NETHER_STAR veya BEDROCK (baseBlock BEDROCK ise NETHER_STAR, değilse BEDROCK)
+            Material topBlock = (baseBlock == Material.BEDROCK) ? Material.NETHER_STAR : Material.BEDROCK;
+            loc.clone().add(0, blockCount, 0).getBlock().setType(topBlock);
         }
         
         // Yakıt ver

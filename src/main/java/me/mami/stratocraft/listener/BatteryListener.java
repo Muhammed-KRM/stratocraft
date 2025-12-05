@@ -490,36 +490,31 @@ public class BatteryListener implements Listener {
         int batteryLevel = data.getBatteryLevel();
         Material baseBlock = center.getType();
         
-        // Tüm baseBlock bloklarını kaldır (yukarı ve aşağı)
-        Block current = center;
-        int removed = 0;
-        
-        // Yukarı doğru tüm blokları kaldır
-        while (current.getType() == baseBlock && removed < 20) { // Güvenlik için maksimum 20
-            current.setType(Material.AIR);
-            removed++;
-            current = current.getRelative(BlockFace.UP);
+        // Önce en alttaki bloğu bul
+        Block bottom = center;
+        while (bottom.getRelative(BlockFace.DOWN).getType() == baseBlock) {
+            bottom = bottom.getRelative(BlockFace.DOWN);
         }
         
-        // Aşağı doğru tüm blokları kaldır
-        current = center.getRelative(BlockFace.DOWN);
-        while (current.getType() == baseBlock && removed < 20) { // Güvenlik için maksimum 20
-            current.setType(Material.AIR);
-            removed++;
-            current = current.getRelative(BlockFace.DOWN);
+        // En üstteki bloğu bul
+        Block top = center;
+        while (top.getRelative(BlockFace.UP).getType() == baseBlock) {
+            top = top.getRelative(BlockFace.UP);
+        }
+        
+        // Tüm baseBlock bloklarını kaldır (alttan üste kadar)
+        Block current = bottom;
+        int removed = 0;
+        while (current.getY() <= top.getY() && removed < 30) { // Güvenlik için maksimum 30
+            if (current.getType() == baseBlock) {
+                current.setType(Material.AIR);
+                removed++;
+            }
+            current = current.getRelative(BlockFace.UP);
         }
         
         // Seviye 5 için özel blokları da kaldır (BEACON altında, NETHER_STAR/BEDROCK üstte)
         if (batteryLevel == 5) {
-            Block bottom = center;
-            while (bottom.getRelative(BlockFace.DOWN).getType() == baseBlock) {
-                bottom = bottom.getRelative(BlockFace.DOWN);
-            }
-            Block top = center;
-            while (top.getRelative(BlockFace.UP).getType() == baseBlock) {
-                top = top.getRelative(BlockFace.UP);
-            }
-            
             // Altındaki BEACON'u kaldır
             Block belowSpecial = bottom.getRelative(BlockFace.DOWN);
             if (belowSpecial.getType() == Material.BEACON) {
@@ -535,10 +530,18 @@ public class BatteryListener implements Listener {
         
         // Yan blokları kaldır (seviye 2+ için)
         if (batteryLevel >= 2) {
-            Block east = center.getRelative(BlockFace.EAST);
-            Block west = center.getRelative(BlockFace.WEST);
-            Block north = center.getRelative(BlockFace.NORTH);
-            Block south = center.getRelative(BlockFace.SOUTH);
+            // Merkez bloğu bul (bottom ve top arasında ortada)
+            Block middle = bottom;
+            int height = (int)(top.getY() - bottom.getY() + 1);
+            int middleOffset = height / 2;
+            for (int i = 0; i < middleOffset; i++) {
+                middle = middle.getRelative(BlockFace.UP);
+            }
+            
+            Block east = middle.getRelative(BlockFace.EAST);
+            Block west = middle.getRelative(BlockFace.WEST);
+            Block north = middle.getRelative(BlockFace.NORTH);
+            Block south = middle.getRelative(BlockFace.SOUTH);
             
             // Yan blokların türünü kontrol et (sideBlock olabilir)
             Material sideBlock = null;
@@ -546,7 +549,7 @@ public class BatteryListener implements Listener {
             if (west.getType() != baseBlock && west.getType() != Material.AIR) sideBlock = west.getType();
             
             if (sideBlock != null) {
-                // Tüm yan blokları kaldır
+                // Tüm yan blokları kaldır (4 yönde)
                 if (east.getType() == sideBlock) east.setType(Material.AIR);
                 if (west.getType() == sideBlock) west.setType(Material.AIR);
                 if (north.getType() == sideBlock) north.setType(Material.AIR);
@@ -747,8 +750,12 @@ public class BatteryListener implements Listener {
             int batteryLevel = batteryManager.detectBatteryLevel(centerBlock, baseBlock);
             if (batteryLevel != batteryType.getLevel()) continue;
             
-            // Seviye 5 için özel blok kontrolü (altında BEACON, üstünde NETHER_STAR)
+            // Seviye 5 için özel kontrol: baseBlock BEDROCK olmalı
             if (batteryLevel == 5) {
+                // Seviye 5 bataryalar sadece BEDROCK kullanır
+                if (baseBlock != Material.BEDROCK) continue;
+                
+                // Alt ve üst blokları bul
                 Block bottom = centerBlock;
                 while (bottom.getRelative(BlockFace.DOWN).getType() == baseBlock) {
                     bottom = bottom.getRelative(BlockFace.DOWN);
@@ -760,16 +767,20 @@ public class BatteryListener implements Listener {
                 Block belowSpecial = bottom.getRelative(BlockFace.DOWN);
                 Block aboveSpecial = top.getRelative(BlockFace.UP);
                 
-                // Seviye 5 için: altında BEACON, üstünde NETHER_STAR veya BEDROCK olmalı
+                // Seviye 5 için: altında BEACON olmalı
                 if (belowSpecial.getType() != Material.BEACON) continue;
-                if (aboveSpecial.getType() != Material.NETHER_STAR && aboveSpecial.getType() != Material.BEDROCK) continue;
+                
+                // Üstteki özel blok sideBlock ile eşleşmeli (enum'da sideBlock üstteki özel blok)
+                if (sideBlock != null && aboveSpecial.getType() != sideBlock) continue;
             }
             
-            // Yan blok kontrolü (seviye 2+ için)
-            if (sideBlock != null && batteryLevel >= 2) {
+            // Yan blok kontrolü (seviye 2-4 için, seviye 5 için yan blok yok)
+            if (sideBlock != null && batteryLevel >= 2 && batteryLevel <= 4) {
+                // Yan bloklar sadece EAST, WEST, NORTH, SOUTH olmalı
+                Block north = centerBlock.getRelative(BlockFace.NORTH);
+                Block south = centerBlock.getRelative(BlockFace.SOUTH);
                 boolean hasSideBlock = east.getType() == sideBlock || west.getType() == sideBlock ||
-                                      below.getRelative(BlockFace.DOWN).getType() == sideBlock ||
-                                      above.getRelative(BlockFace.UP).getType() == sideBlock;
+                                      north.getType() == sideBlock || south.getType() == sideBlock;
                 if (!hasSideBlock) continue;
             }
             
@@ -799,9 +810,7 @@ public class BatteryListener implements Listener {
                 return true;
             }
             
-            // Batarya verisini oluştur
-            boolean isRedDiamond = ItemManager.isCustomItem(handItem, "RED_DIAMOND");
-            boolean isDarkMatter = ItemManager.isCustomItem(handItem, "DARK_MATTER");
+            // Batarya verisini oluştur (isRedDiamond ve isDarkMatter zaten yukarıda tanımlı)
             int alchemyLevel = getAlchemyTowerLevel(player);
             ItemStack offHand = player.getInventory().getItemInOffHand();
             boolean hasAmplifier = ItemManager.isCustomItem(offHand, "FLAME_AMPLIFIER");
@@ -986,7 +995,7 @@ public class BatteryListener implements Listener {
      * Batarya verilerini serialize et (NBT için)
      */
     private String serializeBatteryData(BatteryData battery, int slot) {
-        // Format: type:fuel:alchemyLevel:hasAmplifier:trainingMultiplier:isRedDiamond:isDarkMatter:slot
+        // Format: type:fuel:alchemyLevel:hasAmplifier:trainingMultiplier:isRedDiamond:isDarkMatter:batteryLevel:slot
         return battery.getType() + ":" +
                battery.getFuel().name() + ":" +
                battery.getAlchemyLevel() + ":" +
@@ -994,6 +1003,7 @@ public class BatteryListener implements Listener {
                battery.getTrainingMultiplier() + ":" +
                battery.isRedDiamond() + ":" +
                battery.isDarkMatter() + ":" +
+               battery.getBatteryLevel() + ":" +
                slot;
     }
     
@@ -1075,6 +1085,7 @@ public class BatteryListener implements Listener {
     private BatteryData deserializeBatteryData(String data) {
         try {
             String[] parts = data.split(":");
+            // Eski format (8 parça) veya yeni format (9 parça) destekle
             if (parts.length < 8) return null;
             
             String type = parts[0];
@@ -1084,10 +1095,13 @@ public class BatteryListener implements Listener {
             double trainingMultiplier = Double.parseDouble(parts[4]);
             boolean isRedDiamond = Boolean.parseBoolean(parts[5]);
             boolean isDarkMatter = Boolean.parseBoolean(parts[6]);
-            // slot bilgisi kullanılmıyor ama saklanıyor
+            
+            // batteryLevel: yeni format (9 parça) veya varsayılan 1 (eski format)
+            int batteryLevel = parts.length >= 9 ? Integer.parseInt(parts[7]) : 1;
+            // slot bilgisi: son parça (yeni format) veya 7. parça (eski format)
             
             return new BatteryData(type, fuel, alchemyLevel, hasAmplifier, 
-                                 trainingMultiplier, isRedDiamond, isDarkMatter);
+                                 trainingMultiplier, isRedDiamond, isDarkMatter, batteryLevel);
         } catch (Exception e) {
             return null;
         }
