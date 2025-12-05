@@ -609,7 +609,7 @@ void_dragon, chaos_titan, chaos_god
 
 ---
 
-### `/scadmin build battery <batarya_ismi>`
+### `/stratocraft build battery <batarya_ismi>`
 
 **Açıklama**: Yeni batarya sistemi (75 batarya) - Otomatik yapı oluşturma
 
@@ -680,12 +680,12 @@ support_heal_l5, support_speed_l5, support_damage_l5, support_armor_l5, support_
 
 **Örnekler**:
 ```
-/scadmin build battery attack_fireball_l1
-/scadmin build battery construction_obsidian_wall_l1
-/scadmin build battery support_heal_l1
-/scadmin build battery attack_mountain_destroyer_l5
-/scadmin build battery construction_netherite_bridge_l5
-/scadmin build battery support_heal_l5
+/stratocraft build battery attack_fireball_l1
+/stratocraft build battery construction_obsidian_wall_l1
+/stratocraft build battery support_heal_l1
+/stratocraft build battery attack_mountain_destroyer_l5
+/stratocraft build battery construction_netherite_bridge_l5
+/stratocraft build battery support_heal_l5
 ```
 
 **Tab Completion**: Tüm 75 batarya için otomatik tamamlama mevcuttur.

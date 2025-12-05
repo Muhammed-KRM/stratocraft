@@ -2117,8 +2117,8 @@ public class NewBatteryManager {
      */
     private static class LightningStormL3Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.DIAMOND_BLOCK) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.DIAMOND_BLOCK) // Merkez farklı
                 // Yatay çizgi (3 blok)
                 .addBlockEast(1, Material.IRON_BLOCK)
                 .addBlockWest(1, Material.IRON_BLOCK)
@@ -2129,7 +2129,11 @@ public class NewBatteryManager {
                 .addBlockAt(1, 2, 0, Material.IRON_BLOCK)
                 .addBlockAt(-1, 1, 0, Material.IRON_BLOCK)
                 .addBlockAt(-1, 2, 0, Material.IRON_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2144,8 +2148,8 @@ public class NewBatteryManager {
      */
     private static class IceAgeL3Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.PACKED_ICE)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.PACKED_ICE)
                 // 5 uçlu yıldız
                 .addBlockAbove(1, Material.PACKED_ICE)
                 .addBlockBelow(1, Material.PACKED_ICE)
@@ -2153,7 +2157,11 @@ public class NewBatteryManager {
                 .addBlockWest(1, Material.PACKED_ICE)
                 .addBlockNorth(1, Material.PACKED_ICE)
                 .addBlockSouth(1, Material.FROSTED_ICE);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2169,8 +2177,8 @@ public class NewBatteryManager {
      */
     private static class PoisonBombL3Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.EMERALD) // Merkez farklı (EMERALD vs EMERALD_BLOCK)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.EMERALD) // Merkez farklı (EMERALD vs EMERALD_BLOCK)
                 // Çapraz X şekli (3 kat yukarı)
                 .addBlockAt(1, 1, 1, Material.EMERALD_BLOCK)
                 .addBlockAt(1, 2, 1, Material.EMERALD_BLOCK)
@@ -2180,7 +2188,11 @@ public class NewBatteryManager {
                 .addBlockAt(1, 2, -1, Material.POISONOUS_POTATO)
                 .addBlockAt(-1, 1, 1, Material.EMERALD_BLOCK)
                 .addBlockAt(-1, 2, 1, Material.EMERALD_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2196,8 +2208,8 @@ public class NewBatteryManager {
      */
     private static class ElectricStormL3Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.REDSTONE) // Merkez farklı (REDSTONE vs REDSTONE_BLOCK)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.REDSTONE) // Merkez farklı (REDSTONE vs REDSTONE_BLOCK)
                 // Z şekli
                 .addBlockEast(1, Material.REDSTONE_BLOCK)
                 .addBlockEast(2, Material.REDSTONE_BLOCK)
@@ -2205,7 +2217,11 @@ public class NewBatteryManager {
                 .addBlockAt(1, 1, 0, Material.REDSTONE_BLOCK)  // Çapraz
                 .addBlockWest(1, Material.REDSTONE_BLOCK)
                 .addBlockWest(2, Material.GLOWSTONE);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2221,8 +2237,8 @@ public class NewBatteryManager {
      */
     private static class TeslaTowerL4Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.BEACON) // Merkez farklı (BEACON parlar)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.BEACON) // Merkez farklı (BEACON parlar)
                 // Alt kat (3x3)
                 .addBlockEast(1, Material.COPPER_BLOCK)
                 .addBlockWest(1, Material.COPPER_BLOCK)
@@ -2252,7 +2268,11 @@ public class NewBatteryManager {
                 .addBlockAt(1, 2, -1, Material.COPPER_BLOCK)
                 .addBlockAt(-1, 2, 1, Material.COPPER_BLOCK)
                 .addBlockAt(-1, 2, -1, Material.COPPER_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2268,8 +2288,8 @@ public class NewBatteryManager {
      */
     private static class HellfireL4Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.NETHER_STAR) // Merkez farklı (parlayan)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.NETHER_STAR) // Merkez farklı (parlayan)
                 // Çapraz spiral
                 .addBlockAt(1, 0, 1, Material.MAGMA_BLOCK)
                 .addBlockAt(1, 1, 1, Material.MAGMA_BLOCK)
@@ -2282,7 +2302,11 @@ public class NewBatteryManager {
                 .addBlockAt(-1, 0, 1, Material.NETHER_STAR)
                 .addBlockAt(-1, 1, 1, Material.MAGMA_BLOCK)
                 .addBlockAt(-1, 2, 1, Material.MAGMA_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2298,8 +2322,8 @@ public class NewBatteryManager {
      */
     private static class IceFortressL4Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.BLUE_ICE) // Merkez farklı (daha parlak)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.BLUE_ICE) // Merkez farklı (daha parlak)
                 // Duvarlar (5x5 çerçeve)
                 .addBlockEast(1, Material.PACKED_ICE)
                 .addBlockEast(2, Material.PACKED_ICE)
@@ -2319,7 +2343,11 @@ public class NewBatteryManager {
                 .addBlockAt(2, 1, -2, Material.PACKED_ICE)
                 .addBlockAt(-2, 1, 2, Material.PACKED_ICE)
                 .addBlockAt(-2, 1, -2, Material.PACKED_ICE);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2335,8 +2363,8 @@ public class NewBatteryManager {
      */
     private static class DeathCloudL4Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.WITHER_SKELETON_SKULL) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.WITHER_SKELETON_SKULL) // Merkez farklı
                 // 8 yönlü yıldız
                 .addBlockEast(1, Material.EMERALD_BLOCK)
                 .addBlockEast(2, Material.EMERALD_BLOCK)
@@ -2355,7 +2383,11 @@ public class NewBatteryManager {
                 .addBlockAt(2, 0, -2, Material.EMERALD_BLOCK)
                 .addBlockAt(-1, 0, 1, Material.WITHER_SKELETON_SKULL)
                 .addBlockAt(-2, 0, 2, Material.EMERALD_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2371,8 +2403,8 @@ public class NewBatteryManager {
      */
     private static class ElectricShieldL4Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.END_CRYSTAL) // Merkez farklı (parlayan)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.END_CRYSTAL) // Merkez farklı (parlayan)
                 // Dış halka (5x5 çerçeve)
                 .addBlockEast(1, Material.REDSTONE_BLOCK)
                 .addBlockEast(2, Material.REDSTONE_BLOCK)
@@ -2396,7 +2428,11 @@ public class NewBatteryManager {
                 .addBlockAt(-2, 1, 0, Material.REDSTONE_BLOCK)
                 .addBlockAt(0, 1, 2, Material.REDSTONE_BLOCK)
                 .addBlockAt(0, 1, -2, Material.REDSTONE_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2412,8 +2448,8 @@ public class NewBatteryManager {
      */
     private static class ApocalypseReactorL5Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.BEACON) // Merkez farklı (parlayan)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.BEACON) // Merkez farklı (parlayan)
                 // 7x7 taban (en altta)
                 .addBlockBelow(1, Material.OBSIDIAN)
                 .addBlockAt(0, -1, 0, Material.OBSIDIAN) // Merkez alt
@@ -2436,7 +2472,11 @@ public class NewBatteryManager {
                 .addBlockAbove(2, Material.END_CRYSTAL)
                 // En altta özel blok
                 .addBlockBelow(2, Material.BEACON);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2452,8 +2492,8 @@ public class NewBatteryManager {
      */
     private static class LavaTsunamiL5Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.LAVA) // Merkez farklı (akan lav)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.LAVA) // Merkez farklı (akan lav)
                 // 5x5 yatay düzlem
                 .addBlockEast(1, Material.MAGMA_BLOCK)
                 .addBlockEast(2, Material.MAGMA_BLOCK)
@@ -2472,7 +2512,11 @@ public class NewBatteryManager {
                 .addBlockAbove(1, Material.MAGMA_BLOCK)
                 // Altta özel blok
                 .addBlockBelow(1, Material.BEACON);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2488,8 +2532,8 @@ public class NewBatteryManager {
      */
     private static class BossKillerL5Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.DRAGON_HEAD) // Merkez farklı (özel)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.DRAGON_HEAD) // Merkez farklı (özel)
                 // Yatay T şekli
                 .addBlockEast(1, Material.NETHERITE_BLOCK)
                 .addBlockEast(2, Material.NETHERITE_BLOCK)
@@ -2506,7 +2550,11 @@ public class NewBatteryManager {
                 .addBlockAbove(3, Material.DRAGON_HEAD)
                 // Altta özel blok
                 .addBlockBelow(3, Material.BEACON);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2522,8 +2570,8 @@ public class NewBatteryManager {
      */
     private static class AreaDestroyerL5Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.COMMAND_BLOCK) // Merkez farklı (özel)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.COMMAND_BLOCK) // Merkez farklı (özel)
                 // 7x7 kare (merkez + 48 yan)
                 .addBlockEast(1, Material.ANVIL)
                 .addBlockEast(2, Material.ANVIL)
@@ -2554,7 +2602,11 @@ public class NewBatteryManager {
                 .addBlockAbove(1, Material.ANVIL)
                 // Altta özel blok
                 .addBlockBelow(1, Material.BEACON);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2570,8 +2622,8 @@ public class NewBatteryManager {
      */
     private static class MountainDestroyerL5Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.BEDROCK) // Merkez farklı (en güçlü)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.BEDROCK) // Merkez farklı (en güçlü)
                 // Çapraz X şekli (her yönde 5 blok)
                 .addBlockAt(1, 0, 1, Material.NETHER_STAR)
                 .addBlockAt(2, 0, 2, Material.NETHER_STAR)
@@ -2593,7 +2645,11 @@ public class NewBatteryManager {
                 .addBlockAbove(1, Material.NETHER_STAR)
                 // Altta özel blok
                 .addBlockBelow(1, Material.BEACON);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2610,11 +2666,15 @@ public class NewBatteryManager {
      */
     private static class StoneBridgeL1Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.STONE)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.STONE)
                 .addBlockAbove(1, Material.STONE)
                 .addBlockBelow(1, Material.STONE);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2629,11 +2689,15 @@ public class NewBatteryManager {
      */
     private static class ObsidianWallL1Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.OBSIDIAN)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.OBSIDIAN)
                 .addBlockEast(1, Material.OBSIDIAN)
                 .addBlockWest(1, Material.OBSIDIAN);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2648,12 +2712,16 @@ public class NewBatteryManager {
      */
     private static class IronCageL1Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.IRON_BARS)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.IRON_BARS)
                 .addBlockAbove(1, Material.IRON_BARS)
                 .addBlockNorth(1, Material.IRON_BARS)
                 .addBlockSouth(1, Material.IRON_BARS);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2668,12 +2736,16 @@ public class NewBatteryManager {
      */
     private static class GlassWallL1Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.GLASS)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.GLASS)
                 .addBlockEast(1, Material.GLASS)
                 .addBlockNorth(1, Material.GLASS)
                 .addBlockAt(1, 0, -1, Material.GLASS);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2688,13 +2760,17 @@ public class NewBatteryManager {
      */
     private static class WoodBarricadeL1Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.OAK_PLANKS)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.OAK_PLANKS)
                 .addBlockEast(1, Material.OAK_PLANKS)
                 .addBlockWest(1, Material.OAK_PLANKS)
                 .addBlockNorth(1, Material.OAK_PLANKS)
                 .addBlockSouth(1, Material.OAK_PLANKS);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2709,8 +2785,8 @@ public class NewBatteryManager {
      */
     private static class ObsidianCageL2Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.OBSIDIAN)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.OBSIDIAN)
                 .addBlockEast(1, Material.OBSIDIAN)
                 .addBlockWest(1, Material.OBSIDIAN)
                 .addBlockNorth(1, Material.OBSIDIAN)
@@ -2720,7 +2796,11 @@ public class NewBatteryManager {
                 .addBlockAt(-1, 0, -1, Material.OBSIDIAN)
                 .addBlockAt(-1, 0, 1, Material.OBSIDIAN)
                 .addBlockAbove(1, Material.IRON_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2735,13 +2815,17 @@ public class NewBatteryManager {
      */
     private static class StoneBridgeAdvL2Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.STONE)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.STONE)
                 .addBlockEast(1, Material.STONE)
                 .addBlockEast(2, Material.STONE)
                 .addBlockWest(1, Material.STONE)
                 .addBlockWest(2, Material.COBBLESTONE);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2756,13 +2840,17 @@ public class NewBatteryManager {
      */
     private static class IronWallL2Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.IRON_BARS)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.IRON_BARS)
                 .addBlockAbove(1, Material.IRON_BARS)
                 .addBlockAbove(2, Material.IRON_BARS)
                 .addBlockEast(1, Material.IRON_BARS)
                 .addBlockEast(2, Material.IRON_INGOT);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2777,13 +2865,17 @@ public class NewBatteryManager {
      */
     private static class GlassTunnelL2Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.GLASS)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.GLASS)
                 .addBlockAt(1, 0, 1, Material.GLASS)
                 .addBlockAt(-1, 0, -1, Material.GLASS)
                 .addBlockAt(1, 0, -1, Material.GLASS_PANE)
                 .addBlockAt(-1, 0, 1, Material.GLASS);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2798,8 +2890,8 @@ public class NewBatteryManager {
      */
     private static class WoodCastleL2Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.OAK_PLANKS)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.OAK_PLANKS)
                 .addBlockEast(1, Material.OAK_PLANKS)
                 .addBlockWest(1, Material.OAK_PLANKS)
                 .addBlockNorth(1, Material.OAK_PLANKS)
@@ -2808,7 +2900,11 @@ public class NewBatteryManager {
                 .addBlockAt(1, 0, 1, Material.OAK_PLANKS)
                 .addBlockAt(-1, 0, -1, Material.OAK_PLANKS)
                 .addBlockAt(-1, 0, 1, Material.OAK_LOG);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2824,8 +2920,8 @@ public class NewBatteryManager {
      */
     private static class ObsidianCastleL3Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.DIAMOND_BLOCK) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.DIAMOND_BLOCK) // Merkez farklı
                 .addBlockEast(1, Material.OBSIDIAN)
                 .addBlockEast(2, Material.OBSIDIAN)
                 .addBlockWest(1, Material.OBSIDIAN)
@@ -2847,7 +2943,11 @@ public class NewBatteryManager {
                 .addBlockAt(1, 1, -1, Material.OBSIDIAN)
                 .addBlockAt(-1, 1, 1, Material.OBSIDIAN)
                 .addBlockAt(-1, 1, -1, Material.OBSIDIAN);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2863,8 +2963,8 @@ public class NewBatteryManager {
      */
     private static class NetheriteBridgeL3Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.GOLD_BLOCK) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.GOLD_BLOCK) // Merkez farklı
                 .addBlockEast(1, Material.NETHERITE_BLOCK)
                 .addBlockWest(1, Material.NETHERITE_BLOCK)
                 .addBlockAbove(1, Material.NETHERITE_BLOCK)
@@ -2873,7 +2973,11 @@ public class NewBatteryManager {
                 .addBlockAt(1, 2, 0, Material.NETHERITE_BLOCK)
                 .addBlockAt(-1, 1, 0, Material.NETHERITE_BLOCK)
                 .addBlockAt(-1, 2, 0, Material.NETHERITE_INGOT);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2888,15 +2992,19 @@ public class NewBatteryManager {
      */
     private static class IronPrisonL3Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.IRON_BARS)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.IRON_BARS)
                 .addBlockAbove(1, Material.IRON_BARS)
                 .addBlockBelow(1, Material.IRON_BARS)
                 .addBlockEast(1, Material.IRON_BARS)
                 .addBlockWest(1, Material.IRON_BARS)
                 .addBlockNorth(1, Material.IRON_BARS)
                 .addBlockSouth(1, Material.IRON_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2911,8 +3019,8 @@ public class NewBatteryManager {
      */
     private static class GlassTowerL3Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.GLASS)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.GLASS)
                 .addBlockAt(1, 1, 1, Material.GLASS)
                 .addBlockAt(1, 2, 1, Material.GLASS)
                 .addBlockAt(-1, 1, -1, Material.GLASS)
@@ -2921,7 +3029,11 @@ public class NewBatteryManager {
                 .addBlockAt(1, 2, -1, Material.GLASS_PANE)
                 .addBlockAt(-1, 1, 1, Material.GLASS)
                 .addBlockAt(-1, 2, 1, Material.GLASS);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2936,15 +3048,19 @@ public class NewBatteryManager {
      */
     private static class StoneCastleL3Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.STONE)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.STONE)
                 .addBlockEast(1, Material.STONE)
                 .addBlockEast(2, Material.STONE)
                 .addBlockAt(2, 1, 0, Material.STONE)
                 .addBlockAt(1, 1, 0, Material.STONE)
                 .addBlockWest(1, Material.STONE)
                 .addBlockWest(2, Material.COBBLESTONE);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -2960,8 +3076,8 @@ public class NewBatteryManager {
      */
     private static class ObsidianPrisonL4Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.END_CRYSTAL) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.END_CRYSTAL) // Merkez farklı
                 .addBlockEast(1, Material.OBSIDIAN)
                 .addBlockWest(1, Material.OBSIDIAN)
                 .addBlockNorth(1, Material.OBSIDIAN)
@@ -2988,7 +3104,11 @@ public class NewBatteryManager {
                 .addBlockAt(1, 2, -1, Material.OBSIDIAN)
                 .addBlockAt(-1, 2, 1, Material.OBSIDIAN)
                 .addBlockAt(-1, 2, -1, Material.OBSIDIAN);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3004,8 +3124,8 @@ public class NewBatteryManager {
      */
     private static class NetheriteBridgeAdvL4Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.BEACON) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.BEACON) // Merkez farklı
                 .addBlockAt(1, 0, 1, Material.NETHERITE_BLOCK)
                 .addBlockAt(1, 1, 1, Material.NETHERITE_BLOCK)
                 .addBlockAt(1, 2, 1, Material.NETHERITE_BLOCK)
@@ -3017,7 +3137,11 @@ public class NewBatteryManager {
                 .addBlockAt(-1, 0, 1, Material.NETHERITE_BLOCK)
                 .addBlockAt(-1, 1, 1, Material.NETHERITE_BLOCK)
                 .addBlockAt(-1, 2, 1, Material.BEACON);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3033,8 +3157,8 @@ public class NewBatteryManager {
      */
     private static class IronCastleL4Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.ANVIL) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.ANVIL) // Merkez farklı
                 .addBlockEast(1, Material.IRON_BARS)
                 .addBlockEast(2, Material.IRON_BARS)
                 .addBlockWest(1, Material.IRON_BARS)
@@ -3051,7 +3175,11 @@ public class NewBatteryManager {
                 .addBlockAt(2, 1, -2, Material.IRON_BARS)
                 .addBlockAt(-2, 1, 2, Material.IRON_BARS)
                 .addBlockAt(-2, 1, -2, Material.IRON_BARS);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3067,8 +3195,8 @@ public class NewBatteryManager {
      */
     private static class GlassTowerAdvL4Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.GLOWSTONE) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.GLOWSTONE) // Merkez farklı
                 .addBlockEast(1, Material.GLASS)
                 .addBlockEast(2, Material.GLASS)
                 .addBlockWest(1, Material.GLASS)
@@ -3085,7 +3213,11 @@ public class NewBatteryManager {
                 .addBlockAt(2, 0, -2, Material.GLASS)
                 .addBlockAt(-1, 0, 1, Material.BEACON)
                 .addBlockAt(-2, 0, 2, Material.GLASS);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3101,8 +3233,8 @@ public class NewBatteryManager {
      */
     private static class StoneFortressL4Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.BEACON) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.BEACON) // Merkez farklı
                 .addBlockEast(1, Material.STONE)
                 .addBlockEast(2, Material.STONE)
                 .addBlockWest(1, Material.STONE)
@@ -3123,7 +3255,11 @@ public class NewBatteryManager {
                 .addBlockAt(-2, 1, 0, Material.STONE)
                 .addBlockAt(0, 1, 2, Material.STONE)
                 .addBlockAt(0, 1, -2, Material.STONE);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3139,8 +3275,8 @@ public class NewBatteryManager {
      */
     private static class ObsidianPrisonLegL5Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.BEACON) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.BEACON) // Merkez farklı
                 .addBlockBelow(1, Material.OBSIDIAN)
                 .addBlockEast(1, Material.OBSIDIAN)
                 .addBlockEast(2, Material.OBSIDIAN)
@@ -3157,7 +3293,11 @@ public class NewBatteryManager {
                 .addBlockAt(0, 1, -1, Material.OBSIDIAN)
                 .addBlockAbove(2, Material.END_CRYSTAL)
                 .addBlockBelow(2, Material.BEACON);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3173,8 +3313,8 @@ public class NewBatteryManager {
      */
     private static class NetheriteBridgeLegL5Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.NETHER_STAR) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.NETHER_STAR) // Merkez farklı
                 .addBlockEast(1, Material.NETHERITE_BLOCK)
                 .addBlockEast(2, Material.NETHERITE_BLOCK)
                 .addBlockWest(1, Material.NETHERITE_BLOCK)
@@ -3189,7 +3329,11 @@ public class NewBatteryManager {
                 .addBlockAt(-2, 0, -2, Material.NETHERITE_BLOCK)
                 .addBlockAbove(1, Material.BEACON)
                 .addBlockBelow(1, Material.BEACON);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3205,8 +3349,8 @@ public class NewBatteryManager {
      */
     private static class IronCastleLegL5Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.ANVIL) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.ANVIL) // Merkez farklı
                 .addBlockEast(1, Material.IRON_BARS)
                 .addBlockEast(2, Material.IRON_BARS)
                 .addBlockWest(1, Material.IRON_BARS)
@@ -3219,7 +3363,11 @@ public class NewBatteryManager {
                 .addBlockBelow(2, Material.IRON_BARS)
                 .addBlockAbove(3, Material.ANVIL)
                 .addBlockBelow(3, Material.BEACON);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3235,8 +3383,8 @@ public class NewBatteryManager {
      */
     private static class GlassTowerLegL5Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.END_CRYSTAL) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.END_CRYSTAL) // Merkez farklı
                 .addBlockEast(1, Material.GLASS)
                 .addBlockEast(2, Material.GLASS)
                 .addBlockEast(3, Material.GLASS)
@@ -3263,7 +3411,11 @@ public class NewBatteryManager {
                 .addBlockAt(-3, 0, -2, Material.GLASS)
                 .addBlockAbove(1, Material.BEACON)
                 .addBlockBelow(1, Material.BEACON);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3279,8 +3431,8 @@ public class NewBatteryManager {
      */
     private static class StoneFortressLegL5Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.BEACON) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.BEACON) // Merkez farklı
                 .addBlockAt(1, 0, 1, Material.STONE)
                 .addBlockAt(2, 0, 2, Material.STONE)
                 .addBlockAt(3, 0, 3, Material.STONE)
@@ -3299,7 +3451,11 @@ public class NewBatteryManager {
                 .addBlockAt(-4, 0, 4, Material.STONE)
                 .addBlockAbove(1, Material.BEACON)
                 .addBlockBelow(1, Material.BEACON);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3316,11 +3472,15 @@ public class NewBatteryManager {
      */
     private static class HealL1Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.GOLD_BLOCK)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.GOLD_BLOCK)
                 .addBlockAbove(1, Material.GOLD_BLOCK)
                 .addBlockBelow(1, Material.GOLD_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3335,11 +3495,15 @@ public class NewBatteryManager {
      */
     private static class SpeedL1Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.EMERALD_BLOCK)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.EMERALD_BLOCK)
                 .addBlockEast(1, Material.EMERALD_BLOCK)
                 .addBlockWest(1, Material.EMERALD_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3354,12 +3518,16 @@ public class NewBatteryManager {
      */
     private static class DamageL1Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.DIAMOND_BLOCK)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.DIAMOND_BLOCK)
                 .addBlockAbove(1, Material.DIAMOND_BLOCK)
                 .addBlockNorth(1, Material.DIAMOND_BLOCK)
                 .addBlockSouth(1, Material.DIAMOND_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3374,12 +3542,16 @@ public class NewBatteryManager {
      */
     private static class ArmorL1Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.IRON_BARS)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.IRON_BARS)
                 .addBlockEast(1, Material.IRON_BARS)
                 .addBlockNorth(1, Material.IRON_BARS)
                 .addBlockAt(1, 0, -1, Material.IRON_BARS);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3394,13 +3566,17 @@ public class NewBatteryManager {
      */
     private static class RegenerationL1Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.LAPIS_BLOCK)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.LAPIS_BLOCK)
                 .addBlockEast(1, Material.LAPIS_BLOCK)
                 .addBlockWest(1, Material.LAPIS_BLOCK)
                 .addBlockNorth(1, Material.LAPIS_BLOCK)
                 .addBlockSouth(1, Material.LAPIS_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3415,8 +3591,8 @@ public class NewBatteryManager {
      */
     private static class HealSpeedComboL2Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.GOLD_BLOCK)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.GOLD_BLOCK)
                 .addBlockEast(1, Material.GOLD_BLOCK)
                 .addBlockWest(1, Material.GOLD_BLOCK)
                 .addBlockNorth(1, Material.GOLD_BLOCK)
@@ -3426,7 +3602,11 @@ public class NewBatteryManager {
                 .addBlockAt(-1, 0, -1, Material.GOLD_BLOCK)
                 .addBlockAt(-1, 0, 1, Material.GOLD_BLOCK)
                 .addBlockAbove(1, Material.EMERALD);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3441,13 +3621,17 @@ public class NewBatteryManager {
      */
     private static class DamageArmorComboL2Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.DIAMOND_BLOCK)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.DIAMOND_BLOCK)
                 .addBlockEast(1, Material.DIAMOND_BLOCK)
                 .addBlockEast(2, Material.DIAMOND_BLOCK)
                 .addBlockWest(1, Material.DIAMOND_BLOCK)
                 .addBlockWest(2, Material.IRON_INGOT);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3462,13 +3646,17 @@ public class NewBatteryManager {
      */
     private static class RegenerationHealComboL2Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.LAPIS_BLOCK)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.LAPIS_BLOCK)
                 .addBlockAbove(1, Material.LAPIS_BLOCK)
                 .addBlockAbove(2, Material.LAPIS_BLOCK)
                 .addBlockEast(1, Material.LAPIS_BLOCK)
                 .addBlockEast(2, Material.GOLD_INGOT);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3483,13 +3671,17 @@ public class NewBatteryManager {
      */
     private static class SpeedDamageComboL2Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.EMERALD_BLOCK)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.EMERALD_BLOCK)
                 .addBlockAt(1, 0, 1, Material.EMERALD_BLOCK)
                 .addBlockAt(-1, 0, -1, Material.EMERALD_BLOCK)
                 .addBlockAt(1, 0, -1, Material.DIAMOND)
                 .addBlockAt(-1, 0, 1, Material.EMERALD_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3504,8 +3696,8 @@ public class NewBatteryManager {
      */
     private static class ArmorRegenerationComboL2Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.IRON_BARS)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.IRON_BARS)
                 .addBlockEast(1, Material.IRON_BARS)
                 .addBlockWest(1, Material.IRON_BARS)
                 .addBlockNorth(1, Material.IRON_BARS)
@@ -3514,7 +3706,11 @@ public class NewBatteryManager {
                 .addBlockAt(1, 0, 1, Material.IRON_BARS)
                 .addBlockAt(-1, 0, -1, Material.IRON_BARS)
                 .addBlockAt(-1, 0, 1, Material.LAPIS_LAZULI);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3530,8 +3726,8 @@ public class NewBatteryManager {
      */
     private static class AbsorptionShieldL3Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.GOLDEN_APPLE) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.GOLDEN_APPLE) // Merkez farklı
                 .addBlockEast(1, Material.GOLD_BLOCK)
                 .addBlockEast(2, Material.GOLD_BLOCK)
                 .addBlockWest(1, Material.GOLD_BLOCK)
@@ -3553,7 +3749,11 @@ public class NewBatteryManager {
                 .addBlockAt(1, 1, -1, Material.GOLD_BLOCK)
                 .addBlockAt(-1, 1, 1, Material.GOLD_BLOCK)
                 .addBlockAt(-1, 1, -1, Material.GOLD_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3569,8 +3769,8 @@ public class NewBatteryManager {
      */
     private static class FlightL3Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.FEATHER) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.FEATHER) // Merkez farklı
                 .addBlockEast(1, Material.EMERALD_BLOCK)
                 .addBlockWest(1, Material.EMERALD_BLOCK)
                 .addBlockAbove(1, Material.EMERALD_BLOCK)
@@ -3579,7 +3779,11 @@ public class NewBatteryManager {
                 .addBlockAt(1, 2, 0, Material.EMERALD_BLOCK)
                 .addBlockAt(-1, 1, 0, Material.EMERALD_BLOCK)
                 .addBlockAt(-1, 2, 0, Material.EMERALD_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3594,15 +3798,19 @@ public class NewBatteryManager {
      */
     private static class CriticalStrikeL3Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.DIAMOND_BLOCK)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.DIAMOND_BLOCK)
                 .addBlockAbove(1, Material.DIAMOND_BLOCK)
                 .addBlockBelow(1, Material.DIAMOND_BLOCK)
                 .addBlockEast(1, Material.DIAMOND_BLOCK)
                 .addBlockWest(1, Material.DIAMOND_BLOCK)
                 .addBlockNorth(1, Material.DIAMOND_BLOCK)
                 .addBlockSouth(1, Material.DIAMOND_SWORD);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3617,8 +3825,8 @@ public class NewBatteryManager {
      */
     private static class ReflectionShieldL3Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.IRON_BARS)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.IRON_BARS)
                 .addBlockAt(1, 1, 1, Material.IRON_BARS)
                 .addBlockAt(1, 2, 1, Material.IRON_BARS)
                 .addBlockAt(-1, 1, -1, Material.IRON_BARS)
@@ -3627,7 +3835,11 @@ public class NewBatteryManager {
                 .addBlockAt(1, 2, -1, Material.SHIELD)
                 .addBlockAt(-1, 1, 1, Material.IRON_BARS)
                 .addBlockAt(-1, 2, 1, Material.IRON_BARS);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3642,15 +3854,19 @@ public class NewBatteryManager {
      */
     private static class LifeStealL3Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.LAPIS_BLOCK)
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.LAPIS_BLOCK)
                 .addBlockEast(1, Material.LAPIS_BLOCK)
                 .addBlockEast(2, Material.LAPIS_BLOCK)
                 .addBlockAt(2, 1, 0, Material.LAPIS_BLOCK)
                 .addBlockAt(1, 1, 0, Material.LAPIS_BLOCK)
                 .addBlockWest(1, Material.LAPIS_BLOCK)
                 .addBlockWest(2, Material.ROTTEN_FLESH);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3666,8 +3882,8 @@ public class NewBatteryManager {
      */
     private static class FullHealAbsorptionL4Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.ENCHANTED_GOLDEN_APPLE) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.ENCHANTED_GOLDEN_APPLE) // Merkez farklı
                 .addBlockEast(1, Material.GOLD_BLOCK)
                 .addBlockWest(1, Material.GOLD_BLOCK)
                 .addBlockNorth(1, Material.GOLD_BLOCK)
@@ -3694,7 +3910,11 @@ public class NewBatteryManager {
                 .addBlockAt(1, 2, -1, Material.GOLD_BLOCK)
                 .addBlockAt(-1, 2, 1, Material.GOLD_BLOCK)
                 .addBlockAt(-1, 2, -1, Material.GOLD_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3710,8 +3930,8 @@ public class NewBatteryManager {
      */
     private static class TimeSlowL4Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.CLOCK) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.CLOCK) // Merkez farklı
                 .addBlockAt(1, 0, 1, Material.EMERALD_BLOCK)
                 .addBlockAt(1, 1, 1, Material.EMERALD_BLOCK)
                 .addBlockAt(1, 2, 1, Material.EMERALD_BLOCK)
@@ -3723,7 +3943,11 @@ public class NewBatteryManager {
                 .addBlockAt(-1, 0, 1, Material.EMERALD_BLOCK)
                 .addBlockAt(-1, 1, 1, Material.EMERALD_BLOCK)
                 .addBlockAt(-1, 2, 1, Material.EMERALD_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3739,8 +3963,8 @@ public class NewBatteryManager {
      */
     private static class LightningStrikeL4Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.LIGHTNING_ROD) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.LIGHTNING_ROD) // Merkez farklı
                 .addBlockEast(1, Material.DIAMOND_BLOCK)
                 .addBlockEast(2, Material.DIAMOND_BLOCK)
                 .addBlockWest(1, Material.DIAMOND_BLOCK)
@@ -3757,7 +3981,11 @@ public class NewBatteryManager {
                 .addBlockAt(2, 1, -2, Material.DIAMOND_BLOCK)
                 .addBlockAt(-2, 1, 2, Material.DIAMOND_BLOCK)
                 .addBlockAt(-2, 1, -2, Material.DIAMOND_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3773,8 +4001,8 @@ public class NewBatteryManager {
      */
     private static class InvisibilityShieldL4Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.GLASS_PANE) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.GLASS_PANE) // Merkez farklı
                 .addBlockEast(1, Material.IRON_BARS)
                 .addBlockEast(2, Material.IRON_BARS)
                 .addBlockWest(1, Material.IRON_BARS)
@@ -3791,7 +4019,11 @@ public class NewBatteryManager {
                 .addBlockAt(2, 0, -2, Material.IRON_BARS)
                 .addBlockAt(-1, 0, 1, Material.GLASS_PANE)
                 .addBlockAt(-2, 0, 2, Material.IRON_BARS);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3807,8 +4039,8 @@ public class NewBatteryManager {
      */
     private static class ImmortalityMomentL4Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.TOTEM_OF_UNDYING) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.TOTEM_OF_UNDYING) // Merkez farklı
                 .addBlockEast(1, Material.LAPIS_BLOCK)
                 .addBlockEast(2, Material.LAPIS_BLOCK)
                 .addBlockWest(1, Material.LAPIS_BLOCK)
@@ -3829,7 +4061,11 @@ public class NewBatteryManager {
                 .addBlockAt(-2, 1, 0, Material.LAPIS_BLOCK)
                 .addBlockAt(0, 1, 2, Material.LAPIS_BLOCK)
                 .addBlockAt(0, 1, -2, Material.LAPIS_BLOCK);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3845,8 +4081,8 @@ public class NewBatteryManager {
      */
     private static class LegendaryHealL5Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.NETHER_STAR) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.NETHER_STAR) // Merkez farklı
                 .addBlockBelow(1, Material.GOLD_BLOCK)
                 .addBlockEast(1, Material.GOLD_BLOCK)
                 .addBlockEast(2, Material.GOLD_BLOCK)
@@ -3863,7 +4099,11 @@ public class NewBatteryManager {
                 .addBlockAt(0, 1, -1, Material.GOLD_BLOCK)
                 .addBlockAbove(2, Material.NETHER_STAR)
                 .addBlockBelow(2, Material.BEACON);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3879,8 +4119,8 @@ public class NewBatteryManager {
      */
     private static class TimeStopL5Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.CLOCK) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.CLOCK) // Merkez farklı
                 .addBlockEast(1, Material.EMERALD_BLOCK)
                 .addBlockEast(2, Material.EMERALD_BLOCK)
                 .addBlockWest(1, Material.EMERALD_BLOCK)
@@ -3895,7 +4135,11 @@ public class NewBatteryManager {
                 .addBlockAt(-2, 0, -2, Material.EMERALD_BLOCK)
                 .addBlockAbove(1, Material.NETHER_STAR)
                 .addBlockBelow(1, Material.BEACON);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3911,8 +4155,8 @@ public class NewBatteryManager {
      */
     private static class DeathTouchL5Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.WITHER_SKELETON_SKULL) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.WITHER_SKELETON_SKULL) // Merkez farklı
                 .addBlockEast(1, Material.DIAMOND_BLOCK)
                 .addBlockEast(2, Material.DIAMOND_BLOCK)
                 .addBlockWest(1, Material.DIAMOND_BLOCK)
@@ -3925,7 +4169,11 @@ public class NewBatteryManager {
                 .addBlockBelow(2, Material.DIAMOND_BLOCK)
                 .addBlockAbove(3, Material.NETHER_STAR)
                 .addBlockBelow(3, Material.BEACON);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3941,8 +4189,8 @@ public class NewBatteryManager {
      */
     private static class PhaseShiftL5Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.END_CRYSTAL) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.END_CRYSTAL) // Merkez farklı
                 .addBlockEast(1, Material.IRON_BARS)
                 .addBlockEast(2, Material.IRON_BARS)
                 .addBlockEast(3, Material.IRON_BARS)
@@ -3969,7 +4217,11 @@ public class NewBatteryManager {
                 .addBlockAt(-3, 0, -2, Material.IRON_BARS)
                 .addBlockAbove(1, Material.NETHER_STAR)
                 .addBlockBelow(1, Material.BEACON);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override
@@ -3985,8 +4237,8 @@ public class NewBatteryManager {
      */
     private static class RebirthL5Recipe implements RecipeChecker {
         @Override
-        public RecipeCheckResult checkRecipe(Block centerBlock) {
-            BlockPattern pattern = new BlockPattern(Material.TOTEM_OF_UNDYING) // Merkez farklı
+        public BlockPattern getPattern() {
+            return new BlockPattern(Material.TOTEM_OF_UNDYING) // Merkez farklı
                 .addBlockAt(1, 0, 1, Material.LAPIS_BLOCK)
                 .addBlockAt(2, 0, 2, Material.LAPIS_BLOCK)
                 .addBlockAt(3, 0, 3, Material.LAPIS_BLOCK)
@@ -4005,7 +4257,11 @@ public class NewBatteryManager {
                 .addBlockAt(-4, 0, 4, Material.LAPIS_BLOCK)
                 .addBlockAbove(1, Material.NETHER_STAR)
                 .addBlockBelow(1, Material.BEACON);
-            return checkBlockPattern(centerBlock, pattern, getBatteryName());
+        }
+        
+        @Override
+        public RecipeCheckResult checkRecipe(Block centerBlock) {
+            return checkBlockPattern(centerBlock, getPattern(), getBatteryName());
         }
         
         @Override

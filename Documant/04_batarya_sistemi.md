@@ -1182,12 +1182,12 @@ Tüm destek bataryaları **kendine + yakındaki klan üyelerine** efekt verir.
 
 **Admin Komutları**:
 ```
-/scadmin build battery attack_fireball_l1
-/scadmin build battery construction_obsidian_wall_l1
-/scadmin build battery support_heal_l1
-/scadmin build battery attack_mountain_destroyer_l5
-/scadmin build battery construction_netherite_bridge_l5
-/scadmin build battery support_heal_l5
+/stratocraft build battery attack_fireball_l1
+/stratocraft build battery construction_obsidian_wall_l1
+/stratocraft build battery support_heal_l1
+/stratocraft build battery attack_mountain_destroyer_l5
+/stratocraft build battery construction_netherite_bridge_l5
+/stratocraft build battery support_heal_l5
 ```
 
 **Tab Completion**: Tüm 75 batarya için otomatik tamamlama mevcuttur.
@@ -1323,34 +1323,39 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 #### Seviye 1 (3 Blok)
 
 **1. Yıldırım Asası** (`ATTACK_LIGHTNING_STAFF_L1`)
-- **Blok**: 3x **IRON_BLOCK** (üst üste)
+- **Blok**: 3x **IRON_BLOCK** - **DİKEY ÇİZGİ** (Merkez + Yukarı + Aşağı)
+- **Şekil**: `|` (Dikey)
 - **İşlev**: Manuel nişanlı tek nokta yıldırım
 - **Benzersizlik**: Nişanlı (Tesla Kulesi'nden farklı)
-- **Admin Komut**: `/scadmin build battery 1 Yıldırım Asası`
+- **Admin Komut**: `/stratocraft build battery 1 Yıldırım Asası`
 
 **2. Cehennem Topu** (`ATTACK_HELLFIRE_BALL_L1`)
-- **Blok**: 3x **MAGMA_BLOCK** (üst üste)
+- **Blok**: 3x **MAGMA_BLOCK** - **YATAY ÇİZGİ** (Merkez + Doğu + Batı)
+- **Şekil**: `—` (Yatay)
 - **İşlev**: Düz atış ateş topu
 - **Benzersizlik**: Düz atış (Meteor Yağmuru'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 1 Cehennem Topu`
+- **Admin Komut**: `/stratocraft build battery 1 Cehennem Topu`
 
 **3. Buz Topu** (`ATTACK_ICE_BALL_L1`)
-- **Blok**: 3x **PACKED_ICE** (üst üste)
+- **Blok**: 4x **PACKED_ICE** - **T ŞEKLİ** (Merkez + Yukarı + Kuzey + Güney)
+- **Şekil**: `T` (T şekli)
 - **İşlev**: Düz atış buz topu (yavaşlatma)
 - **Benzersizlik**: Düz atış buz (Buz Fırtınası'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 1 Buz Topu`
+- **Admin Komut**: `/stratocraft build battery 1 Buz Topu`
 
 **4. Zehir Oku** (`ATTACK_POISON_ARROW_L1`)
-- **Blok**: 3x **EMERALD_BLOCK** (üst üste)
+- **Blok**: 4x **EMERALD_BLOCK** - **2x2 KARE** (Merkez + Doğu + Kuzey + Doğu-Kuzey köşe)
+- **Şekil**: `▪` (2x2 kare)
 - **İşlev**: Zehirli ok atışı
 - **Benzersizlik**: Ok atışı (Asit Yağmuru'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 1 Zehir Oku`
+- **Admin Komut**: `/stratocraft build battery 1 Zehir Oku`
 
 **5. Şok Dalgası** (`ATTACK_SHOCK_WAVE_L1`)
-- **Blok**: 3x **REDSTONE_BLOCK** (üst üste)
+- **Blok**: 5x **REDSTONE_BLOCK** - **ARTI (+) ŞEKLİ** (Merkez + Doğu + Batı + Kuzey + Güney)
+- **Şekil**: `+` (Artı)
 - **İşlev**: Elektrik şok dalgası (dairesel)
 - **Benzersizlik**: Dairesel şok (Elektrik Ağı'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 1 Şok Dalgası`
+- **Admin Komut**: `/stratocraft build battery 1 Şok Dalgası`
 
 #### Seviye 2 (5 Blok + Yan Blok)
 
@@ -1358,31 +1363,31 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 - **Blok**: 5x **MAGMA_BLOCK** (üst üste) + **NETHERRACK** (yan)
 - **İşlev**: İki ateş topu paralel atış
 - **Benzersizlik**: Çift atış (Cehennem Topu'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 2 Çift Ateş Topu`
+- **Admin Komut**: `/stratocraft build battery 2 Çift Ateş Topu`
 
 **7. Zincir Yıldırım** (`ATTACK_CHAIN_LIGHTNING_L2`)
 - **Blok**: 5x **IRON_BLOCK** (üst üste) + **GOLD_BLOCK** (yan)
 - **İşlev**: Zincirleme yıldırım (3 hedef)
 - **Benzersizlik**: Zincirleme (Yıldırım Asası'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 2 Zincir Yıldırım`
+- **Admin Komut**: `/stratocraft build battery 2 Zincir Yıldırım`
 
 **8. Buz Fırtınası** (`ATTACK_ICE_STORM_L2`)
 - **Blok**: 5x **PACKED_ICE** (üst üste) + **BLUE_ICE** (yan)
 - **İşlev**: Alan etkili buz yağmuru
 - **Benzersizlik**: Alan yağmuru (Buz Topu'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 2 Buz Fırtınası`
+- **Admin Komut**: `/stratocraft build battery 2 Buz Fırtınası`
 
 **9. Asit Yağmuru** (`ATTACK_ACID_RAIN_L2`)
 - **Blok**: 5x **EMERALD_BLOCK** (üst üste) + **SLIME_BLOCK** (yan)
 - **İşlev**: Alan etkili asit yağmuru
 - **Benzersizlik**: Alan yağmuru (Zehir Oku'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 2 Asit Yağmuru`
+- **Admin Komut**: `/stratocraft build battery 2 Asit Yağmuru`
 
 **10. Elektrik Ağı** (`ATTACK_ELECTRIC_NET_L2`)
 - **Blok**: 5x **REDSTONE_BLOCK** (üst üste) + **LAPIS_BLOCK** (yan)
 - **İşlev**: Ağ şeklinde elektrik (kare alan)
 - **Benzersizlik**: Ağ şekli (Şok Dalgası'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 2 Elektrik Ağı`
+- **Admin Komut**: `/stratocraft build battery 2 Elektrik Ağı`
 
 #### Seviye 3 (7 Blok + Yan Blok)
 
@@ -1390,31 +1395,31 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 - **Blok**: 7x **OBSIDIAN** (üst üste) + **MAGMA_BLOCK** (yan)
 - **İşlev**: Gökyüzünden meteor yağdırma
 - **Benzersizlik**: Gökyüzünden düşen (Cehennem Topu'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 3 Meteor Yağmuru`
+- **Admin Komut**: `/stratocraft build battery 3 Meteor Yağmuru`
 
 **12. Yıldırım Fırtınası** (`ATTACK_LIGHTNING_STORM_L3`)
 - **Blok**: 7x **IRON_BLOCK** (üst üste) + **DIAMOND_BLOCK** (yan)
 - **İşlev**: Rastgele yıldırım yağmuru
 - **Benzersizlik**: Rastgele yağmur (Yıldırım Asası'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 3 Yıldırım Fırtınası`
+- **Admin Komut**: `/stratocraft build battery 3 Yıldırım Fırtınası`
 
 **13. Buz Çağı** (`ATTACK_ICE_AGE_L3`)
 - **Blok**: 7x **PACKED_ICE** (üst üste) + **FROSTED_ICE** (yan)
 - **İşlev**: Alanı dondurma (blokları buz yapma)
 - **Benzersizlik**: Blok dondurma (Buz Fırtınası'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 3 Buz Çağı`
+- **Admin Komut**: `/stratocraft build battery 3 Buz Çağı`
 
 **14. Zehir Bombası** (`ATTACK_POISON_BOMB_L3`)
 - **Blok**: 7x **EMERALD_BLOCK** (üst üste) + **POISONOUS_POTATO** (yan)
 - **İşlev**: Patlayıcı zehir bulutu
 - **Benzersizlik**: Patlayıcı bulut (Asit Yağmuru'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 3 Zehir Bombası`
+- **Admin Komut**: `/stratocraft build battery 3 Zehir Bombası`
 
 **15. Elektrik Fırtınası** (`ATTACK_ELECTRIC_STORM_L3`)
 - **Blok**: 7x **REDSTONE_BLOCK** (üst üste) + **GLOWSTONE** (yan)
 - **İşlev**: Sürekli elektrik fırtınası (10 saniye)
 - **Benzersizlik**: Sürekli fırtına (Elektrik Ağı'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 3 Elektrik Fırtınası`
+- **Admin Komut**: `/stratocraft build battery 3 Elektrik Fırtınası`
 
 #### Seviye 4 (9 Blok + Yan Blok)
 
@@ -1422,31 +1427,31 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 - **Blok**: 9x **COPPER_BLOCK** (üst üste) + **REDSTONE_BLOCK** (yan)
 - **İşlev**: Otomatik alan etkili elektrik (30 saniye)
 - **Benzersizlik**: Otomatik alan (Yıldırım Asası'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 4 Tesla Kulesi`
+- **Admin Komut**: `/stratocraft build battery 4 Tesla Kulesi`
 
 **17. Cehennem Ateşi** (`ATTACK_HELLFIRE_L4`)
 - **Blok**: 9x **MAGMA_BLOCK** (üst üste) + **NETHER_STAR** (yan)
 - **İşlev**: Sürekli ateş duvarı (20 saniye)
 - **Benzersizlik**: Sürekli duvar (Cehennem Topu'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 4 Cehennem Ateşi`
+- **Admin Komut**: `/stratocraft build battery 4 Cehennem Ateşi`
 
 **18. Buz Kalesi** (`ATTACK_ICE_FORTRESS_L4`)
 - **Blok**: 9x **PACKED_ICE** (üst üste) + **SNOW_BLOCK** (yan)
 - **İşlev**: Buz duvarları oluşturma (savunma)
 - **Benzersizlik**: Buz yapı (Buz Çağı'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 4 Buz Kalesi`
+- **Admin Komut**: `/stratocraft build battery 4 Buz Kalesi`
 
 **19. Ölüm Bulutu** (`ATTACK_DEATH_CLOUD_L4`)
 - **Blok**: 9x **EMERALD_BLOCK** (üst üste) + **WITHER_SKELETON_SKULL** (yan)
 - **İşlev**: Ölüm efekti bulutu (Wither efekti)
 - **Benzersizlik**: Ölüm efekti (Zehir Bombası'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 4 Ölüm Bulutu`
+- **Admin Komut**: `/stratocraft build battery 4 Ölüm Bulutu`
 
 **20. Elektrik Kalkanı** (`ATTACK_ELECTRIC_SHIELD_L4`)
 - **Blok**: 9x **REDSTONE_BLOCK** (üst üste) + **END_CRYSTAL** (yan)
 - **İşlev**: Gelen projectile'ları elektrikle yok etme
 - **Benzersizlik**: Savunma kalkanı (Elektrik Fırtınası'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 4 Elektrik Kalkanı`
+- **Admin Komut**: `/stratocraft build battery 4 Elektrik Kalkanı`
 
 #### Seviye 5 (11 Blok + Özel Bloklar)
 
@@ -1454,31 +1459,31 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 - **Blok**: 11x **BEDROCK** (üst üste) + **END_CRYSTAL** (üstte) + **BEACON** (altta)
 - **İşlev**: Tüm elementlerin kombinasyonu (meteor + yıldırım + ölüm + buz)
 - **Benzersizlik**: Kombinasyon felaket (benzersiz)
-- **Admin Komut**: `/scadmin build battery 5 Kıyamet Reaktörü`
+- **Admin Komut**: `/stratocraft build battery 5 Kıyamet Reaktörü`
 
 **22. Lava Tufanı** (`ATTACK_LAVA_TSUNAMI_L5`)
 - **Blok**: 11x **BEDROCK** (üst üste) + **LAVA_BUCKET** (üstte) + **BEACON** (altta)
 - **İşlev**: Lava dalgası (40x40 alan)
 - **Benzersizlik**: Lava dalgası (Cehennem Ateşi'nden farklı)
-- **Admin Komut**: `/scadmin build battery 5 Lava Tufanı`
+- **Admin Komut**: `/stratocraft build battery 5 Lava Tufanı`
 
 **23. Boss Katili** (`ATTACK_BOSS_KILLER_L5`)
 - **Blok**: 11x **BEDROCK** (üst üste) + **DRAGON_HEAD** (üstte) + **BEACON** (altta)
 - **İşlev**: Boss'lara %50 can hasarı
 - **Benzersizlik**: Boss özel hasar (diğerlerinden farklı)
-- **Admin Komut**: `/scadmin build battery 5 Boss Katili`
+- **Admin Komut**: `/stratocraft build battery 5 Boss Katili`
 
 **24. Alan Yok Edici** (`ATTACK_AREA_DESTROYER_L5`)
 - **Blok**: 11x **BEDROCK** (üst üste) + **COMMAND_BLOCK** (üstte) + **BEACON** (altta)
 - **İşlev**: 30x30 alanı tamamen yok etme
 - **Benzersizlik**: Tam yok etme (diğerlerinden farklı)
-- **Admin Komut**: `/scadmin build battery 5 Alan Yok Edici`
+- **Admin Komut**: `/stratocraft build battery 5 Alan Yok Edici`
 
 **25. Dağ Yok Edici** (`ATTACK_MOUNTAIN_DESTROYER_L5`)
 - **Blok**: 11x **BEDROCK** (üst üste) + **NETHER_STAR** (üstte) + **BEACON** (altta)
 - **İşlev**: 50x50 alanı yok etme (yükseklik dahil)
 - **Benzersizlik**: Yükseklik dahil yok etme (Alan Yok Edici'den farklı)
-- **Admin Komut**: `/scadmin build battery 5 Dağ Yok Edici`
+- **Admin Komut**: `/stratocraft build battery 5 Dağ Yok Edici`
 
 ---
 
@@ -1490,31 +1495,31 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 - **Blok**: 3x **STONE** (üst üste)
 - **İşlev**: 10 blok uzunlukta taş köprü
 - **Benzersizlik**: Basit köprü
-- **Admin Komut**: `/scadmin build battery 1 Taş Köprü`
+- **Admin Komut**: `/stratocraft build battery 1 Taş Köprü`
 
 **27. Obsidyen Duvar** (`CONSTRUCTION_OBSIDIAN_WALL_L1`)
 - **Blok**: 3x **OBSIDIAN** (üst üste)
 - **İşlev**: 5x5 yükseklikte obsidyen duvar
 - **Benzersizlik**: Duvar (köprüden farklı)
-- **Admin Komut**: `/scadmin build battery 1 Obsidyen Duvar`
+- **Admin Komut**: `/stratocraft build battery 1 Obsidyen Duvar`
 
 **28. Demir Kafes** (`CONSTRUCTION_IRON_CAGE_L1`)
 - **Blok**: 3x **IRON_BARS** (üst üste)
 - **İşlev**: 5x5x5 demir kafes
 - **Benzersizlik**: Kafes (duvardan farklı)
-- **Admin Komut**: `/scadmin build battery 1 Demir Kafes`
+- **Admin Komut**: `/stratocraft build battery 1 Demir Kafes`
 
 **29. Cam Duvar** (`CONSTRUCTION_GLASS_WALL_L1`)
 - **Blok**: 3x **GLASS** (üst üste)
 - **İşlev**: 5x5 yükseklikte cam duvar
 - **Benzersizlik**: Cam duvar (obsidyen duvardan farklı)
-- **Admin Komut**: `/scadmin build battery 1 Cam Duvar`
+- **Admin Komut**: `/stratocraft build battery 1 Cam Duvar`
 
 **30. Ahşap Barikat** (`CONSTRUCTION_WOOD_BARRICADE_L1`)
 - **Blok**: 3x **OAK_PLANKS** (üst üste)
 - **İşlev**: 5x5 yükseklikte ahşap barikat
 - **Benzersizlik**: Ahşap barikat (diğerlerinden farklı)
-- **Admin Komut**: `/scadmin build battery 1 Ahşap Barikat`
+- **Admin Komut**: `/stratocraft build battery 1 Ahşap Barikat`
 
 #### Seviye 2 (5 Blok + Yan Blok)
 
@@ -1522,31 +1527,31 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 - **Blok**: 5x **OBSIDIAN** (üst üste) + **IRON_BLOCK** (yan)
 - **İşlev**: 10x10x5 obsidyen kafes
 - **Benzersizlik**: Büyük kafes (Obsidyen Duvar'dan farklı)
-- **Admin Komut**: `/scadmin build battery 2 Obsidyen Kafes`
+- **Admin Komut**: `/stratocraft build battery 2 Obsidyen Kafes`
 
 **32. Taş Köprü (Gelişmiş)** (`CONSTRUCTION_STONE_BRIDGE_ADV_L2`)
 - **Blok**: 5x **STONE** (üst üste) + **COBBLESTONE** (yan)
 - **İşlev**: 20 blok uzunlukta taş köprü
 - **Benzersizlik**: Uzun köprü (Taş Köprü'den farklı)
-- **Admin Komut**: `/scadmin build battery 2 Taş Köprü (Gelişmiş)`
+- **Admin Komut**: `/stratocraft build battery 2 Taş Köprü (Gelişmiş)`
 
 **33. Demir Duvar** (`CONSTRUCTION_IRON_WALL_L2`)
 - **Blok**: 5x **IRON_BARS** (üst üste) + **IRON_INGOT** (yan)
 - **İşlev**: 10x10 yükseklikte demir duvar
 - **Benzersizlik**: Büyük duvar (Demir Kafes'ten farklı)
-- **Admin Komut**: `/scadmin build battery 2 Demir Duvar`
+- **Admin Komut**: `/stratocraft build battery 2 Demir Duvar`
 
 **34. Cam Tünel** (`CONSTRUCTION_GLASS_TUNNEL_L2`)
 - **Blok**: 5x **GLASS** (üst üste) + **GLASS_PANE** (yan)
 - **İşlev**: 10 blok uzunlukta cam tünel
 - **Benzersizlik**: Tünel (Cam Duvar'dan farklı)
-- **Admin Komut**: `/scadmin build battery 2 Cam Tünel`
+- **Admin Komut**: `/stratocraft build battery 2 Cam Tünel`
 
 **35. Ahşap Kale** (`CONSTRUCTION_WOOD_CASTLE_L2`)
 - **Blok**: 5x **OAK_PLANKS** (üst üste) + **OAK_LOG** (yan)
 - **İşlev**: 10x10x5 ahşap kale
 - **Benzersizlik**: Kale (Ahşap Barikat'tan farklı)
-- **Admin Komut**: `/scadmin build battery 2 Ahşap Kale`
+- **Admin Komut**: `/stratocraft build battery 2 Ahşap Kale`
 
 #### Seviye 3 (7 Blok + Yan Blok)
 
@@ -1554,31 +1559,31 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 - **Blok**: 7x **OBSIDIAN** (üst üste) + **BEDROCK** (yan)
 - **İşlev**: 20x20x10 obsidyen kale
 - **Benzersizlik**: Büyük kale (Obsidyen Kafes'ten farklı)
-- **Admin Komut**: `/scadmin build battery 3 Obsidyen Kale`
+- **Admin Komut**: `/stratocraft build battery 3 Obsidyen Kale`
 
 **37. Netherite Köprü** (`CONSTRUCTION_NETHERITE_BRIDGE_L3`)
 - **Blok**: 7x **NETHERITE_BLOCK** (üst üste) + **NETHERITE_INGOT** (yan)
 - **İşlev**: 30 blok uzunlukta netherite köprü
 - **Benzersizlik**: Dayanıklı köprü (Taş Köprü'den farklı)
-- **Admin Komut**: `/scadmin build battery 3 Netherite Köprü`
+- **Admin Komut**: `/stratocraft build battery 3 Netherite Köprü`
 
 **38. Demir Hapishane** (`CONSTRUCTION_IRON_PRISON_L3`)
 - **Blok**: 7x **IRON_BARS** (üst üste) + **IRON_BLOCK** (yan)
 - **İşlev**: 15x15x10 demir hapishane
 - **Benzersizlik**: Hapishane (Demir Duvar'dan farklı)
-- **Admin Komut**: `/scadmin build battery 3 Demir Hapishane`
+- **Admin Komut**: `/stratocraft build battery 3 Demir Hapishane`
 
 **39. Cam Kule** (`CONSTRUCTION_GLASS_TOWER_L3`)
 - **Blok**: 7x **GLASS** (üst üste) + **GLASS_PANE** (yan)
 - **İşlev**: 5x5x20 cam kule
 - **Benzersizlik**: Kule (Cam Tünel'den farklı)
-- **Admin Komut**: `/scadmin build battery 3 Cam Kule`
+- **Admin Komut**: `/stratocraft build battery 3 Cam Kule`
 
 **40. Taş Kale** (`CONSTRUCTION_STONE_CASTLE_L3`)
 - **Blok**: 7x **STONE** (üst üste) + **COBBLESTONE** (yan)
 - **İşlev**: 15x15x10 taş kale
 - **Benzersizlik**: Taş kale (Ahşap Kale'den farklı)
-- **Admin Komut**: `/scadmin build battery 3 Taş Kale`
+- **Admin Komut**: `/stratocraft build battery 3 Taş Kale`
 
 #### Seviye 4 (9 Blok + Yan Blok)
 
@@ -1586,31 +1591,31 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 - **Blok**: 9x **OBSIDIAN** (üst üste) + **END_CRYSTAL** (yan)
 - **İşlev**: 25x25x15 obsidyen hapishane
 - **Benzersizlik**: Büyük hapishane (Obsidyen Kale'den farklı)
-- **Admin Komut**: `/scadmin build battery 4 Obsidyen Hapishane`
+- **Admin Komut**: `/stratocraft build battery 4 Obsidyen Hapishane`
 
 **42. Netherite Köprü (Gelişmiş)** (`CONSTRUCTION_NETHERITE_BRIDGE_ADV_L4`)
 - **Blok**: 9x **NETHERITE_BLOCK** (üst üste) + **BEACON** (yan)
 - **İşlev**: 50 blok uzunlukta netherite köprü
 - **Benzersizlik**: Çok uzun köprü (Netherite Köprü'den farklı)
-- **Admin Komut**: `/scadmin build battery 4 Netherite Köprü (Gelişmiş)`
+- **Admin Komut**: `/stratocraft build battery 4 Netherite Köprü (Gelişmiş)`
 
 **43. Demir Kale** (`CONSTRUCTION_IRON_CASTLE_L4`)
 - **Blok**: 9x **IRON_BARS** (üst üste) + **ANVIL** (yan)
 - **İşlev**: 20x20x15 demir kale
 - **Benzersizlik**: Demir kale (Demir Hapishane'den farklı)
-- **Admin Komut**: `/scadmin build battery 4 Demir Kale`
+- **Admin Komut**: `/stratocraft build battery 4 Demir Kale`
 
 **44. Cam Kule (Gelişmiş)** (`CONSTRUCTION_GLASS_TOWER_ADV_L4`)
 - **Blok**: 9x **GLASS** (üst üste) + **BEACON** (yan)
 - **İşlev**: 10x10x30 cam kule
 - **Benzersizlik**: Yüksek kule (Cam Kule'den farklı)
-- **Admin Komut**: `/scadmin build battery 4 Cam Kule (Gelişmiş)`
+- **Admin Komut**: `/stratocraft build battery 4 Cam Kule (Gelişmiş)`
 
 **45. Taş Şato** (`CONSTRUCTION_STONE_FORTRESS_L4`)
 - **Blok**: 9x **STONE** (üst üste) + **BEACON** (yan)
 - **İşlev**: 25x25x15 taş şato
 - **Benzersizlik**: Şato (Taş Kale'den farklı)
-- **Admin Komut**: `/scadmin build battery 4 Taş Şato`
+- **Admin Komut**: `/stratocraft build battery 4 Taş Şato`
 
 #### Seviye 5 (11 Blok + Özel Bloklar)
 
@@ -1618,31 +1623,31 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 - **Blok**: 11x **BEDROCK** (üst üste) + **END_CRYSTAL** (üstte) + **BEACON** (altta)
 - **İşlev**: 50x50x20 obsidyen hapishane
 - **Benzersizlik**: Efsanevi hapishane
-- **Admin Komut**: `/scadmin build battery 5 Obsidyen Hapishane (Efsanevi)`
+- **Admin Komut**: `/stratocraft build battery 5 Obsidyen Hapishane (Efsanevi)`
 
 **47. Netherite Köprü (Efsanevi)** (`CONSTRUCTION_NETHERITE_BRIDGE_LEG_L5`)
 - **Blok**: 11x **BEDROCK** (üst üste) + **BEACON** (üstte) + **BEACON** (altta)
 - **İşlev**: 100 blok uzunlukta netherite köprü (5 blok genişlik)
 - **Benzersizlik**: Efsanevi köprü
-- **Admin Komut**: `/scadmin build battery 5 Netherite Köprü (Efsanevi)`
+- **Admin Komut**: `/stratocraft build battery 5 Netherite Köprü (Efsanevi)`
 
 **48. Demir Kale (Efsanevi)** (`CONSTRUCTION_IRON_CASTLE_LEG_L5`)
 - **Blok**: 11x **BEDROCK** (üst üste) + **ANVIL** (üstte) + **BEACON** (altta)
 - **İşlev**: 40x40x20 demir kale
 - **Benzersizlik**: Efsanevi kale
-- **Admin Komut**: `/scadmin build battery 5 Demir Kale (Efsanevi)`
+- **Admin Komut**: `/stratocraft build battery 5 Demir Kale (Efsanevi)`
 
 **49. Cam Kule (Efsanevi)** (`CONSTRUCTION_GLASS_TOWER_LEG_L5`)
 - **Blok**: 11x **BEDROCK** (üst üste) + **BEACON** (üstte) + **BEACON** (altta)
 - **İşlev**: 15x15x50 cam kule
 - **Benzersizlik**: Efsanevi kule
-- **Admin Komut**: `/scadmin build battery 5 Cam Kule (Efsanevi)`
+- **Admin Komut**: `/stratocraft build battery 5 Cam Kule (Efsanevi)`
 
 **50. Taş Kalesi (Efsanevi)** (`CONSTRUCTION_STONE_FORTRESS_LEG_L5`)
 - **Blok**: 11x **BEDROCK** (üst üste) + **BEACON** (üstte) + **BEACON** (altta)
 - **İşlev**: 50x50x25 taş kalesi
 - **Benzersizlik**: Efsanevi kalesi
-- **Admin Komut**: `/scadmin build battery 5 Taş Kalesi (Efsanevi)`
+- **Admin Komut**: `/stratocraft build battery 5 Taş Kalesi (Efsanevi)`
 
 ---
 
@@ -1654,31 +1659,31 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 - **Blok**: 3x **GOLD_BLOCK** (üst üste)
 - **İşlev**: 5 kalp can verme
 - **Benzersizlik**: Can verme
-- **Admin Komut**: `/scadmin build battery 1 Can Yenileme`
+- **Admin Komut**: `/stratocraft build battery 1 Can Yenileme`
 
 **52. Hız Artışı** (`SUPPORT_SPEED_L1`)
 - **Blok**: 3x **EMERALD_BLOCK** (üst üste)
 - **İşlev**: Speed II (10 saniye)
 - **Benzersizlik**: Hız artışı
-- **Admin Komut**: `/scadmin build battery 1 Hız Artışı`
+- **Admin Komut**: `/stratocraft build battery 1 Hız Artışı`
 
 **53. Hasar Artışı** (`SUPPORT_DAMAGE_L1`)
 - **Blok**: 3x **DIAMOND_BLOCK** (üst üste)
 - **İşlev**: Strength II (10 saniye)
 - **Benzersizlik**: Hasar artışı
-- **Admin Komut**: `/scadmin build battery 1 Hasar Artışı`
+- **Admin Komut**: `/stratocraft build battery 1 Hasar Artışı`
 
 **54. Zırh Artışı** (`SUPPORT_ARMOR_L1`)
 - **Blok**: 3x **IRON_BARS** (üst üste)
 - **İşlev**: Damage Resistance II (10 saniye)
 - **Benzersizlik**: Zırh artışı
-- **Admin Komut**: `/scadmin build battery 1 Zırh Artışı`
+- **Admin Komut**: `/stratocraft build battery 1 Zırh Artışı`
 
 **55. Yenilenme** (`SUPPORT_REGENERATION_L1`)
 - **Blok**: 3x **LAPIS_BLOCK** (üst üste)
 - **İşlev**: Regeneration II (10 saniye)
 - **Benzersizlik**: Yenilenme
-- **Admin Komut**: `/scadmin build battery 1 Yenilenme`
+- **Admin Komut**: `/stratocraft build battery 1 Yenilenme`
 
 #### Seviye 2 (5 Blok + Yan Blok)
 
@@ -1686,31 +1691,31 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 - **Blok**: 5x **GOLD_BLOCK** (üst üste) + **EMERALD** (yan)
 - **İşlev**: 5 kalp can + Speed II (15 saniye) - İKİ EFEKT BİRLİKTE
 - **Benzersizlik**: Kombinasyon (Can Yenileme'den farklı)
-- **Admin Komut**: `/scadmin build battery 2 Can + Hız Kombinasyonu`
+- **Admin Komut**: `/stratocraft build battery 2 Can + Hız Kombinasyonu`
 
 **57. Hasar + Zırh Kombinasyonu** (`SUPPORT_DAMAGE_ARMOR_COMBO_L2`)
 - **Blok**: 5x **DIAMOND_BLOCK** (üst üste) + **IRON_INGOT** (yan)
 - **İşlev**: Strength II + Damage Resistance II (15 saniye) - İKİ EFEKT BİRLİKTE
 - **Benzersizlik**: Kombinasyon (Hasar Artışı'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 2 Hasar + Zırh Kombinasyonu`
+- **Admin Komut**: `/stratocraft build battery 2 Hasar + Zırh Kombinasyonu`
 
 **58. Yenilenme + Can Kombinasyonu** (`SUPPORT_REGENERATION_HEAL_COMBO_L2`)
 - **Blok**: 5x **LAPIS_BLOCK** (üst üste) + **GOLD_INGOT** (yan)
 - **İşlev**: Regeneration II + 3 kalp can (15 saniye) - İKİ EFEKT BİRLİKTE
 - **Benzersizlik**: Kombinasyon (Yenilenme'den farklı)
-- **Admin Komut**: `/scadmin build battery 2 Yenilenme + Can Kombinasyonu`
+- **Admin Komut**: `/stratocraft build battery 2 Yenilenme + Can Kombinasyonu`
 
 **59. Hız + Hasar Kombinasyonu** (`SUPPORT_SPEED_DAMAGE_COMBO_L2`)
 - **Blok**: 5x **EMERALD_BLOCK** (üst üste) + **DIAMOND** (yan)
 - **İşlev**: Speed II + Strength II (15 saniye) - İKİ EFEKT BİRLİKTE
 - **Benzersizlik**: Kombinasyon (Hız Artışı'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 2 Hız + Hasar Kombinasyonu`
+- **Admin Komut**: `/stratocraft build battery 2 Hız + Hasar Kombinasyonu`
 
 **60. Zırh + Yenilenme Kombinasyonu** (`SUPPORT_ARMOR_REGENERATION_COMBO_L2`)
 - **Blok**: 5x **IRON_BARS** (üst üste) + **LAPIS_LAZULI** (yan)
 - **İşlev**: Damage Resistance II + Regeneration II (15 saniye) - İKİ EFEKT BİRLİKTE
 - **Benzersizlik**: Kombinasyon (Zırh Artışı'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 2 Zırh + Yenilenme Kombinasyonu`
+- **Admin Komut**: `/stratocraft build battery 2 Zırh + Yenilenme Kombinasyonu`
 
 #### Seviye 3 (7 Blok + Yan Blok)
 
@@ -1718,31 +1723,31 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 - **Blok**: 7x **GOLD_BLOCK** (üst üste) + **GOLDEN_APPLE** (yan)
 - **İşlev**: 10 kalp absorption (20 saniye) - SADECE ABSORPTION
 - **Benzersizlik**: Absorption (Can Yenileme'den farklı)
-- **Admin Komut**: `/scadmin build battery 3 Absorption Kalkanı`
+- **Admin Komut**: `/stratocraft build battery 3 Absorption Kalkanı`
 
 **62. Uçma Yeteneği** (`SUPPORT_FLIGHT_L3`)
 - **Blok**: 7x **EMERALD_BLOCK** (üst üste) + **FEATHER** (yan)
 - **İşlev**: Uçma yeteneği (10 saniye) - TAMAMEN FARKLI İŞLEV
 - **Benzersizlik**: Uçma (Hız Artışı'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 3 Uçma Yeteneği`
+- **Admin Komut**: `/stratocraft build battery 3 Uçma Yeteneği`
 
 **63. Kritik Vuruş Artışı** (`SUPPORT_CRITICAL_STRIKE_L3`)
 - **Blok**: 7x **DIAMOND_BLOCK** (üst üste) + **DIAMOND_SWORD** (yan)
 - **İşlev**: Kritik vuruş şansı %50 artışı (20 saniye) - FARKLI İŞLEV
 - **Benzersizlik**: Kritik vuruş (Hasar Artışı'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 3 Kritik Vuruş Artışı`
+- **Admin Komut**: `/stratocraft build battery 3 Kritik Vuruş Artışı`
 
 **64. Yansıtma Kalkanı** (`SUPPORT_REFLECTION_SHIELD_L3`)
 - **Blok**: 7x **IRON_BARS** (üst üste) + **SHIELD** (yan)
 - **İşlev**: Gelen hasarın %30'unu yansıtma (20 saniye) - FARKLI İŞLEV
 - **Benzersizlik**: Yansıtma (Zırh Artışı'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 3 Yansıtma Kalkanı`
+- **Admin Komut**: `/stratocraft build battery 3 Yansıtma Kalkanı`
 
 **65. Can Çalma** (`SUPPORT_LIFE_STEAL_L3`)
 - **Blok**: 7x **LAPIS_BLOCK** (üst üste) + **ROTTEN_FLESH** (yan)
 - **İşlev**: Vurduğun hasarın %20'si can olarak geri gelir (20 saniye) - FARKLI İŞLEV
 - **Benzersizlik**: Can çalma (Yenilenme'den farklı)
-- **Admin Komut**: `/scadmin build battery 3 Can Çalma`
+- **Admin Komut**: `/stratocraft build battery 3 Can Çalma`
 
 #### Seviye 4 (9 Blok + Yan Blok)
 
@@ -1750,31 +1755,31 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 - **Blok**: 9x **GOLD_BLOCK** (üst üste) + **ENCHANTED_GOLDEN_APPLE** (yan)
 - **İşlev**: Tam can + 20 kalp absorption - İKİ EFEKT BİRLİKTE
 - **Benzersizlik**: Tam can + absorption (Absorption Kalkanı'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 4 Tam Can + Absorption`
+- **Admin Komut**: `/stratocraft build battery 4 Tam Can + Absorption`
 
 **67. Zaman Yavaşlatma** (`SUPPORT_TIME_SLOW_L4`)
 - **Blok**: 9x **EMERALD_BLOCK** (üst üste) + **CLOCK** (yan)
 - **İşlev**: Etraftaki düşmanları yavaşlatma (Slow V) (30 saniye) - FARKLI İŞLEV
 - **Benzersizlik**: Zaman yavaşlatma (Uçma'dan farklı)
-- **Admin Komut**: `/scadmin build battery 4 Zaman Yavaşlatma`
+- **Admin Komut**: `/stratocraft build battery 4 Zaman Yavaşlatma`
 
 **68. Yıldırım Vuruşu** (`SUPPORT_LIGHTNING_STRIKE_L4`)
 - **Blok**: 9x **DIAMOND_BLOCK** (üst üste) + **LIGHTNING_ROD** (yan)
 - **İşlev**: Her vuruşta yıldırım düşer (30 saniye) - FARKLI İŞLEV
 - **Benzersizlik**: Yıldırım vuruşu (Kritik Vuruş'tan farklı)
-- **Admin Komut**: `/scadmin build battery 4 Yıldırım Vuruşu`
+- **Admin Komut**: `/stratocraft build battery 4 Yıldırım Vuruşu`
 
 **69. Görünmezlik Kalkanı** (`SUPPORT_INVISIBILITY_SHIELD_L4`)
 - **Blok**: 9x **IRON_BARS** (üst üste) + **GLASS_PANE** (yan)
 - **İşlev**: Invisibility + Damage Resistance III (30 saniye) - İKİ EFEKT BİRLİKTE
 - **Benzersizlik**: Görünmezlik (Yansıtma Kalkanı'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 4 Görünmezlik Kalkanı`
+- **Admin Komut**: `/stratocraft build battery 4 Görünmezlik Kalkanı`
 
 **70. Ölümsüzlük Anı** (`SUPPORT_IMMORTALITY_MOMENT_L4`)
 - **Blok**: 9x **LAPIS_BLOCK** (üst üste) + **TOTEM_OF_UNDYING** (yan)
 - **İşlev**: 3 saniye ölümsüzlük (sadece bir kez) - FARKLI İŞLEV
 - **Benzersizlik**: Ölümsüzlük (Can Çalma'dan farklı)
-- **Admin Komut**: `/scadmin build battery 4 Ölümsüzlük Anı`
+- **Admin Komut**: `/stratocraft build battery 4 Ölümsüzlük Anı`
 
 #### Seviye 5 (11 Blok + Özel Bloklar)
 
@@ -1782,31 +1787,31 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 - **Blok**: 11x **BEDROCK** (üst üste) + **NETHER_STAR** (üstte) + **BEACON** (altta)
 - **İşlev**: Tam can + 50 kalp absorption + Regeneration V (60 saniye) - ÜÇ EFEKT BİRLİKTE
 - **Benzersizlik**: Üçlü kombinasyon (benzersiz)
-- **Admin Komut**: `/scadmin build battery 5 Efsanevi Can Yenileme`
+- **Admin Komut**: `/stratocraft build battery 5 Efsanevi Can Yenileme`
 
 **72. Zaman Durdurma** (`SUPPORT_TIME_STOP_L5`)
 - **Blok**: 11x **BEDROCK** (üst üste) + **NETHER_STAR** (üstte) + **BEACON** (altta)
 - **İşlev**: Etraftaki tüm düşmanları dondurma (AI kapatma) (10 saniye) - FARKLI İŞLEV
 - **Benzersizlik**: Zaman durdurma (Zaman Yavaşlatma'dan farklı)
-- **Admin Komut**: `/scadmin build battery 5 Zaman Durdurma`
+- **Admin Komut**: `/stratocraft build battery 5 Zaman Durdurma`
 
 **73. Ölüm Dokunuşu** (`SUPPORT_DEATH_TOUCH_L5`)
 - **Blok**: 11x **BEDROCK** (üst üste) + **NETHER_STAR** (üstte) + **BEACON** (altta)
 - **İşlev**: Her vuruşta %25 can hasarı (60 saniye) - FARKLI İŞLEV
 - **Benzersizlik**: Yüzde hasar (Yıldırım Vuruşu'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 5 Ölüm Dokunuşu`
+- **Admin Komut**: `/stratocraft build battery 5 Ölüm Dokunuşu`
 
 **74. Faz Değiştirme** (`SUPPORT_PHASE_SHIFT_L5`)
 - **Blok**: 11x **BEDROCK** (üst üste) + **NETHER_STAR** (üstte) + **BEACON** (altta)
 - **İşlev**: 5 saniye boyunca tüm hasarlardan geçirmez (60 saniye cooldown) - FARKLI İŞLEV
 - **Benzersizlik**: Faz değiştirme (Görünmezlik Kalkanı'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 5 Faz Değiştirme`
+- **Admin Komut**: `/stratocraft build battery 5 Faz Değiştirme`
 
 **75. Yeniden Doğuş** (`SUPPORT_REBIRTH_L5`)
 - **Blok**: 11x **BEDROCK** (üst üste) + **NETHER_STAR** (üstte) + **BEACON** (altta)
 - **İşlev**: Öldüğünde otomatik canlanma (1 kez, 60 saniye içinde) - FARKLI İŞLEV
 - **Benzersizlik**: Yeniden doğuş (Ölümsüzlük Anı'ndan farklı)
-- **Admin Komut**: `/scadmin build battery 5 Yeniden Doğuş`
+- **Admin Komut**: `/stratocraft build battery 5 Yeniden Doğuş`
 
 ---
 
