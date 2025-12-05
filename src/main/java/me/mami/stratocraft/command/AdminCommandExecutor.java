@@ -264,8 +264,14 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             // İsimden item bul (weapon için)
             if (category.equals("weapon")) {
                 itemName = args[3].toLowerCase();
-                // İsimden silah bul
+                // Önce yeni format (isimlerle) dene
                 ItemStack weaponItem = getWeaponByName(level, itemName);
+                
+                // Eğer yeni format başarısız olursa, eski formatı dene (sword, axe, etc.)
+                if (weaponItem == null) {
+                    weaponItem = getLeveledItemByName(category, level, itemName);
+                }
+                
                 if (weaponItem != null) {
                     amount = args.length > 4 ? parseInt(args[4], 1) : 1;
                     weaponItem.setAmount(amount);
@@ -288,6 +294,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     p.sendMessage("§cGeçersiz silah ismi: §e" + itemName);
                     p.sendMessage("§7Seviye " + level + " için geçerli silahlar:");
                     showWeaponNamesByLevel(p, level);
+                    p.sendMessage("§7Veya eski format: sword, axe, spear, bow, hammer");
                     return true;
                 }
             }
@@ -1279,41 +1286,26 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case 1:
                 switch (normalizedName) {
                     case "hiz_hanceri":
-                    case "hız_hançeri":
-                    case "hiz_hançeri":
-                    case "hız_hanceri":
                     case "l1_1":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier1Weapon("l1_1") : 
                             (ItemManager.WEAPON_L1_1 != null ? ItemManager.WEAPON_L1_1.clone() : null);
                     case "ciftci_tirpani":
-                    case "çiftçi_tırpanı":
-                    case "ciftci_tırpanı":
-                    case "çiftçi_tirpani":
                     case "l1_2":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier1Weapon("l1_2") : 
                             (ItemManager.WEAPON_L1_2 != null ? ItemManager.WEAPON_L1_2.clone() : null);
                     case "yercekimi_gurzu":
-                    case "yerçekimi_gürzü":
-                    case "yercekimi_gürzü":
-                    case "yerçekimi_gurzu":
                     case "l1_3":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier1Weapon("l1_3") : 
                             (ItemManager.WEAPON_L1_3 != null ? ItemManager.WEAPON_L1_3.clone() : null);
                     case "patlayici_yay":
-                    case "patlayıcı_yay":
-                    case "patlayici_yay":
-                    case "patlayıcı_yay":
                     case "l1_4":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier1Weapon("l1_4") : 
                             (ItemManager.WEAPON_L1_4 != null ? ItemManager.WEAPON_L1_4.clone() : null);
                     case "vampir_disi":
-                    case "vampir_dişi":
-                    case "vampir_disi":
-                    case "vampir_dişi":
                     case "l1_5":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier1Weapon("l1_5") : 
@@ -1323,41 +1315,26 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case 2:
                 switch (normalizedName) {
                     case "alev_kilici":
-                    case "alev_kılıcı":
-                    case "alev_kilici":
-                    case "alev_kılıcı":
                     case "l2_1":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier2Weapon("l2_1") : 
                             (ItemManager.WEAPON_L2_1 != null ? ItemManager.WEAPON_L2_1.clone() : null);
                     case "buz_asasi":
-                    case "buz_asası":
-                    case "buz_asasi":
-                    case "buz_asası":
                     case "l2_2":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier2Weapon("l2_2") : 
                             (ItemManager.WEAPON_L2_2 != null ? ItemManager.WEAPON_L2_2.clone() : null);
                     case "zehirli_mizrak":
-                    case "zehirli_mızrak":
-                    case "zehirli_mizrak":
-                    case "zehirli_mızrak":
                     case "l2_3":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier2Weapon("l2_3") : 
                             (ItemManager.WEAPON_L2_3 != null ? ItemManager.WEAPON_L2_3.clone() : null);
                     case "golem_kalkani":
-                    case "golem_kalkanı":
-                    case "golem_kalkani":
-                    case "golem_kalkanı":
                     case "l2_4":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier2Weapon("l2_4") : 
                             (ItemManager.WEAPON_L2_4 != null ? ItemManager.WEAPON_L2_4.clone() : null);
                     case "sok_baltasi":
-                    case "şok_baltası":
-                    case "sok_baltası":
-                    case "şok_baltasi":
                     case "l2_5":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier2Weapon("l2_5") : 
@@ -1367,41 +1344,26 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case 3:
                 switch (normalizedName) {
                     case "golge_katanasi":
-                    case "gölge_katanası":
-                    case "golge_katanası":
-                    case "gölge_katanasi":
                     case "l3_1":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier3Weapon("l3_1") : 
                             (ItemManager.WEAPON_L3_1 != null ? ItemManager.WEAPON_L3_1.clone() : null);
                     case "deprem_cekici":
-                    case "deprem_çekici":
-                    case "deprem_cekici":
-                    case "deprem_çekici":
                     case "l3_2":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier3Weapon("l3_2") : 
                             (ItemManager.WEAPON_L3_2 != null ? ItemManager.WEAPON_L3_2.clone() : null);
                     case "taramali_yay":
-                    case "taramalı_yay":
-                    case "taramali_yay":
-                    case "taramalı_yay":
                     case "l3_3":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier3Weapon("l3_3") : 
                             (ItemManager.WEAPON_L3_3 != null ? ItemManager.WEAPON_L3_3.clone() : null);
                     case "buyucu_kuresi":
-                    case "büyücü_küresi":
-                    case "buyucu_küresi":
-                    case "büyücü_kuresi":
                     case "l3_4":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier3Weapon("l3_4") : 
                             (ItemManager.WEAPON_L3_4 != null ? ItemManager.WEAPON_L3_4.clone() : null);
                     case "hayalet_hanceri":
-                    case "hayalet_hançeri":
-                    case "hayalet_hanceri":
-                    case "hayalet_hançeri":
                     case "l3_5":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier3Weapon("l3_5") : 
@@ -1411,38 +1373,25 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case 4:
                 switch (normalizedName) {
                     case "element_kilici":
-                    case "element_kılıcı":
-                    case "element_kilici":
-                    case "element_kılıcı":
                     case "l4_1":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier4Weapon("l4_1") : 
                             (ItemManager.WEAPON_L4_1 != null ? ItemManager.WEAPON_L4_1.clone() : null);
                     case "yasam_ve_olum":
-                    case "yaşam_ve_ölüm":
-                    case "yasam_ve_ölüm":
-                    case "yaşam_ve_olum":
                     case "l4_2":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier4Weapon("l4_2") : 
                             (ItemManager.WEAPON_L4_2 != null ? ItemManager.WEAPON_L4_2.clone() : null);
                     case "mjolnir_v2":
-                    case "mjölnir_v2":
-                    case "mjolnir_v2":
-                    case "mjölnir_v2":
                     case "l4_3":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier4Weapon("l4_3") : 
                             (ItemManager.WEAPON_L4_3 != null ? ItemManager.WEAPON_L4_3.clone() : null);
                     case "avci_yayi":
-                    case "avcı_yayı":
-                    case "avci_yayı":
-                    case "avcı_yayi":
                     case "l4_4":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier4Weapon("l4_4") : 
                             (ItemManager.WEAPON_L4_4 != null ? ItemManager.WEAPON_L4_4.clone() : null);
-                    case "manyetik_eldiven":
                     case "manyetik_eldiven":
                     case "l4_5":
                         return plugin.getSpecialItemManager() != null ? 
@@ -1453,41 +1402,26 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case 5:
                 switch (normalizedName) {
                     case "hiperiyon_kilici":
-                    case "hiperiyon_kılıcı":
-                    case "hiperiyon_kilici":
-                    case "hiperiyon_kılıcı":
                     case "l5_1":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier5Weapon("l5_1") : 
                             (ItemManager.WEAPON_L5_1 != null ? ItemManager.WEAPON_L5_1.clone() : null);
                     case "meteor_cagiran":
-                    case "meteor_çağıran":
-                    case "meteor_cagiran":
-                    case "meteor_çağıran":
                     case "l5_2":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier5Weapon("l5_2") : 
                             (ItemManager.WEAPON_L5_2 != null ? ItemManager.WEAPON_L5_2.clone() : null);
                     case "titan_katili":
-                    case "titan_katili":
-                    case "zaman_katmani":
-                    case "zaman_katmanı":
                     case "l5_3":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier5Weapon("l5_3") : 
                             (ItemManager.WEAPON_L5_3 != null ? ItemManager.WEAPON_L5_3.clone() : null);
                     case "ruh_bicen":
-                    case "ruh_biçen":
-                    case "olumsuzluk_yayi":
-                    case "ölümsüzlük_yayı":
                     case "l5_4":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier5Weapon("l5_4") : 
                             (ItemManager.WEAPON_L5_4 != null ? ItemManager.WEAPON_L5_4.clone() : null);
                     case "zamani_buken":
-                    case "zamanı_büken":
-                    case "zamani_büken":
-                    case "zamanı_buken":
                     case "l5_5":
                         return plugin.getSpecialItemManager() != null ? 
                             plugin.getSpecialItemManager().getTier5Weapon("l5_5") : 
@@ -3805,8 +3739,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     int level = Integer.parseInt(levelStr);
                     if (level >= 1 && level <= 5) {
                         if (category.equals("weapon")) {
-                            // Silah isimleri (Türkçe isimlerle)
-                            List<String> weaponNames = getWeaponNamesByLevel(level);
+                            // Silah isimleri (hem yeni format hem eski format)
+                            List<String> weaponNames = new ArrayList<>();
+                            // Yeni format (isimlerle)
+                            weaponNames.addAll(getWeaponNamesByLevel(level));
+                            // Eski format (sword, axe, etc.)
+                            weaponNames.addAll(Arrays.asList("sword", "axe", "spear", "bow", "hammer", 
+                                "kılıç", "kilic", "balta", "mızrak", "mizrak", "trident", "yay", "çekiç", "cekiç", "pickaxe"));
                             if (input.isEmpty()) {
                                 return weaponNames;
                             }
