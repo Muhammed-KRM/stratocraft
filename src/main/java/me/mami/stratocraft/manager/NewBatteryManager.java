@@ -342,15 +342,35 @@ public class NewBatteryManager {
     
     /**
      * Merkez bloktan başlayarak tüm tarifleri kontrol et
+     * ÖNCE tıklanan bloğun hangi tarifin merkez bloğu olduğunu kontrol eder
+     * SADECE tıklanan bloğun merkez bloğu olduğu tarifler kontrol edilir (çakışma önleme)
      */
     public RecipeCheckResult checkAllRecipes(Block centerBlock) {
+        Material clickedMaterial = centerBlock.getType();
+        
+        // ÖNCE: Tıklanan bloğun hangi tarifin merkez bloğu olduğunu kontrol et
+        List<RecipeChecker> matchingCenterCheckers = new ArrayList<>();
         for (RecipeChecker checker : recipeCheckers.values()) {
+            BlockPattern pattern = checker.getPattern();
+            if (pattern != null && pattern.getCenterBlock() == clickedMaterial) {
+                matchingCenterCheckers.add(checker);
+            }
+        }
+        
+        // Eğer tıklanan blok hiçbir tarifin merkez bloğu değilse, hiçbir tarif eşleşmemeli
+        if (matchingCenterCheckers.isEmpty()) {
+            return RecipeCheckResult.failure("Tıklanan blok hiçbir tarifin merkez bloğu değil");
+        }
+        
+        // SADECE tıklanan bloğun merkez bloğu olduğu tarifleri kontrol et
+        for (RecipeChecker checker : matchingCenterCheckers) {
             RecipeCheckResult result = checker.checkRecipe(centerBlock);
             if (result.matches()) {
                 return result;
             }
         }
-        return RecipeCheckResult.failure("Hiçbir tarif eşleşmedi");
+        
+        return RecipeCheckResult.failure("Tıklanan blok merkez bloğu ama tarif eşleşmedi");
     }
     
     /**
