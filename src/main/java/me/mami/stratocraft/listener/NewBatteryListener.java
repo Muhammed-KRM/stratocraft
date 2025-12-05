@@ -175,11 +175,11 @@ public class NewBatteryListener implements Listener {
         ItemStack offHand = player.getInventory().getItemInOffHand();
         boolean hasAmplifier = ItemManager.isCustomItem(offHand, "FLAME_AMPLIFIER");
         
-        // Antrenman çarpanını hesapla
+        // Antrenman çarpanını hesapla (seviye bazlı)
         String trainingKey = getTrainingKey(batteryName);
         double trainingMultiplier = 1.0;
         if (trainingManager != null) {
-            trainingMultiplier = trainingManager.getMasteryMultiplier(player.getUniqueId(), trainingKey);
+            trainingMultiplier = trainingManager.getMasteryMultiplier(player.getUniqueId(), trainingKey, batteryLevel);
         }
         
         // Batarya ismini al (RecipeCheckResult'tan - her tarif kendi ismini belirler)
@@ -246,17 +246,50 @@ public class NewBatteryListener implements Listener {
             }
         }
         
-        // 8. Antrenman durumu mesajı
+        // 8. Antrenman durumu mesajı (detaylı)
         if (trainingManager != null) {
             String trainingKey = getTrainingKey(data.getBatteryName());
-            double multiplier = trainingManager.getMasteryMultiplier(player.getUniqueId(), trainingKey);
+            int batteryLvl = data.getBatteryLevel();
+            double multiplier = trainingManager.getMasteryMultiplier(player.getUniqueId(), trainingKey, batteryLvl);
+            int uses = trainingManager.getTotalUses(player.getUniqueId(), trainingKey);
+            
             if (multiplier < 1.0) {
-                player.sendMessage("§e§lANTRENMAN MODU: §7Güç %" + (int)(multiplier * 100));
-                int uses = trainingManager.getTotalUses(player.getUniqueId(), trainingKey);
-                int required = trainingManager.getRequiredUses(trainingKey);
-                player.sendMessage("§7Kullanım: §e" + uses + "§7/§e" + required);
-            } else if (multiplier > 1.0) {
-                player.sendMessage("§6§lMASTERY: §7Güç %" + (int)(multiplier * 100));
+                // Antrenman modu
+                player.sendMessage("§e§l━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                player.sendMessage("§e§l⚡ ANTRENMAN MODU AKTİF ⚡");
+                player.sendMessage("§7Mevcut Güç: §e%" + String.format("%.0f", multiplier * 100));
+                player.sendMessage("§7Kullanım: §e" + uses + "§7/§e5 §7(Tam güç için)");
+                
+                // Sonraki seviye bilgisi
+                if (uses < 5) {
+                    double nextMultiplier = trainingManager.getMasteryMultiplier(player.getUniqueId(), trainingKey, batteryLvl);
+                    int nextUses = uses + 1;
+                    // Sonraki kullanımdaki gücü hesapla
+                    double nextPower = calculateNextPower(uses + 1, batteryLvl);
+                    player.sendMessage("§7Sonraki: §a%" + String.format("%.0f", nextPower * 100) + " §7(+" + String.format("%.0f", (nextPower - multiplier) * 100) + "%)");
+                }
+                player.sendMessage("§e§l━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            } else if (multiplier == 1.0) {
+                // Tam güç
+                if (uses <= 5) {
+                    player.sendMessage("§a§l✓ TAM GÜÇ ULAŞILDI!");
+                    player.sendMessage("§720 kullanımda §6§lMASTERY §7kilidi açılacak!");
+                }
+            } else if (multiplier > 1.0 && multiplier < 1.5) {
+                // Mastery modu (henüz maksimuma ulaşmadı)
+                player.sendMessage("§6§l━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                player.sendMessage("§6§l⭐ MASTERY MODU AKTİF ⭐");
+                player.sendMessage("§7Mevcut Güç: §6%" + String.format("%.0f", multiplier * 100));
+                player.sendMessage("§7Kullanım: §6" + uses + "§7/§630 §7(Maksimum güç için)");
+                double remaining = 1.5 - multiplier;
+                player.sendMessage("§7Kalan Artış: §e+" + String.format("%.0f", remaining * 100) + "%");
+                player.sendMessage("§6§l━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            } else {
+                // Maksimum güç
+                player.sendMessage("§d§l━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                player.sendMessage("§d§l★ MAKSİMUM GÜÇ! ★");
+                player.sendMessage("§7Güç: §d%150 §7(§6+" + uses + " kullanım§7)");
+                player.sendMessage("§d§l━━━━━━━━━━━━━━━━━━━━━━━━━━");
             }
         }
     }
@@ -301,6 +334,41 @@ public class NewBatteryListener implements Listener {
             .replace("Ç", "C").replace("Ğ", "G").replace("İ", "I")
             .replace("Ö", "O").replace("Ş", "S").replace("Ü", "U")
             .replace("EFSANEVİ", "LEG").replace("GELİŞMİŞ", "ADV");
+    }
+    
+    /**
+     * Sonraki kullanımdaki gücü hesapla (bilgi mesajları için)
+     */
+    private double calculateNextPower(int nextUses, int batteryLevel) {
+        // Başlangıç gücü
+        double startPower;
+        switch (batteryLevel) {
+            case 1: startPower = 0.2; break;
+            case 2: startPower = 0.4; break;
+            case 3: startPower = 0.6; break;
+            case 4: startPower = 0.7; break;
+            case 5: startPower = 0.8; break;
+            default: startPower = 0.5; break;
+        }
+        
+        // Kullanım sayısına göre güç
+        if (nextUses <= 1) {
+            return startPower;
+        } else if (nextUses == 2) {
+            return Math.min(1.0, startPower + 0.2);
+        } else if (nextUses == 3) {
+            return Math.min(1.0, startPower + 0.4);
+        } else if (nextUses == 4) {
+            return Math.min(1.0, startPower + 0.6);
+        } else if (nextUses >= 5 && nextUses <= 20) {
+            return 1.0;
+        } else if (nextUses > 20 && nextUses <= 30) {
+            int extraUses = nextUses - 20;
+            double extraPower = (extraUses / 10.0) * 0.5;
+            return 1.0 + extraPower;
+        } else {
+            return 1.5;
+        }
     }
     
     /**
@@ -380,44 +448,88 @@ public class NewBatteryListener implements Listener {
     }
     
     /**
-     * Mastery mesajlarını yönet
+     * Mastery mesajlarını yönet (yeni sistem)
      */
     private void handleMasteryMessages(Player player, String trainingKey, NewBatteryData data) {
         if (trainingManager == null) return;
         
-        int previousLevel = trainingManager.getPreviousMasteryLevel(player.getUniqueId(), trainingKey);
-        int newLevel = trainingManager.getMasteryLevel(player.getUniqueId(), trainingKey);
+        int batteryLevel = data.getBatteryLevel();
         int totalUses = trainingManager.getTotalUses(player.getUniqueId(), trainingKey);
+        int previousUses = totalUses - 1;
         
-        if (newLevel > previousLevel) {
-            if (previousLevel == -1 && newLevel == 0) {
-                // Title göster (deprecated ama çalışıyor)
-                @SuppressWarnings("deprecation")
-                String title = "§a§lANTRENMAN TAMAMLANDI!";
-                @SuppressWarnings("deprecation")
-                String subtitle = "§eArtık tam güçle kullanabilirsin!";
-                player.sendTitle(title, subtitle, 10, 70, 20);
-                player.sendMessage("§a§l════════════════════════════");
-                player.sendMessage("§e§l★ ANTRENMAN TAMAMLANDI ★");
-                player.sendMessage("§7Artık bataryayı tam güçle kullanabilirsin!");
-                player.sendMessage("§7Mastery seviyesi için 20 kullanım gerekli.");
-                player.sendMessage("§a§l════════════════════════════");
-                player.playSound(player.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
-            } else {
-                // Title göster (deprecated ama çalışıyor)
-                @SuppressWarnings("deprecation")
-                String title = "§6§lSEVİYE ATLADI!";
-                @SuppressWarnings("deprecation")
-                String subtitle = "§eMastery Seviye " + newLevel;
-                player.sendTitle(title, subtitle, 10, 70, 20);
-                player.sendMessage("§6§l════════════════════════════");
-                player.sendMessage("§e§l★ MASTERY SEVİYE " + newLevel + " ★");
-                double multiplier = trainingManager.getMasteryMultiplier(player.getUniqueId(), trainingKey);
-                player.sendMessage("§7Güç artışı: §e%" + (int)((multiplier - 1.0) * 100));
-                player.sendMessage("§7Toplam kullanım: §e" + totalUses);
-                player.sendMessage("§6§l════════════════════════════");
-                player.playSound(player.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.2f);
-            }
+        double currentMultiplier = trainingManager.getMasteryMultiplier(player.getUniqueId(), trainingKey, batteryLevel);
+        double previousMultiplier = calculateNextPower(previousUses, batteryLevel);
+        
+        // Önemli geçişleri kontrol et
+        boolean justReachedFullPower = (previousUses < 5 && totalUses >= 5);
+        boolean justStartedMastery = (previousUses <= 20 && totalUses > 20);
+        boolean justReachedMaxPower = (previousUses < 30 && totalUses >= 30);
+        
+        // Her kullanımda güç bilgisi
+        if (totalUses <= 5) {
+            player.sendMessage("§e⚡ Güç Artışı: §7%" + String.format("%.0f", previousMultiplier * 100) 
+                + " §a→ §e%" + String.format("%.0f", currentMultiplier * 100) 
+                + " §7(+" + String.format("%.0f", (currentMultiplier - previousMultiplier) * 100) + "%)");
+        }
+        
+        // Tam güce ulaşma
+        if (justReachedFullPower) {
+            @SuppressWarnings("deprecation")
+            String title = "§a§lTAM GÜÇ!";
+            @SuppressWarnings("deprecation")
+            String subtitle = "§e%100 Güce Ulaştın!";
+            player.sendTitle(title, subtitle, 10, 70, 20);
+            
+            player.sendMessage("§a§l━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            player.sendMessage("§e§l★★★ TAM GÜÇ ULAŞILDI! ★★★");
+            player.sendMessage("§7" + data.getBatteryName() + " §aartık tam gücünde!");
+            player.sendMessage("§720 kullanımda §6§lMASTERY §7sistemine erişebilirsin.");
+            player.sendMessage("§7Mastery ile §d%150 güce §7kadar çıkabilirsin!");
+            player.sendMessage("§a§l━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            player.playSound(player.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+            player.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, player.getLocation().add(0, 1, 0), 50, 0.5, 0.5, 0.5, 0.1);
+        }
+        
+        // Mastery başlangıcı
+        if (justStartedMastery) {
+            @SuppressWarnings("deprecation")
+            String title = "§6§lMASTERY AÇILDI!";
+            @SuppressWarnings("deprecation")
+            String subtitle = "§eÜstün Güç Sistemi Aktif!";
+            player.sendTitle(title, subtitle, 10, 70, 20);
+            
+            player.sendMessage("§6§l━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            player.sendMessage("§e§l⭐⭐⭐ MASTERY AÇILDI! ⭐⭐⭐");
+            player.sendMessage("§7Artık §6%100'den fazla güç §7kullanabilirsin!");
+            player.sendMessage("§730 kullanımda §d%150 maksimum güce §7ulaşacaksın.");
+            player.sendMessage("§7Mevcut Güç: §6%" + String.format("%.0f", currentMultiplier * 100));
+            player.sendMessage("§6§l━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            player.playSound(player.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.2f);
+            player.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, player.getLocation().add(0, 1, 0), 100, 0.5, 0.5, 0.5, 0.1);
+        }
+        
+        // Maksimum güce ulaşma
+        if (justReachedMaxPower) {
+            @SuppressWarnings("deprecation")
+            String title = "§d§lMAKSİMUM GÜÇ!";
+            @SuppressWarnings("deprecation")
+            String subtitle = "§5%150 Güce Ulaştın!";
+            player.sendTitle(title, subtitle, 10, 70, 20);
+            
+            player.sendMessage("§d§l━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            player.sendMessage("§5§l★★★★ MAKSİMUM GÜÇ! ★★★★");
+            player.sendMessage("§7" + data.getBatteryName() + " §dmaksimum gücüne ulaştı!");
+            player.sendMessage("§7Güç: §d%150 §7(Tüm zamanların en yükseği!)");
+            player.sendMessage("§7Toplam Kullanım: §e" + totalUses);
+            player.sendMessage("§d§l━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            player.playSound(player.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.5f);
+            player.getWorld().spawnParticle(org.bukkit.Particle.DRAGON_BREATH, player.getLocation().add(0, 1, 0), 150, 0.5, 1.0, 0.5, 0.1);
+        }
+        
+        // Mastery ilerlemesi (21-29 arası)
+        if (totalUses > 20 && totalUses < 30 && !justStartedMastery) {
+            player.sendMessage("§6⭐ Mastery İlerlemesi: §e%" + String.format("%.0f", currentMultiplier * 100) 
+                + " §7(" + totalUses + "/30)");
         }
     }
     

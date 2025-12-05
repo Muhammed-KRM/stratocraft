@@ -1147,10 +1147,10 @@ public class NewBatteryManager {
     }
     
     /**
-     * Meteor Yağmuru L3: Çoklu meteor düşüşü
+     * Meteor Yağmuru L3: Çoklu meteor düşüşü (60 hasar)
      */
     private void fireMeteorShower(Player player, Location target, double multiplier, int level) {
-        double damage = 8.0 * multiplier;
+        double damage = 60.0 * multiplier;
         int radius = (int)(10 * multiplier);
         int meteorCount = (int)(5 * multiplier);
         
@@ -1192,10 +1192,10 @@ public class NewBatteryManager {
     }
     
     /**
-     * Yıldırım Fırtınası L3: Sürekli yıldırım
+     * Yıldırım Fırtınası L3: Sürekli yıldırım (50 hasar)
      */
     private void fireLightningStorm(Player player, Location target, double multiplier, int level) {
-        double damage = 5.0 * multiplier;
+        double damage = 50.0 * multiplier;
         int radius = (int)(7 * multiplier);
         int duration = (int)(5 * multiplier);
         
@@ -1230,10 +1230,10 @@ public class NewBatteryManager {
     }
     
     /**
-     * Buz Çağı L3: Sürekli dondurma
+     * Buz Çağı L3: Sürekli dondurma (70 hasar)
      */
     private void fireIceAge(Player player, Location target, double multiplier, int level) {
-        double damage = 8.0 * multiplier;
+        double damage = 70.0 * multiplier;
         int radius = (int)(15 * multiplier);
         int duration = (int)(10 * multiplier);
         
@@ -1263,7 +1263,7 @@ public class NewBatteryManager {
     }
     
     /**
-     * Zehir Bombası L3: Büyük alan zehir
+     * Zehir Bombası L3: Büyük alan zehir (55 hasar)
      */
     private void firePoisonBomb(Player player, Location target, double multiplier, int level) {
         int radius = (int)(8 * multiplier);
@@ -1285,7 +1285,7 @@ public class NewBatteryManager {
                     if (entity instanceof org.bukkit.entity.LivingEntity && entity != player) {
                         ((org.bukkit.entity.LivingEntity) entity).addPotionEffect(new org.bukkit.potion.PotionEffect(
                             org.bukkit.potion.PotionEffectType.POISON, 40, 1, false, false, true));
-                        ((org.bukkit.entity.LivingEntity) entity).damage(2.0 * multiplier);
+                        ((org.bukkit.entity.LivingEntity) entity).damage(55.0 * multiplier / duration);
                     }
                 }
                 
@@ -1297,10 +1297,10 @@ public class NewBatteryManager {
     }
     
     /**
-     * Elektrik Fırtınası L3: Sürekli şok alanı
+     * Elektrik Fırtınası L3: Sürekli şok alanı (65 hasar)
      */
     private void fireElectricStorm(Player player, Location target, double multiplier, int level) {
-        double damage = 7.0 * multiplier;
+        double damage = 65.0 * multiplier;
         int radius = (int)(10 * multiplier);
         int duration = (int)(8 * multiplier);
         
@@ -1329,10 +1329,10 @@ public class NewBatteryManager {
     }
     
     /**
-     * Tesla Kulesi L4: Otomatik alan yıldırım
+     * Tesla Kulesi L4: Otomatik alan yıldırım (100 hasar)
      */
     private void fireTeslaTower(Player player, Location target, double multiplier, int level) {
-        double damage = 5.0 * multiplier;
+        double damage = 100.0 * multiplier;
         int radius = (int)(30 * multiplier);
         int duration = (int)(30 * multiplier);
         
@@ -1372,7 +1372,7 @@ public class NewBatteryManager {
     }
     
     /**
-     * Cehennem Ateşi L4: Sürekli yanma + blok kırma
+     * Cehennem Ateşi L4: Sürekli yanma + blok kırma (80 hasar)
      */
     private void fireHellfire(Player player, Location target, double multiplier, int level) {
         int radius = (int)(12 * multiplier);
@@ -1390,7 +1390,7 @@ public class NewBatteryManager {
                 for (org.bukkit.entity.Entity entity : player.getWorld().getNearbyEntities(target, radius, radius, radius)) {
                     if (entity instanceof org.bukkit.entity.LivingEntity && entity != player) {
                         entity.setFireTicks(100);
-                        ((org.bukkit.entity.LivingEntity) entity).damage(3.0 * multiplier);
+                        ((org.bukkit.entity.LivingEntity) entity).damage(80.0 * multiplier / duration);
                     }
                 }
                 
@@ -1415,10 +1415,10 @@ public class NewBatteryManager {
     }
     
     /**
-     * Buz Kalesi L4: Büyük buz yapısı + dondurma
+     * Buz Kalesi L4: Büyük buz yapısı + dondurma (90 hasar)
      */
     private void fireIceFortress(Player player, Location target, double multiplier, int level) {
-        double damage = 10.0 * multiplier;
+        double damage = 90.0 * multiplier;
         int radius = (int)(15 * multiplier);
         int duration = (int)(10 * multiplier);
         
@@ -1462,7 +1462,7 @@ public class NewBatteryManager {
     }
     
     /**
-     * Ölüm Bulutu L4: Ölümcül zehir
+     * Ölüm Bulutu L4: Ölümcül zehir (120 hasar)
      */
     private void fireDeathCloud(Player player, Location target, double multiplier, int level) {
         int radius = (int)(12 * multiplier);
@@ -1483,7 +1483,7 @@ public class NewBatteryManager {
                             org.bukkit.potion.PotionEffectType.POISON, 40, 2, false, false, true));
                         ((org.bukkit.entity.LivingEntity) entity).addPotionEffect(new org.bukkit.potion.PotionEffect(
                             org.bukkit.potion.PotionEffectType.WITHER, 40, 0, false, false, true));
-                        ((org.bukkit.entity.LivingEntity) entity).damage(5.0 * multiplier);
+                        ((org.bukkit.entity.LivingEntity) entity).damage(120.0 * multiplier / duration);
                     }
                 }
                 
@@ -1508,10 +1508,10 @@ public class NewBatteryManager {
     }
     
     /**
-     * Elektrik Kalkanı L4: Koruyucu elektrik alanı
+     * Elektrik Kalkanı L4: Koruyucu elektrik alanı (70 hasar)
      */
     private void fireElectricShield(Player player, Location target, double multiplier, int level) {
-        double damage = 7.0 * multiplier;
+        double damage = 70.0 * multiplier;
         int radius = (int)(10 * multiplier);
         int duration = (int)(30 * multiplier);
         
@@ -1552,10 +1552,10 @@ public class NewBatteryManager {
     }
     
     /**
-     * Kıyamet Reaktörü L5: Tüm elementlerin kombinasyonu
+     * Kıyamet Reaktörü L5: Tüm elementlerin kombinasyonu (300 hasar)
      */
     private void fireApocalypseReactor(Player player, Location target, double multiplier, int level) {
-        double damage = 600.0 * multiplier;
+        double damage = 300.0 * multiplier;
         int radius = (int)(40 * multiplier);
         int areaSize = (int)(40 * multiplier);
         
@@ -1627,11 +1627,11 @@ public class NewBatteryManager {
     }
     
     /**
-     * Boss Katili L5: Bosslara özel hasar
+     * Boss Katili L5: Bosslara özel hasar (Bosslara 300, diğerlerine 100)
      */
     private void fireBossKiller(Player player, Location target, double multiplier, int level) {
-        double bossDamage = 500.0 * multiplier;
-        double normalDamage = 50.0 * multiplier;
+        double bossDamage = 300.0 * multiplier;
+        double normalDamage = 100.0 * multiplier;
         int radius = (int)(50 * multiplier);
         
         me.mami.stratocraft.manager.BossManager bossManager = plugin.getBossManager();
@@ -1659,75 +1659,116 @@ public class NewBatteryManager {
     }
     
     /**
-     * Alan Yok Edici L5: Büyük alan yıkımı
+     * Alan Yok Edici L5: Büyük alan yıkımı (300 hasar, 50x50 alan)
      */
     private void fireAreaDestroyer(Player player, Location target, double multiplier, int level) {
-        double damage = 500.0 * multiplier;
-        int areaSize = (int)(30 * multiplier);
+        double damage = 300.0 * multiplier;
+        int areaSize = 50; // Sabit 50x50 alan
         
         int halfSize = areaSize / 2;
+        int blocksDestroyed = 0;
         
         for (int x = -halfSize; x <= halfSize; x++) {
             for (int z = -halfSize; z <= halfSize; z++) {
                 org.bukkit.Location loc = target.clone().add(x, 0, z);
                 
-                // Hasar ver
+                // Hasar ver (sabit 300 hasar)
                 for (org.bukkit.entity.Entity entity : player.getWorld().getNearbyEntities(loc, 2, 2, 2)) {
                     if (entity instanceof org.bukkit.entity.LivingEntity && entity != player) {
-                        ((org.bukkit.entity.LivingEntity) entity).damage(damage / (areaSize * areaSize));
+                        ((org.bukkit.entity.LivingEntity) entity).damage(damage);
                     }
                 }
                 
-                // Blok kırma
+                // Blok kırma (savaş alanlarında ve klan alanlarında)
                 if (canModifyTerritory(player, loc)) {
                     for (int y = -5; y <= 5; y++) {
                         org.bukkit.block.Block block = loc.clone().add(0, y, 0).getBlock();
-                        if (block.getType() != org.bukkit.Material.BEDROCK && block.getType() != org.bukkit.Material.AIR) {
+                        if (block.getType() != org.bukkit.Material.BEDROCK && 
+                            block.getType() != org.bukkit.Material.AIR &&
+                            block.getType() != org.bukkit.Material.BARRIER) {
                             block.setType(org.bukkit.Material.AIR);
+                            blocksDestroyed++;
                         }
                     }
                 }
             }
         }
         
-        player.getWorld().createExplosion(target, (float)(8.0 * multiplier), false, false);
+        // Büyük patlama efekti
+        player.getWorld().createExplosion(target, (float)(15.0 * multiplier), false, false);
+        
+        // Partikül efekti
+        for (int i = 0; i < 50; i++) {
+            double angle = Math.random() * Math.PI * 2;
+            double radius = Math.random() * areaSize / 2;
+            Location particleLoc = target.clone().add(
+                Math.cos(angle) * radius,
+                Math.random() * 10,
+                Math.sin(angle) * radius
+            );
+            player.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, particleLoc, 1);
+            player.getWorld().spawnParticle(org.bukkit.Particle.LAVA, particleLoc, 5);
+        }
+        
         player.sendMessage("§4§l💥 ALAN YOK EDİCİ AKTİF! 💥");
+        player.sendMessage("§c" + blocksDestroyed + " blok yok edildi!");
     }
     
     /**
-     * Dağ Yok Edici L5: Dev alan yıkımı
+     * Dağ Yok Edici L5: Dev alan yıkımı (300 hasar, 50x50 alan, dikey 20 blok)
      */
     private void fireMountainDestroyer(Player player, Location target, double multiplier, int level) {
-        double damage = 500.0 * multiplier;
-        int areaSize = (int)(30 * multiplier);
+        double damage = 300.0 * multiplier;
+        int areaSize = 50; // Sabit 50x50 alan
         
         int halfSize = areaSize / 2;
+        int blocksDestroyed = 0;
         
         for (int x = -halfSize; x <= halfSize; x++) {
             for (int z = -halfSize; z <= halfSize; z++) {
                 org.bukkit.Location loc = target.clone().add(x, 0, z);
                 
-                // Hasar ver
+                // Hasar ver (sabit 300 hasar)
                 for (org.bukkit.entity.Entity entity : player.getWorld().getNearbyEntities(loc, 2, 2, 2)) {
                     if (entity instanceof org.bukkit.entity.LivingEntity && entity != player) {
-                        ((org.bukkit.entity.LivingEntity) entity).damage(damage / (areaSize * areaSize));
+                        ((org.bukkit.entity.LivingEntity) entity).damage(damage);
                     }
                 }
                 
-                // Blok kırma (dikey olarak)
+                // Blok kırma (dikey olarak 20 blok)
                 if (canModifyTerritory(player, loc)) {
                     for (int y = -10; y <= 10; y++) {
                         org.bukkit.block.Block block = loc.clone().add(0, y, 0).getBlock();
-                        if (block.getType() != org.bukkit.Material.BEDROCK && block.getType() != org.bukkit.Material.AIR) {
+                        if (block.getType() != org.bukkit.Material.BEDROCK && 
+                            block.getType() != org.bukkit.Material.AIR &&
+                            block.getType() != org.bukkit.Material.BARRIER) {
                             block.setType(org.bukkit.Material.AIR);
+                            blocksDestroyed++;
                         }
                     }
                 }
             }
         }
         
-        player.getWorld().createExplosion(target, (float)(10.0 * multiplier), false, false);
+        // Büyük patlama efekti
+        player.getWorld().createExplosion(target, (float)(20.0 * multiplier), false, false);
+        
+        // Partikül efekti
+        for (int i = 0; i < 100; i++) {
+            double angle = Math.random() * Math.PI * 2;
+            double radius = Math.random() * areaSize / 2;
+            Location particleLoc = target.clone().add(
+                Math.cos(angle) * radius,
+                Math.random() * 20 - 10,
+                Math.sin(angle) * radius
+            );
+            player.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, particleLoc, 1);
+            player.getWorld().spawnParticle(org.bukkit.Particle.LAVA, particleLoc, 5);
+            player.getWorld().spawnParticle(org.bukkit.Particle.SMOKE_LARGE, particleLoc, 3);
+        }
+        
         player.sendMessage("§4§l⛰ DAĞ YOK EDİCİ AKTİF! ⛰");
+        player.sendMessage("§c" + blocksDestroyed + " blok yok edildi!");
     }
     
     /**

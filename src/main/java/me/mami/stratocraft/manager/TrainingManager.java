@@ -176,23 +176,85 @@ public class TrainingManager {
     }
     
     /**
-     * Mastery güç çarpanı (seviyeye göre)
-     * Seviye -1 (Antrenman): 0.2x (1/5 güç)
-     * Seviye 0 (Tamamlandı, mastery yok): 1.0x (normal güç)
-     * Seviye 1 (20 kullanım): 1.2x (%20 güç artışı)
-     * Seviye 2 (40 kullanım): 1.3x (%30 güç artışı)
-     * Seviye 3 (50 kullanım): 1.4x (%40 güç artışı)
+     * Mastery güç çarpanı (seviyeye göre) - Geriye dönük uyumluluk için
+     * Seviye bilgisi olmadan çağrıldığında varsayılan seviye 3 kullanılır
      */
     public double getMasteryMultiplier(UUID playerId, String ritualId) {
-        int masteryLevel = getMasteryLevel(playerId, ritualId);
+        // Varsayılan seviye 3 (orta seviye)
+        return getMasteryMultiplier(playerId, ritualId, 3);
+    }
+    
+    /**
+     * Mastery güç çarpanı (seviye bazlı dinamik sistem)
+     * 
+     * BAŞLANGIÇ GÜCÜ (Seviye Bazlı):
+     * - Seviye 1: %20
+     * - Seviye 2: %40
+     * - Seviye 3: %60
+     * - Seviye 4: %70
+     * - Seviye 5: %80
+     * 
+     * KADEMELİ ARTIŞLAR:
+     * - 1. kullanım: Başlangıç gücü
+     * - 2. kullanım: Başlangıç + %20
+     * - 3. kullanım: Başlangıç + %40
+     * - 4. kullanım: Başlangıç + %60
+     * - 5. kullanım: Başlangıç + %80 (genellikle %100'e ulaşır)
+     * - 6-20. kullanım: %100 (tam güç)
+     * - 21-30. kullanım: %100 → %150 (kademeli artış)
+     */
+    public double getMasteryMultiplier(UUID playerId, String ritualId, int batteryLevel) {
+        int totalUses = getTotalUses(playerId, ritualId);
         
-        switch (masteryLevel) {
-            case -1: return 0.2; // Antrenman modu (1/5 güç)
-            case 0: return 1.0; // Antrenman tamamlandı, normal güç
-            case 1: return 1.2; // Seviye 1: %20 güç artışı
-            case 2: return 1.3; // Seviye 2: %30 güç artışı
-            case 3: return 1.4; // Seviye 3: %40 güç artışı
-            default: return 1.0; // Varsayılan tam güç
+        // Başlangıç gücünü seviyeye göre belirle
+        double startPower = getStartingPower(batteryLevel);
+        
+        // Kullanım sayısına göre güç hesapla
+        if (totalUses == 0) {
+            // Hiç kullanılmamış
+            return startPower;
+        } else if (totalUses == 1) {
+            // 1. kullanım: Başlangıç gücü
+            return startPower;
+        } else if (totalUses == 2) {
+            // 2. kullanım: +%20
+            return Math.min(1.0, startPower + 0.2);
+        } else if (totalUses == 3) {
+            // 3. kullanım: +%40
+            return Math.min(1.0, startPower + 0.4);
+        } else if (totalUses == 4) {
+            // 4. kullanım: +%60
+            return Math.min(1.0, startPower + 0.6);
+        } else if (totalUses >= 5 && totalUses <= 20) {
+            // 5-20. kullanım: %100 (tam güç)
+            return 1.0;
+        } else if (totalUses > 20 && totalUses <= 30) {
+            // 21-30. kullanım: %100 → %150 (kademeli)
+            int extraUses = totalUses - 20;
+            double extraPower = (extraUses / 10.0) * 0.5; // Her 10 kullanımda %50 artış
+            return 1.0 + extraPower;
+        } else {
+            // 30+ kullanım: %150 (maksimum güç)
+            return 1.5;
+        }
+    }
+    
+    /**
+     * Seviyeye göre başlangıç gücü
+     * - Seviye 1: %20
+     * - Seviye 2: %40
+     * - Seviye 3: %60
+     * - Seviye 4: %70
+     * - Seviye 5: %80
+     */
+    private double getStartingPower(int batteryLevel) {
+        switch (batteryLevel) {
+            case 1: return 0.2;  // %20
+            case 2: return 0.4;  // %40
+            case 3: return 0.6;  // %60
+            case 4: return 0.7;  // %70
+            case 5: return 0.8;  // %80
+            default: return 0.5; // Varsayılan %50
         }
     }
     
