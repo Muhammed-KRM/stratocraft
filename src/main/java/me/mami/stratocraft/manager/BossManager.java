@@ -886,11 +886,21 @@ public class BossManager {
                 java.util.Map.Entry<UUID, BossData> entry = iterator.next();
                 BossData bossData = entry.getValue();
                 
-                if (bossData.getEntity() == null || bossData.getEntity().isDead()) {
-                    // Boss öldü, BossBar'ı temizle
-                    org.bukkit.boss.BossBar bossBar = bossBars.remove(entry.getKey());
+                // Entity null, ölü veya geçersizse temizle
+                if (bossData.getEntity() == null || !bossData.getEntity().isValid() || bossData.getEntity().isDead()) {
+                    // Boss öldü, BossBar'ı KESINLIKLE temizle
+                    UUID bossId = entry.getKey();
+                    org.bukkit.boss.BossBar bossBar = bossBars.remove(bossId);
                     if (bossBar != null) {
                         bossBar.removeAll();
+                        bossBar.setVisible(false);
+                    }
+                    // Ekstra güvenlik: bossBars map'inde hala varsa temizle
+                    bossBar = bossBars.get(bossId);
+                    if (bossBar != null) {
+                        bossBar.removeAll();
+                        bossBar.setVisible(false);
+                        bossBars.remove(bossId);
                     }
                     iterator.remove();
                     continue;
@@ -900,8 +910,15 @@ public class BossManager {
                 org.bukkit.boss.BossBar bossBar = bossBars.get(entry.getKey());
                 if (bossBar != null) {
                     LivingEntity entity = bossData.getEntity();
-                    if (entity == null || entity.isDead()) {
-                        continue; // Entity null veya ölü, zaten yukarıda temizlenecek
+                    // Entity null, ölü veya geçersizse temizle ve atla
+                    if (entity == null || !entity.isValid() || entity.isDead()) {
+                        // Hemen temizle
+                        UUID bossId = entry.getKey();
+                        bossBar.removeAll();
+                        bossBar.setVisible(false);
+                        bossBars.remove(bossId);
+                        iterator.remove();
+                        continue;
                     }
                     
                     // Null check için attribute kontrolü
@@ -1400,14 +1417,26 @@ public class BossManager {
 
     /**
      * Boss kaldır (öldüğünde)
+     * BossBar'ı kesinlikle temizler
      */
     public void removeBoss(UUID entityId) {
         activeBosses.remove(entityId);
         
-        // BossBar'ı da kaldır
+        // BossBar'ı da kaldır - KESINLIKLE temizle
         org.bukkit.boss.BossBar bossBar = bossBars.remove(entityId);
         if (bossBar != null) {
+            // Tüm oyuncuları kaldır
             bossBar.removeAll();
+            // BossBar'ı null yap (güvenlik için)
+            bossBar.setVisible(false);
+        }
+        
+        // Ekstra güvenlik: Eğer bossBars map'inde hala varsa, onu da temizle
+        bossBar = bossBars.get(entityId);
+        if (bossBar != null) {
+            bossBar.removeAll();
+            bossBar.setVisible(false);
+            bossBars.remove(entityId);
         }
     }
 }

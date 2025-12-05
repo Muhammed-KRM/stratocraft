@@ -52,7 +52,8 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.SiegeWeaponManager siegeWeaponManager;
     private me.mami.stratocraft.manager.SupplyDropManager supplyDropManager;
     private me.mami.stratocraft.manager.TrapManager trapManager;
-    private me.mami.stratocraft.manager.MineManager mineManager;
+    // Eski MineManager kaldırıldı, artık sadece NewMineManager kullanılıyor
+    private me.mami.stratocraft.manager.NewMineManager newMineManager;
     private me.mami.stratocraft.manager.SpecialItemManager specialItemManager;
     private me.mami.stratocraft.manager.DifficultyManager difficultyManager;
     private me.mami.stratocraft.manager.DungeonManager dungeonManager;
@@ -61,6 +62,7 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.TamingManager tamingManager;
     private me.mami.stratocraft.manager.BreedingManager breedingManager;
     private me.mami.stratocraft.listener.SpecialWeaponListener specialWeaponListener;
+    private me.mami.stratocraft.manager.HUDManager hudManager;
     
     public me.mami.stratocraft.listener.SpecialWeaponListener getSpecialWeaponListener() {
         return specialWeaponListener;
@@ -99,8 +101,6 @@ public class Main extends JavaPlugin {
         clanManager.setTerritoryManager(territoryManager); // Cache güncellemesi için
         batteryManager = new BatteryManager(this);
         newBatteryManager = new NewBatteryManager(this); // Yeni batarya sistemi
-        // 75 batarya için hayalet tariflerini ekle
-        ghostRecipeManager.initializeBatteryRecipes(newBatteryManager);
         siegeManager = new SiegeManager();
         disasterManager = new DisasterManager(this);
         batteryManager.setDisasterManager(disasterManager);
@@ -117,9 +117,12 @@ public class Main extends JavaPlugin {
         // MissionManager DifficultyManager'dan sonra başlatılmalı
         // missionManager = new MissionManager(); // Aşağıda difficultyManager'dan sonra başlatılacak
         ghostRecipeManager = new me.mami.stratocraft.manager.GhostRecipeManager();
+        // 75 batarya için hayalet tariflerini ekle (ghostRecipeManager oluşturulduktan sonra)
+        ghostRecipeManager.initializeBatteryRecipes(newBatteryManager);
         trainingManager = new me.mami.stratocraft.manager.TrainingManager();
         buffManager = new BuffManager();
         buffManager.setPlugin(this);
+        hudManager = new me.mami.stratocraft.manager.HUDManager(this);
         dataManager = new DataManager(this);
         configManager = new ConfigManager(this);
         langManager = new me.mami.stratocraft.util.LangManager(this);
@@ -261,8 +264,12 @@ public class Main extends JavaPlugin {
         // Yeni sistemler: Tuzaklar, Kancalar, Casusluk, Hava Drop
         trapManager = new me.mami.stratocraft.manager.TrapManager(this);
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.TrapListener(trapManager), this);
-        mineManager = new me.mami.stratocraft.manager.MineManager(this);
-        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.MineListener(mineManager), this);
+        
+        // Yeni Mayın Sistemi (eski sistem kaldırıldı)
+        newMineManager = new me.mami.stratocraft.manager.NewMineManager(this);
+        // 25 mayın için hayalet tariflerini ekle (ghostRecipeManager oluşturulduktan sonra)
+        ghostRecipeManager.initializeMineRecipes(newMineManager);
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.NewMineListener(newMineManager), this);
 
         // SpecialItemManager zaten yukarıda başlatıldı (ItemManager için gerekli)
         Bukkit.getPluginManager()
@@ -280,7 +287,14 @@ public class Main extends JavaPlugin {
 
         // Veri yükleme
         dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener, allianceManager, disasterManager);
-
+        
+        // HUD Manager'ı başlat (missionManager'dan sonra)
+        if (hudManager != null && missionManager != null) {
+            hudManager.setManagers(disasterManager, newBatteryManager, shopManager, missionManager, 
+                                  contractManager, buffManager, clanManager, territoryManager);
+            hudManager.start();
+        }
+        
         // 3. Zamanlayıcıları Başlat
         new BuffTask(territoryManager, siegeWeaponManager).runTaskTimer(this, 20L, 20L);
         new DisasterTask(disasterManager, territoryManager).runTaskTimer(this, 20L, 20L);
@@ -312,6 +326,16 @@ public class Main extends JavaPlugin {
                 }
                 if (bossManager != null) {
                     bossManager.onPlayerJoin(event.getPlayer());
+                }
+                if (hudManager != null) {
+                    hudManager.onPlayerJoin(event.getPlayer());
+                }
+            }
+            
+            @org.bukkit.event.EventHandler
+            public void onPlayerQuit(org.bukkit.event.player.PlayerQuitEvent event) {
+                if (hudManager != null) {
+                    hudManager.onPlayerQuit(event.getPlayer());
                 }
             }
         }, this);
@@ -576,6 +600,11 @@ public class Main extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // HUD Manager'ı durdur
+        if (hudManager != null) {
+            hudManager.stop();
+        }
+        
         // Batarya sistemini temizle (geçici barrier bloklarını kaldır)
         if (batteryManager != null) {
             batteryManager.shutdown();
@@ -588,8 +617,8 @@ public class Main extends JavaPlugin {
             getLogger().info("Stratocraft: Tuzaklar kaydedildi.");
         }
         
-        // Mayınları kaydet (mines.yml otomatik kaydediliyor, ama kontrol edelim)
-        if (mineManager != null) {
+        // Mayınları kaydet (NewMineManager otomatik kaydediliyor)
+        if (newMineManager != null) {
             getLogger().info("Stratocraft: Mayınlar kaydedildi.");
         }
 
@@ -712,8 +741,8 @@ public class Main extends JavaPlugin {
         return trapManager;
     }
     
-    public me.mami.stratocraft.manager.MineManager getMineManager() {
-        return mineManager;
+    public me.mami.stratocraft.manager.NewMineManager getNewMineManager() {
+        return newMineManager;
     }
 
     public me.mami.stratocraft.manager.SpecialItemManager getSpecialItemManager() {

@@ -155,6 +155,32 @@ public class BuffManager {
         }
         return true;
     }
+    
+    /**
+     * Fatih Buff'ının bitiş zamanını al (HUD için)
+     */
+    public Long getConquerorBuffEnd(UUID clanId) {
+        Long endTime = conquerorBuffs.get(clanId);
+        if (endTime == null) return null;
+        if (System.currentTimeMillis() > endTime) {
+            conquerorBuffs.remove(clanId);
+            return null;
+        }
+        return endTime;
+    }
+    
+    /**
+     * Kahraman Buff'ının bitiş zamanını al (HUD için)
+     */
+    public Long getHeroBuffEnd(UUID clanId) {
+        Long endTime = heroBuffs.get(clanId);
+        if (endTime == null) return null;
+        if (System.currentTimeMillis() > endTime) {
+            heroBuffs.remove(clanId);
+            return null;
+        }
+        return endTime;
+    }
 
     /**
      * Oyuncu giriş yaptığında buff'ları kontrol et ve uygula

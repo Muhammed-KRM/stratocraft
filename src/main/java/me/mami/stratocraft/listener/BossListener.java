@@ -326,8 +326,9 @@ public class BossListener implements Listener {
     
     /**
      * Boss ölüm kontrolü
+     * MONITOR priority kullanılıyor - en son çalışır, cancel edilse bile çalışır
      */
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
     public void onBossDeath(EntityDeathEvent event) {
         if (!(event.getEntity() instanceof LivingEntity)) {
             return;
@@ -339,6 +340,9 @@ public class BossListener implements Listener {
         if (bossData == null) {
             return;
         }
+        
+        // Boss öldü - ÖNCE BossBar'ı temizle (hemen!)
+        bossManager.removeBoss(entity.getUniqueId());
         
         // Boss öldü
         String bossName = bossManager.getBossDisplayName(bossData.getType());
@@ -359,9 +363,6 @@ public class BossListener implements Listener {
         // ========== BOSS ÖZEL İTEMLERİ DÜŞÜRME ==========
         // Her boss kendi özel itemini düşürür
         dropBossItems(event, bossData.getType());
-        
-        // Boss'u listeden kaldır
-        bossManager.removeBoss(entity.getUniqueId());
         
         // Ölüm efekti
         Location loc = entity.getLocation();

@@ -218,6 +218,73 @@ public class ItemManager {
     public static ItemStack BREEDING_CORE; // Üreme Çekirdeği
     public static ItemStack GENDER_SCANNER; // Cinsiyet Ayırıcı
     public static ItemStack CASUSLUK_DURBUN; // Casusluk Dürbünü
+    
+    // ========== YENİ MAYIN SİSTEMİ (25 Mayın + Gizleme Aleti) ==========
+    // Seviye 1
+    public static ItemStack MINE_EXPLOSIVE_L1;
+    public static ItemStack MINE_POISON_L1;
+    public static ItemStack MINE_SLOWNESS_L1;
+    public static ItemStack MINE_LIGHTNING_L1;
+    public static ItemStack MINE_FIRE_L1;
+    
+    // Seviye 2
+    public static ItemStack MINE_CAGE_L2;
+    public static ItemStack MINE_LAUNCH_L2;
+    public static ItemStack MINE_MOB_SPAWN_L2;
+    public static ItemStack MINE_BLINDNESS_L2;
+    public static ItemStack MINE_WEAKNESS_L2;
+    
+    // Seviye 3
+    public static ItemStack MINE_EXPLOSIVE_L3;
+    public static ItemStack MINE_POISON_L3;
+    public static ItemStack MINE_LIGHTNING_L3;
+    public static ItemStack MINE_CAGE_L3;
+    public static ItemStack MINE_LAUNCH_L3;
+    
+    // Seviye 4
+    public static ItemStack MINE_EXPLOSIVE_L4;
+    public static ItemStack MINE_POISON_L4;
+    public static ItemStack MINE_LIGHTNING_L4;
+    public static ItemStack MINE_MOB_SPAWN_L4;
+    public static ItemStack MINE_MULTI_EFFECT_L4;
+    
+    // Seviye 5
+    public static ItemStack MINE_EXPLOSIVE_L5;
+    public static ItemStack MINE_POISON_L5;
+    public static ItemStack MINE_LIGHTNING_L5;
+    public static ItemStack MINE_BOSS_SPAWN_L5;
+    public static ItemStack MINE_CHAOS_L5;
+    
+    // Gizleme Aleti
+    public static ItemStack MINE_CONCEALER;
+    
+    // Mayın Tarif Kitapları (25 + 1 gizleme)
+    public static ItemStack RECIPE_MINE_EXPLOSIVE_L1;
+    public static ItemStack RECIPE_MINE_POISON_L1;
+    public static ItemStack RECIPE_MINE_SLOWNESS_L1;
+    public static ItemStack RECIPE_MINE_LIGHTNING_L1;
+    public static ItemStack RECIPE_MINE_FIRE_L1;
+    public static ItemStack RECIPE_MINE_CAGE_L2;
+    public static ItemStack RECIPE_MINE_LAUNCH_L2;
+    public static ItemStack RECIPE_MINE_MOB_SPAWN_L2;
+    public static ItemStack RECIPE_MINE_BLINDNESS_L2;
+    public static ItemStack RECIPE_MINE_WEAKNESS_L2;
+    public static ItemStack RECIPE_MINE_EXPLOSIVE_L3;
+    public static ItemStack RECIPE_MINE_POISON_L3;
+    public static ItemStack RECIPE_MINE_LIGHTNING_L3;
+    public static ItemStack RECIPE_MINE_CAGE_L3;
+    public static ItemStack RECIPE_MINE_LAUNCH_L3;
+    public static ItemStack RECIPE_MINE_EXPLOSIVE_L4;
+    public static ItemStack RECIPE_MINE_POISON_L4;
+    public static ItemStack RECIPE_MINE_LIGHTNING_L4;
+    public static ItemStack RECIPE_MINE_MOB_SPAWN_L4;
+    public static ItemStack RECIPE_MINE_MULTI_EFFECT_L4;
+    public static ItemStack RECIPE_MINE_EXPLOSIVE_L5;
+    public static ItemStack RECIPE_MINE_POISON_L5;
+    public static ItemStack RECIPE_MINE_LIGHTNING_L5;
+    public static ItemStack RECIPE_MINE_BOSS_SPAWN_L5;
+    public static ItemStack RECIPE_MINE_CHAOS_L5;
+    public static ItemStack RECIPE_MINE_CONCEALER;
 
     // ========== ÖZEL ZIRHLAR (5 Seviye x 5 Zırh = 25 Zırh) ==========
     // Seviye 1 Zırhlar
@@ -574,6 +641,10 @@ public class ItemManager {
         
         // ========== TARİF KİTAPLARI - BATARYALAR (75 Batarya) ==========
         initBatteryRecipeBooks();
+        
+        // ========== YENİ MAYIN SİSTEMİ (25 Mayın + Gizleme Aleti) ==========
+        initMineItems();
+        initMineRecipeBooks();
         
         // ========== ÖZEL SİLAH TARİFLERİ (BOSS EŞYALARI İLE) ==========
         registerSpecialWeaponRecipes();
@@ -2802,5 +2873,169 @@ public class ItemManager {
         RECIPE_BATTERY_SUPPORT_L5_3 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L5_3", "§4§lTarif: Ölüm Dokunuşu");
         RECIPE_BATTERY_SUPPORT_L5_4 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L5_4", "§5§lTarif: Faz Değiştirme");
         RECIPE_BATTERY_SUPPORT_L5_5 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L5_5", "§6§lTarif: Yeniden Doğuş");
+    }
+    
+    /**
+     * Mayın itemlarını oluştur (25 benzersiz mayın)
+     */
+    private void initMineItems() {
+        // Seviye 1 (5 Mayın)
+        MINE_EXPLOSIVE_L1 = createMineItem("MINE_EXPLOSIVE", "§c[Seviye 1] Patlama Mayını", 
+            "§7Basınca küçük patlama yapar", Material.TNT, 1);
+        MINE_POISON_L1 = createMineItem("MINE_POISON", "§2[Seviye 1] Zehir Mayını", 
+            "§7Basınca zehir efekti verir", Material.SPIDER_EYE, 1);
+        MINE_SLOWNESS_L1 = createMineItem("MINE_SLOWNESS", "§b[Seviye 1] Yavaşlık Mayını", 
+            "§7Basınca yavaşlatır", Material.SLIME_BALL, 1);
+        MINE_LIGHTNING_L1 = createMineItem("MINE_LIGHTNING", "§e[Seviye 1] Yıldırım Mayını", 
+            "§7Basınca yıldırım çarpar", Material.BLAZE_ROD, 1);
+        MINE_FIRE_L1 = createMineItem("MINE_FIRE", "§c[Seviye 1] Yakma Mayını", 
+            "§7Basınca yakma efekti verir", Material.BLAZE_POWDER, 1);
+        
+        // Seviye 2 (5 Mayın)
+        MINE_CAGE_L2 = createMineItem("MINE_CAGE", "§8[Seviye 2] Kafes Hapsetme Mayını", 
+            "§7Basınca obsidyen kafes oluşturur", Material.OBSIDIAN, 2);
+        MINE_LAUNCH_L2 = createMineItem("MINE_LAUNCH", "§e[Seviye 2] Fırlatma Mayını", 
+            "§7Basınca yukarı fırlatır", Material.PISTON, 2);
+        MINE_MOB_SPAWN_L2 = createMineItem("MINE_MOB_SPAWN", "§c[Seviye 2] Canavar Spawn Mayını", 
+            "§7Basınca canavarlar spawnlar", Material.ZOMBIE_HEAD, 2);
+        MINE_BLINDNESS_L2 = createMineItem("MINE_BLINDNESS", "§8[Seviye 2] Körlük Mayını", 
+            "§7Basınca körlük efekti verir", Material.INK_SAC, 2);
+        MINE_WEAKNESS_L2 = createMineItem("MINE_WEAKNESS", "§7[Seviye 2] Zayıflık Mayını", 
+            "§7Basınca zayıflık efekti verir", Material.BONE, 2);
+        
+        // Seviye 3 (5 Mayın)
+        MINE_EXPLOSIVE_L3 = createMineItem("MINE_FREEZE", "§b[Seviye 3] Dondurma Mayını", 
+            "§7Basınca dondurma efekti verir", Material.ICE, 3);
+        MINE_POISON_L3 = createMineItem("MINE_CONFUSION", "§d[Seviye 3] Karışıklık Mayını", 
+            "§7Basınca karışıklık efekti verir", Material.FERMENTED_SPIDER_EYE, 3);
+        MINE_LIGHTNING_L3 = createMineItem("MINE_FATIGUE", "§7[Seviye 3] Yorgunluk Mayını", 
+            "§7Basınca yorgunluk efekti verir", Material.IRON_PICKAXE, 3);
+        MINE_CAGE_L3 = createMineItem("MINE_POISON_CLOUD", "§2[Seviye 3] Zehir Bulutu Mayını", 
+            "§7Basınca alan zehiri oluşturur", Material.SPIDER_EYE, 3);
+        MINE_LAUNCH_L3 = createMineItem("MINE_LIGHTNING_STORM", "§e[Seviye 3] Yıldırım Fırtınası Mayını", 
+            "§7Basınca çoklu yıldırım çarpar", Material.BLAZE_ROD, 3);
+        
+        // Seviye 4 (5 Mayın)
+        MINE_EXPLOSIVE_L4 = createMineItem("MINE_MEGA_EXPLOSIVE", "§c[Seviye 4] Büyük Patlama Mayını", 
+            "§7Basınca büyük patlama yapar", Material.TNT, 4);
+        MINE_POISON_L4 = createMineItem("MINE_LARGE_CAGE", "§8[Seviye 4] Büyük Kafes Mayını", 
+            "§7Basınca büyük kafes oluşturur", Material.OBSIDIAN, 4);
+        MINE_LIGHTNING_L4 = createMineItem("MINE_SUPER_LAUNCH", "§e[Seviye 4] Güçlü Fırlatma Mayını", 
+            "§7Basınca çok yukarı fırlatır", Material.PISTON, 4);
+        MINE_MOB_SPAWN_L4 = createMineItem("MINE_ELITE_MOB_SPAWN", "§c[Seviye 4] Güçlü Canavar Spawn Mayını", 
+            "§7Basınca güçlü canavarlar spawnlar", Material.ZOMBIE_HEAD, 4);
+        MINE_MULTI_EFFECT_L4 = createMineItem("MINE_MULTI_EFFECT", "§d[Seviye 4] Çoklu Efekt Mayını", 
+            "§7Basınca birden fazla efekt verir", Material.FERMENTED_SPIDER_EYE, 4);
+        
+        // Seviye 5 (5 Mayın)
+        MINE_EXPLOSIVE_L5 = createMineItem("MINE_NUCLEAR_EXPLOSIVE", "§4§l[Seviye 5] Nükleer Patlama Mayını", 
+            "§7Basınca nükleer patlama yapar", Material.TNT, 5);
+        MINE_POISON_L5 = createMineItem("MINE_DEATH_CLOUD", "§4§l[Seviye 5] Ölüm Bulutu Mayını", 
+            "§7Basınca ölüm bulutu oluşturur", Material.SPIDER_EYE, 5);
+        MINE_LIGHTNING_L5 = createMineItem("MINE_THUNDERSTORM", "§e§l[Seviye 5] Gök Gürültüsü Mayını", 
+            "§7Basınca gök gürültüsü fırtınası yapar", Material.BLAZE_ROD, 5);
+        MINE_BOSS_SPAWN_L5 = createMineItem("MINE_BOSS_SPAWN", "§4§l[Seviye 5] Boss Spawn Mayını", 
+            "§7Basınca boss canavar spawnlar", Material.WITHER_SKELETON_SKULL, 5);
+        MINE_CHAOS_L5 = createMineItem("MINE_CHAOS", "§4§l[Seviye 5] Kaos Mayını", 
+            "§7Basınca tüm efektler + patlama", Material.NETHER_STAR, 5);
+        
+        // Gizleme Aleti
+        MINE_CONCEALER = createMineConcealer();
+    }
+    
+    /**
+     * Mayın itemı oluştur
+     */
+    private ItemStack createMineItem(String id, String name, String description, Material material, int level) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(name);
+        List<String> lore = new ArrayList<>();
+        lore.add(description);
+        lore.add("");
+        lore.add("§7Seviye: §e" + level);
+        lore.add("§7Kullanım: Basınç plakasına sağ tık yap");
+        lore.add("§7Özellik: Basınca aktif olur");
+        meta.setLore(lore);
+        
+        // NBT tag ekle
+        NamespacedKey mineTypeKey = new NamespacedKey(Main.getInstance(), "MineType");
+        meta.getPersistentDataContainer().set(mineTypeKey, PersistentDataType.STRING, id);
+        
+        // Custom ID ekle
+        NamespacedKey customIdKey = new NamespacedKey(Main.getInstance(), "custom_id");
+        meta.getPersistentDataContainer().set(customIdKey, PersistentDataType.STRING, id);
+        
+        item.setItemMeta(meta);
+        return item;
+    }
+    
+    /**
+     * Gizleme aleti oluştur
+     */
+    private ItemStack createMineConcealer() {
+        ItemStack item = new ItemStack(Material.SPYGLASS);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName("§6Mayın Gizleme Aleti");
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Mayınları görünmez yapar");
+        lore.add("");
+        lore.add("§7Kullanım: Shift + Sağ Tık mayına");
+        lore.add("§7Tekrar kullanarak görünür yapabilirsin");
+        meta.setLore(lore);
+        
+        // NBT tag ekle
+        NamespacedKey concealerKey = new NamespacedKey(Main.getInstance(), "MineConcealer");
+        meta.getPersistentDataContainer().set(concealerKey, PersistentDataType.BOOLEAN, true);
+        
+        // Custom ID ekle
+        NamespacedKey customIdKey = new NamespacedKey(Main.getInstance(), "custom_id");
+        meta.getPersistentDataContainer().set(customIdKey, PersistentDataType.STRING, "MINE_CONCEALER");
+        
+        item.setItemMeta(meta);
+        return item;
+    }
+    
+    /**
+     * Mayın tarif kitaplarını oluştur (25 benzersiz mayın)
+     */
+    private void initMineRecipeBooks() {
+        // Seviye 1
+        RECIPE_MINE_EXPLOSIVE_L1 = createRecipeBook("RECIPE_MINE_EXPLOSIVE", "§cTarif: Patlama Mayını");
+        RECIPE_MINE_POISON_L1 = createRecipeBook("RECIPE_MINE_POISON", "§2Tarif: Zehir Mayını");
+        RECIPE_MINE_SLOWNESS_L1 = createRecipeBook("RECIPE_MINE_SLOWNESS", "§bTarif: Yavaşlık Mayını");
+        RECIPE_MINE_LIGHTNING_L1 = createRecipeBook("RECIPE_MINE_LIGHTNING", "§eTarif: Yıldırım Mayını");
+        RECIPE_MINE_FIRE_L1 = createRecipeBook("RECIPE_MINE_FIRE", "§cTarif: Yakma Mayını");
+        
+        // Seviye 2
+        RECIPE_MINE_CAGE_L2 = createRecipeBook("RECIPE_MINE_CAGE", "§8Tarif: Kafes Hapsetme Mayını");
+        RECIPE_MINE_LAUNCH_L2 = createRecipeBook("RECIPE_MINE_LAUNCH", "§eTarif: Fırlatma Mayını");
+        RECIPE_MINE_MOB_SPAWN_L2 = createRecipeBook("RECIPE_MINE_MOB_SPAWN", "§cTarif: Canavar Spawn Mayını");
+        RECIPE_MINE_BLINDNESS_L2 = createRecipeBook("RECIPE_MINE_BLINDNESS", "§8Tarif: Körlük Mayını");
+        RECIPE_MINE_WEAKNESS_L2 = createRecipeBook("RECIPE_MINE_WEAKNESS", "§7Tarif: Zayıflık Mayını");
+        
+        // Seviye 3
+        RECIPE_MINE_EXPLOSIVE_L3 = createRecipeBook("RECIPE_MINE_FREEZE", "§bTarif: Dondurma Mayını");
+        RECIPE_MINE_POISON_L3 = createRecipeBook("RECIPE_MINE_CONFUSION", "§dTarif: Karışıklık Mayını");
+        RECIPE_MINE_LIGHTNING_L3 = createRecipeBook("RECIPE_MINE_FATIGUE", "§7Tarif: Yorgunluk Mayını");
+        RECIPE_MINE_CAGE_L3 = createRecipeBook("RECIPE_MINE_POISON_CLOUD", "§2Tarif: Zehir Bulutu Mayını");
+        RECIPE_MINE_LAUNCH_L3 = createRecipeBook("RECIPE_MINE_LIGHTNING_STORM", "§eTarif: Yıldırım Fırtınası Mayını");
+        
+        // Seviye 4
+        RECIPE_MINE_EXPLOSIVE_L4 = createRecipeBook("RECIPE_MINE_MEGA_EXPLOSIVE", "§cTarif: Büyük Patlama Mayını");
+        RECIPE_MINE_POISON_L4 = createRecipeBook("RECIPE_MINE_LARGE_CAGE", "§8Tarif: Büyük Kafes Mayını");
+        RECIPE_MINE_LIGHTNING_L4 = createRecipeBook("RECIPE_MINE_SUPER_LAUNCH", "§eTarif: Güçlü Fırlatma Mayını");
+        RECIPE_MINE_MOB_SPAWN_L4 = createRecipeBook("RECIPE_MINE_ELITE_MOB_SPAWN", "§cTarif: Güçlü Canavar Spawn Mayını");
+        RECIPE_MINE_MULTI_EFFECT_L4 = createRecipeBook("RECIPE_MINE_MULTI_EFFECT", "§dTarif: Çoklu Efekt Mayını");
+        
+        // Seviye 5
+        RECIPE_MINE_EXPLOSIVE_L5 = createRecipeBook("RECIPE_MINE_NUCLEAR_EXPLOSIVE", "§4§lTarif: Nükleer Patlama Mayını");
+        RECIPE_MINE_POISON_L5 = createRecipeBook("RECIPE_MINE_DEATH_CLOUD", "§4§lTarif: Ölüm Bulutu Mayını");
+        RECIPE_MINE_LIGHTNING_L5 = createRecipeBook("RECIPE_MINE_THUNDERSTORM", "§e§lTarif: Gök Gürültüsü Mayını");
+        RECIPE_MINE_BOSS_SPAWN_L5 = createRecipeBook("RECIPE_MINE_BOSS_SPAWN", "§4§lTarif: Boss Spawn Mayını");
+        RECIPE_MINE_CHAOS_L5 = createRecipeBook("RECIPE_MINE_CHAOS", "§4§lTarif: Kaos Mayını");
+        
+        // Gizleme Aleti
+        RECIPE_MINE_CONCEALER = createRecipeBook("RECIPE_MINE_CONCEALER", "§6Tarif: Mayın Gizleme Aleti");
     }
 }

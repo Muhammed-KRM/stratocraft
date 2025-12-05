@@ -62,10 +62,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return handleDisaster(p, args);
             case "siege":
                 return handleSiege(p, args);
-            case "ballista":
-                return handleBallista(p, args);
-            case "caravan":
-                return handleCaravan(p, args);
+            case "clan":
+                return handleClan(p, args);
             case "contract":
                 return handleContract(p, args);
             case "alliance":
@@ -1096,7 +1094,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7  /stratocraft caravan clear");
         sender.sendMessage("§7  /stratocraft build catapult");
         sender.sendMessage("§7  /stratocraft build alchemy_tower 3");
-        sender.sendMessage("§7  /stratocraft build magma_battery");
+        sender.sendMessage("§7  /stratocraft build battery <seviye> <isim>");
     }
 
     private void showItemsList(Player p) {
@@ -3112,8 +3110,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
         // İlk argüman (komut seçimi)
         if (args.length == 1) {
-            List<String> commands = Arrays.asList("give", "spawn", "disaster", "list", "help", "siege", "caravan",
-                    "contract", "build", "trap", "dungeon", "biome", "mine", "recipe", "ballista", "boss", "tame");
+            List<String> commands = Arrays.asList("give", "spawn", "disaster", "list", "help", "siege", "clan",
+                    "contract", "build", "trap", "dungeon", "biome", "mine", "recipe", "boss", "tame");
             String input = args[0].toLowerCase();
 
             // Eğer boşsa veya başlangıç eşleşiyorsa filtrele
@@ -3163,6 +3161,19 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return disasterCommands.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
+                
+                case "clan":
+                    // Clan alt komutları (ikinci seviye)
+                    if (args.length == 2) {
+                        List<String> clanSubCommands = Arrays.asList("list", "info", "create", "disband", "addmember", "removemember", "caravan");
+                        if (input.isEmpty()) {
+                            return clanSubCommands;
+                        }
+                        return clanSubCommands.stream()
+                                .filter(s -> s.toLowerCase().startsWith(input))
+                                .collect(Collectors.toList());
+                    }
+                    break;
 
                 case "list":
                     // Liste tiplerini listele
@@ -3184,13 +3195,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
 
-                case "caravan":
-                    // Caravan komutları
-                    List<String> caravanCommands = Arrays.asList("clear", "list");
+                case "clan":
+                    // Clan komutları
+                    List<String> clanCommands = Arrays.asList("list", "info", "create", "disband", "addmember", "removemember", "caravan");
                     if (input.isEmpty()) {
-                        return caravanCommands;
+                        return clanCommands;
                     }
-                    return caravanCommands.stream()
+                    return clanCommands.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
 
@@ -3229,18 +3240,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
                 case "mine":
                     // Mine komutları
-                    if (args.length == 2 && args[1].equalsIgnoreCase("give")) {
-                        // Mine give için mayın tipleri (10 tür)
-                        List<String> mineTypes = Arrays.asList("explosive", "lightning", "poison", "blindness",
-                                "fatigue", "slowness", "fire", "freeze", "weakness", "confusion");
-                        if (input.isEmpty()) {
-                            return mineTypes;
-                        }
-                        return mineTypes.stream()
-                                .filter(s -> s.toLowerCase().startsWith(input))
-                                .collect(Collectors.toList());
-                    } else {
-                        // Mine list komutları
+                    if (args.length == 2) {
                         List<String> mineCommands = Arrays.asList("list", "give");
                         if (input.isEmpty()) {
                             return mineCommands;
@@ -3248,11 +3248,48 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         return mineCommands.stream()
                                 .filter(s -> s.toLowerCase().startsWith(input))
                                 .collect(Collectors.toList());
+                    } else if (args.length == 3 && args[1].equalsIgnoreCase("give")) {
+                        // Gizleme aleti veya seviye
+                        List<String> options = new ArrayList<>();
+                        options.add("concealer");
+                        for (int i = 1; i <= 5; i++) {
+                            options.add(String.valueOf(i));
+                        }
+                        if (input.isEmpty()) {
+                            return options;
+                        }
+                        return options.stream()
+                                .filter(s -> s.toLowerCase().startsWith(input))
+                                .collect(Collectors.toList());
+                    } else if (args.length == 4 && args[1].equalsIgnoreCase("give")) {
+                        // Seviye sonrası mayın isimleri
+                        try {
+                            int level = Integer.parseInt(args[2]);
+                            if (level >= 1 && level <= 5) {
+                                me.mami.stratocraft.manager.NewMineManager newMineManager = plugin.getNewMineManager();
+                                if (newMineManager != null) {
+                                    List<me.mami.stratocraft.manager.NewMineManager.MineType> levelMines = 
+                                        newMineManager.getMinesByLevel(level);
+                                    List<String> mineNames = levelMines.stream()
+                                        .map(t -> t.name().toLowerCase())
+                                        .collect(Collectors.toList());
+                                    if (input.isEmpty()) {
+                                        return mineNames;
+                                    }
+                                    return mineNames.stream()
+                                        .filter(s -> s.toLowerCase().startsWith(input))
+                                        .collect(Collectors.toList());
+                                }
+                            }
+                        } catch (NumberFormatException e) {
+                            // Geçersiz seviye
+                        }
                     }
+                    return new ArrayList<>();
 
                 case "build":
                     // Kategoriler
-                    List<String> buildCategories = Arrays.asList("weapon", "battery", "structure");
+                    List<String> buildCategories = Arrays.asList("weapon", "battery", "structure", "ballista");
                     if (input.isEmpty()) {
                         return buildCategories;
                     }
@@ -3310,15 +3347,6 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
 
-                case "ballista":
-                    // Ballista komutları
-                    List<String> ballistaCommands = Arrays.asList("spawn", "list", "clear");
-                    if (input.isEmpty()) {
-                        return ballistaCommands;
-                    }
-                    return ballistaCommands.stream()
-                            .filter(s -> s.toLowerCase().startsWith(input))
-                            .collect(Collectors.toList());
             }
         }
 
@@ -3364,17 +3392,14 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 case "tame":
                     return getTameTabComplete(args, input);
                 case "disaster":
-                    // Disaster start komutu için felaket tipleri
+                    // Disaster start için önce seviye öner (args.length == 3)
                     if (category.equalsIgnoreCase("start")) {
-                        List<String> disasterTypes = Arrays.asList(
-                            "TITAN_GOLEM", "ABYSSAL_WORM", "CHAOS_DRAGON", "VOID_TITAN", "ICE_LEVIATHAN",
-                            "SOLAR_FLARE", "EARTHQUAKE", "METEOR_SHOWER", "VOLCANIC_ERUPTION"
-                        );
+                        List<String> levels = Arrays.asList("1", "2", "3");
                         if (input.isEmpty()) {
-                            return disasterTypes;
+                            return levels;
                         }
-                        return disasterTypes.stream()
-                                .filter(s -> s.toLowerCase().startsWith(input.toLowerCase()))
+                        return levels.stream()
+                                .filter(s -> s.startsWith(input))
                                 .collect(Collectors.toList());
                     }
                     break;
@@ -3394,26 +3419,27 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     int level = Integer.parseInt(levelStr);
                     if (level >= 1 && level <= 5) {
                         if (category.equals("weapon")) {
-                            // Türkçe ve İngilizce isimler
-                            List<String> weaponTypes = Arrays.asList(
-                                "sword", "kılıç", "kilic",
-                                "axe", "balta",
-                                "spear", "mızrak", "mizrak", "trident",
-                                "bow", "yay",
-                                "hammer", "çekiç", "cekiç", "pickaxe"
-                            );
-                            if (input.isEmpty()) {
-                                return weaponTypes;
+                            // Item isimleri (weapon_l1_1, weapon_l1_2, vb.)
+                            List<String> weaponNames = new ArrayList<>();
+                            for (int variant = 1; variant <= 5; variant++) {
+                                weaponNames.add("weapon_l" + level + "_" + variant);
                             }
-                            return weaponTypes.stream()
+                            if (input.isEmpty()) {
+                                return weaponNames;
+                            }
+                            return weaponNames.stream()
                                     .filter(s -> s.toLowerCase().startsWith(input))
                                     .collect(Collectors.toList());
                         } else if (category.equals("armor")) {
-                            List<String> armorTypes = Arrays.asList("helmet", "chestplate", "leggings", "boots");
-                            if (input.isEmpty()) {
-                                return armorTypes;
+                            // Item isimleri (armor_l1_1, armor_l1_2, vb.)
+                            List<String> armorNames = new ArrayList<>();
+                            for (int variant = 1; variant <= 5; variant++) {
+                                armorNames.add("armor_l" + level + "_" + variant);
                             }
-                            return armorTypes.stream()
+                            if (input.isEmpty()) {
+                                return armorNames;
+                            }
+                            return armorNames.stream()
                                     .filter(s -> s.toLowerCase().startsWith(input))
                                     .collect(Collectors.toList());
                         }
@@ -3436,20 +3462,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     // Geçersiz seviye
                 }
             } else if (commandName.equals("disaster") && args[1].equalsIgnoreCase("start")) {
-                // Disaster start için seviye öner
-                String disasterType = args[2];
-                String input = args[3].toLowerCase();
-                
-                // Tüm felaket tipleri için seviye öner
-                if (disasterType.equalsIgnoreCase("TITAN_GOLEM") || 
-                    disasterType.equalsIgnoreCase("ABYSSAL_WORM") || 
-                    disasterType.equalsIgnoreCase("SOLAR_FLARE") ||
-                    disasterType.equalsIgnoreCase("CHAOS_DRAGON") ||
-                    disasterType.equalsIgnoreCase("VOID_TITAN") ||
-                    disasterType.equalsIgnoreCase("ICE_LEVIATHAN") ||
-                    disasterType.equalsIgnoreCase("EARTHQUAKE") ||
-                    disasterType.equalsIgnoreCase("METEOR_SHOWER") ||
-                    disasterType.equalsIgnoreCase("VOLCANIC_ERUPTION")) {
+                // Disaster start için önce seviye öner
+                if (args.length == 3) {
+                    String input = args[2].toLowerCase();
                     List<String> levels = Arrays.asList("1", "2", "3");
                     if (input.isEmpty()) {
                         return levels;
@@ -3457,6 +3472,27 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return levels.stream()
                             .filter(s -> s.startsWith(input))
                             .collect(Collectors.toList());
+                } else if (args.length == 4) {
+                    // Seviyeden sonra felaket tipi öner
+                    String levelStr = args[2];
+                    String input = args[3].toLowerCase();
+                    try {
+                        int level = Integer.parseInt(levelStr);
+                        if (level >= 1 && level <= 3) {
+                            List<String> disasterTypes = Arrays.asList(
+                                "TITAN_GOLEM", "ABYSSAL_WORM", "CHAOS_DRAGON", "VOID_TITAN", "ICE_LEVIATHAN",
+                                "SOLAR_FLARE", "EARTHQUAKE", "METEOR_SHOWER", "VOLCANIC_ERUPTION"
+                            );
+                            if (input.isEmpty()) {
+                                return disasterTypes;
+                            }
+                            return disasterTypes.stream()
+                                    .filter(s -> s.toLowerCase().startsWith(input.toLowerCase()))
+                                    .collect(Collectors.toList());
+                        }
+                    } catch (NumberFormatException e) {
+                        // Geçersiz seviye
+                    }
                 }
             }
         }
@@ -3736,105 +3772,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         "force_field", "healing_shrine", "power_totem", "speed_circle", "defense_wall");
                 return filterList(weapons, input);
             case "battery":
-                // Yeni batarya sistemi - kategorize edilmiş
-                List<String> batteries = new ArrayList<>();
-                
-                // Saldırı Bataryaları - Seviye 1
-                batteries.add("attack_lightning_staff_l1");
-                batteries.add("attack_hellfire_ball_l1");
-                batteries.add("attack_ice_ball_l1");
-                batteries.add("attack_poison_arrow_l1");
-                batteries.add("attack_shock_wave_l1");
-                batteries.add("attack_double_fireball_l2");
-                batteries.add("attack_chain_lightning_l2");
-                batteries.add("attack_ice_storm_l2");
-                batteries.add("attack_acid_rain_l2");
-                batteries.add("attack_electric_net_l2");
-                batteries.add("attack_meteor_shower_l3");
-                batteries.add("attack_storm_l3");
-                batteries.add("attack_ice_age_l3");
-                batteries.add("attack_poison_bomb_l3");
-                batteries.add("attack_lightning_storm_l3");
-                batteries.add("attack_hellfire_l4");
-                batteries.add("attack_tesla_tower_l4");
-                batteries.add("attack_ice_fortress_l4");
-                batteries.add("attack_death_cloud_l4");
-                batteries.add("attack_electric_storm_l4");
-                batteries.add("attack_mountain_destroyer_l5");
-                batteries.add("attack_lava_tsunami_l5");
-                batteries.add("attack_boss_killer_l5");
-                batteries.add("attack_area_destroyer_l5");
-                batteries.add("attack_apocalypse_reactor_l5");
-                
-                // Oluşturma Bataryaları
-                batteries.add("construction_obsidian_wall_l1");
-                batteries.add("construction_stone_bridge_l1");
-                batteries.add("construction_iron_cage_l1");
-                batteries.add("construction_glass_wall_l1");
-                batteries.add("construction_wood_barricade_l1");
-                batteries.add("construction_obsidian_cage_l2");
-                batteries.add("construction_stone_bridge_l2");
-                batteries.add("construction_iron_wall_l2");
-                batteries.add("construction_glass_tunnel_l2");
-                batteries.add("construction_wood_castle_l2");
-                batteries.add("construction_obsidian_wall_l3");
-                batteries.add("construction_netherite_bridge_l3");
-                batteries.add("construction_iron_prison_l3");
-                batteries.add("construction_glass_tower_l3");
-                batteries.add("construction_stone_castle_l3");
-                batteries.add("construction_obsidian_castle_l4");
-                batteries.add("construction_netherite_bridge_l4");
-                batteries.add("construction_iron_prison_l4");
-                batteries.add("construction_glass_tower_l4");
-                batteries.add("construction_stone_fortress_l4");
-                batteries.add("construction_obsidian_prison_l5");
-                batteries.add("construction_netherite_bridge_l5");
-                batteries.add("construction_iron_castle_l5");
-                batteries.add("construction_glass_tower_l5");
-                batteries.add("construction_stone_fortress_l5");
-                
-                // Destek Bataryaları
-                batteries.add("support_heal_l1");
-                batteries.add("support_speed_l1");
-                batteries.add("support_damage_l1");
-                batteries.add("support_armor_l1");
-                batteries.add("support_regeneration_l1");
-                batteries.add("support_heal_l2");
-                batteries.add("support_speed_l2");
-                batteries.add("support_damage_l2");
-                batteries.add("support_armor_l2");
-                batteries.add("support_regeneration_l2");
-                batteries.add("support_heal_l3");
-                batteries.add("support_speed_l3");
-                batteries.add("support_damage_l3");
-                batteries.add("support_armor_l3");
-                batteries.add("support_regeneration_l3");
-                batteries.add("support_heal_l4");
-                batteries.add("support_speed_l4");
-                batteries.add("support_damage_l4");
-                batteries.add("support_armor_l4");
-                batteries.add("support_regeneration_l4");
-                batteries.add("support_heal_l5");
-                batteries.add("support_speed_l5");
-                batteries.add("support_damage_l5");
-                batteries.add("support_armor_l5");
-                batteries.add("support_regeneration_l5");
-                
-                // Eski bataryalar (geriye dönük uyumluluk)
-                batteries.add("magma_battery");
-                batteries.add("lightning_battery");
-                batteries.add("black_hole");
-                batteries.add("bridge");
-                batteries.add("shelter");
-                batteries.add("gravity_anchor");
-                batteries.add("seismic_hammer");
-                batteries.add("magnetic_disruptor");
-                batteries.add("ozone_shield");
-                batteries.add("earth_wall");
-                batteries.add("energy_wall");
-                batteries.add("lava_trencher_battery");
-                
-                return filterList(batteries, input);
+                // Yeni batarya sistemi - sadece seviye öner (getBuildTabComplete kullanılmaz)
+                // Bu durumda build battery için özel kontrol var (args.length == 3)
+                return new ArrayList<>();
+            case "ballista":
+                // Ballista build komutları
+                List<String> ballistaCommands = Arrays.asList("spawn", "list", "clear");
+                return filterList(ballistaCommands, input);
             case "structure":
                 List<String> structures = Arrays.asList("alchemy_tower", "tectonic_stabilizer", "healing_beacon",
                         "global_market_gate", "auto_turret", "poison_reactor", "siege_factory", "wall_generator",
@@ -4238,9 +4182,169 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      * /stratocraft caravan list - Aktif kervanları listele
      * /stratocraft caravan clear - Tüm kervanları temizle
      */
-    private boolean handleCaravan(Player p, String[] args) {
+    /**
+     * Klan yönetimi komutları
+     */
+    private boolean handleClan(Player p, String[] args) {
         if (args.length < 2) {
-            p.sendMessage("§cKullanım: /stratocraft caravan <list|clear>");
+            p.sendMessage("§cKullanım: /stratocraft clan <komut>");
+            p.sendMessage("§7Komutlar:");
+            p.sendMessage("§7  list - Tüm klanları listele");
+            p.sendMessage("§7  info <klan> - Klan bilgisi");
+            p.sendMessage("§7  create <isim> - Klan oluştur");
+            p.sendMessage("§7  disband <klan> - Klanı dağıt");
+            p.sendMessage("§7  addmember <klan> <oyuncu> - Üye ekle");
+            p.sendMessage("§7  removemember <klan> <oyuncu> - Üye çıkar");
+            p.sendMessage("§7  caravan - Kervan yönetimi");
+            return true;
+        }
+
+        me.mami.stratocraft.manager.ClanManager clanManager = plugin.getClanManager();
+        if (clanManager == null) {
+            p.sendMessage("§cClanManager bulunamadı!");
+            return true;
+        }
+
+        String command = args[1].toLowerCase();
+
+        switch (command) {
+            case "list":
+                showClansList(p, clanManager);
+                return true;
+            case "info":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft clan info <klan>");
+                    return true;
+                }
+                showClanInfo(p, args[2], clanManager);
+                return true;
+            case "create":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft clan create <isim>");
+                    return true;
+                }
+                createClan(p, args[2], clanManager);
+                return true;
+            case "disband":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft clan disband <klan>");
+                    return true;
+                }
+                disbandClan(p, args[2], clanManager);
+                return true;
+            case "addmember":
+                if (args.length < 4) {
+                    p.sendMessage("§cKullanım: /stratocraft clan addmember <klan> <oyuncu>");
+                    return true;
+                }
+                addClanMember(p, args[2], args[3], clanManager);
+                return true;
+            case "removemember":
+                if (args.length < 4) {
+                    p.sendMessage("§cKullanım: /stratocraft clan removemember <klan> <oyuncu>");
+                    return true;
+                }
+                removeClanMember(p, args[2], args[3], clanManager);
+                return true;
+            case "caravan":
+                return handleCaravan(p, args);
+            default:
+                p.sendMessage("§cGeçersiz komut! /stratocraft clan <list|info|create|disband|addmember|removemember|caravan>");
+                return true;
+        }
+    }
+
+    private void showClansList(Player p, me.mami.stratocraft.manager.ClanManager clanManager) {
+        java.util.Collection<me.mami.stratocraft.model.Clan> clans = clanManager.getAllClans();
+        p.sendMessage("§6§l=== TÜM KLANLAR ===");
+        p.sendMessage("§7Toplam: §a" + clans.size());
+
+        if (clans.isEmpty()) {
+            p.sendMessage("§7Henüz klan yok.");
+            return;
+        }
+
+        int index = 1;
+        for (me.mami.stratocraft.model.Clan clan : clans) {
+            p.sendMessage("§e" + index + ". §7" + clan.getName() + 
+                    " §7- Üyeler: §a" + clan.getMembers().size() + 
+                    " §7- Bakiye: §6" + clan.getBalance() + " altın");
+            index++;
+        }
+    }
+
+    private void showClanInfo(Player p, String clanName, me.mami.stratocraft.manager.ClanManager clanManager) {
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(clanName);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clanName);
+            return;
+        }
+
+        p.sendMessage("§6§l=== " + clan.getName() + " KLAN BİLGİLERİ ===");
+        p.sendMessage("§7Üye Sayısı: §a" + clan.getMembers().size());
+        p.sendMessage("§7Bakiye: §6" + clan.getBalance() + " altın");
+        p.sendMessage("§7Teknoloji Seviyesi: §e" + clan.getTechLevel());
+        p.sendMessage("§7Üyeler:");
+        for (java.util.UUID memberId : clan.getMembers().keySet()) {
+            org.bukkit.entity.Player member = org.bukkit.Bukkit.getPlayer(memberId);
+            String memberName = member != null ? member.getName() : "Offline";
+            me.mami.stratocraft.model.Clan.Rank rank = clan.getMembers().get(memberId);
+            p.sendMessage("§7  - §a" + memberName + " §7(" + rank.name() + ")");
+        }
+    }
+
+    private void createClan(Player p, String clanName, me.mami.stratocraft.manager.ClanManager clanManager) {
+        me.mami.stratocraft.model.Clan newClan = clanManager.createClan(clanName, p.getUniqueId());
+        if (newClan != null) {
+            p.sendMessage("§aKlan oluşturuldu: " + clanName);
+        } else {
+            p.sendMessage("§cKlan oluşturulamadı! Oyuncu zaten bir klana üye.");
+        }
+    }
+
+    private void disbandClan(Player p, String clanName, me.mami.stratocraft.manager.ClanManager clanManager) {
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(clanName);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clanName);
+            return;
+        }
+        clanManager.disbandClan(clan);
+        p.sendMessage("§aKlan dağıtıldı: " + clanName);
+    }
+
+    private void addClanMember(Player p, String clanName, String playerName, me.mami.stratocraft.manager.ClanManager clanManager) {
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(clanName);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clanName);
+            return;
+        }
+        org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayer(playerName);
+        if (target == null) {
+            p.sendMessage("§cOyuncu bulunamadı: " + playerName);
+            return;
+        }
+        clanManager.addMember(clan, target.getUniqueId(), me.mami.stratocraft.model.Clan.Rank.MEMBER);
+        p.sendMessage("§aOyuncu eklendi: " + playerName + " → " + clanName);
+    }
+
+    private void removeClanMember(Player p, String clanName, String playerName, me.mami.stratocraft.manager.ClanManager clanManager) {
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(clanName);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clanName);
+            return;
+        }
+        org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayer(playerName);
+        if (target == null) {
+            p.sendMessage("§cOyuncu bulunamadı: " + playerName);
+            return;
+        }
+        clanManager.removeMember(clan, target.getUniqueId());
+        p.sendMessage("§aOyuncu çıkarıldı: " + playerName + " ← " + clanName);
+    }
+
+    private boolean handleCaravan(Player p, String[] args) {
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft clan caravan <list|clear>");
             return true;
         }
 
@@ -4250,7 +4354,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        switch (args[1].toLowerCase()) {
+        switch (args[2].toLowerCase()) {
             case "list":
                 showCaravansList(p, caravanManager);
                 return true;
@@ -4259,7 +4363,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 p.sendMessage("§a" + cleared + " kervan temizlendi.");
                 return true;
             default:
-                p.sendMessage("§cKullanım: /stratocraft caravan <list|clear>");
+                p.sendMessage("§cKullanım: /stratocraft clan caravan <list|clear>");
                 return true;
         }
     }
@@ -4428,14 +4532,23 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         buildType.startsWith("power_totem") || buildType.startsWith("speed_circle") ||
                         buildType.startsWith("defense_wall")))) {
             return buildSiegeWeapon(p, buildType);
-        } else if (category.equals("battery")
-                || (category.equals("auto") && (buildType.startsWith("magma") || buildType.startsWith("lightning") ||
-                        buildType.startsWith("black_hole") || buildType.startsWith("bridge") ||
-                        buildType.startsWith("shelter") || buildType.startsWith("gravity") ||
-                        buildType.startsWith("seismic") || buildType.startsWith("ozone") ||
-                        buildType.startsWith("magnetic") || buildType.startsWith("earth_wall") ||
-                        buildType.startsWith("energy_wall") || buildType.startsWith("lava_trencher_battery")))) {
-            return buildBattery(p, buildType);
+        } else if (category.equals("battery")) {
+            return buildBatteryByLevelAndName(p, level, buildType);
+        } else if (category.equals("ballista")) {
+            // Ballista build komutu
+            if (buildType.equalsIgnoreCase("spawn") || buildType.equalsIgnoreCase("create")) {
+                createBallista(p);
+                return true;
+            } else if (buildType.equalsIgnoreCase("remove")) {
+                removeBallista(p);
+                return true;
+            } else if (buildType.equalsIgnoreCase("reload")) {
+                reloadBallista(p);
+                return true;
+            } else {
+                p.sendMessage("§cKullanım: /stratocraft build ballista <spawn|remove|reload>");
+                return true;
+            }
         } else {
             // Klan yapıları (Structure.Type)
             return buildClanStructure(p, buildType, level);
@@ -5610,12 +5723,42 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return true;
             case "give":
                 if (args.length < 3) {
-                    p.sendMessage("§cKullanım: /stratocraft mine give <type>");
-                    p.sendMessage("§7Mayın tipleri: explosive, lightning, poison, blindness, fatigue, slowness, fire, freeze, weakness, confusion");
+                    p.sendMessage("§cKullanım: /stratocraft mine give <seviye> <isim>");
+                    p.sendMessage("§7veya: /stratocraft mine give concealer");
+                    p.sendMessage("§7Örnek: /stratocraft mine give 1 explosive");
                     return true;
                 }
-                String mineType = args[2].toLowerCase();
-                giveMineItems(p, mineType);
+                
+                // Gizleme aleti kontrolü
+                if (args[2].equalsIgnoreCase("concealer")) {
+                    if (ItemManager.MINE_CONCEALER != null) {
+                        giveItemSafely(p, ItemManager.MINE_CONCEALER.clone());
+                        p.sendMessage("§aMayın Gizleme Aleti verildi!");
+                    } else {
+                        p.sendMessage("§cGizleme aleti bulunamadı!");
+                    }
+                    return true;
+                }
+                
+                // Seviye ve isim kontrolü
+                if (args.length < 4) {
+                    p.sendMessage("§cKullanım: /stratocraft mine give <seviye> <isim>");
+                    p.sendMessage("§7Örnek: /stratocraft mine give 1 explosive");
+                    return true;
+                }
+                
+                try {
+                    int level = Integer.parseInt(args[2]);
+                    if (level < 1 || level > 5) {
+                        p.sendMessage("§cSeviye 1-5 arasında olmalı!");
+                        return true;
+                    }
+                    
+                    String mineName = args[3].toLowerCase();
+                    giveMineItem(p, level, mineName);
+                } catch (NumberFormatException e) {
+                    p.sendMessage("§cGeçersiz seviye! 1-5 arasında bir sayı girin.");
+                }
                 return true;
             default:
                 p.sendMessage("§cGeçersiz komut! /stratocraft mine <list|give>");
@@ -5624,112 +5767,141 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     }
 
     private void showMinesList(Player p) {
-        p.sendMessage("§6§l=== MAYIN SİSTEMİ ===");
+        p.sendMessage("§6§l=== YENİ MAYIN SİSTEMİ ===");
         p.sendMessage("§7Mayın kurulumu için:");
-        p.sendMessage("§e1. §7Basınç plakası yerleştir (Stone, Oak, Light/Heavy Weighted)");
-        p.sendMessage("§e2. §7Basınç plakasına mayın tipi item ile sağ tık");
-        p.sendMessage("§e3. §7Mayın hazır! Basınca tetiklenir ve yok olur");
+        p.sendMessage("§e1. §7Basınç plakası yerleştir");
+        p.sendMessage("§e2. §7Mayın itemı ile basınç plakasına sağ tık");
+        p.sendMessage("§e3. §7Mayın hazır! Basınca tetiklenir");
         p.sendMessage("");
-        p.sendMessage("§7--- Mayın Tipleri (10 Tür) ---");
-        p.sendMessage("§e- explosive §7- Patlama Mayını (TNT) - Alan hasarı");
-        p.sendMessage("§e- lightning §7- Yıldırım Mayını (Lightning Core) - Tek hedef");
-        p.sendMessage("§e- poison §7- Zehir Mayını (Spider Eye) - Tek hedef");
-        p.sendMessage("§e- blindness §7- Körlük Mayını (Ink Sac) - Tek hedef");
-        p.sendMessage("§e- fatigue §7- Yorgunluk Mayını (Iron Pickaxe) - Tek hedef");
-        p.sendMessage("§e- slowness §7- Yavaşlık Mayını (Slime Ball) - Tek hedef");
-        p.sendMessage("§e- fire §7- Ateş Mayını (Blaze Rod) - Yanma efekti");
-        p.sendMessage("§e- freeze §7- Dondurma Mayını (Ice) - Buz efekti");
-        p.sendMessage("§e- weakness §7- Zayıflık Mayını (Bone) - Zayıflık efekti");
-        p.sendMessage("§e- confusion §7- Karışıklık Mayını (Fermented Spider Eye) - Nausea efekti");
+        p.sendMessage("§7--- Seviye 1 Mayınlar (5) ---");
+        p.sendMessage("§c- explosive §7- Patlama Mayını");
+        p.sendMessage("§2- poison §7- Zehir Mayını");
+        p.sendMessage("§b- slowness §7- Yavaşlık Mayını");
+        p.sendMessage("§e- lightning §7- Yıldırım Mayını");
+        p.sendMessage("§c- fire §7- Yakma Mayını");
+        p.sendMessage("");
+        p.sendMessage("§7--- Seviye 2 Mayınlar (5) ---");
+        p.sendMessage("§8- cage §7- Kafes Hapsetme Mayını");
+        p.sendMessage("§e- launch §7- Fırlatma Mayını");
+        p.sendMessage("§c- mob_spawn §7- Canavar Spawn Mayını");
+        p.sendMessage("§8- blindness §7- Körlük Mayını");
+        p.sendMessage("§7- weakness §7- Zayıflık Mayını");
+        p.sendMessage("");
+        p.sendMessage("§7--- Seviye 3 Mayınlar (5) ---");
+        p.sendMessage("§b- freeze §7- Dondurma Mayını");
+        p.sendMessage("§d- confusion §7- Karışıklık Mayını");
+        p.sendMessage("§7- fatigue §7- Yorgunluk Mayını");
+        p.sendMessage("§2- poison_cloud §7- Zehir Bulutu Mayını");
+        p.sendMessage("§e- lightning_storm §7- Yıldırım Fırtınası Mayını");
+        p.sendMessage("");
+        p.sendMessage("§7--- Seviye 4 Mayınlar (5) ---");
+        p.sendMessage("§c- mega_explosive §7- Büyük Patlama Mayını");
+        p.sendMessage("§8- large_cage §7- Büyük Kafes Mayını");
+        p.sendMessage("§e- super_launch §7- Güçlü Fırlatma Mayını");
+        p.sendMessage("§c- elite_mob_spawn §7- Güçlü Canavar Spawn Mayını");
+        p.sendMessage("§d- multi_effect §7- Çoklu Efekt Mayını");
+        p.sendMessage("");
+        p.sendMessage("§7--- Seviye 5 Mayınlar (5) ---");
+        p.sendMessage("§4- nuclear_explosive §7- Nükleer Patlama Mayını");
+        p.sendMessage("§4- death_cloud §7- Ölüm Bulutu Mayını");
+        p.sendMessage("§e- thunderstorm §7- Gök Gürültüsü Mayını");
+        p.sendMessage("§4- boss_spawn §7- Boss Spawn Mayını");
+        p.sendMessage("§4- chaos §7- Kaos Mayını");
         p.sendMessage("");
         p.sendMessage("§7Özellikler:");
         p.sendMessage("§7- Görünür (basınç plakası)");
-        p.sendMessage("§7- Basınca yok olur");
-        p.sendMessage("§7- Kolay yapılır (sadece basınç plakası + item)");
-        p.sendMessage("§7- Sahip kırabilir");
+        p.sendMessage("§7- Gizleme aleti ile görünmez yapılabilir");
+        p.sendMessage("§7- Crafting table'da yapılabilir");
+        p.sendMessage("§7- 5 seviye, toplam 25 mayın");
     }
 
-    private void giveMineItems(Player p, String mineType) {
-        // Basınç plakası
-        giveItemSafely(p, new ItemStack(Material.STONE_PRESSURE_PLATE, 5));
-
-        // Mayın tipi itemi
-        switch (mineType) {
-            case "explosive":
-                giveItemSafely(p, new ItemStack(Material.TNT, 5));
-                p.sendMessage("§aPatlama Mayını itemleri verildi!");
-                break;
-            case "lightning":
-                if (ItemManager.LIGHTNING_CORE != null) {
-                    giveItemSafely(p, ItemManager.LIGHTNING_CORE.clone());
-                    giveItemSafely(p, ItemManager.LIGHTNING_CORE.clone());
-                    giveItemSafely(p, ItemManager.LIGHTNING_CORE.clone());
-                }
-                p.sendMessage("§aYıldırım Mayını itemleri verildi!");
-                break;
-            case "poison":
-                giveItemSafely(p, new ItemStack(Material.SPIDER_EYE, 5));
-                p.sendMessage("§aZehir Mayını itemleri verildi!");
-                break;
-            case "blindness":
-                giveItemSafely(p, new ItemStack(Material.INK_SAC, 5));
-                p.sendMessage("§aKörlük Mayını itemleri verildi!");
-                break;
-            case "fatigue":
-                giveItemSafely(p, new ItemStack(Material.IRON_PICKAXE, 5));
-                p.sendMessage("§aYorgunluk Mayını itemleri verildi!");
-                break;
-            case "slowness":
-                giveItemSafely(p, new ItemStack(Material.SLIME_BALL, 5));
-                p.sendMessage("§aYavaşlık Mayını itemleri verildi!");
-                break;
-            case "fire":
-                giveItemSafely(p, new ItemStack(Material.BLAZE_ROD, 5));
-                p.sendMessage("§aAteş Mayını itemleri verildi!");
-                break;
-            case "freeze":
-                giveItemSafely(p, new ItemStack(Material.ICE, 5));
-                p.sendMessage("§aDondurma Mayını itemleri verildi!");
-                break;
-            case "weakness":
-                giveItemSafely(p, new ItemStack(Material.BONE, 5));
-                p.sendMessage("§aZayıflık Mayını itemleri verildi!");
-                break;
-            case "confusion":
-                giveItemSafely(p, new ItemStack(Material.FERMENTED_SPIDER_EYE, 5));
-                p.sendMessage("§aKarışıklık Mayını itemleri verildi!");
-                break;
-            default:
-                p.sendMessage("§cGeçersiz mayın tipi!");
-                p.sendMessage("§7Geçerli tipler: explosive, lightning, poison, blindness, fatigue, slowness, fire, freeze, weakness, confusion");
-                return;
+    private void giveMineItem(Player p, int level, String mineName) {
+        me.mami.stratocraft.manager.NewMineManager.MineType mineType = getMineType(level, mineName);
+        
+        if (mineType == null) {
+            p.sendMessage("§cGeçersiz mayın ismi!");
+            p.sendMessage("§7Seviye " + level + " için geçerli isimler:");
+            List<me.mami.stratocraft.manager.NewMineManager.MineType> levelMines = 
+                plugin.getNewMineManager().getMinesByLevel(level);
+            for (me.mami.stratocraft.manager.NewMineManager.MineType type : levelMines) {
+                p.sendMessage("§7- " + type.name().toLowerCase() + " §7(" + type.getDisplayName() + ")");
+            }
+            return;
+        }
+        
+        // ItemManager'dan mayın itemını al
+        ItemStack mineItem = getMineItemFromType(mineType);
+        if (mineItem != null) {
+            giveItemSafely(p, mineItem.clone());
+            p.sendMessage("§a" + mineType.getDisplayName() + " verildi!");
+        } else {
+            p.sendMessage("§cMayın itemı bulunamadı!");
+        }
+    }
+    
+    /**
+     * Seviye ve isimden MineType al
+     */
+    private me.mami.stratocraft.manager.NewMineManager.MineType getMineType(int level, String name) {
+        // İsimden direkt MineType'a çevir (artık seviye suffix'i yok)
+        String typeName = name.toUpperCase();
+        try {
+            me.mami.stratocraft.manager.NewMineManager.MineType type = 
+                me.mami.stratocraft.manager.NewMineManager.MineType.valueOf(typeName);
+            // Seviye kontrolü
+            if (type.getLevel() == level) {
+                return type;
+            }
+            return null;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+    
+    /**
+     * MineType'dan ItemStack al
+     */
+    private ItemStack getMineItemFromType(me.mami.stratocraft.manager.NewMineManager.MineType type) {
+        switch (type) {
+            // Seviye 1
+            case EXPLOSIVE: return ItemManager.MINE_EXPLOSIVE_L1;
+            case POISON: return ItemManager.MINE_POISON_L1;
+            case SLOWNESS: return ItemManager.MINE_SLOWNESS_L1;
+            case LIGHTNING: return ItemManager.MINE_LIGHTNING_L1;
+            case FIRE: return ItemManager.MINE_FIRE_L1;
+            
+            // Seviye 2
+            case CAGE: return ItemManager.MINE_CAGE_L2;
+            case LAUNCH: return ItemManager.MINE_LAUNCH_L2;
+            case MOB_SPAWN: return ItemManager.MINE_MOB_SPAWN_L2;
+            case BLINDNESS: return ItemManager.MINE_BLINDNESS_L2;
+            case WEAKNESS: return ItemManager.MINE_WEAKNESS_L2;
+            
+            // Seviye 3
+            case FREEZE: return ItemManager.MINE_EXPLOSIVE_L3;
+            case CONFUSION: return ItemManager.MINE_POISON_L3;
+            case FATIGUE: return ItemManager.MINE_LIGHTNING_L3;
+            case POISON_CLOUD: return ItemManager.MINE_CAGE_L3;
+            case LIGHTNING_STORM: return ItemManager.MINE_LAUNCH_L3;
+            
+            // Seviye 4
+            case MEGA_EXPLOSIVE: return ItemManager.MINE_EXPLOSIVE_L4;
+            case LARGE_CAGE: return ItemManager.MINE_POISON_L4;
+            case SUPER_LAUNCH: return ItemManager.MINE_LIGHTNING_L4;
+            case ELITE_MOB_SPAWN: return ItemManager.MINE_MOB_SPAWN_L4;
+            case MULTI_EFFECT: return ItemManager.MINE_MULTI_EFFECT_L4;
+            
+            // Seviye 5
+            case NUCLEAR_EXPLOSIVE: return ItemManager.MINE_EXPLOSIVE_L5;
+            case DEATH_CLOUD: return ItemManager.MINE_POISON_L5;
+            case THUNDERSTORM: return ItemManager.MINE_LIGHTNING_L5;
+            case BOSS_SPAWN: return ItemManager.MINE_BOSS_SPAWN_L5;
+            case CHAOS: return ItemManager.MINE_CHAOS_L5;
+            
+            default: return null;
         }
     }
 
-    private boolean handleBallista(Player p, String[] args) {
-        if (args.length < 2) {
-            p.sendMessage("§c/admin ballista create - Baktığın yöne Balista oluştur");
-            p.sendMessage("§c/admin ballista remove - Yakındaki Balista'yı kaldır");
-            p.sendMessage("§c/admin ballista reload - Balista'nın mermisini doldur");
-            return true;
-        }
-
-        switch (args[1].toLowerCase()) {
-            case "create":
-                createBallista(p);
-                break;
-            case "remove":
-                removeBallista(p);
-                break;
-            case "reload":
-                reloadBallista(p);
-                break;
-            default:
-                p.sendMessage("§cGeçersiz komut! create, remove, veya reload kullan");
-                break;
-        }
-        return true;
-    }
 
     private void createBallista(Player p) {
         org.bukkit.block.Block target = p.getTargetBlock(null, 10);

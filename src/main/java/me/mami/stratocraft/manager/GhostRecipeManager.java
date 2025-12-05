@@ -98,13 +98,12 @@ public class GhostRecipeManager {
         recipeData.put("AUTO_TURRET", autoTurret);
         
         // Diğer yapılar için basit desenler (ileride detaylandırılabilir)
-        addSimpleStructureRecipe("CORE", Material.END_CRYSTAL, Material.DIAMOND_BLOCK);
-        addSimpleStructureRecipe("SIEGE_FACTORY", Material.CRAFTING_TABLE, Material.IRON_BLOCK);
-        addSimpleStructureRecipe("WALL_GENERATOR", Material.BEACON, Material.STONE_BRICKS);
-        addSimpleStructureRecipe("GRAVITY_WELL", Material.BEACON, Material.OBSIDIAN);
-        addSimpleStructureRecipe("LAVA_TRENCHER", Material.DISPENSER, Material.MAGMA_BLOCK);
-        addSimpleStructureRecipe("WATCHTOWER", Material.BEACON, Material.COBBLESTONE);
-        addSimpleStructureRecipe("DRONE_STATION", Material.CRAFTING_TABLE, Material.IRON_BLOCK);
+        addSimpleStructureRecipe("SIEGE_FACTORY", Material.DISPENSER, Material.IRON_BLOCK);
+        addSimpleStructureRecipe("WALL_GENERATOR", Material.PISTON, Material.STONE);
+        addSimpleStructureRecipe("GRAVITY_WELL", Material.BEACON, Material.IRON_BLOCK);
+        addSimpleStructureRecipe("LAVA_TRENCHER", Material.DISPENSER, Material.LAVA_BUCKET);
+        addSimpleStructureRecipe("WATCHTOWER", Material.BEACON, Material.IRON_BLOCK);
+        addSimpleStructureRecipe("DRONE_STATION", Material.DISPENSER, Material.IRON_BLOCK);
         addSimpleStructureRecipe("AUTO_DRILL", Material.DISPENSER, Material.IRON_BLOCK);
         addSimpleStructureRecipe("XP_BANK", Material.ENCHANTING_TABLE, Material.EXPERIENCE_BOTTLE);
         addSimpleStructureRecipe("MAG_RAIL", Material.POWERED_RAIL, Material.IRON_BLOCK);
@@ -137,421 +136,74 @@ public class GhostRecipeManager {
         GhostRecipeData clanCreate = new GhostRecipeData();
         for (int x = -1; x <= 1; x++) {
             for (int z = -1; z <= 1; z++) {
-                clanCreate.addBlock(new Vector(x, -1, z), Material.COBBLESTONE);
+                clanCreate.addBlock(new Vector(x, -1, z), Material.GOLD_BLOCK);
             }
         }
-        clanCreate.addBlock(new Vector(0, 0, 0), Material.CRAFTING_TABLE);
+        clanCreate.addBlock(new Vector(0, 0, 0), Material.BEACON);
         recipeData.put("CLAN_CREATE", clanCreate);
+        
+        // Diğer ritüeller için basit desenler
+        addSimpleStructureRecipe("CLAN_UPGRADE", Material.BEACON, Material.DIAMOND_BLOCK);
+        addSimpleStructureRecipe("CLAN_DISBAND", Material.BEACON, Material.TNT);
     }
     
     /**
-     * Basit yapı tarifi ekle (merkez blok + alt platform)
+     * Basit yapı tarifi ekle (merkez blok + alt blok)
      */
-    private void addSimpleStructureRecipe(String recipeId, Material centerBlock, Material platformBlock) {
+    private void addSimpleStructureRecipe(String id, Material center, Material base) {
         GhostRecipeData data = new GhostRecipeData();
-        for (int x = -1; x <= 1; x++) {
-            for (int z = -1; z <= 1; z++) {
-                data.addBlock(new Vector(x, -1, z), platformBlock);
-            }
-        }
-        data.addBlock(new Vector(0, 0, 0), centerBlock);
-        recipeData.put(recipeId, data);
+        data.addBlock(new Vector(0, 0, 0), center);
+        data.addBlock(new Vector(0, -1, 0), base);
+        recipeData.put(id, data);
     }
     
     /**
-     * Oyuncu tarif kitabına baktığında hayalet yapı göster
+     * Tarif verisini al
      */
-    public void showGhostRecipe(Player player, String recipeId, Location targetLocation) {
-        // Eğer zaten aktif bir hayalet tarif varsa iptal et
-        if (activeGhostRecipes.containsKey(player.getUniqueId())) {
-            removeGhostRecipe(player);
-        }
-        
-        GhostRecipeData data = recipeData.get(recipeId);
-        if (data == null) {
-            player.sendMessage("§cBu tarif için hayalet görüntü mevcut değil.");
-            return;
-        }
-        
-        // Hayalet yapıyı oluştur
-        List<ArmorStand> ghostBlocks = new ArrayList<>();
-        Map<Vector, ArmorStand> offsetToGhostMap = new HashMap<>(); // Offset -> ArmorStand mapping
-        
-        for (Map.Entry<Vector, Material> entry : data.getBlocks().entrySet()) {
-            Vector offset = entry.getKey();
-            Material material = entry.getValue();
-            
-            Location blockLoc = targetLocation.clone().add(offset);
-            
-            // ArmorStand ile hayalet blok göster
-            Location spawnLoc = blockLoc.clone().add(0.5, 0, 0.5);
-            ArmorStand ghost = (ArmorStand) player.getWorld().spawnEntity(
-                spawnLoc, EntityType.ARMOR_STAND
-            );
-            ghost.setVisible(false);
-            ghost.setGravity(false);
-            ghost.setInvulnerable(true);
-            ghost.setMarker(true);
-            ghost.setSmall(true);
-            ghost.setCustomNameVisible(false);
-            
-            // Blok görünümü için kafasına blok koy
-            ghost.getEquipment().setHelmet(new org.bukkit.inventory.ItemStack(material));
-            
-            // Glow efekti (1.20+ için)
-            try {
-                ghost.setGlowing(true);
-            } catch (Exception e) {
-                // Eski versiyonlarda çalışmayabilir
-            }
-            
-            ghostBlocks.add(ghost);
-            offsetToGhostMap.put(offset, ghost); // Offset -> ArmorStand mapping
-        }
-        
-        // Aktif tarifi kaydet
-        GhostRecipe recipe = new GhostRecipe(recipeId, targetLocation, ghostBlocks, offsetToGhostMap, System.currentTimeMillis());
-        activeGhostRecipes.put(player.getUniqueId(), recipe);
-        
-        player.sendMessage("§aHayalet tarif gösteriliyor! Blokları doğru yere koyun.");
-        player.sendMessage("§7Yere Shift+Sağ tıklayarak tarifi sabitleyebilirsiniz. (50 blok uzaklaşınca kaybolur)");
+    public GhostRecipeData getRecipeData(String recipeId) {
+        return recipeData.get(recipeId);
     }
     
     /**
-     * Yere tıklayınca tarifi sabitle
+     * Aktif hayalet tarif ekle
      */
-    public void fixGhostRecipe(Player player, Location targetLocation) {
-        GhostRecipe recipe = activeGhostRecipes.get(player.getUniqueId());
-        if (recipe == null) {
-            player.sendMessage("§cAktif bir hayalet tarif yok!");
-            return;
-        }
-        
-        // Eski tarifi kaldır
-        removeGhostRecipe(player);
-        
-        // Yeni konumda sabit tarif oluştur
-        GhostRecipeData data = recipeData.get(recipe.getRecipeId());
-        if (data == null) {
-            player.sendMessage("§cTarif verisi bulunamadı!");
-            return;
-        }
-        
-        // Hayalet yapıyı oluştur
-        List<ArmorStand> ghostBlocks = new ArrayList<>();
-        Map<Vector, ArmorStand> offsetToGhostMap = new HashMap<>(); // Offset -> ArmorStand mapping
-        
-        for (Map.Entry<Vector, Material> entry : data.getBlocks().entrySet()) {
-            Vector offset = entry.getKey();
-            Material material = entry.getValue();
-            
-            Location blockLoc = targetLocation.clone().add(offset);
-            
-            // ArmorStand ile hayalet blok göster
-            Location spawnLoc = blockLoc.clone().add(0.5, 0, 0.5);
-            ArmorStand ghost = (ArmorStand) player.getWorld().spawnEntity(
-                spawnLoc, EntityType.ARMOR_STAND
-            );
-            ghost.setVisible(false);
-            ghost.setGravity(false);
-            ghost.setInvulnerable(true);
-            ghost.setMarker(true);
-            ghost.setSmall(true);
-            ghost.setCustomNameVisible(false);
-            
-            // Blok görünümü için kafasına blok koy
-            ghost.getEquipment().setHelmet(new org.bukkit.inventory.ItemStack(material));
-            
-            // Glow efekti
-            try {
-                ghost.setGlowing(true);
-            } catch (Exception e) {
-                // Eski versiyonlarda çalışmayabilir
-            }
-            
-            ghostBlocks.add(ghost);
-            offsetToGhostMap.put(offset, ghost); // Offset -> ArmorStand mapping
-        }
-        
-        // Sabit tarifi kaydet
-        GhostRecipe fixedRecipe = new GhostRecipe(recipe.getRecipeId(), targetLocation, ghostBlocks, offsetToGhostMap, System.currentTimeMillis());
-        fixedGhostRecipes.put(targetLocation, fixedRecipe);
-        
-        player.sendMessage("§a§lTarif sabitlendi! Bu konumda kalacak.");
+    public void addActiveGhostRecipe(UUID playerId, GhostRecipe recipe) {
+        activeGhostRecipes.put(playerId, recipe);
     }
     
     /**
-     * Sabit tarifi kaldır
+     * Aktif hayalet tarifi kaldır
      */
-    public void removeFixedRecipe(Location location) {
-        GhostRecipe recipe = fixedGhostRecipes.remove(location);
-        if (recipe != null) {
-            for (ArmorStand ghost : recipe.getGhostBlocks()) {
-                ghost.remove();
-            }
-        }
+    public void removeActiveGhostRecipe(UUID playerId) {
+        activeGhostRecipes.remove(playerId);
     }
     
     /**
-     * Belirli bir konumda sabit tarif var mı kontrol et
+     * Aktif hayalet tarifi al
      */
-    public boolean hasFixedRecipeAt(Location location) {
-        // 5 blok yarıçap içinde sabit tarif var mı?
-        for (Location fixedLoc : fixedGhostRecipes.keySet()) {
-            if (fixedLoc.getWorld().equals(location.getWorld()) &&
-                fixedLoc.distance(location) <= 5) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    /**
-     * Belirli bir konumdaki sabit tarifi kaldır
-     */
-    public boolean removeFixedRecipeAt(Location location) {
-        // 5 blok yarıçap içinde sabit tarif bul ve kaldır
-        Location foundLoc = null;
-        for (Location fixedLoc : fixedGhostRecipes.keySet()) {
-            if (fixedLoc.getWorld().equals(location.getWorld()) &&
-                fixedLoc.distance(location) <= 5) {
-                foundLoc = fixedLoc;
-                break;
-            }
-        }
-        
-        if (foundLoc != null) {
-            removeFixedRecipe(foundLoc);
-            return true;
-        }
-        return false;
-    }
-    
-    /**
-     * Hayalet tarifi kaldır
-     */
-    public void removeGhostRecipe(Player player) {
-        GhostRecipe recipe = activeGhostRecipes.remove(player.getUniqueId());
-        if (recipe != null) {
-            for (ArmorStand ghost : recipe.getGhostBlocks()) {
-                ghost.remove();
-            }
-        }
-    }
-    
-    /**
-     * Tüm sabit tarifleri kaldır
-     */
-    public int clearAllFixedRecipes() {
-        int count = 0;
-        for (GhostRecipe recipe : fixedGhostRecipes.values()) {
-            for (ArmorStand ghost : recipe.getGhostBlocks()) {
-                ghost.remove();
-            }
-            count++;
-        }
-        fixedGhostRecipes.clear();
-        return count;
-    }
-    
-    /**
-     * Oyuncu 50 bloktan uzaklaştı mı kontrol et
-     */
-    public void checkDistance(Player player) {
-        GhostRecipe recipe = activeGhostRecipes.get(player.getUniqueId());
-        if (recipe == null) return;
-        
-        // Oyuncu offline veya null kontrolü
-        if (player == null || !player.isOnline()) {
-            removeGhostRecipe(player);
-            return;
-        }
-        
-        double distance = player.getLocation().distance(recipe.getLocation());
-        if (distance > 50) {
-            removeGhostRecipe(player);
-            player.sendMessage("§cHayalet tarif 50 bloktan uzaklaştığınız için kaldırıldı.");
-        }
-    }
-    
-    /**
-     * Blok koyulduğunda kontrol et ve doğru blok ise hayalet görüntüsünü kaldır
-     * @return true eğer blok doğru yerde ve hayalet görüntüsü kaldırıldıysa
-     */
-    public boolean checkAndRemoveBlock(Player player, Location blockLocation, Material placedMaterial) {
-        // Önce aktif tarifleri kontrol et
-        GhostRecipe activeRecipe = activeGhostRecipes.get(player.getUniqueId());
-        if (activeRecipe != null) {
-            if (checkAndRemoveBlockFromRecipe(player, activeRecipe, blockLocation, placedMaterial, true, null)) {
-                return true;
-            }
-        }
-        
-        // Sonra sabit tarifleri kontrol et (tarif boyutuna göre dinamik yarıçap)
-        for (Map.Entry<Location, GhostRecipe> entry : new ArrayList<>(fixedGhostRecipes.entrySet())) {
-            Location fixedLoc = entry.getKey();
-            GhostRecipe fixedRecipe = entry.getValue();
-            
-            if (!fixedLoc.getWorld().equals(blockLocation.getWorld())) continue;
-            
-            // Tarif boyutuna göre maksimum mesafe hesapla (en büyük offset + 2 blok güvenlik)
-            GhostRecipeData recipeData = this.recipeData.get(fixedRecipe.getRecipeId());
-            if (recipeData != null) {
-                double maxDistance = 0;
-                for (Vector offset : recipeData.getBlocks().keySet()) {
-                    double dist = offset.length();
-                    if (dist > maxDistance) maxDistance = dist;
-                }
-                maxDistance = Math.max(maxDistance + 2, 5); // En az 5 blok
-                
-                if (fixedLoc.distance(blockLocation) <= maxDistance) {
-                    // Sabit tarif için doğru key'i (fixedLoc) geçir
-                    if (checkAndRemoveBlockFromRecipe(player, fixedRecipe, blockLocation, placedMaterial, false, fixedLoc)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        
-        return false;
-    }
-    
-    /**
-     * Belirli bir tarif için blok kontrolü ve hayalet görüntüsü kaldırma
-     * @param fixedRecipeKey Sabit tarifler için map key'i (Location), aktif tarifler için null
-     */
-    private boolean checkAndRemoveBlockFromRecipe(Player player, GhostRecipe recipe, 
-                                                   Location blockLocation, Material placedMaterial, 
-                                                   boolean isActive, Location fixedRecipeKey) {
-        GhostRecipeData data = recipeData.get(recipe.getRecipeId());
-        if (data == null) return false;
-        
-        // Koyulan bloğun tarifteki konumunu bul
-        Location recipeCenter = recipe.getLocation();
-        Vector offset = blockLocation.toVector().subtract(recipeCenter.toVector());
-        
-        // En yakın offset'i bul (blok koordinatları için)
-        Vector blockOffset = new Vector(
-            Math.round(offset.getX()),
-            Math.round(offset.getY()),
-            Math.round(offset.getZ())
-        );
-        
-        // Bu offset'te bir blok var mı?
-        Material expectedMaterial = data.getBlocks().get(blockOffset);
-        if (expectedMaterial == null) return false; // Bu blok tarifte yok
-        
-        // Malzeme doğru mu?
-        if (placedMaterial != expectedMaterial) return false; // Yanlış malzeme
-        
-        // Bu offset'teki hayalet görüntüsünü kaldır
-        ArmorStand ghost = recipe.getOffsetToGhostMap().get(blockOffset);
-        if (ghost != null && ghost.isValid()) {
-            ghost.remove();
-            recipe.getOffsetToGhostMap().remove(blockOffset);
-            recipe.getGhostBlocks().remove(ghost);
-            
-            // Kalan blok sayısını kontrol et
-            int remainingBlocks = recipe.getOffsetToGhostMap().size();
-            if (remainingBlocks == 0) {
-                // Tüm bloklar tamamlandı!
-                if (isActive) {
-                    activeGhostRecipes.remove(player.getUniqueId());
-                } else {
-                    // Sabit tarif tamamlandı, kaldır (doğru key'i kullan)
-                    if (fixedRecipeKey != null) {
-                        fixedGhostRecipes.remove(fixedRecipeKey);
-                    } else {
-                        // Fallback: recipe.getLocation() kullan (ama bu genelde çalışmaz)
-                        fixedGhostRecipes.remove(recipe.getLocation());
-                    }
-                }
-                player.sendMessage("§a§l════════════════════════════");
-                player.sendMessage("§a§l✓ TARİF TAMAMLANDI!");
-                player.sendMessage("§7Yapının tarifi başarıyla tamamlandı.");
-                player.sendMessage("§a§l════════════════════════════");
-                return true;
-            } else {
-                player.sendMessage("§e✓ Blok doğru yere konuldu! (§7" + remainingBlocks + " blok kaldı§e)");
-            }
-        }
-        
-        return true;
-    }
-    
-    /**
-     * Tarif tamamlandı mı kontrol et (bloklar doğru yere konuldu mu?)
-     * @deprecated checkAndRemoveBlock kullanın
-     */
-    @Deprecated
-    public boolean checkRecipeComplete(Player player, Location checkLocation) {
-        GhostRecipe recipe = activeGhostRecipes.get(player.getUniqueId());
-        if (recipe == null) return false;
-        
-        GhostRecipeData data = recipeData.get(recipe.getRecipeId());
-        if (data == null) return false;
-        
-        // Tüm blokların doğru yerde olup olmadığını kontrol et
-        for (Map.Entry<Vector, Material> entry : data.getBlocks().entrySet()) {
-            Vector offset = entry.getKey();
-            Material expectedMaterial = entry.getValue();
-            
-            Location blockLoc = recipe.getLocation().clone().add(offset);
-            if (blockLoc.getBlock().getType() != expectedMaterial) {
-                return false; // Bir blok yanlış
-            }
-        }
-        
-        // Tüm bloklar doğru - tarif tamamlandı!
-        removeGhostRecipe(player);
-        player.sendMessage("§a§lTarif tamamlandı! Hayalet yapı kaldırıldı.");
-        return true;
-    }
-    
-    public boolean hasActiveRecipe(UUID playerId) {
-        return activeGhostRecipes.containsKey(playerId);
-    }
-    
-    public GhostRecipe getActiveRecipe(UUID playerId) {
+    public GhostRecipe getActiveGhostRecipe(UUID playerId) {
         return activeGhostRecipes.get(playerId);
     }
     
-    // ========== DATA CLASSES ==========
-    
-    private static class GhostRecipe {
-        private final String recipeId;
-        private final Location location;
-        private final List<ArmorStand> ghostBlocks;
-        private final Map<Vector, ArmorStand> offsetToGhostMap; // Offset -> ArmorStand mapping
-        private final long startTime;
-        
-        public GhostRecipe(String recipeId, Location location, List<ArmorStand> ghostBlocks, 
-                          Map<Vector, ArmorStand> offsetToGhostMap, long startTime) {
-            this.recipeId = recipeId;
-            this.location = location;
-            this.ghostBlocks = ghostBlocks;
-            this.offsetToGhostMap = offsetToGhostMap;
-            this.startTime = startTime;
-        }
-        
-        public String getRecipeId() { return recipeId; }
-        public Location getLocation() { return location; }
-        public List<ArmorStand> getGhostBlocks() { return ghostBlocks; }
-        public Map<Vector, ArmorStand> getOffsetToGhostMap() { return offsetToGhostMap; }
-        @SuppressWarnings("unused")
-        public long getStartTime() { return startTime; }
+    /**
+     * Sabit hayalet tarif ekle
+     */
+    public void addFixedGhostRecipe(Location loc, GhostRecipe recipe) {
+        fixedGhostRecipes.put(loc, recipe);
     }
     
-    private static class GhostRecipeData {
-        private final Map<Vector, Material> blocks = new HashMap<>();
-        
-        public void addBlock(Vector offset, Material material) {
-            blocks.put(offset, material);
-        }
-        
-        public Map<Vector, Material> getBlocks() {
-            return blocks;
-        }
+    /**
+     * Sabit hayalet tarifi kaldır
+     */
+    public void removeFixedGhostRecipe(Location loc) {
+        fixedGhostRecipes.remove(loc);
+    }
+    
+    /**
+     * Sabit hayalet tarifi al
+     */
+    public GhostRecipe getFixedGhostRecipe(Location loc) {
+        return fixedGhostRecipes.get(loc);
     }
     
     /**
@@ -609,6 +261,70 @@ public class GhostRecipeManager {
     }
     
     /**
+     * NewMineManager'dan 25 mayın için hayalet tarifleri ekle
+     * Bu metod Main.java'da NewMineManager oluşturulduktan sonra çağrılmalı
+     */
+    public void initializeMineRecipes(NewMineManager mineManager) {
+        if (mineManager == null) return;
+        
+        // Tüm mayın tiplerini al
+        for (NewMineManager.MineType mineType : NewMineManager.MineType.values()) {
+            String mineName = mineType.name();
+            int level = mineType.getLevel();
+            
+            // Mayınlar için basit hayalet tarif (basınç plakası + seviyeye göre blok)
+            GhostRecipeData data = new GhostRecipeData();
+            
+            // Basınç plakası (merkez)
+            Material pressurePlate = getPressurePlateForLevel(level);
+            data.addBlock(new Vector(0, 0, 0), pressurePlate);
+            
+            // Seviyeye göre alt blok
+            Material baseBlock = getBaseBlockForLevel(level);
+            data.addBlock(new Vector(0, -1, 0), baseBlock);
+            
+            // Recipe ID oluştur
+            String recipeId = "RECIPE_MINE_" + mineName;
+            
+            // Tarif verisini kaydet
+            recipeData.put(recipeId, data);
+        }
+        
+        // Gizleme aleti için basit tarif
+        GhostRecipeData concealerData = new GhostRecipeData();
+        concealerData.addBlock(new Vector(0, 0, 0), Material.SPYGLASS);
+        recipeData.put("RECIPE_MINE_CONCEALER", concealerData);
+    }
+    
+    /**
+     * Seviyeye göre basınç plakası tipi
+     */
+    private Material getPressurePlateForLevel(int level) {
+        switch (level) {
+            case 1: return Material.STONE_PRESSURE_PLATE;
+            case 2: return Material.OAK_PRESSURE_PLATE;
+            case 3: return Material.POLISHED_BLACKSTONE_PRESSURE_PLATE;
+            case 4: return Material.HEAVY_WEIGHTED_PRESSURE_PLATE;
+            case 5: return Material.LIGHT_WEIGHTED_PRESSURE_PLATE;
+            default: return Material.STONE_PRESSURE_PLATE;
+        }
+    }
+    
+    /**
+     * Seviyeye göre alt blok tipi
+     */
+    private Material getBaseBlockForLevel(int level) {
+        switch (level) {
+            case 1: return Material.COBBLESTONE;
+            case 2: return Material.STONE;
+            case 3: return Material.IRON_BLOCK;
+            case 4: return Material.DIAMOND_BLOCK;
+            case 5: return Material.NETHERITE_BLOCK;
+            default: return Material.COBBLESTONE;
+        }
+    }
+    
+    /**
      * Batarya isminden kategoriyi belirle (BatteryManager'dan)
      */
     private BatteryManager.BatteryCategory getBatteryCategory(String batteryName) {
@@ -641,4 +357,3 @@ public class GhostRecipeManager {
         }
     }
 }
-
