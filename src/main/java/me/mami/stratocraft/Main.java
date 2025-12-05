@@ -621,6 +621,7 @@ public class Main extends JavaPlugin {
         
         // Mayınları kaydet (NewMineManager otomatik kaydediliyor)
         if (newMineManager != null) {
+            newMineManager.shutdown();
             getLogger().info("Stratocraft: Mayınlar kaydedildi.");
         }
 

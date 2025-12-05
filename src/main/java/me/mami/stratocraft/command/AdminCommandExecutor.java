@@ -3568,42 +3568,6 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         return mineCommands.stream()
                                 .filter(s -> s.toLowerCase().startsWith(input))
                                 .collect(Collectors.toList());
-                    } else if (args.length == 3 && args[1].equalsIgnoreCase("give")) {
-                        // Gizleme aleti veya seviye
-                        List<String> options = new ArrayList<>();
-                        options.add("concealer");
-                        for (int i = 1; i <= 5; i++) {
-                            options.add(String.valueOf(i));
-                        }
-                        if (input.isEmpty()) {
-                            return options;
-                        }
-                        return options.stream()
-                                .filter(s -> s.toLowerCase().startsWith(input))
-                                .collect(Collectors.toList());
-                    } else if (args.length == 4 && args[1].equalsIgnoreCase("give")) {
-                        // Seviye sonrası mayın isimleri
-                        try {
-                            int level = Integer.parseInt(args[2]);
-                            if (level >= 1 && level <= 5) {
-                                me.mami.stratocraft.manager.NewMineManager newMineManager = plugin.getNewMineManager();
-                                if (newMineManager != null) {
-                                    List<me.mami.stratocraft.manager.NewMineManager.MineType> levelMines = 
-                                        newMineManager.getMinesByLevel(level);
-                                    List<String> mineNames = levelMines.stream()
-                                        .map(t -> t.name().toLowerCase())
-                                        .collect(Collectors.toList());
-                                    if (input.isEmpty()) {
-                                        return mineNames;
-                                    }
-                                    return mineNames.stream()
-                                        .filter(s -> s.toLowerCase().startsWith(input))
-                                        .collect(Collectors.toList());
-                                }
-                            }
-                        } catch (NumberFormatException e) {
-                            // Geçersiz seviye
-                        }
                     }
                     return new ArrayList<>();
 
@@ -3723,6 +3687,22 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                                 .collect(Collectors.toList());
                     }
                     break;
+                case "mine":
+                    // Mine give için seviye veya concealer öner
+                    if (category.equalsIgnoreCase("give")) {
+                        List<String> options = new ArrayList<>();
+                        options.add("concealer");
+                        for (int i = 1; i <= 5; i++) {
+                            options.add(String.valueOf(i));
+                        }
+                        if (input.isEmpty()) {
+                            return options;
+                        }
+                        return options.stream()
+                                .filter(s -> s.toLowerCase().startsWith(input))
+                                .collect(Collectors.toList());
+                    }
+                    break;
             }
         }
         
@@ -3782,6 +3762,36 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     }
                 } catch (NumberFormatException e) {
                     // Geçersiz seviye
+                }
+            } else if (commandName.equals("mine") && category.equals("give")) {
+                // Mine give için seviye sonrası mayın isimleri
+                String levelStr = args[2];
+                String input = args[3].toLowerCase();
+                
+                try {
+                    int level = Integer.parseInt(levelStr);
+                    if (level >= 1 && level <= 5) {
+                        me.mami.stratocraft.manager.NewMineManager newMineManager = plugin.getNewMineManager();
+                        if (newMineManager != null) {
+                            List<me.mami.stratocraft.manager.NewMineManager.MineType> levelMines = 
+                                newMineManager.getMinesByLevel(level);
+                            List<String> mineNames = levelMines.stream()
+                                .map(t -> t.name().toLowerCase())
+                                .collect(Collectors.toList());
+                            if (input.isEmpty()) {
+                                return mineNames;
+                            }
+                            return mineNames.stream()
+                                .filter(s -> s.toLowerCase().startsWith(input))
+                                .collect(Collectors.toList());
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    // Geçersiz seviye veya concealer
+                    if (levelStr.equalsIgnoreCase("concealer")) {
+                        // Concealer için boş liste döndür (zaten tamamlandı)
+                        return new ArrayList<>();
+                    }
                 }
             } else if (commandName.equals("disaster") && args[1].equalsIgnoreCase("start")) {
                 // Disaster start için önce seviye öner

@@ -1,6 +1,7 @@
 package me.mami.stratocraft.manager;
 
 import me.mami.stratocraft.Main;
+import me.mami.stratocraft.model.Clan;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -10,6 +11,7 @@ import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.EulerAngle;
 import org.bukkit.util.Vector;
 
@@ -123,9 +125,50 @@ public class NewMineManager {
         public void setHidden(boolean hidden) { this.hidden = hidden; }
     }
     
+    private BukkitTask visibilityUpdateTask;
+    
     public NewMineManager(Main plugin) {
         this.plugin = plugin;
         this.clanManager = plugin.getClanManager();
+        startVisibilityUpdateTask();
+    }
+    
+    /**
+     * Görünürlük güncelleme task'ını başlat (her 2 saniyede bir)
+     */
+    private void startVisibilityUpdateTask() {
+        visibilityUpdateTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Map.Entry<Location, MineData> entry : activeMines.entrySet()) {
+                    Location loc = entry.getKey();
+                    MineData mine = entry.getValue();
+                    
+                    // Gizli mayınlar için görünürlük güncelleme yapma
+                    if (mine.isHidden()) {
+                        continue;
+                    }
+                    
+                    // İsim standı var mı?
+                    ArmorStand nameStand = mineNameStands.get(loc);
+                    if (nameStand == null || nameStand.isDead()) {
+                        continue;
+                    }
+                    
+                    // Görünürlüğü güncelle
+                    updateNameStandVisibility(loc, mine.getOwnerId(), mine.getOwnerClanId());
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 40L); // Her 2 saniyede bir (40 tick = 2 saniye)
+    }
+    
+    /**
+     * Task'ı durdur
+     */
+    public void shutdown() {
+        if (visibilityUpdateTask != null) {
+            visibilityUpdateTask.cancel();
+        }
     }
     
     /**
@@ -167,30 +210,103 @@ public class NewMineManager {
         pressurePlate.setMetadata("MineOwner", new FixedMetadataValue(plugin, player.getUniqueId().toString()));
         pressurePlate.setMetadata("MineType", new FixedMetadataValue(plugin, type.name()));
         
-        // İsim standı oluştur (görünür mayınlar için)
-        createNameStand(loc, type);
+        // İsim standı oluştur (sadece sahibi ve klan üyelerine görünür)
+        createNameStand(loc, type, player.getUniqueId(), clanId);
         
         player.sendMessage("§a§lMayın yerleştirildi: §e" + type.getDisplayName());
         return true;
     }
     
     /**
-     * İsim standı oluştur
+     * İsim standı oluştur (sadece sahibi ve klan üyelerine görünür)
      */
-    private void createNameStand(Location loc, MineType type) {
+    private void createNameStand(Location loc, MineType type, UUID ownerId, UUID ownerClanId) {
         Location standLoc = loc.clone().add(0.5, 0.1, 0.5);
         ArmorStand nameStand = (ArmorStand) loc.getWorld().spawnEntity(standLoc, EntityType.ARMOR_STAND);
         nameStand.setVisible(false);
         nameStand.setGravity(false);
         nameStand.setInvulnerable(true);
-        nameStand.setCustomNameVisible(true);
+        // Başlangıçta herkese görünmez yap
+        nameStand.setCustomNameVisible(false);
         nameStand.setCustomName("§c§l" + type.getDisplayName());
         nameStand.setMarker(true);
         nameStand.setSmall(true);
         nameStand.setHeadPose(new EulerAngle(0, 0, 0));
         nameStand.setMetadata("MineNameStand", new FixedMetadataValue(plugin, true));
+        nameStand.setMetadata("MineOwnerId", new FixedMetadataValue(plugin, ownerId.toString()));
+        if (ownerClanId != null) {
+            nameStand.setMetadata("MineClanId", new FixedMetadataValue(plugin, ownerClanId.toString()));
+        }
         
         mineNameStands.put(loc, nameStand);
+        
+        // Sadece sahibi ve klan üyelerine görünür yap
+        updateNameStandVisibility(loc, ownerId, ownerClanId);
+    }
+    
+    /**
+     * İsim standının görünürlüğünü güncelle (sadece sahibi ve klan üyelerine görünür)
+     */
+    private void updateNameStandVisibility(Location loc, UUID ownerId, UUID ownerClanId) {
+        ArmorStand nameStand = mineNameStands.get(loc);
+        if (nameStand == null || nameStand.isDead()) {
+            return;
+        }
+        
+        // Tüm oyuncuları kontrol et
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.getWorld() != loc.getWorld()) {
+                // Farklı dünyada ise gizle
+                player.hideEntity(plugin, nameStand);
+                continue;
+            }
+            
+            double distance = player.getLocation().distance(loc);
+            boolean canSee = false;
+            
+            // 16 blok mesafe içinde mi?
+            if (distance <= 16) {
+                // Sahibi mi?
+                if (player.getUniqueId().equals(ownerId)) {
+                    canSee = true;
+                }
+                // Klan üyesi mi?
+                else if (ownerClanId != null && clanManager != null) {
+                    Clan playerClan = clanManager.getClanByPlayer(player.getUniqueId());
+                    if (playerClan != null && playerClan.getId().equals(ownerClanId)) {
+                        canSee = true;
+                    }
+                }
+            }
+            
+            // Görünürlüğü ayarla (sadece o oyuncu için)
+            if (canSee) {
+                // Oyuncuya görünür yap
+                player.showEntity(plugin, nameStand);
+            } else {
+                // Oyuncuya gizle
+                player.hideEntity(plugin, nameStand);
+            }
+        }
+        
+        // Custom name'i sadece görünebilir oyuncular için ayarla
+        // Not: setCustomNameVisible herkese uygulanır, bu yüzden sadece görünebilir oyuncular varsa true yap
+        boolean hasVisiblePlayer = false;
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.getWorld() == loc.getWorld() && player.getLocation().distance(loc) <= 16) {
+                if (player.getUniqueId().equals(ownerId)) {
+                    hasVisiblePlayer = true;
+                    break;
+                } else if (ownerClanId != null && clanManager != null) {
+                    Clan playerClan = clanManager.getClanByPlayer(player.getUniqueId());
+                    if (playerClan != null && playerClan.getId().equals(ownerClanId)) {
+                        hasVisiblePlayer = true;
+                        break;
+                    }
+                }
+            }
+        }
+        nameStand.setCustomNameVisible(hasVisiblePlayer);
     }
     
     /**
