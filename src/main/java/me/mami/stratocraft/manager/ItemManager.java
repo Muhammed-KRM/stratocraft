@@ -1474,6 +1474,11 @@ public class ItemManager {
                 if (recipeId.startsWith("BATTERY_")) {
                     return new RecipeInfo("Batarya Tarifi", "§7Dünyada bloklarla", "Shift+Sağ Tık ile detaylı tarif görüntüle.", false);
                 }
+                return new RecipeInfo("Bilinmeyen Tarif", "§7Bilinmeyen", "Açıklama yok.");
+            case "WEAPON_L5_2":
+                return new RecipeInfo("Ateş Ejderi Tarifi", "§7Crafting masasında",
+                    "Mod 1: %10 hasar | Mod 2: Ateş topu yağmuru (15 top).", true,
+                    Arrays.asList("Satır 1: [ ] [F] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [G] [ ]",
                         "F = Ateş Topu", "B = Void Dragon Heart", "G = Altın Balta"));
             case "WEAPON_L5_3":
                 return new RecipeInfo("Titan Katili Tarifi", "§7Crafting masasında",

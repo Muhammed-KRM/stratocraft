@@ -4358,6 +4358,69 @@ public class NewBatteryManager {
     
     // ========== DESTEK METODLARI ==========
     
+    private void applyHealSupport(Player player, double radius, double healAmount, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            double newHealth = Math.min(
+                member.getHealth() + healAmount,
+                member.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue()
+            );
+            member.setHealth(newHealth);
+        }
+        
+        player.sendMessage("§aCan yenileme uygulandı! (" + members.size() + " oyuncu)");
+    }
+    
+    private void applySpeedSupport(Player player, double radius, int amplifier, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.SPEED, duration * 20, amplifier, false, false, true));
+        }
+        
+        player.sendMessage("§eHız artışı uygulandı! (" + members.size() + " oyuncu)");
+    }
+    
+    private void applyDamageSupport(Player player, double radius, int amplifier, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.INCREASE_DAMAGE, duration * 20, amplifier, false, false, true));
+        }
+        
+        player.sendMessage("§cHasar artışı uygulandı! (" + members.size() + " oyuncu)");
+    }
+    
+    private void applyArmorSupport(Player player, double radius, int amplifier, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.DAMAGE_RESISTANCE, duration * 20, amplifier, false, false, true));
+        }
+        
+        player.sendMessage("§bZırh artışı uygulandı! (" + members.size() + " oyuncu)");
+    }
+    
+    private void applyRegenerationSupport(Player player, double radius, int amplifier, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.REGENERATION, duration * 20, amplifier, false, false, true));
+        }
+        
+        player.sendMessage("§dYenilenme uygulandı! (" + members.size() + " oyuncu)");
+    }
+    
     private java.util.List<Player> getNearbyClanMembers(Player player, double radius) {
         java.util.List<Player> members = new java.util.ArrayList<>();
         me.mami.stratocraft.manager.TerritoryManager territoryManager = plugin.getTerritoryManager();

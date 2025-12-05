@@ -1,7 +1,9 @@
 package me.mami.stratocraft.manager;
 
+import me.mami.stratocraft.Main;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -14,6 +16,42 @@ import java.util.*;
  * Oyuncular tarif kitaplarına baktığında hayalet yapılar gösterir
  */
 public class GhostRecipeManager {
+    
+    /**
+     * GhostRecipeData - Tarif verisi (blokların konumları ve tipleri)
+     */
+    public static class GhostRecipeData {
+        private final Map<Vector, Material> blocks = new HashMap<>();
+        
+        public void addBlock(Vector pos, Material material) {
+            blocks.put(pos, material);
+        }
+        
+        public Map<Vector, Material> getBlocks() {
+            return blocks;
+        }
+    }
+    
+    /**
+     * GhostRecipe - Aktif hayalet tarif (oyuncuya gösterilen)
+     */
+    public static class GhostRecipe {
+        private final String recipeId;
+        private final Location baseLocation;
+        private final Map<Location, ArmorStand> ghostBlocks = new HashMap<>();
+        private final GhostRecipeData data;
+        
+        public GhostRecipe(String recipeId, Location baseLocation, GhostRecipeData data) {
+            this.recipeId = recipeId;
+            this.baseLocation = baseLocation;
+            this.data = data;
+        }
+        
+        public String getRecipeId() { return recipeId; }
+        public Location getBaseLocation() { return baseLocation; }
+        public Map<Location, ArmorStand> getGhostBlocks() { return ghostBlocks; }
+        public GhostRecipeData getData() { return data; }
+    }
     // Oyuncu UUID -> Aktif hayalet tarif verisi
     private final Map<UUID, GhostRecipe> activeGhostRecipes = new HashMap<>();
     
@@ -355,5 +393,183 @@ public class GhostRecipeManager {
         } else {
             return BatteryManager.BatteryCategory.SUPPORT;
         }
+    }
+    
+    /**
+     * Aktif tarif var mı?
+     */
+    public boolean hasActiveRecipe(UUID playerId) {
+        return activeGhostRecipes.containsKey(playerId);
+    }
+    
+    /**
+     * Oyuncunun aktif tarifini kaldır
+     */
+    public void removeGhostRecipe(Player player) {
+        removeActiveGhostRecipe(player.getUniqueId());
+    }
+    
+    /**
+     * Hayalet tarifi göster
+     */
+    public void showGhostRecipe(Player player, String recipeId, Location baseLocation) {
+        GhostRecipeData data = getRecipeData(recipeId);
+        if (data == null) {
+            player.sendMessage("§cTarif bulunamadı: " + recipeId);
+            return;
+        }
+        
+        // Eski tarifi kaldır
+        if (hasActiveRecipe(player.getUniqueId())) {
+            removeActiveGhostRecipe(player.getUniqueId());
+        }
+        
+        // Yeni tarif oluştur
+        GhostRecipe recipe = new GhostRecipe(recipeId, baseLocation, data);
+        
+        // Hayalet blokları oluştur
+        for (Map.Entry<Vector, Material> entry : data.getBlocks().entrySet()) {
+            Vector offset = entry.getKey();
+            Material material = entry.getValue();
+            Location blockLoc = baseLocation.clone().add(offset);
+            
+            // ArmorStand ile hayalet blok göster
+            ArmorStand stand = (ArmorStand) baseLocation.getWorld().spawnEntity(
+                blockLoc, EntityType.ARMOR_STAND);
+            stand.setVisible(false);
+            stand.setGravity(false);
+            stand.setInvulnerable(true);
+            stand.setCustomNameVisible(false);
+            stand.setMarker(true);
+            
+            // Blok görünümü için ArmorStand'a blok itemı ver
+            org.bukkit.inventory.ItemStack blockItem = new org.bukkit.inventory.ItemStack(material);
+            stand.getEquipment().setHelmet(blockItem);
+            
+            recipe.getGhostBlocks().put(blockLoc, stand);
+        }
+        
+        // Aktif tarif olarak kaydet
+        addActiveGhostRecipe(player.getUniqueId(), recipe);
+    }
+    
+    /**
+     * Mesafe kontrolü (oyuncu çok uzaklaşırsa tarifi kaldır)
+     */
+    public void checkDistance(Player player) {
+        GhostRecipe recipe = getActiveGhostRecipe(player.getUniqueId());
+        if (recipe == null) return;
+        
+        Location baseLoc = recipe.getBaseLocation();
+        double distance = player.getLocation().distance(baseLoc);
+        
+        if (distance > 50) { // 50 bloktan uzaksa kaldır
+            removeActiveGhostRecipe(player.getUniqueId());
+            player.sendMessage("§7Hayalet tarif kaldırıldı (çok uzaklaştınız).");
+        }
+    }
+    
+    /**
+     * Blok koyulduğunda kontrol et ve doğru blok ise hayalet görüntüsünü kaldır
+     */
+    public void checkAndRemoveBlock(Player player, Location blockLocation, Material placedMaterial) {
+        // Aktif tarif kontrolü
+        GhostRecipe activeRecipe = getActiveGhostRecipe(player.getUniqueId());
+        if (activeRecipe != null) {
+            checkAndRemoveBlockFromRecipe(player, activeRecipe, blockLocation, placedMaterial, true);
+        }
+        
+        // Sabit tarif kontrolü
+        GhostRecipe fixedRecipe = getFixedGhostRecipe(blockLocation);
+        if (fixedRecipe != null) {
+            checkAndRemoveBlockFromRecipe(player, fixedRecipe, blockLocation, placedMaterial, false);
+        }
+    }
+    
+    /**
+     * Tariften blok kontrolü
+     */
+    private void checkAndRemoveBlockFromRecipe(Player player, GhostRecipe recipe, 
+            Location blockLocation, Material placedMaterial, boolean isActive) {
+        GhostRecipeData data = recipe.getData();
+        Location baseLoc = recipe.getBaseLocation();
+        
+        // Blok konumunu baseLocation'a göre offset'e çevir
+        Vector offset = blockLocation.toVector().subtract(baseLoc.toVector());
+        
+        // Bu konumda blok var mı?
+        Material requiredMaterial = data.getBlocks().get(offset);
+        if (requiredMaterial == null) return;
+        
+        // Doğru blok mu?
+        if (requiredMaterial != placedMaterial) return;
+        
+        // Hayalet bloku kaldır
+        ArmorStand stand = recipe.getGhostBlocks().get(blockLocation);
+        if (stand != null) {
+            stand.remove();
+            recipe.getGhostBlocks().remove(blockLocation);
+        }
+        
+        // Tüm bloklar tamamlandı mı?
+        if (recipe.getGhostBlocks().isEmpty()) {
+            if (isActive) {
+                removeActiveGhostRecipe(player.getUniqueId());
+                player.sendMessage("§aTarif tamamlandı!");
+            } else {
+                removeFixedGhostRecipe(blockLocation);
+            }
+        }
+    }
+    
+    /**
+     * Tarifi sabitle (yer tıklayınca sabit kalır)
+     */
+    public void fixGhostRecipe(Player player, Location baseLocation) {
+        GhostRecipe activeRecipe = getActiveGhostRecipe(player.getUniqueId());
+        if (activeRecipe == null) return;
+        
+        // Sabit tarif olarak ekle
+        addFixedGhostRecipe(baseLocation, activeRecipe);
+        
+        // Aktif tariften kaldır (ama hayalet bloklar kalır)
+        removeActiveGhostRecipe(player.getUniqueId());
+        
+        player.sendMessage("§aTarif sabitlendi! Shift+Sol tık ile kaldırabilirsiniz.");
+    }
+    
+    /**
+     * Bu konumda sabit tarif var mı?
+     */
+    public boolean hasFixedRecipeAt(Location loc) {
+        return fixedGhostRecipes.containsKey(loc);
+    }
+    
+    /**
+     * Bu konumdaki sabit tarifi kaldır
+     */
+    public void removeFixedRecipeAt(Location loc) {
+        GhostRecipe recipe = getFixedGhostRecipe(loc);
+        if (recipe != null) {
+            // Tüm hayalet blokları kaldır
+            for (ArmorStand stand : recipe.getGhostBlocks().values()) {
+                if (stand.isValid()) {
+                    stand.remove();
+                }
+            }
+            removeFixedGhostRecipe(loc);
+        }
+    }
+    
+    /**
+     * Tüm sabit tarifleri kaldır
+     */
+    public int clearAllFixedRecipes() {
+        int count = 0;
+        for (Location loc : new ArrayList<>(fixedGhostRecipes.keySet())) {
+            removeFixedRecipeAt(loc);
+            count++;
+        }
+        return count;
     }
 }

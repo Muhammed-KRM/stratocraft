@@ -3195,16 +3195,6 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
 
-                case "clan":
-                    // Clan komutları
-                    List<String> clanCommands = Arrays.asList("list", "info", "create", "disband", "addmember", "removemember", "caravan");
-                    if (input.isEmpty()) {
-                        return clanCommands;
-                    }
-                    return clanCommands.stream()
-                            .filter(s -> s.toLowerCase().startsWith(input))
-                            .collect(Collectors.toList());
-
                 case "contract":
                     // Contract komutları
                     List<String> contractCommands = Arrays.asList("clear", "list");

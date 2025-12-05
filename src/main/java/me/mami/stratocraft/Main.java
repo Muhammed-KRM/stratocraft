@@ -1,6 +1,8 @@
 package me.mami.stratocraft;
 
 import me.mami.stratocraft.listener.*;
+import me.mami.stratocraft.listener.NewBatteryListener;
+import me.mami.stratocraft.listener.NewMineListener;
 import me.mami.stratocraft.manager.*;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Territory;
