@@ -1578,47 +1578,55 @@ public class NewBatteryManager {
     }
     
     /**
-     * Lava Tufanı L5: Sürekli lava spawn
+     * Lava Tufanı L5: Sürekli lava spawn - OPTİMİZE EDİLMİŞ
      */
     private void fireLavaTsunami(Player player, Location target, double multiplier, int level) {
         double damage = 300.0 * multiplier;
-        int radius = (int)(30 * multiplier);
-        int duration = (int)(60 * multiplier);
-        int areaSize = (int)(30 * multiplier);
+        int radius = 30;
+        int duration = 20; // 60 saniye yerine 20 saniye
+        int areaSize = 30;
         
         new org.bukkit.scheduler.BukkitRunnable() {
             int count = 0;
+            int currentRadius = 0;
+            
             @Override
             public void run() {
                 if (count >= duration) {
                     cancel();
+                    player.sendMessage("§4§l🔥 LAVA TUFANI SONA ERDİ!");
                     return;
                 }
                 
-                int halfSize = areaSize / 2;
+                // Dairesel genişleme (her saniye yarıçap artar)
+                currentRadius = Math.min(areaSize / 2, count * 2);
                 
-                // Lava spawnla
+                // Her saniye sadece 50 rastgele blok lava'ya dönüştür
                 if (canModifyTerritory(player, target)) {
-                    for (int x = -halfSize; x <= halfSize; x++) {
-                        for (int z = -halfSize; z <= halfSize; z++) {
-                            org.bukkit.Location loc = target.clone().add(x, 0, z);
-                            org.bukkit.block.Block block = loc.getBlock();
-                            if (block.getType() == org.bukkit.Material.AIR) {
-                                block.setType(org.bukkit.Material.LAVA);
-                            }
+                    for (int i = 0; i < 50; i++) {
+                        double angle = Math.random() * Math.PI * 2;
+                        double dist = Math.random() * currentRadius;
+                        int x = (int)(Math.cos(angle) * dist);
+                        int z = (int)(Math.sin(angle) * dist);
+                        
+                        org.bukkit.Location loc = target.clone().add(x, 0, z);
+                        org.bukkit.block.Block block = loc.getBlock();
+                        if (block.getType() == org.bukkit.Material.AIR) {
+                            block.setType(org.bukkit.Material.LAVA);
                         }
                     }
                 }
                 
                 // Hasar ver
-                for (org.bukkit.entity.Entity entity : player.getWorld().getNearbyEntities(target, radius, radius, radius)) {
+                for (org.bukkit.entity.Entity entity : player.getWorld().getNearbyEntities(target, currentRadius, 5, currentRadius)) {
                     if (entity instanceof org.bukkit.entity.LivingEntity && entity != player) {
                         entity.setFireTicks(100);
                         ((org.bukkit.entity.LivingEntity) entity).damage(damage / duration);
                     }
                 }
                 
-                player.getWorld().spawnParticle(org.bukkit.Particle.LAVA, target, 100, radius, 5, radius, 0.1);
+                // Partikül (azaltılmış)
+                player.getWorld().spawnParticle(org.bukkit.Particle.LAVA, target, 20, currentRadius, 3, currentRadius, 0.1);
                 count++;
             }
         }.runTaskTimer(plugin, 0L, 20L);
@@ -1659,116 +1667,132 @@ public class NewBatteryManager {
     }
     
     /**
-     * Alan Yok Edici L5: Büyük alan yıkımı (300 hasar, 50x50 alan)
+     * Alan Yok Edici L5: Büyük alan yıkımı (300 hasar, 50x50 alan) - OPTİMİZE EDİLMİŞ
      */
     private void fireAreaDestroyer(Player player, Location target, double multiplier, int level) {
         double damage = 300.0 * multiplier;
         int areaSize = 50; // Sabit 50x50 alan
         
+        // ÖNCE: Tüm entity'lere hasar ver (tek seferde)
         int halfSize = areaSize / 2;
-        int blocksDestroyed = 0;
-        
-        for (int x = -halfSize; x <= halfSize; x++) {
-            for (int z = -halfSize; z <= halfSize; z++) {
-                org.bukkit.Location loc = target.clone().add(x, 0, z);
-                
-                // Hasar ver (sabit 300 hasar)
-                for (org.bukkit.entity.Entity entity : player.getWorld().getNearbyEntities(loc, 2, 2, 2)) {
-                    if (entity instanceof org.bukkit.entity.LivingEntity && entity != player) {
-                        ((org.bukkit.entity.LivingEntity) entity).damage(damage);
-                    }
-                }
-                
-                // Blok kırma (savaş alanlarında ve klan alanlarında)
-                if (canModifyTerritory(player, loc)) {
-                    for (int y = -5; y <= 5; y++) {
-                        org.bukkit.block.Block block = loc.clone().add(0, y, 0).getBlock();
-                        if (block.getType() != org.bukkit.Material.BEDROCK && 
-                            block.getType() != org.bukkit.Material.AIR &&
-                            block.getType() != org.bukkit.Material.BARRIER) {
-                            block.setType(org.bukkit.Material.AIR);
-                            blocksDestroyed++;
-                        }
-                    }
-                }
+        for (org.bukkit.entity.Entity entity : player.getWorld().getNearbyEntities(target, halfSize, 10, halfSize)) {
+            if (entity instanceof org.bukkit.entity.LivingEntity && entity != player) {
+                ((org.bukkit.entity.LivingEntity) entity).damage(damage);
             }
         }
         
-        // Büyük patlama efekti
-        player.getWorld().createExplosion(target, (float)(15.0 * multiplier), false, false);
+        // Merkez patlama efekti
+        player.getWorld().createExplosion(target, 8.0f, false, false);
         
-        // Partikül efekti
-        for (int i = 0; i < 50; i++) {
-            double angle = Math.random() * Math.PI * 2;
-            double radius = Math.random() * areaSize / 2;
-            Location particleLoc = target.clone().add(
-                Math.cos(angle) * radius,
-                Math.random() * 10,
-                Math.sin(angle) * radius
-            );
-            player.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, particleLoc, 1);
-            player.getWorld().spawnParticle(org.bukkit.Particle.LAVA, particleLoc, 5);
-        }
+        // Blok yok etme (async, ticK bazlı)
+        new org.bukkit.scheduler.BukkitRunnable() {
+            int currentX = -halfSize;
+            int blocksDestroyed = 0;
+            
+            @Override
+            public void run() {
+                // Her tick'te 5 sütun işle (optimizasyon)
+                for (int xOffset = 0; xOffset < 5 && currentX <= halfSize; xOffset++, currentX++) {
+                    for (int z = -halfSize; z <= halfSize; z++) {
+                        org.bukkit.Location loc = target.clone().add(currentX, 0, z);
+                        
+                        // Blok kırma
+                        if (canModifyTerritory(player, loc)) {
+                            for (int y = -5; y <= 5; y++) {
+                                org.bukkit.block.Block block = loc.clone().add(0, y, 0).getBlock();
+                                if (block.getType() != org.bukkit.Material.BEDROCK && 
+                                    block.getType() != org.bukkit.Material.AIR &&
+                                    block.getType() != org.bukkit.Material.BARRIER) {
+                                    block.setType(org.bukkit.Material.AIR);
+                                    blocksDestroyed++;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Her 5 sütunda bir partikül
+                    if (currentX % 5 == 0) {
+                        org.bukkit.Location particleLoc = target.clone().add(currentX, 0, 0);
+                        player.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, particleLoc, 2);
+                    }
+                }
+                
+                // Tamamlandı mı?
+                if (currentX > halfSize) {
+                    cancel();
+                    player.sendMessage("§4§l💥 ALAN YOK EDİCİ TAMAMLANDI! 💥");
+                    player.sendMessage("§c" + blocksDestroyed + " blok yok edildi!");
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 1L); // Her tick çalış
         
         player.sendMessage("§4§l💥 ALAN YOK EDİCİ AKTİF! 💥");
-        player.sendMessage("§c" + blocksDestroyed + " blok yok edildi!");
+        player.sendMessage("§eBloklar yok ediliyor...");
     }
     
     /**
-     * Dağ Yok Edici L5: Dev alan yıkımı (300 hasar, 50x50 alan, dikey 20 blok)
+     * Dağ Yok Edici L5: Dev alan yıkımı (300 hasar, 50x50 alan, dikey 20 blok) - OPTİMİZE EDİLMİŞ
      */
     private void fireMountainDestroyer(Player player, Location target, double multiplier, int level) {
         double damage = 300.0 * multiplier;
         int areaSize = 50; // Sabit 50x50 alan
         
+        // ÖNCE: Tüm entity'lere hasar ver (tek seferde)
         int halfSize = areaSize / 2;
-        int blocksDestroyed = 0;
-        
-        for (int x = -halfSize; x <= halfSize; x++) {
-            for (int z = -halfSize; z <= halfSize; z++) {
-                org.bukkit.Location loc = target.clone().add(x, 0, z);
-                
-                // Hasar ver (sabit 300 hasar)
-                for (org.bukkit.entity.Entity entity : player.getWorld().getNearbyEntities(loc, 2, 2, 2)) {
-                    if (entity instanceof org.bukkit.entity.LivingEntity && entity != player) {
-                        ((org.bukkit.entity.LivingEntity) entity).damage(damage);
-                    }
-                }
-                
-                // Blok kırma (dikey olarak 20 blok)
-                if (canModifyTerritory(player, loc)) {
-                    for (int y = -10; y <= 10; y++) {
-                        org.bukkit.block.Block block = loc.clone().add(0, y, 0).getBlock();
-                        if (block.getType() != org.bukkit.Material.BEDROCK && 
-                            block.getType() != org.bukkit.Material.AIR &&
-                            block.getType() != org.bukkit.Material.BARRIER) {
-                            block.setType(org.bukkit.Material.AIR);
-                            blocksDestroyed++;
-                        }
-                    }
-                }
+        for (org.bukkit.entity.Entity entity : player.getWorld().getNearbyEntities(target, halfSize, 15, halfSize)) {
+            if (entity instanceof org.bukkit.entity.LivingEntity && entity != player) {
+                ((org.bukkit.entity.LivingEntity) entity).damage(damage);
             }
         }
         
-        // Büyük patlama efekti
-        player.getWorld().createExplosion(target, (float)(20.0 * multiplier), false, false);
+        // Merkez patlama efekti
+        player.getWorld().createExplosion(target, 10.0f, false, false);
         
-        // Partikül efekti
-        for (int i = 0; i < 100; i++) {
-            double angle = Math.random() * Math.PI * 2;
-            double radius = Math.random() * areaSize / 2;
-            Location particleLoc = target.clone().add(
-                Math.cos(angle) * radius,
-                Math.random() * 20 - 10,
-                Math.sin(angle) * radius
-            );
-            player.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, particleLoc, 1);
-            player.getWorld().spawnParticle(org.bukkit.Particle.LAVA, particleLoc, 5);
-            player.getWorld().spawnParticle(org.bukkit.Particle.SMOKE_LARGE, particleLoc, 3);
-        }
+        // Blok yok etme (async, tick bazlı)
+        new org.bukkit.scheduler.BukkitRunnable() {
+            int currentX = -halfSize;
+            int blocksDestroyed = 0;
+            
+            @Override
+            public void run() {
+                // Her tick'te 5 sütun işle (optimizasyon)
+                for (int xOffset = 0; xOffset < 5 && currentX <= halfSize; xOffset++, currentX++) {
+                    for (int z = -halfSize; z <= halfSize; z++) {
+                        org.bukkit.Location loc = target.clone().add(currentX, 0, z);
+                        
+                        // Blok kırma (dikey 20 blok)
+                        if (canModifyTerritory(player, loc)) {
+                            for (int y = -10; y <= 10; y++) {
+                                org.bukkit.block.Block block = loc.clone().add(0, y, 0).getBlock();
+                                if (block.getType() != org.bukkit.Material.BEDROCK && 
+                                    block.getType() != org.bukkit.Material.AIR &&
+                                    block.getType() != org.bukkit.Material.BARRIER) {
+                                    block.setType(org.bukkit.Material.AIR);
+                                    blocksDestroyed++;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Her 5 sütunda bir partikül
+                    if (currentX % 5 == 0) {
+                        org.bukkit.Location particleLoc = target.clone().add(currentX, 0, 0);
+                        player.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, particleLoc, 2);
+                        player.getWorld().spawnParticle(org.bukkit.Particle.LAVA, particleLoc, 3);
+                    }
+                }
+                
+                // Tamamlandı mı?
+                if (currentX > halfSize) {
+                    cancel();
+                    player.sendMessage("§4§l⛰ DAĞ YOK EDİCİ TAMAMLANDI! ⛰");
+                    player.sendMessage("§c" + blocksDestroyed + " blok yok edildi!");
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 1L); // Her tick çalış
         
         player.sendMessage("§4§l⛰ DAĞ YOK EDİCİ AKTİF! ⛰");
-        player.sendMessage("§c" + blocksDestroyed + " blok yok edildi!");
+        player.sendMessage("§eBloklar yok ediliyor...");
     }
     
     /**
