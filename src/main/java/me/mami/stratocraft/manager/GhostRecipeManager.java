@@ -123,11 +123,15 @@ public class GhostRecipeManager {
         // Eşyalar için tarif kitapları sadece bilgilendirme amaçlı, hayalet blok göstermez
         // Ama yine de basit desenler ekleyebiliriz
         
-        // ========== BATARYALAR ==========
+        // ========== BATARYALAR (75 Batarya) ==========
+        // Eski batarya (geriye dönük uyumluluk)
         GhostRecipeData magmaBattery = new GhostRecipeData();
         magmaBattery.addBlock(new Vector(0, 0, 0), Material.MAGMA_BLOCK);
         magmaBattery.addBlock(new Vector(0, -1, 0), Material.MAGMA_BLOCK);
         recipeData.put("MAGMA_BATTERY", magmaBattery);
+        
+        // Yeni 75 batarya için hayalet tarifleri NewBatteryManager'dan alınacak
+        // initializeBatteryRecipes() metodu Main.java'da çağrılacak
         
         // ========== RİTÜELLER ==========
         GhostRecipeData clanCreate = new GhostRecipeData();
@@ -547,6 +551,93 @@ public class GhostRecipeManager {
         
         public Map<Vector, Material> getBlocks() {
             return blocks;
+        }
+    }
+    
+    /**
+     * NewBatteryManager'dan 75 batarya için hayalet tarifleri ekle
+     * Bu metod Main.java'da NewBatteryManager oluşturulduktan sonra çağrılmalı
+     */
+    public void initializeBatteryRecipes(NewBatteryManager batteryManager) {
+        if (batteryManager == null) return;
+        
+        // Tüm RecipeChecker'ları al
+        Map<String, NewBatteryManager.RecipeChecker> recipeCheckers = batteryManager.getAllRecipeCheckers();
+        
+        // Kategoriye göre sayaçlar
+        Map<String, Integer> categoryCounters = new HashMap<>();
+        categoryCounters.put("ATTACK", 1);
+        categoryCounters.put("CONSTRUCTION", 1);
+        categoryCounters.put("SUPPORT", 1);
+        
+        for (Map.Entry<String, NewBatteryManager.RecipeChecker> entry : recipeCheckers.entrySet()) {
+            String batteryName = entry.getKey();
+            NewBatteryManager.RecipeChecker checker = entry.getValue();
+            
+            // BlockPattern'i al
+            NewBatteryManager.BlockPattern pattern = checker.getPattern();
+            if (pattern == null) continue;
+            
+            // GhostRecipeData oluştur
+            GhostRecipeData data = new GhostRecipeData();
+            
+            // Merkez blok
+            data.addBlock(new Vector(0, 0, 0), pattern.getCenterBlock());
+            
+            // Diğer bloklar
+            for (Map.Entry<NewBatteryManager.BlockPosition, Material> blockEntry : pattern.getRequiredBlocks().entrySet()) {
+                NewBatteryManager.BlockPosition pos = blockEntry.getKey();
+                Material mat = blockEntry.getValue();
+                data.addBlock(new Vector(pos.getX(), pos.getY(), pos.getZ()), mat);
+            }
+            
+            // BatteryManager'dan kategoriyi al
+            BatteryManager.BatteryCategory category = getBatteryCategory(batteryName);
+            String categoryStr = category.name();
+            int batteryNum = categoryCounters.get(categoryStr);
+            categoryCounters.put(categoryStr, batteryNum + 1);
+            
+            // Recipe ID oluştur
+            String recipeId = "BATTERY_" + categoryStr + "_L" + checker.getLevel() + "_" + batteryNum;
+            
+            // Tarif verisini kaydet
+            recipeData.put(recipeId, data);
+            
+            // Ayrıca batarya ismi ile de kaydet (alternatif erişim)
+            recipeData.put(batteryName.toUpperCase().replace(" ", "_"), data);
+        }
+    }
+    
+    /**
+     * Batarya isminden kategoriyi belirle (BatteryManager'dan)
+     */
+    private BatteryManager.BatteryCategory getBatteryCategory(String batteryName) {
+        // BatteryManager'daki BatteryType enum'undan kategoriyi bul
+        for (BatteryManager.BatteryType type : BatteryManager.BatteryType.values()) {
+            if (type.getDisplayName().equals(batteryName)) {
+                return type.getCategory();
+            }
+        }
+        
+        // Fallback: İsimden kategori tahmin et
+        if (batteryName.contains("Yıldırım") || batteryName.contains("Cehennem") || 
+            batteryName.contains("Buz") || batteryName.contains("Zehir") || 
+            batteryName.contains("Şok") || batteryName.contains("Çift") ||
+            batteryName.contains("Zincir") || batteryName.contains("Asit") ||
+            batteryName.contains("Elektrik") || batteryName.contains("Meteor") ||
+            batteryName.contains("Tesla") || batteryName.contains("Ölüm") ||
+            batteryName.contains("Kıyamet") || batteryName.contains("Lava") ||
+            batteryName.contains("Boss") || batteryName.contains("Alan") ||
+            batteryName.contains("Dağ")) {
+            return BatteryManager.BatteryCategory.ATTACK;
+        } else if (batteryName.contains("Köprü") || batteryName.contains("Duvar") || 
+                   batteryName.contains("Kafes") || batteryName.contains("Kale") ||
+                   batteryName.contains("Hapishane") || batteryName.contains("Kule") ||
+                   batteryName.contains("Şato") || batteryName.contains("Barikat") ||
+                   batteryName.contains("Tünel")) {
+            return BatteryManager.BatteryCategory.CONSTRUCTION;
+        } else {
+            return BatteryManager.BatteryCategory.SUPPORT;
         }
     }
 }

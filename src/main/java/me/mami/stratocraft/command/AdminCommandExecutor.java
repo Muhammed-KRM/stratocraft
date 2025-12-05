@@ -5,6 +5,7 @@ import me.mami.stratocraft.manager.ItemManager;
 import me.mami.stratocraft.manager.MobManager;
 import me.mami.stratocraft.manager.DisasterManager;
 import me.mami.stratocraft.manager.BatteryManager;
+import me.mami.stratocraft.manager.NewBatteryManager;
 import me.mami.stratocraft.model.Disaster;
 import me.mami.stratocraft.util.LangManager;
 import org.bukkit.Material;
@@ -3857,37 +3858,30 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     }
     
     /**
-     * Seviyeye göre batarya isimlerini döndür
+     * Seviyeye göre batarya isimlerini döndür (Yeni Sistem)
      */
     private List<String> getBatteryNamesByLevel(int level, String input) {
-        List<String> batteries = new ArrayList<>();
-        
-        // BatteryType enum'undan seviyeye göre filtrele
-        for (BatteryManager.BatteryType batteryType : BatteryManager.BatteryType.values()) {
-            if (batteryType.getLevel() == level) {
-                // Enum ismini daha okunabilir hale getir
-                String name = batteryType.name().toLowerCase();
-                batteries.add(name);
-            }
+        NewBatteryManager newBatteryManager = plugin.getNewBatteryManager();
+        if (newBatteryManager == null) {
+            return new ArrayList<>();
         }
         
-        // Eski bataryalar (seviye yok, sadece seviye 1 olarak kabul edilir)
-        if (level == 1) {
-            batteries.add("magma_battery");
-            batteries.add("lightning_battery");
-            batteries.add("black_hole");
-            batteries.add("bridge");
-            batteries.add("shelter");
-            batteries.add("gravity_anchor");
-            batteries.add("seismic_hammer");
-            batteries.add("magnetic_disruptor");
-            batteries.add("ozone_shield");
-            batteries.add("earth_wall");
-            batteries.add("energy_wall");
-            batteries.add("lava_trencher_battery");
+        List<String> batteries = newBatteryManager.getBatteryNamesByLevel(level);
+        
+        // İsimleri normalize et (Türkçe karakterleri düzelt, boşlukları alt çizgiye çevir)
+        List<String> normalized = new ArrayList<>();
+        for (String name : batteries) {
+            String normalizedName = name.toLowerCase()
+                .replace(" ", "_")
+                .replace("ç", "c").replace("ğ", "g").replace("ı", "i")
+                .replace("ö", "o").replace("ş", "s").replace("ü", "u")
+                .replace("(", "").replace(")", "")
+                .replace("efsanevi", "leg")
+                .replace("gelişmiş", "adv");
+            normalized.add(normalizedName);
         }
         
-        return filterList(batteries, input);
+        return filterList(normalized, input);
     }
 
     private List<String> getAllianceTabComplete(String[] args, String input) {
@@ -5184,6 +5178,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     
     /**
      * Yeni batarya komut formatı: /stratocraft build battery <seviye> <isim>
+     * Yeni esnek sistem kullanıyor
      */
     private boolean buildBatteryByLevelAndName(Player p, int level, String name) {
         if (level < 1 || level > 5) {
@@ -5191,34 +5186,85 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             return true;
         }
         
-        // İsmi normalize et (tire ve alt çizgiyi kaldır, küçük harfe çevir)
-        String normalizedName = name.toLowerCase().replace("_", "").replace("-", "");
-        
-        // BatteryType enum'undan eşleşen bataryayı bul
-        BatteryManager.BatteryType foundBattery = null;
-        for (BatteryManager.BatteryType batteryType : BatteryManager.BatteryType.values()) {
-            if (batteryType.getLevel() == level) {
-                String batteryName = batteryType.getDisplayName().toLowerCase()
-                    .replace(" ", "").replace("(", "").replace(")", "")
-                    .replace("ç", "c").replace("ğ", "g").replace("ı", "i")
-                    .replace("ö", "o").replace("ş", "s").replace("ü", "u");
-                
-                if (batteryName.contains(normalizedName) || normalizedName.contains(batteryName)) {
-                    foundBattery = batteryType;
-                    break;
-                }
-            }
-        }
-        
-        if (foundBattery == null) {
-            p.sendMessage("§cSeviye " + level + " için '" + name + "' bataryası bulunamadı!");
-            p.sendMessage("§7Mevcut bataryaları görmek için: /stratocraft build battery " + level + " <isim>");
+        NewBatteryManager newBatteryManager = plugin.getNewBatteryManager();
+        if (newBatteryManager == null) {
+            p.sendMessage("§cYeni batarya sistemi başlatılmamış!");
             return true;
         }
         
+        // İsmi normalize et
+        String normalizedInput = name.toLowerCase()
+            .replace("_", "").replace("-", "")
+            .replace("ç", "c").replace("ğ", "g").replace("ı", "i")
+            .replace("ö", "o").replace("ş", "s").replace("ü", "u")
+            .replace("(", "").replace(")", "")
+            .replace("efsanevi", "leg")
+            .replace("gelişmiş", "adv");
+        
+        // Seviyeye göre bataryaları al
+        List<String> batteryNames = newBatteryManager.getBatteryNamesByLevel(level);
+        
+        // Eşleşen bataryayı bul
+        String foundBatteryName = null;
+        for (String batteryName : batteryNames) {
+            String normalizedBatteryName = batteryName.toLowerCase()
+                .replace(" ", "").replace("(", "").replace(")", "")
+                .replace("ç", "c").replace("ğ", "g").replace("ı", "i")
+                .replace("ö", "o").replace("ş", "s").replace("ü", "u")
+                .replace("efsanevi", "leg")
+                .replace("gelişmiş", "adv");
+            
+            if (normalizedBatteryName.contains(normalizedInput) || normalizedInput.contains(normalizedBatteryName)) {
+                foundBatteryName = batteryName;
+                break;
+            }
+        }
+        
+        if (foundBatteryName == null) {
+            p.sendMessage("§cSeviye " + level + " için '" + name + "' bataryası bulunamadı!");
+            p.sendMessage("§7Mevcut bataryalar:");
+            for (String batteryName : batteryNames) {
+                p.sendMessage("§7  - " + batteryName);
+            }
+            return true;
+        }
+        
+        // RecipeChecker'ı al
+        NewBatteryManager.RecipeChecker checker = newBatteryManager.getRecipeChecker(foundBatteryName);
+        if (checker == null) {
+            p.sendMessage("§cBatarya tarifi bulunamadı: " + foundBatteryName);
+            return true;
+        }
+        
+        // Merkez blok konumunu al
         org.bukkit.Location loc = p.getLocation();
-        return buildNewBattery(p, loc, foundBattery.getBaseBlock(), foundBattery.getSideBlock(), 
-                              foundBattery.getLevel(), foundBattery.getDisplayName(), foundBattery.getCategory());
+        
+        // Alanı temizle (geniş bir alan)
+        me.mami.stratocraft.manager.StructureBuilder.clearArea(loc, 10, 10, 10);
+        
+        // Pattern'i al ve build et
+        NewBatteryManager.BlockPattern pattern = checker.getPattern();
+        if (pattern != null) {
+            NewBatteryManager.buildPattern(loc, pattern);
+        } else {
+            p.sendMessage("§cBatarya tarifi oluşturulamadı!");
+            return true;
+        }
+        
+        // Yakıt ver
+        giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.DIAMOND, 5));
+        giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.IRON_INGOT, 5));
+        if (ItemManager.RED_DIAMOND != null) {
+            giveItemSafely(p, ItemManager.RED_DIAMOND.clone());
+        }
+        if (ItemManager.DARK_MATTER != null) {
+            giveItemSafely(p, ItemManager.DARK_MATTER.clone());
+        }
+        
+        p.sendMessage("§a§l" + foundBatteryName.toUpperCase() + " OLUŞTURULDU!");
+        p.sendMessage("§7Seviye: §e" + level);
+        p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
+        return true;
     }
 
     /**

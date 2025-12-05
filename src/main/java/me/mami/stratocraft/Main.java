@@ -25,6 +25,7 @@ public class Main extends JavaPlugin {
     private ClanManager clanManager;
     private TerritoryManager territoryManager;
     private BatteryManager batteryManager;
+    private NewBatteryManager newBatteryManager;
     private ItemManager itemManager;
     private DisasterManager disasterManager;
     private SiegeManager siegeManager;
@@ -97,6 +98,9 @@ public class Main extends JavaPlugin {
         territoryManager = new TerritoryManager(clanManager);
         clanManager.setTerritoryManager(territoryManager); // Cache güncellemesi için
         batteryManager = new BatteryManager(this);
+        newBatteryManager = new NewBatteryManager(this); // Yeni batarya sistemi
+        // 75 batarya için hayalet tariflerini ekle
+        ghostRecipeManager.initializeBatteryRecipes(newBatteryManager);
         siegeManager = new SiegeManager();
         disasterManager = new DisasterManager(this);
         batteryManager.setDisasterManager(disasterManager);
@@ -137,9 +141,15 @@ public class Main extends JavaPlugin {
         disasterManager.setTerritoryManager(territoryManager);
 
         // 2. Dinleyicileri Kaydet
-        BatteryListener batteryListener = new BatteryListener(batteryManager, territoryManager, researchManager);
-        batteryListener.setTrainingManager(trainingManager);
-        Bukkit.getPluginManager().registerEvents(batteryListener, this);
+        // Eski batarya sistemi kaldırıldı, yeni sistem kullanılıyor
+        // BatteryListener batteryListener = new BatteryListener(batteryManager, territoryManager, researchManager);
+        // batteryListener.setTrainingManager(trainingManager);
+        // Bukkit.getPluginManager().registerEvents(batteryListener, this);
+        
+        // Yeni batarya sistemi
+        NewBatteryListener newBatteryListener = new NewBatteryListener(newBatteryManager, territoryManager);
+        newBatteryListener.setTrainingManager(trainingManager);
+        Bukkit.getPluginManager().registerEvents(newBatteryListener, this);
         CombatListener combatListener = new CombatListener(clanManager);
         combatListener.setAllianceManager(allianceManager);
         Bukkit.getPluginManager().registerEvents(combatListener, this);
@@ -672,6 +682,10 @@ public class Main extends JavaPlugin {
 
     public BatteryManager getBatteryManager() {
         return batteryManager;
+    }
+    
+    public NewBatteryManager getNewBatteryManager() {
+        return newBatteryManager;
     }
 
     public SiegeManager getSiegeManager() {

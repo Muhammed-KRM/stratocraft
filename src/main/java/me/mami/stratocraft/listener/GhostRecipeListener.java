@@ -130,7 +130,10 @@ public class GhostRecipeListener implements Listener {
                upperId.contains("MITHRIL") ||
                upperId.contains("ASTRAL") ||
                upperId.contains("HOOK") ||
-               upperId.contains("TRAP_CORE");
+               upperId.contains("TRAP_CORE") ||
+               upperId.contains("WEAPON_") ||
+               upperId.contains("ARMOR_");
+               // NOT: BATTERY tarifleri hayalet yapı gösterir, GUI menü değil
     }
     
     /**
@@ -194,25 +197,72 @@ public class GhostRecipeListener implements Listener {
         
         Inventory menu = Bukkit.createInventory(null, 27, "§eTarif: " + info.getDisplayName());
         
-        // Crafting grid gösterimi (Slot 10-16: 3x3 grid)
+        // Crafting grid gösterimi (Slot 10-18: 3x3 grid)
         // Slot 10-12: İlk satır
         // Slot 13-15: İkinci satır
-        // Slot 16-18: Üçüncü satır (ama 27 slot'ta 16-18 yok, 16-17-18 kullanacağız)
-        // Daha iyi: Slot 10-18 kullan (3x3 grid)
+        // Slot 16-18: Üçüncü satır
         
         // Crafting recipe bilgisi varsa göster
         if (info.getCraftingRecipe() != null && !info.getCraftingRecipe().isEmpty()) {
             // Crafting recipe'yi parse et ve göster
             List<String> recipeLines = info.getCraftingRecipe();
-            // İlk 3 satır crafting grid'i
-            int slot = 10;
-            for (int i = 0; i < Math.min(3, recipeLines.size()); i++) {
-                String line = recipeLines.get(i);
-                // Basit bir parsing (örnek: "[G][E][G]" -> G, E, G)
-                // Daha gelişmiş parsing için ItemManager'dan malzeme bilgisi alınabilir
-                ItemStack gridItem = createRecipeGridItem(line);
-                menu.setItem(slot, gridItem);
-                slot++;
+            
+            // İlk 3 satır crafting grid'i (Satır 1, Satır 2, Satır 3)
+            String[] gridLines = new String[3];
+            java.util.Map<String, Material> materialMap = new java.util.HashMap<>();
+            
+            for (String line : recipeLines) {
+                if (line.startsWith("Satır 1:")) {
+                    gridLines[0] = line.replace("Satır 1:", "").trim();
+                } else if (line.startsWith("Satır 2:")) {
+                    gridLines[1] = line.replace("Satır 2:", "").trim();
+                } else if (line.startsWith("Satır 3:")) {
+                    gridLines[2] = line.replace("Satır 3:", "").trim();
+                } else if (line.contains("=")) {
+                    // Malzeme açıklaması (örn: "I = Demir Külçe")
+                    String[] parts = line.split("=");
+                    if (parts.length == 2) {
+                        String key = parts[0].trim();
+                        String materialName = parts[1].trim();
+                        Material mat = parseMaterialName(materialName);
+                        if (mat != null) {
+                            materialMap.put(key, mat);
+                        }
+                    }
+                }
+            }
+            
+            // 3x3 grid'i oluştur (Slot 10-18)
+            int[] slots = {10, 11, 12, 13, 14, 15, 16, 17, 18};
+            for (int row = 0; row < 3; row++) {
+                String gridLine = gridLines[row];
+                if (gridLine != null && !gridLine.isEmpty()) {
+                    // Parse et: "[I] [F] [I]" -> I, F, I
+                    java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[([^\\]]+)\\]");
+                    java.util.regex.Matcher matcher = pattern.matcher(gridLine);
+                    int col = 0;
+                    while (matcher.find() && col < 3) {
+                        String key = matcher.group(1).trim();
+                        int slotIndex = row * 3 + col;
+                        if (slotIndex < slots.length) {
+                            Material mat = materialMap.get(key);
+                            if (mat != null) {
+                                menu.setItem(slots[slotIndex], new ItemStack(mat));
+                            } else if (key.isEmpty() || key.equals(" ")) {
+                                // Boş slot
+                                menu.setItem(slots[slotIndex], new ItemStack(Material.AIR));
+                            } else {
+                                // Bilinmeyen malzeme - bilgi item'ı
+                                ItemStack infoItem = new ItemStack(Material.PAPER);
+                                ItemMeta meta = infoItem.getItemMeta();
+                                meta.setDisplayName("§7" + key);
+                                infoItem.setItemMeta(meta);
+                                menu.setItem(slots[slotIndex], infoItem);
+                            }
+                        }
+                        col++;
+                    }
+                }
             }
         } else {
             // Crafting recipe yoksa bilgi göster
@@ -236,15 +286,19 @@ public class GhostRecipeListener implements Listener {
             menu.setItem(22, resultItem);
         }
         
-        // Malzeme listesi (Slot 0-8: Lore'da gösterilecek, burada bilgi item'ı)
+        // Malzeme listesi (Slot 4)
         ItemStack materialItem = new ItemStack(Material.BOOK);
         ItemMeta materialMeta = materialItem.getItemMeta();
         materialMeta.setDisplayName("§6Gerekli Malzemeler");
         List<String> materialLore = new ArrayList<>();
-        if (info.getCraftingRecipe() != null && info.getCraftingRecipe().size() > 3) {
-            // 4. satırdan itibaren malzeme açıklamaları
-            for (int i = 3; i < info.getCraftingRecipe().size(); i++) {
-                materialLore.add("§7" + info.getCraftingRecipe().get(i));
+        if (info.getCraftingRecipe() != null && !info.getCraftingRecipe().isEmpty()) {
+            for (String line : info.getCraftingRecipe()) {
+                if (line.contains("=")) {
+                    materialLore.add("§7" + line);
+                }
+            }
+            if (materialLore.isEmpty()) {
+                materialLore.add("§7Detaylı bilgi için Shift+Sağ Tık yapın");
             }
         } else {
             materialLore.add("§7Detaylı bilgi için Shift+Sağ Tık yapın");
@@ -264,15 +318,52 @@ public class GhostRecipeListener implements Listener {
     }
     
     /**
-     * Crafting grid item'ı oluştur (basit gösterim)
+     * Malzeme ismini Material'a çevir
      */
-    private ItemStack createRecipeGridItem(String line) {
-        // Basit gösterim için crafting table ikonu
-        ItemStack item = new ItemStack(Material.CRAFTING_TABLE);
-        ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§7" + line);
-        item.setItemMeta(meta);
-        return item;
+    private Material parseMaterialName(String name) {
+        name = name.toLowerCase().trim();
+        // Türkçe isimlerden İngilizce Material'a çevir
+        if (name.contains("demir") && name.contains("külçe")) return Material.IRON_INGOT;
+        if (name.contains("demir") && name.contains("blok")) return Material.IRON_BLOCK;
+        if (name.contains("altın") && name.contains("külçe")) return Material.GOLD_INGOT;
+        if (name.contains("altın") && name.contains("blok")) return Material.GOLD_BLOCK;
+        if (name.contains("elmas")) return Material.DIAMOND;
+        if (name.contains("elmas") && name.contains("blok")) return Material.DIAMOND_BLOCK;
+        if (name.contains("ender") && name.contains("inci")) return Material.ENDER_PEARL;
+        if (name.contains("tüy")) return Material.FEATHER;
+        if (name.contains("çubuk")) return Material.STICK;
+        if (name.contains("ip")) return Material.STRING;
+        if (name.contains("goblin") && name.contains("taç")) return Material.GOLDEN_HELMET; // Placeholder
+        if (name.contains("troll") && name.contains("kalp")) return Material.HEART_OF_THE_SEA; // Placeholder
+        if (name.contains("t-rex") && name.contains("diş")) return Material.BONE; // Placeholder
+        if (name.contains("obsidyen")) return Material.OBSIDIAN;
+        if (name.contains("tnt")) return Material.TNT;
+        if (name.contains("barut")) return Material.GUNPOWDER;
+        if (name.contains("buz")) return Material.PACKED_ICE;
+        if (name.contains("örümcek") && name.contains("göz")) return Material.SPIDER_EYE;
+        if (name.contains("redstone")) return Material.REDSTONE;
+        if (name.contains("kömür") && name.contains("blok")) return Material.COAL_BLOCK;
+        if (name.contains("paratoner")) return Material.LIGHTNING_ROD;
+        if (name.contains("buğday")) return Material.WHEAT;
+        if (name.contains("magma") && name.contains("blok")) return Material.MAGMA_BLOCK;
+        if (name.contains("netherrack")) return Material.NETHERRACK;
+        if (name.contains("zümrüt") && name.contains("blok")) return Material.EMERALD_BLOCK;
+        if (name.contains("slime") && name.contains("blok")) return Material.SLIME_BLOCK;
+        if (name.contains("lapis") && name.contains("blok")) return Material.LAPIS_BLOCK;
+        if (name.contains("bakır") && name.contains("blok")) return Material.COPPER_BLOCK;
+        if (name.contains("glowstone")) return Material.GLOWSTONE;
+        if (name.contains("zehirli") && name.contains("patates")) return Material.POISONOUS_POTATO;
+        if (name.contains("frosted") && name.contains("ice")) return Material.FROSTED_ICE;
+        if (name.contains("beacon")) return Material.BEACON;
+        if (name.contains("nether") && name.contains("star")) return Material.NETHER_STAR;
+        if (name.contains("end") && name.contains("crystal")) return Material.END_CRYSTAL;
+        if (name.contains("bedrock")) return Material.BEDROCK;
+        if (name.contains("taş")) return Material.STONE;
+        if (name.contains("cam")) return Material.GLASS;
+        if (name.contains("ahşap") || name.contains("planks")) return Material.OAK_PLANKS;
+        if (name.contains("netherite") && name.contains("blok")) return Material.NETHERITE_BLOCK;
+        if (name.contains("iron") && name.contains("bars")) return Material.IRON_BARS;
+        return null;
     }
     
     /**
@@ -289,7 +380,71 @@ public class GhostRecipeListener implements Listener {
                 return ItemManager.TRAP_CORE;
             case "RUSTY_HOOK":
                 return ItemManager.RUSTY_HOOK;
+            // Silah tarifleri
+            case "WEAPON_L1_1":
+                return ItemManager.WEAPON_L1_1;
+            case "WEAPON_L1_2":
+                return ItemManager.WEAPON_L1_2;
+            case "WEAPON_L1_3":
+                return ItemManager.WEAPON_L1_3;
+            case "WEAPON_L1_4":
+                return ItemManager.WEAPON_L1_4;
+            case "WEAPON_L1_5":
+                return ItemManager.WEAPON_L1_5;
+            case "WEAPON_L2_1":
+                return ItemManager.WEAPON_L2_1;
+            case "WEAPON_L2_2":
+                return ItemManager.WEAPON_L2_2;
+            case "WEAPON_L2_3":
+                return ItemManager.WEAPON_L2_3;
+            case "WEAPON_L2_4":
+                return ItemManager.WEAPON_L2_4;
+            case "WEAPON_L2_5":
+                return ItemManager.WEAPON_L2_5;
+            case "WEAPON_L3_1":
+                return ItemManager.WEAPON_L3_1;
+            case "WEAPON_L3_2":
+                return ItemManager.WEAPON_L3_2;
+            case "WEAPON_L3_3":
+                return ItemManager.WEAPON_L3_3;
+            case "WEAPON_L3_4":
+                return ItemManager.WEAPON_L3_4;
+            case "WEAPON_L3_5":
+                return ItemManager.WEAPON_L3_5;
+            case "WEAPON_L4_1":
+                return ItemManager.WEAPON_L4_1;
+            case "WEAPON_L4_2":
+                return ItemManager.WEAPON_L4_2;
+            case "WEAPON_L4_3":
+                return ItemManager.WEAPON_L4_3;
+            case "WEAPON_L4_4":
+                return ItemManager.WEAPON_L4_4;
+            case "WEAPON_L4_5":
+                return ItemManager.WEAPON_L4_5;
+            case "WEAPON_L5_1":
+                return ItemManager.WEAPON_L5_1;
+            case "WEAPON_L5_2":
+                return ItemManager.WEAPON_L5_2;
+            case "WEAPON_L5_3":
+                return ItemManager.WEAPON_L5_3;
+            case "WEAPON_L5_4":
+                return ItemManager.WEAPON_L5_4;
+            case "WEAPON_L5_5":
+                return ItemManager.WEAPON_L5_5;
             default:
+                // Recipe ID'den silah/armor kontrolü
+                if (recipeId.startsWith("WEAPON_") || recipeId.startsWith("ARMOR_")) {
+                    // ItemManager'dan dinamik olarak al
+                    try {
+                        java.lang.reflect.Field field = ItemManager.class.getField(recipeId);
+                        Object value = field.get(null);
+                        if (value instanceof ItemStack) {
+                            return (ItemStack) value;
+                        }
+                    } catch (Exception e) {
+                        // Field bulunamadı, varsayılan döndür
+                    }
+                }
                 return new ItemStack(Material.BOOK);
         }
     }
@@ -450,6 +605,37 @@ public class GhostRecipeListener implements Listener {
         
         // Bataryalar
         if (ItemManager.isCustomItem(item, "RECIPE_MAGMA_BATTERY")) return "MAGMA_BATTERY";
+        
+        // Yeni 75 Batarya Tarifleri
+        // ATTACK bataryaları (L1-L5, her seviyede 5)
+        for (int level = 1; level <= 5; level++) {
+            for (int num = 1; num <= 5; num++) {
+                String recipeId = "RECIPE_BATTERY_ATTACK_L" + level + "_" + num;
+                if (ItemManager.isCustomItem(item, recipeId)) {
+                    return "BATTERY_ATTACK_L" + level + "_" + num;
+                }
+            }
+        }
+        
+        // CONSTRUCTION bataryaları (L1-L5, her seviyede 5)
+        for (int level = 1; level <= 5; level++) {
+            for (int num = 1; num <= 5; num++) {
+                String recipeId = "RECIPE_BATTERY_CONSTRUCTION_L" + level + "_" + num;
+                if (ItemManager.isCustomItem(item, recipeId)) {
+                    return "BATTERY_CONSTRUCTION_L" + level + "_" + num;
+                }
+            }
+        }
+        
+        // SUPPORT bataryaları (L1-L5, her seviyede 5)
+        for (int level = 1; level <= 5; level++) {
+            for (int num = 1; num <= 5; num++) {
+                String recipeId = "RECIPE_BATTERY_SUPPORT_L" + level + "_" + num;
+                if (ItemManager.isCustomItem(item, recipeId)) {
+                    return "BATTERY_SUPPORT_L" + level + "_" + num;
+                }
+            }
+        }
         
         // Ritüeller
         if (ItemManager.isCustomItem(item, "RECIPE_CLAN_CREATE")) return "CLAN_CREATE";

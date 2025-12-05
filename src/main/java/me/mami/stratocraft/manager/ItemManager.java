@@ -72,6 +72,88 @@ public class ItemManager {
     public static ItemStack RECIPE_LIBRARY;
     public static ItemStack RECIPE_WARNING_SIGN;
 
+    // ========== TARİF KİTAPLARI - BATARYALAR (75 Batarya) ==========
+    // Saldırı Bataryaları (25)
+    public static ItemStack RECIPE_BATTERY_ATTACK_L1_1; // Yıldırım Asası
+    public static ItemStack RECIPE_BATTERY_ATTACK_L1_2; // Cehennem Topu
+    public static ItemStack RECIPE_BATTERY_ATTACK_L1_3; // Buz Topu
+    public static ItemStack RECIPE_BATTERY_ATTACK_L1_4; // Zehir Oku
+    public static ItemStack RECIPE_BATTERY_ATTACK_L1_5; // Şok Dalgası
+    public static ItemStack RECIPE_BATTERY_ATTACK_L2_1; // Çift Ateş Topu
+    public static ItemStack RECIPE_BATTERY_ATTACK_L2_2; // Zincir Yıldırım
+    public static ItemStack RECIPE_BATTERY_ATTACK_L2_3; // Buz Fırtınası
+    public static ItemStack RECIPE_BATTERY_ATTACK_L2_4; // Asit Yağmuru
+    public static ItemStack RECIPE_BATTERY_ATTACK_L2_5; // Elektrik Ağı
+    public static ItemStack RECIPE_BATTERY_ATTACK_L3_1; // Meteor Yağmuru
+    public static ItemStack RECIPE_BATTERY_ATTACK_L3_2; // Yıldırım Fırtınası
+    public static ItemStack RECIPE_BATTERY_ATTACK_L3_3; // Buz Çağı
+    public static ItemStack RECIPE_BATTERY_ATTACK_L3_4; // Zehir Bombası
+    public static ItemStack RECIPE_BATTERY_ATTACK_L3_5; // Elektrik Fırtınası
+    public static ItemStack RECIPE_BATTERY_ATTACK_L4_1; // Tesla Kulesi
+    public static ItemStack RECIPE_BATTERY_ATTACK_L4_2; // Cehennem Ateşi
+    public static ItemStack RECIPE_BATTERY_ATTACK_L4_3; // Buz Kalesi
+    public static ItemStack RECIPE_BATTERY_ATTACK_L4_4; // Ölüm Bulutu
+    public static ItemStack RECIPE_BATTERY_ATTACK_L4_5; // Elektrik Kalkanı
+    public static ItemStack RECIPE_BATTERY_ATTACK_L5_1; // Kıyamet Reaktörü
+    public static ItemStack RECIPE_BATTERY_ATTACK_L5_2; // Lava Tufanı
+    public static ItemStack RECIPE_BATTERY_ATTACK_L5_3; // Boss Katili
+    public static ItemStack RECIPE_BATTERY_ATTACK_L5_4; // Alan Yok Edici
+    public static ItemStack RECIPE_BATTERY_ATTACK_L5_5; // Dağ Yok Edici
+    
+    // Oluşturma Bataryaları (25)
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L1_1; // Taş Köprü
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L1_2; // Obsidyen Duvar
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L1_3; // Demir Kafes
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L1_4; // Cam Duvar
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L1_5; // Ahşap Barikat
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L2_1; // Obsidyen Kafes
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L2_2; // Taş Köprü (Gelişmiş)
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L2_3; // Demir Duvar
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L2_4; // Cam Tünel
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L2_5; // Ahşap Kale
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L3_1; // Obsidyen Kale
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L3_2; // Netherite Köprü
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L3_3; // Demir Hapishane
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L3_4; // Cam Kule
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L3_5; // Taş Kale
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L4_1; // Obsidyen Hapishane
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L4_2; // Netherite Köprü (Gelişmiş)
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L4_3; // Demir Kale
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L4_4; // Cam Kule (Gelişmiş)
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L4_5; // Taş Şato
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L5_1; // Obsidyen Hapishane (Efsanevi)
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L5_2; // Netherite Köprü (Efsanevi)
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L5_3; // Demir Kale (Efsanevi)
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L5_4; // Cam Kule (Efsanevi)
+    public static ItemStack RECIPE_BATTERY_CONSTRUCTION_L5_5; // Taş Kalesi (Efsanevi)
+    
+    // Destek Bataryaları (25)
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L1_1; // Can Yenileme
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L1_2; // Hız Artışı
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L1_3; // Hasar Artışı
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L1_4; // Zırh Artışı
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L1_5; // Yenilenme
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L2_1; // Can + Hız Kombinasyonu
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L2_2; // Hasar + Zırh Kombinasyonu
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L2_3; // Yenilenme + Can Kombinasyonu
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L2_4; // Hız + Hasar Kombinasyonu
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L2_5; // Zırh + Yenilenme Kombinasyonu
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L3_1; // Absorption Kalkanı
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L3_2; // Uçma Yeteneği
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L3_3; // Kritik Vuruş Artışı
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L3_4; // Yansıtma Kalkanı
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L3_5; // Can Çalma
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L4_1; // Tam Can + Absorption
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L4_2; // Zaman Yavaşlatma
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L4_3; // Yıldırım Vuruşu
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L4_4; // Görünmezlik Kalkanı
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L4_5; // Ölümsüzlük Anı
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L5_1; // Efsanevi Can Yenileme
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L5_2; // Zaman Durdurma
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L5_3; // Ölüm Dokunuşu
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L5_4; // Faz Değiştirme
+    public static ItemStack RECIPE_BATTERY_SUPPORT_L5_5; // Yeniden Doğuş
+
     // ========== TARİF KİTAPLARI - ÖZEL EŞYALAR ==========
     public static ItemStack RECIPE_BLUEPRINT_PAPER;
     public static ItemStack RECIPE_LIGHTNING_CORE;
@@ -489,6 +571,9 @@ public class ItemManager {
         
         // ========== TARİF KİTAPLARI - ÖZEL ZIRH VE SİLAHLAR ==========
         initSpecialItemRecipeBooks();
+        
+        // ========== TARİF KİTAPLARI - BATARYALAR (75 Batarya) ==========
+        initBatteryRecipeBooks();
         
         // ========== ÖZEL SİLAH TARİFLERİ (BOSS EŞYALARI İLE) ==========
         registerSpecialWeaponRecipes();
@@ -1242,6 +1327,82 @@ public class ItemManager {
                 return new RecipeInfo("Meteor Çağıran Tarifi", "§7Crafting masasında",
                     "Mod 1: Meteor yağdır | Mod 2: Yer yarıp lav çıkart.", true,
                     Arrays.asList("Satır 1: [ ] [F] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [G] [ ]",
+                        "F = Ateş Topu", "B = Void Dragon Heart", "G = Altın Balta"));
+            
+            // ========== BATARYA TARİFLERİ (75 Batarya) ==========
+            // Saldırı Bataryaları - Seviye 1
+            case "BATTERY_ATTACK_L1_1":
+            case "YILDIRIM_ASASI":
+                return new RecipeInfo("Yıldırım Asası", "§7Dünyada bloklarla", "3x Demir Blok üst üste. Manuel nişanlı tek nokta yıldırım.", false);
+            case "BATTERY_ATTACK_L1_2":
+            case "CEHENNEM_TOPU":
+                return new RecipeInfo("Cehennem Topu", "§7Dünyada bloklarla", "3x Magma Blok yatay (Doğu-Batı). Düz atış ateş topu.", false);
+            case "BATTERY_ATTACK_L1_3":
+            case "BUZ_TOPU":
+                return new RecipeInfo("Buz Topu", "§7Dünyada bloklarla", "T şekli: Merkez + Kuzey + Güney + Yukarı. Düz atış buz topu (yavaşlatma).", false);
+            case "BATTERY_ATTACK_L1_4":
+            case "ZEHIR_OKU":
+                return new RecipeInfo("Zehir Oku", "§7Dünyada bloklarla", "2x2 Kare: Merkez + Doğu + Kuzey + Doğu-Kuzey. Zehirli ok atışı.", false);
+            case "BATTERY_ATTACK_L1_5":
+            case "SOK_DALGASI":
+                return new RecipeInfo("Şok Dalgası", "§7Dünyada bloklarla", "Artı (+) şekli: Merkez + 4 yön. Elektrik şok dalgası (dairesel).", false);
+            
+            // Saldırı Bataryaları - Seviye 2
+            case "BATTERY_ATTACK_L2_1":
+            case "CIFT_ATES_TOPU":
+                return new RecipeInfo("Çift Ateş Topu", "§7Dünyada bloklarla", "Piramit şekli: 3x3 taban + 1 üstte. İki ateş topu paralel atış.", false);
+            case "BATTERY_ATTACK_L2_2":
+            case "ZINCIR_YILDIRIM":
+                return new RecipeInfo("Zincir Yıldırım", "§7Dünyada bloklarla", "Yatay çizgi: 5 blok doğu-batı. Zincirleme yıldırım (3 hedef).", false);
+            case "BATTERY_ATTACK_L2_3":
+            case "BUZ_FIRTINASI":
+                return new RecipeInfo("Buz Fırtınası", "§7Dünyada bloklarla", "L şekli: 3 yukarı + 2 doğu. Alan etkili buz yağmuru.", false);
+            case "BATTERY_ATTACK_L2_4":
+            case "ASIT_YAGMURU":
+                return new RecipeInfo("Asit Yağmuru", "§7Dünyada bloklarla", "Çapraz çizgi (X şekli). Alan etkili asit yağmuru.", false);
+            case "BATTERY_ATTACK_L2_5":
+            case "ELEKTRIK_AGI":
+                return new RecipeInfo("Elektrik Ağı", "§7Dünyada bloklarla", "3x3 Kare (9 blok). Ağ şeklinde elektrik (kare alan).", false);
+            
+            // Oluşturma Bataryaları - Seviye 1
+            case "BATTERY_CONSTRUCTION_L1_1":
+            case "TAS_KOPRU":
+                return new RecipeInfo("Taş Köprü", "§7Dünyada bloklarla", "10 blok uzunluğunda taş köprü oluşturur.", false);
+            case "BATTERY_CONSTRUCTION_L1_2":
+            case "OBSIDYEN_DUVAR":
+                return new RecipeInfo("Obsidyen Duvar", "§7Dünyada bloklarla", "5x5x3 obsidyen duvar oluşturur.", false);
+            case "BATTERY_CONSTRUCTION_L1_3":
+            case "DEMIR_KAFES":
+                return new RecipeInfo("Demir Kafes", "§7Dünyada bloklarla", "5x5x5 demir kafes oluşturur.", false);
+            case "BATTERY_CONSTRUCTION_L1_4":
+            case "CAM_DUVAR":
+                return new RecipeInfo("Cam Duvar", "§7Dünyada bloklarla", "5x5x3 cam duvar oluşturur.", false);
+            case "BATTERY_CONSTRUCTION_L1_5":
+            case "AHSAP_BARIKAT":
+                return new RecipeInfo("Ahşap Barikat", "§7Dünyada bloklarla", "5x5x2 ahşap barikat oluşturur.", false);
+            
+            // Destek Bataryaları - Seviye 1
+            case "BATTERY_SUPPORT_L1_1":
+            case "CAN_YENILEME":
+                return new RecipeInfo("Can Yenileme", "§7Dünyada bloklarla", "Yakındaki dostlara can yenileme sağlar.", false);
+            case "BATTERY_SUPPORT_L1_2":
+            case "HIZ_ARTISI":
+                return new RecipeInfo("Hız Artışı", "§7Dünyada bloklarla", "Yakındaki dostlara hız artışı sağlar.", false);
+            case "BATTERY_SUPPORT_L1_3":
+            case "HASAR_ARTISI":
+                return new RecipeInfo("Hasar Artışı", "§7Dünyada bloklarla", "Yakındaki dostlara hasar artışı sağlar.", false);
+            case "BATTERY_SUPPORT_L1_4":
+            case "ZIRH_ARTISI":
+                return new RecipeInfo("Zırh Artışı", "§7Dünyada bloklarla", "Yakındaki dostlara zırh artışı sağlar.", false);
+            case "BATTERY_SUPPORT_L1_5":
+            case "YENILENME":
+                return new RecipeInfo("Yenilenme", "§7Dünyada bloklarla", "Yakındaki dostlara yenilenme efekti sağlar.", false);
+            
+            default:
+                // Batarya tarifleri için genel kontrol
+                if (recipeId.startsWith("BATTERY_")) {
+                    return new RecipeInfo("Batarya Tarifi", "§7Dünyada bloklarla", "Shift+Sağ Tık ile detaylı tarif görüntüle.", false);
+                }
                         "F = Ateş Topu", "B = Void Dragon Heart", "G = Altın Balta"));
             case "WEAPON_L5_3":
                 return new RecipeInfo("Titan Katili Tarifi", "§7Crafting masasında",
@@ -2528,5 +2689,118 @@ public class ItemManager {
         goldenHook.setIngredient('I', Material.IRON_INGOT);
         goldenHook.setIngredient('S', Material.STRING);
         Bukkit.addRecipe(goldenHook);
+    }
+    
+    /**
+     * 75 Batarya için tarif kitaplarını oluştur
+     */
+    private void initBatteryRecipeBooks() {
+        // ========== SALDIRI BATARYALARI (25) ==========
+        // Seviye 1
+        RECIPE_BATTERY_ATTACK_L1_1 = createRecipeBook("RECIPE_BATTERY_ATTACK_L1_1", "§eTarif: Yıldırım Asası");
+        RECIPE_BATTERY_ATTACK_L1_2 = createRecipeBook("RECIPE_BATTERY_ATTACK_L1_2", "§cTarif: Cehennem Topu");
+        RECIPE_BATTERY_ATTACK_L1_3 = createRecipeBook("RECIPE_BATTERY_ATTACK_L1_3", "§bTarif: Buz Topu");
+        RECIPE_BATTERY_ATTACK_L1_4 = createRecipeBook("RECIPE_BATTERY_ATTACK_L1_4", "§2Tarif: Zehir Oku");
+        RECIPE_BATTERY_ATTACK_L1_5 = createRecipeBook("RECIPE_BATTERY_ATTACK_L1_5", "§eTarif: Şok Dalgası");
+        
+        // Seviye 2
+        RECIPE_BATTERY_ATTACK_L2_1 = createRecipeBook("RECIPE_BATTERY_ATTACK_L2_1", "§cTarif: Çift Ateş Topu");
+        RECIPE_BATTERY_ATTACK_L2_2 = createRecipeBook("RECIPE_BATTERY_ATTACK_L2_2", "§eTarif: Zincir Yıldırım");
+        RECIPE_BATTERY_ATTACK_L2_3 = createRecipeBook("RECIPE_BATTERY_ATTACK_L2_3", "§bTarif: Buz Fırtınası");
+        RECIPE_BATTERY_ATTACK_L2_4 = createRecipeBook("RECIPE_BATTERY_ATTACK_L2_4", "§2Tarif: Asit Yağmuru");
+        RECIPE_BATTERY_ATTACK_L2_5 = createRecipeBook("RECIPE_BATTERY_ATTACK_L2_5", "§eTarif: Elektrik Ağı");
+        
+        // Seviye 3
+        RECIPE_BATTERY_ATTACK_L3_1 = createRecipeBook("RECIPE_BATTERY_ATTACK_L3_1", "§cTarif: Meteor Yağmuru");
+        RECIPE_BATTERY_ATTACK_L3_2 = createRecipeBook("RECIPE_BATTERY_ATTACK_L3_2", "§eTarif: Yıldırım Fırtınası");
+        RECIPE_BATTERY_ATTACK_L3_3 = createRecipeBook("RECIPE_BATTERY_ATTACK_L3_3", "§bTarif: Buz Çağı");
+        RECIPE_BATTERY_ATTACK_L3_4 = createRecipeBook("RECIPE_BATTERY_ATTACK_L3_4", "§2Tarif: Zehir Bombası");
+        RECIPE_BATTERY_ATTACK_L3_5 = createRecipeBook("RECIPE_BATTERY_ATTACK_L3_5", "§eTarif: Elektrik Fırtınası");
+        
+        // Seviye 4
+        RECIPE_BATTERY_ATTACK_L4_1 = createRecipeBook("RECIPE_BATTERY_ATTACK_L4_1", "§eTarif: Tesla Kulesi");
+        RECIPE_BATTERY_ATTACK_L4_2 = createRecipeBook("RECIPE_BATTERY_ATTACK_L4_2", "§cTarif: Cehennem Ateşi");
+        RECIPE_BATTERY_ATTACK_L4_3 = createRecipeBook("RECIPE_BATTERY_ATTACK_L4_3", "§bTarif: Buz Kalesi");
+        RECIPE_BATTERY_ATTACK_L4_4 = createRecipeBook("RECIPE_BATTERY_ATTACK_L4_4", "§4Tarif: Ölüm Bulutu");
+        RECIPE_BATTERY_ATTACK_L4_5 = createRecipeBook("RECIPE_BATTERY_ATTACK_L4_5", "§eTarif: Elektrik Kalkanı");
+        
+        // Seviye 5
+        RECIPE_BATTERY_ATTACK_L5_1 = createRecipeBook("RECIPE_BATTERY_ATTACK_L5_1", "§4§lTarif: Kıyamet Reaktörü");
+        RECIPE_BATTERY_ATTACK_L5_2 = createRecipeBook("RECIPE_BATTERY_ATTACK_L5_2", "§4§lTarif: Lava Tufanı");
+        RECIPE_BATTERY_ATTACK_L5_3 = createRecipeBook("RECIPE_BATTERY_ATTACK_L5_3", "§4§lTarif: Boss Katili");
+        RECIPE_BATTERY_ATTACK_L5_4 = createRecipeBook("RECIPE_BATTERY_ATTACK_L5_4", "§4§lTarif: Alan Yok Edici");
+        RECIPE_BATTERY_ATTACK_L5_5 = createRecipeBook("RECIPE_BATTERY_ATTACK_L5_5", "§4§lTarif: Dağ Yok Edici");
+        
+        // ========== OLUŞTURMA BATARYALARI (25) ==========
+        // Seviye 1
+        RECIPE_BATTERY_CONSTRUCTION_L1_1 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L1_1", "§7Tarif: Taş Köprü");
+        RECIPE_BATTERY_CONSTRUCTION_L1_2 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L1_2", "§5Tarif: Obsidyen Duvar");
+        RECIPE_BATTERY_CONSTRUCTION_L1_3 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L1_3", "§7Tarif: Demir Kafes");
+        RECIPE_BATTERY_CONSTRUCTION_L1_4 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L1_4", "§bTarif: Cam Duvar");
+        RECIPE_BATTERY_CONSTRUCTION_L1_5 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L1_5", "§6Tarif: Ahşap Barikat");
+        
+        // Seviye 2
+        RECIPE_BATTERY_CONSTRUCTION_L2_1 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L2_1", "§5Tarif: Obsidyen Kafes");
+        RECIPE_BATTERY_CONSTRUCTION_L2_2 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L2_2", "§7Tarif: Taş Köprü (Gelişmiş)");
+        RECIPE_BATTERY_CONSTRUCTION_L2_3 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L2_3", "§7Tarif: Demir Duvar");
+        RECIPE_BATTERY_CONSTRUCTION_L2_4 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L2_4", "§bTarif: Cam Tünel");
+        RECIPE_BATTERY_CONSTRUCTION_L2_5 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L2_5", "§6Tarif: Ahşap Kale");
+        
+        // Seviye 3
+        RECIPE_BATTERY_CONSTRUCTION_L3_1 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L3_1", "§5Tarif: Obsidyen Kale");
+        RECIPE_BATTERY_CONSTRUCTION_L3_2 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L3_2", "§5Tarif: Netherite Köprü");
+        RECIPE_BATTERY_CONSTRUCTION_L3_3 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L3_3", "§7Tarif: Demir Hapishane");
+        RECIPE_BATTERY_CONSTRUCTION_L3_4 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L3_4", "§bTarif: Cam Kule");
+        RECIPE_BATTERY_CONSTRUCTION_L3_5 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L3_5", "§7Tarif: Taş Kale");
+        
+        // Seviye 4
+        RECIPE_BATTERY_CONSTRUCTION_L4_1 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L4_1", "§5Tarif: Obsidyen Hapishane");
+        RECIPE_BATTERY_CONSTRUCTION_L4_2 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L4_2", "§5Tarif: Netherite Köprü (Gelişmiş)");
+        RECIPE_BATTERY_CONSTRUCTION_L4_3 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L4_3", "§7Tarif: Demir Kale");
+        RECIPE_BATTERY_CONSTRUCTION_L4_4 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L4_4", "§bTarif: Cam Kule (Gelişmiş)");
+        RECIPE_BATTERY_CONSTRUCTION_L4_5 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L4_5", "§7Tarif: Taş Şato");
+        
+        // Seviye 5
+        RECIPE_BATTERY_CONSTRUCTION_L5_1 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L5_1", "§5§lTarif: Obsidyen Hapishane (Efsanevi)");
+        RECIPE_BATTERY_CONSTRUCTION_L5_2 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L5_2", "§5§lTarif: Netherite Köprü (Efsanevi)");
+        RECIPE_BATTERY_CONSTRUCTION_L5_3 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L5_3", "§7§lTarif: Demir Kale (Efsanevi)");
+        RECIPE_BATTERY_CONSTRUCTION_L5_4 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L5_4", "§b§lTarif: Cam Kule (Efsanevi)");
+        RECIPE_BATTERY_CONSTRUCTION_L5_5 = createRecipeBook("RECIPE_BATTERY_CONSTRUCTION_L5_5", "§7§lTarif: Taş Kalesi (Efsanevi)");
+        
+        // ========== DESTEK BATARYALARI (25) ==========
+        // Seviye 1
+        RECIPE_BATTERY_SUPPORT_L1_1 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L1_1", "§aTarif: Can Yenileme");
+        RECIPE_BATTERY_SUPPORT_L1_2 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L1_2", "§eTarif: Hız Artışı");
+        RECIPE_BATTERY_SUPPORT_L1_3 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L1_3", "§cTarif: Hasar Artışı");
+        RECIPE_BATTERY_SUPPORT_L1_4 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L1_4", "§bTarif: Zırh Artışı");
+        RECIPE_BATTERY_SUPPORT_L1_5 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L1_5", "§dTarif: Yenilenme");
+        
+        // Seviye 2
+        RECIPE_BATTERY_SUPPORT_L2_1 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L2_1", "§aTarif: Can + Hız Kombinasyonu");
+        RECIPE_BATTERY_SUPPORT_L2_2 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L2_2", "§cTarif: Hasar + Zırh Kombinasyonu");
+        RECIPE_BATTERY_SUPPORT_L2_3 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L2_3", "§dTarif: Yenilenme + Can Kombinasyonu");
+        RECIPE_BATTERY_SUPPORT_L2_4 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L2_4", "§eTarif: Hız + Hasar Kombinasyonu");
+        RECIPE_BATTERY_SUPPORT_L2_5 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L2_5", "§bTarif: Zırh + Yenilenme Kombinasyonu");
+        
+        // Seviye 3
+        RECIPE_BATTERY_SUPPORT_L3_1 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L3_1", "§6Tarif: Absorption Kalkanı");
+        RECIPE_BATTERY_SUPPORT_L3_2 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L3_2", "§bTarif: Uçma Yeteneği");
+        RECIPE_BATTERY_SUPPORT_L3_3 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L3_3", "§cTarif: Kritik Vuruş Artışı");
+        RECIPE_BATTERY_SUPPORT_L3_4 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L3_4", "§7Tarif: Yansıtma Kalkanı");
+        RECIPE_BATTERY_SUPPORT_L3_5 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L3_5", "§4Tarif: Can Çalma");
+        
+        // Seviye 4
+        RECIPE_BATTERY_SUPPORT_L4_1 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L4_1", "§aTarif: Tam Can + Absorption");
+        RECIPE_BATTERY_SUPPORT_L4_2 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L4_2", "§bTarif: Zaman Yavaşlatma");
+        RECIPE_BATTERY_SUPPORT_L4_3 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L4_3", "§eTarif: Yıldırım Vuruşu");
+        RECIPE_BATTERY_SUPPORT_L4_4 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L4_4", "§7Tarif: Görünmezlik Kalkanı");
+        RECIPE_BATTERY_SUPPORT_L4_5 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L4_5", "§6Tarif: Ölümsüzlük Anı");
+        
+        // Seviye 5
+        RECIPE_BATTERY_SUPPORT_L5_1 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L5_1", "§6§lTarif: Efsanevi Can Yenileme");
+        RECIPE_BATTERY_SUPPORT_L5_2 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L5_2", "§b§lTarif: Zaman Durdurma");
+        RECIPE_BATTERY_SUPPORT_L5_3 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L5_3", "§4§lTarif: Ölüm Dokunuşu");
+        RECIPE_BATTERY_SUPPORT_L5_4 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L5_4", "§5§lTarif: Faz Değiştirme");
+        RECIPE_BATTERY_SUPPORT_L5_5 = createRecipeBook("RECIPE_BATTERY_SUPPORT_L5_5", "§6§lTarif: Yeniden Doğuş");
     }
 }
