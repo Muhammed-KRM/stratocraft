@@ -1316,6 +1316,67 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 
 ---
 
+## 🎓 ANTRENMAN SİSTEMİ
+
+### Nasıl Çalışır?
+
+**İlk Kullanım - Antrenman Modu:**
+- ⚠️ **Güç: %20** (1/5 güç)
+- 📝 Ekranda mesaj: "ANTRENMAN MODU: Güç %20"
+- 🎯 Kullanım sayacı: "Kullanım: 3/5"
+
+**Antrenman Tamamlandı:**
+- ✅ **Güç: %100** (Tam güç)
+- 🎉 Ekran başlığı: "ANTRENMAN TAMAMLANDI!"
+- 🔊 Başarı sesi efekti
+
+**Mastery Seviyeleri (İleri Seviye):**
+- **20 kullanım**: Mastery Seviye 1 → %120 güç (+%20)
+- **40 kullanım**: Mastery Seviye 2 → %130 güç (+%30)
+- **50+ kullanım**: Mastery Seviye 3 → %140 güç (+%40) 🔥
+
+### Seviyeye Göre Gerekli Kullanım
+
+| Batarya Seviyesi | Antrenman İçin Gerekli Kullanım | İlk Güç |
+|------------------|----------------------------------|---------|
+| **Seviye 1** | 5 kullanım | %20 |
+| **Seviye 2** | 10 kullanım | %20 |
+| **Seviye 3** | 15 kullanım | %20 |
+| **Seviye 4** | 20 kullanım | %20 |
+| **Seviye 5** | 25 kullanım | %20 |
+
+### Örnek: Yıldırım Asası (Seviye 1)
+
+```
+1. kullanım: 5 hasar yerine → 1 hasar (20% güç) ⚠️
+2. kullanım: 5 hasar yerine → 1 hasar (20% güç) ⚠️
+3. kullanım: 5 hasar yerine → 1 hasar (20% güç) ⚠️
+4. kullanım: 5 hasar yerine → 1 hasar (20% güç) ⚠️
+5. kullanım: 5 hasar yerine → 1 hasar (20% güç) ⚠️
+
+🎉 ANTRENMAN TAMAMLANDI! 🎉
+
+6. kullanım: → 5 hasar (100% güç) ✅
+7-19. kullanım: → 5 hasar (100% güç) ✅
+20. kullanım: → 6 hasar (120% güç) 🔥 [Mastery Seviye 1]
+40. kullanım: → 6.5 hasar (130% güç) 🔥🔥 [Mastery Seviye 2]
+50. kullanım: → 7 hasar (140% güç) 🔥🔥🔥 [Mastery Seviye 3 - MAX!]
+```
+
+### Örnek: Kıyamet Reaktörü (Seviye 5)
+
+```
+1-24. kullanım: 600 hasar yerine → 120 hasar (20% güç) ⚠️
+25. kullanım: 600 hasar yerine → 120 hasar (20% güç) ⚠️
+
+🎉 ANTRENMAN TAMAMLANDI! 🎉
+
+26. kullanım: → 600 hasar (100% güç) ✅
+50. kullanım: → 840 hasar (140% güç) 🔥🔥🔥 [Mastery Seviye 3 - MAX!]
+```
+
+---
+
 ## 📋 TÜM 75 BATARYA TARİFLERİ
 
 ### ⚔️ SALDIRI BATARYALARI (25 Batarya)
@@ -1360,31 +1421,36 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 #### Seviye 2 (5 Blok + Yan Blok)
 
 **6. Çift Ateş Topu** (`ATTACK_DOUBLE_FIREBALL_L2`)
-- **Blok**: 5x **MAGMA_BLOCK** (üst üste) + **NETHERRACK** (yan)
+- **Blok**: 9x **MAGMA_BLOCK** + 1x **NETHERRACK** - **PİRAMİT** (3x3 taban + 1 üstte)
+- **Şekil**: `▲` (Piramit)
 - **İşlev**: İki ateş topu paralel atış
 - **Benzersizlik**: Çift atış (Cehennem Topu'ndan farklı)
 - **Admin Komut**: `/stratocraft build battery 2 Çift Ateş Topu`
 
 **7. Zincir Yıldırım** (`ATTACK_CHAIN_LIGHTNING_L2`)
-- **Blok**: 5x **IRON_BLOCK** (üst üste) + **GOLD_BLOCK** (yan)
+- **Blok**: 4x **IRON_BLOCK** + 1x **GOLD_BLOCK** - **YATAY ÇİZGİ** (5 blok Doğu-Batı)
+- **Şekil**: `—————` (Uzun yatay çizgi)
 - **İşlev**: Zincirleme yıldırım (3 hedef)
 - **Benzersizlik**: Zincirleme (Yıldırım Asası'ndan farklı)
 - **Admin Komut**: `/stratocraft build battery 2 Zincir Yıldırım`
 
 **8. Buz Fırtınası** (`ATTACK_ICE_STORM_L2`)
-- **Blok**: 5x **PACKED_ICE** (üst üste) + **BLUE_ICE** (yan)
+- **Blok**: 4x **PACKED_ICE** + 1x **BLUE_ICE** - **L ŞEKLİ** (3 yukarı + 2 doğu)
+- **Şekil**: `L` (L şekli)
 - **İşlev**: Alan etkili buz yağmuru
 - **Benzersizlik**: Alan yağmuru (Buz Topu'ndan farklı)
 - **Admin Komut**: `/stratocraft build battery 2 Buz Fırtınası`
 
 **9. Asit Yağmuru** (`ATTACK_ACID_RAIN_L2`)
-- **Blok**: 5x **EMERALD_BLOCK** (üst üste) + **SLIME_BLOCK** (yan)
+- **Blok**: 3x **EMERALD_BLOCK** + 1x **SLIME_BLOCK** - **X ŞEKLİ** (Çapraz 4 köşe)
+- **Şekil**: `X` (Çapraz)
 - **İşlev**: Alan etkili asit yağmuru
 - **Benzersizlik**: Alan yağmuru (Zehir Oku'ndan farklı)
 - **Admin Komut**: `/stratocraft build battery 2 Asit Yağmuru`
 
 **10. Elektrik Ağı** (`ATTACK_ELECTRIC_NET_L2`)
-- **Blok**: 5x **REDSTONE_BLOCK** (üst üste) + **LAPIS_BLOCK** (yan)
+- **Blok**: 8x **REDSTONE_BLOCK** + 1x **LAPIS_BLOCK** - **3x3 KARE** (9 blok)
+- **Şekil**: `■` (3x3 kare)
 - **İşlev**: Ağ şeklinde elektrik (kare alan)
 - **Benzersizlik**: Ağ şekli (Şok Dalgası'ndan farklı)
 - **Admin Komut**: `/stratocraft build battery 2 Elektrik Ağı`
@@ -1392,31 +1458,40 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 #### Seviye 3 (7 Blok + Yan Blok)
 
 **11. Meteor Yağmuru** (`ATTACK_METEOR_SHOWER_L3`)
-- **Blok**: 7x **OBSIDIAN** (üst üste) + **MAGMA_BLOCK** (yan)
+- **Blok**: 24x **OBSIDIAN** + 1x **GOLD_BLOCK** (merkez) + 1x **MAGMA_BLOCK** - **2 KATLI PİRAMİT** (5x5 alt, 3x3 üst)
+- **Şekil**: `▲▲` (Çift katlı piramit)
+- **Merkez**: GOLD_BLOCK (parlak, diğerlerinden farklı)
 - **İşlev**: Gökyüzünden meteor yağdırma
 - **Benzersizlik**: Gökyüzünden düşen (Cehennem Topu'ndan farklı)
 - **Admin Komut**: `/stratocraft build battery 3 Meteor Yağmuru`
 
 **12. Yıldırım Fırtınası** (`ATTACK_LIGHTNING_STORM_L3`)
-- **Blok**: 7x **IRON_BLOCK** (üst üste) + **DIAMOND_BLOCK** (yan)
+- **Blok**: 8x **IRON_BLOCK** + 2x **DIAMOND_BLOCK** - **H ŞEKLİ** (yatay + dikey)
+- **Şekil**: `H` (H şekli)
+- **Merkez**: DIAMOND_BLOCK (parlak, diğerlerinden farklı)
 - **İşlev**: Rastgele yıldırım yağmuru
 - **Benzersizlik**: Rastgele yağmur (Yıldırım Asası'ndan farklı)
 - **Admin Komut**: `/stratocraft build battery 3 Yıldırım Fırtınası`
 
 **13. Buz Çağı** (`ATTACK_ICE_AGE_L3`)
-- **Blok**: 7x **PACKED_ICE** (üst üste) + **FROSTED_ICE** (yan)
+- **Blok**: 5x **PACKED_ICE** + 1x **FROSTED_ICE** - **YILDIZ ŞEKLİ** (5 uçlu)
+- **Şekil**: `★` (Yıldız)
 - **İşlev**: Alanı dondurma (blokları buz yapma)
 - **Benzersizlik**: Blok dondurma (Buz Fırtınası'ndan farklı)
 - **Admin Komut**: `/stratocraft build battery 3 Buz Çağı`
 
 **14. Zehir Bombası** (`ATTACK_POISON_BOMB_L3`)
-- **Blok**: 7x **EMERALD_BLOCK** (üst üste) + **POISONOUS_POTATO** (yan)
+- **Blok**: 7x **EMERALD_BLOCK** + 1x **EMERALD** (merkez) + 1x **POISONOUS_POTATO** - **ÇAPRAZ KULE** (X şekli dikey)
+- **Şekil**: `X` (3D çapraz)
+- **Merkez**: EMERALD (diğerlerinden farklı - EMERALD vs EMERALD_BLOCK)
 - **İşlev**: Patlayıcı zehir bulutu
 - **Benzersizlik**: Patlayıcı bulut (Asit Yağmuru'ndan farklı)
 - **Admin Komut**: `/stratocraft build battery 3 Zehir Bombası`
 
 **15. Elektrik Fırtınası** (`ATTACK_ELECTRIC_STORM_L3`)
-- **Blok**: 7x **REDSTONE_BLOCK** (üst üste) + **GLOWSTONE** (yan)
+- **Blok**: 5x **REDSTONE_BLOCK** + 1x **REDSTONE** (merkez) + 1x **GLOWSTONE** - **Z ŞEKLİ** (yatay + çapraz)
+- **Şekil**: `Z` (Z şekli)
+- **Merkez**: REDSTONE (diğerlerinden farklı - REDSTONE vs REDSTONE_BLOCK)
 - **İşlev**: Sürekli elektrik fırtınası (10 saniye)
 - **Benzersizlik**: Sürekli fırtına (Elektrik Ağı'ndan farklı)
 - **Admin Komut**: `/stratocraft build battery 3 Elektrik Fırtınası`
@@ -1424,7 +1499,9 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 #### Seviye 4 (9 Blok + Yan Blok)
 
 **16. Tesla Kulesi** (`ATTACK_TESLA_TOWER_L4`)
-- **Blok**: 9x **COPPER_BLOCK** (üst üste) + **REDSTONE_BLOCK** (yan)
+- **Blok**: 26x **COPPER_BLOCK** + 1x **BEACON** (merkez) + 1x **REDSTONE_BLOCK** - **3 KATLI KULE** (her katta 3x3)
+- **Şekil**: `🗼` (3 katlı kule)
+- **Merkez**: BEACON (parlak, diğerlerinden farklı)
 - **İşlev**: Otomatik alan etkili elektrik (30 saniye)
 - **Benzersizlik**: Otomatik alan (Yıldırım Asası'ndan farklı)
 - **Admin Komut**: `/stratocraft build battery 4 Tesla Kulesi`
@@ -1816,6 +1893,81 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 ---
 
 **🎮 Bataryalarla savaşı domine et, fiziksel büyülerle düşmanları yok et!**
+
+---
+
+## 🔧 SİSTEM DÜZELTMELERİ (Son Güncellemeler)
+
+### ✅ 1. Yön Sorunu Düzeltildi
+
+**Sorun**: Bataryalar sadece North/South yönünde çalışıyordu.
+
+**Çözüm**: 
+- 4 rotasyon (0°, 90°, 180°, 270°) sistemi eklendi
+- Artık bataryalar **HER YÖNDE** çalışıyor!
+
+**Teknik Detay**:
+- `rotatePosition()` metodu eklendi
+- `checkBlockPatternWithRotation()` metodu ile her rotasyon deneniyor
+- İlk eşleşen rotasyon kullanılıyor
+
+---
+
+### ✅ 2. Partikül Sorunu Düzeltildi
+
+**Sorun**: Partiküller çok büyük ve önü kapatıyordu.
+
+**Çözüm**: 
+- Partiküller artık sadece **diğer oyunculara** görünüyor
+- Kendine görünmüyor, önünü kapatmıyor!
+
+**Teknik Detay**:
+- `spawnParticle()` yerine oyuncu bazlı `other.spawnParticle()` kullanılıyor
+- Sadece diğer oyunculara gönderiliyor
+
+---
+
+### ✅ 3. Yapı Kısıtlaması Kaldırıldı
+
+**Sorun**: Yapı bataryaları sadece klan/savaş alanında çalışıyordu.
+
+**Çözüm**: 
+- `canModifyTerritory` kontrolü kaldırıldı
+- Artık **HER YERE** yapı yapılabilir!
+
+**Teknik Detay**:
+- `fireConstructionBattery()` metodundan bölge kontrolü kaldırıldı
+- Tüm yapı bataryaları artık her yerde çalışıyor
+
+---
+
+### ✅ 4. Gereksiz Uyarı Mesajı Kaldırıldı
+
+**Sorun**: "Bu slotta zaten yüklü batarya var" mesajı gereksiz geliyordu.
+
+**Çözüm**: 
+- Slot kontrolü kaldırıldı
+- Artık rahatsız edici mesaj yok!
+
+**Teknik Detay**:
+- `hasLoadedBattery()` kontrolü kaldırıldı
+- Yeniden yüklemeye izin verildi
+
+---
+
+### ✅ 5. Yakıt Kontrolü Düzeltildi
+
+**Sorun**: Batarya sisteminin yakıt kontrolü mayın ve diğer sistemlere karışıyordu.
+
+**Çözüm**: 
+- Mayın itemları kontrol ediliyor
+- Basınç plakaları kontrol ediliyor
+- Sadece batarya tarifine uyan bloklar yakıt kontrolü yapıyor
+
+**Teknik Detay**:
+- `checkAndLoadBattery()` metodunda önce tarif kontrolü yapılıyor
+- Eğer batarya tarifi değilse, sessizce çıkıyor
+- Mayın itemları ve basınç plakaları için özel kontroller eklendi
 
 ---
 

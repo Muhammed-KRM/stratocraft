@@ -10,6 +10,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
@@ -60,7 +61,37 @@ public class NewMineListener implements Listener {
     }
     
     /**
-     * Oyuncu etkileşimi (mayın oluşturma ve gizleme)
+     * Basınç plakası yerleştirme (yeni mayın sistemi)
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPlaceMine(BlockPlaceEvent event) {
+        Block block = event.getBlockPlaced();
+        Player player = event.getPlayer();
+        ItemStack item = event.getItemInHand();
+        
+        // Basınç plakası mı?
+        if (!NewMineManager.isPressurePlate(block.getType())) {
+            return;
+        }
+        
+        // Mayın itemı mı?
+        NewMineManager.MineType mineType = getMineTypeFromItem(item);
+        if (mineType == null) {
+            return; // Normal basınç plakası
+        }
+        
+        // MAYIN OLUŞTUR!
+        if (mineManager.createMine(player, block, mineType)) {
+            player.sendMessage("§a✓ §e" + mineType.getDisplayName() + " §ayerleştirildi!");
+            player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_STONE_PRESSURE_PLATE_CLICK_ON, 1.0f, 0.8f);
+        } else {
+            player.sendMessage("§cMayın oluşturulamadı!");
+            event.setCancelled(true);
+        }
+    }
+    
+    /**
+     * Oyuncu etkileşimi (gizleme)
      */
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
@@ -105,29 +136,7 @@ public class NewMineListener implements Listener {
             }
         }
         
-        // Mayın oluşturma (item ile basınç plakasına sağ tık)
-        if (!player.isSneaking() && NewMineManager.isPressurePlate(block.getType())) {
-            // Zaten mayın var mı?
-            if (block.hasMetadata("NewMine")) {
-                event.setCancelled(true);
-                return;
-            }
-            
-            // Mayın itemı mı?
-            NewMineManager.MineType mineType = getMineTypeFromItem(item);
-            if (mineType != null) {
-                // Mayın oluştur
-                if (mineManager.createMine(player, block, mineType)) {
-                    // Item'ı tüket (1 adet)
-                    if (item.getAmount() > 1) {
-                        item.setAmount(item.getAmount() - 1);
-                    } else {
-                        player.getInventory().setItemInMainHand(null);
-                    }
-                    event.setCancelled(true);
-                }
-            }
-        }
+        // ESKİ KOD KALDIRILDI - Artık BlockPlaceEvent kullanılıyor
     }
     
     /**

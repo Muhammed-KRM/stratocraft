@@ -404,3 +404,116 @@ Mayınlar, görünmez ve ölümcül tuzaklardır. Basınç plakası ile kurulur,
 ---
 
 **🎮 Tuzaklarla bölgeni koru, düşmanları yakala!**
+
+---
+
+## 💣 YENİ MAYIN SİSTEMİ (25 Benzersiz Mayın)
+
+### 📋 Genel Bilgiler
+
+Mayınlar **basınç plakaları** olarak verilir ve yere koyulduğunda otomatik olarak aktif mayın haline gelir. Her mayın benzersiz bir özelliğe sahiptir ve seviyeye göre farklı basınç plakası tipleri kullanır.
+
+**ÖNEMLİ**: Bu sistem **eski mayın sisteminden tamamen farklıdır**! Eski sistem (Tuzak Çekirdeği + Magma Block) hala çalışıyor, ama yeni sistem daha basit ve kullanışlıdır.
+
+---
+
+### 🎯 Kullanım
+
+1. **Mayın Al**: `/stratocraft mine give <seviye> <isim>`
+2. **Yere Koy**: Basınç plakasını yere koy (sağ tık)
+3. **Aktif Olur**: Otomatik olarak mayın haline gelir
+4. **Gizle** (Opsiyonel): Shift + Gizleme Aleti ile görünmez yap
+
+---
+
+### 📦 Basınç Plakası Tipleri (Seviyeye Göre)
+
+- **Seviye 1**: `STONE_PRESSURE_PLATE` (Taş Basınç Plakası)
+- **Seviye 2**: `OAK_PRESSURE_PLATE` (Meşe Basınç Plakası)
+- **Seviye 3**: `BIRCH_PRESSURE_PLATE` (Huş Basınç Plakası) + ✨ Parlama Efekti
+- **Seviye 4**: `DARK_OAK_PRESSURE_PLATE` (Koyu Meşe Basınç Plakası) + ✨ Parlama Efekti
+- **Seviye 5**: `WARPED_PRESSURE_PLATE` (Yamuk Basınç Plakası) + ✨ Parlama Efekti
+
+---
+
+### 💣 Mayın Listesi (25 Benzersiz Mayın)
+
+#### Seviye 1 (5 Mayın)
+- **EXPLOSIVE** - Patlama Mayını: Basınca küçük patlama yapar
+- **POISON** - Zehir Mayını: Basınca zehir efekti verir
+- **SLOWNESS** - Yavaşlık Mayını: Basınca yavaşlatır
+- **LIGHTNING** - Yıldırım Mayını: Basınca yıldırım çarpar
+- **FIRE** - Yakma Mayını: Basınca yakma efekti verir
+
+#### Seviye 2 (5 Mayın)
+- **CAGE** - Kafes Hapsetme Mayını: Basınca obsidyen kafes oluşturur
+- **LAUNCH** - Fırlatma Mayını: Basınca yukarı fırlatır
+- **MOB_SPAWN** - Canavar Spawn Mayını: Basınca canavarlar spawnlar
+- **BLINDNESS** - Körlük Mayını: Basınca körlük efekti verir
+- **WEAKNESS** - Zayıflık Mayını: Basınca zayıflık efekti verir
+
+#### Seviye 3 (5 Mayın)
+- **FREEZE** - Dondurma Mayını: Basınca dondurma efekti verir
+- **CONFUSION** - Karışıklık Mayını: Basınca karışıklık efekti verir
+- **FATIGUE** - Yorgunluk Mayını: Basınca yorgunluk efekti verir
+- **POISON_CLOUD** - Zehir Bulutu Mayını: Basınca alan zehiri oluşturur
+- **LIGHTNING_STORM** - Yıldırım Fırtınası Mayını: Basınca çoklu yıldırım çarpar
+
+#### Seviye 4 (5 Mayın)
+- **MEGA_EXPLOSIVE** - Büyük Patlama Mayını: Basınca büyük patlama yapar
+- **LARGE_CAGE** - Büyük Kafes Mayını: Basınca büyük kafes oluşturur
+- **SUPER_LAUNCH** - Güçlü Fırlatma Mayını: Basınca çok yukarı fırlatır
+- **ELITE_MOB_SPAWN** - Güçlü Canavar Spawn Mayını: Basınca güçlü canavarlar spawnlar
+- **MULTI_EFFECT** - Çoklu Efekt Mayını: Basınca birden fazla efekt verir
+
+#### Seviye 5 (5 Mayın)
+- **NUCLEAR_EXPLOSIVE** - Nükleer Patlama Mayını: Basınca nükleer patlama yapar
+- **DEATH_CLOUD** - Ölüm Bulutu Mayını: Basınca ölüm bulutu oluşturur
+- **THUNDERSTORM** - Gök Gürültüsü Mayını: Basınca gök gürültüsü fırtınası yapar
+- **BOSS_SPAWN** - Boss Spawn Mayını: Basınca boss spawnlar
+- **CHAOS** - Kaos Mayını: Basınca kaos efekti verir
+
+---
+
+### 🔧 Admin Komutları
+
+**Mayın Verme**:
+```
+/stratocraft mine give <seviye> <isim>
+```
+
+**Örnekler**:
+```
+/stratocraft mine give 1 explosive         → Seviye 1 Patlama Mayını
+/stratocraft mine give 3 freeze             → Seviye 3 Dondurma Mayını
+/stratocraft mine give 5 nuclear_explosive  → Seviye 5 Nükleer Patlama Mayını
+/stratocraft mine give concealer            → Gizleme Aleti
+```
+
+**Mayın Listesi**:
+```
+/stratocraft mine list
+```
+
+---
+
+### 👻 Gizleme Sistemi
+
+**Gizleme Aleti**: `MINE_CONCEALER`
+- **Kullanım**: Shift + Sağ Tık mayına
+- **Efekt**: Mayın görünmez olur (sadece sahibi görebilir)
+- **Tekrar Kullanım**: Aynı işlemle görünür yapılabilir
+
+---
+
+### ⚠️ Önemli Notlar
+
+- **Dost/Düşman Ayrımı Yok**: Mayınlar herkese zarar verir!
+- **Otomatik Aktivasyon**: Yere koyulduğunda otomatik aktif olur
+- **Basınç Plakası Görünür**: Mayınlar gizli değil, açık basınç plakalarıdır
+- **Gizleme Opsiyonel**: Gizleme aleti ile görünmez yapılabilir
+- **Eski Sistem Hala Çalışıyor**: Tuzak Çekirdeği + Magma Block sistemi hala aktif
+
+---
+
+**🎮 Yeni mayın sistemiyle bölgeni koru, düşmanları yakala!**

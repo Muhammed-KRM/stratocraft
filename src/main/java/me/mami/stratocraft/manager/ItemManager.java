@@ -2925,17 +2925,38 @@ public class ItemManager {
     /**
      * Mayın itemı oluştur
      */
-    private ItemStack createMineItem(String id, String name, String description, Material material, int level) {
-        ItemStack item = new ItemStack(material);
+    private ItemStack createMineItem(String id, String name, String description, Material originalMaterial, int level) {
+        // FARKLI BASINCA PLAKASI TİPİ SEÇ (seviyeye göre)
+        Material plateMaterial;
+        switch (level) {
+            case 1: plateMaterial = Material.STONE_PRESSURE_PLATE; break;
+            case 2: plateMaterial = Material.OAK_PRESSURE_PLATE; break;
+            case 3: plateMaterial = Material.BIRCH_PRESSURE_PLATE; break;
+            case 4: plateMaterial = Material.DARK_OAK_PRESSURE_PLATE; break;
+            case 5: plateMaterial = Material.WARPED_PRESSURE_PLATE; break;
+            default: plateMaterial = Material.STONE_PRESSURE_PLATE;
+        }
+        
+        ItemStack item = new ItemStack(plateMaterial);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(name);
+        
+        // Lore
         List<String> lore = new ArrayList<>();
-        lore.add(description);
+        lore.add("§7" + description);
         lore.add("");
         lore.add("§7Seviye: §e" + level);
-        lore.add("§7Kullanım: Basınç plakasına sağ tık yap");
-        lore.add("§7Özellik: Basınca aktif olur");
+        lore.add("§7Kullanım: §eYere koy ve aktif et!");
+        lore.add("§7Özellik: §cBasınca tetiklenir");
+        lore.add("");
+        lore.add("§6⚠ DİKKAT: Düşman ve dost ayırt etmez!");
         meta.setLore(lore);
+        
+        // Parlayan efekt (seviye 3+)
+        if (level >= 3) {
+            meta.addEnchant(org.bukkit.enchantments.Enchantment.DURABILITY, 1, true);
+            meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
+        }
         
         // NBT tag ekle
         NamespacedKey mineTypeKey = new NamespacedKey(Main.getInstance(), "MineType");

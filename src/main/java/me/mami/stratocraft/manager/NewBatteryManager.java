@@ -629,12 +629,6 @@ public class NewBatteryManager {
         double levelMultiplier = 1.0 + (level - 1) * 0.3;
         double finalMultiplier = totalMultiplier * levelMultiplier;
         
-        // Bölge kontrolü
-        if (!canModifyTerritory(player, target)) {
-            player.sendMessage("§cBu bölgede yapı oluşturamazsın! Sadece savaşta olan klan alanlarında çalışır.");
-            return;
-        }
-        
         // Batarya ismine göre özel oluşturma
         switch (batteryName) {
             // ========== SEVİYE 1 OLUŞTURMA BATARYALARI ==========
@@ -1746,65 +1740,76 @@ public class NewBatteryManager {
      * BlockPattern'e göre blokları kontrol eder - TAMAMEN ESNEK
      */
     public static RecipeCheckResult checkBlockPattern(Block centerBlock, BlockPattern pattern, String batteryName) {
-        List<Block> blocksToRemove = new ArrayList<>();
-        
-        // 1. Merkez blok kontrolü (0,0,0)
+        // Merkez blok kontrolü
         if (centerBlock.getType() != pattern.getCenterBlock()) {
             return RecipeCheckResult.failure("Merkez blok eşleşmedi");
         }
+        
+        // 4 rotasyonu dene (0°, 90°, 180°, 270°)
+        for (int rotation = 0; rotation < 4; rotation++) {
+            RecipeCheckResult result = checkBlockPatternWithRotation(centerBlock, pattern, batteryName, rotation);
+            if (result.matches()) {
+                return result; // İlk eşleşen rotasyonu döndür
+            }
+        }
+        
+        return RecipeCheckResult.failure("Hiçbir rotasyonda eşleşmedi");
+    }
+    
+    /**
+     * Belirli bir rotasyonla blok pattern kontrolü
+     * @param rotation 0=0°, 1=90°, 2=180°, 3=270°
+     */
+    private static RecipeCheckResult checkBlockPatternWithRotation(Block centerBlock, BlockPattern pattern, String batteryName, int rotation) {
+        List<Block> blocksToRemove = new ArrayList<>();
         blocksToRemove.add(centerBlock);
         
-        // 2. Tüm gerekli blokları kontrol et (herhangi bir konumda)
+        // Tüm gerekli blokları kontrol et
         for (Map.Entry<BlockPosition, Material> entry : pattern.getRequiredBlocks().entrySet()) {
             BlockPosition pos = entry.getKey();
             Material expected = entry.getValue();
             
+            // Rotasyonu uygula
+            BlockPosition rotatedPos = rotatePosition(pos, rotation);
+            
             // Merkez bloktan göreceli konumu hesapla
-            Block targetBlock = centerBlock;
-            
-            // X ekseni (Doğu/Batı)
-            if (pos.getX() > 0) {
-                for (int i = 0; i < pos.getX(); i++) {
-                    targetBlock = targetBlock.getRelative(BlockFace.EAST);
-                }
-            } else if (pos.getX() < 0) {
-                for (int i = 0; i < -pos.getX(); i++) {
-                    targetBlock = targetBlock.getRelative(BlockFace.WEST);
-                }
-            }
-            
-            // Y ekseni (Yukarı/Aşağı)
-            if (pos.getY() > 0) {
-                for (int i = 0; i < pos.getY(); i++) {
-                    targetBlock = targetBlock.getRelative(BlockFace.UP);
-                }
-            } else if (pos.getY() < 0) {
-                for (int i = 0; i < -pos.getY(); i++) {
-                    targetBlock = targetBlock.getRelative(BlockFace.DOWN);
-                }
-            }
-            
-            // Z ekseni (Güney/Kuzey)
-            if (pos.getZ() > 0) {
-                for (int i = 0; i < pos.getZ(); i++) {
-                    targetBlock = targetBlock.getRelative(BlockFace.SOUTH);
-                }
-            } else if (pos.getZ() < 0) {
-                for (int i = 0; i < -pos.getZ(); i++) {
-                    targetBlock = targetBlock.getRelative(BlockFace.NORTH);
-                }
-            }
+            Block targetBlock = centerBlock.getRelative(rotatedPos.getX(), rotatedPos.getY(), rotatedPos.getZ());
             
             // Blok tipini kontrol et
             if (targetBlock.getType() != expected) {
-                return RecipeCheckResult.failure("Blok eşleşmedi: " + expected + " konum (" + 
-                    pos.getX() + "," + pos.getY() + "," + pos.getZ() + ")");
+                return RecipeCheckResult.failure("Blok eşleşmedi");
             }
             
             blocksToRemove.add(targetBlock);
         }
         
         return RecipeCheckResult.success(pattern, blocksToRemove, batteryName);
+    }
+    
+    /**
+     * Pozisyonu Y ekseni etrafında döndür
+     * @param pos Orijinal pozisyon
+     * @param rotation 0=0°, 1=90°, 2=180°, 3=270°
+     * @return Döndürülmüş pozisyon
+     */
+    private static BlockPosition rotatePosition(BlockPosition pos, int rotation) {
+        int x = pos.getX();
+        int y = pos.getY(); // Y değişmez (yukarı/aşağı)
+        int z = pos.getZ();
+        
+        // Y ekseni etrafında rotasyon (saat yönünde)
+        switch (rotation) {
+            case 0: // 0° - Değişiklik yok
+                return new BlockPosition(x, y, z);
+            case 1: // 90° saat yönünde
+                return new BlockPosition(-z, y, x);
+            case 2: // 180°
+                return new BlockPosition(-x, y, -z);
+            case 3: // 270° saat yönünde (= 90° saat yönünün tersi)
+                return new BlockPosition(z, y, -x);
+            default:
+                return pos;
+        }
     }
     
     // ========== ÖRNEK TARİF İMPLEMENTASYONLARI ==========

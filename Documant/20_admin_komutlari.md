@@ -187,47 +187,70 @@ Toplam: 25 zırh
 ```
 
 **Özel Silahlar** (weapon kategorisi):
+
+**Format 1 (Önerilen - İsimlerle)**: `/stratocraft give weapon <seviye> <isim>`
 ```
-weapon_l1_1 ila weapon_l1_5 - Seviye 1 Silahlar (5 varyant)
-  l1_1: Hız Hançeri
-  l1_2: Çiftçi Tırpanı
-  l1_3: Yerçekimi Gürzü
-  l1_4: Patlayıcı Yay
-  l1_5: Vampir Dişi
-
-weapon_l2_1 ila weapon_l2_5 - Seviye 2 Silahlar (5 varyant)
-  l2_1: Alev Kılıcı
-  l2_2: Buz Asası
-  l2_3: Zehirli Mızrak
-  l2_4: Golem Kalkanı
-  l2_5: Şok Baltası
-
-weapon_l3_1 ila weapon_l3_5 - Seviye 3 Silahlar (5 varyant)
-  l3_1: Gölge Katanası
-  l3_2: Deprem Çekici
-  l3_3: Taramalı Yay
-  l3_4: Büyücü Küresi
-  l3_5: Hayalet Hançeri
-
-weapon_l4_1 ila weapon_l4_5 - Seviye 4 Silahlar (5 varyant - Modlu)
-  l4_1: Element Kılıcı (Mod 1: Ateş, Mod 2: Buz)
-  l4_2: Yaşam ve Ölüm (Mod 1: Ölüm, Mod 2: Yaşam)
-  l4_3: Mjölnir V2 (Mod 1: Melee, Mod 2: Throw)
-  l4_4: Avcı Yayı (Mod 1: Sniper, Mod 2: Shotgun)
-  l4_5: Manyetik Eldiven (Mod 1: Çek, Mod 2: İt)
-
-weapon_l5_1 ila weapon_l5_5 - Seviye 5 Silahlar (5 varyant - Modlu)
-  l5_1: Hiperiyon Kılıcı (Mod 1: Işınlanma, Mod 2: Kara Delik Kalkanı)
-  l5_2: Meteor Çağıran (Mod 1: Kıyamet, Mod 2: Yer Yaran)
-  l5_3: Titan Katili (Mod 1: %5 Hasar, Mod 2: Mızrak Yağmuru)
-  l5_4: Ruh Biçen (Mod 1: Çağır, Mod 2: Ruh Patlaması)
-  l5_5: Zamanı Büken (Mod 1: Zamanı Durdur, Mod 2: Geri Sar)
-
-Toplam: 25 silah
-
-Kullanım: /stratocraft give weapon <seviye> <varyant>
-Örnek: /stratocraft give weapon 1 1 → Hız Hançeri
+/stratocraft give weapon 1 hız_hançeri        → Hız Hançeri
+/stratocraft give weapon 1 çiftçi_tırpanı     → Çiftçi Tırpanı
+/stratocraft give weapon 2 alev_kılıcı        → Alev Kılıcı
+/stratocraft give weapon 3 gölge_katanası     → Gölge Katanası
+/stratocraft give weapon 4 element_kılıcı     → Element Kılıcı
+/stratocraft give weapon 5 zamanı_büken       → Zamanı Büken
 ```
+
+**Format 2 (Direkt ID)**: `/stratocraft give weapon_l<seviye>_<varyant>`
+```
+/stratocraft give weapon_l1_1  → Hız Hançeri
+/stratocraft give weapon_l5_5  → Zamanı Büken
+```
+
+**Format 3 (Eski Format - Tip ile)**: `/stratocraft give weapon <seviye> <tip>`
+```
+/stratocraft give weapon 1 sword   → Hız Hançeri
+/stratocraft give weapon 1 axe     → Çiftçi Tırpanı
+/stratocraft give weapon 5 hammer  → Zamanı Büken
+```
+
+**Tüm Silah İsimleri**:
+
+**Seviye 1**:
+- `hız_hançeri` - Hız Hançeri (Elinde tutarken hız verir)
+- `çiftçi_tırpanı` - Çiftçi Tırpanı (Alan hasarı vurur)
+- `yerçekimi_gürzü` - Yerçekimi Gürzü (Sağ tıkla havaya fırla!)
+- `patlayıcı_yay` - Patlayıcı Yay (Okları patlar)
+- `vampir_dişi` - Vampir Dişi (Can çalar)
+
+**Seviye 2**:
+- `alev_kılıcı` - Alev Kılıcı (Alev dalgası atar)
+- `buz_asası` - Buz Asası (Düşmanı dondurur)
+- `zehirli_mızrak` - Zehirli Mızrak (Zehir bulutu oluşturur)
+- `golem_kalkanı` - Golem Kalkanı (Eğilince dostları iyileştirir)
+- `şok_baltası` - Şok Baltası (Kritik vuruşta çarpar)
+
+**Seviye 3**:
+- `gölge_katanası` - Gölge Katanası
+- `deprem_çekici` - Deprem Çekici
+- `taramalı_yay` - Taramalı Yay
+- `büyücü_küresi` - Büyücü Küresi
+- `hayalet_hançeri` - Hayalet Hançeri
+
+**Seviye 4** (Modlu):
+- `element_kılıcı` - Element Kılıcı (Mod 1: Ateş, Mod 2: Buz)
+- `yaşam_ve_ölüm` - Yaşam ve Ölüm (Mod 1: Ölüm, Mod 2: Yaşam)
+- `mjölnir_v2` - Mjölnir V2 (Mod 1: Melee, Mod 2: Throw)
+- `avcı_yayı` - Avcı Yayı (Mod 1: Sniper, Mod 2: Shotgun)
+- `manyetik_eldiven` - Manyetik Eldiven (Mod 1: Çek, Mod 2: İt)
+
+**Seviye 5** (Modlu):
+- `hiperiyon_kılıcı` - Hiperiyon Kılıcı (Mod 1: Işınlanma, Mod 2: Kara Delik Kalkanı)
+- `meteor_çağıran` - Meteor Çağıran (Mod 1: Kıyamet, Mod 2: Yer Yaran)
+- `titan_katili` - Titan Katili (Mod 1: %5 Hasar, Mod 2: Mızrak Yağmuru)
+- `ruh_biçen` - Ruh Biçen (Mod 1: Çağır, Mod 2: Ruh Patlaması)
+- `zamanı_büken` - Zamanı Büken (Mod 1: Zamanı Durdur, Mod 2: Geri Sar)
+
+**Toplam**: 25 silah
+
+**Tab Completion**: `/stratocraft give weapon 1 [TAB]` → Tüm seviye 1 silah isimlerini gösterir
 
 **Limit**: Maksimum 2304 adet (36 slot × 64)
 
@@ -678,17 +701,23 @@ Destek:
 support_heal_l5, support_speed_l5, support_damage_l5, support_armor_l5, support_regeneration_l5
 ```
 
-**Örnekler**:
+**Yeni Format (Zorunlu)**: `/stratocraft build battery <seviye> <isim>`
 ```
-/stratocraft build battery attack_fireball_l1
-/stratocraft build battery construction_obsidian_wall_l1
-/stratocraft build battery support_heal_l1
-/stratocraft build battery attack_mountain_destroyer_l5
-/stratocraft build battery construction_netherite_bridge_l5
-/stratocraft build battery support_heal_l5
+/stratocraft build battery 1 ateş_topu
+/stratocraft build battery 1 obsidyen_duvar
+/stratocraft build battery 1 can_yenileme
+/stratocraft build battery 5 dağ_yok_edici
+/stratocraft build battery 5 netherite_köprü
+/stratocraft build battery 5 efsanevi_can_yenileme
 ```
 
-**Tab Completion**: Tüm 75 batarya için otomatik tamamlama mevcuttur.
+**Eski Format (Kaldırıldı)**: `/stratocraft build battery <isim>` ❌
+- Artık çalışmıyor! Sadece yeni format kullanılmalı.
+
+**Tab Completion**: 
+- `/stratocraft build battery [TAB]` → Seviye önerir (1-5)
+- `/stratocraft build battery 1 [TAB]` → Seviye 1 batarya isimlerini gösterir
+- `/stratocraft build battery 5 [TAB]` → Seviye 5 batarya isimlerini gösterir
 
 **Not**: Komut, baktığın yere batarya yapısını otomatik olarak oluşturur ve gerekli aktivasyon item'ını verir.
 
@@ -802,6 +831,84 @@ if (!overflow.isEmpty()) {
 ```
 
 **Alternatif**: Shift+Sağ Tık ile mod seçim menüsü açılır
+
+---
+
+## 💣 MAYIN KOMUTLARI
+
+### `/stratocraft mine list`
+
+**Açıklama**: Tüm mayınları listeler
+
+**Kullanım**:
+```
+/stratocraft mine list
+```
+
+**Çıktı**: 25 benzersiz mayın listesi
+
+---
+
+### `/stratocraft mine give <seviye> <isim>`
+
+**Açıklama**: Mayın basınç plakası verir
+
+**Kullanım**:
+```
+/stratocraft mine give 1 explosive         → Seviye 1 Patlama Mayını
+/stratocraft mine give 3 freeze            → Seviye 3 Dondurma Mayını
+/stratocraft mine give 5 nuclear_explosive  → Seviye 5 Nükleer Patlama Mayını
+```
+
+**Seviye 1 Mayınlar**:
+- `explosive` - Patlama Mayını
+- `poison` - Zehir Mayını
+- `slowness` - Yavaşlık Mayını
+- `lightning` - Yıldırım Mayını
+- `fire` - Yakma Mayını
+
+**Seviye 2 Mayınlar**:
+- `cage` - Kafes Hapsetme Mayını
+- `launch` - Fırlatma Mayını
+- `mob_spawn` - Canavar Spawn Mayını
+- `blindness` - Körlük Mayını
+- `weakness` - Zayıflık Mayını
+
+**Seviye 3 Mayınlar**:
+- `freeze` - Dondurma Mayını
+- `confusion` - Karışıklık Mayını
+- `fatigue` - Yorgunluk Mayını
+- `poison_cloud` - Zehir Bulutu Mayını
+- `lightning_storm` - Yıldırım Fırtınası Mayını
+
+**Seviye 4 Mayınlar**:
+- `mega_explosive` - Büyük Patlama Mayını
+- `large_cage` - Büyük Kafes Mayını
+- `super_launch` - Güçlü Fırlatma Mayını
+- `elite_mob_spawn` - Güçlü Canavar Spawn Mayını
+- `multi_effect` - Çoklu Efekt Mayını
+
+**Seviye 5 Mayınlar**:
+- `nuclear_explosive` - Nükleer Patlama Mayını
+- `death_cloud` - Ölüm Bulutu Mayını
+- `thunderstorm` - Gök Gürültüsü Mayını
+- `boss_spawn` - Boss Spawn Mayını
+- `chaos` - Kaos Mayını
+
+**Tab Completion**: `/stratocraft mine give 1 [TAB]` → Tüm seviye 1 mayın isimlerini gösterir
+
+---
+
+### `/stratocraft mine give concealer`
+
+**Açıklama**: Mayın Gizleme Aleti verir
+
+**Kullanım**:
+```
+/stratocraft mine give concealer
+```
+
+**Açıklama**: Shift + Sağ Tık ile mayınları görünmez yapabilirsin
 
 ---
 

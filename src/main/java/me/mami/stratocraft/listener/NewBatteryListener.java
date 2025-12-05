@@ -93,7 +93,58 @@ public class NewBatteryListener implements Listener {
         ItemStack handItem = player.getInventory().getItemInMainHand();
         if (handItem == null) return;
         
-        // Yakıt kontrolü
+        // MAYIN İTEMI KONTROLÜ - Eğer mayın itemı ise, batarya kontrolü yapma!
+        if (ItemManager.isCustomItem(handItem, "MINE_EXPLOSIVE") ||
+            ItemManager.isCustomItem(handItem, "MINE_POISON") ||
+            ItemManager.isCustomItem(handItem, "MINE_SLOWNESS") ||
+            ItemManager.isCustomItem(handItem, "MINE_LIGHTNING") ||
+            ItemManager.isCustomItem(handItem, "MINE_FIRE") ||
+            ItemManager.isCustomItem(handItem, "MINE_CAGE") ||
+            ItemManager.isCustomItem(handItem, "MINE_LAUNCH") ||
+            ItemManager.isCustomItem(handItem, "MINE_MOB_SPAWN") ||
+            ItemManager.isCustomItem(handItem, "MINE_BLINDNESS") ||
+            ItemManager.isCustomItem(handItem, "MINE_WEAKNESS") ||
+            ItemManager.isCustomItem(handItem, "MINE_FREEZE") ||
+            ItemManager.isCustomItem(handItem, "MINE_CONFUSION") ||
+            ItemManager.isCustomItem(handItem, "MINE_FATIGUE") ||
+            ItemManager.isCustomItem(handItem, "MINE_POISON_CLOUD") ||
+            ItemManager.isCustomItem(handItem, "MINE_LIGHTNING_STORM") ||
+            ItemManager.isCustomItem(handItem, "MINE_MEGA_EXPLOSIVE") ||
+            ItemManager.isCustomItem(handItem, "MINE_LARGE_CAGE") ||
+            ItemManager.isCustomItem(handItem, "MINE_SUPER_LAUNCH") ||
+            ItemManager.isCustomItem(handItem, "MINE_ELITE_MOB_SPAWN") ||
+            ItemManager.isCustomItem(handItem, "MINE_MULTI_EFFECT") ||
+            ItemManager.isCustomItem(handItem, "MINE_NUCLEAR_EXPLOSIVE") ||
+            ItemManager.isCustomItem(handItem, "MINE_DEATH_CLOUD") ||
+            ItemManager.isCustomItem(handItem, "MINE_THUNDERSTORM") ||
+            ItemManager.isCustomItem(handItem, "MINE_BOSS_SPAWN") ||
+            ItemManager.isCustomItem(handItem, "MINE_CHAOS") ||
+            ItemManager.isCustomItem(handItem, "MINE_CONCEALER")) {
+            return; // Mayın itemı, batarya kontrolü yapma!
+        }
+        
+        // BASINÇ PLAKASI KONTROLÜ - Eğer basınç plakasına tıklıyorsa, batarya kontrolü yapma!
+        if (centerBlock.getType() == Material.STONE_PRESSURE_PLATE ||
+            centerBlock.getType() == Material.OAK_PRESSURE_PLATE ||
+            centerBlock.getType() == Material.BIRCH_PRESSURE_PLATE ||
+            centerBlock.getType() == Material.DARK_OAK_PRESSURE_PLATE ||
+            centerBlock.getType() == Material.WARPED_PRESSURE_PLATE ||
+            centerBlock.getType() == Material.CRIMSON_PRESSURE_PLATE ||
+            centerBlock.getType() == Material.POLISHED_BLACKSTONE_PRESSURE_PLATE ||
+            centerBlock.getType() == Material.LIGHT_WEIGHTED_PRESSURE_PLATE ||
+            centerBlock.getType() == Material.HEAVY_WEIGHTED_PRESSURE_PLATE) {
+            return; // Basınç plakası, batarya kontrolü yapma!
+        }
+        
+        // ÖNCELİKLE BATARYA TARİFİNİ KONTROL ET!
+        RecipeCheckResult result = batteryManager.checkAllRecipes(centerBlock);
+        
+        // Eğer batarya tarifi değilse, SESSIZCE ÇIK (diğer sistemlere karışma!)
+        if (!result.matches()) {
+            return;
+        }
+        
+        // Tarif eşleşti, ŞİMDİ yakıt kontrolü yap
         Material fuel = handItem.getType();
         boolean isRedDiamond = ItemManager.isCustomItem(handItem, "RED_DIAMOND");
         boolean isDarkMatter = ItemManager.isCustomItem(handItem, "DARK_MATTER");
@@ -106,22 +157,7 @@ public class NewBatteryListener implements Listener {
             return;
         }
         
-        // Zaten yüklü batarya var mı?
-        if (batteryManager.hasLoadedBattery(player, slot)) {
-            player.sendMessage("§cBu slotta zaten yüklü bir batarya var!");
-            event.setCancelled(true);
-            return;
-        }
-        
-        // Tüm tarifleri kontrol et
-        RecipeCheckResult result = batteryManager.checkAllRecipes(centerBlock);
-        
-        if (!result.matches()) {
-            // Tarif eşleşmedi, sessizce çık (oyuncuya mesaj gösterme)
-            return;
-        }
-        
-        // Tarif eşleşti! Bataryayı yükle
+        // Tarif zaten eşleşti (yukarıda kontrol ettik), bataryayı yükle
         String batteryName = result.getBatteryName();
         
         // Seviye bilgisini RecipeChecker'dan al (her tarif kendi seviyesini belirler)
@@ -295,7 +331,13 @@ public class NewBatteryListener implements Listener {
                     double z = loc.getZ() + Math.sin(angle) * radius;
                     
                     org.bukkit.Location particleLoc = new org.bukkit.Location(loc.getWorld(), x, y, z);
-                    player.getWorld().spawnParticle(particleType, particleLoc, 1, 0, 0, 0, 0);
+                    
+                    // Sadece diğer oyunculara göster (kendine gösterme)
+                    for (org.bukkit.entity.Player other : org.bukkit.Bukkit.getOnlinePlayers()) {
+                        if (!other.equals(player)) {
+                            other.spawnParticle(particleType, particleLoc, 1, 0, 0, 0, 0);
+                        }
+                    }
                 }
             }
         }.runTaskTimer(batteryManager.getPlugin(), 0L, 2L); // Her 2 tick'te bir (0.1 saniye)
@@ -316,7 +358,8 @@ public class NewBatteryListener implements Listener {
         } else if (batteryName.contains("Meteor") || batteryName.contains("Kıyamet")) {
             return org.bukkit.Particle.EXPLOSION_LARGE;
         } else if (batteryName.contains("Köprü") || batteryName.contains("Duvar") || batteryName.contains("Kale")) {
-            return org.bukkit.Particle.BLOCK_CRACK;
+            // BLOCK_CRACK yerine VILLAGER_HAPPY kullan (BlockData gerektirmez)
+            return org.bukkit.Particle.VILLAGER_HAPPY;
         } else if (batteryName.contains("Can") || batteryName.contains("Yenilenme")) {
             return org.bukkit.Particle.HEART;
         } else if (batteryName.contains("Hız")) {

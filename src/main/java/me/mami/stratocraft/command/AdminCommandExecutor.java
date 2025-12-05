@@ -190,13 +190,48 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         int amount;
         int level = -1;
 
+        // YENİ FORMAT: weapon_l1_1, armor_l1_1 gibi direkt item isimleri
+        if (category.startsWith("weapon_l") || category.startsWith("armor_l")) {
+            // Direkt item ismi formatı: /stratocraft give weapon_l1_1
+            itemName = category;
+            category = category.startsWith("weapon_") ? "weapon" : "armor";
+            amount = args.length > 2 ? parseInt(args[2], 1) : 1;
+            
+            // Item'ı bul
+            ItemStack item = getItemByName(itemName, "all");
+            if (item == null) {
+                p.sendMessage("§cGeçersiz item: §e" + itemName);
+                p.sendMessage("§7Kullanım: /stratocraft give <kategori> [seviye] <item> [miktar]");
+                p.sendMessage("§7veya: /stratocraft give weapon_l<seviye>_<variant>");
+                return true;
+            }
+            
+            item.setAmount(amount);
+            String displayName = getItemDisplayNameFromStack(item);
+            if (displayName == null || displayName.isEmpty()) {
+                displayName = itemName;
+            }
+            
+            java.util.HashMap<Integer, ItemStack> overflow = p.getInventory().addItem(item);
+            if (!overflow.isEmpty()) {
+                for (ItemStack drop : overflow.values()) {
+                    p.getWorld().dropItemNaturally(p.getLocation(), drop);
+                }
+                p.sendMessage("§a" + amount + "x " + displayName + " verildi (yere düştü)");
+            } else {
+                p.sendMessage("§a" + amount + "x " + displayName + " verildi");
+            }
+            return true;
+        }
+
         // Seviyeli kategoriler için özel işlem (weapon, armor)
         if (category.equals("weapon") || category.equals("armor")) {
             if (args.length < 3) {
-                p.sendMessage("§cKullanım: /stratocraft give " + category + " <seviye> <tip> [miktar]");
+                p.sendMessage("§cKullanım: /stratocraft give " + category + " <seviye> <isim> [miktar]");
                 if (category.equals("weapon")) {
                     p.sendMessage("§7Seviye: 1-5");
-                    p.sendMessage("§7Tipler: sword/kılıç, axe/balta, spear/mızrak, bow/yay, hammer/çekiç");
+                    p.sendMessage("§7Örnek: /stratocraft give weapon 1 hız_hançeri");
+                    p.sendMessage("§7Örnek: /stratocraft give weapon 5 zamanı_büken");
                 } else {
                     p.sendMessage("§7Seviye: 1-5");
                     p.sendMessage("§7Tipler: helmet, chestplate, leggings, boots");
@@ -216,11 +251,48 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return true;
             }
             
-            // Item tipi
+            // Item ismi (artık isimle çağrılıyor)
             if (args.length < 4) {
-                p.sendMessage("§cKullanım: /stratocraft give " + category + " <seviye> <tip> [miktar]");
+                p.sendMessage("§cKullanım: /stratocraft give " + category + " <seviye> <isim> [miktar]");
+                if (category.equals("weapon")) {
+                    p.sendMessage("§7Örnek: /stratocraft give weapon 1 hız_hançeri");
+                    p.sendMessage("§7Örnek: /stratocraft give weapon 2 alev_kılıcı");
+                }
                 return true;
             }
+            
+            // İsimden item bul (weapon için)
+            if (category.equals("weapon")) {
+                itemName = args[3].toLowerCase();
+                // İsimden silah bul
+                ItemStack weaponItem = getWeaponByName(level, itemName);
+                if (weaponItem != null) {
+                    amount = args.length > 4 ? parseInt(args[4], 1) : 1;
+                    weaponItem.setAmount(amount);
+                    String displayName = getItemDisplayNameFromStack(weaponItem);
+                    if (displayName == null || displayName.isEmpty()) {
+                        displayName = itemName;
+                    }
+                    
+                    java.util.HashMap<Integer, ItemStack> overflow = p.getInventory().addItem(weaponItem);
+                    if (!overflow.isEmpty()) {
+                        for (ItemStack drop : overflow.values()) {
+                            p.getWorld().dropItemNaturally(p.getLocation(), drop);
+                        }
+                        p.sendMessage("§a" + amount + "x " + displayName + " verildi (yere düştü)");
+                    } else {
+                        p.sendMessage("§a" + amount + "x " + displayName + " verildi");
+                    }
+                    return true;
+                } else {
+                    p.sendMessage("§cGeçersiz silah ismi: §e" + itemName);
+                    p.sendMessage("§7Seviye " + level + " için geçerli silahlar:");
+                    showWeaponNamesByLevel(p, level);
+                    return true;
+                }
+            }
+            
+            // Armor için eski sistem (tip ile)
             itemName = args[3].toLowerCase();
             amount = args.length > 4 ? parseInt(args[4], 1) : 1;
         } else {
@@ -1190,6 +1262,330 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     /**
      * Seviyeli item al (yeni format: weapon/armor seviye tip)
      */
+    /**
+     * İsimden silah bul (seviye + isim)
+     */
+    private ItemStack getWeaponByName(int level, String name) {
+        String normalizedName = name.toLowerCase()
+            .replace(" ", "_")
+            .replace("ı", "i")
+            .replace("ğ", "g")
+            .replace("ü", "u")
+            .replace("ş", "s")
+            .replace("ö", "o")
+            .replace("ç", "c");
+        
+        switch (level) {
+            case 1:
+                switch (normalizedName) {
+                    case "hiz_hanceri":
+                    case "hız_hançeri":
+                    case "hiz_hançeri":
+                    case "hız_hanceri":
+                    case "l1_1":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier1Weapon("l1_1") : 
+                            (ItemManager.WEAPON_L1_1 != null ? ItemManager.WEAPON_L1_1.clone() : null);
+                    case "ciftci_tirpani":
+                    case "çiftçi_tırpanı":
+                    case "ciftci_tırpanı":
+                    case "çiftçi_tirpani":
+                    case "l1_2":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier1Weapon("l1_2") : 
+                            (ItemManager.WEAPON_L1_2 != null ? ItemManager.WEAPON_L1_2.clone() : null);
+                    case "yercekimi_gurzu":
+                    case "yerçekimi_gürzü":
+                    case "yercekimi_gürzü":
+                    case "yerçekimi_gurzu":
+                    case "l1_3":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier1Weapon("l1_3") : 
+                            (ItemManager.WEAPON_L1_3 != null ? ItemManager.WEAPON_L1_3.clone() : null);
+                    case "patlayici_yay":
+                    case "patlayıcı_yay":
+                    case "patlayici_yay":
+                    case "patlayıcı_yay":
+                    case "l1_4":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier1Weapon("l1_4") : 
+                            (ItemManager.WEAPON_L1_4 != null ? ItemManager.WEAPON_L1_4.clone() : null);
+                    case "vampir_disi":
+                    case "vampir_dişi":
+                    case "vampir_disi":
+                    case "vampir_dişi":
+                    case "l1_5":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier1Weapon("l1_5") : 
+                            (ItemManager.WEAPON_L1_5 != null ? ItemManager.WEAPON_L1_5.clone() : null);
+                }
+                break;
+            case 2:
+                switch (normalizedName) {
+                    case "alev_kilici":
+                    case "alev_kılıcı":
+                    case "alev_kilici":
+                    case "alev_kılıcı":
+                    case "l2_1":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier2Weapon("l2_1") : 
+                            (ItemManager.WEAPON_L2_1 != null ? ItemManager.WEAPON_L2_1.clone() : null);
+                    case "buz_asasi":
+                    case "buz_asası":
+                    case "buz_asasi":
+                    case "buz_asası":
+                    case "l2_2":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier2Weapon("l2_2") : 
+                            (ItemManager.WEAPON_L2_2 != null ? ItemManager.WEAPON_L2_2.clone() : null);
+                    case "zehirli_mizrak":
+                    case "zehirli_mızrak":
+                    case "zehirli_mizrak":
+                    case "zehirli_mızrak":
+                    case "l2_3":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier2Weapon("l2_3") : 
+                            (ItemManager.WEAPON_L2_3 != null ? ItemManager.WEAPON_L2_3.clone() : null);
+                    case "golem_kalkani":
+                    case "golem_kalkanı":
+                    case "golem_kalkani":
+                    case "golem_kalkanı":
+                    case "l2_4":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier2Weapon("l2_4") : 
+                            (ItemManager.WEAPON_L2_4 != null ? ItemManager.WEAPON_L2_4.clone() : null);
+                    case "sok_baltasi":
+                    case "şok_baltası":
+                    case "sok_baltası":
+                    case "şok_baltasi":
+                    case "l2_5":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier2Weapon("l2_5") : 
+                            (ItemManager.WEAPON_L2_5 != null ? ItemManager.WEAPON_L2_5.clone() : null);
+                }
+                break;
+            case 3:
+                switch (normalizedName) {
+                    case "golge_katanasi":
+                    case "gölge_katanası":
+                    case "golge_katanası":
+                    case "gölge_katanasi":
+                    case "l3_1":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier3Weapon("l3_1") : 
+                            (ItemManager.WEAPON_L3_1 != null ? ItemManager.WEAPON_L3_1.clone() : null);
+                    case "deprem_cekici":
+                    case "deprem_çekici":
+                    case "deprem_cekici":
+                    case "deprem_çekici":
+                    case "l3_2":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier3Weapon("l3_2") : 
+                            (ItemManager.WEAPON_L3_2 != null ? ItemManager.WEAPON_L3_2.clone() : null);
+                    case "taramali_yay":
+                    case "taramalı_yay":
+                    case "taramali_yay":
+                    case "taramalı_yay":
+                    case "l3_3":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier3Weapon("l3_3") : 
+                            (ItemManager.WEAPON_L3_3 != null ? ItemManager.WEAPON_L3_3.clone() : null);
+                    case "buyucu_kuresi":
+                    case "büyücü_küresi":
+                    case "buyucu_küresi":
+                    case "büyücü_kuresi":
+                    case "l3_4":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier3Weapon("l3_4") : 
+                            (ItemManager.WEAPON_L3_4 != null ? ItemManager.WEAPON_L3_4.clone() : null);
+                    case "hayalet_hanceri":
+                    case "hayalet_hançeri":
+                    case "hayalet_hanceri":
+                    case "hayalet_hançeri":
+                    case "l3_5":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier3Weapon("l3_5") : 
+                            (ItemManager.WEAPON_L3_5 != null ? ItemManager.WEAPON_L3_5.clone() : null);
+                }
+                break;
+            case 4:
+                switch (normalizedName) {
+                    case "element_kilici":
+                    case "element_kılıcı":
+                    case "element_kilici":
+                    case "element_kılıcı":
+                    case "l4_1":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier4Weapon("l4_1") : 
+                            (ItemManager.WEAPON_L4_1 != null ? ItemManager.WEAPON_L4_1.clone() : null);
+                    case "yasam_ve_olum":
+                    case "yaşam_ve_ölüm":
+                    case "yasam_ve_ölüm":
+                    case "yaşam_ve_olum":
+                    case "l4_2":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier4Weapon("l4_2") : 
+                            (ItemManager.WEAPON_L4_2 != null ? ItemManager.WEAPON_L4_2.clone() : null);
+                    case "mjolnir_v2":
+                    case "mjölnir_v2":
+                    case "mjolnir_v2":
+                    case "mjölnir_v2":
+                    case "l4_3":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier4Weapon("l4_3") : 
+                            (ItemManager.WEAPON_L4_3 != null ? ItemManager.WEAPON_L4_3.clone() : null);
+                    case "avci_yayi":
+                    case "avcı_yayı":
+                    case "avci_yayı":
+                    case "avcı_yayi":
+                    case "l4_4":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier4Weapon("l4_4") : 
+                            (ItemManager.WEAPON_L4_4 != null ? ItemManager.WEAPON_L4_4.clone() : null);
+                    case "manyetik_eldiven":
+                    case "manyetik_eldiven":
+                    case "l4_5":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier4Weapon("l4_5") : 
+                            (ItemManager.WEAPON_L4_5 != null ? ItemManager.WEAPON_L4_5.clone() : null);
+                }
+                break;
+            case 5:
+                switch (normalizedName) {
+                    case "hiperiyon_kilici":
+                    case "hiperiyon_kılıcı":
+                    case "hiperiyon_kilici":
+                    case "hiperiyon_kılıcı":
+                    case "l5_1":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier5Weapon("l5_1") : 
+                            (ItemManager.WEAPON_L5_1 != null ? ItemManager.WEAPON_L5_1.clone() : null);
+                    case "meteor_cagiran":
+                    case "meteor_çağıran":
+                    case "meteor_cagiran":
+                    case "meteor_çağıran":
+                    case "l5_2":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier5Weapon("l5_2") : 
+                            (ItemManager.WEAPON_L5_2 != null ? ItemManager.WEAPON_L5_2.clone() : null);
+                    case "titan_katili":
+                    case "titan_katili":
+                    case "zaman_katmani":
+                    case "zaman_katmanı":
+                    case "l5_3":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier5Weapon("l5_3") : 
+                            (ItemManager.WEAPON_L5_3 != null ? ItemManager.WEAPON_L5_3.clone() : null);
+                    case "ruh_bicen":
+                    case "ruh_biçen":
+                    case "olumsuzluk_yayi":
+                    case "ölümsüzlük_yayı":
+                    case "l5_4":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier5Weapon("l5_4") : 
+                            (ItemManager.WEAPON_L5_4 != null ? ItemManager.WEAPON_L5_4.clone() : null);
+                    case "zamani_buken":
+                    case "zamanı_büken":
+                    case "zamani_büken":
+                    case "zamanı_buken":
+                    case "l5_5":
+                        return plugin.getSpecialItemManager() != null ? 
+                            plugin.getSpecialItemManager().getTier5Weapon("l5_5") : 
+                            (ItemManager.WEAPON_L5_5 != null ? ItemManager.WEAPON_L5_5.clone() : null);
+                }
+                break;
+        }
+        return null;
+    }
+    
+    /**
+     * Seviyeye göre silah isimlerini döndür (tab completion için)
+     */
+    private List<String> getWeaponNamesByLevel(int level) {
+        List<String> names = new ArrayList<>();
+        switch (level) {
+            case 1:
+                names.add("hız_hançeri");
+                names.add("çiftçi_tırpanı");
+                names.add("yerçekimi_gürzü");
+                names.add("patlayıcı_yay");
+                names.add("vampir_dişi");
+                break;
+            case 2:
+                names.add("alev_kılıcı");
+                names.add("buz_asası");
+                names.add("zehirli_mızrak");
+                names.add("golem_kalkanı");
+                names.add("şok_baltası");
+                break;
+            case 3:
+                names.add("gölge_katanası");
+                names.add("deprem_çekici");
+                names.add("taramalı_yay");
+                names.add("büyücü_küresi");
+                names.add("hayalet_hançeri");
+                break;
+            case 4:
+                names.add("element_kılıcı");
+                names.add("yaşam_ve_ölüm");
+                names.add("mjölnir_v2");
+                names.add("avcı_yayı");
+                names.add("manyetik_eldiven");
+                break;
+            case 5:
+                names.add("hiperiyon_kılıcı");
+                names.add("meteor_çağıran");
+                names.add("titan_katili");
+                names.add("ruh_biçen");
+                names.add("zamanı_büken");
+                break;
+        }
+        return names;
+    }
+    
+    /**
+     * Seviyeye göre silah isimlerini göster
+     */
+    private void showWeaponNamesByLevel(Player p, int level) {
+        switch (level) {
+            case 1:
+                p.sendMessage("§7- hız_hançeri");
+                p.sendMessage("§7- çiftçi_tırpanı");
+                p.sendMessage("§7- yerçekimi_gürzü");
+                p.sendMessage("§7- patlayıcı_yay");
+                p.sendMessage("§7- vampir_dişi");
+                break;
+            case 2:
+                p.sendMessage("§7- alev_kılıcı");
+                p.sendMessage("§7- buz_asası");
+                p.sendMessage("§7- zehirli_mızrak");
+                p.sendMessage("§7- golem_kalkanı");
+                p.sendMessage("§7- şok_baltası");
+                break;
+            case 3:
+                p.sendMessage("§7- gölge_katanası");
+                p.sendMessage("§7- deprem_çekici");
+                p.sendMessage("§7- taramalı_yay");
+                p.sendMessage("§7- büyücü_küresi");
+                p.sendMessage("§7- hayalet_hançeri");
+                break;
+            case 4:
+                p.sendMessage("§7- element_kılıcı");
+                p.sendMessage("§7- yaşam_ve_ölüm");
+                p.sendMessage("§7- mjölnir_v2");
+                p.sendMessage("§7- avcı_yayı");
+                p.sendMessage("§7- manyetik_eldiven");
+                break;
+            case 5:
+                p.sendMessage("§7- hiperiyon_kılıcı");
+                p.sendMessage("§7- meteor_çağıran");
+                p.sendMessage("§7- titan_katili");
+                p.sendMessage("§7- ruh_biçen");
+                p.sendMessage("§7- zamanı_büken");
+                break;
+        }
+    }
+    
     private ItemStack getLeveledItemByName(String category, int level, String type) {
         if (category.equals("weapon")) {
             // Silah tipleri: sword(1), axe(2), spear(3), bow(4), hammer(5)
@@ -3409,11 +3805,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     int level = Integer.parseInt(levelStr);
                     if (level >= 1 && level <= 5) {
                         if (category.equals("weapon")) {
-                            // Item isimleri (weapon_l1_1, weapon_l1_2, vb.)
-                            List<String> weaponNames = new ArrayList<>();
-                            for (int variant = 1; variant <= 5; variant++) {
-                                weaponNames.add("weapon_l" + level + "_" + variant);
-                            }
+                            // Silah isimleri (Türkçe isimlerle)
+                            List<String> weaponNames = getWeaponNamesByLevel(level);
                             if (input.isEmpty()) {
                                 return weaponNames;
                             }

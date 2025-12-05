@@ -1209,16 +1209,77 @@ Tüm özel silahlar crafting masasında yapılabilir ve **belirli Boss Item'lar�
 - **Boss İtem**: Void Dragon Heart (Void Dragon'dan düşer)
 - **Craft**: Standart malzemeler + Void Dragon Heart
 
-**Admin Komutu**: `/stratocraft give weapon <seviye> <varyant>` veya `/stratocraft give weapon weapon_l<seviye>_<varyant>`
+**Admin Komutları**:
 
-**Örnekler**:
+**Format 1 (Önerilen - İsimlerle)**: `/stratocraft give weapon <seviye> <isim>`
 ```
-/stratocraft give weapon 1 1  → Hız Hançeri
-/stratocraft give weapon 2 3  → Zehirli Mızrak
-/stratocraft give weapon 3 4  → Büyücü Küresi
-/stratocraft give weapon 4 2  → Yaşam ve Ölüm
-/stratocraft give weapon 5 5  → Zamanı Büken
+/stratocraft give weapon 1 hız_hançeri        → Hız Hançeri
+/stratocraft give weapon 1 çiftçi_tırpanı      → Çiftçi Tırpanı
+/stratocraft give weapon 2 alev_kılıcı         → Alev Kılıcı
+/stratocraft give weapon 3 gölge_katanası      → Gölge Katanası
+/stratocraft give weapon 4 element_kılıcı     → Element Kılıcı
+/stratocraft give weapon 5 zamanı_büken        → Zamanı Büken
 ```
+
+**Format 2 (Direkt ID)**: `/stratocraft give weapon_l<seviye>_<varyant>`
+```
+/stratocraft give weapon_l1_1  → Hız Hançeri
+/stratocraft give weapon_l1_2  → Çiftçi Tırpanı
+/stratocraft give weapon_l5_5  → Zamanı Büken
+```
+
+**Format 3 (Eski Format - Tip ile)**: `/stratocraft give weapon <seviye> <tip>`
+```
+/stratocraft give weapon 1 sword   → Hız Hançeri
+/stratocraft give weapon 1 axe     → Çiftçi Tırpanı
+/stratocraft give weapon 1 spear   → Yerçekimi Gürzü
+/stratocraft give weapon 1 bow     → Patlayıcı Yay
+/stratocraft give weapon 1 hammer  → Vampir Dişi
+```
+
+**Silah Tipleri** (Eski Format için):
+- `sword` / `kılıç` / `kilic` → Varyant 1
+- `axe` / `balta` → Varyant 2
+- `spear` / `mızrak` / `mizrak` / `trident` → Varyant 3
+- `bow` / `yay` → Varyant 4
+- `hammer` / `çekiç` / `cekiç` / `pickaxe` → Varyant 5
+
+**Mevcut Silahlar (25 adet - İsimlerle Çağırma)**:
+
+**Seviye 1**:
+- `hız_hançeri` - Hız Hançeri (Elinde tutarken hız verir)
+- `çiftçi_tırpanı` - Çiftçi Tırpanı (Alan hasarı vurur)
+- `yerçekimi_gürzü` - Yerçekimi Gürzü (Sağ tıkla havaya fırla!)
+- `patlayıcı_yay` - Patlayıcı Yay (Okları patlar)
+- `vampir_dişi` - Vampir Dişi (Can çalar)
+
+**Seviye 2**:
+- `alev_kılıcı` - Alev Kılıcı (Alev dalgası atar)
+- `buz_asası` - Buz Asası (Düşmanı dondurur)
+- `zehirli_mızrak` - Zehirli Mızrak (Zehir bulutu oluşturur)
+- `golem_kalkanı` - Golem Kalkanı (Eğilince dostları iyileştirir)
+- `şok_baltası` - Şok Baltası (Kritik vuruşta çarpar)
+
+**Seviye 3**:
+- `gölge_katanası` - Gölge Katanası
+- `deprem_çekici` - Deprem Çekici
+- `taramalı_yay` - Taramalı Yay
+- `büyücü_küresi` - Büyücü Küresi
+- `hayalet_hançeri` - Hayalet Hançeri
+
+**Seviye 4**:
+- `element_kılıcı` - Element Kılıcı
+- `yaşam_ve_ölüm` - Yaşam ve Ölüm
+- `mjölnir_v2` - Mjölnir V2
+- `avcı_yayı` - Avcı Yayı
+- `manyetik_eldiven` - Manyetik Eldiven
+
+**Seviye 5**:
+- `hiperiyon_kılıcı` - Hiperiyon Kılıcı (Mod 1: Işınlan ve patlat | Mod 2: Kara delik kalkanı)
+- `meteor_çağıran` - Meteor Çağıran (Mod 1: Meteor yağdır | Mod 2: Yer yarıp lav çıkart)
+- `titan_katili` - Titan Katili
+- `ruh_biçen` - Ruh Biçen
+- `zamanı_büken` - Zamanı Büken
 
 ---
 
@@ -1262,6 +1323,147 @@ Her tarif kitabı şunları içerir:
 /stratocraft give recipebook recipe_core
 /stratocraft give recipebook recipe_lightning_core
 ```
+
+---
+
+## 💣 MAYIN SİSTEMİ (25 Benzersiz Mayın)
+
+### 📋 Genel Bilgiler
+
+Mayınlar **basınç plakaları** olarak verilir ve yere koyulduğunda otomatik olarak aktif mayın haline gelir. Her mayın benzersiz bir özelliğe sahiptir ve seviyeye göre farklı basınç plakası tipleri kullanır.
+
+### 🎯 Kullanım
+
+1. **Mayın Al**: `/stratocraft mine give <seviye> <isim>`
+2. **Yere Koy**: Basınç plakasını yere koy (sağ tık)
+3. **Aktif Olur**: Otomatik olarak mayın haline gelir
+4. **Gizle** (Opsiyonel): Shift + Gizleme Aleti ile görünmez yap
+
+### 📦 Basınç Plakası Tipleri (Seviyeye Göre)
+
+- **Seviye 1**: `STONE_PRESSURE_PLATE` (Taş Basınç Plakası)
+- **Seviye 2**: `OAK_PRESSURE_PLATE` (Meşe Basınç Plakası)
+- **Seviye 3**: `BIRCH_PRESSURE_PLATE` (Huş Basınç Plakası) + ✨ Parlama Efekti
+- **Seviye 4**: `DARK_OAK_PRESSURE_PLATE` (Koyu Meşe Basınç Plakası) + ✨ Parlama Efekti
+- **Seviye 5**: `WARPED_PRESSURE_PLATE` (Yamuk Basınç Plakası) + ✨ Parlama Efekti
+
+### 💣 Mayın Listesi (25 Benzersiz Mayın)
+
+#### Seviye 1 (5 Mayın)
+- **EXPLOSIVE** - Patlama Mayını: Basınca küçük patlama yapar
+- **POISON** - Zehir Mayını: Basınca zehir efekti verir
+- **SLOWNESS** - Yavaşlık Mayını: Basınca yavaşlatır
+- **LIGHTNING** - Yıldırım Mayını: Basınca yıldırım çarpar
+- **FIRE** - Yakma Mayını: Basınca yakma efekti verir
+
+#### Seviye 2 (5 Mayın)
+- **CAGE** - Kafes Hapsetme Mayını: Basınca obsidyen kafes oluşturur
+- **LAUNCH** - Fırlatma Mayını: Basınca yukarı fırlatır
+- **MOB_SPAWN** - Canavar Spawn Mayını: Basınca canavarlar spawnlar
+- **BLINDNESS** - Körlük Mayını: Basınca körlük efekti verir
+- **WEAKNESS** - Zayıflık Mayını: Basınca zayıflık efekti verir
+
+#### Seviye 3 (5 Mayın)
+- **FREEZE** - Dondurma Mayını: Basınca dondurma efekti verir
+- **CONFUSION** - Karışıklık Mayını: Basınca karışıklık efekti verir
+- **FATIGUE** - Yorgunluk Mayını: Basınca yorgunluk efekti verir
+- **POISON_CLOUD** - Zehir Bulutu Mayını: Basınca alan zehiri oluşturur
+- **LIGHTNING_STORM** - Yıldırım Fırtınası Mayını: Basınca çoklu yıldırım çarpar
+
+#### Seviye 4 (5 Mayın)
+- **MEGA_EXPLOSIVE** - Büyük Patlama Mayını: Basınca büyük patlama yapar
+- **LARGE_CAGE** - Büyük Kafes Mayını: Basınca büyük kafes oluşturur
+- **SUPER_LAUNCH** - Güçlü Fırlatma Mayını: Basınca çok yukarı fırlatır
+- **ELITE_MOB_SPAWN** - Güçlü Canavar Spawn Mayını: Basınca güçlü canavarlar spawnlar
+- **MULTI_EFFECT** - Çoklu Efekt Mayını: Basınca birden fazla efekt verir
+
+#### Seviye 5 (5 Mayın)
+- **NUCLEAR_EXPLOSIVE** - Nükleer Patlama Mayını: Basınca nükleer patlama yapar
+- **DEATH_CLOUD** - Ölüm Bulutu Mayını: Basınca ölüm bulutu oluşturur
+- **THUNDERSTORM** - Gök Gürültüsü Mayını: Basınca gök gürültüsü fırtınası yapar
+- **BOSS_SPAWN** - Boss Spawn Mayını: Basınca boss spawnlar
+- **CHAOS** - Kaos Mayını: Basınca kaos efekti verir
+
+### 🔧 Admin Komutları
+
+**Mayın Verme**:
+```
+/stratocraft mine give <seviye> <isim>
+```
+
+**Örnekler**:
+```
+/stratocraft mine give 1 explosive      → Seviye 1 Patlama Mayını
+/stratocraft mine give 3 freeze         → Seviye 3 Dondurma Mayını
+/stratocraft mine give 5 nuclear_explosive → Seviye 5 Nükleer Patlama Mayını
+/stratocraft mine give concealer        → Gizleme Aleti
+```
+
+**Mayın Listesi**:
+```
+/stratocraft mine list
+```
+
+### 👻 Gizleme Sistemi
+
+**Gizleme Aleti**: `MINE_CONCEALER`
+- **Kullanım**: Shift + Sağ Tık mayına
+- **Efekt**: Mayın görünmez olur (sadece sahibi görebilir)
+- **Tekrar Kullanım**: Aynı işlemle görünür yapılabilir
+
+### ⚠️ Önemli Notlar
+
+- **Dost/Düşman Ayrımı Yok**: Mayınlar herkese zarar verir!
+- **Otomatik Aktivasyon**: Yere koyulduğunda otomatik aktif olur
+- **Basınç Plakası Görünür**: Mayınlar gizli değil, açık basınç plakalarıdır
+- **Gizleme Opsiyonel**: Gizleme aleti ile görünmez yapılabilir
+
+---
+
+## 🔧 SİSTEM DÜZELTMELERİ (Son Güncellemeler)
+
+### ✅ Batarya Yakıt Kontrolü Düzeltildi
+
+**Sorun**: Batarya sisteminin yakıt kontrolü mayın ve diğer sistemlere karışıyordu.
+
+**Çözüm**: 
+- Mayın itemları kontrol ediliyor
+- Basınç plakaları kontrol ediliyor
+- Sadece batarya tarifine uyan bloklar yakıt kontrolü yapıyor
+
+### ✅ Silah Komutları Düzeltildi
+
+**Format 1 (Önerilen - İsimlerle)**: `/stratocraft give weapon <seviye> <isim>`
+- Örnek: `/stratocraft give weapon 1 hız_hançeri` → Hız Hançeri
+- Örnek: `/stratocraft give weapon 5 zamanı_büken` → Zamanı Büken
+- **Türkçe karakter desteği**: `hız_hançeri` veya `hiz_hanceri` → Her ikisi de çalışır
+
+**Format 2 (Direkt ID)**: `/stratocraft give weapon_l<seviye>_<varyant>`
+- Örnek: `/stratocraft give weapon_l1_1` → Hız Hançeri
+- Örnek: `/stratocraft give weapon_l5_5` → Zamanı Büken
+
+**Format 3 (Eski Format - Hala Çalışıyor)**: `/stratocraft give weapon <seviye> <tip>`
+- Örnek: `/stratocraft give weapon 1 sword` → Hız Hançeri
+- Örnek: `/stratocraft give weapon 5 hammer` → Zamanı Büken
+
+**Tab Completion**: `/stratocraft give weapon 1 [TAB]` → Tüm seviye 1 silah isimlerini gösterir
+
+### ✅ Mayın Sistemi Yeniden Tasarlandı
+
+**Eski Sistem**: 
+- Mayın itemı al (TNT, örümcek gözü, vs.)
+- Basınç plakasına sağ tıkla
+- Mayın oluştur
+
+**Yeni Sistem**:
+- Admin komutundan **basınç plakası** al
+- **Yere koy** → Otomatik mayın olur!
+
+**Avantajlar**:
+- Daha basit kullanım
+- Farklı seviyeler farklı plaka tipleri
+- Seviye 3+ mayınlarda parlayan efekt
+- Özel isimler ve açıklamalar
 
 ---
 

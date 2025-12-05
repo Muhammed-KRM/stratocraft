@@ -171,7 +171,8 @@ public class SpecialItemListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player)) return;
         if (event.getView().title() == null) return;
         
-        String title = ((net.kyori.adventure.text.TextComponent)event.getView().title()).content();
+        // Adventure API - güvenli title çevirme
+        String title = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(event.getView().title());
         if (!title.contains("Casusluk:")) return;
         
         event.setCancelled(true); // Eşya çıkarılmasını engelle
