@@ -830,7 +830,7 @@ public class NewBatteryManager {
                 applyPhaseShift(player, radius, (int)(5 * finalMultiplier), level);
                 break;
             case "Yeniden Doğuş":
-                applyRebirth(player, radius, (int)(60 * finalMultiplier), level);
+                applyRebirth(player, radius, level);
                 break;
             
             default:
@@ -1724,18 +1724,19 @@ public class NewBatteryManager {
         me.mami.stratocraft.manager.TerritoryManager territoryManager = plugin.getTerritoryManager();
         if (territoryManager == null) return false;
         
-        me.mami.stratocraft.model.Territory territory = territoryManager.getTerritoryAt(loc);
-        if (territory == null) return false;
+        me.mami.stratocraft.model.Clan territoryOwner = territoryManager.getTerritoryOwner(loc);
+        if (territoryOwner == null) return false;
         
         // Sadece savaşta olan klan alanlarında çalışır
-        me.mami.stratocraft.model.Clan clan = territoryManager.getClanManager().getClanById(territory.getClanId());
-        if (clan == null) return false;
+        me.mami.stratocraft.model.Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
+        if (playerClan == null) return false;
         
         // Savaş kontrolü (siege kontrolü)
         me.mami.stratocraft.manager.SiegeManager siegeManager = plugin.getSiegeManager();
         if (siegeManager == null) return false;
         
-        return siegeManager.isUnderSiege(territory);
+        return siegeManager.isUnderSiege(territoryOwner) && 
+               siegeManager.getAttacker(territoryOwner).equals(playerClan);
     }
     
     // ========== TARİF KONTROL FONKSİYONLARI ==========
@@ -4421,17 +4422,85 @@ public class NewBatteryManager {
         player.sendMessage("§dYenilenme uygulandı! (" + members.size() + " oyuncu)");
     }
     
+    private void applyAbsorptionShield(Player player, double radius, int duration, int level) {
+        double absorption = 10.0 * level;
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.setAbsorptionAmount((float) absorption);
+        }
+        
+        player.sendMessage("§eAbsorption Kalkanı aktif! (" + members.size() + " oyuncu)");
+    }
+    
+    private void applyFlight(Player player, double radius, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.setAllowFlight(true);
+            member.setFlying(true);
+            
+            // Duration sonra uçmayı kapat
+            org.bukkit.Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (member.isOnline() && !member.getGameMode().equals(org.bukkit.GameMode.CREATIVE)) {
+                    member.setAllowFlight(false);
+                    member.setFlying(false);
+                }
+            }, duration * 20L);
+        }
+        
+        player.sendMessage("§bUçma Yeteneği aktif! (" + duration + " saniye)");
+    }
+    
+    private void applyCriticalStrike(Player player, double radius, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.INCREASE_DAMAGE, duration * 20, level, false, false, true));
+        }
+        
+        player.sendMessage("§cKritik Vuruş Artışı aktif! (" + members.size() + " oyuncu)");
+    }
+    
+    private void applyReflectionShield(Player player, double radius, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.DAMAGE_RESISTANCE, duration * 20, 2, false, false, true));
+        }
+        
+        player.sendMessage("§6Yansıtma Kalkanı aktif! (" + members.size() + " oyuncu)");
+    }
+    
+    private void applyLifeSteal(Player player, double radius, int duration, int level) {
+        List<Player> members = getNearbyClanMembers(player, radius);
+        members.add(player);
+        
+        for (Player member : members) {
+            member.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.ABSORPTION, duration * 20, 1, false, false, true));
+        }
+        
+        player.sendMessage("§4Can Çalma aktif! (" + members.size() + " oyuncu)");
+    }
+    
     private java.util.List<Player> getNearbyClanMembers(Player player, double radius) {
         java.util.List<Player> members = new java.util.ArrayList<>();
-        me.mami.stratocraft.manager.TerritoryManager territoryManager = plugin.getTerritoryManager();
-        if (territoryManager == null) return members;
+        me.mami.stratocraft.manager.ClanManager clanManager = plugin.getClanManager();
+        if (clanManager == null) return members;
         
-        me.mami.stratocraft.model.Clan playerClan = territoryManager.getClanManager().getPlayerClan(player);
+        me.mami.stratocraft.model.Clan playerClan = clanManager.getClanByPlayer(player.getUniqueId());
         if (playerClan == null) return members;
         
         for (Player nearby : player.getWorld().getPlayers()) {
             if (nearby != player && nearby.getLocation().distance(player.getLocation()) <= radius) {
-                me.mami.stratocraft.model.Clan nearbyClan = territoryManager.getClanManager().getPlayerClan(nearby);
+                me.mami.stratocraft.model.Clan nearbyClan = clanManager.getClanByPlayer(nearby.getUniqueId());
                 if (nearbyClan != null && nearbyClan.getId().equals(playerClan.getId())) {
                     members.add(nearby);
                 }

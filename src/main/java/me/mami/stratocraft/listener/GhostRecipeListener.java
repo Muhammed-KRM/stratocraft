@@ -736,10 +736,9 @@ public class GhostRecipeListener implements Listener {
         if (event.getAction() == Action.LEFT_CLICK_BLOCK && event.getClickedBlock() != null) {
             Location clickedLoc = event.getClickedBlock().getLocation();
             if (ghostRecipeManager.hasFixedRecipeAt(clickedLoc)) {
-                if (ghostRecipeManager.removeFixedRecipeAt(clickedLoc)) {
-                    player.sendMessage("§aSabit tarif kaldırıldı.");
-                    event.setCancelled(true);
-                }
+                ghostRecipeManager.removeFixedRecipeAt(clickedLoc);
+                player.sendMessage("§aSabit tarif kaldırıldı.");
+                event.setCancelled(true);
             } else {
                 player.sendMessage("§7Bu konumda sabit tarif yok.");
             }

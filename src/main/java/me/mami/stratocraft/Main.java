@@ -296,7 +296,7 @@ public class Main extends JavaPlugin {
                                   contractManager, buffManager, clanManager, territoryManager);
             hudManager.start();
         }
-        
+
         // 3. Zamanlayıcıları Başlat
         new BuffTask(territoryManager, siegeWeaponManager).runTaskTimer(this, 20L, 20L);
         new DisasterTask(disasterManager, territoryManager).runTaskTimer(this, 20L, 20L);

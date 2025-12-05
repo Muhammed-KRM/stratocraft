@@ -148,14 +148,14 @@ public class NewBatteryListener implements Listener {
         }
         
         // Batarya ismini al (RecipeCheckResult'tan - her tarif kendi ismini belirler)
-        String batteryName = result.getBatteryName();
-        if (batteryName == null || batteryName.isEmpty()) {
+        String batteryNameFromResult = result.getBatteryName();
+        if (batteryNameFromResult == null || batteryNameFromResult.isEmpty()) {
             player.sendMessage("§cHata: Batarya ismi bulunamadı!");
             return;
         }
         
         NewBatteryData data = new NewBatteryData(
-            batteryName,
+            batteryNameFromResult,
             fuel,
             alchemyLevel,
             hasAmplifier,
@@ -317,7 +317,7 @@ public class NewBatteryListener implements Listener {
         } else if (batteryName.contains("Meteor") || batteryName.contains("Kıyamet")) {
             return org.bukkit.Particle.EXPLOSION_LARGE;
         } else if (batteryName.contains("Köprü") || batteryName.contains("Duvar") || batteryName.contains("Kale")) {
-            return org.bukkit.Particle.BLOCK;
+            return org.bukkit.Particle.BLOCK_CRACK;
         } else if (batteryName.contains("Can") || batteryName.contains("Yenilenme")) {
             return org.bukkit.Particle.HEART;
         } else if (batteryName.contains("Hız")) {
