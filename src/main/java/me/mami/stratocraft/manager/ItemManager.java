@@ -235,23 +235,23 @@ public class ItemManager {
     public static ItemStack MINE_WEAKNESS_L2;
     
     // Seviye 3
-    public static ItemStack MINE_EXPLOSIVE_L3;
-    public static ItemStack MINE_POISON_L3;
-    public static ItemStack MINE_LIGHTNING_L3;
-    public static ItemStack MINE_CAGE_L3;
-    public static ItemStack MINE_LAUNCH_L3;
+    public static ItemStack MINE_FREEZE_L3;
+    public static ItemStack MINE_CONFUSION_L3;
+    public static ItemStack MINE_FATIGUE_L3;
+    public static ItemStack MINE_POISON_CLOUD_L3;
+    public static ItemStack MINE_LIGHTNING_STORM_L3;
     
     // Seviye 4
-    public static ItemStack MINE_EXPLOSIVE_L4;
-    public static ItemStack MINE_POISON_L4;
-    public static ItemStack MINE_LIGHTNING_L4;
-    public static ItemStack MINE_MOB_SPAWN_L4;
+    public static ItemStack MINE_MEGA_EXPLOSIVE_L4;
+    public static ItemStack MINE_LARGE_CAGE_L4;
+    public static ItemStack MINE_SUPER_LAUNCH_L4;
+    public static ItemStack MINE_ELITE_MOB_SPAWN_L4;
     public static ItemStack MINE_MULTI_EFFECT_L4;
     
     // Seviye 5
-    public static ItemStack MINE_EXPLOSIVE_L5;
-    public static ItemStack MINE_POISON_L5;
-    public static ItemStack MINE_LIGHTNING_L5;
+    public static ItemStack MINE_NUCLEAR_EXPLOSIVE_L5;
+    public static ItemStack MINE_DEATH_CLOUD_L5;
+    public static ItemStack MINE_THUNDERSTORM_L5;
     public static ItemStack MINE_BOSS_SPAWN_L5;
     public static ItemStack MINE_CHAOS_L5;
     
@@ -269,19 +269,19 @@ public class ItemManager {
     public static ItemStack RECIPE_MINE_MOB_SPAWN_L2;
     public static ItemStack RECIPE_MINE_BLINDNESS_L2;
     public static ItemStack RECIPE_MINE_WEAKNESS_L2;
-    public static ItemStack RECIPE_MINE_EXPLOSIVE_L3;
-    public static ItemStack RECIPE_MINE_POISON_L3;
-    public static ItemStack RECIPE_MINE_LIGHTNING_L3;
-    public static ItemStack RECIPE_MINE_CAGE_L3;
-    public static ItemStack RECIPE_MINE_LAUNCH_L3;
-    public static ItemStack RECIPE_MINE_EXPLOSIVE_L4;
-    public static ItemStack RECIPE_MINE_POISON_L4;
-    public static ItemStack RECIPE_MINE_LIGHTNING_L4;
-    public static ItemStack RECIPE_MINE_MOB_SPAWN_L4;
+    public static ItemStack RECIPE_MINE_FREEZE_L3;
+    public static ItemStack RECIPE_MINE_CONFUSION_L3;
+    public static ItemStack RECIPE_MINE_FATIGUE_L3;
+    public static ItemStack RECIPE_MINE_POISON_CLOUD_L3;
+    public static ItemStack RECIPE_MINE_LIGHTNING_STORM_L3;
+    public static ItemStack RECIPE_MINE_MEGA_EXPLOSIVE_L4;
+    public static ItemStack RECIPE_MINE_LARGE_CAGE_L4;
+    public static ItemStack RECIPE_MINE_SUPER_LAUNCH_L4;
+    public static ItemStack RECIPE_MINE_ELITE_MOB_SPAWN_L4;
     public static ItemStack RECIPE_MINE_MULTI_EFFECT_L4;
-    public static ItemStack RECIPE_MINE_EXPLOSIVE_L5;
-    public static ItemStack RECIPE_MINE_POISON_L5;
-    public static ItemStack RECIPE_MINE_LIGHTNING_L5;
+    public static ItemStack RECIPE_MINE_NUCLEAR_EXPLOSIVE_L5;
+    public static ItemStack RECIPE_MINE_DEATH_CLOUD_L5;
+    public static ItemStack RECIPE_MINE_THUNDERSTORM_L5;
     public static ItemStack RECIPE_MINE_BOSS_SPAWN_L5;
     public static ItemStack RECIPE_MINE_CHAOS_L5;
     public static ItemStack RECIPE_MINE_CONCEALER;
@@ -2883,35 +2883,35 @@ public class ItemManager {
             "§7Basınca zayıflık efekti verir", Material.BONE, 2);
         
         // Seviye 3 (5 Mayın)
-        MINE_EXPLOSIVE_L3 = createMineItem("MINE_FREEZE", "§b[Seviye 3] Dondurma Mayını", 
+        MINE_FREEZE_L3 = createMineItem("MINE_FREEZE", "§b[Seviye 3] Dondurma Mayını", 
             "§7Basınca dondurma efekti verir", Material.ICE, 3);
-        MINE_POISON_L3 = createMineItem("MINE_CONFUSION", "§d[Seviye 3] Karışıklık Mayını", 
+        MINE_CONFUSION_L3 = createMineItem("MINE_CONFUSION", "§d[Seviye 3] Karışıklık Mayını", 
             "§7Basınca karışıklık efekti verir", Material.FERMENTED_SPIDER_EYE, 3);
-        MINE_LIGHTNING_L3 = createMineItem("MINE_FATIGUE", "§7[Seviye 3] Yorgunluk Mayını", 
+        MINE_FATIGUE_L3 = createMineItem("MINE_FATIGUE", "§7[Seviye 3] Yorgunluk Mayını", 
             "§7Basınca yorgunluk efekti verir", Material.IRON_PICKAXE, 3);
-        MINE_CAGE_L3 = createMineItem("MINE_POISON_CLOUD", "§2[Seviye 3] Zehir Bulutu Mayını", 
+        MINE_POISON_CLOUD_L3 = createMineItem("MINE_POISON_CLOUD", "§2[Seviye 3] Zehir Bulutu Mayını", 
             "§7Basınca alan zehiri oluşturur", Material.SPIDER_EYE, 3);
-        MINE_LAUNCH_L3 = createMineItem("MINE_LIGHTNING_STORM", "§e[Seviye 3] Yıldırım Fırtınası Mayını", 
+        MINE_LIGHTNING_STORM_L3 = createMineItem("MINE_LIGHTNING_STORM", "§e[Seviye 3] Yıldırım Fırtınası Mayını", 
             "§7Basınca çoklu yıldırım çarpar", Material.BLAZE_ROD, 3);
         
         // Seviye 4 (5 Mayın)
-        MINE_EXPLOSIVE_L4 = createMineItem("MINE_MEGA_EXPLOSIVE", "§c[Seviye 4] Büyük Patlama Mayını", 
+        MINE_MEGA_EXPLOSIVE_L4 = createMineItem("MINE_MEGA_EXPLOSIVE", "§c[Seviye 4] Büyük Patlama Mayını", 
             "§7Basınca büyük patlama yapar", Material.TNT, 4);
-        MINE_POISON_L4 = createMineItem("MINE_LARGE_CAGE", "§8[Seviye 4] Büyük Kafes Mayını", 
+        MINE_LARGE_CAGE_L4 = createMineItem("MINE_LARGE_CAGE", "§8[Seviye 4] Büyük Kafes Mayını", 
             "§7Basınca büyük kafes oluşturur", Material.OBSIDIAN, 4);
-        MINE_LIGHTNING_L4 = createMineItem("MINE_SUPER_LAUNCH", "§e[Seviye 4] Güçlü Fırlatma Mayını", 
+        MINE_SUPER_LAUNCH_L4 = createMineItem("MINE_SUPER_LAUNCH", "§e[Seviye 4] Güçlü Fırlatma Mayını", 
             "§7Basınca çok yukarı fırlatır", Material.PISTON, 4);
-        MINE_MOB_SPAWN_L4 = createMineItem("MINE_ELITE_MOB_SPAWN", "§c[Seviye 4] Güçlü Canavar Spawn Mayını", 
+        MINE_ELITE_MOB_SPAWN_L4 = createMineItem("MINE_ELITE_MOB_SPAWN", "§c[Seviye 4] Güçlü Canavar Spawn Mayını", 
             "§7Basınca güçlü canavarlar spawnlar", Material.ZOMBIE_HEAD, 4);
         MINE_MULTI_EFFECT_L4 = createMineItem("MINE_MULTI_EFFECT", "§d[Seviye 4] Çoklu Efekt Mayını", 
             "§7Basınca birden fazla efekt verir", Material.FERMENTED_SPIDER_EYE, 4);
         
         // Seviye 5 (5 Mayın)
-        MINE_EXPLOSIVE_L5 = createMineItem("MINE_NUCLEAR_EXPLOSIVE", "§4§l[Seviye 5] Nükleer Patlama Mayını", 
+        MINE_NUCLEAR_EXPLOSIVE_L5 = createMineItem("MINE_NUCLEAR_EXPLOSIVE", "§4§l[Seviye 5] Nükleer Patlama Mayını", 
             "§7Basınca nükleer patlama yapar", Material.TNT, 5);
-        MINE_POISON_L5 = createMineItem("MINE_DEATH_CLOUD", "§4§l[Seviye 5] Ölüm Bulutu Mayını", 
+        MINE_DEATH_CLOUD_L5 = createMineItem("MINE_DEATH_CLOUD", "§4§l[Seviye 5] Ölüm Bulutu Mayını", 
             "§7Basınca ölüm bulutu oluşturur", Material.SPIDER_EYE, 5);
-        MINE_LIGHTNING_L5 = createMineItem("MINE_THUNDERSTORM", "§e§l[Seviye 5] Gök Gürültüsü Mayını", 
+        MINE_THUNDERSTORM_L5 = createMineItem("MINE_THUNDERSTORM", "§e§l[Seviye 5] Gök Gürültüsü Mayını", 
             "§7Basınca gök gürültüsü fırtınası yapar", Material.BLAZE_ROD, 5);
         MINE_BOSS_SPAWN_L5 = createMineItem("MINE_BOSS_SPAWN", "§4§l[Seviye 5] Boss Spawn Mayını", 
             "§7Basınca boss canavar spawnlar", Material.WITHER_SKELETON_SKULL, 5);
@@ -3015,23 +3015,23 @@ public class ItemManager {
         RECIPE_MINE_WEAKNESS_L2 = createRecipeBook("RECIPE_MINE_WEAKNESS", "§7Tarif: Zayıflık Mayını");
         
         // Seviye 3
-        RECIPE_MINE_EXPLOSIVE_L3 = createRecipeBook("RECIPE_MINE_FREEZE", "§bTarif: Dondurma Mayını");
-        RECIPE_MINE_POISON_L3 = createRecipeBook("RECIPE_MINE_CONFUSION", "§dTarif: Karışıklık Mayını");
-        RECIPE_MINE_LIGHTNING_L3 = createRecipeBook("RECIPE_MINE_FATIGUE", "§7Tarif: Yorgunluk Mayını");
-        RECIPE_MINE_CAGE_L3 = createRecipeBook("RECIPE_MINE_POISON_CLOUD", "§2Tarif: Zehir Bulutu Mayını");
-        RECIPE_MINE_LAUNCH_L3 = createRecipeBook("RECIPE_MINE_LIGHTNING_STORM", "§eTarif: Yıldırım Fırtınası Mayını");
+        RECIPE_MINE_FREEZE_L3 = createRecipeBook("RECIPE_MINE_FREEZE", "§bTarif: Dondurma Mayını");
+        RECIPE_MINE_CONFUSION_L3 = createRecipeBook("RECIPE_MINE_CONFUSION", "§dTarif: Karışıklık Mayını");
+        RECIPE_MINE_FATIGUE_L3 = createRecipeBook("RECIPE_MINE_FATIGUE", "§7Tarif: Yorgunluk Mayını");
+        RECIPE_MINE_POISON_CLOUD_L3 = createRecipeBook("RECIPE_MINE_POISON_CLOUD", "§2Tarif: Zehir Bulutu Mayını");
+        RECIPE_MINE_LIGHTNING_STORM_L3 = createRecipeBook("RECIPE_MINE_LIGHTNING_STORM", "§eTarif: Yıldırım Fırtınası Mayını");
         
         // Seviye 4
-        RECIPE_MINE_EXPLOSIVE_L4 = createRecipeBook("RECIPE_MINE_MEGA_EXPLOSIVE", "§cTarif: Büyük Patlama Mayını");
-        RECIPE_MINE_POISON_L4 = createRecipeBook("RECIPE_MINE_LARGE_CAGE", "§8Tarif: Büyük Kafes Mayını");
-        RECIPE_MINE_LIGHTNING_L4 = createRecipeBook("RECIPE_MINE_SUPER_LAUNCH", "§eTarif: Güçlü Fırlatma Mayını");
-        RECIPE_MINE_MOB_SPAWN_L4 = createRecipeBook("RECIPE_MINE_ELITE_MOB_SPAWN", "§cTarif: Güçlü Canavar Spawn Mayını");
+        RECIPE_MINE_MEGA_EXPLOSIVE_L4 = createRecipeBook("RECIPE_MINE_MEGA_EXPLOSIVE", "§cTarif: Büyük Patlama Mayını");
+        RECIPE_MINE_LARGE_CAGE_L4 = createRecipeBook("RECIPE_MINE_LARGE_CAGE", "§8Tarif: Büyük Kafes Mayını");
+        RECIPE_MINE_SUPER_LAUNCH_L4 = createRecipeBook("RECIPE_MINE_SUPER_LAUNCH", "§eTarif: Güçlü Fırlatma Mayını");
+        RECIPE_MINE_ELITE_MOB_SPAWN_L4 = createRecipeBook("RECIPE_MINE_ELITE_MOB_SPAWN", "§cTarif: Güçlü Canavar Spawn Mayını");
         RECIPE_MINE_MULTI_EFFECT_L4 = createRecipeBook("RECIPE_MINE_MULTI_EFFECT", "§dTarif: Çoklu Efekt Mayını");
         
         // Seviye 5
-        RECIPE_MINE_EXPLOSIVE_L5 = createRecipeBook("RECIPE_MINE_NUCLEAR_EXPLOSIVE", "§4§lTarif: Nükleer Patlama Mayını");
-        RECIPE_MINE_POISON_L5 = createRecipeBook("RECIPE_MINE_DEATH_CLOUD", "§4§lTarif: Ölüm Bulutu Mayını");
-        RECIPE_MINE_LIGHTNING_L5 = createRecipeBook("RECIPE_MINE_THUNDERSTORM", "§e§lTarif: Gök Gürültüsü Mayını");
+        RECIPE_MINE_NUCLEAR_EXPLOSIVE_L5 = createRecipeBook("RECIPE_MINE_NUCLEAR_EXPLOSIVE", "§4§lTarif: Nükleer Patlama Mayını");
+        RECIPE_MINE_DEATH_CLOUD_L5 = createRecipeBook("RECIPE_MINE_DEATH_CLOUD", "§4§lTarif: Ölüm Bulutu Mayını");
+        RECIPE_MINE_THUNDERSTORM_L5 = createRecipeBook("RECIPE_MINE_THUNDERSTORM", "§e§lTarif: Gök Gürültüsü Mayını");
         RECIPE_MINE_BOSS_SPAWN_L5 = createRecipeBook("RECIPE_MINE_BOSS_SPAWN", "§4§lTarif: Boss Spawn Mayını");
         RECIPE_MINE_CHAOS_L5 = createRecipeBook("RECIPE_MINE_CHAOS", "§4§lTarif: Kaos Mayını");
         

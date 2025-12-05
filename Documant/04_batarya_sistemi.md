@@ -1971,6 +1971,130 @@ Her batarya için tarif kitabı şu formatta oluşturulur:
 
 ---
 
+### ✅ 6. Blok Yok Etme Mekaniği Düzeltildi
+
+**Sorun**: Alan Yok Edici ve Dağ Yok Edici bataryaları blok yok edemiyordu.
+
+**Çözüm**: 
+- `canModifyTerritory()` metodu **esnestildi**
+- Artık **boş arazide**, **kendi klan alanında** ve **savaşta olan düşman klan alanında** blok yok edilebilir
+- Sadece **spawn yakını (100 blok)** korunuyor
+
+**Performans İyileştirmeleri**:
+- Her tick'te 5 sütun yerine **10 sütun** işleniyor (2x hızlı)
+- Debug sayaçları eklendi
+- Partikül sayısı azaltıldı
+
+**Teknik Detay**:
+```java
+// Eski sistem: Sadece savaşta olan klan alanlarında
+if (siegeManager.isUnderSiege(territoryOwner) && 
+    siegeManager.getAttacker(territoryOwner).equals(playerClan)) {
+    return true;
+}
+
+// Yeni sistem: Esnek ve dengeli
+// 1. Spawn yakını (100 blok) -> Korunur
+// 2. Boş arazi -> Blok yok edilir
+// 3. Kendi klan alanı -> Blok yok edilir
+// 4. Düşman klan alanı + savaş var -> Blok yok edilir
+// 5. Düşman klan alanı + savaş yok -> Korunur
+```
+
+---
+
+### ✅ 7. Antrenman Sistemi İyileştirildi
+
+**Sorun**: Antrenman sistemi çok basit ve görsel geri bildirim yoktu.
+
+**Çözüm**: 
+- **Seviye bazlı başlangıç gücü**: L1: %20, L2: %40, L3: %60, L4: %70, L5: %80
+- **Dinamik güç artışı**: İlk 5 kullanımda %100'e ulaşılıyor
+- **Ustalaşma sistemi**: 21. kullanımdan 30. kullanıma kadar %150'ye çıkıyor
+- **Görsel geri bildirim**: Başlıklar, mesajlar, partiküller, sesler
+
+**Önemli Dönüm Noktaları**:
+- **5. kullanım**: Tam güce ulaşıldı! 🎯
+- **21. kullanım**: Ustalaşma başladı! ⭐
+- **30. kullanım**: Maksimum güç! 🔥 (150%)
+
+**Teknik Detay**:
+```java
+// Seviye bazlı başlangıç gücü
+L1: 20% başlangıç -> 5 kullanımda 100%
+L2: 40% başlangıç -> 3 kullanımda 100%
+L3: 60% başlangıç -> 2 kullanımda 100%
+L4: 70% başlangıç -> 2 kullanımda 100%
+L5: 80% başlangıç -> 1 kullanımda 100%
+
+// Ustalaşma sistemi (tüm seviyeler için aynı)
+21-30 kullanım: 100% -> 150% (doğrusal artış)
+30+ kullanım: 150% (maksimum)
+```
+
+---
+
+### ✅ 8. Batarya Hasarları Artırıldı
+
+**Sorun**: L3, L4, L5 bataryaları çok az hasar veriyordu.
+
+**Çözüm**: 
+- **Seviye 3**: 50-70 hasar
+- **Seviye 4**: 70-120 hasar
+- **Seviye 5**: 200-300 hasar
+
+**Etkilenen Bataryalar**:
+
+**Seviye 3 (50-70 hasar)**:
+- Meteor Yağmuru: 60 hasar
+- Yıldırım Fırtınası: 50 hasar
+- Buz Çağı: 70 hasar
+- Zehir Bombası: 55 hasar
+- Elektrik Fırtınası: 65 hasar
+
+**Seviye 4 (70-120 hasar)**:
+- Tesla Kulesi: 100 hasar
+- Cehennem Ateşi: 80 hasar
+- Buz Kalesi: 90 hasar
+- Ölüm Bulutu: 120 hasar
+- Elektrik Kalkanı: 70 hasar
+
+**Seviye 5 (200-300 hasar)**:
+- Kıyamet Reaktörü: 300 hasar
+- Boss Katili: 300 hasar (boss'lara), 100 hasar (diğerlerine)
+- Alan Yok Edici: 300 hasar
+- Dağ Yok Edici: 300 hasar
+- Lava Tufanı: 300 hasar
+
+---
+
+### ✅ 9. Batarya Çakışma Sorunu Düzeltildi
+
+**Sorun**: Farklı tarifli bataryalar çakışıyordu (örneğin cam ve magma blok).
+
+**Çözüm**: 
+- Merkez blok kontrolü eklendi
+- Sadece **merkez bloğu aynı olan tarifler** kontrol ediliyor
+- Bu sayede farklı merkez bloğu olan bataryalar çakışmıyor
+
+**Teknik Detay**:
+```java
+// Önce merkez bloğa göre filtrele
+List<RecipeChecker> matchingCenterBlock = allRecipeCheckers.stream()
+    .filter(checker -> checker.getPattern().getCenterBlock() == centerBlock.getType())
+    .collect(Collectors.toList());
+
+// Sonra tam tarif kontrolü yap
+for (RecipeChecker checker : matchingCenterBlock) {
+    RecipeCheckResult result = checker.checkRecipe(centerBlock);
+    if (result.isSuccess()) {
+        return result;
+    }
+}
+```
+
+---
+
 ## 📚 EK KAYNAKLAR
 
 Detaylı tasarım raporu ve kod mantığı için `BATARYA_SISTEMI_TASARIM_RAPORU.md` dosyasına bakın.

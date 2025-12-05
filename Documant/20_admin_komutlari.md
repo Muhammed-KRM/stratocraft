@@ -912,4 +912,107 @@ if (!overflow.isEmpty()) {
 
 ---
 
+## 🔋 BATARYA SİSTEMİ - SON GÜNCELLEMELERİ
+
+### ✅ Düzeltilen Sorunlar
+
+#### 1. Batarya Yön Sorunu Düzeltildi
+- **Sorun**: Bataryalar sadece North/South yönünde çalışıyordu
+- **Çözüm**: 4 rotasyon (0°, 90°, 180°, 270°) sistemi eklendi
+- **Sonuç**: Artık bataryalar **HER YÖNDE** çalışıyor!
+
+#### 2. Partikül Sorunu Düzeltildi
+- **Sorun**: Partiküller çok büyük ve önü kapatıyordu
+- **Çözüm**: Partiküller artık sadece diğer oyunculara görünüyor
+- **Sonuç**: Kendine görünmüyor, önünü kapatmıyor!
+
+#### 3. Blok Yok Etme Mekaniği Düzeltildi
+- **Sorun**: Alan Yok Edici ve Dağ Yok Edici blok yok edemiyordu
+- **Çözüm**: `canModifyTerritory()` metodu esnestildi
+- **Performans**: 2x hızlı (10 sütun/tick)
+- **Sonuç**: Artık boş arazide, kendi klan alanında ve savaşta blok yok ediliyor!
+
+#### 4. Antrenman Sistemi İyileştirildi
+- **Sorun**: Antrenman sistemi basit ve görsel geri bildirim yoktu
+- **Çözüm**: Seviye bazlı başlangıç gücü + dinamik güç artışı + görsel geri bildirim
+- **Sonuç**: 
+  - L1: %20 başlangıç → 5 kullanımda %100
+  - L5: %80 başlangıç → 1 kullanımda %100
+  - 30 kullanımda %150 (maksimum)
+
+#### 5. Batarya Hasarları Artırıldı
+- **Sorun**: L3, L4, L5 bataryaları çok az hasar veriyordu
+- **Çözüm**: Hasarlar artırıldı
+- **Sonuç**:
+  - Seviye 3: 50-70 hasar
+  - Seviye 4: 70-120 hasar
+  - Seviye 5: 200-300 hasar
+
+#### 6. Batarya Çakışma Sorunu Düzeltildi
+- **Sorun**: Farklı tarifli bataryalar çakışıyordu
+- **Çözüm**: Merkez blok kontrolü eklendi
+- **Sonuç**: Sadece merkez bloğu aynı olan tarifler kontrol ediliyor
+
+### ✅ Yeni Özellikler
+
+#### 1. Komut Formatı Değişti
+- **Eski**: `/stratocraft build battery <isim>` veya `/stratocraft build battery <seviye> <isim>`
+- **Yeni**: `/stratocraft build battery <seviye> <isim>` (sadece bu format)
+- **Tab Completion**: Seviye seçtikten sonra ilgili seviye bataryaları gösteriliyor
+
+#### 2. Tam Tab Completion Desteği
+- **Seviye 1**: `/stratocraft build battery [TAB]` → 1, 2, 3, 4, 5
+- **Seviye 2**: `/stratocraft build battery 1 [TAB]` → Seviye 1 bataryaları
+- **Örnek**: `/stratocraft build battery 5 [TAB]` → Kıyamet Reaktörü, Boss Katili, Alan Yok Edici, vb.
+
+#### 3. Tüm Eski Sistem Kaldırıldı
+- `magma_battery` ❌
+- `lightning_battery` ❌
+- `black_hole` ❌
+- `bridge` ❌
+- Tüm eski batarya isimleri kaldırıldı ✅
+
+---
+
+## 💣 MAYIN SİSTEMİ - YENİ SİSTEM
+
+### ✅ Yeni Mayın Sistemi Özellikleri
+
+#### 1. 25 Benzersiz Mayın
+- Her mayının kendine özgü ismi ve efekti var
+- MINE_EXPLOSIVE_L3 gibi generic isimler yok ❌
+- FREEZE, DEATH_CLOUD, CHAOS gibi özel isimler var ✅
+
+#### 2. Mayın Basınç Plakası Türleri
+- **Seviye 1**: Stone Pressure Plate (Taş)
+- **Seviye 2**: Oak Pressure Plate (Meşe)
+- **Seviye 3**: Birch Pressure Plate (Huş)
+- **Seviye 4**: Dark Oak Pressure Plate (Koyu Meşe)
+- **Seviye 5**: Warped Pressure Plate (Warped)
+
+#### 3. Mayın Görünürlüğü
+- **Sahibi**: Mayın ismini her zaman görebilir
+- **Klan Üyeleri**: Mayın ismini görebilir
+- **Düşmanlar**: Mayın ismini göremez
+- **Gizleme Aleti**: Mayını tamamen görünmez yapabilir
+
+#### 4. Tab Completion Desteği
+- `/stratocraft mine give [TAB]` → 1, 2, 3, 4, 5, concealer
+- `/stratocraft mine give 1 [TAB]` → explosive, poison, slowness, fire, lightning
+- `/stratocraft mine give 5 [TAB]` → nuclear_explosive, death_cloud, thunderstorm, boss_spawn, chaos
+
+### ✅ En Güçlü Mayınlar (Seviye 5)
+
+#### DEATH_CLOUD (Ölüm Bulutu)
+- **Efekt**: Poison IV (20 saniye) + sürekli 0.5 hasar (50 toplam) + büyük duman
+- **Kullanım**: Ölümcül alan
+- **Komut**: `/stratocraft mine give 5 death_cloud`
+
+#### CHAOS (Kaos)
+- **Efekt**: Patlama + Poison + Slowness + Blindness + Weakness + Ateş + Yıldırım
+- **Kullanım**: Tüm efektlerin birleşimi
+- **Komut**: `/stratocraft mine give 5 chaos`
+
+---
+
 **🎮 Admin komutlarıyla sunucuyu yönet, test et, dengele!**

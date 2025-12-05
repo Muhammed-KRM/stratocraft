@@ -516,4 +516,221 @@ Mayınlar **basınç plakaları** olarak verilir ve yere koyulduğunda otomatik 
 
 ---
 
-**🎮 Yeni mayın sistemiyle bölgeni koru, düşmanları yakala!**
+## 💣 YENİ MAYIN SİSTEMİ - DETAYLI AÇIKLAMA
+
+### 📚 Sistem Özellikleri
+
+**Temel Mekanik**:
+- Mayınlar **basınç plakası** olarak verilir
+- Yere yerleştirildiğinde otomatik aktif olur
+- Üstüne basıldığında efekt tetiklenir
+- Sadece sahibi ve klan üyeleri mayın ismini görebilir
+
+**Seviye Sistemi**:
+- **5 seviye** var (Seviye 1-5)
+- Her seviyede **5 farklı mayın** (Toplam 25 mayın)
+- Seviye arttıkça güç ve yapım zorluğu artar
+
+**Basınç Plakası Türleri**:
+- **Seviye 1**: Stone Pressure Plate (Taş)
+- **Seviye 2**: Oak Pressure Plate (Meşe)
+- **Seviye 3**: Birch Pressure Plate (Huş)
+- **Seviye 4**: Dark Oak Pressure Plate (Koyu Meşe)
+- **Seviye 5**: Warped Pressure Plate (Warped)
+
+---
+
+### 🔥 SEVİYE 1 MAYINLAR (10 Mayın - Taş Basınç Plakası)
+
+#### 1. EXPLOSIVE (Patlama)
+- **Efekt**: 3.0 güç patlama
+- **Kullanım**: Basit hasar mayını
+- **Komut**: `/stratocraft mine give 1 explosive`
+
+#### 2. POISON (Zehir)
+- **Efekt**: Poison II (10 saniye)
+- **Kullanım**: Zehirli alan
+- **Komut**: `/stratocraft mine give 1 poison`
+
+#### 3. SLOWNESS (Yavaşlatma)
+- **Efekt**: Slowness II (10 saniye)
+- **Kullanım**: Düşmanı yavaşlatma
+- **Komut**: `/stratocraft mine give 1 slowness`
+
+#### 4. FIRE (Ateş)
+- **Efekt**: 100 tick (5 saniye) ateş
+- **Kullanım**: Yakma mayını
+- **Komut**: `/stratocraft mine give 1 fire`
+
+#### 5. LIGHTNING (Yıldırım)
+- **Efekt**: Tek yıldırım çarpma
+- **Kullanım**: Elektrik şoku
+- **Komut**: `/stratocraft mine give 1 lightning`
+
+---
+
+### 🔥 SEVİYE 2 MAYINLAR (5 Mayın - Meşe Basınç Plakası)
+
+#### 6. CAGE (Kafes)
+- **Efekt**: 3x3x3 obsidyen kafes (10 saniye)
+- **Kullanım**: Düşmanı hapsetme
+- **Komut**: `/stratocraft mine give 2 cage`
+
+#### 7. LAUNCH (Fırlatma)
+- **Efekt**: Yukarı fırlatma (velocity 1.5)
+- **Kullanım**: Düşüş hasarı vermek için
+- **Komut**: `/stratocraft mine give 2 launch`
+
+#### 8. MOB_SPAWN (Canavar Spawn)
+- **Efekt**: 2 zombie spawn
+- **Kullanım**: Düşmana ekstra zorluk
+- **Komut**: `/stratocraft mine give 2 mob_spawn`
+
+#### 9. BLINDNESS (Körlük)
+- **Efekt**: Blindness (10 saniye)
+- **Kullanım**: Düşmanı kör etme
+- **Komut**: `/stratocraft mine give 2 blindness`
+
+#### 10. WEAKNESS (Zayıflık)
+- **Efekt**: Weakness II (10 saniye)
+- **Kullanım**: Düşmanı zayıflatma
+- **Komut**: `/stratocraft mine give 2 weakness`
+
+---
+
+### 🔥 SEVİYE 3 MAYINLAR (5 Mayın - Huş Basınç Plakası)
+
+#### 11. FREEZE (Dondurma)
+- **Efekt**: Slowness III + Slow Digging (10 saniye)
+- **Kullanım**: Tam dondurma efekti
+- **Komut**: `/stratocraft mine give 3 freeze`
+
+#### 12. CONFUSION (Karışıklık)
+- **Efekt**: Nausea (10 saniye)
+- **Kullanım**: Ekranı döndürme
+- **Komut**: `/stratocraft mine give 3 confusion`
+
+#### 13. FATIGUE (Yorgunluk)
+- **Efekt**: Mining Fatigue III (15 saniye)
+- **Kullanım**: Blok kırmayı engelleme
+- **Komut**: `/stratocraft mine give 3 fatigue`
+
+#### 14. POISON_CLOUD (Zehir Bulutu)
+- **Efekt**: 5 blok yarıçapta tüm oyunculara Poison (8 saniye)
+- **Kullanım**: Alan zehirleme
+- **Komut**: `/stratocraft mine give 3 poison_cloud`
+
+#### 15. LIGHTNING_STORM (Yıldırım Fırtınası)
+- **Efekt**: 3 yıldırım (0.5 saniye aralarla) + 5.0 hasar
+- **Kullanım**: Elektrik fırtınası
+- **Komut**: `/stratocraft mine give 3 lightning_storm`
+
+---
+
+### 🔥 SEVİYE 4 MAYINLAR (5 Mayın - Koyu Meşe Basınç Plakası)
+
+#### 16. MEGA_EXPLOSIVE (Büyük Patlama)
+- **Efekt**: 6.0 güç patlama
+- **Kullanım**: Büyük hasar alanı
+- **Komut**: `/stratocraft mine give 4 mega_explosive`
+
+#### 17. LARGE_CAGE (Büyük Kafes)
+- **Efekt**: 5x5x5 obsidyen kafes (20 saniye)
+- **Kullanım**: Büyük gruplara karşı
+- **Komut**: `/stratocraft mine give 4 large_cage`
+
+#### 18. SUPER_LAUNCH (Güçlü Fırlatma)
+- **Efekt**: Çok yukarı fırlatma (velocity 2.5)
+- **Kullanım**: Yüksek düşüş hasarı
+- **Komut**: `/stratocraft mine give 4 super_launch`
+
+#### 19. ELITE_MOB_SPAWN (Güçlü Canavar Spawn)
+- **Efekt**: 5 zombie + 2 skeleton spawn
+- **Kullanım**: Güçlü düşman ordusu
+- **Komut**: `/stratocraft mine give 4 elite_mob_spawn`
+
+#### 20. MULTI_EFFECT (Çoklu Efekt)
+- **Efekt**: Poison + Slowness + Blindness + Weakness (10 saniye)
+- **Kullanım**: Tüm efektleri bir arada
+- **Komut**: `/stratocraft mine give 4 multi_effect`
+
+---
+
+### 🔥 SEVİYE 5 MAYINLAR (5 Mayın - Warped Basınç Plakası)
+
+#### 21. NUCLEAR_EXPLOSIVE (Nükleer Patlama)
+- **Efekt**: 10.0 güç patlama
+- **Kullanım**: Çok büyük hasar alanı
+- **Komut**: `/stratocraft mine give 5 nuclear_explosive`
+
+#### 22. DEATH_CLOUD (Ölüm Bulutu)
+- **Efekt**: Poison IV (20 saniye) + sürekli 0.5 hasar (100 tick = 50 hasar) + büyük duman
+- **Kullanım**: Ölümcül alan
+- **Komut**: `/stratocraft mine give 5 death_cloud`
+
+#### 23. THUNDERSTORM (Gök Gürültüsü)
+- **Efekt**: 10 yıldırım (5 tick aralarla) + 10.0 hasar
+- **Kullanım**: Yıldırım fırtınası
+- **Komut**: `/stratocraft mine give 5 thunderstorm`
+
+#### 24. BOSS_SPAWN (Boss Spawn)
+- **Efekt**: Wither Skeleton veya Enderman spawn
+- **Kullanım**: Güçlü boss düşman
+- **Komut**: `/stratocraft mine give 5 boss_spawn`
+
+#### 25. CHAOS (Kaos)
+- **Efekt**: Patlama + Poison II + Slowness II + Blindness + Weakness II + Ateş + Yıldırım (10 saniye)
+- **Kullanım**: Tüm efektlerin birleşimi
+- **Komut**: `/stratocraft mine give 5 chaos`
+
+---
+
+### 🎨 Gizleme Sistemi Detayı
+
+**Mayın Gizleme Aleti**:
+- **Item**: Special stick (Sihirli değnek görünümü)
+- **Kullanım**: 
+  1. Mayını yerleştir
+  2. Gizleme aletini al
+  3. Mayına shift + sağ tık yap
+  4. Mayın görünmez olur
+
+**Görünürlük Kuralları**:
+- **Sahibi**: Mayın ismini her zaman görebilir
+- **Klan Üyeleri**: Mayın ismini görebilir
+- **Düşmanlar**: Mayın ismini göremez (gizliyse basınç plakasını da göremez)
+
+**Teknik Detay**:
+- ArmorStand ile isim görünürlüğü kontrol ediliyor
+- `Player#showEntity` ve `Player#hideEntity` kullanılıyor
+- Her 20 tick'te (1 saniye) görünürlük güncelleniyor
+- Yakındaki oyuncular kontrol ediliyor
+
+**Komut**:
+```
+/stratocraft mine give concealer
+```
+
+---
+
+### 🛡️ Güvenlik ve Performans
+
+**Güvenlik**:
+- Spawn yakınında (100 blok) mayın yerleştirilemez
+- Klan alanlarında sadece klan üyeleri mayın yerleştirebilir
+- Mayınlar otomatik olarak sahibine kayıtlı
+
+**Performans**:
+- Her mayın için ayrı ArmorStand oluşturuluyor
+- Görünürlük güncellemesi her 20 tick'te bir
+- Sadece 10 blok yakınındaki oyuncular kontrol ediliyor
+- Mayın kaldırıldığında ArmorStand da otomatik siliniyor
+
+**Sınırlamalar**:
+- Oyuncu başına maksimum 100 mayın
+- Klan başına maksimum 500 mayın
+- Dünya başına maksimum 10,000 mayın
+
+---
+
+**🎮 25 benzersiz mayınla stratejik savunma yap!**

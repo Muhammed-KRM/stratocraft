@@ -1684,22 +1684,30 @@ public class NewBatteryManager {
         // Merkez patlama efekti
         player.getWorld().createExplosion(target, 8.0f, false, false);
         
-        // Blok yok etme (async, ticK bazlı)
+        // Blok yok etme (async, tick bazlı) - OPTİMİZE EDİLMİŞ
         new org.bukkit.scheduler.BukkitRunnable() {
             int currentX = -halfSize;
             int blocksDestroyed = 0;
+            int blocksChecked = 0;
+            int blocksBlocked = 0;
             
             @Override
             public void run() {
-                // Her tick'te 5 sütun işle (optimizasyon)
-                for (int xOffset = 0; xOffset < 5 && currentX <= halfSize; xOffset++, currentX++) {
+                // Her tick'te 10 sütun işle (daha hızlı)
+                for (int xOffset = 0; xOffset < 10 && currentX <= halfSize; xOffset++, currentX++) {
                     for (int z = -halfSize; z <= halfSize; z++) {
                         org.bukkit.Location loc = target.clone().add(currentX, 0, z);
                         
                         // Blok kırma
-                        if (canModifyTerritory(player, loc)) {
+                        boolean canModify = canModifyTerritory(player, loc);
+                        if (!canModify) {
+                            blocksBlocked++;
+                        }
+                        
+                        if (canModify) {
                             for (int y = -5; y <= 5; y++) {
                                 org.bukkit.block.Block block = loc.clone().add(0, y, 0).getBlock();
+                                blocksChecked++;
                                 if (block.getType() != org.bukkit.Material.BEDROCK && 
                                     block.getType() != org.bukkit.Material.AIR &&
                                     block.getType() != org.bukkit.Material.BARRIER) {
@@ -1710,8 +1718,8 @@ public class NewBatteryManager {
                         }
                     }
                     
-                    // Her 5 sütunda bir partikül
-                    if (currentX % 5 == 0) {
+                    // Her 10 sütunda bir partikül
+                    if (currentX % 10 == 0) {
                         org.bukkit.Location particleLoc = target.clone().add(currentX, 0, 0);
                         player.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, particleLoc, 2);
                     }
@@ -1722,6 +1730,10 @@ public class NewBatteryManager {
                     cancel();
                     player.sendMessage("§4§l💥 ALAN YOK EDİCİ TAMAMLANDI! 💥");
                     player.sendMessage("§c" + blocksDestroyed + " blok yok edildi!");
+                    player.sendMessage("§7" + blocksChecked + " blok kontrol edildi.");
+                    if (blocksBlocked > 0) {
+                        player.sendMessage("§e" + blocksBlocked + " sütun korumalı alanda.");
+                    }
                 }
             }
         }.runTaskTimer(plugin, 0L, 1L); // Her tick çalış
@@ -1748,22 +1760,30 @@ public class NewBatteryManager {
         // Merkez patlama efekti
         player.getWorld().createExplosion(target, 10.0f, false, false);
         
-        // Blok yok etme (async, tick bazlı)
+        // Blok yok etme (async, tick bazlı) - OPTİMİZE EDİLMİŞ
         new org.bukkit.scheduler.BukkitRunnable() {
             int currentX = -halfSize;
             int blocksDestroyed = 0;
+            int blocksChecked = 0;
+            int blocksBlocked = 0;
             
             @Override
             public void run() {
-                // Her tick'te 5 sütun işle (optimizasyon)
-                for (int xOffset = 0; xOffset < 5 && currentX <= halfSize; xOffset++, currentX++) {
+                // Her tick'te 10 sütun işle (daha hızlı)
+                for (int xOffset = 0; xOffset < 10 && currentX <= halfSize; xOffset++, currentX++) {
                     for (int z = -halfSize; z <= halfSize; z++) {
                         org.bukkit.Location loc = target.clone().add(currentX, 0, z);
                         
                         // Blok kırma (dikey 20 blok)
-                        if (canModifyTerritory(player, loc)) {
+                        boolean canModify = canModifyTerritory(player, loc);
+                        if (!canModify) {
+                            blocksBlocked++;
+                        }
+                        
+                        if (canModify) {
                             for (int y = -10; y <= 10; y++) {
                                 org.bukkit.block.Block block = loc.clone().add(0, y, 0).getBlock();
+                                blocksChecked++;
                                 if (block.getType() != org.bukkit.Material.BEDROCK && 
                                     block.getType() != org.bukkit.Material.AIR &&
                                     block.getType() != org.bukkit.Material.BARRIER) {
@@ -1774,8 +1794,8 @@ public class NewBatteryManager {
                         }
                     }
                     
-                    // Her 5 sütunda bir partikül
-                    if (currentX % 5 == 0) {
+                    // Her 10 sütunda bir partikül
+                    if (currentX % 10 == 0) {
                         org.bukkit.Location particleLoc = target.clone().add(currentX, 0, 0);
                         player.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, particleLoc, 2);
                         player.getWorld().spawnParticle(org.bukkit.Particle.LAVA, particleLoc, 3);
@@ -1787,6 +1807,10 @@ public class NewBatteryManager {
                     cancel();
                     player.sendMessage("§4§l⛰ DAĞ YOK EDİCİ TAMAMLANDI! ⛰");
                     player.sendMessage("§c" + blocksDestroyed + " blok yok edildi!");
+                    player.sendMessage("§7" + blocksChecked + " blok kontrol edildi.");
+                    if (blocksBlocked > 0) {
+                        player.sendMessage("§e" + blocksBlocked + " sütun korumalı alanda.");
+                    }
                 }
             }
         }.runTaskTimer(plugin, 0L, 1L); // Her tick çalış
@@ -1796,26 +1820,51 @@ public class NewBatteryManager {
     }
     
     /**
-     * Bölge değiştirme kontrolü (sadece savaşta olan klan alanlarında)
+     * Bölge değiştirme kontrolü (ESNETİLMİŞ)
+     * SADECE spawn ve özel korumalı bölgeleri korur
      */
     private boolean canModifyTerritory(Player player, Location loc) {
-        // TerritoryManager kontrolü
+        // Spawn kontrolü (spawn yakınında blok yok etme engellenir)
+        Location spawnLoc = loc.getWorld().getSpawnLocation();
+        if (spawnLoc != null && loc.distance(spawnLoc) < 100) {
+            return false; // Spawn yakınında blok yok etme yasak
+        }
+        
+        // TerritoryManager kontrolü (opsiyonel)
         me.mami.stratocraft.manager.TerritoryManager territoryManager = plugin.getTerritoryManager();
-        if (territoryManager == null) return false;
+        if (territoryManager == null) {
+            return true; // TerritoryManager yoksa her yerde blok yok edilebilir
+        }
         
+        // Bölge sahibi var mı?
         me.mami.stratocraft.model.Clan territoryOwner = territoryManager.getTerritoryOwner(loc);
-        if (territoryOwner == null) return false;
+        if (territoryOwner == null) {
+            return true; // Boş arazi, blok yok edilebilir
+        }
         
-        // Sadece savaşta olan klan alanlarında çalışır
+        // Oyuncunun klanı var mı?
         me.mami.stratocraft.model.Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
-        if (playerClan == null) return false;
+        if (playerClan == null) {
+            return false; // Klansız oyuncu klan alanında blok yok edemez
+        }
         
-        // Savaş kontrolü (siege kontrolü)
+        // Kendi klan alanı mı?
+        if (territoryOwner.getId().equals(playerClan.getId())) {
+            return true; // Kendi klan alanında blok yok edilebilir
+        }
+        
+        // Düşman klan alanı - savaş kontrolü
         me.mami.stratocraft.manager.SiegeManager siegeManager = plugin.getSiegeManager();
-        if (siegeManager == null) return false;
+        if (siegeManager == null) {
+            return false; // SiegeManager yoksa düşman alanında blok yok edilemez
+        }
         
-        return siegeManager.isUnderSiege(territoryOwner) && 
-               siegeManager.getAttacker(territoryOwner).equals(playerClan);
+        // Savaş durumu kontrolü
+        if (siegeManager.isUnderSiege(territoryOwner)) {
+            return siegeManager.getAttacker(territoryOwner).equals(playerClan);
+        }
+        
+        return false; // Düşman klan alanı ve savaş yok, blok yok edilemez
     }
     
     // ========== TARİF KONTROL FONKSİYONLARI ==========

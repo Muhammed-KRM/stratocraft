@@ -47,18 +47,12 @@ public class NewMineListener implements Listener {
             return;
         }
         
-        // DEBUG
-        player.sendMessage("§7[DEBUG] Basınç plakasına basıldı: " + standingBlock.getType());
-        
         // Mayın var mı?
         if (!standingBlock.hasMetadata("NewMine")) {
-            player.sendMessage("§7[DEBUG] Bu konumda mayın yok (metadata eksik)");
             return;
         }
         
-        player.sendMessage("§7[DEBUG] Mayın metadata bulundu! Tetikleniyor...");
-        
-        // Mayın tetikle (isPowered kontrolüne gerek yok, basınca direkt tetiklenir)
+        // Mayın tetikle
         mineManager.triggerMine(standingBlock, player);
     }
     
@@ -71,24 +65,16 @@ public class NewMineListener implements Listener {
         Player player = event.getPlayer();
         ItemStack item = event.getItemInHand();
         
-        // DEBUG
-        player.sendMessage("§7[DEBUG] Blok yerleştirildi: " + block.getType());
-        
         // Basınç plakası mı?
         if (!NewMineManager.isPressurePlate(block.getType())) {
             return;
         }
         
-        player.sendMessage("§7[DEBUG] Basınç plakası tespit edildi!");
-        
         // Mayın itemı mı?
         NewMineManager.MineType mineType = getMineTypeFromItem(item);
         if (mineType == null) {
-            player.sendMessage("§7[DEBUG] Normal basınç plakası (mayın değil)");
             return; // Normal basınç plakası
         }
-        
-        player.sendMessage("§7[DEBUG] Mayın tipi: " + mineType.name());
         
         // MAYIN OLUŞTUR!
         if (mineManager.createMine(player, block, mineType)) {

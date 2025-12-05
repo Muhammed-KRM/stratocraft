@@ -6210,23 +6210,23 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case WEAKNESS: return ItemManager.MINE_WEAKNESS_L2;
             
             // Seviye 3
-            case FREEZE: return ItemManager.MINE_EXPLOSIVE_L3;
-            case CONFUSION: return ItemManager.MINE_POISON_L3;
-            case FATIGUE: return ItemManager.MINE_LIGHTNING_L3;
-            case POISON_CLOUD: return ItemManager.MINE_CAGE_L3;
-            case LIGHTNING_STORM: return ItemManager.MINE_LAUNCH_L3;
+            case FREEZE: return ItemManager.MINE_FREEZE_L3;
+            case CONFUSION: return ItemManager.MINE_CONFUSION_L3;
+            case FATIGUE: return ItemManager.MINE_FATIGUE_L3;
+            case POISON_CLOUD: return ItemManager.MINE_POISON_CLOUD_L3;
+            case LIGHTNING_STORM: return ItemManager.MINE_LIGHTNING_STORM_L3;
             
             // Seviye 4
-            case MEGA_EXPLOSIVE: return ItemManager.MINE_EXPLOSIVE_L4;
-            case LARGE_CAGE: return ItemManager.MINE_POISON_L4;
-            case SUPER_LAUNCH: return ItemManager.MINE_LIGHTNING_L4;
-            case ELITE_MOB_SPAWN: return ItemManager.MINE_MOB_SPAWN_L4;
+            case MEGA_EXPLOSIVE: return ItemManager.MINE_MEGA_EXPLOSIVE_L4;
+            case LARGE_CAGE: return ItemManager.MINE_LARGE_CAGE_L4;
+            case SUPER_LAUNCH: return ItemManager.MINE_SUPER_LAUNCH_L4;
+            case ELITE_MOB_SPAWN: return ItemManager.MINE_ELITE_MOB_SPAWN_L4;
             case MULTI_EFFECT: return ItemManager.MINE_MULTI_EFFECT_L4;
             
             // Seviye 5
-            case NUCLEAR_EXPLOSIVE: return ItemManager.MINE_EXPLOSIVE_L5;
-            case DEATH_CLOUD: return ItemManager.MINE_POISON_L5;
-            case THUNDERSTORM: return ItemManager.MINE_LIGHTNING_L5;
+            case NUCLEAR_EXPLOSIVE: return ItemManager.MINE_NUCLEAR_EXPLOSIVE_L5;
+            case DEATH_CLOUD: return ItemManager.MINE_DEATH_CLOUD_L5;
+            case THUNDERSTORM: return ItemManager.MINE_THUNDERSTORM_L5;
             case BOSS_SPAWN: return ItemManager.MINE_BOSS_SPAWN_L5;
             case CHAOS: return ItemManager.MINE_CHAOS_L5;
             
