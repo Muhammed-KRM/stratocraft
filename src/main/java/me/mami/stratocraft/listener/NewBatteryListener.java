@@ -122,7 +122,6 @@ public class NewBatteryListener implements Listener {
         }
         
         // Tarif eşleşti! Bataryayı yükle
-        BlockPattern pattern = result.getMatchedPattern();
         String batteryName = result.getBatteryName();
         
         // Seviye bilgisini RecipeChecker'dan al (her tarif kendi seviyesini belirler)
@@ -346,11 +345,15 @@ public class NewBatteryListener implements Listener {
         int previousLevel = trainingManager.getPreviousMasteryLevel(player.getUniqueId(), trainingKey);
         int newLevel = trainingManager.getMasteryLevel(player.getUniqueId(), trainingKey);
         int totalUses = trainingManager.getTotalUses(player.getUniqueId(), trainingKey);
-        boolean nowTrained = trainingManager.isTrained(player.getUniqueId(), trainingKey);
         
         if (newLevel > previousLevel) {
             if (previousLevel == -1 && newLevel == 0) {
-                player.sendTitle("§a§lANTRENMAN TAMAMLANDI!", "§eArtık tam güçle kullanabilirsin!", 10, 70, 20);
+                // Title göster (deprecated ama çalışıyor)
+                @SuppressWarnings("deprecation")
+                String title = "§a§lANTRENMAN TAMAMLANDI!";
+                @SuppressWarnings("deprecation")
+                String subtitle = "§eArtık tam güçle kullanabilirsin!";
+                player.sendTitle(title, subtitle, 10, 70, 20);
                 player.sendMessage("§a§l════════════════════════════");
                 player.sendMessage("§e§l★ ANTRENMAN TAMAMLANDI ★");
                 player.sendMessage("§7Artık bataryayı tam güçle kullanabilirsin!");
@@ -358,7 +361,12 @@ public class NewBatteryListener implements Listener {
                 player.sendMessage("§a§l════════════════════════════");
                 player.playSound(player.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
             } else {
-                player.sendTitle("§6§lSEVİYE ATLADI!", "§eMastery Seviye " + newLevel, 10, 70, 20);
+                // Title göster (deprecated ama çalışıyor)
+                @SuppressWarnings("deprecation")
+                String title = "§6§lSEVİYE ATLADI!";
+                @SuppressWarnings("deprecation")
+                String subtitle = "§eMastery Seviye " + newLevel;
+                player.sendTitle(title, subtitle, 10, 70, 20);
                 player.sendMessage("§6§l════════════════════════════");
                 player.sendMessage("§e§l★ MASTERY SEVİYE " + newLevel + " ★");
                 double multiplier = trainingManager.getMasteryMultiplier(player.getUniqueId(), trainingKey);

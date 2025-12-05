@@ -43,6 +43,39 @@ public class TrainingManager {
         // Seviye 4 (Çok İleri): 20 kullanım
         requiredUses.put("SEISMIC_HAMMER", 20);
         requiredUses.put("LAVA_TRENCH", 20);
+        
+        // ========== YENİ 75 BATARYA SİSTEMİ ==========
+        // Tüm bataryalar için seviyeye göre gerekli kullanım
+        // Seviye 1: 5, Seviye 2: 10, Seviye 3: 15, Seviye 4: 20, Seviye 5: 25
+        int defaultRequired = 5; // Varsayılan (bilinmeyen bataryalar için)
+        requiredUses.put("DEFAULT", defaultRequired);
+    }
+    
+    /**
+     * Gerekli kullanım sayısını al (batarya ismine göre)
+     */
+    public int getRequiredUses(String trainingKey) {
+        // Önce map'te var mı bak
+        if (requiredUses.containsKey(trainingKey)) {
+            return requiredUses.get(trainingKey);
+        }
+        
+        // Yeni batarya sistemi için seviyeye göre otomatik hesapla
+        // Seviye 1: 5, Seviye 2: 10, Seviye 3: 15, Seviye 4: 20, Seviye 5: 25
+        if (trainingKey.contains("_L1") || trainingKey.endsWith(" L1")) {
+            return 5;
+        } else if (trainingKey.contains("_L2") || trainingKey.endsWith(" L2")) {
+            return 10;
+        } else if (trainingKey.contains("_L3") || trainingKey.endsWith(" L3")) {
+            return 15;
+        } else if (trainingKey.contains("_L4") || trainingKey.endsWith(" L4")) {
+            return 20;
+        } else if (trainingKey.contains("_L5") || trainingKey.endsWith(" L5")) {
+            return 25;
+        }
+        
+        // Varsayılan
+        return requiredUses.getOrDefault("DEFAULT", 5);
     }
     
     /**
