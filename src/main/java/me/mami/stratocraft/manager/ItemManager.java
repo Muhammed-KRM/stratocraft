@@ -1469,32 +1469,6 @@ public class ItemManager {
             case "YENILENME":
                 return new RecipeInfo("Yenilenme", "§7Dünyada bloklarla", "Yakındaki dostlara yenilenme efekti sağlar.", false);
             
-            default:
-                // Batarya tarifleri için genel kontrol
-                if (recipeId.startsWith("BATTERY_")) {
-                    return new RecipeInfo("Batarya Tarifi", "§7Dünyada bloklarla", "Shift+Sağ Tık ile detaylı tarif görüntüle.", false);
-                }
-                return new RecipeInfo("Bilinmeyen Tarif", "§7Bilinmeyen", "Açıklama yok.");
-            case "WEAPON_L5_2":
-                return new RecipeInfo("Ateş Ejderi Tarifi", "§7Crafting masasında",
-                    "Mod 1: %10 hasar | Mod 2: Ateş topu yağmuru (15 top).", true,
-                    Arrays.asList("Satır 1: [ ] [F] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [G] [ ]",
-                        "F = Ateş Topu", "B = Void Dragon Heart", "G = Altın Balta"));
-            case "WEAPON_L5_3":
-                return new RecipeInfo("Titan Katili Tarifi", "§7Crafting masasında",
-                    "Mod 1: %5 hasar | Mod 2: Mızrak yağmuru (10 mızrak).", true,
-                    Arrays.asList("Satır 1: [ ] [D] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [S] [ ]",
-                        "D = Elmas Blok", "B = Void Dragon Heart", "S = Çubuk"));
-            case "WEAPON_L5_4":
-                return new RecipeInfo("Ruh Biçen Tarifi", "§7Crafting masasında",
-                    "Mod 1: Öldürdüğün mobları çağır | Mod 2: Hortlakları patlat.", true,
-                    Arrays.asList("Satır 1: [ ] [W] [ ]", "Satır 2: [ ] [B] [ ]", "Satır 3: [ ] [S] [ ]",
-                        "W = Wither Gülü", "B = Void Dragon Heart", "S = Ruh Kumu"));
-            case "WEAPON_L5_5":
-                return new RecipeInfo("Zamanı Büken Tarifi", "§7Crafting masasında",
-                    "Mod 1: Zamanı durdur (10 sn) | Mod 2: Geri sar (5 sn önce).", true,
-                    Arrays.asList("Satır 1: [ ] [S] [ ]", "Satır 2: [C] [B] [C]", "Satır 3: [ ] [S] [ ]",
-                        "S = Saat", "B = Void Dragon Heart", "C = Yıldız Çekirdeği"));
             // Zırh tarif kitapları (RECIPE_ARMOR_L1_1 -> ARMOR_L1_1)
             case "ARMOR_L1_1":
             case "ARMOR_L1_2":
