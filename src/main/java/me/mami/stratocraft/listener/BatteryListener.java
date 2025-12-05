@@ -513,7 +513,7 @@ public class BatteryListener implements Listener {
             current = current.getRelative(BlockFace.UP);
         }
         
-        // Seviye 5 için özel blokları da kaldır (BEACON altında, NETHER_STAR/BEDROCK üstte)
+        // Seviye 5 için özel blokları da kaldır (BEACON altında, üstte özel blok)
         if (batteryLevel == 5) {
             // Altındaki BEACON'u kaldır
             Block belowSpecial = bottom.getRelative(BlockFace.DOWN);
@@ -521,15 +521,19 @@ public class BatteryListener implements Listener {
                 belowSpecial.setType(Material.AIR);
             }
             
-            // Üstündeki NETHER_STAR veya BEDROCK'u kaldır
+            // Üstündeki özel blokları kaldır (tüm olası özel bloklar)
             Block aboveSpecial = top.getRelative(BlockFace.UP);
-            if (aboveSpecial.getType() == Material.NETHER_STAR || aboveSpecial.getType() == Material.BEDROCK) {
+            Material topBlock = aboveSpecial.getType();
+            if (topBlock == Material.NETHER_STAR || topBlock == Material.BEDROCK ||
+                topBlock == Material.END_CRYSTAL || topBlock == Material.DRAGON_HEAD ||
+                topBlock == Material.COMMAND_BLOCK || topBlock == Material.LAVA_BUCKET ||
+                topBlock == Material.BEACON || topBlock == Material.ANVIL) {
                 aboveSpecial.setType(Material.AIR);
             }
         }
         
-        // Yan blokları kaldır (seviye 2+ için)
-        if (batteryLevel >= 2) {
+        // Yan blokları kaldır (seviye 2-4 için, seviye 5 için yan blok yok)
+        if (batteryLevel >= 2 && batteryLevel <= 4) {
             // Merkez bloğu bul (bottom ve top arasında ortada)
             Block middle = bottom;
             int height = (int)(top.getY() - bottom.getY() + 1);
@@ -547,6 +551,8 @@ public class BatteryListener implements Listener {
             Material sideBlock = null;
             if (east.getType() != baseBlock && east.getType() != Material.AIR) sideBlock = east.getType();
             if (west.getType() != baseBlock && west.getType() != Material.AIR) sideBlock = west.getType();
+            if (north.getType() != baseBlock && north.getType() != Material.AIR && sideBlock == null) sideBlock = north.getType();
+            if (south.getType() != baseBlock && south.getType() != Material.AIR && sideBlock == null) sideBlock = south.getType();
             
             if (sideBlock != null) {
                 // Tüm yan blokları kaldır (4 yönde)
