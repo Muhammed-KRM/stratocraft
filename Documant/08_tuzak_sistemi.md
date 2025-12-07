@@ -415,6 +415,8 @@ Mayınlar **basınç plakaları** olarak verilir ve yere koyulduğunda otomatik 
 
 **ÖNEMLİ**: Bu sistem **eski mayın sisteminden tamamen farklıdır**! Eski sistem (Tuzak Çekirdeği + Magma Block) hala çalışıyor, ama yeni sistem daha basit ve kullanışlıdır.
 
+**Sistem Yöneticisi**: `NewMineManager.java` - Tüm 25 mayın tipini yönetir.
+
 ---
 
 ### 🎯 Kullanım
@@ -430,9 +432,16 @@ Mayınlar **basınç plakaları** olarak verilir ve yere koyulduğunda otomatik 
 
 - **Seviye 1**: `STONE_PRESSURE_PLATE` (Taş Basınç Plakası)
 - **Seviye 2**: `OAK_PRESSURE_PLATE` (Meşe Basınç Plakası)
-- **Seviye 3**: `BIRCH_PRESSURE_PLATE` (Huş Basınç Plakası) + ✨ Parlama Efekti
-- **Seviye 4**: `DARK_OAK_PRESSURE_PLATE` (Koyu Meşe Basınç Plakası) + ✨ Parlama Efekti
-- **Seviye 5**: `WARPED_PRESSURE_PLATE` (Yamuk Basınç Plakası) + ✨ Parlama Efekti
+- **Seviye 3**: `POLISHED_BLACKSTONE_PRESSURE_PLATE` (Cilalı Siyah Taş Basınç Plakası) + ✨ Parlama Efekti
+- **Seviye 4**: `HEAVY_WEIGHTED_PRESSURE_PLATE` (Ağır Ağırlık Basınç Plakası) + ✨ Parlama Efekti
+- **Seviye 5**: `LIGHT_WEIGHTED_PRESSURE_PLATE` (Hafif Ağırlık Basınç Plakası) + ✨ Parlama Efekti
+
+**Alt Blok Tipleri (Seviyeye Göre)**:
+- **Seviye 1**: Cobblestone
+- **Seviye 2**: Stone
+- **Seviye 3**: Iron Block
+- **Seviye 4**: Diamond Block
+- **Seviye 5**: Netherite Block
 
 ---
 
@@ -501,18 +510,59 @@ Mayınlar **basınç plakaları** olarak verilir ve yere koyulduğunda otomatik 
 
 **Gizleme Aleti**: `MINE_CONCEALER`
 - **Kullanım**: Shift + Sağ Tık mayına
-- **Efekt**: Mayın görünmez olur (sadece sahibi görebilir)
+- **Efekt**: Mayın görünmez olur (sadece sahibi ve klan üyeleri görebilir)
 - **Tekrar Kullanım**: Aynı işlemle görünür yapılabilir
+- **Görünürlük Kuralları**:
+  - **Sahibi**: Mayın ismini her zaman görebilir
+  - **Klan Üyeleri**: Mayın ismini görebilir
+  - **Düşmanlar**: Gizli mayınları göremez (basınç plakasını da göremez)
+
+**Teknik Detay**:
+- ArmorStand ile isim görünürlüğü kontrol ediliyor
+- `Player#showEntity` ve `Player#hideEntity` kullanılıyor
+- Her 20 tick'te (1 saniye) görünürlük güncelleniyor
+- Yakındaki oyuncular kontrol ediliyor (10 blok yarıçap)
+
+---
+
+### 👻 Hayalet Tarif Desteği
+
+**Yeni Özellik**: Mayınlar için hayalet tarif gösterimi!
+
+**Nasıl Çalışır?**:
+1. Tarif kitabına bak (mayın tarifi içeren)
+2. Hayalet bloklar görünür (ArmorStand ile)
+3. Basınç plakası + alt blok deseni gösterilir
+4. Doğru blokları koy, hayalet bloklar kaybolur
+
+**Desteklenen Mayınlar**:
+- Tüm 25 mayın tipi için hayalet tarifler
+- `GhostRecipeManager.initializeMineRecipes()` ile otomatik yüklenir
+- Seviyeye göre basınç plakası + alt blok deseni
+
+**Tarif Formatı**:
+- **Merkez**: Basınç plakası (seviyeye göre)
+- **Alt Blok**: Seviyeye göre blok (Cobblestone, Stone, Iron Block, vb.)
+
+**Tarif ID Formatı**:
+- `RECIPE_MINE_<MAYIN_ISMI>`
+- Örnek: `RECIPE_MINE_EXPLOSIVE`, `RECIPE_MINE_NUCLEAR_EXPLOSIVE`
 
 ---
 
 ### ⚠️ Önemli Notlar
 
-- **Dost/Düşman Ayrımı Yok**: Mayınlar herkese zarar verir!
+- **Dost/Düşman Ayrımı**: Mayınlar herkese zarar verir (klan üyeleri de dahil!)
 - **Otomatik Aktivasyon**: Yere koyulduğunda otomatik aktif olur
-- **Basınç Plakası Görünür**: Mayınlar gizli değil, açık basınç plakalarıdır
+- **Basınç Plakası Görünür**: Mayınlar gizli değil, açık basınç plakalarıdır (gizleme aleti ile gizlenebilir)
 - **Gizleme Opsiyonel**: Gizleme aleti ile görünmez yapılabilir
 - **Eski Sistem Hala Çalışıyor**: Tuzak Çekirdeği + Magma Block sistemi hala aktif
+- **Spawn Koruması**: Spawn yakınında (100 blok) mayın yerleştirilemez
+- **Klan Alanı**: Klan alanlarında sadece klan üyeleri mayın yerleştirebilir
+- **Sınırlamalar**:
+  - Oyuncu başına maksimum 100 mayın
+  - Klan başına maksimum 500 mayın
+  - Dünya başına maksimum 10,000 mayın
 
 ---
 
@@ -730,6 +780,72 @@ Mayınlar **basınç plakaları** olarak verilir ve yere koyulduğunda otomatik 
 - Oyuncu başına maksimum 100 mayın
 - Klan başına maksimum 500 mayın
 - Dünya başına maksimum 10,000 mayın
+
+---
+
+---
+
+## 🔧 TEKNİK DETAYLAR
+
+### NewMineManager Sistemi
+
+**Dosya**: `NewMineManager.java`
+
+**Özellikler**:
+- 25 benzersiz mayın tipi yönetimi
+- Basınç plakası tabanlı sistem
+- Gizleme sistemi (ArmorStand ile görünürlük kontrolü)
+- Klan entegrasyonu
+- Performans optimizasyonları
+
+**Veri Yapıları**:
+- `activeMines`: Aktif mayınlar (Location -> MineData)
+- `mineNameStands`: Mayın isim standları (Location -> ArmorStand)
+- `hiddenMines`: Gizli mayınlar (Location -> boolean)
+
+**MineType Enum**:
+- 25 farklı mayın tipi
+- Her mayın için seviye ve görünen isim
+- Seviye 1-5 arası dağılım
+
+### Hayalet Tarif Entegrasyonu
+
+**GhostRecipeManager Entegrasyonu**:
+- `initializeMineRecipes()` metodu ile otomatik yükleme
+- Her mayın için basit hayalet tarif (basınç plakası + alt blok)
+- Seviyeye göre farklı basınç plakası ve alt blok tipleri
+
+**Tarif Oluşturma**:
+```java
+// Seviyeye göre basınç plakası
+Material pressurePlate = getPressurePlateForLevel(level);
+// Seviyeye göre alt blok
+Material baseBlock = getBaseBlockForLevel(level);
+```
+
+### Performans Optimizasyonları
+
+**Görünürlük Güncellemesi**:
+- Her 20 tick'te bir (1 saniye) güncellenir
+- Sadece 10 blok yakınındaki oyuncular kontrol edilir
+- `Player#showEntity` ve `Player#hideEntity` kullanılır
+
+**Mayın Tetikleme**:
+- Event-based sistem (BlockPressurePlateEvent)
+- Sadece aktif mayınlar kontrol edilir
+- Chunk yüklü kontrolü yapılır
+
+---
+
+## 📊 MAYIN KARŞILAŞTIRMA TABLOSU
+
+| Seviye | Mayın Sayısı | Basınç Plakası | Alt Blok | Özellik |
+|--------|--------------|----------------|----------|---------|
+| **1** | 5 | Taş | Cobblestone | Temel efektler |
+| **2** | 5 | Meşe | Stone | Orta seviye efektler |
+| **3** | 5 | Cilalı Siyah Taş | Demir Bloğu | Güçlü efektler + Parlama |
+| **4** | 5 | Ağır Ağırlık | Elmas Bloğu | Çok güçlü efektler + Parlama |
+| **5** | 5 | Hafif Ağırlık | Netherite Bloğu | Efsanevi efektler + Parlama |
 
 ---
 

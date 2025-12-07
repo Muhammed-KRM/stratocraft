@@ -291,6 +291,84 @@ Avantaj:
 
 ---
 
+## 👻 HAYALET TARİF SİSTEMİ (GHOST RECIPES)
+
+### Nedir?
+
+**Hayalet Tarifler** = Tarif kitaplarına baktığında görünen görsel rehberler. Blokların nereye konulacağını ArmorStand ile gösterir.
+
+---
+
+### Nasıl Çalışır?
+
+#### 1. **Tarif Kitabına Bak**
+- Tarif kitabını eline al
+- Kitaba bak (sneak + sağ tık veya sadece bak)
+- Hayalet bloklar görünür (ArmorStand ile gösterilir)
+
+#### 2. **Hayalet Bloklar**
+- **Görünüm:** ArmorStand'lar blok item'ı kafalarında taşır
+- **Renk:** Şeffaf, hayalet görünümü
+- **Konum:** Tarif desenine göre yerleştirilir
+- **Menzil:** 50 bloktan uzaklaşırsan kaybolur
+
+#### 3. **Blok Koyma**
+- Hayalet bloğun olduğu yere doğru blok tipini koy
+- Doğru blok koyulunca hayalet blok kaybolur
+- Tüm bloklar tamamlanınca tarif tamamlanır
+
+#### 4. **Sabit Tarifler**
+- Yer tıklayınca tarif sabitlenir
+- Shift + Sol tık ile kaldırılabilir
+- Sabit tarifler oyuncu uzaklaşsa da kalır
+
+---
+
+### Desteklenen Tarifler
+
+#### Yapılar
+- Simya Kulesi (ALCHEMY_TOWER)
+- Tektonik Sabitleyici (TECTONIC_STABILIZER)
+- Zehir Reaktörü (POISON_REACTOR)
+- Şifa Kulesi (HEALING_BEACON)
+- Global Pazar Kapısı (GLOBAL_MARKET_GATE)
+- Otomatik Taret (AUTO_TURRET)
+- Ve daha fazlası...
+
+#### Bataryalar (75 Batarya)
+- Tüm 75 batarya için hayalet tarifler
+- NewBatteryManager'dan otomatik yüklenir
+- Kategori ve seviye bazlı organizasyon
+
+#### Mayınlar (25 Mayın)
+- Tüm 25 mayın tipi için hayalet tarifler
+- Basınç plakası + seviyeye göre blok deseni
+- Gizleme aleti tarifi
+
+#### Ritüeller
+- Klan Oluşturma (CLAN_CREATE)
+- Klan Yükseltme (CLAN_UPGRADE)
+- Klan Dağıtma (CLAN_DISBAND)
+
+---
+
+### Teknik Detaylar
+
+#### GhostRecipeManager
+- **Dosya:** `GhostRecipeManager.java`
+- **Görev:** Hayalet tarif verilerini yönetir
+- **Özellikler:**
+  - Aktif tarifler (oyuncuya özel)
+  - Sabit tarifler (konum bazlı)
+  - Otomatik temizleme (mesafe kontrolü)
+
+#### Entegrasyon
+- **Bataryalar:** NewBatteryManager ile entegre
+- **Mayınlar:** NewMineManager ile entegre
+- **Yapılar:** Manuel tanımlı tarifler
+
+---
+
 ## ⚠️ ÖNEMLİ NOTLAR
 
 ### Tarif Sistemi Kuralları
