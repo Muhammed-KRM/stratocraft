@@ -2600,10 +2600,11 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         // Özel zırh tarifleri
         if (name.toLowerCase().startsWith("recipe_armor_l")) {
             String[] parts = name.toLowerCase().split("_");
-            if (parts.length >= 4) {
+            // Format: recipe_armor_l1_2 -> ["recipe", "armor", "l1", "2"] (4 parça)
+            if (parts.length == 4) {
                 try {
-                    int level = Integer.parseInt(parts[3].replace("l", ""));
-                    int variant = Integer.parseInt(parts[4]);
+                    int level = Integer.parseInt(parts[2].replace("l", ""));
+                    int variant = Integer.parseInt(parts[3]);
                     
                     if (level >= 1 && level <= 5 && variant >= 1 && variant <= 5) {
                         switch (level) {
@@ -2663,10 +2664,11 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         // Özel silah tarifleri
         if (name.toLowerCase().startsWith("recipe_weapon_l")) {
             String[] parts = name.toLowerCase().split("_");
-            if (parts.length >= 4) {
+            // Format: recipe_weapon_l5_3 -> ["recipe", "weapon", "l5", "3"] (4 parça)
+            if (parts.length == 4) {
                 try {
-                    int level = Integer.parseInt(parts[3].replace("l", ""));
-                    int variant = Integer.parseInt(parts[4]);
+                    int level = Integer.parseInt(parts[2].replace("l", ""));
+                    int variant = Integer.parseInt(parts[3]);
                     
                     if (level >= 1 && level <= 5 && variant >= 1 && variant <= 5) {
                         switch (level) {

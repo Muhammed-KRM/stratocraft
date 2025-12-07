@@ -347,7 +347,6 @@ public class NewMineManager {
      */
     private void applyMineEffect(MineData mine, Player victim, Location mineLoc) {
         MineType type = mine.getType();
-        int level = type.getLevel();
         
         switch (type) {
             // ========== SEVİYE 1 MAYINLAR ==========
@@ -670,22 +669,23 @@ public class NewMineManager {
     }
     
     /**
-     * Basınç plakası tipi al
+     * Basınç plakası tipi al (ItemManager ile uyumlu)
      */
     private Material getPressurePlateType(MineType type) {
         int level = type.getLevel();
         switch (level) {
             case 1:
+                return Material.STONE_PRESSURE_PLATE; // ItemManager'da seviye 1 için STONE_PRESSURE_PLATE
             case 2:
-                return Material.OAK_PRESSURE_PLATE;
+                return Material.OAK_PRESSURE_PLATE; // ItemManager'da seviye 2 için OAK_PRESSURE_PLATE
             case 3:
-                return Material.STONE_PRESSURE_PLATE;
+                return Material.BIRCH_PRESSURE_PLATE; // ItemManager'da seviye 3 için BIRCH_PRESSURE_PLATE
             case 4:
-                return Material.LIGHT_WEIGHTED_PRESSURE_PLATE;
+                return Material.DARK_OAK_PRESSURE_PLATE; // ItemManager'da seviye 4 için DARK_OAK_PRESSURE_PLATE
             case 5:
-                return Material.HEAVY_WEIGHTED_PRESSURE_PLATE;
+                return Material.WARPED_PRESSURE_PLATE; // ItemManager'da seviye 5 için WARPED_PRESSURE_PLATE
             default:
-                return Material.OAK_PRESSURE_PLATE;
+                return Material.STONE_PRESSURE_PLATE;
         }
     }
     
@@ -695,8 +695,16 @@ public class NewMineManager {
     public static boolean isPressurePlate(Material material) {
         return material == Material.OAK_PRESSURE_PLATE ||
                material == Material.STONE_PRESSURE_PLATE ||
+               material == Material.BIRCH_PRESSURE_PLATE ||
+               material == Material.DARK_OAK_PRESSURE_PLATE ||
+               material == Material.WARPED_PRESSURE_PLATE ||
                material == Material.LIGHT_WEIGHTED_PRESSURE_PLATE ||
-               material == Material.HEAVY_WEIGHTED_PRESSURE_PLATE;
+               material == Material.HEAVY_WEIGHTED_PRESSURE_PLATE ||
+               material == Material.SPRUCE_PRESSURE_PLATE ||
+               material == Material.JUNGLE_PRESSURE_PLATE ||
+               material == Material.ACACIA_PRESSURE_PLATE ||
+               material == Material.CRIMSON_PRESSURE_PLATE ||
+               material == Material.POLISHED_BLACKSTONE_PRESSURE_PLATE;
     }
     
     /**

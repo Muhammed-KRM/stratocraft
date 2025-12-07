@@ -2,7 +2,6 @@ package me.mami.stratocraft;
 
 import me.mami.stratocraft.listener.*;
 import me.mami.stratocraft.listener.NewBatteryListener;
-import me.mami.stratocraft.listener.NewMineListener;
 import me.mami.stratocraft.manager.*;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Territory;
@@ -61,7 +60,11 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.DungeonManager dungeonManager;
     private me.mami.stratocraft.manager.BiomeManager biomeManager;
     private me.mami.stratocraft.manager.BossManager bossManager;
+    private me.mami.stratocraft.manager.BossArenaManager bossArenaManager;
     private me.mami.stratocraft.manager.TamingManager tamingManager;
+    
+    // Yeni Boss Arena Sistemi (BossManager ile birlikte çalışır)
+    private me.mami.stratocraft.manager.NewBossArenaManager newBossArenaManager;
     private me.mami.stratocraft.manager.BreedingManager breedingManager;
     private me.mami.stratocraft.listener.SpecialWeaponListener specialWeaponListener;
     private me.mami.stratocraft.manager.HUDManager hudManager;
@@ -133,8 +136,12 @@ public class Main extends JavaPlugin {
         difficultyManager = new me.mami.stratocraft.manager.DifficultyManager(this);
         dungeonManager = new me.mami.stratocraft.manager.DungeonManager(this);
         biomeManager = new me.mami.stratocraft.manager.BiomeManager(this);
-        bossManager = new me.mami.stratocraft.manager.BossManager(this);
+        bossArenaManager = new me.mami.stratocraft.manager.BossArenaManager(this); // Eski, devre dışı arena (gerekirse)
+        bossManager = new me.mami.stratocraft.manager.BossManager(this);           // Yeni, birleşik Boss sistemi
         tamingManager = new me.mami.stratocraft.manager.TamingManager(this);
+        
+        // Yeni Boss Arena Sistemi - Sadece çevre dönüşümü için
+        newBossArenaManager = new me.mami.stratocraft.manager.NewBossArenaManager(this);
         breedingManager = new me.mami.stratocraft.manager.BreedingManager(this);
         
         // MissionManager'ı DifficultyManager ile başlat
@@ -766,6 +773,14 @@ public class Main extends JavaPlugin {
     
     public me.mami.stratocraft.manager.BossManager getBossManager() {
         return bossManager;
+    }
+    
+    public me.mami.stratocraft.manager.BossArenaManager getBossArenaManager() {
+        return bossArenaManager;
+    }
+    
+    public me.mami.stratocraft.manager.NewBossArenaManager getNewBossArenaManager() {
+        return newBossArenaManager;
     }
     
     public me.mami.stratocraft.manager.TamingManager getTamingManager() {

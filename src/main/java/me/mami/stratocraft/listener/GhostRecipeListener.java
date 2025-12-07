@@ -1,5 +1,6 @@
 package me.mami.stratocraft.listener;
 
+import me.mami.stratocraft.gui.RecipeMenu;
 import me.mami.stratocraft.manager.GhostRecipeManager;
 import me.mami.stratocraft.manager.ItemManager;
 import me.mami.stratocraft.manager.ResearchManager;
@@ -16,14 +17,12 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.Bukkit;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.util.RayTraceResult;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * GhostRecipeListener - Hayalet tarif sistemi listener'ı
@@ -67,7 +66,8 @@ public class GhostRecipeListener implements Listener {
                 showCraftingRecipe(player, recipeId);
             } else {
                 // Normal sağ tık: GUI menü aç
-                openRecipeMenu(player, recipeId);
+                Inventory menu = RecipeMenu.createRecipeMenu(recipeId);
+                player.openInventory(menu);
             }
             event.setCancelled(true);
             return;
@@ -181,272 +181,6 @@ public class GhostRecipeListener implements Listener {
         }
         
         player.sendMessage("§6§l════════════════════════════");
-    }
-    
-    /**
-     * Tarif kitabı GUI menüsünü aç
-     */
-    private void openRecipeMenu(Player player, String recipeId) {
-        String recipeIdUpper = recipeId.toUpperCase().replace("RECIPE_", "");
-        ItemManager.RecipeInfo info = ItemManager.getRecipeInfo(recipeIdUpper);
-        
-        if (info == null) {
-            player.sendMessage("§cBu tarif için bilgi bulunamadı!");
-            return;
-        }
-        
-        Inventory menu = Bukkit.createInventory(null, 27, "§eTarif: " + info.getDisplayName());
-        
-        // Crafting grid gösterimi (Slot 10-18: 3x3 grid)
-        // Slot 10-12: İlk satır
-        // Slot 13-15: İkinci satır
-        // Slot 16-18: Üçüncü satır
-        
-        // Crafting recipe bilgisi varsa göster
-        if (info.getCraftingRecipe() != null && !info.getCraftingRecipe().isEmpty()) {
-            // Crafting recipe'yi parse et ve göster
-            List<String> recipeLines = info.getCraftingRecipe();
-            
-            // İlk 3 satır crafting grid'i (Satır 1, Satır 2, Satır 3)
-            String[] gridLines = new String[3];
-            java.util.Map<String, Material> materialMap = new java.util.HashMap<>();
-            
-            for (String line : recipeLines) {
-                if (line.startsWith("Satır 1:")) {
-                    gridLines[0] = line.replace("Satır 1:", "").trim();
-                } else if (line.startsWith("Satır 2:")) {
-                    gridLines[1] = line.replace("Satır 2:", "").trim();
-                } else if (line.startsWith("Satır 3:")) {
-                    gridLines[2] = line.replace("Satır 3:", "").trim();
-                } else if (line.contains("=")) {
-                    // Malzeme açıklaması (örn: "I = Demir Külçe")
-                    String[] parts = line.split("=");
-                    if (parts.length == 2) {
-                        String key = parts[0].trim();
-                        String materialName = parts[1].trim();
-                        Material mat = parseMaterialName(materialName);
-                        if (mat != null) {
-                            materialMap.put(key, mat);
-                        }
-                    }
-                }
-            }
-            
-            // 3x3 grid'i oluştur (Slot 10-18)
-            int[] slots = {10, 11, 12, 13, 14, 15, 16, 17, 18};
-            for (int row = 0; row < 3; row++) {
-                String gridLine = gridLines[row];
-                if (gridLine != null && !gridLine.isEmpty()) {
-                    // Parse et: "[I] [F] [I]" -> I, F, I
-                    java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[([^\\]]+)\\]");
-                    java.util.regex.Matcher matcher = pattern.matcher(gridLine);
-                    int col = 0;
-                    while (matcher.find() && col < 3) {
-                        String key = matcher.group(1).trim();
-                        int slotIndex = row * 3 + col;
-                        if (slotIndex < slots.length) {
-                            Material mat = materialMap.get(key);
-                            if (mat != null) {
-                                menu.setItem(slots[slotIndex], new ItemStack(mat));
-                            } else if (key.isEmpty() || key.equals(" ")) {
-                                // Boş slot
-                                menu.setItem(slots[slotIndex], new ItemStack(Material.AIR));
-                            } else {
-                                // Bilinmeyen malzeme - bilgi item'ı
-                                ItemStack infoItem = new ItemStack(Material.PAPER);
-                                ItemMeta meta = infoItem.getItemMeta();
-                                meta.setDisplayName("§7" + key);
-                                infoItem.setItemMeta(meta);
-                                menu.setItem(slots[slotIndex], infoItem);
-                            }
-                        }
-                        col++;
-                    }
-                }
-            }
-        } else {
-            // Crafting recipe yoksa bilgi göster
-            ItemStack infoItem = new ItemStack(Material.CRAFTING_TABLE);
-            ItemMeta meta = infoItem.getItemMeta();
-            meta.setDisplayName("§eCrafting Tarifi");
-            List<String> lore = new ArrayList<>();
-            lore.add("§7" + info.getFunctionInfo());
-            if (info.getLocationInfo() != null) {
-                lore.add("");
-                lore.add("§7" + info.getLocationInfo());
-            }
-            meta.setLore(lore);
-            infoItem.setItemMeta(meta);
-            menu.setItem(13, infoItem);
-        }
-        
-        // Sonuç item (Slot 22)
-        ItemStack resultItem = getResultItem(recipeIdUpper);
-        if (resultItem != null) {
-            menu.setItem(22, resultItem);
-        }
-        
-        // Malzeme listesi (Slot 4)
-        ItemStack materialItem = new ItemStack(Material.BOOK);
-        ItemMeta materialMeta = materialItem.getItemMeta();
-        materialMeta.setDisplayName("§6Gerekli Malzemeler");
-        List<String> materialLore = new ArrayList<>();
-        if (info.getCraftingRecipe() != null && !info.getCraftingRecipe().isEmpty()) {
-            for (String line : info.getCraftingRecipe()) {
-                if (line.contains("=")) {
-                    materialLore.add("§7" + line);
-                }
-            }
-            if (materialLore.isEmpty()) {
-                materialLore.add("§7Detaylı bilgi için Shift+Sağ Tık yapın");
-            }
-        } else {
-            materialLore.add("§7Detaylı bilgi için Shift+Sağ Tık yapın");
-        }
-        materialMeta.setLore(materialLore);
-        materialItem.setItemMeta(materialMeta);
-        menu.setItem(4, materialItem);
-        
-        // Kapat butonu (Slot 26)
-        ItemStack closeItem = new ItemStack(Material.BARRIER);
-        ItemMeta closeMeta = closeItem.getItemMeta();
-        closeMeta.setDisplayName("§cKapat");
-        closeItem.setItemMeta(closeMeta);
-        menu.setItem(26, closeItem);
-        
-        player.openInventory(menu);
-    }
-    
-    /**
-     * Malzeme ismini Material'a çevir
-     */
-    private Material parseMaterialName(String name) {
-        name = name.toLowerCase().trim();
-        // Türkçe isimlerden İngilizce Material'a çevir
-        if (name.contains("demir") && name.contains("külçe")) return Material.IRON_INGOT;
-        if (name.contains("demir") && name.contains("blok")) return Material.IRON_BLOCK;
-        if (name.contains("altın") && name.contains("külçe")) return Material.GOLD_INGOT;
-        if (name.contains("altın") && name.contains("blok")) return Material.GOLD_BLOCK;
-        if (name.contains("elmas")) return Material.DIAMOND;
-        if (name.contains("elmas") && name.contains("blok")) return Material.DIAMOND_BLOCK;
-        if (name.contains("ender") && name.contains("inci")) return Material.ENDER_PEARL;
-        if (name.contains("tüy")) return Material.FEATHER;
-        if (name.contains("çubuk")) return Material.STICK;
-        if (name.contains("ip")) return Material.STRING;
-        if (name.contains("goblin") && name.contains("taç")) return Material.GOLDEN_HELMET; // Placeholder
-        if (name.contains("troll") && name.contains("kalp")) return Material.HEART_OF_THE_SEA; // Placeholder
-        if (name.contains("t-rex") && name.contains("diş")) return Material.BONE; // Placeholder
-        if (name.contains("obsidyen")) return Material.OBSIDIAN;
-        if (name.contains("tnt")) return Material.TNT;
-        if (name.contains("barut")) return Material.GUNPOWDER;
-        if (name.contains("buz")) return Material.PACKED_ICE;
-        if (name.contains("örümcek") && name.contains("göz")) return Material.SPIDER_EYE;
-        if (name.contains("redstone")) return Material.REDSTONE;
-        if (name.contains("kömür") && name.contains("blok")) return Material.COAL_BLOCK;
-        if (name.contains("paratoner")) return Material.LIGHTNING_ROD;
-        if (name.contains("buğday")) return Material.WHEAT;
-        if (name.contains("magma") && name.contains("blok")) return Material.MAGMA_BLOCK;
-        if (name.contains("netherrack")) return Material.NETHERRACK;
-        if (name.contains("zümrüt") && name.contains("blok")) return Material.EMERALD_BLOCK;
-        if (name.contains("slime") && name.contains("blok")) return Material.SLIME_BLOCK;
-        if (name.contains("lapis") && name.contains("blok")) return Material.LAPIS_BLOCK;
-        if (name.contains("bakır") && name.contains("blok")) return Material.COPPER_BLOCK;
-        if (name.contains("glowstone")) return Material.GLOWSTONE;
-        if (name.contains("zehirli") && name.contains("patates")) return Material.POISONOUS_POTATO;
-        if (name.contains("frosted") && name.contains("ice")) return Material.FROSTED_ICE;
-        if (name.contains("beacon")) return Material.BEACON;
-        if (name.contains("nether") && name.contains("star")) return Material.NETHER_STAR;
-        if (name.contains("end") && name.contains("crystal")) return Material.END_CRYSTAL;
-        if (name.contains("bedrock")) return Material.BEDROCK;
-        if (name.contains("taş")) return Material.STONE;
-        if (name.contains("cam")) return Material.GLASS;
-        if (name.contains("ahşap") || name.contains("planks")) return Material.OAK_PLANKS;
-        if (name.contains("netherite") && name.contains("blok")) return Material.NETHERITE_BLOCK;
-        if (name.contains("iron") && name.contains("bars")) return Material.IRON_BARS;
-        return null;
-    }
-    
-    /**
-     * Recipe ID'ye göre sonuç item'ı al
-     */
-    private ItemStack getResultItem(String recipeId) {
-        // ItemManager'dan static field'ları kullan
-        switch (recipeId) {
-            case "LIGHTNING_CORE":
-                return ItemManager.LIGHTNING_CORE;
-            case "TITANIUM_INGOT":
-                return ItemManager.TITANIUM_INGOT;
-            case "TRAP_CORE":
-                return ItemManager.TRAP_CORE;
-            case "RUSTY_HOOK":
-                return ItemManager.RUSTY_HOOK;
-            // Silah tarifleri
-            case "WEAPON_L1_1":
-                return ItemManager.WEAPON_L1_1;
-            case "WEAPON_L1_2":
-                return ItemManager.WEAPON_L1_2;
-            case "WEAPON_L1_3":
-                return ItemManager.WEAPON_L1_3;
-            case "WEAPON_L1_4":
-                return ItemManager.WEAPON_L1_4;
-            case "WEAPON_L1_5":
-                return ItemManager.WEAPON_L1_5;
-            case "WEAPON_L2_1":
-                return ItemManager.WEAPON_L2_1;
-            case "WEAPON_L2_2":
-                return ItemManager.WEAPON_L2_2;
-            case "WEAPON_L2_3":
-                return ItemManager.WEAPON_L2_3;
-            case "WEAPON_L2_4":
-                return ItemManager.WEAPON_L2_4;
-            case "WEAPON_L2_5":
-                return ItemManager.WEAPON_L2_5;
-            case "WEAPON_L3_1":
-                return ItemManager.WEAPON_L3_1;
-            case "WEAPON_L3_2":
-                return ItemManager.WEAPON_L3_2;
-            case "WEAPON_L3_3":
-                return ItemManager.WEAPON_L3_3;
-            case "WEAPON_L3_4":
-                return ItemManager.WEAPON_L3_4;
-            case "WEAPON_L3_5":
-                return ItemManager.WEAPON_L3_5;
-            case "WEAPON_L4_1":
-                return ItemManager.WEAPON_L4_1;
-            case "WEAPON_L4_2":
-                return ItemManager.WEAPON_L4_2;
-            case "WEAPON_L4_3":
-                return ItemManager.WEAPON_L4_3;
-            case "WEAPON_L4_4":
-                return ItemManager.WEAPON_L4_4;
-            case "WEAPON_L4_5":
-                return ItemManager.WEAPON_L4_5;
-            case "WEAPON_L5_1":
-                return ItemManager.WEAPON_L5_1;
-            case "WEAPON_L5_2":
-                return ItemManager.WEAPON_L5_2;
-            case "WEAPON_L5_3":
-                return ItemManager.WEAPON_L5_3;
-            case "WEAPON_L5_4":
-                return ItemManager.WEAPON_L5_4;
-            case "WEAPON_L5_5":
-                return ItemManager.WEAPON_L5_5;
-            default:
-                // Recipe ID'den silah/armor kontrolü
-                if (recipeId.startsWith("WEAPON_") || recipeId.startsWith("ARMOR_")) {
-                    // ItemManager'dan dinamik olarak al
-                    try {
-                        java.lang.reflect.Field field = ItemManager.class.getField(recipeId);
-                        Object value = field.get(null);
-                        if (value instanceof ItemStack) {
-                            return (ItemStack) value;
-                        }
-                    } catch (Exception e) {
-                        // Field bulunamadı, varsayılan döndür
-                    }
-                }
-                return new ItemStack(Material.BOOK);
-        }
     }
     
     /**
@@ -665,6 +399,26 @@ public class GhostRecipeListener implements Listener {
         if (ItemManager.isCustomItem(item, "RECIPE_TITAN_GRAPPLE")) return "TITAN_GRAPPLE";
         if (ItemManager.isCustomItem(item, "RECIPE_TRAP_CORE")) return "TRAP_CORE";
         
+        // Silah tarif kitapları (RECIPE_WEAPON_L1_1 -> WEAPON_L1_1)
+        for (int level = 1; level <= 5; level++) {
+            for (int variant = 1; variant <= 5; variant++) {
+                String recipeId = "RECIPE_WEAPON_L" + level + "_" + variant;
+                if (ItemManager.isCustomItem(item, recipeId)) {
+                    return "WEAPON_L" + level + "_" + variant;
+                }
+            }
+        }
+        
+        // Zırh tarif kitapları (RECIPE_ARMOR_L1_1 -> ARMOR_L1_1)
+        for (int level = 1; level <= 5; level++) {
+            for (int variant = 1; variant <= 5; variant++) {
+                String recipeId = "RECIPE_ARMOR_L" + level + "_" + variant;
+                if (ItemManager.isCustomItem(item, recipeId)) {
+                    return "ARMOR_L" + level + "_" + variant;
+                }
+            }
+        }
+        
         return null;
     }
     
@@ -742,6 +496,201 @@ public class GhostRecipeListener implements Listener {
             } else {
                 player.sendMessage("§7Bu konumda sabit tarif yok.");
             }
+        }
+    }
+    
+    /**
+     * Tarif kitabı GUI menüsü tıklama işlemleri - TAM KORUMA
+     * Tüm tıklama türlerini engeller (normal, shift, number key, vb.)
+     */
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST)
+    public void onRecipeMenuClick(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        Player player = (Player) event.getWhoClicked();
+        
+        // Adventure API - güvenli title çevirme
+        String title = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(event.getView().title());
+        if (!title.startsWith("§eTarif:") && !title.startsWith("§cTarif Bulunamadı")) return;
+        
+        // RAW SLOT KONTROLÜ
+        Inventory clickedInventory = event.getClickedInventory();
+        Inventory topInventory = event.getView().getTopInventory();
+        int rawSlot = event.getRawSlot();
+        int slot = event.getSlot();
+        
+        // GUI envanterinden tıklama - BUTONLARI KONTROL ET
+        if (clickedInventory != null && clickedInventory.equals(topInventory)) {
+            ItemStack clicked = event.getCurrentItem();
+            if (clicked == null || clicked.getType() == Material.AIR) {
+                // Boş slot - engelle
+                event.setCancelled(true);
+                return;
+            }
+            
+            // Buton slotları - ÇALIŞSIN ama item transfer engellensin
+            if (slot == 53 || slot == 49 || slot == 31 || slot == 40 || slot == 25) {
+                // Buton tıklaması - item transfer engelle ama buton çalışsın
+                event.setCancelled(true);
+                
+                // Kapat butonu (Slot 53)
+                if (slot == 53 && clicked.getType() == Material.BARRIER) {
+                    player.closeInventory();
+                    player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
+                    return;
+                }
+                
+                // Bilgi butonu (Slot 49) - Detaylı bilgi göster
+                if (slot == 49 && clicked.getType() == Material.BOOK) {
+                    player.sendMessage("§6§l════════════════════════════");
+                    player.sendMessage("§e§lTARİF BİLGİSİ");
+                    player.sendMessage("§6§l════════════════════════════");
+                    if (clicked.hasItemMeta() && clicked.getItemMeta().hasLore()) {
+                        for (String line : clicked.getItemMeta().getLore()) {
+                            player.sendMessage(line);
+                        }
+                    }
+                    player.sendMessage("§6§l════════════════════════════");
+                    player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, 1.0f, 1.0f);
+                    return;
+                }
+                
+                // Malzeme listesi butonu (Slot 31) - Chat'te göster
+                if (slot == 31 && clicked.getType() == Material.BOOK) {
+                    player.sendMessage("§6§l════════════════════════════");
+                    player.sendMessage("§e§lGEREKLİ MALZEMELER");
+                    player.sendMessage("§6§l════════════════════════════");
+                    if (clicked.hasItemMeta() && clicked.getItemMeta().hasLore()) {
+                        for (String line : clicked.getItemMeta().getLore()) {
+                            player.sendMessage(line);
+                        }
+                    }
+                    player.sendMessage("§6§l════════════════════════════");
+                    player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, 1.0f, 1.0f);
+                    return;
+                }
+                
+                // Sonuç item (Slot 40) - Item bilgisi göster
+                if (slot == 40 && clicked.hasItemMeta()) {
+                    ItemMeta meta = clicked.getItemMeta();
+                    player.sendMessage("§6§l════════════════════════════");
+                    player.sendMessage("§e§lCRAFT EDİLECEK İTEM");
+                    player.sendMessage("§6§l════════════════════════════");
+                    player.sendMessage("§7İsim: §e" + meta.getDisplayName());
+                    if (meta.hasLore()) {
+                        for (String line : meta.getLore()) {
+                            if (!line.contains("═══════════════════")) {
+                                player.sendMessage(line);
+                            }
+                        }
+                    }
+                    player.sendMessage("§6§l════════════════════════════");
+                    player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, 1.0f, 1.0f);
+                    return;
+                }
+                
+                // Ok işareti (Slot 25) - Sadece görsel
+                if (slot == 25) {
+                    return;
+                }
+            }
+            
+            // Crafting grid slotları (10-12, 19-21, 28-30) - Item transfer engelle
+            if ((slot >= 10 && slot <= 12) || (slot >= 19 && slot <= 21) || (slot >= 28 && slot <= 30)) {
+                event.setCancelled(true);
+                player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 0.8f);
+                return;
+            }
+            
+            // Diğer slotlar - engelle
+            event.setCancelled(true);
+            return;
+        }
+        
+        // Oyuncu envanterinden GUI'ye transfer - ENGELLE
+        if (clickedInventory != null && clickedInventory.equals(player.getInventory())) {
+            // Oyuncu envanterinden GUI'ye item koyma - ENGELLE
+            if (rawSlot >= 0 && rawSlot < topInventory.getSize()) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+        
+        // Shift+Click kontrolü - GUI'ye item koymayı engelle
+        if (event.getClick() == org.bukkit.event.inventory.ClickType.SHIFT_LEFT || 
+            event.getClick() == org.bukkit.event.inventory.ClickType.SHIFT_RIGHT) {
+            if (rawSlot >= 0 && rawSlot < topInventory.getSize()) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+        
+        // Number key kontrolü - Hotbar'dan item koymayı engelle
+        if (event.getClick() == org.bukkit.event.inventory.ClickType.NUMBER_KEY) {
+            if (rawSlot >= 0 && rawSlot < topInventory.getSize()) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+        
+        // Middle click kontrolü - Orta tık ile item kopyalamayı engelle
+        if (event.getClick() == org.bukkit.event.inventory.ClickType.MIDDLE) {
+            if (rawSlot >= 0 && rawSlot < topInventory.getSize()) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+        
+        // GUI envanterinden oyuncu envanterine transfer - ENGELLE
+        if (rawSlot >= 0 && rawSlot < topInventory.getSize()) {
+            event.setCancelled(true);
+        }
+    }
+    
+    /**
+     * Tarif kitabı GUI menüsü drag işlemleri - SÜRÜKLEME ENGELLEME
+     */
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST)
+    public void onRecipeMenuDrag(org.bukkit.event.inventory.InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        Player player = (Player) event.getWhoClicked();
+        
+        // Adventure API - güvenli title çevirme
+        String title = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(event.getView().title());
+        if (!title.startsWith("§eTarif:") && !title.startsWith("§cTarif Bulunamadı")) return;
+        
+        // KRİTİK: TÜM DRAG İŞLEMLERİNİ ENGELLE
+        event.setCancelled(true);
+        event.setResult(org.bukkit.event.Event.Result.DENY);
+        
+        // GUI envanterine drag işlemini tamamen engelle
+        Inventory topInventory = event.getView().getTopInventory();
+        boolean isGUISlot = false;
+        for (int slot : event.getRawSlots()) {
+            if (slot < topInventory.getSize()) {
+                isGUISlot = true;
+                break;
+            }
+        }
+        
+        if (isGUISlot) {
+            player.sendMessage("§cBu menüde item taşıyamazsınız!");
+            player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_VILLAGER_NO, 0.5f, 1.0f);
+        }
+    }
+    
+    /**
+     * Tarif kitabı GUI menüsü kapatma işlemleri
+     */
+    @EventHandler
+    public void onRecipeMenuClose(org.bukkit.event.inventory.InventoryCloseEvent event) {
+        if (!(event.getPlayer() instanceof Player)) return;
+        
+        // Adventure API - güvenli title çevirme
+        String title = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(event.getView().title());
+        if (title.startsWith("§eTarif:") || title.startsWith("§cTarif Bulunamadı")) {
+            // Menü kapatıldı - ses efekti (opsiyonel)
+            // Player player = (Player) event.getPlayer();
+            // player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.3f, 0.5f);
         }
     }
 }

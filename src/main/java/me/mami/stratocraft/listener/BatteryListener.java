@@ -741,6 +741,11 @@ public class BatteryListener implements Listener {
         Block east = centerBlock.getRelative(BlockFace.EAST);
         Block west = centerBlock.getRelative(BlockFace.WEST);
         
+        // Yakıt kontrolü değişkenleri (döngü dışında tanımla - duplicate variable hatası önleme)
+        Material fuel = handItem.getType();
+        boolean isDarkMatter = ItemManager.isCustomItem(handItem, "DARK_MATTER");
+        boolean isRedDiamond = ItemManager.isCustomItem(handItem, "RED_DIAMOND");
+        
         // Tüm BatteryType'ları kontrol et
         for (BatteryManager.BatteryType batteryType : BatteryManager.BatteryType.values()) {
             Material baseBlock = batteryType.getBaseBlock();
@@ -791,9 +796,7 @@ public class BatteryListener implements Listener {
             }
             
             // Yakıt kontrolü - Seviye 5 için DARK_MATTER zorunlu
-            Material fuel = handItem.getType();
-            boolean isDarkMatter = ItemManager.isCustomItem(handItem, "DARK_MATTER");
-            boolean isRedDiamond = ItemManager.isCustomItem(handItem, "RED_DIAMOND");
+            // Not: fuel, isDarkMatter, isRedDiamond döngü dışında tanımlı (duplicate variable hatası önleme)
             
             if (batteryLevel == 5) {
                 // Seviye 5 için sadece DARK_MATTER kabul edilir

@@ -84,6 +84,10 @@ public class ContractMenu {
                     lore.add("§7Yapı: §e" + contract.getStructureType());
                 }
                 break;
+            case BASE_PROTECTION:
+                // Base koruma sözleşmesi için özel bilgi yok (şimdilik)
+                lore.add("§7Base koruma sözleşmesi aktif");
+                break;
         }
         
         meta.setLore(lore);

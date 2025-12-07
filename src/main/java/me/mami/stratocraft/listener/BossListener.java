@@ -19,6 +19,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
+import java.util.UUID;
+
 /**
  * Boss Sistemi Dinleyicisi
  * - Ritüel kontrolü ve boss çağırma
@@ -277,7 +279,7 @@ public class BossListener implements Listener {
     }
     
     /**
-     * Boss hasar kontrolü (zayıf noktalar)
+     * Boss hasar kontrolü (zayıf noktalar ve kritik vuruşlar)
      */
     @EventHandler(priority = EventPriority.HIGH)
     public void onBossDamage(EntityDamageEvent event) {
@@ -292,21 +294,77 @@ public class BossListener implements Listener {
             return;
         }
         
+        // Zayıf nokta kontrolü (kritik vuruş - 3x hasar)
+        if (bossManager.isWeakPointActive(entity.getUniqueId())) {
+            double baseDamage = event.getDamage();
+            double criticalDamage = baseDamage * 3.0; // 3x hasar
+            event.setDamage(criticalDamage);
+            
+            // Kritik vuruş efekti
+            entity.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, 
+                entity.getLocation().add(0, 2, 0), 30, 0.5, 0.5, 0.5, 0.1);
+            entity.getWorld().spawnParticle(org.bukkit.Particle.CRIT_MAGIC, 
+                entity.getLocation(), 20, 0.5, 1, 0.5, 0.1);
+            entity.getWorld().playSound(entity.getLocation(), 
+                org.bukkit.Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.5f);
+            
+            // Oyuncuya mesaj
+            if (event instanceof org.bukkit.event.entity.EntityDamageByEntityEvent) {
+                org.bukkit.event.entity.EntityDamageByEntityEvent byEntityEvent = 
+                    (org.bukkit.event.entity.EntityDamageByEntityEvent) event;
+                if (byEntityEvent.getDamager() instanceof Player) {
+                    Player attacker = (Player) byEntityEvent.getDamager();
+                    attacker.sendMessage("§e§l⚡ KRİTİK VURUŞ! §c3x Hasar!");
+                }
+            }
+        }
+        
+        // Zayıf nokta kontrolü (başa vurulduysa 3x hasar)
+        UUID bossId = entity.getUniqueId();
+        boolean weakPointActive = bossManager.isWeakPointActive(bossId);
+        double weakPointMultiplier = 1.0;
+        
+        if (weakPointActive) {
+            // Başa vuruldu mu kontrol et (basit kontrol - yukarıdan vurulduysa)
+            org.bukkit.event.entity.EntityDamageEvent.DamageCause cause = event.getCause();
+            if (cause == org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_ATTACK ||
+                cause == org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK) {
+                // Oyuncu saldırısı - zayıf nokta aktifse 3x hasar
+                weakPointMultiplier = 3.0;
+            }
+        }
+        
+        // Kalkan kontrolü (hasar azaltma) - ÖNCE kalkan kontrolü yapılmalı
+        boolean shieldActive = bossManager.isShieldActive(bossId);
+        if (shieldActive) {
+            double baseDamage = event.getDamage();
+            double reducedDamage = baseDamage * 0.3; // %70 hasar azaltma
+            event.setDamage(reducedDamage);
+            
+            // Kalkan efekti
+            entity.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, 
+                entity.getLocation(), 10, 0.3, 0.3, 0.3, 0.05);
+        }
+        
         // Zayıflık çarpanı uygula
         double multiplier = bossManager.getWeaknessMultiplier(bossData, event.getCause());
-        if (multiplier > 1.0) {
+        double totalMultiplier = Math.max(multiplier, weakPointMultiplier);
+        
+        if (totalMultiplier > 1.0) {
             // Base damage'i artır (armor koruması da olsun)
-            double newDamage = event.getDamage() * multiplier;
+            double newDamage = event.getDamage() * totalMultiplier;
             event.setDamage(newDamage);
             
             // Zayıf nokta vuruldu efekti
-            entity.getWorld().spawnParticle(org.bukkit.Particle.CRIT_MAGIC, entity.getLocation(), 20, 0.5, 1, 0.5, 0.1);
-            entity.getWorld().playSound(entity.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.5f);
-            
-            // Yakındaki oyunculara mesaj
-            for (org.bukkit.entity.Player nearby : entity.getWorld().getPlayers()) {
-                if (nearby.getLocation().distance(entity.getLocation()) <= 20) {
-                    nearby.sendMessage("§c§lZAYIF NOKTASI VURULDU! " + String.format("%.1f", multiplier) + "x hasar!");
+            if (weakPointActive && weakPointMultiplier > 1.0) {
+                entity.getWorld().spawnParticle(org.bukkit.Particle.CRIT_MAGIC, entity.getLocation(), 20, 0.5, 1, 0.5, 0.1);
+                entity.getWorld().playSound(entity.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.5f);
+                
+                // Yakındaki oyunculara mesaj
+                for (org.bukkit.entity.Player nearby : entity.getWorld().getPlayers()) {
+                    if (nearby.getLocation().distance(entity.getLocation()) <= 20) {
+                        nearby.sendMessage("§c§l⚡ ZAYIF NOKTASI VURULDU! " + String.format("%.1f", totalMultiplier) + "x hasar!");
+                    }
                 }
             }
         }
@@ -343,6 +401,12 @@ public class BossListener implements Listener {
         
         // Boss öldü - ÖNCE BossBar'ı temizle (hemen!)
         bossManager.removeBoss(entity.getUniqueId());
+        
+        // Arena temizle (güçlü boss'lar için)
+        if (me.mami.stratocraft.Main.getInstance().getBossArenaManager() != null) {
+            me.mami.stratocraft.Main.getInstance().getBossArenaManager()
+                .cleanupArena(entity.getLocation());
+        }
         
         // Boss öldü
         String bossName = bossManager.getBossDisplayName(bossData.getType());

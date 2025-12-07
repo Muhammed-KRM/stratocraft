@@ -1,6 +1,7 @@
 package me.mami.stratocraft.listener;
 
 import me.mami.stratocraft.manager.NewMineManager;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -118,16 +119,23 @@ public class NewMineListener implements Listener {
                 // Mayın var mı?
                 if (block.hasMetadata("NewMine")) {
                     // Görünürlüğü değiştir
-                    if (mineManager.toggleMineVisibility(block.getLocation())) {
-                        NewMineManager.MineData mine = mineManager.getMine(block.getLocation());
+                    Location mineLoc = block.getLocation();
+                    if (mineManager.toggleMineVisibility(mineLoc)) {
+                        NewMineManager.MineData mine = mineManager.getMine(mineLoc);
                         if (mine != null && mine.isHidden()) {
-                            player.sendMessage("§aMayın gizlendi!");
+                            player.sendMessage("§a§l✓ Mayın gizlendi!");
+                            player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.5f);
                         } else {
-                            player.sendMessage("§aMayın görünür yapıldı!");
+                            player.sendMessage("§a§l✓ Mayın görünür yapıldı!");
+                            player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
                         }
                         event.setCancelled(true);
+                    } else {
+                        player.sendMessage("§cMayın bulunamadı!");
                     }
                     return;
+                } else {
+                    player.sendMessage("§cBu bir mayın değil!");
                 }
             }
         }

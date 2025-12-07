@@ -48,10 +48,43 @@ caravan:
   min-stacks: 20         # Minimum stack sayısı - Anti-abuse (20 stack = 1280 item)
   arrival-radius: 5     # Hedefe ulaşma yarıçapı (blok)
 
-# Performans Ayarları
-performance:
-  async-saving: true     # Async kayıt aktif mi?
-  max-particles-per-tick: 50  # Tick başına maksimum partikül sayısı
+# Boss Ayarları
+boss:
+  bossbar:
+    max-distance: 100    # BossBar gösterim mesafesi (blok) - sadece bu mesafe içindeki bosslar gösterilir
+    max-bars: 3          # Maksimum gösterilecek BossBar sayısı (en yakın 3 boss)
+    show-location: true   # ActionBar'da boss konum bilgisi göster (yön + mesafe)
+    location-update-interval: 20  # Konum bilgisi güncelleme aralığı (tick) - 1 saniye
+  ai:
+    # Yetenek kullanım ayarları
+    ability-cooldown-min: 4000    # Minimum yetenek cooldown (milisaniye) - 4 saniye
+    ability-cooldown-max: 8000    # Maksimum yetenek cooldown (milisaniye) - 8 saniye
+    ability-check-interval: 20    # Yetenek kontrol aralığı (tick) - 1 saniye
+    
+    # Mesafe bazlı yetenek seçimi
+    close-range: 5       # Yakın mesafe (blok) - CHARGE, SHOCKWAVE için
+    medium-range: 15     # Orta mesafe (blok) - FIRE_BREATH, BLOCK_THROW için
+    far-range: 30        # Uzak mesafe (blok) - LIGHTNING_STRIKE, TELEPORT için
+    
+    # AI davranış ayarları
+    use-smart-targeting: true     # Akıllı hedef seçimi (görüş hattı kontrolü)
+    avoid-self-damage: true      # Kendine zarar vermeme kontrolü
+    use-pathfinding: true         # Pathfinding kullan (daha iyi hareket)
+    min-health-for-heal: 0.3     # İyileştirme için minimum can yüzdesi (%30)
+    min-health-for-teleport: 0.2  # Işınlanma için minimum can yüzdesi (%20)
+    
+    # Yetenek öncelikleri (yüksek sayı = daha yüksek öncelik)
+    priority:
+      heal: 10           # Can düşükse iyileştirme öncelikli
+      teleport: 8        # Can çok düşükse ışınlanma
+      summon-minions: 6  # Minyon çağırma
+      charge: 5          # Yakınsa koşu saldırısı
+      fire-breath: 4     # Orta mesafede ateş püskürtme
+      lightning-strike: 4 # Uzaktan yıldırım
+      block-throw: 3     # Blok fırlatma
+      shockwave: 3       # Şok dalgası
+      poison-cloud: 2    # Zehir bulutu
+      explosion: 1       # Patlama (en düşük öncelik - kendine zarar verebilir)
 
 # Dünya Zorluk Sistemi
 world:
