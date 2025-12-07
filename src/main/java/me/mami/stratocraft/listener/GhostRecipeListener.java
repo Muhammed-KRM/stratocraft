@@ -501,108 +501,107 @@ public class GhostRecipeListener implements Listener {
     
     /**
      * Tarif kitabı GUI menüsü tıklama işlemleri - TAM KORUMA
-     * Tüm tıklama türlerini engeller (normal, shift, number key, vb.)
+     * Tüm item transferlerini engeller, sadece butonlar çalışır
      */
     @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST)
     public void onRecipeMenuClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) return;
-        Player player = (Player) event.getWhoClicked();
         
         // Adventure API - güvenli title çevirme
         String title = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(event.getView().title());
-        if (!title.startsWith("§eTarif:") && !title.startsWith("§cTarif Bulunamadı")) return;
         
-        // RAW SLOT KONTROLÜ
-        Inventory clickedInventory = event.getClickedInventory();
+        // Title kontrolü - daha esnek (renk kodları olmadan da çalışır)
+        if (!title.contains("Tarif:") && !title.contains("Tarif Bulunamadı")) return;
+        
+        // KRİTİK: TÜM TIKLAMALARI ENGELLE (en başta)
+        event.setCancelled(true);
+        event.setResult(org.bukkit.event.Event.Result.DENY);
+        
+        Player player = (Player) event.getWhoClicked();
         Inventory topInventory = event.getView().getTopInventory();
-        int rawSlot = event.getRawSlot();
+        Inventory clickedInventory = event.getClickedInventory();
         int slot = event.getSlot();
+        int rawSlot = event.getRawSlot();
         
-        // GUI envanterinden tıklama - BUTONLARI KONTROL ET
+        // GUI envanterinden tıklama kontrolü
         if (clickedInventory != null && clickedInventory.equals(topInventory)) {
+            // GUI envanterinden tıklama - item transfer engelle
             ItemStack clicked = event.getCurrentItem();
+            
             if (clicked == null || clicked.getType() == Material.AIR) {
                 // Boş slot - engelle
-                event.setCancelled(true);
                 return;
             }
             
-            // Buton slotları - ÇALIŞSIN ama item transfer engellensin
-            if (slot == 53 || slot == 49 || slot == 31 || slot == 40 || slot == 25) {
-                // Buton tıklaması - item transfer engelle ama buton çalışsın
-                event.setCancelled(true);
-                
-                // Kapat butonu (Slot 53)
-                if (slot == 53 && clicked.getType() == Material.BARRIER) {
-                    player.closeInventory();
-                    player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
-                    return;
-                }
-                
-                // Bilgi butonu (Slot 49) - Detaylı bilgi göster
-                if (slot == 49 && clicked.getType() == Material.BOOK) {
-                    player.sendMessage("§6§l════════════════════════════");
-                    player.sendMessage("§e§lTARİF BİLGİSİ");
-                    player.sendMessage("§6§l════════════════════════════");
-                    if (clicked.hasItemMeta() && clicked.getItemMeta().hasLore()) {
-                        for (String line : clicked.getItemMeta().getLore()) {
-                            player.sendMessage(line);
-                        }
-                    }
-                    player.sendMessage("§6§l════════════════════════════");
-                    player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, 1.0f, 1.0f);
-                    return;
-                }
-                
-                // Malzeme listesi butonu (Slot 31) - Chat'te göster
-                if (slot == 31 && clicked.getType() == Material.BOOK) {
-                    player.sendMessage("§6§l════════════════════════════");
-                    player.sendMessage("§e§lGEREKLİ MALZEMELER");
-                    player.sendMessage("§6§l════════════════════════════");
-                    if (clicked.hasItemMeta() && clicked.getItemMeta().hasLore()) {
-                        for (String line : clicked.getItemMeta().getLore()) {
-                            player.sendMessage(line);
-                        }
-                    }
-                    player.sendMessage("§6§l════════════════════════════");
-                    player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, 1.0f, 1.0f);
-                    return;
-                }
-                
-                // Sonuç item (Slot 40) - Item bilgisi göster
-                if (slot == 40 && clicked.hasItemMeta()) {
-                    ItemMeta meta = clicked.getItemMeta();
-                    player.sendMessage("§6§l════════════════════════════");
-                    player.sendMessage("§e§lCRAFT EDİLECEK İTEM");
-                    player.sendMessage("§6§l════════════════════════════");
-                    player.sendMessage("§7İsim: §e" + meta.getDisplayName());
-                    if (meta.hasLore()) {
-                        for (String line : meta.getLore()) {
-                            if (!line.contains("═══════════════════")) {
-                                player.sendMessage(line);
-                            }
-                        }
-                    }
-                    player.sendMessage("§6§l════════════════════════════");
-                    player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, 1.0f, 1.0f);
-                    return;
-                }
-                
-                // Ok işareti (Slot 25) - Sadece görsel
-                if (slot == 25) {
-                    return;
-                }
+            // Buton tıklamalarını işle
+            // Kapat butonu (Slot 53)
+            if (slot == 53 && clicked.getType() == Material.BARRIER) {
+                player.closeInventory();
+                player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
+                return;
             }
             
-            // Crafting grid slotları (10-12, 19-21, 28-30) - Item transfer engelle
+            // Bilgi butonu (Slot 49) - Detaylı bilgi göster
+            if (slot == 49 && clicked.getType() == Material.BOOK) {
+                player.sendMessage("§6§l════════════════════════════");
+                player.sendMessage("§e§lTARİF BİLGİSİ");
+                player.sendMessage("§6§l════════════════════════════");
+                if (clicked.hasItemMeta() && clicked.getItemMeta().hasLore()) {
+                    for (String line : clicked.getItemMeta().getLore()) {
+                        player.sendMessage(line);
+                    }
+                }
+                player.sendMessage("§6§l════════════════════════════");
+                player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, 1.0f, 1.0f);
+                return;
+            }
+            
+            // Malzeme listesi butonu (Slot 31) - Chat'te göster
+            if (slot == 31 && clicked.getType() == Material.BOOK) {
+                player.sendMessage("§6§l════════════════════════════");
+                player.sendMessage("§e§lGEREKLİ MALZEMELER");
+                player.sendMessage("§6§l════════════════════════════");
+                if (clicked.hasItemMeta() && clicked.getItemMeta().hasLore()) {
+                    for (String line : clicked.getItemMeta().getLore()) {
+                        player.sendMessage(line);
+                    }
+                }
+                player.sendMessage("§6§l════════════════════════════");
+                player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, 1.0f, 1.0f);
+                return;
+            }
+            
+            // Sonuç item (Slot 40) - Item bilgisi göster
+            if (slot == 40 && clicked.hasItemMeta()) {
+                ItemMeta meta = clicked.getItemMeta();
+                player.sendMessage("§6§l════════════════════════════");
+                player.sendMessage("§e§lCRAFT EDİLECEK İTEM");
+                player.sendMessage("§6§l════════════════════════════");
+                player.sendMessage("§7İsim: §e" + meta.getDisplayName());
+                if (meta.hasLore()) {
+                    for (String line : meta.getLore()) {
+                        if (!line.contains("═══════════════════")) {
+                            player.sendMessage(line);
+                        }
+                    }
+                }
+                player.sendMessage("§6§l════════════════════════════");
+                player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, 1.0f, 1.0f);
+                return;
+            }
+            
+            // Crafting grid slotları (10-12, 19-21, 28-30) - Sadece görsel, tıklama sesi
             if ((slot >= 10 && slot <= 12) || (slot >= 19 && slot <= 21) || (slot >= 28 && slot <= 30)) {
-                event.setCancelled(true);
                 player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 0.8f);
                 return;
             }
             
-            // Diğer slotlar - engelle
-            event.setCancelled(true);
+            // Ok işareti (Slot 25) - Sadece görsel
+            if (slot == 25) {
+                return;
+            }
+            
+            // Diğer tüm GUI slotları - engelle
             return;
         }
         
@@ -610,49 +609,35 @@ public class GhostRecipeListener implements Listener {
         if (clickedInventory != null && clickedInventory.equals(player.getInventory())) {
             // Oyuncu envanterinden GUI'ye item koyma - ENGELLE
             if (rawSlot >= 0 && rawSlot < topInventory.getSize()) {
-                event.setCancelled(true);
+                // GUI slotuna item koymaya çalışıyor - engelle (zaten setCancelled(true) yapıldı)
                 return;
             }
         }
         
-        // Shift+Click kontrolü - GUI'ye item koymayı engelle
-        if (event.getClick() == org.bukkit.event.inventory.ClickType.SHIFT_LEFT || 
-            event.getClick() == org.bukkit.event.inventory.ClickType.SHIFT_RIGHT) {
-            if (rawSlot >= 0 && rawSlot < topInventory.getSize()) {
-                event.setCancelled(true);
-                return;
-            }
-        }
-        
-        // Number key kontrolü - Hotbar'dan item koymayı engelle
-        if (event.getClick() == org.bukkit.event.inventory.ClickType.NUMBER_KEY) {
-            if (rawSlot >= 0 && rawSlot < topInventory.getSize()) {
-                event.setCancelled(true);
-                return;
-            }
-        }
-        
-        // Middle click kontrolü - Orta tık ile item kopyalamayı engelle
-        if (event.getClick() == org.bukkit.event.inventory.ClickType.MIDDLE) {
-            if (rawSlot >= 0 && rawSlot < topInventory.getSize()) {
-                event.setCancelled(true);
-                return;
-            }
-        }
-        
-        // GUI envanterinden oyuncu envanterine transfer - ENGELLE
+        // Shift+Click, Number Key, Middle Click - TÜMÜNÜ ENGELLE
         if (rawSlot >= 0 && rawSlot < topInventory.getSize()) {
-            event.setCancelled(true);
+            // GUI slotuna herhangi bir şekilde item koymaya çalışıyor - engelle (zaten setCancelled(true) yapıldı)
+            return;
+        }
+        
+        // GUI'den oyuncu envanterine transfer - ENGELLE
+        if (rawSlot >= topInventory.getSize() && rawSlot < topInventory.getSize() + 36) {
+            // GUI'den oyuncu envanterine item alma - ENGELLE
+            // (Bu durumda clickedInventory topInventory olmalı)
+            if (clickedInventory != null && clickedInventory.equals(topInventory)) {
+                // Zaten setCancelled(true) yapıldı, ekstra bir şey yapmaya gerek yok
+                return;
+            }
         }
     }
     
     /**
      * Tarif kitabı GUI menüsü drag işlemleri - SÜRÜKLEME ENGELLEME
+     * Basit ve etkili yaklaşım
      */
     @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST)
     public void onRecipeMenuDrag(org.bukkit.event.inventory.InventoryDragEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) return;
-        Player player = (Player) event.getWhoClicked();
         
         // Adventure API - güvenli title çevirme
         String title = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(event.getView().title());
@@ -662,19 +647,16 @@ public class GhostRecipeListener implements Listener {
         event.setCancelled(true);
         event.setResult(org.bukkit.event.Event.Result.DENY);
         
-        // GUI envanterine drag işlemini tamamen engelle
+        // GUI envanterine drag işlemini kontrol et
         Inventory topInventory = event.getView().getTopInventory();
-        boolean isGUISlot = false;
         for (int slot : event.getRawSlots()) {
             if (slot < topInventory.getSize()) {
-                isGUISlot = true;
+                // GUI slotuna drag yapılmaya çalışılıyor - uyarı ver
+                Player player = (Player) event.getWhoClicked();
+                player.sendMessage("§cBu menüde item taşıyamazsınız!");
+                player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_VILLAGER_NO, 0.5f, 1.0f);
                 break;
             }
-        }
-        
-        if (isGUISlot) {
-            player.sendMessage("§cBu menüde item taşıyamazsınız!");
-            player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_VILLAGER_NO, 0.5f, 1.0f);
         }
     }
     

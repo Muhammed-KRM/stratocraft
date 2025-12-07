@@ -16,59 +16,123 @@ import java.util.concurrent.ConcurrentHashMap;
 public class NewBossArenaManager {
     private final Main plugin;
     private final Map<UUID, ArenaData> activeArenas;
-    private final Map<UUID, BukkitTask> arenaTasks;
+    
+    // Performans ayarları - HIZLANDIRILMIŞ OPTİMİZASYON
+    private static final int MAX_ACTIVE_ARENAS = 50; // Maksimum aktif arena sayısı (performans için artırıldı)
+    private static final long TASK_INTERVAL = 40L; // Her 2 saniyede bir (20 tick = 1 saniye) - HIZLANDIRILDI
+    private static final int BLOCKS_PER_CYCLE = 8; // Her döngüde 8 blok (3'ten artırıldı - HIZLANDIRILDI)
+    private static final int HAZARD_CREATE_INTERVAL = 5; // Her 5 döngüde bir tehlike oluştur
+    private static final double FAR_DISTANCE = 100.0; // 100 blok içindeki arenalar aktif, dışındakiler pasif
+    
+    private BukkitTask centralTask; // Merkezi task (tüm arenaları yönetir)
+    private int globalCycleCount = 0; // Global döngü sayacı
     
     public NewBossArenaManager(Main plugin) {
         this.plugin = plugin;
         this.activeArenas = new ConcurrentHashMap<>();
-        this.arenaTasks = new ConcurrentHashMap<>();
+        startCentralArenaTask(); // Merkezi task'ı başlat
     }
     
     /**
      * Arena transformasyonunu başlat
+     * Artık merkezi task sistemi kullanılıyor - her arena için ayrı task yok
      */
     public void startArenaTransformation(Location center, BossManager.BossType bossType, int level, UUID bossId) {
+        // Maksimum arena limiti kontrolü
+        if (activeArenas.size() >= MAX_ACTIVE_ARENAS) {
+            plugin.getLogger().warning("Maksimum arena sayısına ulaşıldı (" + MAX_ACTIVE_ARENAS + "). Yeni arena oluşturulamıyor.");
+            return;
+        }
+        
         // Arena verisi oluştur
         ArenaData arena = new ArenaData(center, bossType, level, bossId);
         activeArenas.put(bossId, arena);
         
-        // Sürekli transformasyon görevini başlat
-        BukkitTask task = new BukkitRunnable() {
+        plugin.getLogger().info("Boss arena transformasyonu başlatıldı: " + bossId);
+    }
+    
+    /**
+     * Merkezi arena task'ı - Tüm arenaları mesafeye göre önceliklendirir
+     */
+    private void startCentralArenaTask() {
+        if (centralTask != null && !centralTask.isCancelled()) {
+            return; // Zaten çalışıyor
+        }
+        
+        centralTask = new BukkitRunnable() {
             @Override
             public void run() {
-                BossManager.BossData bossData = plugin.getBossManager().getBossData(bossId);
-                if (bossData == null || bossData.getEntity() == null || bossData.getEntity().isDead()) {
-                    stopArenaTransformation(bossId);
-                    cancel();
-                    return;
+                if (activeArenas.isEmpty()) {
+                    return; // Arena yoksa işlem yapma
                 }
                 
-                // Boss'un güncel konumunu al
-                Location bossLoc = bossData.getEntity().getLocation();
-                arena.setCenter(bossLoc);
+                // Tüm oyuncuları al
+                List<org.bukkit.entity.Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
                 
-                // Not: Eskiden burada boss'un altını STONE ile dolduruyorduk (fillBelowBoss),
-                // bu da sütun / kule oluşumuna sebep oluyordu. Artık tamamen kapatıldı.
+                // Her arena için en yakın oyuncu mesafesini hesapla ve önceliklendir
+                List<Map.Entry<UUID, ArenaData>> sortedArenas = new ArrayList<>(activeArenas.entrySet());
                 
-                // Arena transformasyonunu gerçekleştir
-                transformArenaBlocks(arena);
+                // Önce mesafeleri hesapla ve sırala
+                for (Map.Entry<UUID, ArenaData> entry : sortedArenas) {
+                    ArenaData arena = entry.getValue();
+                    Location center = arena.getCenter();
+                    World world = center.getWorld();
+                    
+                    if (world == null) continue;
+                    
+                    // En yakın oyuncu mesafesini bul
+                    double minDistance = Double.MAX_VALUE;
+                    for (org.bukkit.entity.Player player : players) {
+                        if (!player.getWorld().equals(world)) continue;
+                        double dist = player.getLocation().distance(center);
+                        if (dist < minDistance) {
+                            minDistance = dist;
+                        }
+                    }
+                    
+                    // Arena'ya mesafeyi kaydet
+                    arena.setNearestPlayerDistance(minDistance);
+                }
+                
+                // Mesafeye göre sırala (en yakın önce)
+                sortedArenas.sort(Comparator.comparingDouble(e -> e.getValue().getNearestPlayerDistance()));
+                
+                // Öncelikli arenaları işle (en yakın 20 arena) - HIZLANDIRILDI
+                int processed = 0;
+                int maxProcessPerCycle = 20; // Her döngüde maksimum 20 arena işle (10'dan artırıldı)
+                
+                for (Map.Entry<UUID, ArenaData> entry : sortedArenas) {
+                    if (processed >= maxProcessPerCycle) break;
+                    
+                    UUID bossId = entry.getKey();
+                    ArenaData arena = entry.getValue();
+                    
+                    // Boss kontrolü
+                    BossManager.BossData bossData = plugin.getBossManager().getBossData(bossId);
+                    if (bossData == null || bossData.getEntity() == null || bossData.getEntity().isDead()) {
+                        stopArenaTransformation(bossId);
+                        continue;
+                    }
+                    
+                    // Boss'un güncel konumunu al
+                    Location bossLoc = bossData.getEntity().getLocation();
+                    arena.setCenter(bossLoc);
+                    
+                    // Arena transformasyonunu gerçekleştir (mesafeye göre önceliklendirilmiş)
+                    transformArenaBlocks(arena, globalCycleCount);
+                    
+                    processed++;
+                }
+                
+                globalCycleCount++;
             }
-        }.runTaskTimer(plugin, 0L, 20L); // Her saniye
-        
-        arenaTasks.put(bossId, task);
-        
-        plugin.getLogger().info("Boss arena transformasyonu başlatıldı: " + bossId);
+        }.runTaskTimer(plugin, 0L, TASK_INTERVAL);
     }
     
     /**
      * Arena transformasyonunu durdur
      */
     public void stopArenaTransformation(UUID bossId) {
-        BukkitTask task = arenaTasks.remove(bossId);
-        if (task != null) {
-            task.cancel();
-        }
-        
         activeArenas.remove(bossId);
         plugin.getLogger().info("Boss arena transformasyonu durduruldu: " + bossId);
     }
@@ -76,26 +140,50 @@ public class NewBossArenaManager {
     /**
      * Arena bloklarını dönüştür (Sürekli - YAYILMA MEKANİZMASI)
      * Boss'tan başlayarak dışa doğru yayılır
+     * PERFORMANS OPTİMİZE EDİLDİ: Oyuncu kontrolü esnetildi
      */
-    private void transformArenaBlocks(ArenaData arena) {
+    private void transformArenaBlocks(ArenaData arena, int cycleCount) {
         Location center = arena.getCenter();
-        int maxRadius = getArenaRadius(arena.getLevel());
-        int blocksPerCycle = 15; // Her döngüde 15 blok değiştir
-
-        // Kuleler henüz oluşturulmadıysa, bir kez oluştur (oyuncunun hareketini zorlaştıran yapı)
-        if (!arena.isTowersCreated()) {
-            createBossTowers(arena, maxRadius);
-            arena.setTowersCreated(true);
+        World world = center.getWorld();
+        if (world == null) return;
+        
+        // En yakın oyuncu mesafesini al (merkezi task tarafından hesaplanmış)
+        double nearestPlayerDistance = arena.getNearestPlayerDistance();
+        boolean isNearArena = nearestPlayerDistance <= FAR_DISTANCE; // 100 blok içindeyse aktif
+        
+        // UZAK ARENALAR (100+ blok) İÇİN HİÇBİR ŞEY YAPILMAZ - ERKEN ÇIKIŞ
+        if (!isNearArena) {
+            return; // Uzak arenalar için hiçbir transformasyon yapılmaz
         }
         
-        // Mevcut genişleme yarıçapını artır (yavaşça)
+        int maxRadius = getArenaRadius(arena.getLevel());
+
+        // Kuleler sürekli oluşturulur (yayılma gibi) - Dakikada 1 kere
+        // Task interval = 40 tick (2 saniye), dakikada 1 = 60 saniye = 30 döngü
+        if (cycleCount % 30 == 0) {
+            createBossTowers(arena, maxRadius);
+        }
+        
+        // Rastgele örümcek ağları, lavlar ve sular oluştur (3 KAT ARTTIRILDI)
+        // Sadece yakın arenalarda oluşturulur
+        if (cycleCount % HAZARD_CREATE_INTERVAL == 0) {
+            createRandomHazards(arena, 50);
+        }
+        
+        // Mevcut genişleme yarıçapını artır (3 KAT HIZLANDIRILDI)
+        // Sadece yakın arenalarda genişler
         double currentRadius = arena.getCurrentRadius();
         if (currentRadius < maxRadius) {
-            arena.setCurrentRadius(currentRadius + 0.5); // Her saniye 0.5 blok genişle
+            arena.setCurrentRadius(currentRadius + 1.2); // Her 2 saniyede 1.2 blok genişle (3 KAT HIZLANDIRILDI - 0.4'ten)
         }
         
-        // Şu anki radius'ta blokları dönüştür
-        for (int i = 0; i < blocksPerCycle; i++) {
+        // Şu anki radius'ta blokları dönüştür (daha az blok)
+        // Sadece yakın arenalarda blok transformasyonu yapılır
+        
+        int transformed = 0;
+        int maxAttempts = BLOCKS_PER_CYCLE * 3; // Maksimum deneme sayısı (chunk yüklü değilse atla) - optimize edildi
+        
+        for (int attempt = 0; attempt < maxAttempts && transformed < BLOCKS_PER_CYCLE; attempt++) {
             // Rastgele açı seç (çember oluşturmak için)
             double angle = Math.random() * 2 * Math.PI;
             
@@ -107,28 +195,102 @@ public class NewBossArenaManager {
             int x = (int) (center.getX() + distance * Math.cos(angle));
             int z = (int) (center.getZ() + distance * Math.sin(angle));
             
-            // Y koordinatını bul (ZEMİN bloğunun kendisi)
-            int y = findGroundLevel(center.getWorld(), x, center.getBlockY(), z);
+            // KRİTİK: Chunk yüklü mü kontrol et (performans için - önce chunk kontrolü)
+            Chunk chunk = world.getChunkAt(x >> 4, z >> 4);
+            if (!chunk.isLoaded()) {
+                continue; // Chunk yüklü değilse atla
+            }
+            
+            // Y koordinatını bul (ZEMİN bloğunun kendisi) - optimize edilmiş
+            int y = findGroundLevelOptimized(world, x, center.getBlockY(), z);
             
             if (y == -1) continue; // Zemin bulunamadı
             
             // ZEMİN BLOĞUNU DEĞİŞTİR (hava bloğu değil!)
-            Location blockLoc = new Location(center.getWorld(), x, y, z);
+            Location blockLoc = new Location(world, x, y, z);
             
             // Boss'a çok yakınsa atlama
             if (blockLoc.distance(center) < 3) continue;
             
             // Bloğu dönüştür
             transformSingleBlock(blockLoc, arena);
+            transformed++;
         }
     }
 
+    /**
+     * Boss'un 50 blok etrafında rastgele örümcek ağları, lavlar ve sular oluşturur.
+     * Oyuncunun hareketini zorlaştıran çevresel tehlikeler.
+     * PERFORMANS OPTİMİZE EDİLDİ: Daha az tehlike, chunk kontrolü
+     * NOT: Oyuncu kontrolü çağıran metod tarafından yapılıyor
+     */
+    private void createRandomHazards(ArenaData arena, int maxRadius) {
+        Location center = arena.getCenter();
+        World world = center.getWorld();
+        if (world == null) return;
+        
+        Random random = new Random();
+        
+        // Her döngüde rastgele sayıda tehlike oluştur (3 KAT ARTTIRILDI)
+        int hazardCount = 6 + random.nextInt(4); // 6-9 tehlike (3 KAT ARTTIRILDI - 2-3'ten)
+        
+        for (int i = 0; i < hazardCount; i++) {
+            // Rastgele açı ve mesafe
+            double angle = random.nextDouble() * 2 * Math.PI;
+            double distance = 8 + random.nextDouble() * (maxRadius - 8); // Boss'tan en az 8 blok uzakta
+            
+            int x = (int) (center.getX() + distance * Math.cos(angle));
+            int z = (int) (center.getZ() + distance * Math.sin(angle));
+            
+            // Zemin seviyesini bul (optimize edilmiş)
+            int groundY = findGroundLevelOptimized(world, x, center.getBlockY(), z);
+            if (groundY == -1) continue;
+            
+            // Boss'a çok yakınsa atlama
+            Location hazardLoc = new Location(world, x, groundY, z);
+            if (hazardLoc.distance(center) < 5) continue;
+            
+            // KRİTİK: Chunk yüklü mü kontrol et (performans için - önce chunk kontrolü)
+            Chunk chunk = world.getChunkAt(x >> 4, z >> 4);
+            if (!chunk.isLoaded()) continue;
+            
+            // Rastgele tehlike tipi seç - DAHA ÇOK LAV VE ÖRÜMCEK AĞI
+            double hazardType = random.nextDouble();
+            
+            if (hazardType < 0.5) {
+                // %50 şans: Örümcek ağı (zemin üzerinde veya havada) - ARTTIRILDI
+                int webY = groundY + 1 + random.nextInt(4); // Zemin + 1-4 blok yukarıda (artırıldı)
+                if (webY < world.getMaxHeight()) {
+                    Block webBlock = world.getBlockAt(x, webY, z);
+                    if (webBlock.getType() == Material.AIR) {
+                        webBlock.setType(Material.COBWEB);
+                    }
+                }
+            } else if (hazardType < 0.9) {
+                // %40 şans: Lav (zemin seviyesinde) - ARTTIRILDI
+                Block lavaBlock = world.getBlockAt(x, groundY + 1, z);
+                if (lavaBlock.getType() == Material.AIR) {
+                    // Lava kaynağı oluştur (sadece kaynak, akan lav değil)
+                    lavaBlock.setType(Material.LAVA);
+                }
+            } else {
+                // %10 şans: Su (zemin seviyesinde) - AZALTILDI
+                Block waterBlock = world.getBlockAt(x, groundY + 1, z);
+                if (waterBlock.getType() == Material.AIR) {
+                    // Su kaynağı oluştur (sadece kaynak, akan su değil)
+                    waterBlock.setType(Material.WATER);
+                }
+            }
+        }
+    }
+    
     /**
      * Boss'un etrafına kuleler oluşturur.
      * - 50 blok yarıçap içinde
      * - Yükseklik: 3, 5, 8, 10
      * - Kalınlık (kare taban): 1, 2, 4, 6
      * - Malzeme boss tipine göre seçilir (ör: Titan Golem demir, Chaos God obsidyen)
+     * PERFORMANS OPTİMİZE EDİLDİ: Daha az kule, chunk kontrolü önceden
      */
     private void createBossTowers(ArenaData arena, int arenaRadius) {
         Location center = arena.getCenter();
@@ -142,10 +304,12 @@ public class NewBossArenaManager {
         if (maxRadius < 8) maxRadius = 8; // minimum mantıklı alan
 
         Random random = new Random();
-        int towerCount = 6 + random.nextInt(5); // 6–10 kule
+        // Sürekli oluşturma için daha az kule (tek seferde yeterli, ama sürekli oluşmaya devam etsin)
+        int towerCount = 5 + random.nextInt(5); // 3-5 kule (dakikada 1 kere oluşturulur)
 
-        int[] heights = {3, 5, 8, 10};
-        int[] widths = {1, 2, 4, 6};
+        // ÇEŞİTLENDİRİLMİŞ KULE BOYUTLARI - Daha fazla çeşitlilik
+        int[] heights = {2, 3, 4, 5, 6, 7, 8, 10, 12, 15}; // Daha kısa ve uzun kuleler
+        int[] widths = {1, 1, 2, 2, 3, 4, 5, 6}; // Tek blok, 2 blok, daha geniş kuleler
 
         Material towerMaterial = getTowerMaterial(type, level);
 
@@ -156,18 +320,31 @@ public class NewBossArenaManager {
             int baseX = (int) (center.getX() + distance * Math.cos(angle));
             int baseZ = (int) (center.getZ() + distance * Math.sin(angle));
 
-            int baseY = findGroundLevel(world, baseX, center.getBlockY(), baseZ);
+            // KRİTİK: Chunk yüklü mü kontrol et (performans için - önce chunk kontrolü)
+            Chunk chunk = world.getChunkAt(baseX >> 4, baseZ >> 4);
+            if (!chunk.isLoaded()) continue; // Chunk yüklü değilse bu kuleyi atla
+            
+            int baseY = findGroundLevelOptimized(world, baseX, center.getBlockY(), baseZ);
             if (baseY == -1) continue;
 
             int height = heights[random.nextInt(heights.length)];
             int width = widths[random.nextInt(widths.length)];
             int half = width / 2;
 
+            // Kule bloklarını oluştur
             for (int dx = -half; dx <= half; dx++) {
                 for (int dz = -half; dz <= half; dz++) {
                     for (int dy = 0; dy < height; dy++) {
-                        Block block = world.getBlockAt(baseX + dx, baseY + dy, baseZ + dz);
-                        if (!block.getChunk().isLoaded()) continue;
+                        int blockX = baseX + dx;
+                        int blockZ = baseZ + dz;
+                        int blockY = baseY + dy;
+                        
+                        // Aynı chunk içinde mi kontrol et (performans)
+                        if ((blockX >> 4) != (baseX >> 4) || (blockZ >> 4) != (baseZ >> 4)) {
+                            continue; // Farklı chunk'a geçme
+                        }
+                        
+                        Block block = world.getBlockAt(blockX, blockY, blockZ);
 
                         // Sadece hava veya geçilebilir blokların yerine kule bloğu koy
                         if (!block.getType().isSolid() || block.getType() == Material.AIR) {
@@ -181,10 +358,25 @@ public class NewBossArenaManager {
     
     /**
      * Zemin seviyesini bul (ZEMİN BLOĞUNUN KENDİSİNİN Y'sini döndürür, hava bloğunu değil!)
+     * OPTİMİZE EDİLDİ: Daha az blok kontrol eder
      */
     private int findGroundLevel(World world, int x, int startY, int z) {
-        // Aşağıya doğru tara - ZEMİN BLOĞUNU BUL
-        for (int y = startY; y > startY - 10 && y > world.getMinHeight(); y--) {
+        return findGroundLevelOptimized(world, x, startY, z);
+    }
+    
+    /**
+     * Optimize edilmiş zemin bulma (daha az blok kontrol eder)
+     */
+    private int findGroundLevelOptimized(World world, int x, int startY, int z) {
+        // Chunk yüklü mü kontrol et (performans)
+        Chunk chunk = world.getChunkAt(x >> 4, z >> 4);
+        if (!chunk.isLoaded()) {
+            return -1; // Chunk yüklü değilse zemin bulunamaz
+        }
+        
+        // Aşağıya doğru tara - ZEMİN BLOĞUNU BUL (daha az aralık)
+        int searchRange = 5; // 10'dan 5'e azaltıldı (performans)
+        for (int y = startY; y > startY - searchRange && y > world.getMinHeight(); y--) {
             Block currentBlock = world.getBlockAt(x, y, z);
             
             // Bu blok katı mı? (zemin bloğu)
@@ -193,8 +385,8 @@ public class NewBossArenaManager {
             }
         }
         
-        // Yukarıya doğru tara
-        for (int y = startY; y < startY + 10 && y < world.getMaxHeight(); y++) {
+        // Yukarıya doğru tara (daha az aralık)
+        for (int y = startY; y < startY + searchRange && y < world.getMaxHeight(); y++) {
             Block currentBlock = world.getBlockAt(x, y, z);
             
             if (currentBlock.getType().isSolid() && !currentBlock.getType().isAir()) {
@@ -319,6 +511,18 @@ public class NewBossArenaManager {
                 if (Math.random() < 0.1) materials.add(Material.CRYING_OBSIDIAN);
                 break;
                 
+            case CHAOS_GOD:
+            case CHAOS_TITAN:
+                // Seviye 5: Kaos malzemeleri - Obsidyen, örümcek ağı, netherrack
+                materials.add(Material.OBSIDIAN);
+                materials.add(Material.CRYING_OBSIDIAN);
+                materials.add(Material.NETHERRACK);
+                materials.add(Material.BLACKSTONE);
+                materials.add(Material.BASALT);
+                materials.add(Material.COBWEB); // Örümcek ağı
+                if (Math.random() < 0.2) materials.add(Material.MAGMA_BLOCK);
+                break;
+                
             default:
                 materials.add(Material.STONE);
         }
@@ -402,6 +606,7 @@ public class NewBossArenaManager {
         private final UUID bossId;
         private double currentRadius; // Mevcut yayılma yarıçapı
         private boolean towersCreated; // Kuleler bir kez oluşturuldu mu?
+        private double nearestPlayerDistance = Double.MAX_VALUE; // En yakın oyuncu mesafesi
         
         public ArenaData(Location center, BossManager.BossType bossType, int level, UUID bossId) {
             this.center = center;
@@ -428,6 +633,8 @@ public class NewBossArenaManager {
         public void setCurrentRadius(double radius) { this.currentRadius = radius; }
         public boolean isTowersCreated() { return towersCreated; }
         public void setTowersCreated(boolean towersCreated) { this.towersCreated = towersCreated; }
+        public double getNearestPlayerDistance() { return nearestPlayerDistance; }
+        public void setNearestPlayerDistance(double distance) { this.nearestPlayerDistance = distance; }
     }
 }
 

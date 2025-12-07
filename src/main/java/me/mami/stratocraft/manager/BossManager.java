@@ -645,13 +645,23 @@ public class BossManager {
                 for (Map.Entry<UUID, BossData> entry : activeBosses.entrySet()) {
                     BossData data = entry.getValue();
                     LivingEntity boss = data.getEntity();
-                    BossBar bar = bossBars.get(entry.getKey());
-                    if (boss == null || !boss.isValid() || boss.isDead() || bar == null) {
+                    
+                    // Boss geçersizse temizle
+                    if (boss == null || !boss.isValid() || boss.isDead()) {
+                        BossBar bar = bossBars.remove(entry.getKey());
                         if (bar != null) bar.removeAll();
-                        bossBars.remove(entry.getKey());
                         continue;
                     }
+                    
+                    // BossBar yoksa oluştur (güvenlik kontrolü)
+                    BossBar bar = bossBars.get(entry.getKey());
+                    if (bar == null) {
+                        createBossBar(boss, data.getType());
+                        bar = bossBars.get(entry.getKey());
+                        if (bar == null) continue; // Hala null ise atla
+                    }
 
+                    // BossBar'ı güncelle
                     double max = boss.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
                     double hp = boss.getHealth();
                     double progress = Math.max(0.0, Math.min(1.0, hp / max));
@@ -659,6 +669,7 @@ public class BossManager {
                             " §7[" + (int) hp + "/" + (int) max + "]";
                     bar.setTitle(title);
                     bar.setProgress(progress);
+                    bar.setVisible(true); // Her zaman görünür yap
                 }
 
                 // Her oyuncu için en yakın bossBar'ları göster
@@ -690,11 +701,15 @@ public class BossManager {
                     // BossBar'lara ekle/çıkar
                     for (Map.Entry<UUID, BossBar> entry : bossBars.entrySet()) {
                         BossBar bar = entry.getValue();
+                        if (bar == null) continue; // Güvenlik kontrolü
+                        
                         if (visibleIds.contains(entry.getKey())) {
+                            // Yakındaki boss - oyuncuya ekle
                             if (!bar.getPlayers().contains(player)) {
                                 bar.addPlayer(player);
                             }
                         } else {
+                            // Uzaktaki boss - oyuncudan çıkar
                             if (bar.getPlayers().contains(player)) {
                                 bar.removePlayer(player);
                             }
@@ -1078,6 +1093,9 @@ public class BossManager {
         List<BossWeakness> weaknesses = getBossWeaknesses(type);
         BossData bossData = new BossData(type, bossEntity, ownerId, maxPhase, weaknesses);
         activeBosses.put(bossEntity.getUniqueId(), bossData);
+
+        // BossBar oluştur (boss canlarının gösterilmesi için)
+        createBossBar(bossEntity, type);
 
         // Arena dönüşümünü başlat (güçlü boss'lar için yayılmalı alan)
         try {
