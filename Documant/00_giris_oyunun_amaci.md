@@ -176,10 +176,19 @@ Dünyada sadece zombiler yok. **Eğitilebilir Ejderhalar**, yer altı Solucanlar
 - **Efsanevi**: Titan Golem, Hydra, Behemoth (400-1000 HP)
 
 **Boss Sistemi**: 
-- **11 Farklı Boss**: Goblin King, Orc King, Troll King, Dragon, T-Rex, Cyclops, Titan Golem, Phoenix, Kraken, Demon Lord, Void Dragon
+- **13 Farklı Boss**: Goblin King, Orc Chief, Troll King, Dragon, T-Rex, Cyclops, Titan Golem, Hell Dragon, Hydra, Phoenix, Void Dragon, Chaos Titan, Chaos God
 - **BossBar Görüntüsü**: Tüm bossların canı ve fazı (multi-phase bosslar için) ekranın üstünde gösterilir
 - **Boss Drops**: Her boss özel item düşürür (Goblin Crown, Troll Heart, Titan Core, Void Dragon Heart vb.)
 - **Boss Item Gereksinimleri**: Özel silah ve zırhlar craft etmek için boss item'ları gerekir
+- **Arena Transformasyonu**: Güçlü bosslar spawn olduğunda etrafları dinamik olarak dönüşür (kuleler, tehlikeler, blok transformasyonu)
+- **YENİ ÖZELLİK**: Arena sistemi dinamik öncelik sistemi ile optimize edildi:
+  - **Config Entegrasyonu**: Tüm arena ayarları `config.yml` dosyasından değiştirilebilir
+  - **Dinamik Öncelik**: Oyuncu sayısına göre arena limiti otomatik ayarlanır
+  - **50 Blok Kuralı**: Uzak bossların alanları genişlemez (performans optimizasyonu)
+  - **Otomatik Performans Optimizasyonu**: TPS düşerse ayarlar otomatik düşer
+  - **Uzak Arena Tekrar Başlatma**: Oyuncu yaklaştığında durdurulmuş arenalar otomatik başlatılır
+  - **Admin Komutları**: `/scadmin arena status`, `/scadmin arena groups`, `/scadmin arena settings`, `/scadmin arena reload` ile sistem yönetimi
+  - **Performans Metrikleri**: Sistem durumu detaylı olarak izlenebilir
 
 **Eğitme Sistemi**: Özel isimli tüm canlılar eğitilebilir! **Eğitim Çekirdeği** (`TAMING_CORE`) kullanarak ritüel platformu kur, aktivasyon itemi ile eğit, sahiplen, binebilir hale getir. 5 zorluk seviyesine göre farklı platformlar. Eğitim Çekirdeği merkez bloğa yerleştirilir ve ritüel deseni çekirdeğin altına yapılır.
 
@@ -234,6 +243,8 @@ Derinlerde sıradan elmas değil, **Titanyum** ve **Kızıl Elmas** gibi yeni ce
 
 **Güvenlik**: Boss item doğrulama sistemi aktif - Sadece gerçek boss item'ları (NBT kontrolü) craft için kullanılabilir!
 
+**YENİ ÖZELLİK**: Araştırma sistemi performans optimizasyonları ve güvenlik iyileştirmeleri ile güncellendi. Detaylar için `15_arastirma_sistemi.md` dosyasına bakın.
+
 ---
 
 ### 5. Tuzak ve Savunma
@@ -252,6 +263,8 @@ Derinlerde sıradan elmas değil, **Titanyum** ve **Kızıl Elmas** gibi yeni ce
 **Tuzak Türleri**: Ateş, Şok, Zehir, Donma, Patlayıcı
 
 **Mayın Sistemi**: Görünmez tuzaklar, basınç plakası ile kurulur. Mayın türleri: Patlama (TNT), Yıldırım (Lightning Core), Zehir (Spider Eye), Körlük (Ink Sac), Yorgunluk (Iron Pickaxe), Yavaşlık (Slime Ball). Kendi klan üyelerin mayınlarına basmaz!
+
+**YENİ ÖZELLİK**: Tuzak sistemi performans optimizasyonları ile güncellendi. Detaylar için `08_tuzak_sistemi.md` dosyasına bakın.
 
 ---
 
@@ -522,14 +535,15 @@ Bu döküman, Stratocraft'ın temel felsefesini ve amacını anlatır. Detaylı 
 - **05_ozel_esyalar.md**: Yeni madenler, **25 özel silah** (detaylı açıklamalar, crafting tarifleri, mod sistemi), eşyalar
 - **06_ozel_moblar.md**: Özel moblar, eğitme, binme
 - **07_yapilar.md**: Yapı kategorileri, seviyeler, stratejiler
-- **08_tuzak_sistemi.md**: Tuzak kurulumu, türleri, mayınlar
+- **08_tuzak_sistemi.md**: Tuzak kurulumu, türleri, mayınlar (YENİ: Performans optimizasyonları)
 - **09_kusatma_sistemi.md**: Kuşatma başlatma, savaş kuralları, ödüller
 - **10_felaketler.md**: Felaket mekaniği, türleri, mücadele stratejileri
 - **11_kontrat_sistemi.md**: Kontrat oluşturma, kan imzası, ihlal sistemi
 - **12_kervan_sistemi.md**: Kervan oluşturma, yolculuk, riskler
 - **13_ozel_araclar.md**: Kancalar, dürbün, stratejik kullanım
 - **14_supply_drop.md**: Supply drop mekaniği, yarışma, ödüller
-- **15_arastirma_sistemi.md**: Tarif kitabı sistemi, araştırma masası, boss item doğrulama
+- **15_arastirma_sistemi.md**: Tarif kitabı sistemi, araştırma masası, boss item doğrulama (YENİ: Performans optimizasyonları ve güvenlik iyileştirmeleri)
+- **22_boss_sistemi.md**: Boss çağırma, yetenekler, arena transformasyonu (YENİ: Config entegrasyonu, dinamik öncelik sistemi, admin komutları, performans metrikleri)
 - **16-19_diger_sistemler.md**: Görev sistemi (GUI menü, 8 görev tipi), antrenman, lojistik, ekonomi
 - **21_market_sistemi.md**: Market kurulumu, teklif sistemi, alışveriş, güvenlik özellikleri
 - **17_egitme_sistemi.md**: Canlı eğitme, ritüeller, binme
