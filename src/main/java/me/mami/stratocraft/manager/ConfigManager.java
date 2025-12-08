@@ -44,6 +44,23 @@ public class ConfigManager {
     // ========== PERFORMANS AYARLARI ==========
     private boolean asyncSaving; // Async kayıt aktif mi?
     private int maxParticlesPerTick; // Tick başına maksimum partikül sayısı
+    
+    // ========== BOSS ARENA AYARLARI ==========
+    private int minArenasPerGroup;
+    private int minArenasPerGroupFallback;
+    private int baseMaxActiveArenas;
+    private long taskInterval;
+    private int blocksPerCycle;
+    private int hazardCreateInterval;
+    private double playerGroupDistance;
+    private double playerGroupDistanceFallback;
+    private double farDistance;
+    private double farDistanceFallback;
+    private double farDistanceMin;
+    private double arenaExpansionLimit;
+    private long groupCacheDuration;
+    private double tpsThreshold;
+    private int tpsSampleSize;
 
     public ConfigManager(Main plugin) {
         this.plugin = plugin;
@@ -88,6 +105,23 @@ public class ConfigManager {
         // Performans Ayarları
         asyncSaving = config.getBoolean("performance.async-saving", true);
         maxParticlesPerTick = config.getInt("performance.max-particles-per-tick", 50);
+        
+        // Boss Arena Ayarları
+        minArenasPerGroup = config.getInt("boss.arena.min-arenas-per-group", 5);
+        minArenasPerGroupFallback = config.getInt("boss.arena.min-arenas-per-group-fallback", 3);
+        baseMaxActiveArenas = config.getInt("boss.arena.base-max-active-arenas", 25);
+        taskInterval = config.getLong("boss.arena.task-interval", 40L);
+        blocksPerCycle = config.getInt("boss.arena.blocks-per-cycle", 8);
+        hazardCreateInterval = config.getInt("boss.arena.hazard-create-interval", 1);
+        playerGroupDistance = config.getDouble("boss.arena.player-group-distance", 50.0);
+        playerGroupDistanceFallback = config.getDouble("boss.arena.player-group-distance-fallback", 25.0);
+        farDistance = config.getDouble("boss.arena.far-distance", 100.0);
+        farDistanceFallback = config.getDouble("boss.arena.far-distance-fallback", 50.0);
+        farDistanceMin = config.getDouble("boss.arena.far-distance-min", 25.0);
+        arenaExpansionLimit = config.getDouble("boss.arena.arena-expansion-limit", 50.0);
+        groupCacheDuration = config.getLong("boss.arena.group-cache-duration", 5000L);
+        tpsThreshold = config.getDouble("boss.arena.tps-threshold", 18.0);
+        tpsSampleSize = config.getInt("boss.arena.tps-sample-size", 100);
     }
 
     public void reloadConfig() {
@@ -114,6 +148,23 @@ public class ConfigManager {
     public int getMaxShieldFuel() { return maxShieldFuel; }
     public boolean isAsyncSaving() { return asyncSaving; }
     public int getMaxParticlesPerTick() { return maxParticlesPerTick; }
+    
+    // ========== BOSS ARENA GETTERS ==========
+    public int getMinArenasPerGroup() { return minArenasPerGroup; }
+    public int getMinArenasPerGroupFallback() { return minArenasPerGroupFallback; }
+    public int getBaseMaxActiveArenas() { return baseMaxActiveArenas; }
+    public long getTaskInterval() { return taskInterval; }
+    public int getBlocksPerCycle() { return blocksPerCycle; }
+    public int getHazardCreateInterval() { return hazardCreateInterval; }
+    public double getPlayerGroupDistance() { return playerGroupDistance; }
+    public double getPlayerGroupDistanceFallback() { return playerGroupDistanceFallback; }
+    public double getFarDistance() { return farDistance; }
+    public double getFarDistanceFallback() { return farDistanceFallback; }
+    public double getFarDistanceMin() { return farDistanceMin; }
+    public double getArenaExpansionLimit() { return arenaExpansionLimit; }
+    public long getGroupCacheDuration() { return groupCacheDuration; }
+    public double getTpsThreshold() { return tpsThreshold; }
+    public int getTpsSampleSize() { return tpsSampleSize; }
     
     // Config erişimi için (CaravanManager gibi yerler için)
     public FileConfiguration getConfig() { return config; }

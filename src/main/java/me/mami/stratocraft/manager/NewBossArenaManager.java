@@ -17,30 +17,105 @@ public class NewBossArenaManager {
     private final Main plugin;
     private final Map<UUID, ArenaData> activeArenas;
     
-    // Performans ayarları - HIZLANDIRILMIŞ OPTİMİZASYON
-    private static final int MAX_ACTIVE_ARENAS = 50; // Maksimum aktif arena sayısı (performans için artırıldı)
-    private static final long TASK_INTERVAL = 40L; // Her 2 saniyede bir (20 tick = 1 saniye) - HIZLANDIRILDI
-    private static final int BLOCKS_PER_CYCLE = 8; // Her döngüde 8 blok (3'ten artırıldı - HIZLANDIRILDI)
-    private static final int HAZARD_CREATE_INTERVAL = 1; // Her döngüde bir tehlike oluştur (ARTTIRILDI)
-    private static final double FAR_DISTANCE = 100.0; // 100 blok içindeki arenalar aktif, dışındakiler pasif
+    // Config'den yüklenecek ayarlar (varsayılan değerler)
+    private int minArenasPerGroup;
+    private int minArenasPerGroupFallback;
+    private int baseMaxActiveArenas;
+    private long taskInterval;
+    private int blocksPerCycle;
+    private int hazardCreateInterval;
+    private double playerGroupDistance;
+    private double playerGroupDistanceFallback;
+    private double farDistance;
+    private double farDistanceFallback;
+    private double farDistanceMin;
+    private double arenaExpansionLimit;
+    private long groupCacheDuration;
+    private double tpsThreshold;
+    private int tpsSampleSize;
+    
+    // Dinamik ayarlar (performans sorunu varsa değişir)
+    private int currentArenasPerGroup;
+    private double currentPlayerGroupDistance;
+    private double currentFarDistance;
+    
+    // Oyuncu grupları cache (performans optimizasyonu)
+    private long lastGroupCalculation = 0;
+    private List<List<org.bukkit.entity.Player>> cachedPlayerGroups = null;
+    
+    // Uzak arena tekrar başlatma sistemi
+    private final Set<UUID> stoppedArenas = new HashSet<>(); // Durdurulmuş arenalar
+    
+    // Performans metrikleri
+    private int totalArenasProcessed = 0;
+    private int totalArenasStopped = 0;
+    private double averageDistance = 0.0;
+    private long lastMetricsReset = System.currentTimeMillis();
     
     private BukkitTask centralTask; // Merkezi task (tüm arenaları yönetir)
     
     public NewBossArenaManager(Main plugin) {
         this.plugin = plugin;
         this.activeArenas = new ConcurrentHashMap<>();
+        loadConfig(); // Config'den ayarları yükle
         startCentralArenaTask(); // Merkezi task'ı başlat
     }
     
     /**
+     * Config'den ayarları yükle
+     */
+    private void loadConfig() {
+        me.mami.stratocraft.manager.ConfigManager config = plugin.getConfigManager();
+        
+        minArenasPerGroup = config.getMinArenasPerGroup();
+        minArenasPerGroupFallback = config.getMinArenasPerGroupFallback();
+        baseMaxActiveArenas = config.getBaseMaxActiveArenas();
+        taskInterval = config.getTaskInterval();
+        blocksPerCycle = config.getBlocksPerCycle();
+        hazardCreateInterval = config.getHazardCreateInterval();
+        playerGroupDistance = config.getPlayerGroupDistance();
+        playerGroupDistanceFallback = config.getPlayerGroupDistanceFallback();
+        farDistance = config.getFarDistance();
+        farDistanceFallback = config.getFarDistanceFallback();
+        farDistanceMin = config.getFarDistanceMin();
+        arenaExpansionLimit = config.getArenaExpansionLimit();
+        groupCacheDuration = config.getGroupCacheDuration();
+        tpsThreshold = config.getTpsThreshold();
+        tpsSampleSize = config.getTpsSampleSize();
+        
+        // Dinamik ayarları başlangıç değerlerine ayarla
+        currentArenasPerGroup = minArenasPerGroup;
+        currentPlayerGroupDistance = playerGroupDistance;
+        currentFarDistance = farDistance;
+    }
+    
+    /**
+     * Config'i yeniden yükle (reload komutu için)
+     */
+    public void reloadConfig() {
+        loadConfig();
+        plugin.getLogger().info("Boss Arena ayarları yeniden yüklendi.");
+    }
+    
+    /**
      * Arena transformasyonunu başlat
-     * Artık merkezi task sistemi kullanılıyor - her arena için ayrı task yok
+     * DİNAMİK ÖNCELİK SİSTEMİ: Oyuncu gruplarına göre dinamik limit
      */
     public void startArenaTransformation(Location center, BossManager.BossType bossType, int level, UUID bossId) {
+        // Dinamik maksimum arena limitini hesapla
+        int maxArenas = calculateMaxActiveArenas();
+        
         // Maksimum arena limiti kontrolü
-        if (activeArenas.size() >= MAX_ACTIVE_ARENAS) {
-            plugin.getLogger().warning("Maksimum arena sayısına ulaşıldı (" + MAX_ACTIVE_ARENAS + "). Yeni arena oluşturulamıyor.");
-            return;
+        if (activeArenas.size() >= maxArenas) {
+            // Limit dolmuşsa, en uzaktaki bosslardan başlayarak durdur
+            freeUpArenaSlot(center);
+            
+            // Tekrar kontrol et
+            maxArenas = calculateMaxActiveArenas();
+            if (activeArenas.size() >= maxArenas) {
+                plugin.getLogger().warning("Maksimum arena sayısına ulaşıldı (" + maxArenas + "). Yeni arena oluşturulamıyor.");
+                return;
+            }
         }
         
         // Arena verisi oluştur
@@ -52,6 +127,148 @@ public class NewBossArenaManager {
         createBossTowers(arena, maxRadius);
         
         plugin.getLogger().info("Boss arena transformasyonu başlatıldı: " + bossId);
+    }
+    
+    /**
+     * Dinamik maksimum arena sayısını hesapla
+     * Oyuncu gruplarına göre: grup sayısı * arenasPerGroup
+     */
+    private int calculateMaxActiveArenas() {
+        List<List<org.bukkit.entity.Player>> playerGroups = getPlayerGroups();
+        int groupCount = playerGroups.size();
+        int maxArenas = Math.max(BASE_MAX_ACTIVE_ARENAS, groupCount * currentArenasPerGroup);
+        return maxArenas;
+    }
+    
+    /**
+     * Oyuncuları gruplara ayır (yakın oyuncular aynı grup)
+     * 50 blok içindeki oyuncular aynı grup (performans sorunu varsa 25 blok)
+     * Cache mekanizması ile optimize edilmiş
+     */
+    public List<List<org.bukkit.entity.Player>> getPlayerGroups() {
+        // Cache kontrolü
+        long now = System.currentTimeMillis();
+        if (cachedPlayerGroups != null && (now - lastGroupCalculation) < groupCacheDuration) {
+            return cachedPlayerGroups; // Cache'den dön
+        }
+        
+        // Cache süresi dolmuş veya ilk hesaplama - yeniden hesapla
+        List<org.bukkit.entity.Player> allPlayers = new ArrayList<>(Bukkit.getOnlinePlayers());
+        if (allPlayers.isEmpty()) {
+            cachedPlayerGroups = new ArrayList<>();
+            lastGroupCalculation = now;
+            return cachedPlayerGroups;
+        }
+        
+        List<List<org.bukkit.entity.Player>> groups = new ArrayList<>();
+        Set<org.bukkit.entity.Player> assigned = new HashSet<>();
+        
+        for (org.bukkit.entity.Player player : allPlayers) {
+            if (player == null || assigned.contains(player)) continue;
+            
+            // Yeni grup oluştur
+            List<org.bukkit.entity.Player> group = new ArrayList<>();
+            group.add(player);
+            assigned.add(player);
+            
+            // Bu oyuncuya yakın olanları bul (Union-Find benzeri yaklaşım)
+            boolean foundNew = true;
+            while (foundNew) {
+                foundNew = false;
+                for (org.bukkit.entity.Player other : allPlayers) {
+                    if (other == null || assigned.contains(other)) continue;
+                    if (!player.getWorld().equals(other.getWorld())) continue;
+                    
+                    // Grup içindeki herhangi bir oyuncuya yakın mı kontrol et
+                    for (org.bukkit.entity.Player groupPlayer : group) {
+                        double distance = groupPlayer.getLocation().distance(other.getLocation());
+                        if (distance <= currentPlayerGroupDistance) {
+                            group.add(other);
+                            assigned.add(other);
+                            foundNew = true;
+                            break; // Bu oyuncuyu ekledik, diğerlerine bak
+                        }
+                    }
+                }
+            }
+            
+            groups.add(group);
+        }
+        
+        // Cache'le
+        cachedPlayerGroups = groups;
+        lastGroupCalculation = now;
+        return groups;
+    }
+    
+    /**
+     * Arena slot'u boşalt - En uzaktaki bosslardan başlayarak durdur
+     * Yeni boss için yer açmak için kullanılır
+     */
+    private void freeUpArenaSlot(Location newBossLocation) {
+        if (activeArenas.isEmpty()) {
+            return;
+        }
+        
+        // Tüm oyuncuları al
+        List<org.bukkit.entity.Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
+        
+        // Her arena için yeni boss'a olan mesafeyi hesapla
+        List<Map.Entry<UUID, ArenaData>> arenasWithDistance = new ArrayList<>();
+        
+        for (Map.Entry<UUID, ArenaData> entry : activeArenas.entrySet()) {
+            ArenaData arena = entry.getValue();
+            Location arenaCenter = arena.getCenter();
+            
+            // Aynı dünyada mı kontrol et
+            if (!arenaCenter.getWorld().equals(newBossLocation.getWorld())) {
+                continue;
+            }
+            
+            // Yeni boss'a olan mesafeyi hesapla
+            double distanceToNewBoss = arenaCenter.distance(newBossLocation);
+            
+            // En yakın oyuncu mesafesini de hesapla
+            double minPlayerDistance = Double.MAX_VALUE;
+            for (org.bukkit.entity.Player player : players) {
+                if (!player.getWorld().equals(arenaCenter.getWorld())) continue;
+                double dist = player.getLocation().distance(arenaCenter);
+                if (dist < minPlayerDistance) {
+                    minPlayerDistance = dist;
+                }
+            }
+            
+            arenasWithDistance.add(new AbstractMap.SimpleEntry<>(entry.getKey(), arena));
+            arena.setNearestPlayerDistance(minPlayerDistance);
+        }
+        
+        // Öncelik sıralaması:
+        // 1. En uzaktaki bosslar (yeni boss'a göre)
+        // 2. En uzaktaki oyunculara göre (100+ blok)
+        arenasWithDistance.sort((e1, e2) -> {
+            ArenaData a1 = e1.getValue();
+            ArenaData a2 = e2.getValue();
+            
+            double dist1 = a1.getCenter().distance(newBossLocation);
+            double dist2 = a2.getCenter().distance(newBossLocation);
+            
+            // Önce uzaktaki arenaları önceliklendir (dinamik uzaklık)
+            boolean far1 = a1.getNearestPlayerDistance() > currentFarDistance;
+            boolean far2 = a2.getNearestPlayerDistance() > currentFarDistance;
+            
+            if (far1 && !far2) return -1; // far1 önce
+            if (!far1 && far2) return 1;  // far2 önce
+            
+            // İkisi de uzak veya yakın, mesafeye göre sırala (en uzak önce)
+            return Double.compare(dist2, dist1);
+        });
+        
+        // En uzaktaki arena'yı durdur
+        if (!arenasWithDistance.isEmpty()) {
+            UUID farthestBossId = arenasWithDistance.get(0).getKey();
+            stopArenaTransformation(farthestBossId);
+            plugin.getLogger().info("Uzaktaki boss arena'sı durduruldu (yeni boss için yer açıldı): " + farthestBossId);
+        }
     }
     
     /**
@@ -97,13 +314,47 @@ public class NewBossArenaManager {
                     arena.setNearestPlayerDistance(minDistance);
                 }
                 
-                // Mesafeye göre sırala (en yakın önce)
+                // Performans kontrolü ve dinamik ayarlama
+                adjustPerformanceSettings();
+                
+                // Uzaktaki bossların transformasyonunu durdur (dinamik uzaklık)
+                // Mesafe zaten hesaplanmış, tekrar hesaplamaya gerek yok
+                List<UUID> farArenasToStop = new ArrayList<>();
+                for (Map.Entry<UUID, ArenaData> entry : sortedArenas) {
+                    ArenaData arena = entry.getValue();
+                    if (arena.getNearestPlayerDistance() > currentFarDistance) {
+                        farArenasToStop.add(entry.getKey());
+                    }
+                }
+                
+                // Uzak arenaları durdur
+                for (UUID farBossId : farArenasToStop) {
+                    stopArenaTransformation(farBossId);
+                    // Log spam önleme: Sadece önemli durumlar loglanır
+                    if (plugin.getLogger().isLoggable(java.util.logging.Level.FINE)) {
+                        plugin.getLogger().fine(currentFarDistance + "+ blok uzaktaki boss arena'sı durduruldu: " + farBossId);
+                    }
+                }
+                
+                // UZAK ARENA TEKRAR BAŞLATMA: Oyuncu yaklaştığında durdurulmuş arenaları tekrar başlat
+                checkAndRestartStoppedArenas(players);
+                
+                // Aktif arenaları tekrar al (uzak olanlar durduruldu)
+                // Mesafe zaten hesaplanmış, tekrar hesaplamaya gerek yok
+                sortedArenas = new ArrayList<>(activeArenas.entrySet());
+                
+                // Mesafeye göre sırala (en yakın önce) - Mesafe zaten hesaplanmış
                 sortedArenas.sort(Comparator.comparingDouble(e -> e.getValue().getNearestPlayerDistance()));
                 
-                // Öncelikli arenaları işle (en yakın 20 arena) - HIZLANDIRILDI
-                int processed = 0;
-                int maxProcessPerCycle = 20; // Her döngüde maksimum 20 arena işle (10'dan artırıldı)
+                // Performans metriklerini güncelle
+                updateMetrics(sortedArenas);
                 
+                // Oyuncu gruplarına göre öncelikli arenaları işle
+                List<List<org.bukkit.entity.Player>> playerGroups = getPlayerGroups();
+                int maxProcessPerCycle = playerGroups.size() * currentArenasPerGroup;
+                maxProcessPerCycle = Math.max(maxProcessPerCycle, baseMaxActiveArenas);
+                
+                int processed = 0;
                 for (Map.Entry<UUID, ArenaData> entry : sortedArenas) {
                     if (processed >= maxProcessPerCycle) break;
                     
@@ -125,9 +376,138 @@ public class NewBossArenaManager {
                     transformArenaBlocks(arena);
                     
                     processed++;
+                    totalArenasProcessed++;
                 }
             }
-        }.runTaskTimer(plugin, 0L, TASK_INTERVAL);
+        }.runTaskTimer(plugin, 0L, taskInterval);
+    }
+    
+    /**
+     * Durdurulmuş arenaları kontrol et ve oyuncu yaklaştığında tekrar başlat
+     */
+    private void checkAndRestartStoppedArenas(List<org.bukkit.entity.Player> players) {
+        if (stoppedArenas.isEmpty()) {
+            return;
+        }
+        
+        List<UUID> toRestart = new ArrayList<>();
+        
+        for (UUID bossId : stoppedArenas) {
+            BossManager.BossData bossData = plugin.getBossManager().getBossData(bossId);
+            if (bossData == null || bossData.getEntity() == null || bossData.getEntity().isDead()) {
+                // Boss ölmüş, listeden çıkar
+                stoppedArenas.remove(bossId);
+                continue;
+            }
+            
+            Location bossLoc = bossData.getEntity().getLocation();
+            World world = bossLoc.getWorld();
+            if (world == null) continue;
+            
+            // En yakın oyuncu mesafesini bul
+            double minDistance = Double.MAX_VALUE;
+            for (org.bukkit.entity.Player player : players) {
+                if (!player.getWorld().equals(world)) continue;
+                double dist = player.getLocation().distance(bossLoc);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                }
+            }
+            
+            // Oyuncu yaklaştıysa (currentFarDistance içindeyse) tekrar başlat
+            if (minDistance <= currentFarDistance) {
+                toRestart.add(bossId);
+            }
+        }
+        
+        // Tekrar başlatılacak arenaları işle
+        for (UUID bossId : toRestart) {
+            BossManager.BossData bossData = plugin.getBossManager().getBossData(bossId);
+            if (bossData == null) continue;
+            
+            Location bossLoc = bossData.getEntity().getLocation();
+            startArenaTransformation(bossLoc, bossData.getType(), bossData.getLevel(), bossId);
+            stoppedArenas.remove(bossId);
+            plugin.getLogger().info("Durdurulmuş boss arena'sı tekrar başlatıldı (oyuncu yaklaştı): " + bossId);
+        }
+    }
+    
+    /**
+     * Performans metriklerini güncelle
+     */
+    private void updateMetrics(List<Map.Entry<UUID, ArenaData>> sortedArenas) {
+        if (sortedArenas.isEmpty()) {
+            averageDistance = 0.0;
+            return;
+        }
+        
+        double totalDistance = 0.0;
+        for (Map.Entry<UUID, ArenaData> entry : sortedArenas) {
+            totalDistance += entry.getValue().getNearestPlayerDistance();
+        }
+        averageDistance = totalDistance / sortedArenas.size();
+    }
+    
+    /**
+     * Performans metriklerini al (admin komutları için)
+     */
+    public ArenaMetrics getMetrics() {
+        return new ArenaMetrics(
+            activeArenas.size(),
+            stoppedArenas.size(),
+            totalArenasProcessed,
+            totalArenasStopped,
+            averageDistance,
+            getCurrentTPS(),
+            getPlayerGroups().size(),
+            currentArenasPerGroup,
+            currentPlayerGroupDistance,
+            currentFarDistance,
+            System.currentTimeMillis() - lastMetricsReset
+        );
+    }
+    
+    /**
+     * Performans metriklerini sıfırla
+     */
+    public void resetMetrics() {
+        totalArenasProcessed = 0;
+        totalArenasStopped = 0;
+        averageDistance = 0.0;
+        lastMetricsReset = System.currentTimeMillis();
+    }
+    
+    /**
+     * Performans metrikleri veri sınıfı
+     */
+    public static class ArenaMetrics {
+        public final int activeArenas;
+        public final int stoppedArenas;
+        public final int totalProcessed;
+        public final int totalStopped;
+        public final double averageDistance;
+        public final double currentTPS;
+        public final int playerGroups;
+        public final int arenasPerGroup;
+        public final double playerGroupDistance;
+        public final double farDistance;
+        public final long metricsUptime;
+        
+        public ArenaMetrics(int activeArenas, int stoppedArenas, int totalProcessed, int totalStopped,
+                          double averageDistance, double currentTPS, int playerGroups, int arenasPerGroup,
+                          double playerGroupDistance, double farDistance, long metricsUptime) {
+            this.activeArenas = activeArenas;
+            this.stoppedArenas = stoppedArenas;
+            this.totalProcessed = totalProcessed;
+            this.totalStopped = totalStopped;
+            this.averageDistance = averageDistance;
+            this.currentTPS = currentTPS;
+            this.playerGroups = playerGroups;
+            this.arenasPerGroup = arenasPerGroup;
+            this.playerGroupDistance = playerGroupDistance;
+            this.farDistance = farDistance;
+            this.metricsUptime = metricsUptime;
+        }
     }
     
     /**
@@ -135,7 +515,97 @@ public class NewBossArenaManager {
      */
     public void stopArenaTransformation(UUID bossId) {
         activeArenas.remove(bossId);
+        stoppedArenas.add(bossId); // Durdurulmuş arenaları takip et
+        totalArenasStopped++;
         plugin.getLogger().info("Boss arena transformasyonu durduruldu: " + bossId);
+    }
+    
+    /**
+     * Performans ayarlarını dinamik olarak ayarla
+     * Performans sorunu varsa ayarları düşür
+     */
+    private void adjustPerformanceSettings() {
+        // TPS kontrolü (config'den eşik değeri)
+        double currentTPS = getCurrentTPS();
+        boolean performanceIssue = currentTPS < tpsThreshold;
+        
+        if (performanceIssue) {
+            // Performans sorunu var - ayarları düşür
+            if (currentArenasPerGroup > minArenasPerGroupFallback) {
+                currentArenasPerGroup = minArenasPerGroupFallback;
+                plugin.getLogger().warning("Performans sorunu tespit edildi! Arena sayısı oyuncu başına " + 
+                    minArenasPerGroupFallback + "'e düşürüldü.");
+            }
+            
+            if (currentPlayerGroupDistance > playerGroupDistanceFallback) {
+                currentPlayerGroupDistance = playerGroupDistanceFallback;
+                plugin.getLogger().warning("Performans sorunu tespit edildi! Oyuncu grup mesafesi " + 
+                    playerGroupDistanceFallback + " bloğa düşürüldü.");
+            }
+            
+            if (currentFarDistance > farDistanceMin) {
+                currentFarDistance = farDistanceMin;
+                plugin.getLogger().warning("Performans sorunu tespit edildi! Uzaklık limiti " + 
+                    farDistanceMin + " bloğa düşürüldü.");
+            }
+        } else {
+            // Performans iyi - normal ayarlara dön
+            if (currentArenasPerGroup < minArenasPerGroup) {
+                currentArenasPerGroup = minArenasPerGroup;
+            }
+            
+            if (currentPlayerGroupDistance < playerGroupDistance) {
+                currentPlayerGroupDistance = playerGroupDistance;
+            }
+            
+            // Uzaklık limiti: yavaşça artır
+            if (currentFarDistance < farDistance) {
+                // Performans iyi ama hala düşükse, yavaşça artır
+                if (currentFarDistance == farDistanceMin && currentTPS > 19.5) {
+                    currentFarDistance = farDistanceFallback;
+                } else if (currentFarDistance == farDistanceFallback && currentTPS > 19.8) {
+                    currentFarDistance = farDistance;
+                }
+            }
+        }
+    }
+    
+    // TPS ölçümü için tick zamanları
+    private final List<Long> tickTimes = new ArrayList<>();
+    
+    /**
+     * Mevcut TPS'i hesapla (tick zamanı ölçümü ile)
+     */
+    private double getCurrentTPS() {
+        try {
+            long currentTime = System.currentTimeMillis();
+            tickTimes.add(currentTime);
+            
+            // Son N tick'i tut (config'den)
+            if (tickTimes.size() > tpsSampleSize) {
+                tickTimes.remove(0);
+            }
+            
+            // Yeterli örnek yoksa varsayılan değer döndür
+            if (tickTimes.size() < 20) {
+                return 20.0;
+            }
+            
+            // İlk ve son tick arasındaki süreyi hesapla
+            long timeDiff = tickTimes.get(tickTimes.size() - 1) - tickTimes.get(0);
+            if (timeDiff <= 0) {
+                return 20.0;
+            }
+            
+            // TPS = (tick sayısı / saniye cinsinden süre)
+            double seconds = timeDiff / 1000.0;
+            double tps = (tickTimes.size() - 1) / seconds;
+            
+            // TPS'i 0-20 aralığına sınırla
+            return Math.max(0.0, Math.min(20.0, tps));
+        } catch (Exception e) {
+            return 20.0; // Hata durumunda varsayılan değer
+        }
     }
     
     /**
@@ -150,9 +620,10 @@ public class NewBossArenaManager {
         
         // En yakın oyuncu mesafesini al (merkezi task tarafından hesaplanmış)
         double nearestPlayerDistance = arena.getNearestPlayerDistance();
-        boolean isNearArena = nearestPlayerDistance <= FAR_DISTANCE; // 100 blok içindeyse aktif
+        boolean isNearArena = nearestPlayerDistance <= currentFarDistance; // Dinamik uzaklık içindeyse aktif
+        boolean isWithin50Blocks = nearestPlayerDistance <= 50.0; // 50 blok kontrolü (bir kez hesapla)
         
-        // UZAK ARENALAR (100+ blok) İÇİN HİÇBİR ŞEY YAPILMAZ - ERKEN ÇIKIŞ
+        // UZAK ARENALAR (dinamik uzaklık dışı) İÇİN HİÇBİR ŞEY YAPILMAZ - ERKEN ÇIKIŞ
         if (!isNearArena) {
             return; // Uzak arenalar için hiçbir transformasyon yapılmaz
         }
@@ -160,27 +631,34 @@ public class NewBossArenaManager {
         int maxRadius = getArenaRadius(arena.getLevel());
 
         // Kuleler sürekli oluşturulur (yayılma gibi) - Her arena için ayrı sayaç
-        // Task interval = 40 tick (2 saniye), dakikada 1 = 60 saniye = 30 döngü
+        // Sadece expansion limit içindeki arenalarda oluşturulur
         arena.incrementCycleCount();
-        if (arena.getCycleCount() % 30 == 0) {
-            createBossTowers(arena, maxRadius);
+        boolean isWithinExpansionLimit = nearestPlayerDistance <= arenaExpansionLimit;
+        if (isWithinExpansionLimit) {
+            // Task interval = 40 tick (2 saniye), dakikada 1 = 60 saniye = 30 döngü
+            if (arena.getCycleCount() % 30 == 0) {
+                createBossTowers(arena, maxRadius);
+            }
+            
+            // Rastgele örümcek ağları, lavlar ve sular oluştur
+            if (arena.getCycleCount() % HAZARD_CREATE_INTERVAL == 0) {
+                createRandomHazards(arena, maxRadius);
+            }
         }
         
-        // Rastgele örümcek ağları, lavlar ve sular oluştur (ÇOK ARTTIRILDI - Her döngüde)
-        // Sadece yakın arenalarda oluşturulur
-        if (arena.getCycleCount() % HAZARD_CREATE_INTERVAL == 0) {
-            createRandomHazards(arena, maxRadius);
-        }
-        
-        // Mevcut genişleme yarıçapını artır (3 KAT HIZLANDIRILDI)
-        // Sadece yakın arenalarda genişler
+        // Mevcut genişleme yarıçapını artır
+        // Sadece arenaExpansionLimit içindeki arenalarda genişler
         double currentRadius = arena.getCurrentRadius();
-        if (currentRadius < maxRadius) {
-            arena.setCurrentRadius(currentRadius + 1.2); // Her 2 saniyede 1.2 blok genişle (3 KAT HIZLANDIRILDI - 0.4'ten)
+        boolean isWithinExpansionLimit = nearestPlayerDistance <= arenaExpansionLimit;
+        if (isWithinExpansionLimit && currentRadius < maxRadius) {
+            arena.setCurrentRadius(currentRadius + 1.2); // Her 2 saniyede 1.2 blok genişle
         }
         
-        // Şu anki radius'ta blokları dönüştür (daha az blok)
-        // Sadece yakın arenalarda blok transformasyonu yapılır
+        // Şu anki radius'ta blokları dönüştür
+        // Sadece arenaExpansionLimit içindeki arenalarda blok transformasyonu yapılır
+        if (!isWithinExpansionLimit) {
+            return; // Expansion limit dışındaki arenalar için hiçbir transformasyon yapılmaz
+        }
         
         int transformed = 0;
         int maxAttempts = BLOCKS_PER_CYCLE * 3; // Maksimum deneme sayısı (chunk yüklü değilse atla) - optimize edildi
@@ -302,7 +780,7 @@ public class NewBossArenaManager {
         BossManager.BossType type = arena.getBossType();
         int level = arena.getLevel();
 
-        int maxRadius = Math.min(50, arenaRadius);
+        int maxRadius = Math.min((int)arenaExpansionLimit, arenaRadius);
         if (maxRadius < 8) maxRadius = 8; // minimum mantıklı alan
 
         Random random = new Random();

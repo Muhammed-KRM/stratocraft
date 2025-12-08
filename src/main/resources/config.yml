@@ -55,6 +55,23 @@ boss:
     max-bars: 3          # Maksimum gösterilecek BossBar sayısı (en yakın 3 boss)
     show-location: true   # ActionBar'da boss konum bilgisi göster (yön + mesafe)
     location-update-interval: 20  # Konum bilgisi güncelleme aralığı (tick) - 1 saniye
+  arena:
+    # Dinamik öncelik sistemi ayarları
+    min-arenas-per-group: 5        # Her oyuncu grubuna minimum arena sayısı
+    min-arenas-per-group-fallback: 3  # Performans sorunu varsa düşürülmüş arena sayısı
+    base-max-active-arenas: 25     # Temel maksimum arena sayısı
+    task-interval: 40               # Task çalışma aralığı (tick) - 2 saniye
+    blocks-per-cycle: 8             # Her döngüde dönüştürülecek blok sayısı
+    hazard-create-interval: 1       # Tehlike oluşturma aralığı (döngü)
+    player-group-distance: 50.0     # Oyuncu grup mesafesi (blok) - 50 blok içindeki oyuncular aynı grup
+    player-group-distance-fallback: 25.0  # Performans sorunu varsa grup mesafesi (blok)
+    far-distance: 100.0             # Uzaklık limiti (blok) - 100+ blok uzaktaki arenalar durdurulur
+    far-distance-fallback: 50.0    # Performans sorunu varsa uzaklık limiti (blok)
+    far-distance-min: 25.0          # Minimum uzaklık limiti (blok) - ciddi performans sorunu
+    arena-expansion-limit: 50.0     # Arena genişleme limiti (blok) - 50 blok dışındaki arenalar genişlemez
+    group-cache-duration: 5000      # Oyuncu grupları cache süresi (milisaniye) - 5 saniye
+    tps-threshold: 18.0             # Performans sorunu TPS eşiği - 18 TPS altı performans sorunu
+    tps-sample-size: 100            # TPS ölçümü için örnek sayısı (tick)
   ai:
     # Yetenek kullanım ayarları
     ability-cooldown-min: 4000    # Minimum yetenek cooldown (milisaniye) - 4 saniye

@@ -85,6 +85,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return handleTame(p, args);
             case "recipe":
                 return handleRecipe(p, args);
+            case "arena":
+                return handleArena(p, args);
             default:
                 showHelp(sender);
                 return true;
@@ -160,6 +162,107 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 if (listActiveCount == 0) {
                     p.sendMessage("§7Aktif tarif yok.");
                 }
+                return true;
+                
+            default:
+                p.sendMessage("§cBilinmeyen komut: " + args[1]);
+                return true;
+        }
+    }
+    
+    /**
+     * Arena yönetim komutları
+     */
+    private boolean handleArena(Player p, String[] args) {
+        if (args.length < 2) {
+            p.sendMessage("§cKullanım: /scadmin arena <komut>");
+            p.sendMessage("§7Komutlar:");
+            p.sendMessage("§7  status - Sistem durumu ve metrikler");
+            p.sendMessage("§7  groups - Oyuncu grupları listesi");
+            p.sendMessage("§7  settings - Mevcut ayarlar");
+            p.sendMessage("§7  reset - Metrikleri sıfırla");
+            p.sendMessage("§7  reload - Config'i yeniden yükle");
+            return true;
+        }
+        
+        me.mami.stratocraft.manager.NewBossArenaManager arenaManager = plugin.getNewBossArenaManager();
+        if (arenaManager == null) {
+            p.sendMessage("§cArena yöneticisi bulunamadı!");
+            return true;
+        }
+        
+        switch (args[1].toLowerCase()) {
+            case "status":
+                me.mami.stratocraft.manager.NewBossArenaManager.ArenaMetrics metrics = arenaManager.getMetrics();
+                p.sendMessage("§6§l════════════════════════════");
+                p.sendMessage("§e§lBOSS ARENA SİSTEMİ DURUMU");
+                p.sendMessage("§6§l════════════════════════════");
+                p.sendMessage("§7Aktif Arena: §a" + metrics.activeArenas);
+                p.sendMessage("§7Durdurulmuş Arena: §c" + metrics.stoppedArenas);
+                p.sendMessage("§7Toplam İşlenen: §e" + metrics.totalProcessed);
+                p.sendMessage("§7Toplam Durdurulan: §e" + metrics.totalStopped);
+                p.sendMessage("§7Ortalama Mesafe: §b" + String.format("%.2f", metrics.averageDistance) + " blok");
+                p.sendMessage("§7Mevcut TPS: §" + (metrics.currentTPS >= 18.0 ? "a" : "c") + String.format("%.2f", metrics.currentTPS));
+                p.sendMessage("§7Oyuncu Grupları: §e" + metrics.playerGroups);
+                p.sendMessage("§7Grup Başına Arena: §e" + metrics.arenasPerGroup);
+                p.sendMessage("§7Grup Mesafesi: §b" + String.format("%.1f", metrics.playerGroupDistance) + " blok");
+                p.sendMessage("§7Uzaklık Limiti: §b" + String.format("%.1f", metrics.farDistance) + " blok");
+                long uptimeSeconds = metrics.metricsUptime / 1000;
+                long uptimeMinutes = uptimeSeconds / 60;
+                long uptimeHours = uptimeMinutes / 60;
+                p.sendMessage("§7Metrik Süresi: §e" + uptimeHours + "s " + (uptimeMinutes % 60) + "d " + (uptimeSeconds % 60) + "sn");
+                p.sendMessage("§6§l════════════════════════════");
+                return true;
+                
+            case "groups":
+                List<List<org.bukkit.entity.Player>> groups = arenaManager.getPlayerGroups();
+                p.sendMessage("§6§l════════════════════════════");
+                p.sendMessage("§e§lOYUNCU GRUPLARI");
+                p.sendMessage("§6§l════════════════════════════");
+                if (groups.isEmpty()) {
+                    p.sendMessage("§7Aktif oyuncu grubu yok.");
+                } else {
+                    for (int i = 0; i < groups.size(); i++) {
+                        List<org.bukkit.entity.Player> group = groups.get(i);
+                        p.sendMessage("§7Grup §e" + (i + 1) + "§7: §a" + group.size() + " oyuncu");
+                        for (org.bukkit.entity.Player player : group) {
+                            p.sendMessage("§7  - §e" + player.getName());
+                        }
+                    }
+                }
+                p.sendMessage("§6§l════════════════════════════");
+                return true;
+                
+            case "settings":
+                me.mami.stratocraft.manager.ConfigManager config = plugin.getConfigManager();
+                p.sendMessage("§6§l════════════════════════════");
+                p.sendMessage("§e§lARENA AYARLARI");
+                p.sendMessage("§6§l════════════════════════════");
+                p.sendMessage("§7Min Arena/Grup: §e" + config.getMinArenasPerGroup());
+                p.sendMessage("§7Min Arena/Grup (Fallback): §c" + config.getMinArenasPerGroupFallback());
+                p.sendMessage("§7Base Max Arena: §e" + config.getBaseMaxActiveArenas());
+                p.sendMessage("§7Task Interval: §e" + config.getTaskInterval() + " tick");
+                p.sendMessage("§7Blok/Döngü: §e" + config.getBlocksPerCycle());
+                p.sendMessage("§7Oyuncu Grup Mesafesi: §b" + config.getPlayerGroupDistance() + " blok");
+                p.sendMessage("§7Oyuncu Grup Mesafesi (Fallback): §c" + config.getPlayerGroupDistanceFallback() + " blok");
+                p.sendMessage("§7Uzaklık Limiti: §b" + config.getFarDistance() + " blok");
+                p.sendMessage("§7Uzaklık Limiti (Fallback): §c" + config.getFarDistanceFallback() + " blok");
+                p.sendMessage("§7Uzaklık Limiti (Min): §c" + config.getFarDistanceMin() + " blok");
+                p.sendMessage("§7Arena Genişleme Limiti: §b" + config.getArenaExpansionLimit() + " blok");
+                p.sendMessage("§7Grup Cache Süresi: §e" + (config.getGroupCacheDuration() / 1000) + " saniye");
+                p.sendMessage("§7TPS Eşiği: §e" + config.getTpsThreshold());
+                p.sendMessage("§7TPS Örnek Sayısı: §e" + config.getTpsSampleSize());
+                p.sendMessage("§6§l════════════════════════════");
+                return true;
+                
+            case "reset":
+                arenaManager.resetMetrics();
+                p.sendMessage("§aPerformans metrikleri sıfırlandı.");
+                return true;
+                
+            case "reload":
+                arenaManager.reloadConfig();
+                p.sendMessage("§aArena config'i yeniden yüklendi.");
                 return true;
                 
             default:
@@ -3443,7 +3546,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         // İlk argüman (komut seçimi)
         if (args.length == 1) {
             List<String> commands = Arrays.asList("give", "spawn", "disaster", "list", "help", "siege", "clan",
-                    "contract", "build", "trap", "dungeon", "biome", "mine", "recipe", "boss", "tame");
+                    "contract", "build", "trap", "dungeon", "biome", "mine", "recipe", "boss", "tame", "arena");
             String input = args[0].toLowerCase();
 
             // Eğer boşsa veya başlangıç eşleşiyorsa filtrele
@@ -3630,6 +3733,16 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         return recipeCommands;
                     }
                     return recipeCommands.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
+                            .collect(Collectors.toList());
+                            
+                case "arena":
+                    // Arena komutları
+                    List<String> arenaCommands = Arrays.asList("status", "groups", "settings", "reset", "reload");
+                    if (input.isEmpty()) {
+                        return arenaCommands;
+                    }
+                    return arenaCommands.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
 
