@@ -136,7 +136,7 @@ public class NewBossArenaManager {
     private int calculateMaxActiveArenas() {
         List<List<org.bukkit.entity.Player>> playerGroups = getPlayerGroups();
         int groupCount = playerGroups.size();
-        int maxArenas = Math.max(BASE_MAX_ACTIVE_ARENAS, groupCount * currentArenasPerGroup);
+        int maxArenas = Math.max(baseMaxActiveArenas, groupCount * currentArenasPerGroup);
         return maxArenas;
     }
     
@@ -225,10 +225,7 @@ public class NewBossArenaManager {
                 continue;
             }
             
-            // Yeni boss'a olan mesafeyi hesapla
-            double distanceToNewBoss = arenaCenter.distance(newBossLocation);
-            
-            // En yakın oyuncu mesafesini de hesapla
+            // En yakın oyuncu mesafesini hesapla
             double minPlayerDistance = Double.MAX_VALUE;
             for (org.bukkit.entity.Player player : players) {
                 if (!player.getWorld().equals(arenaCenter.getWorld())) continue;
@@ -426,7 +423,8 @@ public class NewBossArenaManager {
             if (bossData == null) continue;
             
             Location bossLoc = bossData.getEntity().getLocation();
-            startArenaTransformation(bossLoc, bossData.getType(), bossData.getLevel(), bossId);
+            int level = getDefaultLevelForBossType(bossData.getType());
+            startArenaTransformation(bossLoc, bossData.getType(), level, bossId);
             stoppedArenas.remove(bossId);
             plugin.getLogger().info("Durdurulmuş boss arena'sı tekrar başlatıldı (oyuncu yaklaştı): " + bossId);
         }
@@ -621,7 +619,6 @@ public class NewBossArenaManager {
         // En yakın oyuncu mesafesini al (merkezi task tarafından hesaplanmış)
         double nearestPlayerDistance = arena.getNearestPlayerDistance();
         boolean isNearArena = nearestPlayerDistance <= currentFarDistance; // Dinamik uzaklık içindeyse aktif
-        boolean isWithin50Blocks = nearestPlayerDistance <= 50.0; // 50 blok kontrolü (bir kez hesapla)
         
         // UZAK ARENALAR (dinamik uzaklık dışı) İÇİN HİÇBİR ŞEY YAPILMAZ - ERKEN ÇIKIŞ
         if (!isNearArena) {
@@ -641,7 +638,7 @@ public class NewBossArenaManager {
             }
             
             // Rastgele örümcek ağları, lavlar ve sular oluştur
-            if (arena.getCycleCount() % HAZARD_CREATE_INTERVAL == 0) {
+            if (arena.getCycleCount() % hazardCreateInterval == 0) {
                 createRandomHazards(arena, maxRadius);
             }
         }
@@ -649,7 +646,6 @@ public class NewBossArenaManager {
         // Mevcut genişleme yarıçapını artır
         // Sadece arenaExpansionLimit içindeki arenalarda genişler
         double currentRadius = arena.getCurrentRadius();
-        boolean isWithinExpansionLimit = nearestPlayerDistance <= arenaExpansionLimit;
         if (isWithinExpansionLimit && currentRadius < maxRadius) {
             arena.setCurrentRadius(currentRadius + 1.2); // Her 2 saniyede 1.2 blok genişle
         }
@@ -661,9 +657,9 @@ public class NewBossArenaManager {
         }
         
         int transformed = 0;
-        int maxAttempts = BLOCKS_PER_CYCLE * 3; // Maksimum deneme sayısı (chunk yüklü değilse atla) - optimize edildi
+        int maxAttempts = blocksPerCycle * 3; // Maksimum deneme sayısı (chunk yüklü değilse atla) - optimize edildi
         
-        for (int attempt = 0; attempt < maxAttempts && transformed < BLOCKS_PER_CYCLE; attempt++) {
+        for (int attempt = 0; attempt < maxAttempts && transformed < blocksPerCycle; attempt++) {
             // Rastgele açı seç (çember oluşturmak için)
             double angle = Math.random() * 2 * Math.PI;
             
@@ -1060,6 +1056,34 @@ public class NewBossArenaManager {
      */
     private void fillBelowBoss(Location bossLoc) {
         // Bilinçli olarak boş bırakıldı.
+    }
+    
+    /**
+     * Boss tipine göre varsayılan seviyeyi al
+     */
+    private int getDefaultLevelForBossType(BossManager.BossType type) {
+        switch (type) {
+            case GOBLIN_KING:
+            case ORC_CHIEF:
+                return 1;
+            case TROLL_KING:
+                return 2;
+            case DRAGON:
+            case TREX:
+            case CYCLOPS:
+                return 3;
+            case TITAN_GOLEM:
+            case HELL_DRAGON:
+            case HYDRA:
+            case PHOENIX:
+                return 4;
+            case VOID_DRAGON:
+            case CHAOS_TITAN:
+            case CHAOS_GOD:
+                return 5;
+            default:
+                return 1;
+        }
     }
     
     /**
