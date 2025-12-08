@@ -16,6 +16,152 @@ siege:
 disaster:
   cooldown: 3600000      # Felaket arası bekleme süresi (milisaniye) - 1 saat
   wreckage-size: 5       # Enkaz boyutu (5x5x3)
+  
+  # Genel Ayarlar
+  general:
+    spawn-distance: 5000          # Spawn mesafesi (blok)
+    attack-interval: 120000       # Oyuncu saldırı aralığı (ms) - 2 dakika
+    attack-radius: 30             # Saldırı yarıçapı (blok)
+    crystal-proximity: 5          # Kristal yakınlık (blok)
+    crystal-cache-interval: 10000 # Cache güncelleme (ms)
+    chunk-unload-delay: 200       # Chunk unload gecikmesi (tick)
+  
+  # Güç Hesaplama
+  power:
+    player-multiplier: 0.1        # Oyuncu başına çarpan
+    clan-multiplier: 0.15         # Klan seviyesi başına çarpan
+  
+  # Seviye Bazlı Güçler
+  levels:
+    level1:
+      base-health: 500
+      base-damage: 1.0
+      health-multiplier: 1.0
+      damage-multiplier: 1.0
+    level2:
+      base-health: 1500
+      base-damage: 2.0
+      health-multiplier: 1.5
+      damage-multiplier: 1.5
+    level3:
+      base-health: 5000
+      base-damage: 5.0
+      health-multiplier: 2.0
+      damage-multiplier: 2.0
+    level4:
+      base-health: 10000
+      base-damage: 10.0
+      health-multiplier: 3.0
+      damage-multiplier: 3.0
+  
+  # Felaket Tipi Bazlı Ayarlar
+  types:
+    TITAN_GOLEM:
+      move-speed: 0.4
+      jump-height: 1.2
+      can-jump: true
+      can-teleport: false
+      jump-interval-min: 300
+      jump-interval-max: 400
+      block-throw-interval: 200
+      explosion-interval: 200
+      explosion-power: 4.0
+      block-break-radius: 3
+      passive-explosion-power: 2.0
+    
+    ABYSSAL_WORM:
+      move-speed: 0.3
+      jump-height: 0.0
+      can-jump: false
+      can-teleport: true
+      teleport-distance: 5
+      dig-speed: 1.0
+    
+    CHAOS_DRAGON:
+      move-speed: 0.5
+      jump-height: 0.0
+      can-jump: false
+      can-teleport: false
+      fire-breath-chance: 5
+      fire-breath-range: 50
+      fire-damage: 5.0
+    
+    VOID_TITAN:
+      move-speed: 0.3
+      jump-height: 0.0
+      can-jump: false
+      can-teleport: false
+      void-explosion-chance: 3
+      void-explosion-power: 4.0
+      void-explosion-radius: 10
+    
+    ICE_LEVIATHAN:
+      move-speed: 0.3
+      jump-height: 0.0
+      can-jump: false
+      can-teleport: false
+      freeze-chance: 5
+      freeze-radius: 30
+      freeze-duration: 100
+      ice-conversion-chance: 30
+      ice-conversion-radius: 5
+    
+    ZOMBIE_HORDE:
+      move-speed: 0.3
+      jump-height: 0.0
+      can-jump: false
+      can-teleport: false
+      group-size: 30
+      spawn-radius: 20
+    
+    CREEPER_SWARM:
+      move-speed: 0.2
+      jump-height: 0.0
+      can-jump: false
+      can-teleport: false
+      group-size-min: 100
+      group-size-max: 500
+      spawn-radius: 50
+      health-percentage: 0.2
+    
+    SOLAR_FLARE:
+      fire-tick-duration: 100
+      flammable-chance-log: 0.05
+      flammable-chance-other: 0.15
+      lava-spawn-chance: 0.02
+      scan-radius: 5
+    
+    EARTHQUAKE:
+      explosion-chance: 5
+      explosion-radius: 20
+      explosion-power: 3.0
+      damage-interval: 40
+      damage-amount: 2.0
+      block-fall-radius: 2
+      block-fall-height: 5
+    
+    STORM:
+      lightning-chance-nearby: 3
+      lightning-chance-random: 1
+      lightning-radius: 10
+      lightning-damage: 10.0
+      lightning-damage-radius: 5
+    
+    METEOR_SHOWER:
+      meteor-chance: 5            # %
+      meteor-spawn-height: 50     # Blok yüksekliği
+      meteor-spawn-range: 50       # Blok yarıçapı
+      meteor-explosion-power: 4.0  # Patlama gücü
+      meteor-damage-radius: 3     # Hasar yarıçapı
+    
+    VOLCANIC_ERUPTION:
+      explosion-chance: 3          # %
+      explosion-radius: 30         # Blok yarıçapı
+      explosion-power: 5.0         # Patlama gücü
+      lava-spawn-chance: 1         # %
+      lava-spawn-radius: 20        # Blok yarıçapı
+      fire-damage-interval: 40     # Tick
+      fire-damage-amount: 2.0      # Hasar miktarı
 
 # Matkap Ayarları
 drill:

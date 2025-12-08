@@ -2,17 +2,23 @@
 
 ## 🌪️ Felaketler Nedir?
 
-Felaketler **doğa olayları**dır, normal boss değil! **Merkezden uzakta** spawlanır ve **merkeze doğru ilerleyerek** yoldaki baseleri yok eder.
+Felaketler **oyuncuları merkezden çok uzaklaşmamasını ve merkeze çok yakın yerleşmemelerini sağlamak** için tasarlanmış **çok güçlü** sistemlerdir. **Tek başına başa çıkılamaz**, mutlaka takım çalışması gerektirir.
+
+**Ana Amaç:**
+- Merkezden uzaklaşmayı engellemek
+- Merkeze çok yakın yerleşmeyi engellemek
+- Klan kristallerini öncelikli hedef almak
 
 ---
 
 ## 📋 İÇİNDEKİLER
 
 1. [Felaket Mekaniği](#felaket-mekaniği)
-2. [5 Feladet Tipi](#5-felaket-tipi)
-3. [Mücadele Stratejileri](#mücadele-stratejileri)
-4. [Ödüller](#ödüller)
-
+2. [Felaket Tipleri](#felaket-tipleri)
+3. [Klan Kristali Hedefleme](#klan-kristali-hedefleme)
+4. [Mücadele Stratejileri](#mücadele-stratejileri)
+5. [Admin Komutları](#admin-komutları)
+6. [Ödüller](#ödüller)
 
 ---
 
@@ -20,7 +26,7 @@ Felaketler **doğa olayları**dır, normal boss değil! **Merkezden uzakta** spa
 
 ### Güç Hesaplama Formülü
 
-**Felaketler artık dinamik güçte!**
+**Felaketler dinamik güçte!**
 
 ```
 Formül:
@@ -50,114 +56,270 @@ Sonuç: Felaket 245 güçte spawn olur!
    - Her seviye +%15 güç
 
 3. Temel Güç:
-   - Felaket seviyesine göre (1-3)
+   - Felaket seviyesine göre (1-4)
 ```
 
 ---
 
 ### Felaket Seviyeleri
 
-**3 Seviye Felaket**:
+**4 Seviye Felaket Sistemi:**
 
-#### Seviye 1 (Kolay)
+#### Seviye 1 (Günlük)
 ```
-Temel Güç: 100
+Temel Güç: 500 HP
 Can Çarpanı: 1.0x
 Hasar Çarpanı: 1.0x
-Spawn Sıklığı: Sık (her 30 dakika)
+Spawn Sıklığı: Her gün
+Örnekler: Mini felaketler, Güneş Patlaması, Mini dalgalar
 ```
 
 #### Seviye 2 (Orta)
 ```
-Temel Güç: 200
+Temel Güç: 1500 HP
 Can Çarpanı: 1.5x
 Hasar Çarpanı: 1.5x
-Spawn Sıklığı: Orta (her 1 saat)
+Spawn Sıklığı: 3 günde bir
+Örnekler: Deprem, Fırtına, Orta güçte grup (30 adet)
 ```
 
-#### Seviye 3 (Zor)
+#### Seviye 3 (Büyük)
 ```
-Temel Güç: 300
+Temel Güç: 5000 HP
 Can Çarpanı: 2.0x
 Hasar Çarpanı: 2.0x
-Spawn Sıklığı: Nadir (her 2 saat)
+Spawn Sıklığı: Haftada bir
+Örnekler: Tek Boss (Titan Golem, Khaos Ejderi), Volkanik Patlama
+```
+
+#### Seviye 4 (Mega)
+```
+Temel Güç: 10000+ HP
+Can Çarpanı: 3.0x
+Hasar Çarpanı: 3.0x
+Spawn Sıklığı: 2 haftada bir
+Örnekler: Çok güçlü boss, Mini felaket dalgası (100-500 adet)
 ```
 
 ---
 
-### Otomatik Spawn Sistemi
+## 🏗️ FELAKET TİPLERİ
 
-**Felaketler otomatik spawn olur!**
+### A. CANAVAR FELAKETLER (CREATURE DISASTERS)
 
-```
-Kontrol Sıklığı: Her 10 dakika
+Canavar felaketler **merkezden uzakta** spawn olur ve **merkeze doğru ilerleyerek** yoldaki klan kristallerini yok eder.
 
-Spawn Şansı:
-- Seviye 1: %50 (sık)
-- Seviye 2: %30 (orta)
-- Seviye 3: %10 (nadir)
+**Özellikler:**
+- Merkezden uzakta spawn olur (5000+ blok)
+- Merkeze doğru ilerler
+- **Klan kristalini öncelikli hedef alır**
+- Kristal yok edilene kadar oyuncularla oyalanmaz
+- **2 dakikada bir** yakındaki oyunculara saldırır
+- Kristal yok edildikten sonra en yakın klan kristaline gider
 
-Koşullar:
-✓ Aktif felaket yok
-✓ En az 3 oyuncu online
-✓ Spawn şansı tuttu
-```
+**Alt Kategoriler:**
+
+#### 1. Tek Boss Felaketi (SINGLE_BOSS)
+Çok güçlü tek bir boss. Örnekler:
+- **Titan Golem** (Seviye 3)
+- **Khaos Ejderi** (Seviye 3)
+- **Boşluk Titanı** (Seviye 3)
+- **Hiçlik Solucanı** (Seviye 2)
+- **Buzul Leviathan** (Seviye 2)
+
+**İstatistikler:**
+- Can: 10,000-50,000 HP
+- Hasar: 50-200 HP/vuruş
+- Çok güçlü özel yetenekler
+
+#### 2. Orta Güçte Grup (MEDIUM_GROUP)
+30 tane orta güçte canavar. Örnekler:
+- **Zombi Ordusu** (ZOMBIE_HORDE) - 30 adet güçlendirilmiş zombi
+- **İskelet Lejyonu** (SKELETON_LEGION) - 30 adet güçlendirilmiş iskelet
+- **Örümcek Sürüsü** (SPIDER_SWARM) - 30 adet güçlendirilmiş örümcek
+
+**İstatistikler:**
+- Can: 500-2000 HP/başına
+- Hasar: 10-50 HP/vuruş
+- Her biri aynı kristale hedeflenir
+
+#### 3. Mini Felaket Dalgası (MINI_SWARM)
+100-500 adet mini canavar. Örnekler:
+- **Creeper Dalgası** (CREEPER_SWARM) - 100-500 adet güçlendirilmiş creeper
+- **Zombi Dalgası** (ZOMBIE_WAVE) - 100-500 adet güçlendirilmiş zombi
+
+**İstatistikler:**
+- Can: 100-500 HP/başına
+- Hasar: 5-20 HP/vuruş
+- Performans için max 500 adet
 
 ---
 
-### BossBar Sayaç
+### B. DOĞA OLAYI FELAKETLER (NATURAL DISASTERS)
 
-**Felaket sırasında ekranda sayaç!**
+Doğa olayları **tüm dünyayı etkiler** ve belirli bir süre boyunca aktif kalır.
 
-**Canlı Felaketler** (Titan Golem, Hiçlik Solucanı, vb.) için:
-- Ekranın üst kısmında **BossBar** gösterilir
-- Felaket ismi
-- Can gösterimi: `Can/Maksimum Can` (örn: `500/500`)
-- Kalan süre: `⏰ 5:23` formatında
-- Can barı: Progress bar ile görsel gösterim
-- Renk değişimi: 
-  - Kırmızı (>%60 can)
-  - Sarı (%30-60 can)
-  - Yeşil (<%30 can)
+#### 1. Güneş Patlaması (SOLAR_FLARE) - Seviye 1
+**Süre:** 10 dakika
 
-**Doğa Olayları** (Güneş Fırtınası, Deprem, vb.) için:
-- Ekranın alt kısmında **ActionBar** gösterilir
-- Felaket ismi
-- Kalan süre: `⏰ 5:23` formatında
+**Etkiler:**
+- Yüzeydeki oyuncular yanar (çatısız yerlerde)
+- Yanıcı bloklar tutuşur (ahşap, yün, yapraklar)
+- Etrafta lavlar oluşur
+- Klan bölgelerinde etkisiz
+
+**Hayatta Kalma:**
+- Yeraltına sığın (Y 50 altı)
+- Çatı altında kal
+- Klan bölgesinde korun
+
+#### 2. Deprem (EARTHQUAKE) - Seviye 2
+**Süre:** 5 dakika
+
+**Etkiler:**
+- Rastgele konumlarda patlamalar
+- Herkes sürekli yüksek hasar alır (1 kalp/2 saniye)
+- Bloklar düşer (yukarıdan)
+- Yapılara hasar
+- Klan bölgelerinde etkisiz
+
+**Hayatta Kalma:**
+- Açık alanlardan kaç
+- Yüksek binalardan uzak dur
+- Klan bölgesinde korun
+
+#### 3. Fırtına (STORM) - Seviye 2
+**Süre:** 20 dakika
+
+**Etkiler:**
+- Oyuncular yaklaştıkça yıldırım düşer
+- Rastgele konumlarda yıldırım
+- Yüksek hasar (5 kalp)
+- Klan bölgelerinde etkisiz
+
+**Hayatta Kalma:**
+- Açık alanlardan kaç
+- Yıldırım çarpmasından korun
+- Klan bölgesinde korun
+
+#### 4. Meteor Yağmuru (METEOR_SHOWER) - Seviye 2
+**Süre:** 20 dakika
+
+**Etkiler:**
+- Gökyüzünden meteor düşer
+- Rastgele bölgelere
+- Blok kırar
+- 10 kalp hasar (çarparsa)
+
+**Hayatta Kalma:**
+- Çatı yap (Obsidian önerilir)
+- Klan bölgesinde korun
+
+#### 5. Volkanik Patlama (VOLCANIC_ERUPTION) - Seviye 3
+**Süre:** 60 dakika
+
+**Etkiler:**
+- Lav akışı
+- Kül bulutu
+- Çok yüksek hasar (yanma)
+- Geniş alan etkisi
+
+---
+
+### C. MİNİ FELAKETLER (MINI DISASTERS)
+
+Mini felaketler **rastgele zamanda günde birkaç kez** ortaya çıkar. Çok güçlü değildir ama etkileri vardır.
+
+**Özellikler:**
+- Rastgele zamanda spawn
+- Günde 2-5 kez
+- Süre: 5-15 dakika
+- Güç: Düşük-Orta
+
+**Tipler:**
+
+#### 1. Boss Güçlenme Dalgası (BOSS_BUFF_WAVE)
+- Tüm bosslar %50 daha güçlü
+- Süre: 10 dakika
+
+#### 2. Mob İstilası (MOB_INVASION)
+- 50 tane güçlendirilmiş mob spawn
+- Rastgele konumlarda
+
+#### 3. Oyuncu Buff Dalgası (PLAYER_BUFF_WAVE)
+- Tüm oyunculara geçici güç buff'ı
+- +%25 hasar, +%15 savunma
+- Süre: 15 dakika
+
+---
+
+## 🎯 KLAN KRISTALİ HEDEFLEME
+
+### Nasıl Çalışır?
+
+1. **Felaket Spawn Olur:**
+   - Merkezden uzakta spawn olur (5000+ blok)
+   - En yakın klan kristalini bulur
+   - Kristale doğru ilerler
+
+2. **Kristale İlerleme:**
+   - Felaket kristale doğru sürekli ilerler
+   - Önüne çıkan blokları kırar
+   - Yapıları yok eder
+
+3. **Oyuncu Saldırısı:**
+   - **2 dakikada bir** yakındaki oyunculara saldırır
+   - Saldırı sonrası kristale devam eder
+   - Oyuncularla oyalanmaz
+
+4. **Kristal Yok Etme:**
+   - Kristale 5 blok yaklaşınca yok eder
+   - Klan dağılır
+   - Yapılar yok edilir
+   - En yakın klan kristaline gider
+
+### Önemli Notlar
+
+- **Felaketler oyuncularla oyalanmaz** - Kristal yok edilene kadar
+- **2 dakikada bir saldırır** - Sadece yakındaki oyunculara
+- **Kristal öncelikli hedef** - Her zaman en yakın kristale gider
+- **Klan yok edilince** - Kahraman Buff'ı verilir (48 saat)
 
 ---
 
 ## ⚙️ FELAKET MEKANİĞİ
 
-
 ### Spawn Sistemi
 
 ```
-Spawn Konumu: Haritanın köşesi (5000+ blok uzakta)
+Spawn Konumu: Merkezden uzakta (5000+ blok)
 
 Davranış:
 1. Merkezden uzakta doğar
-2. MERKEZE DOĞRU ilerler
-3. Yolda base bulursa → YOK EDER
-4. Base yok edince → Bir sonraki base'e gider
-5. Merkeze ulaşırsa → Etraftaki baseleri tek tek yok eder
+2. En yakın klan kristalini bulur
+3. Kristale doğru ilerler
+4. 2 dakikada bir yakındaki oyunculara saldırır
+5. Kristale 5 blok yaklaşınca yok eder
+6. Klan dağılır
+7. En yakın klan kristaline gider
+8. Tekrarla
 ```
-
----
 
 ### Yıkım Etkisi
 
-**Base Yok Edilirse**:
+**Klan Kristali Yok Edilirse:**
 ```
-Felaket base'i buldu:
-→ Tüm yapıları yok eder
+Felaket kristale ulaştı:
 → Kristali kırar
+→ Tüm yapıları yok eder
 → Klan dağılır
+→ En yakın klan kristaline gider
 
 AMA:
 → Klan üyeleri "Kahraman Buff'ı" alır!
 → +%30 hasar
 → +%20 savunma
+→ +%15 hareket hızı
 → 48 saat sürer
 
 AMAÇ: İntikam almak için güçlenirler
@@ -165,332 +327,114 @@ AMAÇ: İntikam almak için güçlenirler
 
 ---
 
-### Güç Dengesi
+## 🎮 MÜCADELE STRATEJİLERİ
 
-```
-Yakında Base Varsa:
-→ Feladet max güçte
-→ Base yok eder
+### Genel Strateji
 
-Yakında Base Yoksa:
-→ Feladet gücü azalır (%50 hasar düşüşü)
-→ Daha kolay yenilir
+1. **Takım Oluştur:**
+   - Minimum 3-5 oyuncu
+   - Farklı roller (tank, dps, support)
 
-STRATEJI: Felaket merkezden uzaklaştıkça zayıflar
-```
+2. **Klan Kristalini Koru:**
+   - Felaket kristale gidiyor
+   - Kristali korumak için hazırlık yap
+   - Tektonik Sabitleyici kur (felaket hasarını %90 azaltır)
 
----
+3. **2 Dakikada Bir Saldırı:**
+   - Felaket 2 dakikada bir saldırır
+   - Bu süre zarfında hazırlık yap
+   - Saldırı sonrası tekrar saldır
 
-## 🗿 9 FELAKET TİPİ
-
-### 1. Yürüyen Dağ (TITAN GOLEM)
-
-**Görünüm**: Dev Giant (4 kat büyük)
-
-**İstatistikler**:
-```
-Can: 500 HP (250 kalp)
-Hasar: 25 (12.5 kalp/vuruş)
-Hız: Yavaş ama durdurulamaz
-```
-
-**Özel Yetenekler**:
-```
-Her 5 saniyede:
-
-1. Toprak Fırlatma:
-   → Düşmana toprak bloğu fırlatır
-   → 5 kalp hasar
-
-2. Zıplama:
-   → En yakın düşmana zıplar
-   → Landing patlama (alan hasar)
-
-3. Şok Dalgası:
-   → 8 blok çaptaki herkese 10 kalp
-   → Geri itme + ELECTRIC_SPARK partikül
-```
-
-**Zayıf Nokta**: Arkasındaki "soğutma panelleri" (vur arkadan!)
-
-**Spawn**: Haritanın kuzey-batı köşesi
+4. **Kristal Yok Edilirse:**
+   - Kahraman Buff'ı al
+   - İntikam için güçlen
+   - Felaketi yok et
 
 ---
 
-### 2. Hiçlik Solucanı (ABYSSAL WORM)
+## 🛠️ ADMIN KOMUTLARI
 
-**Görünüm**: Dev Silverfish (yeraltında)
+### Test Komutları
 
-**İstatistikler**:
+#### Normal Felaket Test
 ```
-Can: 300 HP (150 kalp)
-Hasar: Orta
-Hız: Yeraltında hızlı
-```
+/stratocraft disaster test <type> <level> [konum]
 
-**Davranış**:
-```
-- Yer ALTINDAN merkeze ilerler
-- Yüzeye çıkmaz (normalde)
-- Baselerin TEMELLERİNİ kazar
-- Blokları yutar
+Örnekler:
+/stratocraft disaster test TITAN_GOLEM 3 ben
+/stratocraft disaster test EARTHQUAKE 2 100 64 200
+/stratocraft disaster test SOLAR_FLARE 1
 ```
 
-**Sismik Çekiç Bataryası**:
+#### Grup Felaket Test (30 adet)
 ```
-Kurulum: Özel blok dizilimi
-Kullanım: Shift + Sağ tık
-Etki: Solucanı YÜZEYE ÇIKMAYA ZORLA
+/stratocraft disaster test group <entity> <count> [konum]
 
-Mesaj: "SİSMİK ÇEKİÇ! Hiçlik Solucanı yüzeye çıkmaya zorlandı!"
-```
-
-**Mücadele**:
-```
-1. Sismik Çekiç kur
-2. Solucanı yüzeye çıkar
-3. Hepiniz birlikte saldırın
-4. Tekrar kaçarsa → Tekrar çekiç kullan
+Örnekler:
+/stratocraft disaster test group ZOMBIE 30 ben
+/stratocraft disaster test group SKELETON 30 100 64 200
 ```
 
-**Spawn**: Yeraltı (Y -50 altı), uzak bölgeler
-
----
-
-### 3. Güneş Fırtınası (SOLAR FLARE)
-
-**Tip**: Yaratık değil, **10 dakika süren OLAY**
-
-**Etki**:
+#### Mini Dalga Test (100-500 adet)
 ```
-- Gökyüzü KIRMIZI olur
-- Yüzeyde duranlar YANAR (Fire Damage)
-- Ahşap yapılar TUTUŞURolve
-- Ekinler KURURUR
+/stratocraft disaster test swarm <entity> <count> [konum]
+
+Örnekler:
+/stratocraft disaster test swarm CREEPER 200 ben
+/stratocraft disaster test swarm ZOMBIE 500 100 64 200
 ```
 
-**Hayatta Kalma**:
+#### Mini Felaket Test
 ```
-Seçenek 1: Yeraltına sığın
-→ Y 50 altına in
-→ 10 dakika bekle
+/stratocraft disaster test mini <type>
 
-Seçenek 2: Ozon Kalkanı Bataryası
-→ Ritüel kur (özel tarif)
-→ Bölgeyi korur
-→ Pahalı ama etkili
+Örnekler:
+/stratocraft disaster test mini BOSS_BUFF_WAVE
+/stratocraft disaster test mini MOB_INVASION
+/stratocraft disaster test mini PLAYER_BUFF_WAVE
 ```
 
-**Uyarı**:
+### Normal Komutlar
+
+#### Felaket Başlat
 ```
-Başlamadan 2 dakika önce:
-"UYARI! Güneş Fırtınası yaklaşıyor! Yeraltına sığının!"
-```
+/stratocraft disaster start <type> [level] [konum]
 
-**Spawn**: Rastgele, gündüz saatlerinde
-
----
-
-### 4. Khaos Ejderi (CHAOS_DRAGON)
-
-**Görünüm**: Dev Ender Dragon
-
-**İstatistikler**:
-```
-Can: 600 HP (300 kalp)
-Hasar: 30 (15 kalp/vuruş)
-Hız: Hızlı (uçuyor)
+Örnekler:
+/stratocraft disaster start TITAN_GOLEM 3
+/stratocraft disaster start SOLAR_FLARE 1 ben
+/stratocraft disaster start EARTHQUAKE 2 100 64 200
 ```
 
-**Özel Yetenekler**:
+#### Felaketi Durdur
 ```
-- Ateş püskürtme (50 blok menzil)
-- Oyuncuları yakma
-- Yüksek hasar
+/stratocraft disaster stop
 ```
 
-**Spawn**: Gökyüzünde, merkeze doğru uçar
-
----
-
-### 5. Boşluk Titanı (VOID_TITAN)
-
-**Görünüm**: Dev Wither
-
-**İstatistikler**:
+#### Felaket Bilgisi
 ```
-Can: 700 HP (350 kalp)
-Hasar: 35 (17.5 kalp/vuruş)
-Hız: Orta
+/stratocraft disaster info
 ```
 
-**Özel Yetenekler**:
+#### Felaket Listesi
 ```
-- Boşluk patlaması (rastgele konumlarda)
-- Yüksek patlama hasarı
-- Blok yıkma
-```
-
-**Spawn**: Yer seviyesinde, merkeze doğru ilerler
-
----
-
-### 6. Buzul Leviathan (ICE_LEVIATHAN)
-
-**Görünüm**: Dev Elder Guardian (buzda)
-
-**İstatistikler**:
-```
-Can: 400 HP (200 kalp)
-Hasar: Donma + 20 (10 kalp/vuruş)
-Hız: Suda/buzda hızlı
-```
-
-**Özel Yetenekler**:
-```
-- Etrafındaki oyuncuları dondurma (30 blok menzil)
-- Blokları buz yapma
-- Mining Fatigue efekti
-```
-
-**Etki**:
-```
-- Suda yüzerken base bulursa donlaırr
-- Tüm bloklar ICE olur
-- Yapılar bozulur
-- Klan donma hasarı alır
-```
-
-**Mücadele**: Ateş bataryaları + lav
-
----
-
-### 7. Meteor Yağmuru (METEOR_SHOWER)
-
-**Tip**: Doğa Olayı (20 dakika)
-
-**Etki**:
-```
-- Gökyüzünden FallingBlock (Anvil) düşer
-- Rastgele bölgelere
-- Blok kırar
-- 10 kalp hasar (çarparsa)
-```
-
-**Hayatta Kalma**: Çatı yap (Obsidian)
-
----
-
-### 8. Deprem (EARTHQUAKE)
-
-**Tip**: Doğa Olayı (5 dakika)
-
-**Etki**:
-```
-- Yer sarsılır
-- Bloklar düşer
-- Yapılara hasar
-```
-
----
-
-### 9. Volkanik Patlama (VOLCANIC_ERUPTION)
-
-**Tip**: Doğa Olayı (60 dakika)
-
-**Etki**:
-```
-- Lav akışı
-- Kül bulutu
-- Çok yüksek hasar (yanma)
-- Geniş alan etkisi
-```
-
----
-
-## 🎯 MÜCADELE STRATEJİLERİ
-
-### Titan Golem
-
-**Takım Kompozisyonu**:
-```
-3 Okçu (uzaktan arkasına vur)
-2 Savaşçı (dikkat dağıt)
-1 Destek (potion at, heal)
-```
-
-**Taktik**:
-```
-1. Önden YAKLAŞMAY!
-2. Yan/arkadan saldır
-3. Şok Dalgası gelince KAÇÇ
-4. Tekrar saldır
-5. Tekrarla
-```
-
----
-
-### Hiçlik Solucanı
-
-**Ekipman**:
-```
-- Sismik Çekiç Bataryası (3 adet)
-- Ateş Topu bataryası (50x)
-- Potion of Strength
-```
-
-**Taktik**:
-```
-1. Sismik Çekiç kur (3 farklı yere)
-2. Solucan yere gelince AKTİFLEŞTİR
-3. Yüzeye çıkınca HIZLA saldır
-4. Tekrar kaçınca → 2. Çekiç
-5. Bitirene kadar tekrarla
-```
-
----
-
-### Güneş Fırtınası
-
-**Hazırlık** (Uyarıdan sonra):
-```
-2 dakika var:
-
-1. Tüm önemli eşyaları sandığa koy
-2. Yeraltı sığınağına git (Y 30)
-3. Gıda/potion hazırla
-4. 10 dakika bekle
-5. BAĞTTI - Yüzeye çık
-```
-
-**Ozon Kalkanı** (İleri Seviye):
-```
-Tarif Kitabı gerekli (Boss dropu)
-
-Kurulum: Özel yapı (pahalı)
-Etki: Bölgeyi korur
-Maliyet: 50 Elmas + 10 Yakut
+/stratocraft disaster list
 ```
 
 ---
 
 ## 🎁 ÖDÜLLER
 
-### Boss Dropları
+### Felaket Öldürüldüğünde
 
-**Feladet Öldürüldüğünde**:
-```
-%50 şans: Karanlık Madde (1-3 adet)
-%50 şans: Yıldız Çekirdeği (1 adet)
-
-Her zaman: Enkaz Yığını (5x5 Ancient Debris)
-```
-
----
+**Ödüller:**
+- %50 şans: Karanlık Madde (1-3 adet)
+- %50 şans: Yıldız Çekirdeği (1 adet)
+- Her zaman: Enkaz Yığını (5x5x3 Ancient Debris)
 
 ### Enkaz Yığını (Wreckage)
 
-**Nedir?**:
+**Nedir?**
 ```
 Boss öldüğünde düştüğü yere 5x5x3 enkaz oluşur:
 - Ancient Debris blokları
@@ -502,19 +446,9 @@ Boss öldüğünde düştüğü yere 5x5x3 enkaz oluşur:
 - Rastgele: Tarif Kitapları
 ```
 
-**Kullanım**:
-```
-Antik Dişli + Hidrolik Piston:
-→ Otomatik Taret craft
-→ Drone İstasyonu upgrade
-→ Gelişmiş yapılar
-```
-
----
-
 ### Kahraman Buff'ı (Hero Buff)
 
-**Kimin Alır?**: Base'i felaket tarafından yok edilen klan
+**Kimin Alır?** Base'i felaket tarafından yok edilen klan
 
 **Etkiler** (48 saat):
 ```
@@ -532,43 +466,36 @@ AMAÇ: İntikam almak için güçlenirler!
 
 1. **Tek Başına Yenilemez**: Tüm felaketler takım gerektirir (minimum 3-5 oyuncu)
 2. **Merkezden Uzak**: Felaketler 5000+ blok uzakta spawn olur
-3. **Merkeze Doğru**: Sürekli merkeze ilerlerler
-4. **Base Bulursa**: O base'i yok edene kadar durmaz
-5. **Enkaz Topla**: Öldükten sonra enkaz kazı, çok değerli!
-6. **BossBar Görüntüsü**: Canlı felaketler için ekranın üst kısmında can ve süre gösterilir
-7. **9 Felaket Tipi**: 5 canlı felaket + 4 doğa olayı
+3. **Klan Kristali Hedef**: Felaketler önce kristali yok eder
+4. **2 Dakikada Bir Saldırı**: Felaketler yakındaki oyunculara saldırır
+5. **Oyuncularla Oyalanmaz**: Kristal yok edilene kadar oyuncularla savaşmaz
+6. **Enkaz Topla**: Öldükten sonra enkaz kazı, çok değerli!
+7. **BossBar Görüntüsü**: Canlı felaketler için ekranın üst kısmında can ve süre gösterilir
+8. **Çok Güçlü**: Felaketler tek başına başa çıkılamaz, mutlaka takım gerekir
 
 ---
 
-**🎮 Felaketlere karşı takımla birleş, dropları topla, Kahraman ol!**
+## 📊 FELAKET TİPLERİ ÖZET TABLOSU
+
+| Felaket | Kategori | Tip | Seviye | Spawn Sıklığı | Süre |
+|---------|----------|-----|--------|---------------|------|
+| Titan Golem | Canavar | Tek Boss | 3 | Haftada bir | 30 dk |
+| Khaos Ejderi | Canavar | Tek Boss | 3 | Haftada bir | 30 dk |
+| Boşluk Titanı | Canavar | Tek Boss | 3 | Haftada bir | 30 dk |
+| Hiçlik Solucanı | Canavar | Tek Boss | 2 | 3 günde bir | 20 dk |
+| Buzul Leviathan | Canavar | Tek Boss | 2 | 3 günde bir | 20 dk |
+| Zombi Ordusu | Canavar | Grup (30) | 2 | 3 günde bir | 20 dk |
+| İskelet Lejyonu | Canavar | Grup (30) | 2 | 3 günde bir | 20 dk |
+| Creeper Dalgası | Canavar | Mini Dalga (100-500) | 1 | Her gün | 10 dk |
+| Güneş Patlaması | Doğa | - | 1 | Her gün | 10 dk |
+| Deprem | Doğa | - | 2 | 3 günde bir | 5 dk |
+| Fırtına | Doğa | - | 2 | 3 günde bir | 20 dk |
+| Meteor Yağmuru | Doğa | - | 2 | 3 günde bir | 20 dk |
+| Volkanik Patlama | Doğa | - | 3 | Haftada bir | 60 dk |
+| Boss Buff Dalgası | Mini | - | 1 | Günlük (2-5 kez) | 5-15 dk |
+| Mob İstilası | Mini | - | 1 | Günlük (2-5 kez) | 5-15 dk |
+| Oyuncu Buff Dalgası | Mini | - | 1 | Günlük (2-5 kez) | 5-15 dk |
 
 ---
 
-## 📊 BOSSBAR GÖRÜNTÜSÜ
-
-### Canlı Felaketler İçin BossBar
-
-Tüm canlı felaketler (Titan Golem, Hiçlik Solucanı, vb.) spawn edildiğinde:
-- Ekranın **üst kısmında** BossBar gösterilir
-- **Can gösterimi**: `Can/Maksimum Can` formatında
-- **Kalan süre**: `⏰ 5:23` formatında
-- **Progress bar**: Can yüzdesine göre görsel gösterim
-- **Renk değişimi**: 
-  - 🔴 Kırmızı: >%60 can
-  - 🟡 Sarı: %30-60 can
-  - 🟢 Yeşil: <%30 can
-
-### Doğa Olayları İçin ActionBar
-
-Doğa olayları (Güneş Fırtınası, Deprem, vb.) için:
-- Ekranın **alt kısmında** ActionBar gösterilir
-- **Felaket ismi** ve **kalan süre** gösterilir
-
-### Tüm Bosslar İçin BossBar
-
-Tüm bosslar spawn edildiğinde:
-- Ekranın **üst kısmında** BossBar gösterilir
-- **Boss ismi** ve **faz bilgisi** (çok fazlı bosslar için)
-- **Can gösterimi**: `Can/Maksimum Can` formatında
-- **Progress bar**: Can yüzdesine göre görsel gösterim
-- **Renk değişimi**: Can durumuna göre otomatik
+**🎮 Felaketlere karşı takımla birleş, kristalleri koru, Kahraman ol!**

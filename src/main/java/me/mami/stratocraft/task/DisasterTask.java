@@ -1,38 +1,69 @@
 package me.mami.stratocraft.task;
 
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.handler.DisasterHandler;
+import me.mami.stratocraft.handler.DisasterHandlerRegistry;
+import me.mami.stratocraft.manager.DisasterConfigManager;
 import me.mami.stratocraft.manager.DisasterManager;
 import me.mami.stratocraft.manager.TerritoryManager;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Disaster;
+import me.mami.stratocraft.model.DisasterConfig;
 import me.mami.stratocraft.model.Structure;
+import me.mami.stratocraft.util.DisasterBehavior;
+import me.mami.stratocraft.util.DisasterEntityAI;
+import me.mami.stratocraft.util.DisasterUtils;
 import me.mami.stratocraft.util.EffectUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Giant;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Silverfish;
-import org.bukkit.entity.FallingBlock;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.Vector;
-import java.util.Random;
+import java.util.UUID;
 
 public class DisasterTask extends BukkitRunnable {
     private final DisasterManager disasterManager;
     private final TerritoryManager territoryManager;
-    private final Random random = new Random();
-    private int titanGolemTickCounter = 0; // Titan Golem için tick sayacı
-    private int lastJumpTick = 0; // Son zıplama zamanı
+    private final DisasterConfigManager configManager;
+    private final DisasterHandlerRegistry handlerRegistry;
     
     // Chunk yönetimi: Force-loaded chunk'ları takip et
     private final java.util.Map<String, org.bukkit.Chunk> forceLoadedChunks = new java.util.HashMap<>();
-    private static final int CHUNK_UNLOAD_DELAY = 200; // 10 saniye (200 tick) sonra unload et
+    
+    // Oyuncu saldırısı için zaman takibi (her felaket için ayrı)
+    private final java.util.Map<UUID, Long> lastAttackTime = new java.util.HashMap<>();
+    
+    // Klan kristali cache (performans için)
+    private Location cachedNearestCrystal = null;
+    private long lastCrystalCacheUpdate = 0;
+    
+    // Kristal yok edildikten sonra oyuncularla savaşma durumu
+    private boolean crystalDestroyed = false;
+    private long crystalDestroyedTime = 0;
+    private static final long POST_CRYSTAL_FIGHT_DURATION = 60000L; // 1 dakika oyuncularla savaş
 
     public DisasterTask(DisasterManager dm, TerritoryManager tm) { 
         this.disasterManager = dm; 
         this.territoryManager = tm;
+        // ConfigManager'dan DisasterConfigManager al
+        Main plugin = Main.getInstance();
+        if (plugin != null && plugin.getConfigManager() != null) {
+            this.configManager = plugin.getConfigManager().getDisasterConfigManager();
+        } else {
+            this.configManager = null;
+        }
+        // Handler Registry oluştur
+        this.handlerRegistry = new DisasterHandlerRegistry(territoryManager);
+    }
+    
+    /**
+     * Config'den değer al (varsayılan değerle)
+     */
+    private DisasterConfig getConfig(Disaster disaster) {
+        if (configManager != null && disaster != null) {
+            return configManager.getConfig(disaster.getType(), disaster.getLevel());
+        }
+        return new DisasterConfig(); // Varsayılan config
     }
 
     @Override
@@ -54,7 +85,7 @@ public class DisasterTask extends BukkitRunnable {
             disaster.kill();
             disasterManager.setActiveDisaster(null);
             cleanupForceLoadedChunks(); // Chunk'ları temizle
-            Bukkit.broadcastMessage("§a§lFelaket süresi doldu!");
+            Bukkit.getServer().broadcastMessage(org.bukkit.ChatColor.GREEN + "" + org.bukkit.ChatColor.BOLD + "Felaket süresi doldu!");
             return;
         }
 
@@ -63,15 +94,20 @@ public class DisasterTask extends BukkitRunnable {
         // Canlı felaketler için entity kontrolü
         if (disaster.getCategory() == Disaster.Category.CREATURE) {
             if (entity == null || entity.isDead()) {
+                // Plan'a göre: Felaket yok edilince ödül
+                disasterManager.dropRewards(disaster);
                 disaster.kill();
                 disasterManager.setActiveDisaster(null);
                 cleanupForceLoadedChunks(); // Chunk'ları temizle
                 return;
             }
             handleCreatureDisaster(disaster, entity);
-        } else {
+        } else if (disaster.getCategory() == Disaster.Category.NATURAL) {
             // Doğa olayları
             handleNaturalDisaster(disaster);
+        } else if (disaster.getCategory() == Disaster.Category.MINI) {
+            // Mini felaketler
+            handleMiniDisaster(disaster);
         }
     }
     
@@ -92,8 +128,35 @@ public class DisasterTask extends BukkitRunnable {
      */
     private void handleCreatureDisaster(Disaster disaster, Entity entity) {
         Location current = entity.getLocation();
-        Location target = disaster.getTarget();
-        double damageMultiplier = disaster.getDamageMultiplier();
+        DisasterConfig config = getConfig(disaster);
+        
+        // Hedef kristali güncelle (config'den aralık)
+        updateTargetCrystal(disaster, current, config);
+        
+        // Kristal kontrolü - eğer kristale yakınsa yok et (öncelikli)
+        if (!crystalDestroyed) {
+            checkAndDestroyCrystal(disaster, entity, current, config);
+        }
+        
+        // Plan'a göre: Kristal yok edildikten sonra oyuncularla savaşır
+        // Kristal yok edildikten sonra 1 dakika boyunca oyuncularla savaş
+        if (crystalDestroyed) {
+            long timeSinceCrystalDestroyed = System.currentTimeMillis() - crystalDestroyedTime;
+            if (timeSinceCrystalDestroyed < POST_CRYSTAL_FIGHT_DURATION) {
+                // Oyuncularla agresif savaş (daha sık saldırı)
+                attackNearbyPlayersIfNeeded(disaster, entity, current, config, true);
+            } else {
+                // 1 dakika sonra yeni kristal bul
+                crystalDestroyed = false;
+                crystalDestroyedTime = 0;
+                disaster.setTargetCrystal(null);
+                cachedNearestCrystal = null;
+                lastCrystalCacheUpdate = 0;
+            }
+        } else {
+            // Normal durum: 2 dakikada bir oyunculara saldırır
+            attackNearbyPlayersIfNeeded(disaster, entity, current, config, false);
+        }
         
         // Chunk yüklü mü kontrol et, değilse yükle (entity hareket edebilsin diye)
         if (current.getWorld() != null) {
@@ -109,7 +172,7 @@ public class DisasterTask extends BukkitRunnable {
             currentChunk.setForceLoaded(true);
             forceLoadedChunks.put(chunkKey, currentChunk);
             
-            // Eski chunk'ları unload et (10 saniye sonra)
+            // Eski chunk'ları unload et
             java.util.Iterator<java.util.Map.Entry<String, org.bukkit.Chunk>> iterator = 
                 forceLoadedChunks.entrySet().iterator();
             while (iterator.hasNext()) {
@@ -122,249 +185,21 @@ public class DisasterTask extends BukkitRunnable {
             }
         }
         
-        // TITAN GOLEM
-        if (disaster.getType() == Disaster.Type.TITAN_GOLEM && entity instanceof Giant) {
-            handleTitanGolem(disaster, (Giant) entity, current, target, damageMultiplier);
-        }
+        // Handler sistemi kullan
+        DisasterHandler handler = handlerRegistry.getHandler(disaster.getType());
         
-        // HİÇLİK SOLUCANI
-        else if (disaster.getType() == Disaster.Type.ABYSSAL_WORM && entity instanceof Silverfish) {
-            handleAbyssalWorm(disaster, (Silverfish) entity, current, target, damageMultiplier);
-        }
-        
-        // KHAOS EJDERİ
-        else if (disaster.getType() == Disaster.Type.CHAOS_DRAGON && entity instanceof org.bukkit.entity.EnderDragon) {
-            handleChaosDragon(disaster, (org.bukkit.entity.EnderDragon) entity, current, target, damageMultiplier);
-        }
-        
-        // BOŞLUK TİTANI
-        else if (disaster.getType() == Disaster.Type.VOID_TITAN && entity instanceof org.bukkit.entity.Wither) {
-            handleVoidTitan(disaster, (org.bukkit.entity.Wither) entity, current, target, damageMultiplier);
-        }
-        
-        // BUZUL LEVİATHAN
-        else if (disaster.getType() == Disaster.Type.ICE_LEVIATHAN && entity instanceof org.bukkit.entity.ElderGuardian) {
-            handleIceLeviathan(disaster, (org.bukkit.entity.ElderGuardian) entity, current, target, damageMultiplier);
-        }
-    }
-    
-    /**
-     * Titan Golem işle
-     */
-    private void handleTitanGolem(Disaster disaster, Giant golem, Location current, Location target, double damageMultiplier) {
-            titanGolemTickCounter++;
-            
-            Vector direction = target.toVector().subtract(current.toVector()).normalize();
-            
-            // Zıplama-Patlama Yeteneği (Her 15-20 saniyede bir)
-            if (titanGolemTickCounter - lastJumpTick >= (random.nextInt(100) + 300)) { // 15-20 saniye arası
-                lastJumpTick = titanGolemTickCounter;
-                
-                // Yüksek zıplama: İleri ve yukarı doğru
-                Vector jumpVector = direction.clone().multiply(1.5).setY(1.2);
-                golem.setVelocity(jumpVector);
-                
-                // Zıplama sonrası patlama (0.8 saniye sonra)
-                final Location jumpLocation = current.clone();
-                final Giant finalGolem = golem;
-                me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
-                if (plugin != null) {
-                    Bukkit.getScheduler().runTaskLater(
-                        plugin,
-                        () -> {
-                            if (finalGolem != null && !finalGolem.isDead() && finalGolem.isValid()) {
-                                Location landLoc = finalGolem.getLocation();
-                                // Düştüğü yerde patlama
-                                finalGolem.getWorld().createExplosion(landLoc, 4.0f, false, true);
-                                // Etrafındaki blokları yok et
-                                for (int x = -3; x <= 3; x++) {
-                                    for (int z = -3; z <= 3; z++) {
-                                        for (int y = -1; y <= 2; y++) {
-                                            Block block = landLoc.clone().add(x, y, z).getBlock();
-                                            if (block.getType() != Material.BEDROCK && block.getType() != Material.AIR) {
-                                                block.setType(Material.AIR);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        16L // 0.8 saniye = 16 tick
-                    );
-                }
+        // Grup felaketler için özel işleme
+        if (disaster.getCreatureDisasterType() == Disaster.CreatureDisasterType.MEDIUM_GROUP || 
+            disaster.getCreatureDisasterType() == Disaster.CreatureDisasterType.MINI_SWARM) {
+            java.util.List<Entity> groupEntities = disaster.getGroupEntities();
+            if (groupEntities != null && !groupEntities.isEmpty()) {
+                handler.handleGroup(disaster, groupEntities, config);
             }
-            
-            // Normal yürüme
-            golem.setVelocity(direction.multiply(0.4));
-            
-            // Sıkışma kontrolü - önünde blok varsa zıpla
-            Block frontBlock = current.clone().add(direction).getBlock();
-            if (frontBlock.getType() != Material.AIR && frontBlock.getType() != Material.BEDROCK) {
-                // Sıkışma önleme - zıplama
-                if (titanGolemTickCounter % 20 == 0) { // Her saniye kontrol
-                    Vector jumpVector = direction.clone().multiply(1.5).setY(1.5);
-                    golem.setVelocity(jumpVector);
-                }
-            }
-            
-            // Blok Fırlatma Yeteneği (Her 10-15 saniyede bir)
-            if (titanGolemTickCounter % (random.nextInt(100) + 200) == 0) { // 10-15 saniye arası
-                // Etrafındaki oyunculara toprak blokları fırlat
-                for (Player nearbyPlayer : golem.getWorld().getPlayers()) {
-                    if (nearbyPlayer.getLocation().distance(current) <= 30) {
-                        Location playerLoc = nearbyPlayer.getLocation();
-                        Vector throwDirection = playerLoc.toVector().subtract(current.toVector()).normalize();
-                        
-                        // Toprak bloğu fırlat
-                        FallingBlock fallingBlock = golem.getWorld().spawnFallingBlock(
-                            current.clone().add(0, 3, 0),
-                            Material.DIRT.createBlockData()
-                        );
-                        fallingBlock.setVelocity(throwDirection.multiply(1.2).setY(0.5));
-                        fallingBlock.setHurtEntities(true);
-                        fallingBlock.setDropItem(false);
-                        
-                        // Çarptığında hasar vermesi için kontrol (EntityChangeBlockEvent'te yakalanabilir)
-                    }
-                }
-            }
-            
-            // Blok Yıkma - Tektonik Sabitleyici kontrolü
-            Block frontBlockCheck = current.clone().add(direction).getBlock();
-            if (frontBlockCheck.getType() != Material.AIR && frontBlockCheck.getType() != Material.BEDROCK) {
-                // Bu bölgede Tektonik Sabitleyici var mı kontrol et
-                Clan owner = territoryManager.getTerritoryOwner(frontBlockCheck.getLocation());
-                if (owner != null) {
-                    Structure stabilizer = owner.getStructures().stream()
-                            .filter(s -> s.getType() == Structure.Type.TECTONIC_STABILIZER)
-                            .findFirst().orElse(null);
-                    
-                    if (stabilizer != null && stabilizer.getLocation().distance(frontBlockCheck.getLocation()) <= 50) {
-                        // Tektonik Sabitleyici aktif - blok kırma iptal, yakıt tüket
-                        if (stabilizer.getLevel() > 0) {
-                            stabilizer.consumeFuel();
-                            EffectUtil.playDisasterEffect(frontBlockCheck.getLocation());
-                            return; // Blok kırılmaz
-                        }
-                    }
-                    
-                    // Klan yok etme - yapıları yok et
-                    destroyClanStructures(owner, current, damageMultiplier);
-                }
-                
-                // Normal blok kırma
-                frontBlockCheck.setType(Material.AIR);
-                EffectUtil.playDisasterEffect(frontBlockCheck.getLocation());
-            }
-            
-            // Pasif hasar - sürekli patlama
-            if (titanGolemTickCounter % 200 == 0) { // Her 10 saniyede bir
-                current.getWorld().createExplosion(current, (float)(2.0 * damageMultiplier), false, true);
-            }
-    }
-    
-    /**
-     * Hiçlik Solucanı işle
-     */
-    private void handleAbyssalWorm(Disaster disaster, Silverfish worm, Location current, Location target, double damageMultiplier) {
-        Vector direction = target.toVector().subtract(current.toVector()).normalize();
-        worm.setVelocity(direction.multiply(0.3));
-        
-        // Temelleri (alt blokları) kaz
-        Block belowBlock = current.clone().add(0, -1, 0).getBlock();
-        if (belowBlock.getType() != Material.AIR && belowBlock.getType() != Material.BEDROCK) {
-            belowBlock.setType(Material.AIR);
-            EffectUtil.playDisasterEffect(belowBlock.getLocation());
+            return;
         }
         
-        // Önündeki bloğu da kır
-        Block frontBlock = current.clone().add(direction).getBlock();
-        if (frontBlock.getType() != Material.AIR && frontBlock.getType() != Material.BEDROCK) {
-            frontBlock.setType(Material.AIR);
-            EffectUtil.playDisasterEffect(frontBlock.getLocation());
-        }
-        
-        // Sıkışma önleme - ışınlanma
-        if (worm.getLocation().getBlock().getType() != Material.AIR) {
-            Location teleportLoc = current.clone().add(direction.multiply(5));
-            teleportLoc.setY(current.getWorld().getHighestBlockYAt(teleportLoc) + 1);
-            worm.teleport(teleportLoc);
-        }
-    }
-    
-    /**
-     * Khaos Ejderi işle
-     */
-    private void handleChaosDragon(Disaster disaster, org.bukkit.entity.EnderDragon dragon, Location current, Location target, double damageMultiplier) {
-        Vector direction = target.toVector().subtract(current.toVector()).normalize();
-        dragon.setVelocity(direction.multiply(0.5));
-        
-        // Ateş püskürtme
-        if (random.nextInt(100) < 5) { // %5 şans
-            for (Player player : current.getWorld().getPlayers()) {
-                if (player.getLocation().distance(current) <= 50) {
-                    Location playerLoc = player.getLocation();
-                    playerLoc.getWorld().spawnParticle(org.bukkit.Particle.FLAME, playerLoc, 20, 1, 1, 1, 0.1);
-                    player.setFireTicks((int)(100 * damageMultiplier));
-                    player.damage(5.0 * damageMultiplier, dragon);
-                }
-            }
-        }
-    }
-    
-    /**
-     * Boşluk Titanı işle
-     */
-    private void handleVoidTitan(Disaster disaster, org.bukkit.entity.Wither wither, Location current, Location target, double damageMultiplier) {
-        Vector direction = target.toVector().subtract(current.toVector()).normalize();
-        wither.setVelocity(direction.multiply(0.3));
-        
-        // Boşluk patlaması
-        if (random.nextInt(100) < 3) { // %3 şans
-            Location explosionLoc = current.clone().add(
-                (random.nextDouble() - 0.5) * 10,
-                0,
-                (random.nextDouble() - 0.5) * 10
-            );
-            explosionLoc.getWorld().createExplosion(explosionLoc, (float)(4.0 * damageMultiplier), false, true);
-        }
-    }
-    
-    /**
-     * Buzul Leviathan işle
-     */
-    private void handleIceLeviathan(Disaster disaster, org.bukkit.entity.ElderGuardian leviathan, Location current, Location target, double damageMultiplier) {
-        Vector direction = target.toVector().subtract(current.toVector()).normalize();
-        leviathan.setVelocity(direction.multiply(0.3));
-        
-        // Buz donma efekti - etrafındaki blokları ve oyuncuları dondur
-        if (random.nextInt(100) < 5) { // %5 şans
-            for (Player player : current.getWorld().getPlayers()) {
-                if (player.getLocation().distance(current) <= 30) {
-                    // Oyuncuyu dondur
-                    player.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                        org.bukkit.potion.PotionEffectType.SLOW, 100, 3, false, false));
-                    player.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                        org.bukkit.potion.PotionEffectType.SLOW_DIGGING, 100, 2, false, false));
-                    player.damage(3.0 * damageMultiplier, leviathan);
-                }
-            }
-            
-            // Etrafındaki blokları buz yap
-            for (int x = -5; x <= 5; x++) {
-                for (int z = -5; z <= 5; z++) {
-                    for (int y = -2; y <= 2; y++) {
-                        Block block = current.clone().add(x, y, z).getBlock();
-                        if (block.getType() != Material.AIR && block.getType() != Material.BEDROCK && 
-                            block.getType() != Material.ICE && block.getType() != Material.PACKED_ICE) {
-                            if (random.nextDouble() < 0.3) { // %30 şans
-                                block.setType(Material.ICE);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // Tek boss felaketler için handler kullan
+        handler.handle(disaster, entity, config);
     }
     
     /**
@@ -381,84 +216,179 @@ public class DisasterTask extends BukkitRunnable {
     }
     
     /**
-     * Doğa olaylarını işle
+     * Hedef kristali güncelle (cache ile, config'den aralık)
      */
-    private void handleNaturalDisaster(Disaster disaster) {
-        if (disaster == null) return;
+    private void updateTargetCrystal(Disaster disaster, Location current, DisasterConfig config) {
+        long now = System.currentTimeMillis();
+        long cacheInterval = config.getCrystalCacheInterval();
         
-        // GÜNEŞ FIRTINASI
-        if (disaster.getType() == Disaster.Type.SOLAR_FLARE) {
-            // Yüzeydeki oyuncuları yak, ahşap yapılar ve ormanlar tutuşur
-            for (Player p : Bukkit.getOnlinePlayers()) {
-                Location playerLoc = p.getLocation();
-                int highestY = p.getWorld().getHighestBlockYAt(playerLoc);
-                
-                // Önce oyuncunun olduğu yeri kontrol et (performans optimizasyonu)
-                Clan currentOwner = territoryManager.getTerritoryOwner(playerLoc);
-                
-                // Eğer oyuncu zaten bir klan bölgesindeyse, etrafı yakma işlemini tamamen atla
-                // Çünkü klan bölgeleri yangından etkilenmemeli
-                if (currentOwner != null) {
-                    continue; // Bu oyuncu klan bölgesinde, atla
-                }
-                
-                // Oyuncu yüzeydeyse (üstünde blok yoksa)
-                if (playerLoc.getBlockY() >= highestY - 1) {
-                    p.setFireTicks(Math.max(p.getFireTicks(), 100)); // 5 saniye yanma
-                }
-                
-                // Geniş alan tarama: 10x10 alan (oyuncu merkezli)
-                // NOT: Oyuncu klan bölgesinde değil, bu yüzden etrafındaki bloklar da büyük ihtimalle değil
-                for (int x = -5; x <= 5; x++) {
-                    for (int z = -5; z <= 5; z++) {
-                        for (int y = -2; y <= 5; y++) { // Yükseklik aralığı
-                            Block targetBlock = playerLoc.clone().add(x, y, z).getBlock();
-                            Material type = targetBlock.getType();
-                            
-                            // Klan bölgesi kontrolü - korumalı bölgelerde yakma (nadiren gerekli ama güvenlik için)
-                            Clan owner = territoryManager.getTerritoryOwner(targetBlock.getLocation());
-                            if (owner != null) {
-                                continue; // Klan bölgesinde yakma
-                            }
-                            
-                            // Gökyüzünü gören bloklar mı kontrol et
-                            int blockHighestY = targetBlock.getWorld().getHighestBlockYAt(targetBlock.getLocation());
-                            boolean canSeeSky = targetBlock.getY() >= blockHighestY - 1;
-                            
-                            if (!canSeeSky) continue; // Çatı altındaysa yakma
-                            
-                            // Yanıcı blokları yak
-                            boolean isFlammable = 
-                                // Ahşap planks
-                                type == Material.OAK_PLANKS || type == Material.BIRCH_PLANKS || 
-                                type == Material.SPRUCE_PLANKS || type == Material.JUNGLE_PLANKS ||
-                                type == Material.ACACIA_PLANKS || type == Material.DARK_OAK_PLANKS ||
-                                // Ahşap loglar
-                                type == Material.OAK_LOG || type == Material.BIRCH_LOG ||
-                                type == Material.SPRUCE_LOG || type == Material.JUNGLE_LOG ||
-                                type == Material.ACACIA_LOG || type == Material.DARK_OAK_LOG ||
-                                // Yün bloklar
-                                type == Material.WHITE_WOOL || type == Material.BLACK_WOOL ||
-                                type == Material.RED_WOOL || type == Material.BLUE_WOOL ||
-                                // Yapraklar
-                                type == Material.OAK_LEAVES || type == Material.BIRCH_LEAVES ||
-                                type == Material.SPRUCE_LEAVES || type == Material.JUNGLE_LEAVES ||
-                                // Diğer yanıcılar
-                                type == Material.BOOKSHELF || type == Material.CHEST ||
-                                type == Material.TRAPPED_CHEST || type == Material.LECTERN;
-                            
-                            if (isFlammable) {
-                                // Şansla yak (loglar daha dayanıklı)
-                                double chance = (type.toString().contains("LOG")) ? 0.05 : 0.15; // Loglar %5, diğerleri %15
-                                if (Math.random() < chance) {
-                                    targetBlock.setType(Material.FIRE);
-                                }
-                            }
-                        }
-                    }
+        // Cache güncelle (config'den aralık)
+        if (now - lastCrystalCacheUpdate >= cacheInterval) {
+            cachedNearestCrystal = disasterManager.findNearestCrystal(current);
+            lastCrystalCacheUpdate = now;
+        }
+        
+        // Eğer hedef kristal yoksa veya kırıldıysa yeni hedef bul
+        Location oldCrystal = disaster.getTargetCrystal();
+        if (disaster.getTargetCrystal() == null || 
+            (cachedNearestCrystal != null && !cachedNearestCrystal.equals(disaster.getTargetCrystal()))) {
+            disaster.setTargetCrystal(cachedNearestCrystal);
+            disaster.setTarget(cachedNearestCrystal != null ? cachedNearestCrystal : disaster.getTarget());
+            
+            // Plan'a göre: Klan kristali hedef alındığında uyarı
+            if (cachedNearestCrystal != null && (oldCrystal == null || !oldCrystal.equals(cachedNearestCrystal))) {
+                Clan targetClan = findClanByCrystalLocation(cachedNearestCrystal);
+                if (targetClan != null) {
+                    Bukkit.getServer().broadcastMessage(org.bukkit.ChatColor.RED + "" + org.bukkit.ChatColor.BOLD + 
+                        "⚠ FELAKET " + targetClan.getName() + " klanının kristalini hedef aldı! ⚠");
                 }
             }
         }
     }
+    
+    /**
+     * Config'den aralık ile yakındaki oyunculara saldır
+     * @param aggressiveMode Kristal yok edildikten sonra agresif mod (daha sık saldırı)
+     */
+    private void attackNearbyPlayersIfNeeded(Disaster disaster, Entity entity, Location current, DisasterConfig config, boolean aggressiveMode) {
+        UUID entityId = entity.getUniqueId();
+        long now = System.currentTimeMillis();
+        
+        // Agresif modda daha sık saldır (normal aralığın yarısı)
+        long attackInterval = aggressiveMode ? config.getAttackInterval() / 2 : config.getAttackInterval();
+        
+        Long lastAttack = lastAttackTime.get(entityId);
+        if (lastAttack != null && now - lastAttack < attackInterval) {
+            return; // Henüz aralık geçmedi
+        }
+        
+        // Config'den yarıçap ile yakındaki oyuncuları bul ve saldır
+        DisasterBehavior.attackPlayers(entity, current, config, disaster.getDamageMultiplier());
+        
+        lastAttackTime.put(entityId, now);
+    }
+    
+    /**
+     * Kristal kontrolü ve yok etme (config'den yakınlık)
+     */
+    private void checkAndDestroyCrystal(Disaster disaster, Entity entity, Location current, DisasterConfig config) {
+        Location targetCrystal = disaster.getTargetCrystal();
+        if (targetCrystal == null) return;
+        
+        // Config'den yakınlık ile kristale yakın mı?
+        double proximity = config.getCrystalProximity();
+        if (current.distance(targetCrystal) <= proximity) {
+            // Kristali bul
+            Clan targetClan = findClanByCrystalLocation(targetCrystal);
+            if (targetClan != null && targetClan.getCrystalEntity() != null) {
+                // Kristali yok et - EntityDamageByEntityEvent ile (TerritoryListener yakalayacak)
+                org.bukkit.entity.EnderCrystal crystal = targetClan.getCrystalEntity();
+                if (crystal != null && !crystal.isDead()) {
+                    // EnderCrystal'a hasar ver - EntityDamageByEntityEvent oluştur ve tetikle
+                    // TerritoryListener bu event'i yakalayıp klanı dağıtacak
+                    // Not: Constructor deprecated ama çalışıyor, alternatif yok
+                    @SuppressWarnings("deprecation")
+                    org.bukkit.event.entity.EntityDamageByEntityEvent damageEvent = 
+                        new org.bukkit.event.entity.EntityDamageByEntityEvent(
+                            crystal, entity, 
+                            org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_ATTACK, 
+                            1000.0);
+                    Bukkit.getPluginManager().callEvent(damageEvent);
+                    
+                    // Event cancel edilmediyse kristali kır
+                    if (!damageEvent.isCancelled() && damageEvent.getFinalDamage() >= 1.0) {
+                        crystal.remove();
+                    }
+                }
+                
+                // Klanı dağıt (eğer TerritoryListener dağıtmadıysa)
+                boolean crystalWasDestroyed = (targetClan.getCrystalEntity() == null || targetClan.getCrystalEntity().isDead());
+                if (crystalWasDestroyed) {
+                    destroyClan(targetClan, current, disaster.getDamageMultiplier());
+                } else {
+                    // Plan'a göre: Klan kristali korunursa bonus ödül (eğer felaket öldürülürse)
+                    // Bu durumda kristal korundu, bonus ödül için flag set et
+                    // (Felaket öldüğünde dropRewards'ta kontrol edilecek)
+                }
+                
+                // Plan'a göre: Kristal yok edildikten sonra oyuncularla savaşır
+                // Yeni kristal bulmadan önce 1 dakika oyuncularla savaş
+                crystalDestroyed = true;
+                crystalDestroyedTime = System.currentTimeMillis();
+                disaster.setTargetCrystal(null);
+                cachedNearestCrystal = null;
+                lastCrystalCacheUpdate = 0;
+                
+                Bukkit.getServer().broadcastMessage(org.bukkit.ChatColor.RED + "" + org.bukkit.ChatColor.BOLD + 
+                    targetClan.getName() + " klanının kristali felaket tarafından yok edildi!");
+                Bukkit.getServer().broadcastMessage(org.bukkit.ChatColor.YELLOW + 
+                    "Felaket şimdi oyuncularla savaşıyor! 1 dakika sonra yeni kristal arayacak.");
+            }
+        }
+    }
+    
+    /**
+     * Kristal lokasyonuna göre klanı bul
+     */
+    private Clan findClanByCrystalLocation(Location crystalLoc) {
+        if (territoryManager == null) return null;
+        
+        for (Clan clan : territoryManager.getClanManager().getAllClans()) {
+            if (clan.getCrystalLocation() != null && 
+                clan.getCrystalLocation().distance(crystalLoc) < 1.0) {
+                return clan;
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Klanı yok et (yapılar ve kristal)
+     */
+    private void destroyClan(Clan clan, Location disasterLoc, double damageMultiplier) {
+        // Yapıları yok et
+        destroyClanStructures(clan, disasterLoc, damageMultiplier);
+        
+        // Klanı dağıt
+        if (territoryManager != null && territoryManager.getClanManager() != null) {
+            territoryManager.getClanManager().disbandClan(clan);
+            territoryManager.setCacheDirty();
+        }
+        
+        // Kahraman Buff'ı ver (eğer buffManager varsa)
+        if (disasterManager != null) {
+            me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+            if (plugin != null) {
+                me.mami.stratocraft.manager.BuffManager buffManager = plugin.getBuffManager();
+                if (buffManager != null) {
+                    buffManager.applyHeroBuff(clan);
+                }
+            }
+        }
+    }
+    
+    
+    /**
+     * Doğa olaylarını işle (Handler sistemi ile)
+     */
+    private void handleNaturalDisaster(Disaster disaster) {
+        if (disaster == null) return;
+        
+        DisasterConfig config = getConfig(disaster);
+        DisasterHandler handler = handlerRegistry.getHandler(disaster.getType());
+        handler.handle(disaster, null, config);
+    }
+    
+    /**
+     * Mini felaketleri işle (Handler sistemi ile)
+     */
+    private void handleMiniDisaster(Disaster disaster) {
+        if (disaster == null) return;
+        
+        DisasterConfig config = getConfig(disaster);
+        DisasterHandler handler = handlerRegistry.getHandler(disaster.getType());
+        handler.handle(disaster, null, config);
+    }
+    
 }
 

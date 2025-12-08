@@ -61,9 +61,13 @@ public class ConfigManager {
     private long groupCacheDuration;
     private double tpsThreshold;
     private int tpsSampleSize;
+    
+    // ========== FELAKET CONFIG YÖNETİCİSİ ==========
+    private DisasterConfigManager disasterConfigManager;
 
     public ConfigManager(Main plugin) {
         this.plugin = plugin;
+        this.disasterConfigManager = new DisasterConfigManager();
         loadConfig();
     }
 
@@ -122,6 +126,9 @@ public class ConfigManager {
         groupCacheDuration = config.getLong("boss.arena.group-cache-duration", 5000L);
         tpsThreshold = config.getDouble("boss.arena.tps-threshold", 18.0);
         tpsSampleSize = config.getInt("boss.arena.tps-sample-size", 100);
+        
+        // Felaket Config Yöneticisi
+        disasterConfigManager.loadConfigs(config);
     }
 
     public void reloadConfig() {
@@ -165,6 +172,9 @@ public class ConfigManager {
     public long getGroupCacheDuration() { return groupCacheDuration; }
     public double getTpsThreshold() { return tpsThreshold; }
     public int getTpsSampleSize() { return tpsSampleSize; }
+    
+    // ========== FELAKET CONFIG GETTER ==========
+    public DisasterConfigManager getDisasterConfigManager() { return disasterConfigManager; }
     
     // Config erişimi için (CaravanManager gibi yerler için)
     public FileConfiguration getConfig() { return config; }

@@ -151,6 +151,8 @@ public class Main extends JavaPlugin {
         siegeManager.setBuffManager(buffManager);
         disasterManager.setBuffManager(buffManager);
         disasterManager.setTerritoryManager(territoryManager);
+        disasterManager.setDifficultyManager(difficultyManager); // DifficultyManager'ı set et
+        disasterManager.setConfigManager(configManager.getDisasterConfigManager()); // ConfigManager'ı set et
 
         // 2. Dinleyicileri Kaydet
         // Eski batarya sistemi kaldırıldı, yeni sistem kullanılıyor

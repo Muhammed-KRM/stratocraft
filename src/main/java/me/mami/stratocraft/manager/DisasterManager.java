@@ -27,10 +27,20 @@ import java.util.*;
 public class DisasterManager {
     private final Main plugin;
     private final ClanManager clanManager;
-    private final DifficultyManager difficultyManager;
+    private DifficultyManager difficultyManager; // Final değil, sonradan set edilecek
+    private DisasterConfigManager configManager; // Config yöneticisi
     
     private Disaster activeDisaster = null;
     private long lastDisasterTime = System.currentTimeMillis();
+    
+    // Mini felaket sistemi
+    private long lastMiniDisasterTime = System.currentTimeMillis();
+    private int miniDisasterCountToday = 0; // Bugün spawn olan mini felaket sayısı
+    private long lastDayReset = System.currentTimeMillis();
+    
+    // Plan'a göre: 2 dakika önce uyarı sistemi
+    private long lastWarningTime = 0;
+    private static final long WARNING_INTERVAL = 120000L; // 2 dakika = 120000 ms
     
     /**
      * Aktif felaket durumunu kaydet (DataManager için)
@@ -116,18 +126,46 @@ public class DisasterManager {
     public DisasterManager(Main plugin) {
         this.plugin = plugin;
         this.clanManager = plugin.getClanManager();
+        // difficultyManager henüz oluşturulmamış olabilir, sonradan set edilecek
         this.difficultyManager = plugin.getDifficultyManager();
+        // ConfigManager'dan DisasterConfigManager al
+        if (plugin.getConfigManager() != null) {
+            this.configManager = plugin.getConfigManager().getDisasterConfigManager();
+        }
     }
     
     /**
-     * Güç hesaplama formülü
+     * DifficultyManager'ı set et (Main.java'da sonradan çağrılır)
+     */
+    public void setDifficultyManager(me.mami.stratocraft.manager.DifficultyManager dm) {
+        this.difficultyManager = dm;
+    }
+    
+    /**
+     * ConfigManager'ı set et
+     */
+    public void setConfigManager(DisasterConfigManager configManager) {
+        this.configManager = configManager;
+    }
+    
+    /**
+     * Güç hesaplama formülü (Config'den okur)
      * 
-     * Formül: basePower * (1 + playerCount * 0.1 + avgClanLevel * 0.15)
+     * Formül: basePower * (1 + playerCount * playerMultiplier + avgClanLevel * clanMultiplier)
      * 
-     * @param basePower Temel güç (seviyeye göre)
+     * @param level Felaket seviyesi
      * @return Hesaplanmış güç
      */
     public DisasterPower calculateDisasterPower(int level) {
+        // Config'den seviye config'i al
+        me.mami.stratocraft.model.DisasterConfig levelConfig;
+        if (configManager != null) {
+            levelConfig = configManager.getConfigForLevel(level);
+        } else {
+            // Config yoksa varsayılan değerler
+            levelConfig = new me.mami.stratocraft.model.DisasterConfig();
+        }
+        
         // Oyuncu sayısı
         int playerCount = Bukkit.getOnlinePlayers().size();
         
@@ -142,29 +180,14 @@ public class DisasterManager {
             avgClanLevel = (double) totalLevel / clans.size();
         }
         
-        // Temel güç (seviyeye göre)
-        double baseHealth;
-        double baseDamage;
-        switch (level) {
-            case 1:
-                baseHealth = 500.0;
-                baseDamage = 1.0;
-                break;
-            case 2:
-                baseHealth = 1500.0;
-                baseDamage = 2.0;
-                break;
-            case 3:
-                baseHealth = 5000.0;
-                baseDamage = 5.0;
-                break;
-            default:
-                baseHealth = 500.0;
-                baseDamage = 1.0;
-        }
+        // Config'den temel güç ve çarpanlar
+        double baseHealth = levelConfig.getBaseHealth() * levelConfig.getHealthMultiplier();
+        double baseDamage = levelConfig.getBaseDamage() * levelConfig.getDamageMultiplier();
+        double playerMultiplier = levelConfig.getPlayerMultiplier();
+        double clanMultiplier = levelConfig.getClanMultiplier();
         
         // Güç çarpanı
-        double powerMultiplier = 1.0 + (playerCount * 0.1) + (avgClanLevel * 0.15);
+        double powerMultiplier = 1.0 + (playerCount * playerMultiplier) + (avgClanLevel * clanMultiplier);
         
         // Hesaplanmış güç
         double calculatedHealth = baseHealth * powerMultiplier;
@@ -193,14 +216,25 @@ public class DisasterManager {
      */
     public void triggerDisaster(Disaster.Type type, int level) {
         World world = Bukkit.getWorlds().get(0);
-        Location centerLoc = difficultyManager.getCenterLocation();
+        Location centerLoc = null;
+        if (difficultyManager != null) {
+            centerLoc = difficultyManager.getCenterLocation();
+        }
         if (centerLoc == null) {
             centerLoc = world.getSpawnLocation();
         }
         
-        // Merkezden en uzak noktayı bul (5000 blok)
-        int x = centerLoc.getBlockX() + (new Random().nextBoolean() ? 5000 : -5000);
-        int z = centerLoc.getBlockZ() + (new Random().nextBoolean() ? 5000 : -5000);
+        // Config'den spawn mesafesini al
+        double spawnDistance = 5000.0; // Varsayılan
+        if (configManager != null) {
+            me.mami.stratocraft.model.DisasterConfig config = configManager.getConfig(type, level);
+            spawnDistance = config.getSpawnDistance();
+        }
+        
+        // Merkezden en uzak noktayı bul (config'den okunan mesafe)
+        int distance = (int) spawnDistance;
+        int x = centerLoc.getBlockX() + (new Random().nextBoolean() ? distance : -distance);
+        int z = centerLoc.getBlockZ() + (new Random().nextBoolean() ? distance : -distance);
         
         // Chunk'ı force load et (felaket hareket edebilsin diye)
         int chunkX = x >> 4;
@@ -244,9 +278,19 @@ public class DisasterManager {
         }
         
         // Felaket oluştur
+        Location targetLoc = null;
+        if (difficultyManager != null) {
+            targetLoc = difficultyManager.getCenterLocation();
+        }
+        if (targetLoc == null) {
+            targetLoc = spawnLoc.getWorld().getSpawnLocation();
+        }
         activeDisaster = new Disaster(type, category, level, entity, 
-                                     difficultyManager.getCenterLocation(), 
+                                     targetLoc, 
                                      power.health, power.damage, duration);
+        
+        // Hedef kristali belirle
+        setDisasterTarget(activeDisaster);
         
         // Countdown Scoreboard'ı kaldır
         if (countdownObjective != null) {
@@ -280,65 +324,67 @@ public class DisasterManager {
     }
     
     /**
-     * Canlı felaket spawn et
+     * Canlı felaket spawn et (Config kullanır)
      */
     private Entity spawnCreatureDisaster(Disaster.Type type, Location loc, DisasterPower power) {
         World world = loc.getWorld();
         
+        // Config'den ayarları al
+        me.mami.stratocraft.model.DisasterConfig config = null;
+        if (configManager != null) {
+            int level = Disaster.getDefaultLevel(type);
+            config = configManager.getConfig(type, level);
+        }
+        if (config == null) {
+            config = new me.mami.stratocraft.model.DisasterConfig();
+        }
+        
+        Entity entity = null;
+        
         switch (type) {
             case TITAN_GOLEM:
-                Giant golem = (Giant) world.spawnEntity(loc, EntityType.GIANT);
-                golem.setCustomName("§4§lTITAN GOLEM");
-                if (golem.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH) != null) {
-                    golem.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(power.health);
-                }
-                golem.setHealth(power.health);
-                return golem;
+                entity = world.spawnEntity(loc, EntityType.GIANT);
+                entity.setCustomName("§4§lTITAN GOLEM");
+                break;
                 
             case ABYSSAL_WORM:
-                Silverfish worm = (Silverfish) world.spawnEntity(loc, EntityType.SILVERFISH);
-                worm.setCustomName("§5§lHİÇLİK SOLUCANI");
-                if (worm.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH) != null) {
-                    worm.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(power.health);
+                entity = world.spawnEntity(loc, EntityType.SILVERFISH);
+                entity.setCustomName("§5§lHİÇLİK SOLUCANI");
+                if (entity instanceof org.bukkit.entity.LivingEntity) {
+                    ((org.bukkit.entity.LivingEntity) entity).addPotionEffect(new org.bukkit.potion.PotionEffect(
+                        org.bukkit.potion.PotionEffectType.INVISIBILITY, 999999, 0, false, false));
                 }
-                worm.setHealth(power.health);
-                worm.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                    org.bukkit.potion.PotionEffectType.INVISIBILITY, 999999, 0, false, false));
-                return worm;
+                break;
                 
             case CHAOS_DRAGON:
-                EnderDragon dragon = (EnderDragon) world.spawnEntity(loc, EntityType.ENDER_DRAGON);
-                dragon.setCustomName("§5§lKHAOS EJDERİ");
-                if (dragon.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH) != null) {
-                    dragon.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(power.health);
-                }
-                dragon.setHealth(power.health);
-                return dragon;
+                entity = world.spawnEntity(loc, EntityType.ENDER_DRAGON);
+                entity.setCustomName("§5§lKHAOS EJDERİ");
+                break;
                 
             case VOID_TITAN:
-                Wither wither = (Wither) world.spawnEntity(loc, EntityType.WITHER);
-                wither.setCustomName("§8§lBOŞLUK TİTANI");
-                if (wither.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH) != null) {
-                    wither.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(power.health);
-                }
-                wither.setHealth(power.health);
-                return wither;
+                entity = world.spawnEntity(loc, EntityType.WITHER);
+                entity.setCustomName("§8§lBOŞLUK TİTANI");
+                break;
                 
             case ICE_LEVIATHAN:
-                ElderGuardian leviathan = (ElderGuardian) world.spawnEntity(loc, EntityType.ELDER_GUARDIAN);
-                leviathan.setCustomName("§b§lBUZUL LEVİATHAN");
-                if (leviathan.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH) != null) {
-                    leviathan.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(power.health);
+                entity = world.spawnEntity(loc, EntityType.ELDER_GUARDIAN);
+                entity.setCustomName("§b§lBUZUL LEVİATHAN");
+                if (entity instanceof org.bukkit.entity.LivingEntity) {
+                    ((org.bukkit.entity.LivingEntity) entity).addPotionEffect(new org.bukkit.potion.PotionEffect(
+                        org.bukkit.potion.PotionEffectType.SLOW, 999999, 0, false, false));
                 }
-                leviathan.setHealth(power.health);
-                // Buz efekti
-                leviathan.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                    org.bukkit.potion.PotionEffectType.SLOW, 999999, 0, false, false));
-                return leviathan;
+                break;
                 
             default:
                 return null;
         }
+        
+        // DisasterUtils ile güçlendirme (tüm entity'ler için ortak)
+        if (entity != null) {
+            me.mami.stratocraft.util.DisasterUtils.strengthenEntity(entity, config, power.multiplier);
+        }
+        
+        return entity;
     }
     
     /**
@@ -489,6 +535,18 @@ public class DisasterManager {
     }
     
     /**
+     * Seviyeye göre felaket tipi ismi (uyarı için)
+     */
+    private String getDisasterTypeNameForLevel(int level) {
+        switch (level) {
+            case 1: return "Günlük";
+            case 2: return "Orta";
+            case 3: return "Büyük";
+            default: return "Bilinmeyen";
+        }
+    }
+    
+    /**
      * Felaket ismi
      */
     public String getDisasterDisplayName(Disaster.Type type) {
@@ -498,10 +556,19 @@ public class DisasterManager {
             case CHAOS_DRAGON: return "Khaos Ejderi";
             case VOID_TITAN: return "Boşluk Titanı";
             case ICE_LEVIATHAN: return "Buzul Leviathan";
+            case ZOMBIE_HORDE: return "Zombi Ordusu";
+            case SKELETON_LEGION: return "İskelet Lejyonu";
+            case SPIDER_SWARM: return "Örümcek Sürüsü";
+            case CREEPER_SWARM: return "Creeper Dalgası";
+            case ZOMBIE_WAVE: return "Zombi Dalgası";
             case SOLAR_FLARE: return "Güneş Patlaması";
             case EARTHQUAKE: return "Deprem";
+            case STORM: return "Fırtına";
             case METEOR_SHOWER: return "Meteor Yağmuru";
             case VOLCANIC_ERUPTION: return "Volkanik Patlama";
+            case BOSS_BUFF_WAVE: return "Boss Güçlenme Dalgası";
+            case MOB_INVASION: return "Mob İstilası";
+            case PLAYER_BUFF_WAVE: return "Oyuncu Buff Dalgası";
             default: return "Bilinmeyen Felaket";
         }
     }
@@ -576,6 +643,69 @@ public class DisasterManager {
             triggerDisaster(randomType, 3);
             return;
         }
+        
+        // Mini felaket kontrolü (günde 2-5 kez, rastgele zamanda)
+        checkMiniDisasterSpawn();
+    }
+    
+    /**
+     * Mini felaket otomatik spawn kontrolü
+     * Günde 2-5 kez rastgele zamanda spawn olur
+     */
+    private void checkMiniDisasterSpawn() {
+        long now = System.currentTimeMillis();
+        
+        // Gün sıfırlama kontrolü (24 saat = 86400000 ms)
+        if (now - lastDayReset >= 86400000L) {
+            miniDisasterCountToday = 0;
+            lastDayReset = now;
+        }
+        
+        // Günde maksimum 5 kez
+        if (miniDisasterCountToday >= 5) {
+            return;
+        }
+        
+        // Minimum 2 kez spawn olmalı (eğer gün bitiyorsa)
+        long timeSinceLastMini = now - lastMiniDisasterTime;
+        long timeUntilDayEnd = 86400000L - (now - lastDayReset);
+        
+        // Eğer gün bitiyorsa ve henüz 2 kez spawn olmadıysa zorla spawn et
+        if (timeUntilDayEnd < 3600000L && miniDisasterCountToday < 2) { // Son 1 saat
+            spawnRandomMiniDisaster();
+            return;
+        }
+        
+        // Rastgele spawn kontrolü (2-6 saat arası rastgele aralık)
+        long minInterval = 7200000L;  // 2 saat
+        long maxInterval = 21600000L; // 6 saat
+        long randomInterval = minInterval + (long)(random.nextDouble() * (maxInterval - minInterval));
+        
+        if (timeSinceLastMini >= randomInterval) {
+            spawnRandomMiniDisaster();
+        }
+    }
+    
+    /**
+     * Rastgele mini felaket spawn et
+     */
+    private void spawnRandomMiniDisaster() {
+        Disaster.Type[] miniTypes = {
+            Disaster.Type.BOSS_BUFF_WAVE,
+            Disaster.Type.MOB_INVASION,
+            Disaster.Type.PLAYER_BUFF_WAVE
+        };
+        
+        Disaster.Type randomType = miniTypes[random.nextInt(miniTypes.length)];
+        int level = Disaster.getDefaultLevel(randomType);
+        
+        // Mini felaketler için özel spawn (entity yok, sadece efektler)
+        triggerDisaster(randomType, level);
+        
+        lastMiniDisasterTime = System.currentTimeMillis();
+        miniDisasterCountToday++;
+        
+        Bukkit.broadcastMessage("§6§l⚡ MİNİ FELAKET: " + getDisasterDisplayName(randomType) + " ⚡");
     }
     
     /**
@@ -678,6 +808,18 @@ public class DisasterManager {
                 long timeSinceLast = currentElapsed % minInterval;
                 currentNextSpawnTime = minInterval - timeSinceLast;
                 currentNextLevel = 1; // En kısa interval seviye 1
+            }
+            
+            // Plan'a göre: Felaket spawn olmadan 2 dakika önce uyarı
+            if (currentNextSpawnTime <= WARNING_INTERVAL && currentNextSpawnTime > (WARNING_INTERVAL - 2000)) {
+                // 2 dakika kala uyarı (2 saniye tolerans)
+                long now = System.currentTimeMillis();
+                if (now - lastWarningTime >= WARNING_INTERVAL) {
+                    String disasterTypeName = getDisasterTypeNameForLevel(currentNextLevel);
+                    Bukkit.getServer().broadcastMessage(org.bukkit.ChatColor.RED + "" + org.bukkit.ChatColor.BOLD + 
+                        "⚠ UYARI: " + disasterTypeName + " felaketi 2 dakika içinde başlayacak! ⚠");
+                    lastWarningTime = now;
+                }
             }
             
             // Scoreboard'u güncelle (sağ üst köşe)
@@ -866,6 +1008,7 @@ public class DisasterManager {
         // Enkaz yığını oluştur
         createWreckageStructure(loc);
         
+        // Plan'a göre: Felaket yok edilince ödül
         // Ödüller düşür
         if (Math.random() < 0.5) {
             if (me.mami.stratocraft.manager.ItemManager.DARK_MATTER != null) {
@@ -877,6 +1020,22 @@ public class DisasterManager {
             }
         }
         
+        // Plan'a göre: Klan kristali korunursa bonus ödül
+        if (territoryManager != null) {
+            Clan affectedClan = territoryManager.getTerritoryOwner(loc);
+            if (affectedClan != null && affectedClan.getCrystalEntity() != null && !affectedClan.getCrystalEntity().isDead()) {
+                // Kristal korundu - bonus ödül
+                if (me.mami.stratocraft.manager.ItemManager.DARK_MATTER != null) {
+                    loc.getWorld().dropItemNaturally(loc, me.mami.stratocraft.manager.ItemManager.DARK_MATTER.clone());
+                }
+                if (me.mami.stratocraft.manager.ItemManager.STAR_CORE != null) {
+                    loc.getWorld().dropItemNaturally(loc, me.mami.stratocraft.manager.ItemManager.STAR_CORE.clone());
+                }
+                Bukkit.getServer().broadcastMessage(org.bukkit.ChatColor.GOLD + "" + org.bukkit.ChatColor.BOLD + 
+                    "⭐ BONUS ÖDÜL: " + affectedClan.getName() + " klanının kristali korundu! ⭐");
+            }
+        }
+        
         // Kahraman Buff'ı
         if (territoryManager != null && buffManager != null) {
             Clan affectedClan = territoryManager.getTerritoryOwner(loc);
@@ -885,7 +1044,8 @@ public class DisasterManager {
             }
         }
         
-        Bukkit.broadcastMessage("§a§lFelaket yok edildi! Ödüller düştü!");
+        Bukkit.getServer().broadcastMessage(org.bukkit.ChatColor.GREEN + "" + org.bukkit.ChatColor.BOLD + 
+            "Felaket yok edildi! Ödüller düştü!");
     }
     
     private void createWreckageStructure(Location center) {
@@ -927,5 +1087,258 @@ public class DisasterManager {
         surfaceLoc.setY(seismicLocation.getWorld().getHighestBlockYAt(seismicLocation) + 1);
         worm.teleport(surfaceLoc);
         Bukkit.broadcastMessage("§6§lSİSMİK ÇEKİÇ! Hiçlik Solucanı yüzeye çıkmaya zorlandı!");
+    }
+    
+    /**
+     * En yakın klan kristalini bul
+     */
+    public Location findNearestCrystal(Location from) {
+        if (from == null || clanManager == null) return null;
+        
+        Location nearest = null;
+        double minDistance = Double.MAX_VALUE;
+        
+        for (Clan clan : clanManager.getAllClans()) {
+            if (clan == null || !clan.hasCrystal()) continue;
+            
+            Location crystalLoc = clan.getCrystalLocation();
+            if (crystalLoc == null) continue;
+            
+            // Aynı dünyada mı kontrol et
+            if (!crystalLoc.getWorld().equals(from.getWorld())) continue;
+            
+            double distance = from.distance(crystalLoc);
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearest = crystalLoc;
+            }
+        }
+        
+        return nearest;
+    }
+    
+    /**
+     * Felaket hedefini belirle (kristal veya merkez)
+     */
+    public void setDisasterTarget(Disaster disaster) {
+        if (disaster == null || disaster.getCategory() != Disaster.Category.CREATURE) return;
+        
+        Entity entity = disaster.getEntity();
+        if (entity == null && disaster.getGroupEntities().isEmpty()) return;
+        
+        Location currentLoc = null;
+        if (entity != null) {
+            currentLoc = entity.getLocation();
+        } else if (!disaster.getGroupEntities().isEmpty()) {
+            currentLoc = disaster.getGroupEntities().get(0).getLocation();
+        }
+        
+        if (currentLoc == null) return;
+        
+        // Önce en yakın kristali bul
+        Location nearestCrystal = findNearestCrystal(currentLoc);
+        if (nearestCrystal != null) {
+            disaster.setTargetCrystal(nearestCrystal);
+            disaster.setTarget(nearestCrystal);
+            return;
+        }
+        
+        // Kristal yoksa merkeze git
+        Location centerLoc = null;
+        if (difficultyManager != null) {
+            centerLoc = difficultyManager.getCenterLocation();
+        }
+        if (centerLoc == null) {
+            centerLoc = currentLoc.getWorld().getSpawnLocation();
+        }
+        disaster.setTarget(centerLoc);
+    }
+    
+    private java.util.Random random = new java.util.Random();
+    
+    /**
+     * Grup felaket spawn (30 adet orta güçte) - Config kullanır
+     */
+    public void spawnGroupDisaster(org.bukkit.entity.EntityType entityType, int count, Location spawnLoc) {
+        if (activeDisaster != null && !activeDisaster.isDead()) {
+            Bukkit.broadcastMessage("§cZaten aktif bir felaket var!");
+            return;
+        }
+        
+        World world = spawnLoc.getWorld();
+        java.util.List<Entity> entities = new java.util.ArrayList<>();
+        
+        // EntityType'a göre felaket tipi belirle
+        Disaster.Type disasterType = getDisasterTypeFromEntityType(entityType, true);
+        int level = Disaster.getDefaultLevel(disasterType);
+        DisasterPower power = calculateDisasterPower(level);
+        
+        // Config'den ayarları al
+        me.mami.stratocraft.model.DisasterConfig config = null;
+        if (configManager != null) {
+            config = configManager.getConfig(disasterType, level);
+        }
+        if (config == null) {
+            config = new me.mami.stratocraft.model.DisasterConfig();
+        }
+        
+        double spawnRadius = config.getSpawnRadius();
+        
+        // Spawn
+        for (int i = 0; i < count; i++) {
+            // Config'den spawn radius ile rastgele konum
+            Location entityLoc = spawnLoc.clone().add(
+                (random.nextDouble() - 0.5) * spawnRadius * 2,
+                0,
+                (random.nextDouble() - 0.5) * spawnRadius * 2
+            );
+            entityLoc.setY(world.getHighestBlockYAt(entityLoc) + 1);
+            
+            Entity entity = world.spawnEntity(entityLoc, entityType);
+            
+            // DisasterUtils ile güçlendirme
+            me.mami.stratocraft.util.DisasterUtils.strengthenEntity(entity, config, power.multiplier);
+            
+            entities.add(entity);
+        }
+        
+        // Disaster oluştur
+        Location targetLoc = findNearestCrystal(spawnLoc);
+        if (targetLoc == null) {
+            if (difficultyManager != null) {
+                targetLoc = difficultyManager.getCenterLocation();
+            }
+            if (targetLoc == null) {
+                targetLoc = world.getSpawnLocation();
+            }
+        }
+        
+        Disaster disaster = new Disaster(
+            disasterType,
+            Disaster.Category.CREATURE,
+            level,
+            entities.isEmpty() ? null : entities.get(0),
+            targetLoc,
+            power.health,
+            power.damage,
+            Disaster.getDefaultDuration(disasterType, level)
+        );
+        
+        // Grup entity'lerini ekle
+        for (Entity e : entities) {
+            disaster.addGroupEntity(e);
+        }
+        
+        activeDisaster = disaster;
+        setDisasterTarget(disaster);
+        
+        Bukkit.broadcastMessage("§c§l⚠ GRUP FELAKET BAŞLADI! ⚠");
+        Bukkit.broadcastMessage("§4§l" + count + " adet güçlendirilmiş canavar spawn oldu!");
+    }
+    
+    /**
+     * EntityType'a göre felaket tipi belirle
+     */
+    private Disaster.Type getDisasterTypeFromEntityType(org.bukkit.entity.EntityType entityType, boolean isGroup) {
+        if (isGroup) {
+            // Grup felaketler
+            switch (entityType) {
+                case ZOMBIE: return Disaster.Type.ZOMBIE_HORDE;
+                case SKELETON: return Disaster.Type.SKELETON_LEGION;
+                case SPIDER: return Disaster.Type.SPIDER_SWARM;
+                default: return Disaster.Type.ZOMBIE_HORDE;
+            }
+        } else {
+            // Mini dalga felaketler
+            switch (entityType) {
+                case CREEPER: return Disaster.Type.CREEPER_SWARM;
+                case ZOMBIE: return Disaster.Type.ZOMBIE_WAVE;
+                default: return Disaster.Type.CREEPER_SWARM;
+            }
+        }
+    }
+    
+    /**
+     * Mini felaket dalgası spawn (100-500 adet) - Config kullanır
+     */
+    public void spawnSwarmDisaster(org.bukkit.entity.EntityType entityType, int count, Location spawnLoc) {
+        if (activeDisaster != null && !activeDisaster.isDead()) {
+            Bukkit.broadcastMessage("§cZaten aktif bir felaket var!");
+            return;
+        }
+        
+        World world = spawnLoc.getWorld();
+        java.util.List<Entity> entities = new java.util.ArrayList<>();
+        
+        // EntityType'a göre felaket tipi belirle
+        Disaster.Type disasterType = getDisasterTypeFromEntityType(entityType, false);
+        int level = Disaster.getDefaultLevel(disasterType);
+        DisasterPower power = calculateDisasterPower(level);
+        
+        // Config'den ayarları al
+        me.mami.stratocraft.model.DisasterConfig config = null;
+        if (configManager != null) {
+            config = configManager.getConfig(disasterType, level);
+        }
+        if (config == null) {
+            config = new me.mami.stratocraft.model.DisasterConfig();
+        }
+        
+        double spawnRadius = config.getSpawnRadius();
+        double healthPercentage = config.getHealthPercentage(); // Mini dalga için %20 = 0.2
+        
+        // Performans kontrolü - max 500
+        int actualCount = Math.min(count, 500);
+        
+        // Spawn (config'den spawn radius ile)
+        for (int i = 0; i < actualCount; i++) {
+            // Config'den spawn radius ile rastgele konum
+            Location entityLoc = spawnLoc.clone().add(
+                (random.nextDouble() - 0.5) * spawnRadius * 2,
+                0,
+                (random.nextDouble() - 0.5) * spawnRadius * 2
+            );
+            entityLoc.setY(world.getHighestBlockYAt(entityLoc) + 1);
+            
+            Entity entity = world.spawnEntity(entityLoc, entityType);
+            
+            // DisasterUtils ile güçlendirme (healthPercentage ile)
+            me.mami.stratocraft.util.DisasterUtils.strengthenEntity(entity, config, power.multiplier * healthPercentage);
+            
+            entities.add(entity);
+        }
+        
+        // Disaster oluştur
+        Location targetLoc = findNearestCrystal(spawnLoc);
+        if (targetLoc == null) {
+            if (difficultyManager != null) {
+                targetLoc = difficultyManager.getCenterLocation();
+            }
+            if (targetLoc == null) {
+                targetLoc = world.getSpawnLocation();
+            }
+        }
+        
+        Disaster disaster = new Disaster(
+            disasterType,
+            Disaster.Category.CREATURE,
+            level,
+            entities.isEmpty() ? null : entities.get(0),
+            targetLoc,
+            power.health * healthPercentage,
+            power.damage * healthPercentage,
+            Disaster.getDefaultDuration(disasterType, level)
+        );
+        
+        // Grup entity'lerini ekle
+        for (Entity e : entities) {
+            disaster.addGroupEntity(e);
+        }
+        
+        activeDisaster = disaster;
+        setDisasterTarget(disaster);
+        
+        Bukkit.broadcastMessage("§c§l⚠ MİNİ FELAKET DALGASI BAŞLADI! ⚠");
+        Bukkit.broadcastMessage("§4§l" + actualCount + " adet mini canavar spawn oldu!");
     }
 }

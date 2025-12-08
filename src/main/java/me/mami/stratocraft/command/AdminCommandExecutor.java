@@ -827,10 +827,236 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "yok":
             case "temizle":
                 return handleDisasterClear(p, disasterManager);
+            case "test":
+                return handleDisasterTest(p, args, disasterManager);
             default:
-                p.sendMessage("§cGeçersiz komut! /stratocraft disaster <start|stop|info|list|clear>");
+                p.sendMessage("§cGeçersiz komut! /stratocraft disaster <start|stop|info|list|clear|test>");
                 return true;
         }
+    }
+    
+    /**
+     * Felaket test komutları
+     */
+    private boolean handleDisasterTest(Player p, String[] args, DisasterManager disasterManager) {
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft disaster test <type> [parametreler]");
+            p.sendMessage("§7Tipler:");
+            p.sendMessage("§7  test <type> <level> [konum] - Normal felaket spawn");
+            p.sendMessage("§7  test group <entity> <count> [konum] - Grup felaket (30 adet)");
+            p.sendMessage("§7  test swarm <entity> <count> [konum] - Mini dalga (100-500 adet)");
+            p.sendMessage("§7  test mini <type> - Mini felaket");
+            return true;
+        }
+        
+        String testType = args[2].toLowerCase();
+        
+        switch (testType) {
+            case "group":
+                return handleTestGroup(p, args, disasterManager);
+            case "swarm":
+                return handleTestSwarm(p, args, disasterManager);
+            case "mini":
+                return handleTestMini(p, args, disasterManager);
+            default:
+                // Normal felaket test
+                return handleTestNormal(p, args, disasterManager);
+        }
+    }
+    
+    /**
+     * Normal felaket test
+     */
+    private boolean handleTestNormal(Player p, String[] args, DisasterManager disasterManager) {
+        if (args.length < 4) {
+            p.sendMessage("§cKullanım: /stratocraft disaster test <type> <level> [konum]");
+            return true;
+        }
+        
+        String disasterName = args[2].toUpperCase(java.util.Locale.ENGLISH).replace(" ", "_");
+        Disaster.Type type;
+        try {
+            type = Disaster.Type.valueOf(disasterName);
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz felaket tipi: §e" + args[2]);
+            return true;
+        }
+        
+        int level;
+        try {
+            level = Integer.parseInt(args[3]);
+            if (level < 1 || level > 4) {
+                p.sendMessage("§cSeviye 1-4 arası olmalı!");
+                return true;
+            }
+        } catch (NumberFormatException e) {
+            p.sendMessage("§cGeçersiz seviye!");
+            return true;
+        }
+        
+        Location spawnLoc = p.getLocation();
+        if (args.length >= 5) {
+            if (args[4].equalsIgnoreCase("ben") || args[4].equalsIgnoreCase("me")) {
+                spawnLoc = p.getLocation();
+            } else if (args.length >= 7) {
+                try {
+                    double x = Double.parseDouble(args[4]);
+                    double y = Double.parseDouble(args[5]);
+                    double z = Double.parseDouble(args[6]);
+                    spawnLoc = new Location(p.getWorld(), x, y, z);
+                } catch (NumberFormatException ex) {
+                    p.sendMessage("§cGeçersiz koordinatlar!");
+                    return true;
+                }
+            }
+        }
+        
+        disasterManager.triggerDisaster(type, level, spawnLoc);
+        p.sendMessage("§a§lTEST FELAKET BAŞLATILDI!");
+        p.sendMessage("§7Tip: §e" + disasterManager.getDisasterDisplayName(type));
+        p.sendMessage("§7Seviye: §e" + level);
+        p.sendMessage("§7Konum: §e" + spawnLoc.getBlockX() + ", " + spawnLoc.getBlockY() + ", " + spawnLoc.getBlockZ());
+        return true;
+    }
+    
+    /**
+     * Grup felaket test
+     */
+    private boolean handleTestGroup(Player p, String[] args, DisasterManager disasterManager) {
+        if (args.length < 5) {
+            p.sendMessage("§cKullanım: /stratocraft disaster test group <entity> <count> [konum]");
+            p.sendMessage("§7Örnek: /stratocraft disaster test group ZOMBIE 30 ben");
+            return true;
+        }
+        
+        org.bukkit.entity.EntityType entityType;
+        try {
+            entityType = org.bukkit.entity.EntityType.valueOf(args[3].toUpperCase());
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz entity tipi: §e" + args[3]);
+            return true;
+        }
+        
+        int count;
+        try {
+            count = Integer.parseInt(args[4]);
+            if (count < 1 || count > 100) {
+                p.sendMessage("§cSayı 1-100 arası olmalı!");
+                return true;
+            }
+        } catch (NumberFormatException e) {
+            p.sendMessage("§cGeçersiz sayı!");
+            return true;
+        }
+        
+        Location spawnLoc = p.getLocation();
+        if (args.length >= 6) {
+            if (args[5].equalsIgnoreCase("ben") || args[5].equalsIgnoreCase("me")) {
+                spawnLoc = p.getLocation();
+            } else if (args.length >= 9) {
+                try {
+                    double x = Double.parseDouble(args[5]);
+                    double y = Double.parseDouble(args[6]);
+                    double z = Double.parseDouble(args[7]);
+                    spawnLoc = new Location(p.getWorld(), x, y, z);
+                } catch (NumberFormatException ex) {
+                    p.sendMessage("§cGeçersiz koordinatlar!");
+                    return true;
+                }
+            }
+        }
+        
+        disasterManager.spawnGroupDisaster(entityType, count, spawnLoc);
+        p.sendMessage("§a§lGRUP FELAKET TEST BAŞLATILDI!");
+        p.sendMessage("§7Entity: §e" + entityType.name());
+        p.sendMessage("§7Sayı: §e" + count);
+        return true;
+    }
+    
+    /**
+     * Mini dalga test
+     */
+    private boolean handleTestSwarm(Player p, String[] args, DisasterManager disasterManager) {
+        if (args.length < 5) {
+            p.sendMessage("§cKullanım: /stratocraft disaster test swarm <entity> <count> [konum]");
+            p.sendMessage("§7Örnek: /stratocraft disaster test swarm CREEPER 200 ben");
+            return true;
+        }
+        
+        org.bukkit.entity.EntityType entityType;
+        try {
+            entityType = org.bukkit.entity.EntityType.valueOf(args[3].toUpperCase());
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz entity tipi: §e" + args[3]);
+            return true;
+        }
+        
+        int count;
+        try {
+            count = Integer.parseInt(args[4]);
+            if (count < 1 || count > 500) {
+                p.sendMessage("§cSayı 1-500 arası olmalı!");
+                return true;
+            }
+        } catch (NumberFormatException e) {
+            p.sendMessage("§cGeçersiz sayı!");
+            return true;
+        }
+        
+        Location spawnLoc = p.getLocation();
+        if (args.length >= 6) {
+            if (args[5].equalsIgnoreCase("ben") || args[5].equalsIgnoreCase("me")) {
+                spawnLoc = p.getLocation();
+            } else if (args.length >= 9) {
+                try {
+                    double x = Double.parseDouble(args[5]);
+                    double y = Double.parseDouble(args[6]);
+                    double z = Double.parseDouble(args[7]);
+                    spawnLoc = new Location(p.getWorld(), x, y, z);
+                } catch (NumberFormatException ex) {
+                    p.sendMessage("§cGeçersiz koordinatlar!");
+                    return true;
+                }
+            }
+        }
+        
+        disasterManager.spawnSwarmDisaster(entityType, count, spawnLoc);
+        p.sendMessage("§a§lMİNİ DALGA TEST BAŞLATILDI!");
+        p.sendMessage("§7Entity: §e" + entityType.name());
+        p.sendMessage("§7Sayı: §e" + count);
+        return true;
+    }
+    
+    /**
+     * Mini felaket test
+     */
+    private boolean handleTestMini(Player p, String[] args, DisasterManager disasterManager) {
+        if (args.length < 4) {
+            p.sendMessage("§cKullanım: /stratocraft disaster test mini <type>");
+            p.sendMessage("§7Tipler: BOSS_BUFF_WAVE, MOB_INVASION, PLAYER_BUFF_WAVE");
+            return true;
+        }
+        
+        String miniType = args[3].toUpperCase();
+        Disaster.Type type;
+        try {
+            type = Disaster.Type.valueOf(miniType);
+            if (type != Disaster.Type.BOSS_BUFF_WAVE && 
+                type != Disaster.Type.MOB_INVASION && 
+                type != Disaster.Type.PLAYER_BUFF_WAVE) {
+                p.sendMessage("§cGeçersiz mini felaket tipi!");
+                return true;
+            }
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz mini felaket tipi: §e" + args[3]);
+            return true;
+        }
+        
+        // Mini felaket spawn (şimdilik normal felaket olarak spawn ediyoruz)
+        disasterManager.triggerDisaster(type, 1, p.getLocation());
+        p.sendMessage("§a§lMİNİ FELAKET TEST BAŞLATILDI!");
+        p.sendMessage("§7Tip: §e" + disasterManager.getDisasterDisplayName(type));
+        return true;
     }
 
     /**

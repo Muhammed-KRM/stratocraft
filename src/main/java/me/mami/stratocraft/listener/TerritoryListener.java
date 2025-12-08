@@ -383,11 +383,20 @@ public class TerritoryListener implements Listener {
         if (event.getFinalDamage() >= 1.0 && !event.isCancelled()) {
             // Kırılma nedenini kontrol et
             Player breaker = null;
+            Entity damager = null;
             if (event instanceof EntityDamageByEntityEvent) {
-                Entity damager = ((EntityDamageByEntityEvent) event).getDamager();
+                damager = ((EntityDamageByEntityEvent) event).getDamager();
                 if (damager instanceof Player) {
                     breaker = (Player) damager;
                 }
+            }
+            
+            // Felaket entity'si kristali kırıyor mu? (DisasterTask'tan geliyor)
+            // Felaket entity'leri için özel durum - klanı dağıt
+            if (damager != null && !(damager instanceof Player)) {
+                // Bu bir felaket entity'si olabilir - DisasterTask zaten klanı dağıtacak
+                // Burada sadece event'i işle, klan dağıtma DisasterTask'ta yapılıyor
+                return; // DisasterTask zaten işleyecek
             }
             
             // Lider kendi kristalini kırıyor mu?

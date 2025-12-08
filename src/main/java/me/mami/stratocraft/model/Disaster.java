@@ -17,30 +17,58 @@ import org.bukkit.Location;
  */
 public class Disaster {
     public enum Type { 
-        // Canlı Felaketler
+        // Canlı Felaketler - Tek Boss
         TITAN_GOLEM,        // Seviye 3 - Titan Golem
         ABYSSAL_WORM,       // Seviye 2 - Hiçlik Solucanı
         CHAOS_DRAGON,       // Seviye 3 - Khaos Ejderi
         VOID_TITAN,         // Seviye 3 - Boşluk Titanı
-        ICE_LEVIATHAN,      // Seviye 2 - Buzul Leviathan (opsiyonel)
+        ICE_LEVIATHAN,      // Seviye 2 - Buzul Leviathan
+        
+        // Canlı Felaketler - Grup (30 adet)
+        ZOMBIE_HORDE,       // Seviye 2 - 30 Orta Güçte Zombi
+        SKELETON_LEGION,    // Seviye 2 - 30 Orta Güçte İskelet
+        SPIDER_SWARM,       // Seviye 2 - 30 Orta Güçte Örümcek
+        
+        // Canlı Felaketler - Mini Dalga (100-500 adet)
+        CREEPER_SWARM,      // Seviye 1 - 100-500 Mini Creeper
+        ZOMBIE_WAVE,        // Seviye 1 - 100-500 Mini Zombi
         
         // Doğa Olayları
         SOLAR_FLARE,        // Seviye 1 - Güneş Patlaması
         EARTHQUAKE,         // Seviye 2 - Deprem
+        STORM,              // Seviye 2 - Fırtına
         METEOR_SHOWER,      // Seviye 2 - Meteor Yağmuru
-        VOLCANIC_ERUPTION   // Seviye 3 - Volkanik Patlama
+        VOLCANIC_ERUPTION,  // Seviye 3 - Volkanik Patlama
+        
+        // Mini Felaketler
+        BOSS_BUFF_WAVE,     // Mini - Boss güçlenme dalgası
+        MOB_INVASION,       // Mini - Mob istilası
+        PLAYER_BUFF_WAVE    // Mini - Oyuncu buff dalgası
     }
     
     public enum Category {
         CREATURE,   // Canlı felaketler
-        NATURAL     // Doğa olayları
+        NATURAL,    // Doğa olayları
+        MINI        // Mini felaketler
+    }
+    
+    /**
+     * Canavar felaket tipi (tek boss, grup, mini dalga)
+     */
+    public enum CreatureDisasterType {
+        SINGLE_BOSS,    // Tek boss
+        MEDIUM_GROUP,   // 30 orta güçte
+        MINI_SWARM      // 100-500 mini
     }
     
     private final Type type;
     private final Category category;
-    private final int level;        // 1-3 seviye
+    private final int level;        // 1-4 seviye
     private final Entity entity;    // Bossun Minecraft Entity'si (canlı felaketler için)
     private Location target;        // Merkez noktası (canlı felaketler için)
+    private Location targetCrystalLocation; // Klan kristali hedefi (canlı felaketler için)
+    private CreatureDisasterType creatureDisasterType; // Canavar felaket tipi
+    private java.util.List<Entity> groupEntities; // Grup felaketler için entity listesi
     private boolean isDead = false;
     
     // Dinamik güç
@@ -59,11 +87,20 @@ public class Disaster {
         this.level = level;
         this.entity = entity;
         this.target = target;
+        this.targetCrystalLocation = null;
         this.maxHealth = maxHealth;
         this.currentHealth = maxHealth;
         this.damageMultiplier = damageMultiplier;
         this.duration = duration;
         this.startTime = System.currentTimeMillis();
+        this.groupEntities = new java.util.ArrayList<>();
+        
+        // Canavar felaket tipini belirle
+        if (category == Category.CREATURE) {
+            this.creatureDisasterType = getCreatureDisasterType(type);
+        } else {
+            this.creatureDisasterType = null;
+        }
         
         // Entity'ye can ayarla
         if (entity != null && entity instanceof org.bukkit.entity.LivingEntity) {
@@ -81,6 +118,11 @@ public class Disaster {
     public Entity getEntity() { return entity; }
     public Location getTarget() { return target; }
     public void setTarget(Location target) { this.target = target; }
+    public Location getTargetCrystal() { return targetCrystalLocation; }
+    public void setTargetCrystal(Location crystalLoc) { this.targetCrystalLocation = crystalLoc; }
+    public CreatureDisasterType getCreatureDisasterType() { return creatureDisasterType; }
+    public java.util.List<Entity> getGroupEntities() { return groupEntities; }
+    public void addGroupEntity(Entity entity) { this.groupEntities.add(entity); }
     
     public double getMaxHealth() { return maxHealth; }
     public double getCurrentHealth() { 
@@ -115,6 +157,13 @@ public class Disaster {
         if (entity != null) {
             entity.remove();
         }
+        // Grup entity'lerini de temizle
+        for (Entity e : groupEntities) {
+            if (e != null && !e.isDead()) {
+                e.remove();
+            }
+        }
+        groupEntities.clear();
     }
     
     /**
@@ -127,14 +176,47 @@ public class Disaster {
             case CHAOS_DRAGON:
             case VOID_TITAN:
             case ICE_LEVIATHAN:
+            case ZOMBIE_HORDE:
+            case SKELETON_LEGION:
+            case SPIDER_SWARM:
+            case CREEPER_SWARM:
+            case ZOMBIE_WAVE:
                 return Category.CREATURE;
             case SOLAR_FLARE:
             case EARTHQUAKE:
+            case STORM:
             case METEOR_SHOWER:
             case VOLCANIC_ERUPTION:
                 return Category.NATURAL;
+            case BOSS_BUFF_WAVE:
+            case MOB_INVASION:
+            case PLAYER_BUFF_WAVE:
+                return Category.MINI;
             default:
                 return Category.CREATURE;
+        }
+    }
+    
+    /**
+     * Canavar felaket tipini belirle
+     */
+    public static CreatureDisasterType getCreatureDisasterType(Type type) {
+        switch (type) {
+            case TITAN_GOLEM:
+            case ABYSSAL_WORM:
+            case CHAOS_DRAGON:
+            case VOID_TITAN:
+            case ICE_LEVIATHAN:
+                return CreatureDisasterType.SINGLE_BOSS;
+            case ZOMBIE_HORDE:
+            case SKELETON_LEGION:
+            case SPIDER_SWARM:
+                return CreatureDisasterType.MEDIUM_GROUP;
+            case CREEPER_SWARM:
+            case ZOMBIE_WAVE:
+                return CreatureDisasterType.MINI_SWARM;
+            default:
+                return null;
         }
     }
     
@@ -144,11 +226,20 @@ public class Disaster {
     public static int getDefaultLevel(Type type) {
         switch (type) {
             case SOLAR_FLARE:
+            case CREEPER_SWARM:
+            case ZOMBIE_WAVE:
+            case BOSS_BUFF_WAVE:
+            case MOB_INVASION:
+            case PLAYER_BUFF_WAVE:
                 return 1;
             case ABYSSAL_WORM:
             case EARTHQUAKE:
+            case STORM:
             case METEOR_SHOWER:
             case ICE_LEVIATHAN:
+            case ZOMBIE_HORDE:
+            case SKELETON_LEGION:
+            case SPIDER_SWARM:
                 return 2;
             case TITAN_GOLEM:
             case CHAOS_DRAGON:
@@ -179,10 +270,19 @@ public class Disaster {
                 return baseDuration; // 10 dakika
             case EARTHQUAKE:
                 return baseDuration / 2; // 5 dakika
+            case STORM:
+                return baseDuration; // 20 dakika
             case METEOR_SHOWER:
                 return baseDuration; // 20 dakika
             case VOLCANIC_ERUPTION:
                 return baseDuration * 2; // 60 dakika
+            case BOSS_BUFF_WAVE:
+            case MOB_INVASION:
+            case PLAYER_BUFF_WAVE:
+                // Mini felaketler: 5-15 dakika arası rastgele
+                long minDuration = 300000L;  // 5 dakika
+                long maxDuration = 900000L;  // 15 dakika
+                return minDuration + (long)(Math.random() * (maxDuration - minDuration));
             default:
                 return baseDuration;
         }
