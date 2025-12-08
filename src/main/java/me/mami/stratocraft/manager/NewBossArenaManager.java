@@ -387,19 +387,26 @@ public class NewBossArenaManager {
             return;
         }
         
-        List<UUID> toRestart = new ArrayList<>();
+        // ConcurrentModificationException'ı önlemek için kopya al
+        Set<UUID> stoppedArenasCopy = new HashSet<>(stoppedArenas);
         
-        for (UUID bossId : stoppedArenas) {
+        List<UUID> toRestart = new ArrayList<>();
+        List<UUID> toRemove = new ArrayList<>(); // Ölü boss'ları kaldırmak için
+        
+        for (UUID bossId : stoppedArenasCopy) {
             BossManager.BossData bossData = plugin.getBossManager().getBossData(bossId);
             if (bossData == null || bossData.getEntity() == null || bossData.getEntity().isDead()) {
                 // Boss ölmüş, listeden çıkar
-                stoppedArenas.remove(bossId);
+                toRemove.add(bossId);
                 continue;
             }
             
             Location bossLoc = bossData.getEntity().getLocation();
             World world = bossLoc.getWorld();
-            if (world == null) continue;
+            if (world == null) {
+                toRemove.add(bossId);
+                continue;
+            }
             
             // En yakın oyuncu mesafesini bul
             double minDistance = Double.MAX_VALUE;
@@ -415,6 +422,11 @@ public class NewBossArenaManager {
             if (minDistance <= currentFarDistance) {
                 toRestart.add(bossId);
             }
+        }
+        
+        // Ölü boss'ları kaldır
+        for (UUID bossId : toRemove) {
+            stoppedArenas.remove(bossId);
         }
         
         // Tekrar başlatılacak arenaları işle
