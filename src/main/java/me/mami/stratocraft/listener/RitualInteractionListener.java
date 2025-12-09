@@ -40,11 +40,23 @@ public class RitualInteractionListener implements Listener {
     
     // Cooldown sistemi: Oyuncu UUID -> Son ritüel zamanı
     private final Map<UUID, Long> ritualCooldowns = new HashMap<>();
-    private static final long RITUAL_COOLDOWN = 10000L; // 10 saniye
+    private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
+    
+    /**
+     * Ritüel cooldown'u al (config'den)
+     */
+    private long getRitualCooldown() {
+        return balanceConfig != null ? balanceConfig.getRitualCooldown() : 10000L;
+    }
 
     public RitualInteractionListener(ClanManager cm, TerritoryManager tm) {
         this.clanManager = cm;
         this.territoryManager = tm;
+        // ✅ CONFIG: GameBalanceConfig'i al
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        if (plugin != null && plugin.getConfigManager() != null) {
+            this.balanceConfig = plugin.getConfigManager().getGameBalanceConfig();
+        }
     }
     
     public void setAllianceManager(me.mami.stratocraft.manager.AllianceManager am) {
@@ -1276,7 +1288,7 @@ public class RitualInteractionListener implements Listener {
     private boolean isOnCooldown(UUID playerId) {
         Long lastRitual = ritualCooldowns.get(playerId);
         if (lastRitual == null) return false;
-        return System.currentTimeMillis() - lastRitual < RITUAL_COOLDOWN;
+        return System.currentTimeMillis() - lastRitual < getRitualCooldown();
     }
     
     private void setCooldown(UUID playerId) {

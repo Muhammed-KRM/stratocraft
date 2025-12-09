@@ -66,12 +66,16 @@ public class ConfigManager {
     private DisasterConfigManager disasterConfigManager;
     private DisasterPowerConfig disasterPowerConfig;
     private DisasterPhaseConfig disasterPhaseConfig;
+    
+    // ========== OYUN DENGE CONFIG YÖNETİCİSİ ==========
+    private GameBalanceConfig gameBalanceConfig;
 
     public ConfigManager(Main plugin) {
         this.plugin = plugin;
         this.disasterConfigManager = new DisasterConfigManager();
         this.disasterPowerConfig = new DisasterPowerConfig();
         this.disasterPhaseConfig = new DisasterPhaseConfig();
+        this.gameBalanceConfig = new GameBalanceConfig();
         loadConfig();
     }
 
@@ -139,6 +143,9 @@ public class ConfigManager {
         
         // Felaket Faz Config Yöneticisi (Faz Sistemi)
         disasterPhaseConfig.loadFromConfig(config);
+        
+        // Oyun Denge Config Yöneticisi (Tüm hardcoded değerler)
+        gameBalanceConfig.loadFromConfig(config);
     }
 
     public void reloadConfig() {
@@ -187,6 +194,9 @@ public class ConfigManager {
     public DisasterConfigManager getDisasterConfigManager() { return disasterConfigManager; }
     public DisasterPowerConfig getDisasterPowerConfig() { return disasterPowerConfig; }
     public DisasterPhaseConfig getDisasterPhaseConfig() { return disasterPhaseConfig; }
+    
+    // ========== OYUN DENGE CONFIG GETTER ==========
+    public GameBalanceConfig getGameBalanceConfig() { return gameBalanceConfig; }
     
     // Config erişimi için (CaravanManager gibi yerler için)
     public FileConfiguration getConfig() { return config; }

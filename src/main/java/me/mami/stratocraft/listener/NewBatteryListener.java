@@ -17,6 +17,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
@@ -29,10 +30,21 @@ public class NewBatteryListener implements Listener {
     private final NewBatteryManager batteryManager;
     private final TerritoryManager territoryManager;
     private me.mami.stratocraft.manager.TrainingManager trainingManager;
+    private me.mami.stratocraft.manager.BatteryParticleManager particleManager;
+    private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
     
     public NewBatteryListener(NewBatteryManager bm, TerritoryManager tm) {
         this.batteryManager = bm;
         this.territoryManager = tm;
+        // ✅ PARTİKÜL SİSTEMİ: BatteryParticleManager'ı al
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        if (plugin != null) {
+            this.particleManager = plugin.getBatteryParticleManager();
+            // ✅ OYUN DENGE CONFIG: GameBalanceConfig'i al
+            if (plugin.getConfigManager() != null) {
+                this.balanceConfig = plugin.getConfigManager().getGameBalanceConfig();
+            }
+        }
     }
     
     public void setTrainingManager(me.mami.stratocraft.manager.TrainingManager tm) {
@@ -232,8 +244,14 @@ public class NewBatteryListener implements Listener {
         // 4. Bataryayı Manager'a kaydet
         batteryManager.loadBattery(player, slot, data);
         
-        // 5. Partikül efekti başlat (etrafında dönmeli)
-        startBatteryParticles(player, slot, data);
+        // 5. ✅ YENİ PARTİKÜL SİSTEMİ: Modüler partikül efekti başlat
+        if (particleManager != null) {
+            org.bukkit.Particle particleType = me.mami.stratocraft.manager.BatteryParticleManager.getParticleType(data.getBatteryName());
+            particleManager.startBatteryParticles(player, slot, particleType);
+        } else {
+            // Fallback: Eski sistem (geriye dönük uyumluluk)
+            startBatteryParticles(player, slot, data);
+        }
         
         // 6. Ses efekti
         player.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1f, 2f);
@@ -301,8 +319,12 @@ public class NewBatteryListener implements Listener {
         NewBatteryData data = batteryManager.getLoadedBattery(player, slot);
         if (data == null) return;
         
-        // Partikül efektini durdur
-        stopBatteryParticles(player, slot);
+        // ✅ YENİ PARTİKÜL SİSTEMİ: Partikül efektini durdur
+        if (particleManager != null) {
+            particleManager.stopBatteryParticles(player, slot);
+        } else {
+            stopBatteryParticles(player, slot);
+        }
         
         // Antrenman kaydı
         if (trainingManager != null) {
@@ -340,34 +362,56 @@ public class NewBatteryListener implements Listener {
      * Sonraki kullanımdaki gücü hesapla (bilgi mesajları için)
      */
     private double calculateNextPower(int nextUses, int batteryLevel) {
-        // Başlangıç gücü
+        // ✅ CONFIG: Başlangıç gücü (config'den al)
         double startPower;
-        switch (batteryLevel) {
-            case 1: startPower = 0.2; break;
-            case 2: startPower = 0.4; break;
-            case 3: startPower = 0.6; break;
-            case 4: startPower = 0.7; break;
-            case 5: startPower = 0.8; break;
-            default: startPower = 0.5; break;
+        if (balanceConfig != null) {
+            switch (batteryLevel) {
+                case 1: startPower = balanceConfig.getTrainingLevel1StartPower(); break;
+                case 2: startPower = balanceConfig.getTrainingLevel2StartPower(); break;
+                case 3: startPower = balanceConfig.getTrainingLevel3StartPower(); break;
+                case 4: startPower = balanceConfig.getTrainingLevel4StartPower(); break;
+                case 5: startPower = balanceConfig.getTrainingLevel5StartPower(); break;
+                default: startPower = 0.5; break;
+            }
+        } else {
+            // Fallback (config yüklenmemişse)
+            switch (batteryLevel) {
+                case 1: startPower = 0.2; break;
+                case 2: startPower = 0.4; break;
+                case 3: startPower = 0.6; break;
+                case 4: startPower = 0.7; break;
+                case 5: startPower = 0.8; break;
+                default: startPower = 0.5; break;
+            }
         }
         
-        // Kullanım sayısına göre güç
+        // ✅ CONFIG: Kullanım sayısına göre güç (config'den eşikler al)
+        int fullPowerUses = balanceConfig != null ? balanceConfig.getTrainingFullPowerUses() : 5;
+        int masteryStartUses = balanceConfig != null ? balanceConfig.getTrainingMasteryStartUses() : 20;
+        int maxPowerUses = balanceConfig != null ? balanceConfig.getTrainingMaxPowerUses() : 30;
+        double increment2 = balanceConfig != null ? balanceConfig.getTrainingPowerIncrement2() : 0.2;
+        double increment3 = balanceConfig != null ? balanceConfig.getTrainingPowerIncrement3() : 0.4;
+        double increment4 = balanceConfig != null ? balanceConfig.getTrainingPowerIncrement4() : 0.6;
+        double maxMultiplier = balanceConfig != null ? balanceConfig.getTrainingMaxPowerMultiplier() : 1.5;
+        double masteryIncrement = balanceConfig != null ? balanceConfig.getTrainingMasteryPowerIncrement() : 0.5;
+        
         if (nextUses <= 1) {
             return startPower;
         } else if (nextUses == 2) {
-            return Math.min(1.0, startPower + 0.2);
+            return Math.min(1.0, startPower + increment2);
         } else if (nextUses == 3) {
-            return Math.min(1.0, startPower + 0.4);
+            return Math.min(1.0, startPower + increment3);
         } else if (nextUses == 4) {
-            return Math.min(1.0, startPower + 0.6);
-        } else if (nextUses >= 5 && nextUses <= 20) {
+            return Math.min(1.0, startPower + increment4);
+        } else if (nextUses >= fullPowerUses && nextUses <= masteryStartUses) {
             return 1.0;
-        } else if (nextUses > 20 && nextUses <= 30) {
-            int extraUses = nextUses - 20;
-            double extraPower = (extraUses / 10.0) * 0.5;
+        } else if (nextUses > masteryStartUses && nextUses <= maxPowerUses) {
+            int extraUses = nextUses - masteryStartUses;
+            int masteryRange = maxPowerUses - masteryStartUses;
+            double extraPower = (extraUses / (double) masteryRange) * masteryIncrement;
             return 1.0 + extraPower;
         } else {
-            return 1.5;
+            return maxMultiplier;
         }
     }
     
@@ -539,6 +583,13 @@ public class NewBatteryListener implements Listener {
     private void dischargeBattery(Player player, int slot) {
         NewBatteryData data = batteryManager.getLoadedBattery(player, slot);
         if (data == null) return;
+        
+        // ✅ YENİ PARTİKÜL SİSTEMİ: Partikül efektini durdur
+        if (particleManager != null) {
+            particleManager.stopBatteryParticles(player, slot);
+        } else {
+            stopBatteryParticles(player, slot);
+        }
         
         batteryManager.removeBattery(player, slot);
         player.sendMessage("§eBatarya iptal edildi: " + data.getBatteryName());

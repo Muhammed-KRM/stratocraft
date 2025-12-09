@@ -14,6 +14,7 @@ Bataryalar **sanal olarak** envanterinize yüklenir ve savaşta kullanılır. **
 4. [Ateşleme Sistemi](#ateşleme-sistemi)
 5. [Stratejik Kullanım](#stratejik-kullanim)
 6. [Batarya Güç Sistemi](#batarya-güç-sistemi) ⭐ YENİ
+7. [Batarya Partikül Sistemi](#batarya-partikül-sistemi) ⭐ YENİ
 
 ---
 
@@ -2093,6 +2094,163 @@ for (RecipeChecker checker : matchingCenterBlock) {
     }
 }
 ```
+
+---
+
+## 🎨 BATARYA PARTİKÜL SİSTEMİ ⭐ YENİ
+
+### Genel Bakış
+
+Batarya partikül sistemi, aktif bataryaların görsel efektlerini yönetir. Sistem, oyuncunun bakış açısına (FPS modu vs 3. kişi modu) göre farklı partiküller gösterir.
+
+### Özellikler
+
+#### 1. Bakış Açısı Algılama
+
+- **FPS Modu (1. Bakış)**: Oyuncu kendi partiküllerini görür ama görüşü kapatmayacak şekilde ufak partiküller gösterilir
+- **3. Kişi Modu (F5)**: Oyuncu normal partikülleri görür
+- **Diğer Oyuncular**: Her zaman normal partikülleri görür
+
+#### 2. Partikül Tipleri
+
+Batarya ismine göre otomatik partikül tipi seçilir:
+
+- **Ateş/Cehennem/Lava**: `FLAME` partikülü
+- **Yıldırım/Elektrik/Şok**: `ELECTRIC_SPARK` partikülü
+- **Buz/Kale**: `SNOWBALL` partikülü
+- **Zehir/Asit**: `DRIP_LAVA` partikülü
+- **Meteor/Kıyamet**: `EXPLOSION_LARGE` partikülü
+- **Köprü/Duvar**: `VILLAGER_HAPPY` partikülü
+- **Can/Yenilenme**: `HEART` partikülü
+- **Hız**: `CLOUD` partikülü
+- **Hasar**: `CRIT` partikülü
+- **Zırh**: `TOTEM` partikülü
+- **Diğer**: `ENCHANTMENT_TABLE` partikülü
+
+#### 3. FPS Modu Özellikleri
+
+FPS modunda (1. bakış açısı) partiküller:
+- **Bel hizasında** gösterilir (görüşü kapatmaz)
+- **Ufak yarıçap** (0.3 blok)
+- **Az sayıda** partikül (2 adet)
+- **Yavaş dönüş** hızı
+- **Küçük offset** değerleri (0.05)
+
+#### 4. 3. Kişi Modu Özellikleri
+
+3. kişi modunda (F5) partiküller:
+- **Normal yükseklik** (1.0 blok)
+- **Normal yarıçap** (1.5 blok)
+- **Normal sayıda** partikül (8 adet)
+- **Normal dönüş** hızı
+- **Dikey hareket** animasyonu
+
+### Config Ayarları
+
+Tüm partikül ayarları `config.yml` dosyasından yönetilebilir:
+
+```yaml
+battery:
+  particles:
+    # Normal partiküller (3. kişi modu ve diğer oyuncular için)
+    normal-radius: 1.5              # Partikül yarıçapı (blok)
+    normal-height: 1.0               # Partikül yüksekliği (blok)
+    normal-count: 8                 # Partikül sayısı
+    normal-rotation-speed: 2.0       # Dönüş hızı (radyan/saniye)
+    
+    # FPS modu partikülleri (1. bakış açısı - görüşü kapatmayacak)
+    fps-radius: 0.3                 # Ufak yarıçap (blok)
+    fps-height: 0.5                  # Bel hizası (blok)
+    fps-count: 2                    # Az sayıda partikül
+    fps-rotation-speed: 1.0          # Yavaş dönüş (radyan/saniye)
+    
+    # Sistem ayarları
+    update-interval: 2               # Güncelleme aralığı (tick)
+    fps-detection-threshold: 0.3     # FPS modu algılama eşiği (göz-vücut mesafesi)
+```
+
+### Config Parametreleri Detaylı Açıklama
+
+#### Normal Partiküller (3. Kişi Modu)
+
+**`normal-radius`** (Varsayılan: 1.5)
+- **Ne İşe Yarar**: Partiküllerin oyuncunun etrafında döndüğü yarıçap
+- **Düşürürsen**: Partiküller oyuncuya daha yakın döner (daha kompakt görünüm)
+- **Artırırsan**: Partiküller oyuncudan daha uzakta döner (daha geniş görünüm)
+- **Önerilen Değer**: 1.0 - 2.5 arası
+
+**`normal-height`** (Varsayılan: 1.0)
+- **Ne İşe Yarar**: Partiküllerin oyuncunun ayak seviyesinden yüksekliği
+- **Düşürürsen**: Partiküller daha alçakta görünür (ayak hizası)
+- **Artırırsan**: Partiküller daha yüksekte görünür (baş hizası)
+- **Önerilen Değer**: 0.5 - 2.0 arası
+
+**`normal-count`** (Varsayılan: 8)
+- **Ne İşe Yarar**: Etrafında dönen partikül sayısı
+- **Düşürürsen**: Daha az partikül (daha az görsel efekt, daha iyi performans)
+- **Artırırsan**: Daha fazla partikül (daha yoğun görsel efekt, daha kötü performans)
+- **Önerilen Değer**: 4 - 16 arası (performans için 8'den fazla önerilmez)
+
+**`normal-rotation-speed`** (Varsayılan: 2.0)
+- **Ne İşe Yarar**: Partiküllerin dönüş hızı (radyan/saniye)
+- **Düşürürsen**: Partiküller daha yavaş döner (daha sakin görünüm)
+- **Artırırsan**: Partiküller daha hızlı döner (daha dinamik görünüm)
+- **Önerilen Değer**: 1.0 - 4.0 arası
+
+#### FPS Modu Partikülleri (1. Bakış Açısı)
+
+**`fps-radius`** (Varsayılan: 0.3)
+- **Ne İşe Yarar**: FPS modunda partiküllerin yarıçapı (görüşü kapatmamak için küçük)
+- **Düşürürsen**: Partiküller oyuncuya çok yakın olur (görüşü kapatabilir)
+- **Artırırsan**: Partiküller daha uzakta olur (ama görüşü kapatabilir)
+- **Önerilen Değer**: 0.2 - 0.5 arası (0.3 ideal)
+
+**`fps-height`** (Varsayılan: 0.5)
+- **Ne İşe Yarar**: FPS modunda partiküllerin yüksekliği (bel hizası)
+- **Düşürürsen**: Partiküller ayak hizasında görünür
+- **Artırırsan**: Partiküller göğüs/baş hizasında görünür (görüşü kapatabilir)
+- **Önerilen Değer**: 0.3 - 0.7 arası (0.5 ideal - bel hizası)
+
+**`fps-count`** (Varsayılan: 2)
+- **Ne İşe Yarar**: FPS modunda partikül sayısı (görüşü kapatmamak için az)
+- **Düşürürsen**: Daha az partikül (1 adet - çok az görsel efekt)
+- **Artırırsan**: Daha fazla partikül (görüşü kapatabilir)
+- **Önerilen Değer**: 1 - 3 arası (2 ideal)
+
+**`fps-rotation-speed`** (Varsayılan: 1.0)
+- **Ne İşe Yarar**: FPS modunda dönüş hızı (daha yavaş)
+- **Düşürürsen**: Çok yavaş dönüş (neredeyse hareketsiz)
+- **Artırırsan**: Daha hızlı dönüş (ama görüşü rahatsız edebilir)
+- **Önerilen Değer**: 0.5 - 2.0 arası (1.0 ideal)
+
+#### Sistem Ayarları
+
+**`update-interval`** (Varsayılan: 2)
+- **Ne İşe Yarar**: Partiküllerin güncellenme sıklığı (tick cinsinden)
+- **Düşürürsen**: Daha sık güncelleme (daha akıcı animasyon, daha kötü performans)
+- **Artırırsan**: Daha seyrek güncelleme (daha kesikli animasyon, daha iyi performans)
+- **Önerilen Değer**: 1 - 5 arası (2 ideal - her 0.1 saniyede bir)
+
+**`fps-detection-threshold`** (Varsayılan: 0.3)
+- **Ne İşe Yarar**: FPS modu algılama eşiği (göz-vücut mesafesi)
+- **Düşürürsen**: Daha hassas algılama (sadece tam FPS modunda çalışır)
+- **Artırırsan**: Daha geniş algılama (3. kişi modunda da FPS partikülleri gösterilebilir)
+- **Önerilen Değer**: 0.2 - 0.5 arası (0.3 ideal)
+
+### Performans Optimizasyonları
+
+1. **Mesafe Kontrolü**: Partiküller sadece 32 blok mesafe içindeki oyunculara gösterilir
+2. **Dünya Kontrolü**: Farklı dünyalardaki oyunculara partikül gösterilmez
+3. **Thread Safety**: `ConcurrentHashMap` kullanılarak thread-safe yapı sağlanır
+4. **Memory Leak Önleme**: Oyuncu çıkışında tüm partikül task'ları otomatik temizlenir
+5. **Cache Sistemi**: Partikül pozisyonları her tick hesaplanır (cache yok, çünkü dinamik)
+
+### Teknik Detaylar
+
+- **FPS Algılama**: Göz pozisyonu ve vücut pozisyonu arasındaki mesafe + Y ekseni farkı kontrol edilir
+- **Partikül Spawn**: Her partikül için ayrı `Location` objesi oluşturulur
+- **Task Yönetimi**: Her batarya slot'u için ayrı `BukkitTask` oluşturulur
+- **Otomatik Temizlik**: Batarya ateşlendiğinde veya iptal edildiğinde partikül task'ı otomatik durdurulur
 
 ---
 

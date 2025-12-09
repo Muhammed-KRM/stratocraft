@@ -73,6 +73,7 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.SimpleRankingSystem simpleRankingSystem;
     private me.mami.stratocraft.manager.SimplePowerHistory simplePowerHistory;
     private me.mami.stratocraft.manager.HUDManager hudManager;
+    private me.mami.stratocraft.manager.BatteryParticleManager batteryParticleManager;
     
     public me.mami.stratocraft.listener.SpecialWeaponListener getSpecialWeaponListener() {
         return specialWeaponListener;
@@ -315,6 +316,11 @@ public class Main extends JavaPlugin {
             stratocraftPowerSystem.loadAllPlayerProfiles();
         }
         
+        // ✅ BATARYA PARTİKÜL SİSTEMİ: Config yükle (configManager hazır olduktan sonra)
+        if (batteryParticleManager != null && configManager != null) {
+            batteryParticleManager.loadConfig(configManager.getConfig());
+        }
+        
         // HUD Manager'ı başlat (missionManager'dan sonra)
         if (hudManager != null && missionManager != null) {
             hudManager.setManagers(disasterManager, newBatteryManager, shopManager, missionManager, 
@@ -322,6 +328,28 @@ public class Main extends JavaPlugin {
             hudManager.start();
         }
 
+        // ✅ OYUNCU ADI GÜNCELLEME: Periyodik güncelleme (config'den interval al)
+        // Güç değiştiğinde seviye değişebilir, oyuncu adını güncelle
+        if (stratocraftPowerSystem != null && configManager != null) {
+            long updateInterval = configManager.getGameBalanceConfig() != null ? 
+                configManager.getGameBalanceConfig().getPowerSystemPlayerNameUpdateInterval() : 600L;
+            new org.bukkit.scheduler.BukkitRunnable() {
+                @Override
+                public void run() {
+                    // PowerSystemListener'ı bul ve tüm oyuncuların adlarını güncelle
+                    for (org.bukkit.event.ListenerRegistration<?> registration : 
+                         org.bukkit.Bukkit.getPluginManager().getRegisteredListeners(plugin)) {
+                        if (registration.getListener() instanceof me.mami.stratocraft.listener.PowerSystemListener) {
+                            me.mami.stratocraft.listener.PowerSystemListener powerListener = 
+                                (me.mami.stratocraft.listener.PowerSystemListener) registration.getListener();
+                            powerListener.updateAllPlayerNames();
+                            break;
+                        }
+                    }
+                }
+            }.runTaskTimer(this, updateInterval, updateInterval);
+        }
+        
         // 3. Zamanlayıcıları Başlat
         new BuffTask(territoryManager, siegeWeaponManager).runTaskTimer(this, 20L, 20L);
         new DisasterTask(disasterManager, territoryManager).runTaskTimer(this, 20L, 20L);
@@ -357,6 +385,8 @@ public class Main extends JavaPlugin {
                 if (hudManager != null) {
                     hudManager.onPlayerJoin(event.getPlayer());
                 }
+                // ✅ OYUNCU ADI GÜNCELLEME: Seviyeye göre renk ve seviye gösterimi
+                // PowerSystemListener zaten PlayerJoinEvent'i dinliyor ve updatePlayerName çağırıyor
             }
             
             @org.bukkit.event.EventHandler
@@ -383,7 +413,9 @@ public class Main extends JavaPlugin {
                     // Özel Casusluk Dürbünü kontrolü
                     if (item != null && item.getType() == org.bukkit.Material.SPYGLASS && 
                         me.mami.stratocraft.manager.ItemManager.isCustomItem(item, "CASUSLUK_DURBUN")) {
-                        org.bukkit.util.RayTraceResult result = player.rayTraceEntities(50);
+                        int maxDistance = configManager != null && configManager.getGameBalanceConfig() != null 
+                            ? configManager.getGameBalanceConfig().getMainRayTraceMaxDistance() : 50;
+                        org.bukkit.util.RayTraceResult result = player.rayTraceEntities(maxDistance);
                         // Null kontrolü: Oyuncu boşluğa bakıyorsa result null olabilir
                         if (result != null) {
                             specialItemManager.handleSpyglass(player, result);
@@ -396,8 +428,12 @@ public class Main extends JavaPlugin {
                     }
                 }
             }
-        }.runTaskTimer(this, 0L, 20L); // Her 20 tickte bir (1 saniye) - ÖNCEKİ: 5 tick (0.25 saniye)
-        new MobRideTask(mobManager).runTaskTimer(this, 5L, 5L); // Performans için 5 tick (0.25 saniye)
+        }.runTaskTimer(this, 0L, 
+            configManager != null && configManager.getGameBalanceConfig() != null 
+                ? configManager.getGameBalanceConfig().getMainRayTraceInterval() : 20L);
+        long mobRideInterval = configManager != null && configManager.getGameBalanceConfig() != null 
+            ? configManager.getGameBalanceConfig().getMobRideTaskInterval() : 5L;
+        new MobRideTask(mobManager).runTaskTimer(this, mobRideInterval, mobRideInterval);
         new DrillTask(territoryManager).runTaskTimer(this, configManager.getDrillInterval(),
                 configManager.getDrillInterval());
         new CropTask(territoryManager).runTaskTimer(this, 40L, 40L); // Her 2 saniye
@@ -758,6 +794,10 @@ public class Main extends JavaPlugin {
     
     public NewBatteryManager getNewBatteryManager() {
         return newBatteryManager;
+    }
+    
+    public me.mami.stratocraft.manager.BatteryParticleManager getBatteryParticleManager() {
+        return batteryParticleManager;
     }
 
     public SiegeManager getSiegeManager() {

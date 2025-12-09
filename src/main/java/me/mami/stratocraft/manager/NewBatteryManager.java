@@ -18,6 +18,7 @@ import java.util.*;
 public class NewBatteryManager {
     
     private final Main plugin;
+    private GameBalanceConfig balanceConfig;
     
     /**
      * Batarya veri sınıfı
@@ -899,9 +900,16 @@ public class NewBatteryManager {
     }
     
     /**
-     * Yakıt çarpanını hesapla
+     * Yakıt çarpanını hesapla (Config'den)
      */
     private double getFuelMultiplier(NewBatteryData data) {
+        if (balanceConfig != null) {
+            if (data.isDarkMatter()) return balanceConfig.getFuelDarkMatterMultiplier();
+            if (data.isRedDiamond()) return balanceConfig.getFuelRedDiamondMultiplier();
+            if (data.getFuel() == Material.DIAMOND) return balanceConfig.getFuelDiamondMultiplier();
+            return balanceConfig.getFuelIronMultiplier();
+        }
+        // Fallback (config yüklenmemişse)
         if (data.isDarkMatter()) return 10.0;
         if (data.isRedDiamond()) return 5.0;
         if (data.getFuel() == Material.DIAMOND) return 2.5;
@@ -909,15 +917,25 @@ public class NewBatteryManager {
     }
     
     /**
-     * RayTrace ile hedef bul
+     * RayTrace ile hedef bul (Config'den mesafe alır)
      */
     private Location getTargetLocation(Player player, int maxDistance) {
-        org.bukkit.util.RayTraceResult result = player.rayTraceBlocks(maxDistance);
+        // Config'den mesafe al (eğer varsa)
+        int actualDistance = maxDistance;
+        if (balanceConfig != null) {
+            if (maxDistance >= balanceConfig.getBatteryRayTraceMaxDistance()) {
+                actualDistance = balanceConfig.getBatteryRayTraceMaxDistance();
+            } else if (maxDistance >= balanceConfig.getBatteryRayTraceShortDistance()) {
+                actualDistance = balanceConfig.getBatteryRayTraceShortDistance();
+            }
+        }
+        
+        org.bukkit.util.RayTraceResult result = player.rayTraceBlocks(actualDistance);
         if (result != null && result.getHitBlock() != null) {
             return result.getHitBlock().getLocation();
         }
         org.bukkit.util.Vector direction = player.getLocation().getDirection().normalize();
-        return player.getLocation().add(direction.multiply(maxDistance));
+        return player.getLocation().add(direction.multiply(actualDistance));
     }
     
     // ========== SALDIRI BATARYA ATEŞLEME METODLARI ==========
@@ -1240,9 +1258,12 @@ public class NewBatteryManager {
      * Yıldırım Fırtınası L3: Sürekli yıldırım (50 hasar)
      */
     private void fireLightningStorm(Player player, Location target, double multiplier, int level) {
-        double damage = 50.0 * multiplier;
-        int radius = (int)(7 * multiplier);
-        int duration = (int)(5 * multiplier);
+        double baseDamage = balanceConfig != null ? balanceConfig.getBatteryLevel3LightningStormDamage() : 50.0;
+        int baseRadius = balanceConfig != null ? balanceConfig.getBatteryLevel3LightningStormRadius() : 7;
+        int baseDuration = balanceConfig != null ? balanceConfig.getBatteryLevel3LightningStormDuration() : 5;
+        double damage = baseDamage * multiplier;
+        int radius = (int)(baseRadius * multiplier);
+        int duration = (int)(baseDuration * multiplier);
         
         new org.bukkit.scheduler.BukkitRunnable() {
             int count = 0;
@@ -1275,10 +1296,11 @@ public class NewBatteryManager {
     }
     
     /**
-     * Buz Çağı L3: Sürekli dondurma (70 hasar)
+     * Buz Çağı L3: Sürekli dondurma (config'den hasar al)
      */
     private void fireIceAge(Player player, Location target, double multiplier, int level) {
-        double damage = 70.0 * multiplier;
+        double baseDamage = balanceConfig != null ? balanceConfig.getBatteryLevel3IceAgeDamage() : 70.0;
+        double damage = baseDamage * multiplier;
         int radius = (int)(15 * multiplier);
         int duration = (int)(10 * multiplier);
         
@@ -1374,10 +1396,11 @@ public class NewBatteryManager {
     }
     
     /**
-     * Tesla Kulesi L4: Otomatik alan yıldırım (100 hasar)
+     * Tesla Kulesi L4: Otomatik alan yıldırım (config'den hasar al)
      */
     private void fireTeslaTower(Player player, Location target, double multiplier, int level) {
-        double damage = 100.0 * multiplier;
+        double baseDamage = balanceConfig != null ? balanceConfig.getBatteryLevel4TeslaTowerDamage() : 100.0;
+        double damage = baseDamage * multiplier;
         int radius = (int)(30 * multiplier);
         int duration = (int)(30 * multiplier);
         
@@ -1528,7 +1551,8 @@ public class NewBatteryManager {
                             org.bukkit.potion.PotionEffectType.POISON, 40, 2, false, false, true));
                         ((org.bukkit.entity.LivingEntity) entity).addPotionEffect(new org.bukkit.potion.PotionEffect(
                             org.bukkit.potion.PotionEffectType.WITHER, 40, 0, false, false, true));
-                        ((org.bukkit.entity.LivingEntity) entity).damage(120.0 * multiplier / duration);
+                        double baseDamage = balanceConfig != null ? balanceConfig.getBatteryLevel4DeathCloudDamage() : 120.0;
+                        ((org.bukkit.entity.LivingEntity) entity).damage(baseDamage * multiplier / duration);
                     }
                 }
                 
@@ -1553,10 +1577,11 @@ public class NewBatteryManager {
     }
     
     /**
-     * Elektrik Kalkanı L4: Koruyucu elektrik alanı (70 hasar)
+     * Elektrik Kalkanı L4: Koruyucu elektrik alanı (config'den hasar al)
      */
     private void fireElectricShield(Player player, Location target, double multiplier, int level) {
-        double damage = 70.0 * multiplier;
+        double baseDamage = balanceConfig != null ? balanceConfig.getBatteryLevel4ElectricShieldDamage() : 70.0;
+        double damage = baseDamage * multiplier;
         int radius = (int)(10 * multiplier);
         int duration = (int)(30 * multiplier);
         
@@ -1597,12 +1622,15 @@ public class NewBatteryManager {
     }
     
     /**
-     * Kıyamet Reaktörü L5: Tüm elementlerin kombinasyonu (300 hasar)
+     * Kıyamet Reaktörü L5: Tüm elementlerin kombinasyonu (config'den hasar al)
      */
     private void fireApocalypseReactor(Player player, Location target, double multiplier, int level) {
-        double damage = 300.0 * multiplier;
-        int radius = (int)(40 * multiplier);
-        int areaSize = (int)(40 * multiplier);
+        double baseDamage = balanceConfig != null ? balanceConfig.getBatteryLevel5ApocalypseReactorDamage() : 300.0;
+        double baseRadius = balanceConfig != null ? balanceConfig.getBatteryLevel5ApocalypseReactorRadius() : 40.0;
+        double baseExplosion = balanceConfig != null ? balanceConfig.getBatteryLevel5ApocalypseReactorExplosion() : 10.0;
+        double damage = baseDamage * multiplier;
+        int radius = (int)(baseRadius * multiplier);
+        int areaSize = (int)(baseRadius * multiplier);
         
         // Meteor yağmuru
         fireMeteorShower(player, target, multiplier, level);
@@ -1617,7 +1645,8 @@ public class NewBatteryManager {
         fireIceAge(player, target, multiplier, level);
         
         // Büyük patlama
-        player.getWorld().createExplosion(target, (float)(10.0 * multiplier), false, false);
+        double explosionPower = baseExplosion * multiplier;
+        player.getWorld().createExplosion(target, (float)explosionPower, false, false);
         
         player.sendMessage("§4§l☠ KIYAMET REAKTÖRÜ AKTİF! ☠");
     }
@@ -1683,9 +1712,12 @@ public class NewBatteryManager {
      * Boss Katili L5: Bosslara özel hasar (Bosslara 300, diğerlerine 100)
      */
     private void fireBossKiller(Player player, Location target, double multiplier, int level) {
-        double bossDamage = 300.0 * multiplier;
-        double normalDamage = 100.0 * multiplier;
-        int radius = (int)(50 * multiplier);
+        double baseBossDamage = balanceConfig != null ? balanceConfig.getBatteryLevel5BossKillerBossDamage() : 300.0;
+        double baseNormalDamage = balanceConfig != null ? balanceConfig.getBatteryLevel5BossKillerNormalDamage() : 100.0;
+        int baseRadius = balanceConfig != null ? balanceConfig.getBatteryLevel5BossKillerRadius() : 50;
+        double bossDamage = baseBossDamage * multiplier;
+        double normalDamage = baseNormalDamage * multiplier;
+        int radius = (int)(baseRadius * multiplier);
         
         me.mami.stratocraft.manager.BossManager bossManager = plugin.getBossManager();
         
@@ -1715,8 +1747,10 @@ public class NewBatteryManager {
      * Alan Yok Edici L5: Büyük alan yıkımı (300 hasar, 50x50 alan) - OPTİMİZE EDİLMİŞ
      */
     private void fireAreaDestroyer(Player player, Location target, double multiplier, int level) {
-        double damage = 300.0 * multiplier;
-        int areaSize = 50; // Sabit 50x50 alan
+        double baseDamage = balanceConfig != null ? balanceConfig.getBatteryLevel5AreaDestroyerDamage() : 300.0;
+        int baseAreaSize = balanceConfig != null ? balanceConfig.getBatteryLevel5AreaDestroyerRadius() : 50;
+        double damage = baseDamage * multiplier;
+        int areaSize = baseAreaSize; // Sabit alan (multiplier uygulanmaz)
         
         // ÖNCE: Tüm entity'lere hasar ver (tek seferde)
         int halfSize = areaSize / 2;
@@ -1727,7 +1761,8 @@ public class NewBatteryManager {
         }
         
         // Merkez patlama efekti
-        player.getWorld().createExplosion(target, 8.0f, false, false);
+        double explosionPower = balanceConfig != null ? balanceConfig.getBatteryLevel5AreaDestroyerExplosion() : 8.0;
+        player.getWorld().createExplosion(target, (float)explosionPower, false, false);
         
         // Blok yok etme (async, tick bazlı) - OPTİMİZE EDİLMİŞ
         new org.bukkit.scheduler.BukkitRunnable() {
@@ -1791,19 +1826,23 @@ public class NewBatteryManager {
      * Dağ Yok Edici L5: Dev alan yıkımı (300 hasar, 50x50 alan, dikey 20 blok) - OPTİMİZE EDİLMİŞ
      */
     private void fireMountainDestroyer(Player player, Location target, double multiplier, int level) {
-        double damage = 300.0 * multiplier;
-        int areaSize = 50; // Sabit 50x50 alan
+        double baseDamage = balanceConfig != null ? balanceConfig.getBatteryLevel5MountainDestroyerDamage() : 300.0;
+        int baseAreaSize = balanceConfig != null ? balanceConfig.getBatteryLevel5MountainDestroyerRadius() : 50;
+        int baseHeight = balanceConfig != null ? balanceConfig.getBatteryLevel5MountainDestroyerHeight() : 15;
+        double damage = baseDamage * multiplier;
+        int areaSize = baseAreaSize; // Sabit alan (multiplier uygulanmaz)
         
         // ÖNCE: Tüm entity'lere hasar ver (tek seferde)
         int halfSize = areaSize / 2;
-        for (org.bukkit.entity.Entity entity : player.getWorld().getNearbyEntities(target, halfSize, 15, halfSize)) {
+        for (org.bukkit.entity.Entity entity : player.getWorld().getNearbyEntities(target, halfSize, baseHeight, halfSize)) {
             if (entity instanceof org.bukkit.entity.LivingEntity && entity != player) {
                 ((org.bukkit.entity.LivingEntity) entity).damage(damage);
             }
         }
         
         // Merkez patlama efekti
-        player.getWorld().createExplosion(target, 10.0f, false, false);
+        double explosionPower = balanceConfig != null ? balanceConfig.getBatteryLevel5MountainDestroyerExplosion() : 10.0;
+        player.getWorld().createExplosion(target, (float)explosionPower, false, false);
         
         // Blok yok etme (async, tick bazlı) - OPTİMİZE EDİLMİŞ
         new org.bukkit.scheduler.BukkitRunnable() {

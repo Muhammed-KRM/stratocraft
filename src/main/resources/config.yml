@@ -515,3 +515,123 @@ clan-power-system:
     combat: 0.6        # Combat Power ağırlığı (eşya + buff)
     progression: 0.4   # Progression Power ağırlığı (ustalık + ritüel)
 
+# Batarya Partikül Sistemi Ayarları
+battery:
+  particles:
+    # Normal partiküller (3. kişi modu ve diğer oyuncular için)
+    normal-radius: 1.5              # Partikül yarıçapı (blok)
+    normal-height: 1.0               # Partikül yüksekliği (blok)
+    normal-count: 8                 # Partikül sayısı
+    normal-rotation-speed: 2.0       # Dönüş hızı (radyan/saniye)
+    
+    # FPS modu partikülleri (1. bakış açısı - görüşü kapatmayacak)
+    fps-radius: 0.3                 # Ufak yarıçap (blok)
+    fps-height: 0.5                  # Bel hizası (blok)
+    fps-count: 2                    # Az sayıda partikül
+    fps-rotation-speed: 1.0          # Yavaş dönüş (radyan/saniye)
+    
+    # Sistem ayarları
+    update-interval: 2               # Güncelleme aralığı (tick)
+    fps-detection-threshold: 0.3     # FPS modu algılama eşiği (göz-vücut mesafesi)
+
+# Oyun Denge Ayarları (Tüm Sistemler)
+game-balance:
+  # Batarya Sistemi
+  battery:
+    # Seviye bazlı temel hasar değerleri
+    damage:
+      level1-base: 5.0        # Seviye 1 batarya temel hasarı
+      level2-base: 10.0       # Seviye 2 batarya temel hasarı
+      level3-base: 50.0       # Seviye 3 batarya temel hasarı
+      level4-base: 100.0      # Seviye 4 batarya temel hasarı
+      level5-base: 300.0      # Seviye 5 batarya temel hasarı
+      
+      # Özel batarya hasarları
+      special:
+        level3-lightning-storm: 50.0    # Yıldırım Fırtınası L3
+        level3-ice-age: 70.0            # Buz Çağı L3
+        level4-tesla-tower: 100.0       # Tesla Kulesi L4
+        level4-death-cloud: 120.0       # Ölüm Bulutu L4
+        level4-electric-shield: 70.0    # Elektrik Kalkanı L4
+        level5-apocalypse-reactor: 300.0 # Kıyamet Reaktörü L5
+        level5-boss-killer: 300.0       # Boss Katili L5
+        level5-area-destroyer: 300.0    # Alan Yok Edici L5
+        level5-mountain-destroyer: 300.0 # Dağ Yok Edici L5
+    
+    # Yakıt çarpanları (batarya gücünü artırır)
+    fuel-multipliers:
+      dark-matter: 10.0       # Karanlık Madde (10x güç)
+      red-diamond: 5.0        # Kızıl Elmas (5x güç)
+      diamond: 2.5            # Elmas (2.5x güç)
+      iron: 1.0               # Demir (1x güç - normal)
+    
+    # RayTrace mesafeleri (hedef bulma)
+    raytrace:
+      max-distance: 50        # Maksimum mesafe (blok)
+      short-distance: 30      # Kısa mesafe (blok)
+    
+    # Seviye bazlı temel radius değerleri
+    radius:
+      level1-base: 5         # Seviye 1 batarya temel yarıçapı
+      level2-base: 5         # Seviye 2 batarya temel yarıçapı
+      level3-base: 7         # Seviye 3 batarya temel yarıçapı
+      level4-base: 10        # Seviye 4 batarya temel yarıçapı
+      level5-base: 40        # Seviye 5 batarya temel yarıçapı
+    
+    # Özel batarya radius, duration ve explosion değerleri
+    special:
+      level3-lightning-storm-radius: 7      # Yıldırım Fırtınası yarıçapı
+      level3-lightning-storm-duration: 5     # Yıldırım Fırtınası süresi (saniye)
+      level5-boss-killer-boss-damage: 300    # Boss Katili boss hasarı
+      level5-boss-killer-normal-damage: 100  # Boss Katili normal hasarı
+      level5-boss-killer-radius: 50         # Boss Katili yarıçapı
+      level5-area-destroyer-radius: 50       # Alan Yok Edici yarıçapı
+      level5-area-destroyer-explosion: 8.0  # Alan Yok Edici patlama gücü
+      level5-mountain-destroyer-radius: 50   # Dağ Yok Edici yarıçapı
+      level5-mountain-destroyer-height: 15   # Dağ Yok Edici yüksekliği
+      level5-mountain-destroyer-explosion: 10.0 # Dağ Yok Edici patlama gücü
+      level5-apocalypse-reactor-radius: 40.0 # Kıyamet Reaktörü yarıçapı
+      level5-apocalypse-reactor-explosion: 10.0 # Kıyamet Reaktörü patlama gücü
+  
+  # Ritüel Sistemi
+  ritual:
+    cooldown: 10000          # Ritüel cooldown (ms) - 10 saniye
+  
+  # Task Intervals (Görev Aralıkları)
+  tasks:
+    mob-ride-interval: 5     # MobRideTask çalışma aralığı (tick) - 0.25 saniye
+  
+  # Training (Antrenman) Sistemi
+  training:
+    # Kullanım eşikleri
+    thresholds:
+      full-power: 5           # Tam güce ulaşma (5 kullanım)
+      mastery-start: 20       # Ustalaşma başlangıcı (20 kullanım)
+      max-power: 30           # Maksimum güç (30 kullanım)
+    
+    # Seviye bazlı başlangıç güçleri (0.0 - 1.0 arası)
+    start-power:
+      level1: 0.2             # Seviye 1: %20 başlangıç gücü
+      level2: 0.4             # Seviye 2: %40 başlangıç gücü
+      level3: 0.6             # Seviye 3: %60 başlangıç gücü
+      level4: 0.7             # Seviye 4: %70 başlangıç gücü
+      level5: 0.8             # Seviye 5: %80 başlangıç gücü
+    
+    # Güç artış değerleri
+    power-increments:
+      use2: 0.2               # 2. kullanımda +%20 güç
+      use3: 0.4               # 3. kullanımda +%40 güç
+      use4: 0.6               # 4. kullanımda +%60 güç
+      max-multiplier: 1.5     # Maksimum güç çarpanı (%150)
+      mastery-increment: 0.5  # Ustalaşma güç artışı (10 kullanımda +%50)
+  
+  # Power System (Güç Sistemi)
+  power-system:
+    slot-update-cooldown: 500        # Slot değişikliği cooldown (ms) - 0.5 saniye
+    player-name-update-interval: 600 # Oyuncu adı güncelleme aralığı (tick) - 30 saniye
+  
+  # Main System (Ana Sistem)
+  main:
+    raytrace-interval: 20           # RayTrace güncelleme aralığı (tick) - 1 saniye
+    raytrace-max-distance: 50       # RayTrace maksimum mesafe (blok)
+
