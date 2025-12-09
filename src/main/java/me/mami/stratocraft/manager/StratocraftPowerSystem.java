@@ -1,26 +1,25 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.model.ClanPowerProfile;
-import me.mami.stratocraft.model.PlayerPowerProfile;
-import me.mami.stratocraft.model.Structure;
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
-
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.ClanPowerProfile;
+import me.mami.stratocraft.model.PlayerPowerProfile;
+import me.mami.stratocraft.model.Structure;
 import me.mami.stratocraft.util.LRUCache;
 
 /**
@@ -451,59 +450,198 @@ public class StratocraftPowerSystem {
     }
     
     /**
-     * Eşya gücü hesapla (silah + zırh)
+     * Eşya gücü hesapla (silah + zırh + özel itemler + materyaller)
      */
     public double calculateGearPower(Player player) {
-        return calculateWeaponPower(player) + calculateArmorPower(player);
+        return calculateWeaponPower(player) + 
+               calculateArmorPower(player) + 
+               calculateSpecialItemPower(player) +
+               calculateMaterialPower(player);
     }
     
     /**
-     * Silah gücü hesapla
+     * Silah gücü hesapla (envanterdeki tüm seviyeli silahların toplamı)
+     * Aynı item'dan birden fazla varsa, hepsinin gücü toplanır (stack boyutuna göre)
      */
     private double calculateWeaponPower(Player player) {
-        ItemStack weapon = player.getInventory().getItemInMainHand();
-        if (weapon == null) return 0.0;
-        
-        int level = ItemManager.getWeaponLevel(weapon);
-        if (level > 0) {
-            return powerConfig.getWeaponPower(level);
-        }
-        
-        return 0.0;
-    }
-    
-    /**
-     * Zırh gücü hesapla (tüm parçalar + tam set bonusu)
-     */
-    private double calculateArmorPower(Player player) {
         double totalPower = 0.0;
-        int equippedPieces = 0;
         
-        ItemStack[] armor = player.getInventory().getArmorContents();
-        for (ItemStack piece : armor) {
-            if (piece != null) {
-                int level = ItemManager.getArmorLevel(piece);
+        // Envanterdeki tüm itemleri kontrol et (tüm seviyeli silahların gücünü topla)
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null || item.getType() == org.bukkit.Material.AIR) continue;
+            
+            // Seviyeli silah mı?
+            if (ItemManager.isLeveledWeapon(item)) {
+                int level = ItemManager.getWeaponLevel(item);
                 if (level > 0) {
-                    totalPower += powerConfig.getArmorPower(level);
-                    equippedPieces++;
+                    double power = powerConfig.getWeaponPower(level);
+                    // Stack boyutuna göre çarp (eğer birden fazla varsa)
+                    totalPower += power * item.getAmount();
                 }
             }
-        }
-        
-        // Tam set bonusu (4 parça)
-        if (equippedPieces == 4) {
-            totalPower *= powerConfig.getArmorSetBonus();
         }
         
         return totalPower;
     }
     
     /**
-     * Özel item gücü (gelecekte eklenebilir)
+     * Zırh gücü hesapla (takılı zırh + envanterdeki tüm seviyeli zırhlar)
+     * Aynı zırh parçasından birden fazla varsa, hepsinin gücü toplanır (stack boyutuna göre)
+     */
+    private double calculateArmorPower(Player player) {
+        double totalPower = 0.0;
+        double equippedPower = 0.0;
+        int equippedPieces = 0;
+        
+        // Önce takılı zırhları kontrol et
+        ItemStack[] armor = player.getInventory().getArmorContents();
+        for (ItemStack piece : armor) {
+            if (piece != null) {
+                int level = ItemManager.getArmorLevel(piece);
+                if (level > 0) {
+                    double power = powerConfig.getArmorPower(level);
+                    // Takılı zırh için stack boyutuna göre çarp
+                    totalPower += power * piece.getAmount();
+                    equippedPower += power * piece.getAmount();
+                    equippedPieces++;
+                }
+            }
+        }
+        
+        // Envanterdeki tüm seviyeli zırhları kontrol et (takılı olmayanlar)
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null || item.getType() == org.bukkit.Material.AIR) continue;
+            
+            // Seviyeli zırh mı?
+            if (ItemManager.isLeveledArmor(item)) {
+                int level = ItemManager.getArmorLevel(item);
+                if (level > 0) {
+                    double power = powerConfig.getArmorPower(level);
+                    // Stack boyutuna göre çarp (eğer birden fazla varsa)
+                    totalPower += power * item.getAmount();
+                }
+            }
+        }
+        
+        // Tam set bonusu (4 parça takılıysa)
+        if (equippedPieces == 4 && equippedPower > 0) {
+            // Sadece takılı zırhların gücüne bonus uygula
+            double bonus = equippedPower * (powerConfig.getArmorSetBonus() - 1.0); // Sadece bonus kısmı
+            totalPower += bonus;
+        }
+        
+        return totalPower;
+    }
+    
+    /**
+     * Özel item gücü (envanterdeki tüm özel itemler)
+     * Aynı özel item'dan birden fazla varsa, hepsinin gücü toplanır (stack boyutuna göre)
      */
     private double calculateSpecialItemPower(Player player) {
-        // TODO: SpecialItemManager entegrasyonu
-        return 0.0;
+        if (specialItemManager == null) return 0.0;
+        
+        double totalPower = 0.0;
+        
+        // Envanterdeki tüm itemleri kontrol et
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null || item.getType() == org.bukkit.Material.AIR) continue;
+            
+            // Özel item kontrolü (SpecialItemManager'dan)
+            if (item.hasItemMeta()) {
+                org.bukkit.NamespacedKey specialItemKey = new org.bukkit.NamespacedKey(
+                    plugin, "special_item_id");
+                String specialItemId = item.getItemMeta().getPersistentDataContainer()
+                    .get(specialItemKey, org.bukkit.persistence.PersistentDataType.STRING);
+                
+                if (specialItemId != null) {
+                    // Özel item gücü (config'den tier'a göre)
+                    // Özel itemlerin tier'ını al (weapon_level veya armor_level key'inden)
+                    org.bukkit.NamespacedKey tierKey = new org.bukkit.NamespacedKey(
+                        plugin, "weapon_level");
+                    Integer tier = item.getItemMeta().getPersistentDataContainer()
+                        .get(tierKey, org.bukkit.persistence.PersistentDataType.INTEGER);
+                    
+                    if (tier == null) {
+                        // armor_level'dan dene
+                        tierKey = new org.bukkit.NamespacedKey(plugin, "armor_level");
+                        tier = item.getItemMeta().getPersistentDataContainer()
+                            .get(tierKey, org.bukkit.persistence.PersistentDataType.INTEGER);
+                    }
+                    
+                    if (tier != null && tier > 0) {
+                        // Config'den özel item gücü al (eğer varsa)
+                        // Şimdilik basit: Her tier için 50 puan
+                        // Stack boyutuna göre çarp (eğer birden fazla varsa)
+                        totalPower += (tier * 50.0) * item.getAmount();
+                    }
+                }
+            }
+        }
+        
+        return totalPower;
+    }
+    
+    /**
+     * Materyal gücü hesapla (envanterdeki değerli materyaller)
+     * Elmas, Karanlık Madde, Obsidyen, Kızıl Elmas, Titanyum vb.
+     */
+    private double calculateMaterialPower(Player player) {
+        double totalPower = 0.0;
+        
+        // Envanterdeki tüm itemleri kontrol et
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null || item.getType() == org.bukkit.Material.AIR) continue;
+            
+            // Seviyeli silah/zırh/özel item değilse materyal kontrolü yap
+            if (!ItemManager.isLeveledWeapon(item) && 
+                !ItemManager.isLeveledArmor(item) && 
+                !isSpecialItem(item)) {
+                
+                // Önce özel item kontrolü yap (Karanlık Madde, Kızıl Elmas, Titanyum)
+                // ItemManager.create() metodu "custom_id" key'ini kullanıyor
+                if (item.hasItemMeta()) {
+                    org.bukkit.NamespacedKey customItemKey = new org.bukkit.NamespacedKey(
+                        plugin, "custom_id");
+                    String customItemId = item.getItemMeta().getPersistentDataContainer()
+                        .get(customItemKey, org.bukkit.persistence.PersistentDataType.STRING);
+                    
+                    if (customItemId != null) {
+                        // Özel item gücü (config'den)
+                        double specialMaterialPower = powerConfig.getSpecialMaterialPower(customItemId);
+                        if (specialMaterialPower > 0) {
+                            // Stack boyutuna göre çarp
+                            totalPower += specialMaterialPower * item.getAmount();
+                            continue; // Özel item bulundu, normal materyal kontrolüne geçme
+                        }
+                    }
+                }
+                
+                // Normal materyal gücü (config'den)
+                double materialPower = powerConfig.getMaterialPower(item.getType());
+                if (materialPower > 0) {
+                    // Stack boyutuna göre çarp
+                    totalPower += materialPower * item.getAmount();
+                }
+            }
+        }
+        
+        return totalPower;
+    }
+    
+    /**
+     * Özel item kontrolü (SpecialItemManager'dan)
+     */
+    private boolean isSpecialItem(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        
+        // SpecialItemManager'dan kontrol et
+        if (specialItemManager != null) {
+            org.bukkit.NamespacedKey specialItemKey = new org.bukkit.NamespacedKey(
+                plugin, "special_item_id");
+            return item.getItemMeta().getPersistentDataContainer()
+                .has(specialItemKey, org.bukkit.persistence.PersistentDataType.STRING);
+        }
+        return false;
     }
     
     /**
@@ -687,9 +825,10 @@ public class StratocraftPowerSystem {
         // 1. Üye güçleri toplamı (batch processing)
         double memberPowerSum = 0.0;
         
-        // Online üyeleri topla
+        // Online üyeleri topla (optimizasyon: keySet'i bir kez al)
+        Set<UUID> memberIds = clan.getMembers().keySet();
         List<Player> onlineMembers = new ArrayList<>();
-        for (UUID memberId : clan.getMembers()) {
+        for (UUID memberId : memberIds) {
             Player member = getCachedPlayer(memberId);
             if (member != null && member.isOnline()) {
                 onlineMembers.add(member);
@@ -706,8 +845,8 @@ public class StratocraftPowerSystem {
                 .sum();
         }
         
-        // Offline üyeler (cache'den)
-        for (UUID memberId : clan.getMembers()) {
+        // Offline üyeler (cache'den) - aynı keySet'i kullan
+        for (UUID memberId : memberIds) {
             if (getCachedPlayer(memberId) == null) {
                 PlayerPowerProfile cachedProfile = offlinePlayerCache.get(memberId);
                 if (cachedProfile != null) {

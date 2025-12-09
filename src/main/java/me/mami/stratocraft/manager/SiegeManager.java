@@ -1,6 +1,8 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.model.Clan;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -8,16 +10,29 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import java.util.HashMap;
-import java.util.Map;
+
+import me.mami.stratocraft.model.Clan;
 
 public class SiegeManager {
     // Savunan Klan ID -> Saldıran Klan ID
     private final Map<Clan, Clan> activeSieges = new HashMap<>();
     private BuffManager buffManager;
+    private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
 
     public void setBuffManager(BuffManager bm) {
         this.buffManager = bm;
+    }
+    
+    public void setBalanceConfig(me.mami.stratocraft.manager.GameBalanceConfig config) {
+        this.balanceConfig = config;
+    }
+    
+    private double getLootPercentage() {
+        return balanceConfig != null ? balanceConfig.getSiegeLootPercentage() : 0.5;
+    }
+    
+    private double getChestLootPercentage() {
+        return balanceConfig != null ? balanceConfig.getSiegeChestLootPercentage() : 0.5;
     }
 
     public void startSiege(Clan attacker, Clan defender, Player attackerPlayer) {
@@ -44,8 +59,9 @@ public class SiegeManager {
         activeSieges.remove(loser);
         Bukkit.broadcastMessage("§2§lZAFER! §a" + winner.getName() + " klanı, " + loser.getName() + " klanını fethetti!");
         
-        // Ödül mantığı
-        double loot = loser.getBalance() * 0.5;
+        // Ödül mantığı (config'den)
+        double lootPercentage = getLootPercentage();
+        double loot = loser.getBalance() * lootPercentage;
         winner.deposit(loot);
         loser.withdraw(loot);
         
@@ -77,8 +93,9 @@ public class SiegeManager {
         // Sandık itemlerinin yarısını al
         takeHalfChestItems(surrenderingClan, attacker);
         
-        // Kazanan klan ödülü (para)
-        double loot = surrenderingClan.getBalance() * 0.5;
+        // Kazanan klan ödülü (para) (config'den)
+        double lootPercentage = getLootPercentage();
+        double loot = surrenderingClan.getBalance() * lootPercentage;
         attacker.deposit(loot);
         surrenderingClan.withdraw(loot);
         
@@ -98,7 +115,8 @@ public class SiegeManager {
         Location center = surrenderingClan.getTerritory().getCenter();
         if (center == null) return;
         
-        int searchRadius = Math.min(surrenderingClan.getTerritory().getRadius(), 100);
+        int maxSearchRadius = balanceConfig != null ? balanceConfig.getSiegeMaxSearchRadius() : 100;
+        int searchRadius = Math.min(surrenderingClan.getTerritory().getRadius(), maxSearchRadius);
         
         // Chunk bazlı tarama listesi oluştur (async thread'de)
         me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
@@ -131,7 +149,6 @@ public class SiegeManager {
         private final Location center;
         private int currentChunkIndex = 0;
         private final java.util.List<Location> foundChests = new java.util.ArrayList<>();
-        private static final int CHUNKS_PER_TICK = 5; // Her tick'te 5 chunk tara
         
         public ChestScannerAndLootTask(java.util.List<org.bukkit.Chunk> chunks, Clan attacker, Location center, int radius) {
             this.chunksToScan = chunks;
@@ -144,8 +161,9 @@ public class SiegeManager {
         public void run() {
             int chunksProcessed = 0;
             
-            // Her tick'te sadece 5 chunk tara (sunucuyu yormaz)
-            while (currentChunkIndex < chunksToScan.size() && chunksProcessed < CHUNKS_PER_TICK) {
+            // Her tick'te config'den belirlenen kadar chunk tara (sunucuyu yormaz)
+            int chunksPerTick = balanceConfig != null ? balanceConfig.getSiegeChunksPerTick() : 5;
+            while (currentChunkIndex < chunksToScan.size() && chunksProcessed < chunksPerTick) {
                 org.bukkit.Chunk chunk = chunksToScan.get(currentChunkIndex);
                 
                 if (chunk.isLoaded()) {
@@ -182,7 +200,6 @@ public class SiegeManager {
         private final java.util.List<Location> chestLocations;
         private final Clan attacker;
         private int currentIndex;
-        private static final int CHESTS_PER_TICK = 2; // Her tick'te 2 sandık işle
         
         public ChestLootTask(java.util.List<Location> chestLocations, Clan attacker, int startIndex) {
             this.chestLocations = chestLocations;
@@ -194,7 +211,8 @@ public class SiegeManager {
         public void run() {
             int processed = 0;
             
-            while (currentIndex < chestLocations.size() && processed < CHESTS_PER_TICK) {
+            int chestsPerTick = balanceConfig != null ? balanceConfig.getSiegeChestsPerTick() : 2;
+            while (currentIndex < chestLocations.size() && processed < chestsPerTick) {
                 Location chestLoc = chestLocations.get(currentIndex);
                 Block block = chestLoc.getBlock();
                 
@@ -203,11 +221,12 @@ public class SiegeManager {
                         Chest chest = (Chest) block.getState();
                         org.bukkit.inventory.Inventory inv = chest.getInventory();
                         
-                        // Her item'ın yarısını al
+                        // Her item'ın yüzdesini al (config'den)
+                        double chestLootPercentage = getChestLootPercentage();
                         for (int i = 0; i < inv.getSize(); i++) {
                             ItemStack item = inv.getItem(i);
                             if (item != null && item.getType() != Material.AIR) {
-                                int halfAmount = item.getAmount() / 2;
+                                int halfAmount = (int) Math.ceil(item.getAmount() * chestLootPercentage);
                                 if (halfAmount > 0) {
                                     ItemStack halfItem = item.clone();
                                     halfItem.setAmount(halfAmount);

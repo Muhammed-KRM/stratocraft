@@ -15,12 +15,15 @@ public class ResearchManager {
             if (ItemManager.isCustomItem(item, fullId)) return true;
         }
 
-        // 2. Yakındaki (10 blok) Araştırma Masasında (Kürsü) var mı?
+        // 2. Yakındaki Araştırma Masasında (Kürsü) var mı? - Config'den mesafe
+        me.mami.stratocraft.manager.GameBalanceConfig balanceConfig = me.mami.stratocraft.Main.getInstance().getConfigManager() != null ? 
+            me.mami.stratocraft.Main.getInstance().getConfigManager().getGameBalanceConfig() : null;
+        int researchDistance = balanceConfig != null ? balanceConfig.getResearchTableDistance() : 10;
         // Bu, WorldEdit kontrolü kadar önemlidir.
         for (org.bukkit.block.BlockState state : player.getLocation().getChunk().getTileEntities()) {
             if (state instanceof Lectern) {
                 Lectern lectern = (Lectern) state;
-                if (lectern.getLocation().distance(player.getLocation()) <= 10) {
+                if (lectern.getLocation().distance(player.getLocation()) <= researchDistance) {
                     ItemStack book = lectern.getInventory().getItem(0);
                     if (book != null && ItemManager.isCustomItem(book, fullId)) {
                         return true;

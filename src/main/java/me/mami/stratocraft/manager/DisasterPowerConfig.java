@@ -183,5 +183,8 @@ public class DisasterPowerConfig {
     
     public double getLegacyPlayerMultiplier() { return legacyPlayerMultiplier; }
     public double getLegacyClanMultiplier() { return legacyClanMultiplier; }
+    
+    // Buff çarpanı getter (PlayerPowerCalculator için)
+    public double getDamageBoostMultiplier() { return damageBoostMultiplier; }
 }
 

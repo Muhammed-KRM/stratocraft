@@ -1,18 +1,22 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.model.Disaster;
+import java.util.Collection;
+import java.util.Random;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
-import org.bukkit.entity.*;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.*;
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.Disaster;
 
 /**
  * Gelişmiş Felaket Yönetim Sistemi
@@ -309,10 +313,10 @@ public class DisasterManager {
             double baseHealth, double baseDamage) {
         
         // Oyuncu sayısı
-        int playerCount = Bukkit.getOnlinePlayers().size();
+        int playerCount = org.bukkit.Bukkit.getOnlinePlayers().size();
         
         // Ortalama klan seviyesi
-        Collection<Clan> clans = clanManager.getAllClans();
+        java.util.Collection<Clan> clans = clanManager.getAllClans();
         double avgClanLevel = 0;
         if (!clans.isEmpty()) {
             int totalLevel = 0;
@@ -376,8 +380,8 @@ public class DisasterManager {
      * Felaket başlat
      */
     public void triggerDisaster(Disaster.Type type, int level) {
-        World world = Bukkit.getWorlds().get(0);
-        Location centerLoc = null;
+        World world = org.bukkit.Bukkit.getWorlds().get(0);
+        org.bukkit.Location centerLoc = null;
         if (difficultyManager != null) {
             centerLoc = difficultyManager.getCenterLocation();
         }
@@ -394,8 +398,8 @@ public class DisasterManager {
         
         // Merkezden en uzak noktayı bul (config'den okunan mesafe)
         int distance = (int) spawnDistance;
-        int x = centerLoc.getBlockX() + (new Random().nextBoolean() ? distance : -distance);
-        int z = centerLoc.getBlockZ() + (new Random().nextBoolean() ? distance : -distance);
+        int x = centerLoc.getBlockX() + (new java.util.Random().nextBoolean() ? distance : -distance);
+        int z = centerLoc.getBlockZ() + (new java.util.Random().nextBoolean() ? distance : -distance);
         
         // Chunk'ı force load et (felaket hareket edebilsin diye)
         int chunkX = x >> 4;
@@ -404,7 +408,7 @@ public class DisasterManager {
         
         // Chunk yüklendikten sonra spawn yap
         int y = world.getHighestBlockYAt(x, z);
-        Location spawnLoc = new Location(world, x, y + 1, z);
+        org.bukkit.Location spawnLoc = new org.bukkit.Location(world, x, y + 1, z);
         
         triggerDisaster(type, level, spawnLoc);
     }
@@ -412,9 +416,9 @@ public class DisasterManager {
     /**
      * Felaket başlat (konum belirtilmiş)
      */
-    public void triggerDisaster(Disaster.Type type, int level, Location spawnLoc) {
+    public void triggerDisaster(Disaster.Type type, int level, org.bukkit.Location spawnLoc) {
         if (activeDisaster != null && !activeDisaster.isDead()) {
-            Bukkit.broadcastMessage("§cZaten aktif bir felaket var!");
+            org.bukkit.Bukkit.broadcastMessage("§cZaten aktif bir felaket var!");
             return;
         }
         
@@ -436,10 +440,15 @@ public class DisasterManager {
         // Canlı felaketler için entity oluştur
         if (category == Disaster.Category.CREATURE) {
             entity = spawnCreatureDisaster(type, spawnLoc, power);
+            if (entity == null) {
+                org.bukkit.Bukkit.broadcastMessage("§c§l⚠ FELAKET SPAWN HATASI! ⚠");
+                org.bukkit.Bukkit.broadcastMessage("§7Felaket tipi için entity oluşturulamadı: §e" + type.name());
+                return;
+            }
         }
         
         // Felaket oluştur
-        Location targetLoc = null;
+        org.bukkit.Location targetLoc = null;
         if (difficultyManager != null) {
             targetLoc = difficultyManager.getCenterLocation();
         }
@@ -472,14 +481,17 @@ public class DisasterManager {
             countdownUpdateTask = null;
         }
         
-        // BossBar oluştur
-        createBossBar(activeDisaster);
-        
-        // Broadcast
+        // Broadcast (BossBar'dan önce, herkes görsün)
         String disasterName = getDisasterDisplayName(type);
-        Bukkit.broadcastMessage("§c§l⚠ FELAKET BAŞLADI! ⚠");
-        Bukkit.broadcastMessage("§4§l" + disasterName + " §7(Seviye " + level + ")");
-        Bukkit.broadcastMessage("§7Güç Çarpanı: §e" + String.format("%.2f", power.multiplier) + "x");
+        org.bukkit.Bukkit.broadcastMessage("§c§l⚠ FELAKET BAŞLADI! ⚠");
+        org.bukkit.Bukkit.broadcastMessage("§4§l" + disasterName + " §7(Seviye " + level + ")");
+        org.bukkit.Bukkit.broadcastMessage("§7Güç Çarpanı: §e" + String.format("%.2f", power.multiplier) + "x");
+        if (entity != null) {
+            org.bukkit.Bukkit.broadcastMessage("§7Konum: §e" + spawnLoc.getBlockX() + ", " + spawnLoc.getBlockY() + ", " + spawnLoc.getBlockZ());
+        }
+        
+        // BossBar oluştur (canlı felaketler için)
+        createBossBar(activeDisaster);
         
         lastDisasterTime = System.currentTimeMillis();
     }
@@ -487,7 +499,7 @@ public class DisasterManager {
     /**
      * Canlı felaket spawn et (Config kullanır)
      */
-    private Entity spawnCreatureDisaster(Disaster.Type type, Location loc, DisasterPower power) {
+    private org.bukkit.entity.Entity spawnCreatureDisaster(Disaster.Type type, org.bukkit.Location loc, DisasterPower power) {
         World world = loc.getWorld();
         
         // Config'den ayarları al
@@ -500,7 +512,7 @@ public class DisasterManager {
             config = new me.mami.stratocraft.model.DisasterConfig();
         }
         
-        Entity entity = null;
+        org.bukkit.entity.Entity entity = null;
         
         switch (type) {
             case TITAN_GOLEM:
@@ -559,17 +571,36 @@ public class DisasterManager {
         }
         
         // Canlı felaketler için BossBar oluştur
-        if (disaster.getCategory() == Disaster.Category.CREATURE && disaster.getEntity() != null) {
+        if (disaster != null && disaster.getCategory() == Disaster.Category.CREATURE) {
+            // Entity kontrolü (null olabilir, ama BossBar yine de gösterilmeli)
             String disasterName = getDisasterDisplayName(disaster.getType());
+            double health = disaster.getCurrentHealth();
+            double maxHealth = disaster.getMaxHealth();
+            double healthPercent = maxHealth > 0 ? Math.max(0.0, Math.min(1.0, health / maxHealth)) : 1.0;
+            String timeLeft = formatTime(disaster.getRemainingTime());
+            
             disasterBossBar = Bukkit.createBossBar(
-                "§c§l" + disasterName,
+                "§c§l" + disasterName + " §7| §c" + String.format("%.0f/%.0f", health, maxHealth) + " §7| §e⏰ " + timeLeft,
                 BarColor.RED,
                 BarStyle.SOLID
             );
+            disasterBossBar.setProgress(healthPercent);
             
             // Tüm oyunculara ekle
             for (Player player : Bukkit.getOnlinePlayers()) {
                 disasterBossBar.addPlayer(player);
+            }
+            
+            plugin.getLogger().info("BossBar oluşturuldu: " + disasterName + " (Can: " + health + "/" + maxHealth + ")");
+        } else if (disaster != null && disaster.getCategory() == Disaster.Category.NATURAL) {
+            // Doğa olayları için ActionBar kullan (BossBar yok)
+            String disasterName = getDisasterDisplayName(disaster.getType());
+            String timeLeft = formatTime(disaster.getRemainingTime());
+            String actionBarText = "§c§l" + disasterName + " §7| §e⏰ " + timeLeft;
+            
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                    net.md_5.bungee.api.chat.TextComponent.fromLegacyText(actionBarText));
             }
         }
         
@@ -783,16 +814,16 @@ public class DisasterManager {
         // Seviye 1 kontrolü (her gün)
         if (shouldSpawnDisaster(1)) {
             Disaster.Type[] level1Types = {Disaster.Type.SOLAR_FLARE};
-            Disaster.Type randomType = level1Types[new Random().nextInt(level1Types.length)];
-            triggerDisaster(randomType, 1);
+            Disaster.Type randomType = level1Types[new java.util.Random().nextInt(level1Types.length)];
+            triggerDisaster(randomType, (int) 1);
             return;
         }
         
         // Seviye 2 kontrolü (3 günde bir)
         if (shouldSpawnDisaster(2)) {
             Disaster.Type[] level2Types = {Disaster.Type.ABYSSAL_WORM, Disaster.Type.EARTHQUAKE, Disaster.Type.METEOR_SHOWER};
-            Disaster.Type randomType = level2Types[new Random().nextInt(level2Types.length)];
-            triggerDisaster(randomType, 2);
+            Disaster.Type randomType = level2Types[new java.util.Random().nextInt(level2Types.length)];
+            triggerDisaster(randomType, (int) 2);
             return;
         }
         
@@ -800,8 +831,8 @@ public class DisasterManager {
         if (shouldSpawnDisaster(3)) {
             Disaster.Type[] level3Types = {Disaster.Type.TITAN_GOLEM, Disaster.Type.CHAOS_DRAGON, 
                                           Disaster.Type.VOID_TITAN, Disaster.Type.VOLCANIC_ERUPTION};
-            Disaster.Type randomType = level3Types[new Random().nextInt(level3Types.length)];
-            triggerDisaster(randomType, 3);
+            Disaster.Type randomType = level3Types[new java.util.Random().nextInt(level3Types.length)];
+            triggerDisaster(randomType, (int) 3);
             return;
         }
         
@@ -866,7 +897,7 @@ public class DisasterManager {
         lastMiniDisasterTime = System.currentTimeMillis();
         miniDisasterCountToday++;
         
-        Bukkit.broadcastMessage("§6§l⚡ MİNİ FELAKET: " + getDisasterDisplayName(randomType) + " ⚡");
+        org.bukkit.Bukkit.broadcastMessage("§6§l⚡ MİNİ FELAKET: " + getDisasterDisplayName(randomType) + " ⚡");
     }
     
     /**
@@ -1130,12 +1161,12 @@ public class DisasterManager {
     // Eski metodlar (geriye dönük uyumluluk)
     public void triggerDisaster(Disaster.Type type) {
         int level = Disaster.getDefaultLevel(type);
-        triggerDisaster(type, level);
+        triggerDisaster(type, (int) level);
     }
     
-    public void triggerDisaster(Disaster.Type type, Location spawnLoc) {
+    public void triggerDisaster(Disaster.Type type, org.bukkit.Location spawnLoc) {
         int level = Disaster.getDefaultLevel(type);
-        triggerDisaster(type, level, spawnLoc);
+        triggerDisaster(type, (int) level, spawnLoc);
     }
     
     /**
@@ -1178,7 +1209,7 @@ public class DisasterManager {
     
     public void dropRewards(Disaster disaster) {
         if (disaster == null || disaster.getEntity() == null) return;
-        Location loc = disaster.getEntity().getLocation();
+        org.bukkit.Location loc = disaster.getEntity().getLocation();
         
         // Enkaz yığını oluştur
         createWreckageStructure(loc);
@@ -1223,16 +1254,16 @@ public class DisasterManager {
             "Felaket yok edildi! Ödüller düştü!");
     }
     
-    private void createWreckageStructure(Location center) {
+    private void createWreckageStructure(org.bukkit.Location center) {
         org.bukkit.Material wreckageMat = org.bukkit.Material.ANCIENT_DEBRIS;
         int surfaceY = center.getWorld().getHighestBlockYAt(center);
-        Location surfaceLoc = center.clone();
+        org.bukkit.Location surfaceLoc = center.clone();
         surfaceLoc.setY(surfaceY);
         
         for (int x = -2; x <= 2; x++) {
             for (int z = -2; z <= 2; z++) {
                 for (int y = 0; y < 3; y++) {
-                    Location blockLoc = surfaceLoc.clone().add(x, y, z);
+                    org.bukkit.Location blockLoc = surfaceLoc.clone().add(x, y, z);
                     if (blockLoc.getBlock().getType() == org.bukkit.Material.AIR ||
                             blockLoc.getBlock().getType() == org.bukkit.Material.GRASS_BLOCK ||
                             blockLoc.getBlock().getType() == org.bukkit.Material.TALL_GRASS) {
@@ -1251,32 +1282,32 @@ public class DisasterManager {
         }
     }
     
-    public void forceWormSurface(Location seismicLocation) {
+    public void forceWormSurface(org.bukkit.Location seismicLocation) {
         Disaster disaster = getActiveDisaster();
         if (disaster == null || disaster.getType() != Disaster.Type.ABYSSAL_WORM) return;
         
-        Entity worm = disaster.getEntity();
+        org.bukkit.entity.Entity worm = disaster.getEntity();
         if (worm == null) return;
         
-        Location surfaceLoc = seismicLocation.clone();
+        org.bukkit.Location surfaceLoc = seismicLocation.clone();
         surfaceLoc.setY(seismicLocation.getWorld().getHighestBlockYAt(seismicLocation) + 1);
         worm.teleport(surfaceLoc);
-        Bukkit.broadcastMessage("§6§lSİSMİK ÇEKİÇ! Hiçlik Solucanı yüzeye çıkmaya zorlandı!");
+        org.bukkit.Bukkit.broadcastMessage("§6§lSİSMİK ÇEKİÇ! Hiçlik Solucanı yüzeye çıkmaya zorlandı!");
     }
     
     /**
      * En yakın klan kristalini bul
      */
-    public Location findNearestCrystal(Location from) {
+    public org.bukkit.Location findNearestCrystal(org.bukkit.Location from) {
         if (from == null || clanManager == null) return null;
         
-        Location nearest = null;
+        org.bukkit.Location nearest = null;
         double minDistance = Double.MAX_VALUE;
         
         for (Clan clan : clanManager.getAllClans()) {
             if (clan == null || !clan.hasCrystal()) continue;
             
-            Location crystalLoc = clan.getCrystalLocation();
+            org.bukkit.Location crystalLoc = clan.getCrystalLocation();
             if (crystalLoc == null) continue;
             
             // Aynı dünyada mı kontrol et
@@ -1298,10 +1329,10 @@ public class DisasterManager {
     public void setDisasterTarget(Disaster disaster) {
         if (disaster == null || disaster.getCategory() != Disaster.Category.CREATURE) return;
         
-        Entity entity = disaster.getEntity();
+        org.bukkit.entity.Entity entity = disaster.getEntity();
         if (entity == null && disaster.getGroupEntities().isEmpty()) return;
         
-        Location currentLoc = null;
+        org.bukkit.Location currentLoc = null;
         if (entity != null) {
             currentLoc = entity.getLocation();
         } else if (!disaster.getGroupEntities().isEmpty()) {
@@ -1311,7 +1342,7 @@ public class DisasterManager {
         if (currentLoc == null) return;
         
         // Önce en yakın kristali bul
-        Location nearestCrystal = findNearestCrystal(currentLoc);
+        org.bukkit.Location nearestCrystal = findNearestCrystal(currentLoc);
         if (nearestCrystal != null) {
             disaster.setTargetCrystal(nearestCrystal);
             disaster.setTarget(nearestCrystal);
@@ -1319,7 +1350,7 @@ public class DisasterManager {
         }
         
         // Kristal yoksa merkeze git
-        Location centerLoc = null;
+        org.bukkit.Location centerLoc = null;
         if (difficultyManager != null) {
             centerLoc = difficultyManager.getCenterLocation();
         }
@@ -1334,14 +1365,14 @@ public class DisasterManager {
     /**
      * Grup felaket spawn (30 adet orta güçte) - Config kullanır
      */
-    public void spawnGroupDisaster(org.bukkit.entity.EntityType entityType, int count, Location spawnLoc) {
+    public void spawnGroupDisaster(org.bukkit.entity.EntityType entityType, int count, org.bukkit.Location spawnLoc) {
         if (activeDisaster != null && !activeDisaster.isDead()) {
-            Bukkit.broadcastMessage("§cZaten aktif bir felaket var!");
+            org.bukkit.Bukkit.broadcastMessage("§cZaten aktif bir felaket var!");
             return;
         }
         
         World world = spawnLoc.getWorld();
-        java.util.List<Entity> entities = new java.util.ArrayList<>();
+        java.util.List<org.bukkit.entity.Entity> entities = new java.util.ArrayList<>();
         
         // EntityType'a göre felaket tipi belirle
         Disaster.Type disasterType = getDisasterTypeFromEntityType(entityType, true);
@@ -1362,14 +1393,14 @@ public class DisasterManager {
         // Spawn
         for (int i = 0; i < count; i++) {
             // Config'den spawn radius ile rastgele konum
-            Location entityLoc = spawnLoc.clone().add(
+            org.bukkit.Location entityLoc = spawnLoc.clone().add(
                 (random.nextDouble() - 0.5) * spawnRadius * 2,
                 0,
                 (random.nextDouble() - 0.5) * spawnRadius * 2
             );
             entityLoc.setY(world.getHighestBlockYAt(entityLoc) + 1);
             
-            Entity entity = world.spawnEntity(entityLoc, entityType);
+            org.bukkit.entity.Entity entity = world.spawnEntity(entityLoc, entityType);
             
             // DisasterUtils ile güçlendirme
             me.mami.stratocraft.util.DisasterUtils.strengthenEntity(entity, config, power.multiplier);
@@ -1378,7 +1409,7 @@ public class DisasterManager {
         }
         
         // Disaster oluştur
-        Location targetLoc = findNearestCrystal(spawnLoc);
+        org.bukkit.Location targetLoc = findNearestCrystal(spawnLoc);
         if (targetLoc == null) {
             if (difficultyManager != null) {
                 targetLoc = difficultyManager.getCenterLocation();
@@ -1407,8 +1438,8 @@ public class DisasterManager {
         activeDisaster = disaster;
         setDisasterTarget(disaster);
         
-        Bukkit.broadcastMessage("§c§l⚠ GRUP FELAKET BAŞLADI! ⚠");
-        Bukkit.broadcastMessage("§4§l" + count + " adet güçlendirilmiş canavar spawn oldu!");
+        org.bukkit.Bukkit.broadcastMessage("§c§l⚠ GRUP FELAKET BAŞLADI! ⚠");
+        org.bukkit.Bukkit.broadcastMessage("§4§l" + count + " adet güçlendirilmiş canavar spawn oldu!");
     }
     
     /**
@@ -1436,14 +1467,14 @@ public class DisasterManager {
     /**
      * Mini felaket dalgası spawn (100-500 adet) - Config kullanır
      */
-    public void spawnSwarmDisaster(org.bukkit.entity.EntityType entityType, int count, Location spawnLoc) {
+    public void spawnSwarmDisaster(org.bukkit.entity.EntityType entityType, int count, org.bukkit.Location spawnLoc) {
         if (activeDisaster != null && !activeDisaster.isDead()) {
-            Bukkit.broadcastMessage("§cZaten aktif bir felaket var!");
+            org.bukkit.Bukkit.broadcastMessage("§cZaten aktif bir felaket var!");
             return;
         }
         
         World world = spawnLoc.getWorld();
-        java.util.List<Entity> entities = new java.util.ArrayList<>();
+        java.util.List<org.bukkit.entity.Entity> entities = new java.util.ArrayList<>();
         
         // EntityType'a göre felaket tipi belirle
         Disaster.Type disasterType = getDisasterTypeFromEntityType(entityType, false);
@@ -1468,14 +1499,14 @@ public class DisasterManager {
         // Spawn (config'den spawn radius ile)
         for (int i = 0; i < actualCount; i++) {
             // Config'den spawn radius ile rastgele konum
-            Location entityLoc = spawnLoc.clone().add(
+            org.bukkit.Location entityLoc = spawnLoc.clone().add(
                 (random.nextDouble() - 0.5) * spawnRadius * 2,
                 0,
                 (random.nextDouble() - 0.5) * spawnRadius * 2
             );
             entityLoc.setY(world.getHighestBlockYAt(entityLoc) + 1);
             
-            Entity entity = world.spawnEntity(entityLoc, entityType);
+            org.bukkit.entity.Entity entity = world.spawnEntity(entityLoc, entityType);
             
             // DisasterUtils ile güçlendirme (healthPercentage ile)
             me.mami.stratocraft.util.DisasterUtils.strengthenEntity(entity, config, power.multiplier * healthPercentage);
@@ -1484,7 +1515,7 @@ public class DisasterManager {
         }
         
         // Disaster oluştur
-        Location targetLoc = findNearestCrystal(spawnLoc);
+        org.bukkit.Location targetLoc = findNearestCrystal(spawnLoc);
         if (targetLoc == null) {
             if (difficultyManager != null) {
                 targetLoc = difficultyManager.getCenterLocation();
@@ -1513,7 +1544,7 @@ public class DisasterManager {
         activeDisaster = disaster;
         setDisasterTarget(disaster);
         
-        Bukkit.broadcastMessage("§c§l⚠ MİNİ FELAKET DALGASI BAŞLADI! ⚠");
-        Bukkit.broadcastMessage("§4§l" + actualCount + " adet mini canavar spawn oldu!");
+        org.bukkit.Bukkit.broadcastMessage("§c§l⚠ MİNİ FELAKET DALGASI BAŞLADI! ⚠");
+        org.bukkit.Bukkit.broadcastMessage("§4§l" + actualCount + " adet mini canavar spawn oldu!");
     }
 }

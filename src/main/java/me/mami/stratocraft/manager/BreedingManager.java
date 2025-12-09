@@ -1,15 +1,22 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.model.Clan;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.entity.*;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.*;
+import me.mami.stratocraft.Main;
 
 /**
  * Çiftleştirme Sistemi
@@ -24,6 +31,11 @@ public class BreedingManager {
     private final TamingManager tamingManager;
     private final ClanManager clanManager;
     private final MobManager mobManager;
+    private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
+    
+    public void setBalanceConfig(me.mami.stratocraft.manager.GameBalanceConfig config) {
+        this.balanceConfig = config;
+    }
 
     // Çiftleştirme tesisleri (Location -> BreedingFacility)
     private final Map<Location, BreedingFacility> breedingFacilities = new HashMap<>();
@@ -48,11 +60,24 @@ public class BreedingManager {
         private boolean isBreeding; // Çiftleştirme aktif mi?
         private BukkitTask task; // Task referansı
 
-        public BreedingFacility(Location location, UUID ownerId, int level) {
+        public BreedingFacility(Location location, UUID ownerId, int level, me.mami.stratocraft.manager.GameBalanceConfig balanceConfig) {
             this.location = location;
             this.ownerId = ownerId;
             this.level = level;
-            this.duration = getBreedingDuration(level);
+            // Config'den süreyi al
+            if (balanceConfig != null) {
+                this.duration = balanceConfig.getBreedingDurationForLevel(level);
+            } else {
+                // Fallback değerler
+                switch (level) {
+                    case 1: this.duration = 86400000L; break;
+                    case 2: this.duration = 172800000L; break;
+                    case 3: this.duration = 259200000L; break;
+                    case 4: this.duration = 345600000L; break;
+                    case 5: this.duration = 432000000L; break;
+                    default: this.duration = 86400000L;
+                }
+            }
             this.isBreeding = false;
         }
 
@@ -124,21 +149,9 @@ public class BreedingManager {
         }
 
         private long getBreedingDuration(int level) {
-            // Seviyeye göre süre (1 gün = 86400000 ms)
-            switch (level) {
-                case 1:
-                    return 86400000L; // 1 gün
-                case 2:
-                    return 172800000L; // 2 gün
-                case 3:
-                    return 259200000L; // 3 gün
-                case 4:
-                    return 345600000L; // 4 gün
-                case 5:
-                    return 432000000L; // 5 gün
-                default:
-                    return 86400000L;
-            }
+            // Seviyeye göre süre - Config'den (BreedingManager'dan balanceConfig'e erişim gerekli)
+            // Bu metod BreedingFacility içinde olduğu için, duration constructor'da set edilecek
+            return duration; // Zaten constructor'da set edilmiş
         }
     }
 
@@ -303,7 +316,7 @@ public class BreedingManager {
         }
 
         // Tesis oluştur
-        BreedingFacility facility = new BreedingFacility(location, player.getUniqueId(), level);
+        BreedingFacility facility = new BreedingFacility(location, player.getUniqueId(), level, balanceConfig);
         breedingFacilities.put(location, facility);
 
         player.sendMessage("§a§lÇiftleştirme Tesisi oluşturuldu! (Seviye " + level + ")");
@@ -331,7 +344,7 @@ public class BreedingManager {
         
         if (facility == null) {
             // Tesis oluştur
-            facility = new BreedingFacility(facilityLoc, player.getUniqueId(), level);
+            facility = new BreedingFacility(facilityLoc, player.getUniqueId(), level, balanceConfig);
             breedingFacilities.put(facilityLoc, facility);
             player.sendMessage("§aÜreme tesisi otomatik oluşturuldu! (Seviye " + level + ")");
         }
@@ -717,7 +730,8 @@ public class BreedingManager {
             }
         }
 
-        return foodCount >= 3; // En az 3 yiyecek bloğu
+        int minFoodBlocks = balanceConfig != null ? balanceConfig.getBreedingMinFoodBlocks() : 3;
+        return foodCount >= minFoodBlocks; // Config'den minimum yiyecek bloğu
     }
 
     /**
@@ -766,8 +780,8 @@ public class BreedingManager {
             return false;
         }
 
-        // Çiftleştirme başlat
-        long duration = 60000L; // 1 dakika (doğal çiftleştirme)
+        // Çiftleştirme başlat - Config'den süre
+        long duration = balanceConfig != null ? balanceConfig.getBreedingNaturalDuration() : 60000L;
         BreedingData breeding = new BreedingData(female, male, ownerId, duration);
         activeBreedings.put(female.getUniqueId(), breeding);
         activeBreedings.put(male.getUniqueId(), breeding);

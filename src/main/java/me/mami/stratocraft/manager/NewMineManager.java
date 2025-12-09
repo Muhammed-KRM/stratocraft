@@ -1,12 +1,21 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.model.Clan;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.entity.*;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -15,7 +24,8 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.EulerAngle;
 import org.bukkit.util.Vector;
 
-import java.util.*;
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.model.Clan;
 
 /**
  * Yeni Mayın Sistemi Yöneticisi
@@ -27,6 +37,7 @@ import java.util.*;
 public class NewMineManager {
     private final Main plugin;
     private final ClanManager clanManager;
+    private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
     
     // Aktif mayınlar (Location -> MineData)
     private final Map<Location, MineData> activeMines = new HashMap<>();
@@ -34,6 +45,32 @@ public class NewMineManager {
     private final Map<Location, ArmorStand> mineNameStands = new HashMap<>();
     // Gizli mayınlar (Location -> boolean)
     private final Set<Location> hiddenMines = new HashSet<>();
+    
+    public void setBalanceConfig(me.mami.stratocraft.manager.GameBalanceConfig config) {
+        this.balanceConfig = config;
+    }
+    
+    private double getMineDamageForLevel(int level) {
+        if (balanceConfig == null) {
+            // Varsayılan değerler
+            switch (level) {
+                case 1: return 3.0;
+                case 2: return 5.0;
+                case 3: return 8.0;
+                case 4: return 12.0;
+                case 5: return 20.0;
+                default: return 3.0;
+            }
+        }
+        switch (level) {
+            case 1: return balanceConfig.getMineLevel1BaseDamage();
+            case 2: return balanceConfig.getMineLevel2BaseDamage();
+            case 3: return balanceConfig.getMineLevel3BaseDamage();
+            case 4: return balanceConfig.getMineLevel4BaseDamage();
+            case 5: return balanceConfig.getMineLevel5BaseDamage();
+            default: return balanceConfig.getMineLevel1BaseDamage();
+        }
+    }
     
     /**
      * Mayın Tipi Enum (25 benzersiz mayın)
@@ -367,13 +404,15 @@ public class NewMineManager {
                 
             case LIGHTNING:
                 mineLoc.getWorld().strikeLightning(mineLoc);
-                victim.damage(3.0);
+                double lightningDamage = getMineDamageForLevel(1);
+                victim.damage(lightningDamage);
                 victim.sendMessage("§e§lYILDIRIM ÇARPTI!");
                 break;
                 
             case FIRE:
                 victim.setFireTicks(100);
-                victim.damage(2.0);
+                double fireDamage = getMineDamageForLevel(1);
+                victim.damage(fireDamage);
                 victim.sendMessage("§c§lYANDIN!");
                 mineLoc.getWorld().spawnParticle(org.bukkit.Particle.FLAME, 
                     mineLoc.clone().add(0.5, 0.1, 0.5), 30, 0.3, 0.1, 0.3, 0.1);
@@ -443,7 +482,8 @@ public class NewMineManager {
                         mineLoc.getWorld().strikeLightning(mineLoc);
                     }, i * 10L);
                 }
-                victim.damage(5.0);
+                double lightningStormDamage = getMineDamageForLevel(3);
+                victim.damage(lightningStormDamage);
                 victim.sendMessage("§e§lYILDIRIM FIRTINASI!");
                 break;
             
@@ -485,7 +525,8 @@ public class NewMineManager {
                 
             case DEATH_CLOUD:
                 victim.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 400, 3, false, false));
-                // Sürekli hasar
+                // Sürekli hasar (config'den - seviye 5 temel hasarının %2.5'i)
+                final double deathCloudTickDamage = getMineDamageForLevel(5) * 0.025;
                 new BukkitRunnable() {
                     int ticks = 0;
                     @Override
@@ -494,7 +535,7 @@ public class NewMineManager {
                             cancel();
                             return;
                         }
-                        victim.damage(0.5);
+                        victim.damage(deathCloudTickDamage);
                     }
                 }.runTaskTimer(plugin, 0L, 10L);
                 mineLoc.getWorld().spawnParticle(org.bukkit.Particle.SMOKE_LARGE, 
@@ -513,7 +554,8 @@ public class NewMineManager {
                         strikeLoc.getWorld().strikeLightning(strikeLoc);
                     }, i * 5L);
                 }
-                victim.damage(10.0);
+                double thunderstormDamage = getMineDamageForLevel(5);
+                victim.damage(thunderstormDamage);
                 victim.sendMessage("§e§lGÖK GÜRÜLTÜSÜ!");
                 break;
                 

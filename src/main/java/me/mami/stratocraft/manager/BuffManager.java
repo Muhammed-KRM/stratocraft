@@ -19,9 +19,26 @@ public class BuffManager {
     private final Map<UUID, Long> heroBuffs = new HashMap<>(); // Kahraman Buff'ı
     
     private me.mami.stratocraft.Main plugin;
+    private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
     
     public void setPlugin(me.mami.stratocraft.Main plugin) {
         this.plugin = plugin;
+    }
+    
+    public void setBalanceConfig(me.mami.stratocraft.manager.GameBalanceConfig config) {
+        this.balanceConfig = config;
+    }
+    
+    private double getConquerorDamageMultiplier() {
+        return balanceConfig != null ? balanceConfig.getConquerorBuffDamageMultiplier() : 0.2;
+    }
+    
+    private double getHeroHealthMultiplier() {
+        return balanceConfig != null ? balanceConfig.getHeroBuffHealthMultiplier() : 0.15;
+    }
+    
+    private double getHeroDefenseMultiplier() {
+        return balanceConfig != null ? balanceConfig.getHeroBuffDefenseMultiplier() : 0.25;
     }
     
     private long getConquerorDuration() {
@@ -85,11 +102,12 @@ public class BuffManager {
             }
         }
         
-        // Hasar artışı
+        // Hasar artışı (config'den)
+        double damageMultiplier = getConquerorDamageMultiplier();
         AttributeModifier damageMod = new AttributeModifier(
             UUID.randomUUID(),
             "conqueror_damage",
-            0.2,
+            damageMultiplier,
             AttributeModifier.Operation.MULTIPLY_SCALAR_1,
             EquipmentSlot.HAND
         );
@@ -114,22 +132,25 @@ public class BuffManager {
             }
         }
         
-        // Can artışı
+        // Can artışı (config'den)
+        double healthMultiplier = getHeroHealthMultiplier();
         AttributeModifier healthMod = new AttributeModifier(
             UUID.randomUUID(),
             "hero_health",
-            0.15,
+            healthMultiplier,
             AttributeModifier.Operation.MULTIPLY_SCALAR_1,
             EquipmentSlot.HAND
         );
         p.getAttribute(Attribute.GENERIC_MAX_HEALTH).addModifier(healthMod);
-        p.setHealth(Math.min(p.getHealth() * 1.15, p.getMaxHealth()));
+        double newHealthMultiplier = 1.0 + healthMultiplier;
+        p.setHealth(Math.min(p.getHealth() * newHealthMultiplier, p.getMaxHealth()));
         
-        // Savunma artışı
+        // Savunma artışı (config'den)
+        double defenseMultiplier = getHeroDefenseMultiplier();
         AttributeModifier armorMod = new AttributeModifier(
             UUID.randomUUID(),
             "hero_armor",
-            0.25,
+            defenseMultiplier,
             AttributeModifier.Operation.MULTIPLY_SCALAR_1,
             EquipmentSlot.CHEST
         );

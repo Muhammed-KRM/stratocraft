@@ -1,28 +1,28 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
-import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.ItemFlag;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
-
-import java.util.UUID;
 import org.bukkit.entity.FishHook;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerFishEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.util.Vector;
-import org.bukkit.Bukkit;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.util.Vector;
 
-import java.util.HashMap;
-import java.util.Map;
+import me.mami.stratocraft.Main;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 /**
  * Özel Eşyalar Yöneticisi
@@ -31,11 +31,9 @@ import java.util.Map;
  * - Yapım tarifleri
  */
 public class SpecialItemManager {
-    // 3 KADEMELİ KANCA SİSTEMİ
+    // 3 KADEMELİ KANCA SİSTEMİ - Config'den değerler
     private static final double RUSTY_HOOK_RANGE = Double.MAX_VALUE; // Sınırsız menzil
-    private static final double GOLDEN_HOOK_RANGE = 20.0; // Orta menzil
-    private static final double TITAN_GRAPPLE_RANGE = 40.0; // Uzun menzil
-    private static final long SPY_DURATION = 3000; // 3 saniye (milisaniye)
+    private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
 
     // Casusluk Dürbünü için takip
     private final Map<Player, Long> spyStartTimes = new HashMap<>();
@@ -43,11 +41,13 @@ public class SpecialItemManager {
 
     // Kanca Cooldown sistemi (Fly hack önleme)
     private final Map<java.util.UUID, Long> hookCooldowns = new HashMap<>();
-    private static final long HOOK_COOLDOWN = 1000; // 1 saniye
     
     // Düşme hasarı koruması (kanca kullanıldıktan sonra)
     private final Map<java.util.UUID, Long> fallDamageProtection = new HashMap<>();
-    private static final long FALL_DAMAGE_PROTECTION_DURATION = 3000; // 3 saniye
+    
+    public void setBalanceConfig(me.mami.stratocraft.manager.GameBalanceConfig config) {
+        this.balanceConfig = config;
+    }
 
     /**
      * Kanca kullanımını işle - 3 KADEMELİ SİSTEM
@@ -60,9 +60,10 @@ public class SpecialItemManager {
 
         Player player = event.getPlayer();
 
-        // COOLDOWN KONTROLÜ
+        // COOLDOWN KONTROLÜ - Config'den
+        long hookCooldown = balanceConfig != null ? balanceConfig.getHookCooldown() : 1000L;
         if (hookCooldowns.containsKey(player.getUniqueId())) {
-            long timeLeft = (hookCooldowns.get(player.getUniqueId()) + HOOK_COOLDOWN) - System.currentTimeMillis();
+            long timeLeft = (hookCooldowns.get(player.getUniqueId()) + hookCooldown) - System.currentTimeMillis();
             if (timeLeft > 0) {
                 player.sendMessage("§cKanca soğumadı! Bekle: §e" + String.format("%.1f", timeLeft / 1000.0) + "§c sn");
                 event.setCancelled(true);
@@ -94,12 +95,13 @@ public class SpecialItemManager {
 
             player.sendMessage("§7Paslı Kanca kullanıldı! (Max 3 blok yukarı)");
         }
-        // 2. ALTIN KANCA - 20 blok menzil, bloğun üstüne çıkar
+        // 2. ALTIN KANCA - Config'den menzil ve güç
         else if (ItemManager.isCustomItem(rod, "GOLDEN_HOOK")) {
+            double goldenRange = balanceConfig != null ? balanceConfig.getHookGoldenRange() : 20.0;
             double distance = hook.getLocation().distance(player.getLocation());
 
-            if (distance > GOLDEN_HOOK_RANGE) {
-                player.sendMessage("§cAltın Kanca menzil dışında! Maksimum " + GOLDEN_HOOK_RANGE + " blok.");
+            if (distance > goldenRange) {
+                player.sendMessage("§cAltın Kanca menzil dışında! Maksimum " + goldenRange + " blok.");
                 hook.remove();
                 event.setCancelled(true);
                 return;
@@ -116,22 +118,25 @@ public class SpecialItemManager {
             player.getWorld().spawnParticle(org.bukkit.Particle.CRIT_MAGIC,
                     player.getLocation(), 15, 0.5, 0.5, 0.5, 0.1);
         }
-        // 3. TİTAN KANCASI - 40 blok, çok güçlü
+        // 3. TİTAN KANCASI - Config'den menzil ve güç
         else if (ItemManager.isCustomItem(rod, "TITAN_GRAPPLE")) {
+            double titanRange = balanceConfig != null ? balanceConfig.getHookTitanRange() : 40.0;
+            double pullStrength = balanceConfig != null ? balanceConfig.getHookTitanPullStrength() : 2.5;
             double distance = hook.getLocation().distance(player.getLocation());
 
-            if (distance > TITAN_GRAPPLE_RANGE) {
-                player.sendMessage("§cTitan Kancası menzil dışında! Maksimum " + TITAN_GRAPPLE_RANGE + " blok.");
+            if (distance > titanRange) {
+                player.sendMessage("§cTitan Kancası menzil dışında! Maksimum " + titanRange + " blok.");
                 hook.remove();
                 event.setCancelled(true);
                 return;
             }
 
-            // Düşme hasarı koruması ekle (slow falling olmadan)
+            // Düşme hasarı koruması ekle (slow falling olmadan) - Config'den
+            long fallProtectionDuration = balanceConfig != null ? balanceConfig.getHookFallDamageProtectionDuration() : 3000L;
             fallDamageProtection.put(player.getUniqueId(), System.currentTimeMillis());
 
-            // Çok güçlü çekme
-            pullPlayer(player, hook.getLocation(), 2.5);
+            // Çok güçlü çekme - Config'den
+            pullPlayer(player, hook.getLocation(), pullStrength);
 
             // Ses ve partikül
             player.getWorld().playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ENDER_DRAGON_FLAP, 1.0f, 1.2f);
@@ -190,10 +195,11 @@ public class SpecialItemManager {
             return;
         }
 
-        // 3 saniye geçti mi kontrol et
+        // Config'den süre kontrolü
+        long spyDuration = balanceConfig != null ? balanceConfig.getSpyDuration() : 3000L;
         long elapsed = System.currentTimeMillis() - startTime;
 
-        if (elapsed >= SPY_DURATION) {
+        if (elapsed >= spyDuration) {
             // GUI menüsü aç
             openSpyMenu(player, target);
             spyStartTimes.remove(player);
@@ -552,7 +558,8 @@ public class SpecialItemManager {
         long elapsed = System.currentTimeMillis() - protectionTime;
         
         // Süre dolduysa kaldır
-        if (elapsed >= FALL_DAMAGE_PROTECTION_DURATION) {
+        long fallProtectionDuration = balanceConfig != null ? balanceConfig.getHookFallDamageProtectionDuration() : 3000L;
+        if (elapsed >= fallProtectionDuration) {
             fallDamageProtection.remove(player.getUniqueId());
             return false;
         }

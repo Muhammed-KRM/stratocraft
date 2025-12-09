@@ -1,14 +1,15 @@
 package me.mami.stratocraft.listener;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.manager.ItemManager;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -17,9 +18,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import me.mami.stratocraft.Main;
 
 /**
  * Özel zırh güçlerini yöneten listener
@@ -75,10 +74,13 @@ public class SpecialArmorListener implements Listener {
         int armorLevel = getArmorLevel(player);
         
         if (armorLevel >= 2) {
-            // Diken etkisi - saldırana hasar ver
+            // Diken etkisi - saldırana hasar ver - Config'den
             if (event.getDamager() instanceof Player) {
                 Player attacker = (Player) event.getDamager();
-                double thornDamage = event.getFinalDamage() * 0.3; // %30 geri hasar
+                me.mami.stratocraft.manager.GameBalanceConfig balanceConfig = plugin.getConfigManager() != null ? 
+                    plugin.getConfigManager().getGameBalanceConfig() : null;
+                double thornMultiplier = balanceConfig != null ? balanceConfig.getArmorLevel2ThornDamageMultiplier() : 0.3;
+                double thornDamage = event.getFinalDamage() * thornMultiplier;
                 attacker.damage(thornDamage);
                 attacker.sendMessage("§cDiken etkisi! " + String.format("%.1f", thornDamage) + " hasar aldın!");
             }
@@ -96,21 +98,31 @@ public class SpecialArmorListener implements Listener {
         int armorLevel = getArmorLevel(player);
         
         if (armorLevel >= 3) {
-            // 2x Hız
-            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 100, 1, false, false));
+            // 2x Hız - Config'den
+            me.mami.stratocraft.manager.GameBalanceConfig balanceConfig = plugin.getConfigManager() != null ? 
+                plugin.getConfigManager().getGameBalanceConfig() : null;
+            int speedDuration = balanceConfig != null ? balanceConfig.getArmorLevel3SpeedDuration() : 100;
+            int speedLevel = balanceConfig != null ? balanceConfig.getArmorLevel3SpeedLevel() : 1;
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, speedDuration, speedLevel, false, false));
             
-            // Yüksek Zıplama
-            player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, 100, 2, false, false));
+            // Yüksek Zıplama - Config'den
+            int jumpDuration = balanceConfig != null ? balanceConfig.getArmorLevel3JumpDuration() : 100;
+            int jumpLevel = balanceConfig != null ? balanceConfig.getArmorLevel3JumpLevel() : 2;
+            player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, jumpDuration, jumpLevel, false, false));
         }
         
         if (armorLevel >= 4) {
-            // Sürekli Can Yenileme (her saniye)
+            // Sürekli Can Yenileme - Config'den
+            me.mami.stratocraft.manager.GameBalanceConfig balanceConfig = plugin.getConfigManager() != null ? 
+                plugin.getConfigManager().getGameBalanceConfig() : null;
+            long regenInterval = balanceConfig != null ? balanceConfig.getArmorLevel4RegenInterval() : 1000L;
+            double regenAmount = balanceConfig != null ? balanceConfig.getArmorLevel4RegenAmount() : 1.0;
             long currentTime = System.currentTimeMillis();
             Long lastRegen = lastRegenTime.get(player.getUniqueId());
             
-            if (lastRegen == null || currentTime - lastRegen >= 1000) {
+            if (lastRegen == null || currentTime - lastRegen >= regenInterval) {
                 if (player.getHealth() < player.getMaxHealth()) {
-                    player.setHealth(Math.min(player.getHealth() + 1.0, player.getMaxHealth()));
+                    player.setHealth(Math.min(player.getHealth() + regenAmount, player.getMaxHealth()));
                     lastRegenTime.put(player.getUniqueId(), currentTime);
                 }
             }
@@ -124,31 +136,38 @@ public class SpecialArmorListener implements Listener {
                 Long lastJump = lastJumpTime.get(player.getUniqueId());
                 Integer jumpCount = doubleJumpCount.get(player.getUniqueId());
                 
-                // İlk zıplama tespiti (yerden ayrılma)
-                if (lastJump == null || (currentTime - lastJump > 1000 && player.getVelocity().getY() > 0.3)) {
+                // İlk zıplama tespiti (yerden ayrılma) - Config'den
+                me.mami.stratocraft.manager.GameBalanceConfig balanceConfig = plugin.getConfigManager() != null ? 
+                    plugin.getConfigManager().getGameBalanceConfig() : null;
+                long cooldown1 = balanceConfig != null ? balanceConfig.getArmorLevel5DoubleJumpCooldown1() : 1000L;
+                if (lastJump == null || (currentTime - lastJump > cooldown1 && player.getVelocity().getY() > 0.3)) {
                     doubleJumpCount.put(player.getUniqueId(), 1);
                     lastJumpTime.put(player.getUniqueId(), currentTime);
                 } 
-                // İkinci zıplama (havadayken tekrar zıplama)
-                else if (jumpCount != null && jumpCount == 1 && currentTime - lastJump < 500) {
-                    // Çift zıplama tespit edildi - uçma aktif
-                    doubleJumpCount.put(player.getUniqueId(), 2);
-                    player.setAllowFlight(true);
-                    player.setFlying(true);
-                    player.sendMessage("§dUçma gücü aktif!");
-                    
-                    // 5 saniye sonra uçmayı kapat
-                    new BukkitRunnable() {
-                        @Override
-                        public void run() {
-                            if (player.isOnline()) {
-                                player.setFlying(false);
-                                player.setAllowFlight(false);
-                                doubleJumpCount.remove(player.getUniqueId());
-                                lastJumpTime.remove(player.getUniqueId());
+                // İkinci zıplama (havadayken tekrar zıplama) - Config'den
+                else if (jumpCount != null && jumpCount == 1) {
+                    long cooldown2 = balanceConfig != null ? balanceConfig.getArmorLevel5DoubleJumpCooldown2() : 500L;
+                    if (currentTime - lastJump < cooldown2) {
+                        // Çift zıplama tespit edildi - uçma aktif
+                        doubleJumpCount.put(player.getUniqueId(), 2);
+                        player.setAllowFlight(true);
+                        player.setFlying(true);
+                        player.sendMessage("§dUçma gücü aktif!");
+                        
+                        // Config'den süre sonra uçmayı kapat
+                        long flightDuration = balanceConfig != null ? balanceConfig.getArmorLevel5FlightDuration() : 100L;
+                        new BukkitRunnable() {
+                            @Override
+                            public void run() {
+                                if (player.isOnline()) {
+                                    player.setFlying(false);
+                                    player.setAllowFlight(false);
+                                    doubleJumpCount.remove(player.getUniqueId());
+                                    lastJumpTime.remove(player.getUniqueId());
+                                }
                             }
-                        }
-                    }.runTaskLater(plugin, 100L); // 5 saniye
+                        }.runTaskLater(plugin, flightDuration);
+                    }
                 }
             }
             

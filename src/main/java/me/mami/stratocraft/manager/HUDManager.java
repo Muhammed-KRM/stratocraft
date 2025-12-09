@@ -3,6 +3,7 @@ package me.mami.stratocraft.manager;
 import me.mami.stratocraft.Main;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Contract;
+import me.mami.stratocraft.model.Disaster;
 import me.mami.stratocraft.model.Mission;
 import me.mami.stratocraft.model.Shop;
 import org.bukkit.Bukkit;
@@ -152,15 +153,22 @@ public class HUDManager {
     private List<HUDLine> collectHUDInfo(Player player) {
         List<HUDLine> lines = new ArrayList<>();
         
-        // 1. Felaket Sayacı (her zaman göster)
-        HUDLine disaster = getDisasterCountdown();
-        if (disaster != null) {
-            lines.add(disaster);
-            String[] countdownInfo = disasterManager.getCountdownInfo();
-            if (countdownInfo != null && countdownInfo.length > 1) {
-                lines.add(new HUDLine("§7Kalan: §e" + countdownInfo[1]));
-            }
+        // 1. Aktif Felaket Bilgisi (varsa öncelikli)
+        List<HUDLine> activeDisasterInfo = getActiveDisasterInfo();
+        if (activeDisasterInfo != null && !activeDisasterInfo.isEmpty()) {
+            lines.addAll(activeDisasterInfo);
             lines.add(new HUDLine("§7")); // Boş satır
+        } else {
+            // Aktif felaket yoksa countdown göster
+            HUDLine disaster = getDisasterCountdown();
+            if (disaster != null) {
+                lines.add(disaster);
+                String[] countdownInfo = disasterManager.getCountdownInfo();
+                if (countdownInfo != null && countdownInfo.length > 1) {
+                    lines.add(new HUDLine("§7Kalan: §e" + countdownInfo[1]));
+                }
+                lines.add(new HUDLine("§7")); // Boş satır
+            }
         }
         
         // 2. Aktif Batarya (varsa)
@@ -261,6 +269,46 @@ public class HUDManager {
         String powerText = "§e💪 Güç: §f" + String.format("%.0f", totalSGP) + " SGP §7(Seviye " + level + ")";
         
         return new HUDLine(powerText);
+    }
+    
+    /**
+     * Aktif felaket bilgisi (HUD için)
+     */
+    private List<HUDLine> getActiveDisasterInfo() {
+        if (disasterManager == null) return null;
+        
+        Disaster activeDisaster = disasterManager.getActiveDisaster();
+        if (activeDisaster == null || activeDisaster.isDead()) {
+            return null;
+        }
+        
+        List<HUDLine> lines = new ArrayList<>();
+        String disasterName = disasterManager.getDisasterDisplayName(activeDisaster.getType());
+        String category = activeDisaster.getCategory() == Disaster.Category.CREATURE ? "Canlı" : 
+                         activeDisaster.getCategory() == Disaster.Category.NATURAL ? "Doğa" : "Mini";
+        
+        // Başlık
+        lines.add(new HUDLine("§c§l⚠ AKTİF FELAKET"));
+        
+        // İsim ve kategori
+        lines.add(new HUDLine("§4" + disasterName + " §7(" + category + ")"));
+        
+        // Canlı felaketler için can bilgisi
+        if (activeDisaster.getCategory() == Disaster.Category.CREATURE) {
+            double health = activeDisaster.getCurrentHealth();
+            double maxHealth = activeDisaster.getMaxHealth();
+            double healthPercent = maxHealth > 0 ? (health / maxHealth) * 100 : 0;
+            String healthColor = healthPercent > 60 ? "§c" : healthPercent > 30 ? "§e" : "§a";
+            lines.add(new HUDLine("§7Can: " + healthColor + String.format("%.0f/%.0f", health, maxHealth) + 
+                " §7(" + String.format("%.0f%%", healthPercent) + ")"));
+        }
+        
+        // Kalan süre
+        long remainingTime = activeDisaster.getRemainingTime();
+        String timeText = formatTime(remainingTime);
+        lines.add(new HUDLine("§7Kalan Süre: §e" + timeText));
+        
+        return lines;
     }
     
     /**

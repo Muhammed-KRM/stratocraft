@@ -1,7 +1,7 @@
 package me.mami.stratocraft.model;
 
-import org.bukkit.entity.Entity;
 import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 
 /**
  * Gelişmiş Felaket Sistemi
@@ -110,13 +110,45 @@ public class Disaster {
             this.creatureDisasterType = null;
         }
         
-        // Entity'ye can ayarla
+        // Entity'ye can ayarla (Minecraft limiti: 2048)
         if (entity != null && entity instanceof org.bukkit.entity.LivingEntity) {
             org.bukkit.entity.LivingEntity living = (org.bukkit.entity.LivingEntity) entity;
             if (living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH) != null) {
-                living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(maxHealth);
+                // Minecraft'ın maksimum can değeri 2048
+                if (maxHealth > 2048.0) {
+                    // Base değeri 2048'e ayarla
+                    living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(2048.0);
+                    
+                    // Kalan canı attribute modifier ile ekle
+                    double extraHealth = maxHealth - 2048.0;
+                    org.bukkit.attribute.AttributeModifier healthMod = new org.bukkit.attribute.AttributeModifier(
+                        java.util.UUID.randomUUID(),
+                        "disaster_extra_health",
+                        extraHealth,
+                        org.bukkit.attribute.AttributeModifier.Operation.ADD_NUMBER
+                    );
+                    
+                    // Eski modifier'ı kaldır (varsa)
+                    living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH)
+                        .getModifiers().stream()
+                        .filter(m -> m.getName().equals("disaster_extra_health"))
+                        .forEach(m -> living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).removeModifier(m));
+                    
+                    // Yeni modifier'ı ekle
+                    living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).addModifier(healthMod);
+                    
+                    // Attribute modifier eklendikten sonra gerçek maksimum canı al
+                    org.bukkit.attribute.AttributeInstance healthAttr = living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
+                    double actualMaxHealth = healthAttr != null ? healthAttr.getValue() : maxHealth;
+                    
+                    // Canı ayarla (gerçek maksimum can değerini kullan)
+                    living.setHealth(actualMaxHealth);
+                } else {
+                    // 2048'in altındaysa normal şekilde ayarla
+                    living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(maxHealth);
+                    living.setHealth(maxHealth);
+                }
             }
-            living.setHealth(maxHealth);
         }
     }
     

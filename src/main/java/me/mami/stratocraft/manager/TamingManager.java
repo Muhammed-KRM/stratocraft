@@ -1,18 +1,24 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.*;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Tameable;
 import org.bukkit.metadata.FixedMetadataValue;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
+import me.mami.stratocraft.Main;
 
 /**
  * Canlı Eğitme Sistemi
@@ -38,7 +44,15 @@ public class TamingManager {
     
     // Ritüel cooldown (Location -> Long)
     private final Map<Location, Long> ritualCooldowns = new HashMap<>();
-    private static final long RITUAL_COOLDOWN = 30000L; // 30 saniye
+    private long ritualCooldown = 30000L; // 30 saniye (config'den)
+    private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
+    
+    public void setBalanceConfig(me.mami.stratocraft.manager.GameBalanceConfig config) {
+        this.balanceConfig = config;
+        if (config != null) {
+            this.ritualCooldown = config.getTamingRitualCooldown();
+        }
+    }
     
     /**
      * Cinsiyet enum
@@ -699,7 +713,7 @@ public class TamingManager {
         }
         
         long cooldownTime = ritualCooldowns.get(loc);
-        return System.currentTimeMillis() - cooldownTime < RITUAL_COOLDOWN;
+        return System.currentTimeMillis() - cooldownTime < ritualCooldown;
     }
     
     /**

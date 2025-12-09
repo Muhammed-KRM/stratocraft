@@ -1,32 +1,74 @@
 package me.mami.stratocraft.manager;
 
+import java.util.UUID;
+
 import org.bukkit.Location;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Phantom;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Silverfish;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.entity.Entity;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.entity.LivingEntity;
-import java.util.UUID;
-import org.bukkit.entity.EnderDragon;
-import org.bukkit.entity.IronGolem;
 
 public class MobManager {
+    private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
+    
+    public void setBalanceConfig(me.mami.stratocraft.manager.GameBalanceConfig config) {
+        this.balanceConfig = config;
+    }
+    
+    private double getMobHellDragonHealth() {
+        return balanceConfig != null ? balanceConfig.getMobHellDragonHealth() : 200.0;
+    }
+    
+    private double getMobTerrorWormHealth() {
+        return balanceConfig != null ? balanceConfig.getMobTerrorWormHealth() : 100.0;
+    }
+    
+    private double getMobWarBearHealth() {
+        return balanceConfig != null ? balanceConfig.getMobWarBearHealth() : 150.0;
+    }
+    
+    private double getMobShadowPantherHealth() {
+        return balanceConfig != null ? balanceConfig.getMobShadowPantherHealth() : 80.0;
+    }
+    
+    private double getMobWyvernHealth() {
+        return balanceConfig != null ? balanceConfig.getMobWyvernHealth() : 250.0;
+    }
+    
+    private double getMobFireAmphiptereHealth() {
+        return balanceConfig != null ? balanceConfig.getMobFireAmphiptereHealth() : 120.0;
+    }
+    
+    private double getMobFireAmphiptereDamage() {
+        return balanceConfig != null ? balanceConfig.getMobFireAmphiptereDamage() : 10.0;
+    }
+    
+    private int getMobHellDragonSize() {
+        return balanceConfig != null ? balanceConfig.getMobHellDragonSize() : 20;
+    }
+    
+    private int getMobWyvernSize() {
+        return balanceConfig != null ? balanceConfig.getMobWyvernSize() : 15;
+    }
 
     public LivingEntity spawnHellDragon(Location loc, UUID ownerId) {
         if (loc == null || loc.getWorld() == null)
             return null;
         Phantom dragon = (Phantom) loc.getWorld().spawnEntity(loc, EntityType.PHANTOM);
         dragon.setCustomName("§4Cehennem Ejderi");
-        dragon.setSize(20);
+        int size = getMobHellDragonSize();
+        double health = getMobHellDragonHealth();
+        dragon.setSize(size);
         if (dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
-            dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(200.0);
+            dragon.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(health);
         }
-        dragon.setHealth(200.0);
+        dragon.setHealth(health);
         return dragon;
     }
 
@@ -35,10 +77,11 @@ public class MobManager {
             return;
         Silverfish worm = (Silverfish) loc.getWorld().spawnEntity(loc, EntityType.SILVERFISH);
         worm.setCustomName("§8Toprak Solucanı");
+        double health = getMobTerrorWormHealth();
         if (worm.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
-            worm.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(100.0);
+            worm.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(health);
         }
-        worm.setHealth(100.0);
+        worm.setHealth(health);
     }
 
     public void spawnWarBear(Location loc, Player owner) {
@@ -47,10 +90,11 @@ public class MobManager {
         org.bukkit.entity.PolarBear bear = (org.bukkit.entity.PolarBear) loc.getWorld().spawnEntity(loc,
                 EntityType.POLAR_BEAR);
         bear.setCustomName("§7Savaş Ayısı");
+        double health = getMobWarBearHealth();
         if (bear.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
-            bear.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(150.0);
+            bear.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(health);
         }
-        bear.setHealth(150.0);
+        bear.setHealth(health);
         // PolarBear tamed edilemez, sadece custom name ile işaretliyoruz
     }
 
@@ -59,10 +103,11 @@ public class MobManager {
             return;
         org.bukkit.entity.Cat panther = (org.bukkit.entity.Cat) loc.getWorld().spawnEntity(loc, EntityType.CAT);
         panther.setCustomName("§8Gölge Panteri");
+        double health = getMobShadowPantherHealth();
         if (panther.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
-            panther.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(80.0);
+            panther.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(health);
         }
-        panther.setHealth(80.0);
+        panther.setHealth(health);
         if (owner != null) {
             panther.setTamed(true);
             panther.setOwner(owner);
@@ -74,11 +119,13 @@ public class MobManager {
             return;
         Phantom wyvern = (Phantom) loc.getWorld().spawnEntity(loc, EntityType.PHANTOM);
         wyvern.setCustomName("§bWyvern");
-        wyvern.setSize(15);
+        int size = getMobWyvernSize();
+        double health = getMobWyvernHealth();
+        wyvern.setSize(size);
         if (wyvern.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
-            wyvern.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(250.0);
+            wyvern.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(health);
         }
-        wyvern.setHealth(250.0);
+        wyvern.setHealth(health);
     }
 
     public void spawnFireAmphiptere(Location loc) {
@@ -87,12 +134,14 @@ public class MobManager {
         org.bukkit.entity.Blaze amphiptere = (org.bukkit.entity.Blaze) loc.getWorld().spawnEntity(loc,
                 EntityType.BLAZE);
         amphiptere.setCustomName("§6Ateş Amfibiterü");
+        double health = getMobFireAmphiptereHealth();
+        double damage = getMobFireAmphiptereDamage();
         if (amphiptere.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
-            amphiptere.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(120.0);
+            amphiptere.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(health);
         }
-        amphiptere.setHealth(120.0);
+        amphiptere.setHealth(health);
         if (amphiptere.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) != null) {
-            amphiptere.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(10.0);
+            amphiptere.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(damage);
         }
     }
 
@@ -104,13 +153,15 @@ public class MobManager {
         org.bukkit.entity.Zombie goblin = (org.bukkit.entity.Zombie) loc.getWorld().spawnEntity(loc, EntityType.ZOMBIE);
         goblin.setCustomName("§2Goblin");
         goblin.setBaby(true); // Küçük boyut
+        double goblinHealth = balanceConfig != null ? balanceConfig.getMobGoblinHealth() : 30.0;
+        double goblinSpeed = balanceConfig != null ? balanceConfig.getMobGoblinSpeed() : 0.35;
         if (goblin.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
-            goblin.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(30.0);
+            goblin.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(goblinHealth);
         }
         if (goblin.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED) != null) {
-            goblin.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.35); // Hızlı
+            goblin.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(goblinSpeed);
         }
-        goblin.setHealth(30.0);
+        goblin.setHealth(goblinHealth);
     }
 
     public void spawnOrk(Location loc) {
@@ -118,13 +169,15 @@ public class MobManager {
             return;
         org.bukkit.entity.Zombie ork = (org.bukkit.entity.Zombie) loc.getWorld().spawnEntity(loc, EntityType.ZOMBIE);
         ork.setCustomName("§cOrk");
+        double orkHealth = balanceConfig != null ? balanceConfig.getMobOrkHealth() : 80.0;
+        double orkDamage = balanceConfig != null ? balanceConfig.getMobOrkDamage() : 8.0;
         if (ork.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
-            ork.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(80.0);
+            ork.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(orkHealth);
         }
         if (ork.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) != null) {
-            ork.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(8.0); // Güçlü
+            ork.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(orkDamage);
         }
-        ork.setHealth(80.0);
+        ork.setHealth(orkHealth);
         // Zırh ekle
         if (ork.getEquipment() != null) {
             org.bukkit.inventory.ItemStack helmet = new org.bukkit.inventory.ItemStack(
@@ -138,16 +191,19 @@ public class MobManager {
             return;
         org.bukkit.entity.Zombie troll = (org.bukkit.entity.Zombie) loc.getWorld().spawnEntity(loc, EntityType.ZOMBIE);
         troll.setCustomName("§5Troll");
+        double trollHealth = balanceConfig != null ? balanceConfig.getMobTrollHealth() : 120.0;
+        double trollSpeed = balanceConfig != null ? balanceConfig.getMobTrollSpeed() : 0.2;
+        double trollDamage = balanceConfig != null ? balanceConfig.getMobTrollDamage() : 10.0;
         if (troll.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
-            troll.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(120.0);
+            troll.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(trollHealth);
         }
         if (troll.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED) != null) {
-            troll.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.2); // Yavaş
+            troll.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(trollSpeed);
         }
         if (troll.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) != null) {
-            troll.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(10.0);
+            troll.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(trollDamage);
         }
-        troll.setHealth(120.0);
+        troll.setHealth(trollHealth);
         troll.setAdult();
     }
 
@@ -157,10 +213,11 @@ public class MobManager {
         org.bukkit.entity.Skeleton knight = (org.bukkit.entity.Skeleton) loc.getWorld().spawnEntity(loc,
                 EntityType.SKELETON);
         knight.setCustomName("§7İskelet Şövalye");
+        double knightHealth = balanceConfig != null ? balanceConfig.getMobKnightHealth() : 60.0;
         if (knight.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
-            knight.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(60.0);
+            knight.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(knightHealth);
         }
-        knight.setHealth(60.0);
+        knight.setHealth(knightHealth);
         // Tam zırh
         if (knight.getEquipment() != null) {
             knight.getEquipment().setHelmet(new org.bukkit.inventory.ItemStack(org.bukkit.Material.IRON_HELMET));
@@ -177,10 +234,11 @@ public class MobManager {
             return;
         org.bukkit.entity.Witch mage = (org.bukkit.entity.Witch) loc.getWorld().spawnEntity(loc, EntityType.WITCH);
         mage.setCustomName("§5Karanlık Büyücü");
+        double mageHealth = balanceConfig != null ? balanceConfig.getMobMageHealth() : 50.0;
         if (mage.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
-            mage.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(50.0);
+            mage.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(mageHealth);
         }
-        mage.setHealth(50.0);
+        mage.setHealth(mageHealth);
     }
 
     public void spawnWerewolf(Location loc) {
@@ -189,13 +247,15 @@ public class MobManager {
         org.bukkit.entity.Wolf wolf = (org.bukkit.entity.Wolf) loc.getWorld().spawnEntity(loc, EntityType.WOLF);
         wolf.setCustomName("§cKurt Adam");
         wolf.setAngry(true);
+        double werewolfHealth = balanceConfig != null ? balanceConfig.getMobWerewolfHealth() : 70.0;
+        double werewolfDamage = balanceConfig != null ? balanceConfig.getMobWerewolfDamage() : 6.0;
         if (wolf.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
-            wolf.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(70.0);
+            wolf.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(werewolfHealth);
         }
         if (wolf.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) != null) {
-            wolf.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(6.0);
+            wolf.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(werewolfDamage);
         }
-        wolf.setHealth(70.0);
+        wolf.setHealth(werewolfHealth);
     }
 
     public void spawnGiantSpider(Location loc) {
@@ -203,13 +263,15 @@ public class MobManager {
             return;
         org.bukkit.entity.Spider spider = (org.bukkit.entity.Spider) loc.getWorld().spawnEntity(loc, EntityType.SPIDER);
         spider.setCustomName("§8Dev Örümcek");
+        double spiderHealth = balanceConfig != null ? balanceConfig.getMobSpiderHealth() : 60.0;
+        double spiderSpeed = balanceConfig != null ? balanceConfig.getMobSpiderSpeed() : 0.4;
         if (spider.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
-            spider.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(60.0);
+            spider.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(spiderHealth);
         }
         if (spider.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED) != null) {
-            spider.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.4);
+            spider.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(spiderSpeed);
         }
-        spider.setHealth(60.0);
+        spider.setHealth(spiderHealth);
         spider.addPotionEffect(new PotionEffect(PotionEffectType.POISON, Integer.MAX_VALUE, 0, false, false));
     }
 

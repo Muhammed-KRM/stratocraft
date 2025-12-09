@@ -1,10 +1,5 @@
 package me.mami.stratocraft.listener;
 
-import me.mami.stratocraft.manager.ClanManager;
-import me.mami.stratocraft.manager.StratocraftPowerSystem;
-import me.mami.stratocraft.manager.TerritoryManager;
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.model.PlayerPowerProfile;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -15,21 +10,26 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.potion.PotionEffectAddEvent;
-import org.bukkit.potion.PotionEffectRemoveEvent;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+
+import me.mami.stratocraft.manager.ClanManager;
+import me.mami.stratocraft.manager.StratocraftPowerSystem;
+import me.mami.stratocraft.manager.TerritoryManager;
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.PlayerPowerProfile;
 
 /**
  * Power System Event Listener
  * 
  * Güç sistemi için event'leri dinler:
  * - PlayerQuitEvent: Offline cache'e kaydetme
- * - PotionEffectAddEvent/RemoveEvent: Buff cache güncelleme
+ * - EntityPotionEffectEvent: Buff cache güncelleme (eklendi/kaldırıldı/değişti)
  * - BlockPlaceEvent/BlockBreakEvent: Delta sistemi (ritüel blok tracking)
  */
 public class PowerSystemListener implements Listener {
@@ -84,28 +84,22 @@ public class PowerSystemListener implements Listener {
     }
     
     /**
-     * PotionEffect eklendiğinde buff cache'i güncelle ve adı güncelle
+     * PotionEffect değiştiğinde (eklendi/kaldırıldı/değişti) buff cache'i güncelle ve adı güncelle
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPotionEffectAdd(PotionEffectAddEvent event) {
+    public void onPotionEffectChange(EntityPotionEffectEvent event) {
         if (event.getEntity() instanceof Player) {
             Player player = (Player) event.getEntity();
-            powerSystem.updateBuffPowerCache(player);
-            // ✅ Oyuncu adını güncelle (güç değişti)
-            updatePlayerName(player);
-        }
-    }
-    
-    /**
-     * PotionEffect kaldırıldığında buff cache'i güncelle ve adı güncelle
-     */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPotionEffectRemove(PotionEffectRemoveEvent event) {
-        if (event.getEntity() instanceof Player) {
-            Player player = (Player) event.getEntity();
-            powerSystem.updateBuffPowerCache(player);
-            // ✅ Oyuncu adını güncelle (güç değişti)
-            updatePlayerName(player);
+            // Eklendi, kaldırıldı, değişti veya temizlendiğinde güncelle
+            EntityPotionEffectEvent.Action action = event.getAction();
+            if (action == EntityPotionEffectEvent.Action.ADDED || 
+                action == EntityPotionEffectEvent.Action.REMOVED ||
+                action == EntityPotionEffectEvent.Action.CHANGED ||
+                action == EntityPotionEffectEvent.Action.CLEARED) {
+                powerSystem.updateBuffPowerCache(player);
+                // ✅ Oyuncu adını güncelle (güç değişti)
+                updatePlayerName(player);
+            }
         }
     }
     
@@ -253,8 +247,12 @@ public class PowerSystemListener implements Listener {
         String playerName = player.getName();
         String formattedName = color + "[" + level + "] " + playerName;
         
-        // Tab list'te görünen isim
-        player.setPlayerListName(formattedName);
+        // Tab list'te görünen isim (deprecated ama çalışıyor)
+        try {
+            player.setPlayerListName(formattedName);
+        } catch (Exception e) {
+            // Deprecated metod, hata olursa devam et
+        }
         
         // Scoreboard Team sistemi (daha esnek)
         updatePlayerTeam(player, level, color, playerName);
@@ -297,11 +295,14 @@ public class PowerSystemListener implements Listener {
             team = mainScoreboard.registerNewTeam(teamName);
         }
         
-        // Prefix: "[Seviye] "
-        team.setPrefix(color + "[" + level + "] ");
-        
-        // Suffix: boş (isteğe bağlı eklenebilir)
-        team.setSuffix("");
+        // Prefix: "[Seviye] " (deprecated ama çalışıyor)
+        try {
+            team.setPrefix(color + "[" + level + "] ");
+            // Suffix: boş (isteğe bağlı eklenebilir)
+            team.setSuffix("");
+        } catch (Exception e) {
+            // Deprecated metod, hata olursa devam et
+        }
         
         // Oyuncuyu team'e ekle (zaten ekliyse hata vermez)
         if (!team.hasEntry(playerName)) {

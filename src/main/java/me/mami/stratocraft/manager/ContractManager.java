@@ -1,14 +1,5 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.model.Contract;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.entity.Player;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.ScoreboardManager;
-import org.bukkit.scoreboard.Team;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -16,11 +7,23 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.ScoreboardManager;
+import org.bukkit.scoreboard.Team;
+
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.Contract;
+
 public class ContractManager {
     private final List<Contract> activeContracts = new ArrayList<>();
     private final ClanManager clanManager;
     private final me.mami.stratocraft.Main plugin;
     private Team traitorTeam;
+    private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
     
     // Kalıcı can kaybı takibi (UUID -> Kayıp can sayısı)
     private final Map<UUID, Integer> permanentHealthLoss = new ConcurrentHashMap<>();
@@ -29,6 +32,22 @@ public class ContractManager {
         this.clanManager = cm;
         this.plugin = me.mami.stratocraft.Main.getInstance();
         initializeTraitorTeam();
+    }
+    
+    public void setBalanceConfig(me.mami.stratocraft.manager.GameBalanceConfig config) {
+        this.balanceConfig = config;
+    }
+    
+    private double getHealthRestorePerHeart() {
+        return balanceConfig != null ? balanceConfig.getContractHealthRestorePerHeart() : 2.0;
+    }
+    
+    private int getDefaultDays() {
+        return balanceConfig != null ? balanceConfig.getContractDefaultDays() : 7;
+    }
+    
+    private double getRewardMultiplier() {
+        return balanceConfig != null ? balanceConfig.getContractRewardMultiplier() : 0.5;
     }
     
     private void initializeTraitorTeam() {
@@ -183,7 +202,8 @@ public class ContractManager {
         org.bukkit.attribute.AttributeInstance maxHealthAttr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
         if (maxHealthAttr != null) {
             double currentMax = maxHealthAttr.getBaseValue();
-            double newMax = Math.max(1.0, currentMax - (hearts * 2.0)); // Her kalp = 2 can
+            double healthPerHeart = getHealthRestorePerHeart();
+            double newMax = Math.max(1.0, currentMax - (hearts * healthPerHeart)); // Config'den
             maxHealthAttr.setBaseValue(newMax);
             
             // Eğer mevcut can yeni maksimumdan fazlaysa, düşür
@@ -315,8 +335,10 @@ public class ContractManager {
      */
     public void createBountyContract(UUID issuer, UUID target, double reward) {
         // Yeni sistem: ContractType.PLAYER_KILL kullan
-        Contract bounty = new Contract(issuer, Contract.ContractType.PLAYER_KILL, 
-            Contract.ContractScope.PLAYER_TO_PLAYER, reward, reward * 0.5, 7); // 7 gün süre
+            double rewardMultiplier = getRewardMultiplier();
+            int defaultDays = getDefaultDays();
+            Contract bounty = new Contract(issuer, Contract.ContractType.PLAYER_KILL, 
+            Contract.ContractScope.PLAYER_TO_PLAYER, reward, reward * rewardMultiplier, defaultDays); // Config'den
         bounty.setTargetPlayer(target); // Hedef oyuncu UUID'si
         activeContracts.add(bounty);
     }

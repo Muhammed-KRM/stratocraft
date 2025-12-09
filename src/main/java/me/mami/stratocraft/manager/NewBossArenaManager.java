@@ -114,7 +114,7 @@ public class NewBossArenaManager {
             maxArenas = calculateMaxActiveArenas();
             if (activeArenas.size() >= maxArenas) {
                 plugin.getLogger().warning("Maksimum arena sayısına ulaşıldı (" + maxArenas + "). Yeni arena oluşturulamıyor.");
-                return;
+            return;
             }
         }
         
@@ -644,11 +644,11 @@ public class NewBossArenaManager {
         arena.incrementCycleCount();
         boolean isWithinExpansionLimit = nearestPlayerDistance <= arenaExpansionLimit;
         if (isWithinExpansionLimit) {
-            // Task interval = 40 tick (2 saniye), dakikada 1 = 60 saniye = 30 döngü
+        // Task interval = 40 tick (2 saniye), dakikada 1 = 60 saniye = 30 döngü
             if (arena.getCycleCount() % 30 == 0) {
-                createBossTowers(arena, maxRadius);
-            }
-            
+            createBossTowers(arena, maxRadius);
+        }
+        
             // Rastgele örümcek ağları, lavlar ve sular oluştur
             if (arena.getCycleCount() % hazardCreateInterval == 0) {
                 createRandomHazards(arena, maxRadius);

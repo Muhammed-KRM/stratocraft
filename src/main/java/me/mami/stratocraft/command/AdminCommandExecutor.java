@@ -1,28 +1,29 @@
 package me.mami.stratocraft.command;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.manager.ItemManager;
-import me.mami.stratocraft.manager.MobManager;
-import me.mami.stratocraft.manager.DisasterManager;
-import me.mami.stratocraft.manager.BatteryManager;
-import me.mami.stratocraft.manager.NewBatteryManager;
-import me.mami.stratocraft.model.Disaster;
-import me.mami.stratocraft.util.LangManager;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.Location;
-import org.bukkit.entity.LivingEntity;
-import me.mami.stratocraft.manager.BossManager;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.manager.BatteryManager;
+import me.mami.stratocraft.manager.BossManager;
+import me.mami.stratocraft.manager.DisasterManager;
+import me.mami.stratocraft.manager.ItemManager;
+import me.mami.stratocraft.manager.MobManager;
+import me.mami.stratocraft.manager.NewBatteryManager;
+import me.mami.stratocraft.model.Disaster;
+import me.mami.stratocraft.util.LangManager;
 
 public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
@@ -874,11 +875,31 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
         
         String disasterName = args[2].toUpperCase(java.util.Locale.ENGLISH).replace(" ", "_");
-        Disaster.Type type;
+        Disaster.Type type = null;
+        
+        // Önce direkt enum değerini dene
         try {
             type = Disaster.Type.valueOf(disasterName);
         } catch (IllegalArgumentException e) {
+            // Alt çizgi olmadan dene (TITANGOLEM -> TITAN_GOLEM)
+            String withoutUnderscore = disasterName.replace("_", "");
+            try {
+                type = Disaster.Type.valueOf(withoutUnderscore);
+            } catch (IllegalArgumentException e2) {
+                // Tüm enum değerlerini kontrol et (case-insensitive)
+                for (Disaster.Type dt : Disaster.Type.values()) {
+                    if (dt.name().replace("_", "").equalsIgnoreCase(withoutUnderscore) ||
+                        dt.name().equalsIgnoreCase(disasterName)) {
+                        type = dt;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (type == null) {
             p.sendMessage("§cGeçersiz felaket tipi: §e" + args[2]);
+            p.sendMessage("§7Kullanım: §e/stratocraft disaster list §7- Tüm tipleri gör");
             return true;
         }
         
@@ -1037,18 +1058,40 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             return true;
         }
         
-        String miniType = args[3].toUpperCase();
-        Disaster.Type type;
+        String miniType = args[3].toUpperCase(java.util.Locale.ENGLISH).replace(" ", "_");
+        Disaster.Type type = null;
+        
+        // Önce direkt enum değerini dene
         try {
             type = Disaster.Type.valueOf(miniType);
-            if (type != Disaster.Type.BOSS_BUFF_WAVE && 
-                type != Disaster.Type.MOB_INVASION && 
-                type != Disaster.Type.PLAYER_BUFF_WAVE) {
-                p.sendMessage("§cGeçersiz mini felaket tipi!");
-                return true;
-            }
         } catch (IllegalArgumentException e) {
+            // Alt çizgi olmadan dene
+            String withoutUnderscore = miniType.replace("_", "");
+            try {
+                type = Disaster.Type.valueOf(withoutUnderscore);
+            } catch (IllegalArgumentException e2) {
+                // Tüm enum değerlerini kontrol et (case-insensitive)
+                for (Disaster.Type dt : Disaster.Type.values()) {
+                    if (dt.name().replace("_", "").equalsIgnoreCase(withoutUnderscore) ||
+                        dt.name().equalsIgnoreCase(miniType)) {
+                        type = dt;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (type == null) {
             p.sendMessage("§cGeçersiz mini felaket tipi: §e" + args[3]);
+            p.sendMessage("§7Tipler: §eBOSS_BUFF_WAVE, MOB_INVASION, PLAYER_BUFF_WAVE");
+            return true;
+        }
+        
+        // Mini felaket kontrolü
+        if (type != Disaster.Type.BOSS_BUFF_WAVE && 
+            type != Disaster.Type.MOB_INVASION && 
+            type != Disaster.Type.PLAYER_BUFF_WAVE) {
+            p.sendMessage("§cGeçersiz mini felaket tipi! Sadece BOSS_BUFF_WAVE, MOB_INVASION, PLAYER_BUFF_WAVE kullanılabilir.");
             return true;
         }
         
@@ -1066,30 +1109,62 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         if (args.length < 3) {
             p.sendMessage("§cKullanım: /stratocraft disaster start <type> [level] [konum]");
             p.sendMessage("§7Level: 1-3 (varsayılan: tip'e göre)");
-            p.sendMessage("§7Konum: 'ben' veya 'X Y Z'");
+            p.sendMessage("§7Konum: 'ben' (yanına spawnlar) veya 'X Y Z' (koordinat)");
+            p.sendMessage("§eÖrnekler:");
+            p.sendMessage("§7  /stratocraft disaster start TITAN_GOLEM 3 ben");
+            p.sendMessage("§7  /stratocraft disaster start SOLAR_FLARE ben");
+            p.sendMessage("§7  /stratocraft disaster start EARTHQUAKE 2 100 64 200");
             return true;
         }
 
         // Felaket tipini parse et (titan_golem -> TITAN_GOLEM)
         String disasterName = args[2].toUpperCase(java.util.Locale.ENGLISH).replace(" ", "_");
-        Disaster.Type type;
+        Disaster.Type type = null;
+        
+        // Önce direkt enum değerini dene
         try {
             type = Disaster.Type.valueOf(disasterName);
         } catch (IllegalArgumentException e) {
-            // Alternatif isimler dene
-            disasterName = disasterName.replace("_", "");
+            // Alt çizgi olmadan dene (TITANGOLEM -> TITAN_GOLEM)
+            String withoutUnderscore = disasterName.replace("_", "");
             try {
-                type = Disaster.Type.valueOf(disasterName);
+                type = Disaster.Type.valueOf(withoutUnderscore);
             } catch (IllegalArgumentException e2) {
-                p.sendMessage("§cGeçersiz felaket tipi: §e" + args[2]);
-                p.sendMessage("§7Kullanılabilir tipler: §eTITAN_GOLEM, ABYSSAL_WORM, SOLAR_FLARE, EARTHQUAKE, METEOR_SHOWER, VOLCANIC_ERUPTION, CHAOS_DRAGON, VOID_TITAN, ICE_LEVIATHAN");
-                return true;
+                // Tüm enum değerlerini kontrol et (case-insensitive)
+                for (Disaster.Type dt : Disaster.Type.values()) {
+                    if (dt.name().replace("_", "").equalsIgnoreCase(withoutUnderscore) ||
+                        dt.name().equalsIgnoreCase(disasterName)) {
+                        type = dt;
+                        break;
+                    }
+                }
             }
         }
+        
+        if (type == null) {
+            p.sendMessage("§cGeçersiz felaket tipi: §e" + args[2]);
+            p.sendMessage("§7Kullanılabilir tipler:");
+            p.sendMessage("§7  Tek Boss: §eTITAN_GOLEM, ABYSSAL_WORM, CHAOS_DRAGON, VOID_TITAN, ICE_LEVIATHAN");
+            p.sendMessage("§7  Grup: §eZOMBIE_HORDE, SKELETON_LEGION, SPIDER_SWARM");
+            p.sendMessage("§7  Mini Dalga: §eCREEPER_SWARM, ZOMBIE_WAVE");
+            p.sendMessage("§7  Doğa: §eSOLAR_FLARE, EARTHQUAKE, STORM, METEOR_SHOWER, VOLCANIC_ERUPTION");
+            p.sendMessage("§7  Mini: §eBOSS_BUFF_WAVE, MOB_INVASION, PLAYER_BUFF_WAVE");
+            p.sendMessage("§7Kullanım: §e/stratocraft disaster list §7- Tüm tipleri gör");
+            return true;
+        }
 
-        // Seviye belirleme
+        // Konum belirleme (önce kontrol et, "ben" direkt 3. argüman olabilir)
+        org.bukkit.Location spawnLoc = null;
         int level = Disaster.getDefaultLevel(type);
-        if (args.length >= 4) {
+        
+        // Eğer 3. argüman "ben", "me" veya "self" ise direkt oyuncunun yanına spawnla
+        if (args.length >= 4 && (args[3].equalsIgnoreCase("ben") || 
+                                 args[3].equalsIgnoreCase("me") || 
+                                 args[3].equalsIgnoreCase("self"))) {
+            spawnLoc = p.getLocation().clone();
+        }
+        // Eğer 3. argüman sayı ise seviye olarak al
+        else if (args.length >= 4) {
             try {
                 int inputLevel = Integer.parseInt(args[3]);
                 if (inputLevel >= 1 && inputLevel <= 3) {
@@ -1098,28 +1173,40 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     p.sendMessage("§cSeviye 1-3 arası olmalı!");
                     return true;
                 }
+                
+                // 4. argüman konum olabilir
+                if (args.length >= 5) {
+                    if (args[4].equalsIgnoreCase("ben") || 
+                        args[4].equalsIgnoreCase("me") || 
+                        args[4].equalsIgnoreCase("self")) {
+                        spawnLoc = p.getLocation().clone();
+                    } else if (args.length >= 7) {
+                        // Koordinatlar: X Y Z
+                        try {
+                            double x = Double.parseDouble(args[4]);
+                            double y = Double.parseDouble(args[5]);
+                            double z = Double.parseDouble(args[6]);
+                            spawnLoc = new org.bukkit.Location(p.getWorld(), x, y, z);
+                        } catch (NumberFormatException ex) {
+                            p.sendMessage("§cGeçersiz koordinatlar! Format: X Y Z");
+                            return true;
+                        }
+                    }
+                }
             } catch (NumberFormatException ex) {
-                // Seviye değil, konum olabilir
-            }
-        }
-
-        // Konum belirleme
-        org.bukkit.Location spawnLoc = null;
-        int locationArgIndex = args.length >= 4 && !args[3].matches("\\d+") ? 3 : args.length >= 5 ? 4 : -1;
-
-        if (locationArgIndex > 0 && locationArgIndex < args.length) {
-            if (args[locationArgIndex].equalsIgnoreCase("ben") ||
-                    args[locationArgIndex].equalsIgnoreCase("me") ||
-                    args[locationArgIndex].equalsIgnoreCase("self")) {
-                spawnLoc = p.getLocation().clone();
-            } else if (args.length >= locationArgIndex + 3) {
-                try {
-                    double x = Double.parseDouble(args[locationArgIndex]);
-                    double y = Double.parseDouble(args[locationArgIndex + 1]);
-                    double z = Double.parseDouble(args[locationArgIndex + 2]);
-                    spawnLoc = new org.bukkit.Location(p.getWorld(), x, y, z);
-                } catch (NumberFormatException ex) {
-                    p.sendMessage("§cGeçersiz koordinatlar!");
+                // 3. argüman sayı değil, koordinat olabilir
+                if (args.length >= 6) {
+                    try {
+                        double x = Double.parseDouble(args[3]);
+                        double y = Double.parseDouble(args[4]);
+                        double z = Double.parseDouble(args[5]);
+                        spawnLoc = new org.bukkit.Location(p.getWorld(), x, y, z);
+                    } catch (NumberFormatException ex2) {
+                        p.sendMessage("§cGeçersiz format! Kullanım: <type> [level] [ben|X Y Z]");
+                        return true;
+                    }
+                } else {
+                    p.sendMessage("§cGeçersiz format! Kullanım: <type> [level] [ben|X Y Z]");
                     return true;
                 }
             }
@@ -1135,6 +1222,11 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§a§lFELAKET BAŞLATILDI!");
         p.sendMessage("§7Tip: §e" + disasterManager.getDisasterDisplayName(type));
         p.sendMessage("§7Seviye: §e" + level);
+        if (spawnLoc != null) {
+            p.sendMessage("§7Konum: §e" + spawnLoc.getBlockX() + ", " + spawnLoc.getBlockY() + ", " + spawnLoc.getBlockZ());
+        } else {
+            p.sendMessage("§7Konum: §eOtomatik (merkezden uzak)");
+        }
 
         return true;
     }
@@ -1186,23 +1278,29 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      */
     private boolean handleDisasterList(Player p) {
         p.sendMessage("§6=== FELAKET TİPLERİ ===");
-        p.sendMessage("§7§lCanlı Felaketler:");
+        p.sendMessage("§7§lCanlı Felaketler - Tek Boss:");
         p.sendMessage("§7  §eTITAN_GOLEM §7- Seviye 3 - Titan Golem");
         p.sendMessage("§7  §eABYSSAL_WORM §7- Seviye 2 - Hiçlik Solucanı");
         p.sendMessage("§7  §eCHAOS_DRAGON §7- Seviye 3 - Khaos Ejderi");
         p.sendMessage("§7  §eVOID_TITAN §7- Seviye 3 - Boşluk Titanı");
         p.sendMessage("§7  §eICE_LEVIATHAN §7- Seviye 2 - Buzul Leviathan");
+        p.sendMessage("§7§lCanlı Felaketler - Grup (30 adet):");
+        p.sendMessage("§7  §eZOMBIE_HORDE §7- Seviye 2 - Zombi Ordusu");
+        p.sendMessage("§7  §eSKELETON_LEGION §7- Seviye 2 - İskelet Lejyonu");
+        p.sendMessage("§7  §eSPIDER_SWARM §7- Seviye 2 - Örümcek Sürüsü");
+        p.sendMessage("§7§lCanlı Felaketler - Mini Dalga (100-500 adet):");
+        p.sendMessage("§7  §eCREEPER_SWARM §7- Seviye 1 - Creeper Sürüsü");
+        p.sendMessage("§7  §eZOMBIE_WAVE §7- Seviye 1 - Zombi Dalgası");
         p.sendMessage("§7§lDoğa Olayları:");
         p.sendMessage("§7  §eSOLAR_FLARE §7- Seviye 1 - Güneş Patlaması");
         p.sendMessage("§7  §eEARTHQUAKE §7- Seviye 2 - Deprem");
+        p.sendMessage("§7  §eSTORM §7- Seviye 2 - Fırtına");
         p.sendMessage("§7  §eMETEOR_SHOWER §7- Seviye 2 - Meteor Yağmuru");
         p.sendMessage("§7  §eVOLCANIC_ERUPTION §7- Seviye 3 - Volkanik Patlama");
-        p.sendMessage("§7  §eVOID_TITAN §7- Seviye 3 - Boşluk Titanı");
-        p.sendMessage("§7§lDoğa Olayları:");
-        p.sendMessage("§7  §eSOLAR_FLARE §7- Seviye 1 - Güneş Patlaması");
-        p.sendMessage("§7  §eEARTHQUAKE §7- Seviye 2 - Deprem");
-        p.sendMessage("§7  §eMETEOR_SHOWER §7- Seviye 2 - Meteor Yağmuru");
-        p.sendMessage("§7  §eVOLCANIC_ERUPTION §7- Seviye 3 - Volkanik Patlama");
+        p.sendMessage("§7§lMini Felaketler:");
+        p.sendMessage("§7  §eBOSS_BUFF_WAVE §7- Seviye 1 - Boss Güçlenme Dalgası");
+        p.sendMessage("§7  §eMOB_INVASION §7- Seviye 1 - Mob İstilası");
+        p.sendMessage("§7  §ePLAYER_BUFF_WAVE §7- Seviye 1 - Oyuncu Buff Dalgası");
 
         return true;
     }
@@ -4017,17 +4115,37 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 case "tame":
                     return getTameTabComplete(args, input);
                 case "disaster":
-                    // Disaster start için önce seviye öner (args.length == 3)
+                    // Disaster start için önce felaket tipi öner (args.length == 3)
                     if (category.equalsIgnoreCase("start")) {
-                        List<String> levels = Arrays.asList("1", "2", "3");
+                        // Tüm felaket tiplerini listele
+                        List<String> disasterTypes = Arrays.asList(
+                            // Tek Boss
+                            "TITAN_GOLEM", "ABYSSAL_WORM", "CHAOS_DRAGON", "VOID_TITAN", "ICE_LEVIATHAN",
+                            // Grup (30 adet)
+                            "ZOMBIE_HORDE", "SKELETON_LEGION", "SPIDER_SWARM",
+                            // Mini Dalga (100-500 adet)
+                            "CREEPER_SWARM", "ZOMBIE_WAVE",
+                            // Doğa Olayları
+                            "SOLAR_FLARE", "EARTHQUAKE", "STORM", "METEOR_SHOWER", "VOLCANIC_ERUPTION",
+                            // Mini Felaketler
+                            "BOSS_BUFF_WAVE", "MOB_INVASION", "PLAYER_BUFF_WAVE"
+                        );
                         if (input.isEmpty()) {
-                            return levels;
+                            return disasterTypes;
                         }
-                        return levels.stream()
-                                .filter(s -> s.startsWith(input))
+                        return disasterTypes.stream()
+                                .filter(s -> s.toLowerCase().startsWith(input.toLowerCase()))
                                 .collect(Collectors.toList());
                     }
-                    break;
+                    // Diğer disaster komutları (stop, info, list, clear, test)
+                    List<String> disasterCommands = Arrays.asList("start", "stop", "info", "list", "clear", "test");
+                    if (input.isEmpty()) {
+                        return disasterCommands;
+                    }
+                    return disasterCommands.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
+                            .collect(Collectors.toList());
+                
                 case "mine":
                     // Mine give için seviye veya concealer öner
                     if (category.equalsIgnoreCase("give")) {
@@ -4134,39 +4252,19 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         return new ArrayList<>();
                     }
                 }
-            } else if (commandName.equals("disaster") && args[1].equalsIgnoreCase("start")) {
-                // Disaster start için önce seviye öner
-                if (args.length == 3) {
-                    String input = args[2].toLowerCase();
-                    List<String> levels = Arrays.asList("1", "2", "3");
-                    if (input.isEmpty()) {
-                        return levels;
-                    }
-                    return levels.stream()
-                            .filter(s -> s.startsWith(input))
-                            .collect(Collectors.toList());
-                } else if (args.length == 4) {
-                    // Seviyeden sonra felaket tipi öner
-                    String levelStr = args[2];
-                    String input = args[3].toLowerCase();
-                    try {
-                        int level = Integer.parseInt(levelStr);
-                        if (level >= 1 && level <= 3) {
-                            List<String> disasterTypes = Arrays.asList(
-                                "TITAN_GOLEM", "ABYSSAL_WORM", "CHAOS_DRAGON", "VOID_TITAN", "ICE_LEVIATHAN",
-                                "SOLAR_FLARE", "EARTHQUAKE", "METEOR_SHOWER", "VOLCANIC_ERUPTION"
-                            );
-                            if (input.isEmpty()) {
-                                return disasterTypes;
-                            }
-                            return disasterTypes.stream()
-                                    .filter(s -> s.toLowerCase().startsWith(input.toLowerCase()))
-                                    .collect(Collectors.toList());
-                        }
-                    } catch (NumberFormatException e) {
-                        // Geçersiz seviye
-                    }
+            } else if (commandName.equals("disaster") && category.equalsIgnoreCase("start")) {
+                // Disaster start için felaket tipinden sonra seviye veya "ben" öner
+                String input = args[3].toLowerCase();
+                List<String> suggestions = new ArrayList<>();
+                suggestions.addAll(Arrays.asList("1", "2", "3")); // Seviyeler
+                suggestions.addAll(Arrays.asList("ben", "me", "self")); // Yanına spawnla
+                
+                if (input.isEmpty()) {
+                    return suggestions;
                 }
+                return suggestions.stream()
+                        .filter(s -> s.startsWith(input))
+                        .collect(Collectors.toList());
             }
         }
 
@@ -7484,5 +7582,3 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
     }
 }
-
-// Missing tab completion helper methods

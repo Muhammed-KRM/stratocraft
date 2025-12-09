@@ -1,18 +1,22 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
+import me.mami.stratocraft.Main;
 
 /**
  * Ritüel Tabanlı Tuzak Sistemi
@@ -25,12 +29,49 @@ import java.util.*;
 public class TrapManager {
     private final Main plugin;
     private final ClanManager clanManager;
+    private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
 
     public TrapManager(Main plugin) {
         this.plugin = plugin;
         this.clanManager = plugin.getClanManager();
         loadTraps();
         startParticleTask();
+    }
+    
+    public void setBalanceConfig(me.mami.stratocraft.manager.GameBalanceConfig config) {
+        this.balanceConfig = config;
+    }
+    
+    private int getTrapFuelDiamond() {
+        return balanceConfig != null ? balanceConfig.getTrapFuelDiamond() : 5;
+    }
+    
+    private int getTrapFuelEmerald() {
+        return balanceConfig != null ? balanceConfig.getTrapFuelEmerald() : 10;
+    }
+    
+    private int getTrapFuelTitanium() {
+        return balanceConfig != null ? balanceConfig.getTrapFuelTitanium() : 20;
+    }
+    
+    private double getTrapHellTrapDamage() {
+        return balanceConfig != null ? balanceConfig.getTrapHellTrapDamage() : 3.0;
+    }
+    
+    private double getTrapShockTrapDamage() {
+        return balanceConfig != null ? balanceConfig.getTrapShockTrapDamage() : 2.0;
+    }
+    
+    private double getTrapMineDamage() {
+        return balanceConfig != null ? balanceConfig.getTrapMineDamage() : 5.0;
+    }
+    
+    private double getTrapPoisonTrapDamage() {
+        return balanceConfig != null ? balanceConfig.getTrapPoisonTrapDamage() : 0.5;
+    }
+    
+    private double getTrapBlackHoleDamage() {
+        return balanceConfig != null ? balanceConfig.getTrapBlackHoleDamage() : 10.0;
     }
 
     private void startParticleTask() {
@@ -818,16 +859,16 @@ public class TrapManager {
             }
         }
 
-        // Yakıt miktarını hesapla
+        // Yakıt miktarını hesapla (config'den)
         int fuel = 0;
         if (fuelMaterial == Material.DIAMOND)
-            fuel = 5;
+            fuel = getTrapFuelDiamond();
         else if (fuelMaterial == Material.EMERALD)
-            fuel = 10;
+            fuel = getTrapFuelEmerald();
         // ItemManager.isCustomItem kontrolü listener'da yapılıyor, buraya geldiğinde
-        // Titanyum ise 20 verilir
+        // Titanyum ise config'den al
         else
-            fuel = 20; // Titanyum veya diğer
+            fuel = getTrapFuelTitanium(); // Titanyum veya diğer
 
         // Klan ID'sini al
         UUID clanId = null;

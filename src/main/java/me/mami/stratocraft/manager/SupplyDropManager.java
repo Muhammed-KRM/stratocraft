@@ -1,7 +1,7 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.manager.ItemManager;
+import java.util.Random;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -13,7 +13,7 @@ import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.util.Random;
+import me.mami.stratocraft.Main;
 
 /**
  * Hava Drop Sistemi
@@ -21,12 +21,20 @@ import java.util.Random;
  */
 public class SupplyDropManager {
     private final Main plugin;
-    private static final long DROP_INTERVAL = 3 * 60 * 60 * 20; // 3 saat (tick cinsinden)
+    private long dropInterval = 3 * 60 * 60 * 20L; // 3 saat (tick cinsinden) - config'den
     private final Random random = new Random();
+    private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
 
     public SupplyDropManager(Main plugin) {
         this.plugin = plugin;
         startDropTask();
+    }
+    
+    public void setBalanceConfig(me.mami.stratocraft.manager.GameBalanceConfig config) {
+        this.balanceConfig = config;
+        if (config != null) {
+            this.dropInterval = config.getSupplyDropInterval();
+        }
     }
 
     /**
@@ -38,7 +46,7 @@ public class SupplyDropManager {
             public void run() {
                 spawnSupplyDrop();
             }
-        }.runTaskTimer(plugin, DROP_INTERVAL, DROP_INTERVAL);
+        }.runTaskTimer(plugin, dropInterval, dropInterval);
     }
 
     /**
@@ -52,8 +60,9 @@ public class SupplyDropManager {
 
         // Rastgele konum (spawn'dan uzak, PvP açık alan)
         Location spawnLoc = world.getSpawnLocation();
-        int x = spawnLoc.getBlockX() + random.nextInt(2000) - 1000;
-        int z = spawnLoc.getBlockZ() + random.nextInt(2000) - 1000;
+        int spawnRange = balanceConfig != null ? balanceConfig.getSupplyDropSpawnRange() : 2000;
+        int x = spawnLoc.getBlockX() + random.nextInt(spawnRange) - (spawnRange / 2);
+        int z = spawnLoc.getBlockZ() + random.nextInt(spawnRange) - (spawnRange / 2);
         
         // Güvenli Y koordinatı bul (sıvı ve geçersiz blok kontrolü)
         int groundY = findSafeGroundY(world, x, z);
@@ -63,7 +72,8 @@ public class SupplyDropManager {
             return;
         }
         
-        int dropY = groundY + 50; // 50 blok yukarıdan
+        int dropHeight = balanceConfig != null ? balanceConfig.getSupplyDropHeight() : 50;
+        int dropY = groundY + dropHeight; // Config'den yükseklik
 
         Location dropLoc = new Location(world, x + 0.5, dropY, z + 0.5);
         Location groundLoc = new Location(world, x, groundY + 1, z);
@@ -93,8 +103,9 @@ public class SupplyDropManager {
             groundLoc = groundLocation;
         }
 
-        // Drop konumu (targetLocation'dan 50 blok yukarı)
-        int dropY = targetLocation.getBlockY() + 50;
+        // Drop konumu (targetLocation'dan config'den yükseklik kadar yukarı)
+        int dropHeight = balanceConfig != null ? balanceConfig.getSupplyDropHeight() : 50;
+        int dropY = targetLocation.getBlockY() + dropHeight;
         Location dropLoc = new Location(world, targetLocation.getBlockX() + 0.5, dropY,
                 targetLocation.getBlockZ() + 0.5);
 
@@ -191,29 +202,37 @@ public class SupplyDropManager {
                 if (finalLoc.getBlock().getState() instanceof Chest) {
                     Chest chest = (Chest) finalLoc.getBlock().getState();
 
-                    // İçine değerli eşyalar koy (Titanyum, Batarya, Para)
-                    chest.getInventory().addItem(new ItemStack(Material.DIAMOND, random.nextInt(5) + 3));
+                    // İçine değerli eşyalar koy (Titanyum, Batarya, Para) - Config'den
+                    int minDiamond = balanceConfig != null ? balanceConfig.getSupplyDropMinDiamond() : 3;
+                    int maxDiamond = balanceConfig != null ? balanceConfig.getSupplyDropMaxDiamond() : 8;
+                    chest.getInventory().addItem(new ItemStack(Material.DIAMOND, random.nextInt(maxDiamond - minDiamond + 1) + minDiamond));
                     if (ItemManager.TITANIUM_INGOT != null) {
                         chest.getInventory().addItem(ItemManager.TITANIUM_INGOT.clone());
                     }
-                    chest.getInventory().addItem(new ItemStack(Material.GOLD_INGOT, random.nextInt(20) + 10));
-                    chest.getInventory().addItem(new ItemStack(Material.EMERALD, random.nextInt(10) + 5));
+                    int minGold = balanceConfig != null ? balanceConfig.getSupplyDropMinGold() : 10;
+                    int maxGold = balanceConfig != null ? balanceConfig.getSupplyDropMaxGold() : 30;
+                    chest.getInventory().addItem(new ItemStack(Material.GOLD_INGOT, random.nextInt(maxGold - minGold + 1) + minGold));
+                    int minEmerald = balanceConfig != null ? balanceConfig.getSupplyDropMinEmerald() : 5;
+                    int maxEmerald = balanceConfig != null ? balanceConfig.getSupplyDropMaxEmerald() : 15;
+                    chest.getInventory().addItem(new ItemStack(Material.EMERALD, random.nextInt(maxEmerald - minEmerald + 1) + minEmerald));
 
-                    // Batarya eşyası ekle (Lightning Core veya başka bir batarya eşyası)
-                    if (ItemManager.LIGHTNING_CORE != null && random.nextDouble() < 0.3) {
+                    // Batarya eşyası ekle (Lightning Core veya başka bir batarya eşyası) - Config'den
+                    double lightningCoreChance = balanceConfig != null ? balanceConfig.getSupplyDropLightningCoreChance() : 0.3;
+                    if (ItemManager.LIGHTNING_CORE != null && random.nextDouble() < lightningCoreChance) {
                         chest.getInventory().addItem(ItemManager.LIGHTNING_CORE.clone());
                     }
 
                     chest.update();
                 }
 
-                // Duman efekti (5 saniye)
+                // Duman efekti - Config'den süre
+                int smokeDuration = balanceConfig != null ? balanceConfig.getSupplyDropSmokeEffectDuration() : 100;
                 new BukkitRunnable() {
                     int ticks = 0;
 
                     @Override
                     public void run() {
-                        if (ticks > 100 || finalLoc.getWorld() == null) { // 5 saniye
+                        if (ticks > smokeDuration || finalLoc.getWorld() == null) {
                             cancel();
                             return;
                         }

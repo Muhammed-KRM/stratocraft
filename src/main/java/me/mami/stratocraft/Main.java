@@ -68,6 +68,7 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.BreedingManager breedingManager;
     private me.mami.stratocraft.listener.SpecialWeaponListener specialWeaponListener;
     private me.mami.stratocraft.manager.StratocraftPowerSystem stratocraftPowerSystem;
+    private me.mami.stratocraft.listener.PowerSystemListener powerSystemListener;
     
     // Güç sistemi yardımcıları (test için)
     private me.mami.stratocraft.manager.SimpleRankingSystem simpleRankingSystem;
@@ -134,6 +135,7 @@ public class Main extends JavaPlugin {
         buffManager = new BuffManager();
         buffManager.setPlugin(this);
         hudManager = new me.mami.stratocraft.manager.HUDManager(this);
+        batteryParticleManager = new me.mami.stratocraft.manager.BatteryParticleManager(this);
         dataManager = new DataManager(this);
         configManager = new ConfigManager(this);
         langManager = new me.mami.stratocraft.util.LangManager(this);
@@ -153,12 +155,39 @@ public class Main extends JavaPlugin {
         // MissionManager'ı DifficultyManager ile başlat
         missionManager = new me.mami.stratocraft.manager.MissionManager(difficultyManager, this);
 
+        // Yeni sistemler: Tuzaklar, Mayınlar, Hava Drop (174. satırdan önce initialize edilmeli)
+        trapManager = new me.mami.stratocraft.manager.TrapManager(this);
+        newMineManager = new me.mami.stratocraft.manager.NewMineManager(this);
+        supplyDropManager = new me.mami.stratocraft.manager.SupplyDropManager(this);
+
         // Manager bağlantıları
         siegeManager.setBuffManager(buffManager);
         disasterManager.setBuffManager(buffManager);
         disasterManager.setTerritoryManager(territoryManager);
         disasterManager.setDifficultyManager(difficultyManager); // DifficultyManager'ı set et
         disasterManager.setConfigManager(configManager.getDisasterConfigManager()); // ConfigManager'ı set et
+        
+        // ✅ CONFIG ENTEGRASYONU: Manager'lara GameBalanceConfig'i set et
+        if (configManager != null && configManager.getGameBalanceConfig() != null) {
+            me.mami.stratocraft.manager.GameBalanceConfig balanceConfig = configManager.getGameBalanceConfig();
+            siegeManager.setBalanceConfig(balanceConfig);
+            buffManager.setBalanceConfig(balanceConfig);
+            contractManager.setBalanceConfig(balanceConfig);
+            shopManager.setBalanceConfig(balanceConfig);
+            missionManager.setBalanceConfig(balanceConfig);
+                    // Faz 2: Savaş sistemleri
+                    bossManager.setBalanceConfig(balanceConfig);
+                    trapManager.setBalanceConfig(balanceConfig);
+                    newMineManager.setBalanceConfig(balanceConfig);
+                    mobManager.setBalanceConfig(balanceConfig);
+                    // Faz 3: Ekonomi ve üreme sistemleri
+                    supplyDropManager.setBalanceConfig(balanceConfig);
+                    caravanManager.setBalanceConfig(balanceConfig);
+                    tamingManager.setBalanceConfig(balanceConfig);
+                    breedingManager.setBalanceConfig(balanceConfig);
+                    // Faz 4: Diğer sistemler
+                    specialItemManager.setBalanceConfig(balanceConfig);
+                }
         
         // Dinamik Zorluk Sistemi Başlatma (tüm manager'lar hazır olduktan sonra)
         initializeDynamicDifficultySystem();
@@ -285,11 +314,9 @@ public class Main extends JavaPlugin {
                 this);
 
         // Yeni sistemler: Tuzaklar, Kancalar, Casusluk, Hava Drop
-        trapManager = new me.mami.stratocraft.manager.TrapManager(this);
+        // (trapManager, newMineManager, supplyDropManager zaten yukarıda initialize edildi)
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.TrapListener(trapManager), this);
         
-        // Yeni Mayın Sistemi (eski sistem kaldırıldı)
-        newMineManager = new me.mami.stratocraft.manager.NewMineManager(this);
         // 25 mayın için hayalet tariflerini ekle (ghostRecipeManager oluşturulduktan sonra)
         ghostRecipeManager.initializeMineRecipes(newMineManager);
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.NewMineListener(newMineManager), this);
@@ -298,7 +325,6 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager()
                 .registerEvents(new me.mami.stratocraft.listener.SpecialItemListener(specialItemManager), this);
 
-        supplyDropManager = new me.mami.stratocraft.manager.SupplyDropManager(this);
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.SupplyDropListener(supplyDropManager),
                 this);
         
@@ -337,14 +363,9 @@ public class Main extends JavaPlugin {
                 @Override
                 public void run() {
                     // PowerSystemListener'ı bul ve tüm oyuncuların adlarını güncelle
-                    for (org.bukkit.event.ListenerRegistration<?> registration : 
-                         org.bukkit.Bukkit.getPluginManager().getRegisteredListeners(plugin)) {
-                        if (registration.getListener() instanceof me.mami.stratocraft.listener.PowerSystemListener) {
-                            me.mami.stratocraft.listener.PowerSystemListener powerListener = 
-                                (me.mami.stratocraft.listener.PowerSystemListener) registration.getListener();
-                            powerListener.updateAllPlayerNames();
-                            break;
-                        }
+                    // Field'dan direkt al (daha güvenli ve hızlı)
+                    if (powerSystemListener != null) {
+                        powerSystemListener.updateAllPlayerNames();
                     }
                 }
             }.runTaskTimer(this, updateInterval, updateInterval);
@@ -936,14 +957,12 @@ public class Main extends JavaPlugin {
         stratocraftPowerSystem.loadConfig(configManager.getConfig());
         
         // Event listener'ı kaydet (Delta sistemi için TerritoryManager gerekli)
-        Bukkit.getPluginManager().registerEvents(
-            new me.mami.stratocraft.listener.PowerSystemListener(
-                stratocraftPowerSystem, 
-                clanManager, 
-                territoryManager
-            ), 
-            this
+        powerSystemListener = new me.mami.stratocraft.listener.PowerSystemListener(
+            stratocraftPowerSystem, 
+            clanManager, 
+            territoryManager
         );
+        Bukkit.getPluginManager().registerEvents(powerSystemListener, this);
         
         // ✅ FELAKET SİSTEMİ ENTEGRASYONU: DisasterManager'a yeni güç sistemini bağla
         if (disasterManager != null) {

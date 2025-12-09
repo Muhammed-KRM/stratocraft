@@ -472,6 +472,21 @@ clan-power-system:
     titanium: 15      # Titanyum
     default: 3         # Diğer kaynaklar
   
+  # Oyuncu envanter materyal güç puanları (envanterdeki materyaller)
+  player-inventory-materials:
+    diamond: 10          # Elmas
+    obsidian: 30          # Obsidyen
+    emerald: 35           # Zümrüt
+    gold_ingot: 5         # Altın külçesi
+    iron_ingot: 3         # Demir külçesi
+    netherite_ingot: 20   # Netherite külçesi
+    # Özel itemler (NBT tag ile kontrol edilir)
+    red-diamond: 18       # Kızıl Elmas (custom_id: RED_DIAMOND)
+    dark-matter: 50       # Karanlık Madde (custom_id: DARK_MATTER)
+    titanium-ore: 15      # Titanyum Parçası (custom_id: TITANIUM)
+    titanium-ingot: 15    # Titanyum Külçesi (custom_id: TITANIUM_INGOT)
+    default: 0            # Diğer materyaller (güç vermez)
+  
   # Antrenman/Ustalık güç puanları
   mastery:
     base-power: 150    # Temel güç (rapor: 150)
@@ -634,4 +649,173 @@ game-balance:
   main:
     raytrace-interval: 20           # RayTrace güncelleme aralığı (tick) - 1 saniye
     raytrace-max-distance: 50       # RayTrace maksimum mesafe (blok)
+  
+  # Siege Sistemi (Kuşatma)
+  siege:
+    loot-percentage: 0.5            # Kuşatma yağma yüzdesi (%50)
+    chest-loot-percentage: 0.5      # Pes etme durumunda sandık item yüzdesi (%50)
+    chunks-per-tick: 5               # Her tick'te taranacak chunk sayısı (performans)
+    chests-per-tick: 2               # Her tick'te işlenecek sandık sayısı (performans)
+    max-search-radius: 100          # Maksimum arama yarıçapı (blok)
+  
+  # Buff Sistemi
+  buff:
+    conqueror:
+      damage-multiplier: 0.2        # Fatih Buff hasar artışı (%20)
+      production-multiplier: 0.3   # Fatih Buff üretim hızı artışı (%30)
+    hero:
+      health-multiplier: 0.15       # Kahraman Buff can artışı (%15)
+      defense-multiplier: 0.25      # Kahraman Buff savunma artışı (%25)
+  
+  # Contract Sistemi (Kontrat)
+  contract:
+    reward-multiplier: 0.5          # Kontrat ödül çarpanı
+    default-days: 7                 # Varsayılan kontrat süresi (gün)
+    health-restore-per-heart: 2.0   # Her kalp için geri verilen can (2.0 = 1 kalp)
+  
+  # Shop Sistemi (Market)
+  shop:
+    tax-percentage: 0.05            # Market vergi oranı (%5)
+  
+  # Mission Sistemi (Görev)
+  mission:
+    tier1:
+      kill-mob-reward-amount: 5     # Tier 1 öldürme görevi ödülü (Iron Ingot)
+      gather-reward-amount: 3       # Tier 1 toplama görevi ödülü (Gold Ingot)
+      kill-mob-target: 10           # Tier 1 öldürme hedefi (10 mob)
+      gather-target: 64             # Tier 1 toplama hedefi (64 item)
+    tier2:
+      kill-mob-reward-amount: 5     # Tier 2 öldürme görevi ödülü (Diamond)
+      kill-mob-target: 20           # Tier 2 öldürme hedefi (20 mob)
+      gather-target: 10             # Tier 2 toplama hedefi (10 item)
+  
+  # Boss Sistemi
+  boss:
+    max-bossbar-distance: 100       # BossBar gösterim mesafesi (blok)
+    max-bossbars-per-player: 3      # Oyuncu başına maksimum BossBar sayısı
+    ritual-cooldown: 60000          # Ritüel cooldown (ms) - 60 saniye
+    weak-point-duration: 5000       # Zayıf nokta süresi (ms) - 5 saniye
+    shield-duration: 3000           # Kalkan süresi (ms) - 3 saniye
+  
+  # Trap Sistemi (Tuzak)
+  trap:
+    fuel:
+      diamond: 5                    # Elmas yakıt değeri
+      emerald: 10                   # Zümrüt yakıt değeri
+      titanium: 20                  # Titanyum yakıt değeri
+    damage:
+      hell-trap: 3.0                # Cehennem tuzağı hasarı
+      shock-trap: 2.0               # Şok tuzağı hasarı
+      mine: 5.0                     # Mayın hasarı
+      poison-trap: 0.5              # Zehir tuzağı hasarı
+      black-hole: 10.0              # Kara delik tuzağı hasarı
+  
+  # Mine Sistemi (Mayın)
+  mine:
+    damage:
+      level1-base: 3.0              # Seviye 1 mayın temel hasarı
+      level2-base: 5.0               # Seviye 2 mayın temel hasarı
+      level3-base: 8.0               # Seviye 3 mayın temel hasarı
+      level4-base: 12.0              # Seviye 4 mayın temel hasarı
+      level5-base: 20.0              # Seviye 5 mayın temel hasarı
+  
+  # Mob Sistemi (Canavar)
+  mob:
+    hell-dragon-health: 200.0       # Cehennem Ejderi canı
+    terror-worm-health: 100.0       # Toprak Solucanı canı
+    war-bear-health: 150.0          # Savaş Ayısı canı
+    shadow-panther-health: 80.0     # Gölge Panteri canı
+    wyvern-health: 250.0            # Wyvern canı
+    fire-amphiptere-health: 120.0   # Ateş Amfibiterü canı
+    fire-amphiptere-damage: 10.0    # Ateş Amfibiterü hasarı
+    hell-dragon-size: 20            # Cehennem Ejderi boyutu
+    wyvern-size: 15                 # Wyvern boyutu
+    # Normal Mob Değerleri (Sık Gelen Canavarlar)
+    normal:
+      goblin-health: 30.0           # Goblin canı
+      goblin-speed: 0.35            # Goblin hızı
+      ork-health: 80.0              # Ork canı
+      ork-damage: 8.0                # Ork hasarı
+      troll-health: 120.0           # Troll canı
+      troll-speed: 0.2              # Troll hızı
+      troll-damage: 10.0             # Troll hasarı
+      knight-health: 60.0            # İskelet Şövalye canı
+      mage-health: 50.0              # Karanlık Büyücü canı
+      werewolf-health: 70.0          # Kurt Adam canı
+      werewolf-damage: 6.0           # Kurt Adam hasarı
+      spider-health: 60.0            # Dev Örümcek canı
+      spider-speed: 0.4              # Dev Örümcek hızı
+
+  # Supply Drop Sistemi
+  supply-drop:
+    interval: 216000                # Drop aralığı (tick) - 3 saat (3 * 60 * 60 * 20)
+    height: 50                      # Drop yüksekliği (blok)
+    min-diamond: 3                  # Minimum elmas sayısı
+    max-diamond: 8                  # Maksimum elmas sayısı
+    min-gold: 10                    # Minimum altın sayısı
+    max-gold: 30                    # Maksimum altın sayısı
+    min-emerald: 5                  # Minimum zümrüt sayısı
+    max-emerald: 15                 # Maksimum zümrüt sayısı
+    lightning-core-chance: 0.3      # Lightning Core şansı (0.0-1.0)
+    spawn-range: 2000               # Spawn'dan uzaklık (blok)
+    smoke-effect-duration: 100      # Duman efekti süresi (tick)
+
+  # Caravan Sistemi (Kervan)
+  caravan:
+    min-distance: 1000              # Minimum mesafe (blok)
+    min-stacks: 20                  # Minimum stack sayısı
+    min-value: 5000.0               # Minimum değer (altın)
+    arrival-radius: 5               # Varış yarıçapı (blok)
+    reward-multiplier: 1.5          # Ödül çarpanı (x1.5)
+
+  # Taming Sistemi (Eğitme)
+  taming:
+    ritual-cooldown: 30000           # Ritüel cooldown (ms) - 30 saniye
+
+  # Breeding Sistemi (Üreme)
+  breeding:
+    level1-duration: 86400000       # Seviye 1 süre (ms) - 1 gün
+    level2-duration: 172800000       # Seviye 2 süre (ms) - 2 gün
+    level3-duration: 259200000       # Seviye 3 süre (ms) - 3 gün
+    level4-duration: 345600000       # Seviye 4 süre (ms) - 4 gün
+    level5-duration: 432000000       # Seviye 5 süre (ms) - 5 gün
+    natural-duration: 60000          # Doğal çiftleştirme süresi (ms) - 1 dakika
+    min-food-blocks: 3              # Minimum yiyecek bloğu sayısı
+
+  # Special Weapon Sistemi (Özel Silah)
+  special-weapon:
+    level3-range: 20                 # Seviye 3 silah menzili (blok)
+    level3-explosion-power: 3.0      # Seviye 3 patlama gücü
+    level3-damage: 10.0              # Seviye 3 hasar
+    level3-radius: 5                 # Seviye 3 etki yarıçapı (blok)
+    level4-laser-cooldown: 500       # Seviye 4 lazer cooldown (ms)
+
+  # Special Armor Sistemi (Özel Zırh)
+  special-armor:
+    level2-thorn-damage-multiplier: 0.3  # Seviye 2 diken hasar çarpanı (%30)
+    level3-speed-duration: 100       # Seviye 3 hız süresi (tick)
+    level3-speed-level: 1           # Seviye 3 hız seviyesi
+    level3-jump-duration: 100       # Seviye 3 zıplama süresi (tick)
+    level3-jump-level: 2             # Seviye 3 zıplama seviyesi
+    level4-regen-interval: 1000      # Seviye 4 can yenileme aralığı (ms)
+    level4-regen-amount: 1.0         # Seviye 4 can yenileme miktarı
+    level5-double-jump-cooldown1: 1000  # Seviye 5 çift zıplama cooldown 1 (ms)
+    level5-double-jump-cooldown2: 500   # Seviye 5 çift zıplama cooldown 2 (ms)
+    level5-flight-duration: 100     # Seviye 5 uçma süresi (tick) - 5 saniye
+
+  # Special Item Sistemi (Özel Eşya - Kanca)
+  special-item:
+    hook-rusty-max-vertical: 3.0    # Paslı kanca maksimum dikey mesafe (blok)
+    hook-rusty-pull-strength: 0.4   # Paslı kanca çekme gücü
+    hook-golden-range: 20.0         # Altın kanca menzili (blok)
+    hook-golden-pull-strength: 1.2  # Altın kanca çekme gücü
+    hook-titan-range: 40.0           # Titan kancası menzili (blok)
+    hook-titan-pull-strength: 2.5   # Titan kancası çekme gücü
+    hook-cooldown: 1000              # Kanca cooldown (ms)
+    hook-fall-damage-protection-duration: 3000  # Düşme hasarı koruma süresi (ms)
+    spy-duration: 3000               # Casusluk dürbünü süresi (ms)
+
+  # Research Sistemi (Araştırma)
+  research:
+    table-distance: 10               # Araştırma masası mesafesi (blok)
 

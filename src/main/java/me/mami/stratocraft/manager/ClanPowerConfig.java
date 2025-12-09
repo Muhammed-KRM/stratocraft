@@ -42,6 +42,22 @@ public class ClanPowerConfig {
     private double ritualResourceTitanium = 15.0;
     private double ritualResourceDefault = 3.0;
     
+    // ========== OYUNCU ENVANTER MATERYAL GÜÇ PUANLARI ==========
+    // Normal materyaller
+    private double materialDiamond = 10.0;
+    private double materialObsidian = 30.0;
+    private double materialEmerald = 35.0;
+    private double materialGoldIngot = 5.0;
+    private double materialIronIngot = 3.0;
+    private double materialNetheriteIngot = 20.0;
+    private double materialDefault = 0.0;
+    
+    // Özel itemler (NBT tag ile kontrol edilecek)
+    private double materialRedDiamond = 18.0;
+    private double materialDarkMatter = 50.0;
+    private double materialTitaniumOre = 15.0;
+    private double materialTitaniumIngot = 15.0;
+    
     // ========== ANTRENMAN/USTALIK GÜÇ PUANLARI ==========
     // Her %100 üzerine çıkış için puan
     // Formül: basePower × (masteryPercent / 100) ^ exponent
@@ -123,6 +139,22 @@ public class ClanPowerConfig {
         ritualResourceDarkMatter = config.getDouble(path + "dark-matter", 50.0);
         ritualResourceTitanium = config.getDouble(path + "titanium", 15.0);
         ritualResourceDefault = config.getDouble(path + "default", 3.0);
+        
+        // Oyuncu envanter materyal güç puanları
+        path = "clan-power-system.player-inventory-materials.";
+        materialDiamond = config.getDouble(path + "diamond", 10.0);
+        materialObsidian = config.getDouble(path + "obsidian", 30.0);
+        materialEmerald = config.getDouble(path + "emerald", 35.0);
+        materialGoldIngot = config.getDouble(path + "gold_ingot", 5.0);
+        materialIronIngot = config.getDouble(path + "iron_ingot", 3.0);
+        materialNetheriteIngot = config.getDouble(path + "netherite_ingot", 20.0);
+        materialDefault = config.getDouble(path + "default", 0.0);
+        
+        // Özel itemler (ritüel kaynak güçleriyle aynı değerler)
+        materialRedDiamond = config.getDouble(path + "red-diamond", 18.0);
+        materialDarkMatter = config.getDouble(path + "dark-matter", 50.0);
+        materialTitaniumOre = config.getDouble(path + "titanium-ore", 15.0);
+        materialTitaniumIngot = config.getDouble(path + "titanium-ingot", 15.0);
         
         // Antrenman/Ustalık güç puanları
         path = "clan-power-system.mastery.";
@@ -304,5 +336,37 @@ public class ClanPowerConfig {
     public double getProgressionPowerWeight() { return progressionPowerWeight; }
     
     public long getGearDecreaseDelay() { return gearDecreaseDelay; }
+    
+    /**
+     * Oyuncu envanter materyal gücü al
+     */
+    public double getMaterialPower(org.bukkit.Material material) {
+        switch (material) {
+            case DIAMOND: return materialDiamond;
+            case OBSIDIAN: return materialObsidian;
+            case EMERALD: return materialEmerald;
+            case GOLD_INGOT: return materialGoldIngot;
+            case IRON_INGOT: return materialIronIngot;
+            case NETHERITE_INGOT: return materialNetheriteIngot;
+            default: return materialDefault;
+        }
+    }
+    
+    /**
+     * Özel item gücü al (NBT tag ile kontrol edilecek)
+     */
+    public double getSpecialMaterialPower(String itemId) {
+        if (itemId == null) return 0.0;
+        
+        switch (itemId.toUpperCase()) {
+            case "RED_DIAMOND":
+            case "REDDIAMOND": return materialRedDiamond;
+            case "DARK_MATTER":
+            case "DARKMATTER": return materialDarkMatter;
+            case "TITANIUM": return materialTitaniumOre;
+            case "TITANIUM_INGOT": return materialTitaniumIngot;
+            default: return 0.0;
+        }
+    }
 }
 

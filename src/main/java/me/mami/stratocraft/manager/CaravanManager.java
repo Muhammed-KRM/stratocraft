@@ -1,27 +1,33 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.model.Clan;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Llama;
-import org.bukkit.entity.Mule;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.scheduler.BukkitRunnable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Mule;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.scheduler.BukkitRunnable;
+
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.model.Clan;
+
 public class CaravanManager {
     private final Map<UUID, Entity> activeCaravans = new HashMap<>();
     private final Map<UUID, Location> caravanTargets = new HashMap<>(); // Kervan hedefleri
     private final Map<UUID, Clan> caravanClans = new HashMap<>(); // Kervan sahibi klanlar
     private final Map<Entity, UUID> caravanOwners = new HashMap<>(); // Entity -> Owner UUID (ters mapping)
+    private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
+    
+    public void setBalanceConfig(me.mami.stratocraft.manager.GameBalanceConfig config) {
+        this.balanceConfig = config;
+    }
     
     /**
      * Kervan oluşturma - Anti-abuse kontrolleri ile
@@ -39,31 +45,31 @@ public class CaravanManager {
             return false;
         }
         
-        // 2. MESAFE KONTROLÜ (Anti-abuse)
-        double minDistance = configManager.getConfig().getInt("caravan.min-distance", 1000);
+        // 2. MESAFE KONTROLÜ (Anti-abuse) - Config'den
+        int minDistance = balanceConfig != null ? balanceConfig.getCaravanMinDistance() : 1000;
         double distance = start.distance(end);
         if (distance < minDistance) {
             owner.sendMessage("§cTicaret rotası çok kısa! Hedef en az " + minDistance + " blok uzakta olmalı.");
             return false;
         }
         
-        // 3. MALZEME SAYISI KONTROLÜ (Anti-abuse)
+        // 3. MALZEME SAYISI KONTROLÜ (Anti-abuse) - Config'den
         int totalItems = 0;
         for (ItemStack item : cargo) {
             if (item != null && item.getType() != Material.AIR) {
                 totalItems += item.getAmount();
             }
         }
-        int minStacks = configManager.getConfig().getInt("caravan.min-stacks", 20);
+        int minStacks = balanceConfig != null ? balanceConfig.getCaravanMinStacks() : 20;
         int minItems = minStacks * 64; // 20 stack = 1280 item
         if (totalItems < minItems) {
             owner.sendMessage("§cKervan çıkarmak için yükünüz çok az! En az " + minStacks + " stack (" + minItems + " adet) eşya yükleyin.");
             return false;
         }
         
-        // 4. YÜK DEĞERİ KONTROLÜ (Anti-abuse)
+        // 4. YÜK DEĞERİ KONTROLÜ (Anti-abuse) - Config'den
         double totalValue = calculateCargoValue(cargo);
-        double minValue = configManager.getConfig().getDouble("caravan.min-value", 5000.0);
+        double minValue = balanceConfig != null ? balanceConfig.getCaravanMinValue() : 5000.0;
         if (totalValue < minValue) {
             owner.sendMessage("§cKervan çıkarmak için yükünüz çok değersiz! En az " + minValue + " altın değerinde eşya yükleyin.");
             return false;
@@ -177,9 +183,7 @@ public class CaravanManager {
         Main plugin = Main.getInstance();
         if (plugin == null) return;
         
-        ConfigManager configManager = plugin.getConfigManager();
-        int arrivalRadius = configManager != null ? 
-            configManager.getConfig().getInt("caravan.arrival-radius", 5) : 5;
+        int arrivalRadius = balanceConfig != null ? balanceConfig.getCaravanArrivalRadius() : 5;
         
         new BukkitRunnable() {
             @Override
@@ -207,14 +211,18 @@ public class CaravanManager {
                         double totalValue = 0;
                         
                         // Mule'nin envanterindeki eşyaları değerlendir
-                        for (ItemStack item : mule.getInventory().getContents()) {
-                            if (item != null && item.getType() != Material.AIR) {
-                                totalValue += calculateCargoValue(java.util.Arrays.asList(item));
+                        ItemStack[] contents = mule.getInventory().getContents();
+                        if (contents != null) {
+                            for (ItemStack item : contents) {
+                                if (item != null && item.getType() != Material.AIR) {
+                                    totalValue += calculateCargoValue(java.util.Arrays.asList(item));
+                                }
                             }
                         }
                         
-                        // x1.5 bonus
-                        double reward = totalValue * 1.5;
+                        // Config'den bonus çarpanı
+                        double rewardMultiplier = balanceConfig != null ? balanceConfig.getCaravanRewardMultiplier() : 1.5;
+                        double reward = totalValue * rewardMultiplier;
                         clan.deposit(reward);
                         
                         // Kervanı temizle
@@ -228,7 +236,7 @@ public class CaravanManager {
                         if (owner != null && owner.isOnline()) {
                             owner.sendMessage("§a§l════════════════════════════");
                             owner.sendMessage("§a§lKERVAN HEDEFE ULAŞTI!");
-                            owner.sendMessage("§eMallarınız x1.5 değer kazandı!");
+                            owner.sendMessage("§eMallarınız x" + rewardMultiplier + " değer kazandı!");
                             owner.sendMessage("§6Toplam Ödül: §a" + String.format("%.2f", reward) + " Altın");
                             owner.sendMessage("§a§l════════════════════════════");
                         }

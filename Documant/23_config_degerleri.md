@@ -454,5 +454,329 @@ Config değerlerini değiştirdikten sonra:
 
 ---
 
+## ⚔️ Siege Sistemi (Kuşatma)
+
+### Yağma Yüzdesi
+
+```yaml
+game-balance:
+  siege:
+    loot-percentage: 0.5
+    chest-loot-percentage: 0.5
+```
+
+**Açıklama:**
+- **loot-percentage:** Kuşatma kazananına verilecek para yüzdesi (%50)
+- **chest-loot-percentage:** Pes etme durumunda sandık itemlerinden alınacak yüzde (%50)
+
+**Etkisi:**
+- **Artırılırsa:** Kuşatma ödülleri artar, savaşlar daha değerli olur
+- **Azaltılırsa:** Kuşatma ödülleri azalır, savaşlar daha az değerli olur
+
+**Önerilen Aralık:**
+- loot-percentage: 0.3 - 0.7 (%30 - %70)
+- chest-loot-percentage: 0.3 - 0.7 (%30 - %70)
+
+---
+
+## 🛡️ Buff Sistemi
+
+### Fatih Buff Çarpanları
+
+```yaml
+game-balance:
+  buff:
+    conqueror:
+      damage-multiplier: 0.2      # %20 hasar artışı
+      production-multiplier: 0.3  # %30 üretim hızı artışı
+```
+
+**Açıklama:** Savaş kazanan klana verilen Fatih Buff'ının çarpanları.
+
+**Etkisi:**
+- **Artırılırsa:** Fatih Buff daha güçlü olur, savaş kazananları daha avantajlı olur
+- **Azaltılırsa:** Fatih Buff zayıflar, savaş ödülleri azalır
+
+**Önerilen Aralık:**
+- damage-multiplier: 0.15 - 0.30 (%15 - %30)
+- production-multiplier: 0.20 - 0.40 (%20 - %40)
+
+### Kahraman Buff Çarpanları
+
+```yaml
+game-balance:
+  buff:
+    hero:
+      health-multiplier: 0.15     # %15 can artışı
+      defense-multiplier: 0.25    # %25 savunma artışı
+```
+
+**Açıklama:** Felaket tarafından yıkılan klana verilen Kahraman Buff'ının çarpanları.
+
+**Etkisi:**
+- **Artırılırsa:** Kahraman Buff daha güçlü olur, felaket mağdurları daha avantajlı olur
+- **Azaltılırsa:** Kahraman Buff zayıflar, felaket sonrası toparlanma zorlaşır
+
+**Önerilen Aralık:**
+- health-multiplier: 0.10 - 0.25 (%10 - %25)
+- defense-multiplier: 0.20 - 0.35 (%20 - %35)
+
+---
+
+## 📜 Contract Sistemi (Kontrat)
+
+### Kontrat Ayarları
+
+```yaml
+game-balance:
+  contract:
+    reward-multiplier: 0.5              # Ödül çarpanı
+    default-days: 7                      # Varsayılan süre (gün)
+    health-restore-per-heart: 2.0       # Her kalp için geri verilen can
+```
+
+**Açıklama:**
+- **reward-multiplier:** Kontrat ödül çarpanı (kan imzası için kullanılır)
+- **default-days:** Varsayılan kontrat süresi (gün)
+- **health-restore-per-heart:** Kontrat tamamlandığında her kalp için geri verilen can (2.0 = 1 kalp)
+
+**Etkisi:**
+- **Artırılırsa:** Kontratlar daha değerli olur, oyuncular daha fazla kontrat yapar
+- **Azaltılırsa:** Kontratlar daha az değerli olur, oyuncular daha az kontrat yapar
+
+**Önerilen Aralık:**
+- reward-multiplier: 0.3 - 0.7
+- default-days: 5 - 14 (gün)
+- health-restore-per-heart: 1.5 - 2.5
+
+---
+
+## 🛒 Shop Sistemi (Market)
+
+### Market Vergi Oranı
+
+```yaml
+game-balance:
+  shop:
+    tax-percentage: 0.05    # %5 vergi
+```
+
+**Açıklama:** Korumalı bölgelerde yapılan alışverişlerden alınan vergi oranı.
+
+**Etkisi:**
+- **Artırılırsa:** Vergi artar, klanlar daha fazla gelir elde eder
+- **Azaltılırsa:** Vergi azalır, oyuncular daha az öder
+
+**Önerilen Aralık:** 0.03 - 0.10 (%3 - %10)
+
+**Denge Notu:** Çok yüksek vergi oyuncuları korumasız bölgelere yönlendirir. Çok düşük vergi klan ekonomisini zayıflatır.
+
+---
+
+## 🎯 Mission Sistemi (Görev)
+
+### Tier 1 Görevleri (Taş Totem)
+
+```yaml
+game-balance:
+  mission:
+    tier1:
+      kill-mob-reward-amount: 5     # Öldürme görevi ödülü (Iron Ingot)
+      gather-reward-amount: 3       # Toplama görevi ödülü (Gold Ingot)
+      kill-mob-target: 10           # Öldürme hedefi (10 mob)
+      gather-target: 64              # Toplama hedefi (64 item)
+```
+
+**Açıklama:** Taş Totem için basit görevlerin ödülleri ve hedefleri.
+
+**Etkisi:**
+- **Artırılırsa:** Görevler daha zor ama ödülleri daha fazla olur
+- **Azaltılırsa:** Görevler daha kolay ama ödülleri daha az olur
+
+**Önerilen Aralık:**
+- kill-mob-reward-amount: 3 - 8
+- gather-reward-amount: 2 - 5
+- kill-mob-target: 5 - 15
+- gather-target: 32 - 128
+
+### Tier 2 Görevleri (Elmas Totem)
+
+```yaml
+game-balance:
+  mission:
+    tier2:
+      kill-mob-reward-amount: 5     # Öldürme görevi ödülü (Diamond)
+      kill-mob-target: 20           # Öldürme hedefi (20 mob)
+      gather-target: 10               # Toplama hedefi (10 item)
+```
+
+**Açıklama:** Elmas Totem için zor görevlerin ödülleri ve hedefleri.
+
+**Etkisi:**
+- **Artırılırsa:** Görevler daha zor ama ödülleri daha fazla olur
+- **Azaltılırsa:** Görevler daha kolay ama ödülleri daha az olur
+
+**Önerilen Aralık:**
+- kill-mob-reward-amount: 3 - 10
+- kill-mob-target: 15 - 30
+- gather-target: 5 - 20
+
+**Denge Notu:** Tier 2 görevleri Tier 1'den daha zor ve ödüllü olmalı, böylece oyuncular ilerleme hissi yaşar.
+
+---
+
+---
+
+## 👹 Boss Sistemi
+
+### BossBar Ayarları
+
+```yaml
+game-balance:
+  boss:
+    max-bossbar-distance: 100       # BossBar gösterim mesafesi (blok)
+    max-bossbars-per-player: 3      # Oyuncu başına maksimum BossBar sayısı
+    ritual-cooldown: 60000          # Ritüel cooldown (ms) - 60 saniye
+    weak-point-duration: 5000       # Zayıf nokta süresi (ms) - 5 saniye
+    shield-duration: 3000           # Kalkan süresi (ms) - 3 saniye
+```
+
+**Açıklama:**
+- **max-bossbar-distance:** Oyuncuların boss'ları ne kadar mesafeden görebileceği (blok)
+- **max-bossbars-per-player:** Bir oyuncunun aynı anda görebileceği maksimum boss sayısı
+- **ritual-cooldown:** Boss ritüeli yapıldıktan sonra bir sonraki ritüelin yapılabilmesi için geçmesi gereken süre
+- **weak-point-duration:** Boss'un zayıf noktasının aktif kalacağı süre
+- **shield-duration:** Boss'un kalkanının aktif kalacağı süre
+
+**Etkisi:**
+- **Artırılırsa:** Boss'lar daha uzaktan görülebilir, daha uzun süreli yetenekler
+- **Azaltılırsa:** Boss'lar daha yakından görülebilir, daha kısa süreli yetenekler
+
+**Önerilen Aralık:**
+- max-bossbar-distance: 50 - 150 (blok)
+- max-bossbars-per-player: 2 - 5
+- ritual-cooldown: 30000 - 120000 (ms)
+- weak-point-duration: 3000 - 10000 (ms)
+- shield-duration: 2000 - 6000 (ms)
+
+---
+
+## 🪤 Trap Sistemi (Tuzak)
+
+### Tuzak Yakıt Değerleri
+
+```yaml
+game-balance:
+  trap:
+    fuel:
+      diamond: 5                    # Elmas yakıt değeri
+      emerald: 10                    # Zümrüt yakıt değeri
+      titanium: 20                   # Titanyum yakıt değeri
+```
+
+**Açıklama:** Farklı yakıt tiplerinin tuzaklara verdiği patlama hakkı sayısı.
+
+**Etkisi:**
+- **Artırılırsa:** Yakıtlar daha değerli olur, tuzaklar daha uzun süre aktif kalır
+- **Azaltılırsa:** Yakıtlar daha az değerli olur, tuzaklar daha kısa süre aktif kalır
+
+**Önerilen Aralık:**
+- diamond: 3 - 8
+- emerald: 8 - 15
+- titanium: 15 - 30
+
+### Tuzak Hasar Değerleri
+
+```yaml
+game-balance:
+  trap:
+    damage:
+      hell-trap: 3.0                 # Cehennem tuzağı hasarı
+      shock-trap: 2.0                # Şok tuzağı hasarı
+      mine: 5.0                      # Mayın hasarı
+      poison-trap: 0.5               # Zehir tuzağı hasarı (sürekli)
+      black-hole: 10.0               # Kara delik tuzağı hasarı
+```
+
+**Açıklama:** Her tuzak tipinin verdiği hasar miktarı.
+
+**Etkisi:**
+- **Artırılırsa:** Tuzaklar daha güçlü olur, oyuncular daha fazla hasar alır
+- **Azaltılırsa:** Tuzaklar zayıflar, oyuncular daha az hasar alır
+
+**Önerilen Aralık:**
+- hell-trap: 2.0 - 5.0
+- shock-trap: 1.0 - 4.0
+- mine: 3.0 - 8.0
+- poison-trap: 0.3 - 1.0
+- black-hole: 5.0 - 15.0
+
+---
+
+## 💣 Mine Sistemi (Mayın)
+
+### Seviye Bazlı Hasar Değerleri
+
+```yaml
+game-balance:
+  mine:
+    damage:
+      level1-base: 3.0               # Seviye 1 mayın temel hasarı
+      level2-base: 5.0               # Seviye 2 mayın temel hasarı
+      level3-base: 8.0               # Seviye 3 mayın temel hasarı
+      level4-base: 12.0              # Seviye 4 mayın temel hasarı
+      level5-base: 20.0               # Seviye 5 mayın temel hasarı
+```
+
+**Açıklama:** Her mayın seviyesi için temel hasar değeri. Bu değerler mayın tipine göre kullanılır.
+
+**Etkisi:**
+- **Artırılırsa:** Mayınlar daha güçlü olur, oyuncular daha fazla hasar alır
+- **Azaltılırsa:** Mayınlar zayıflar, oyuncular daha az hasar alır
+
+**Önerilen Aralık:**
+- Level 1: 2.0 - 5.0
+- Level 2: 4.0 - 8.0
+- Level 3: 6.0 - 12.0
+- Level 4: 10.0 - 18.0
+- Level 5: 15.0 - 30.0
+
+**Denge Notu:** Seviye arttıkça hasar artmalı, böylece yüksek seviye mayınlar daha değerli olur.
+
+---
+
+## 🐉 Mob Sistemi (Canavar)
+
+### Özel Mob Can ve Hasar Değerleri
+
+```yaml
+game-balance:
+  mob:
+    hell-dragon-health: 200.0        # Cehennem Ejderi canı
+    terror-worm-health: 100.0        # Toprak Solucanı canı
+    war-bear-health: 150.0           # Savaş Ayısı canı
+    shadow-panther-health: 80.0      # Gölge Panteri canı
+    wyvern-health: 250.0             # Wyvern canı
+    fire-amphiptere-health: 120.0    # Ateş Amfibiterü canı
+    fire-amphiptere-damage: 10.0     # Ateş Amfibiterü hasarı
+    hell-dragon-size: 20             # Cehennem Ejderi boyutu
+    wyvern-size: 15                  # Wyvern boyutu
+```
+
+**Açıklama:** Özel mobların can, hasar ve boyut değerleri.
+
+**Etkisi:**
+- **Artırılırsa:** Moblar daha güçlü ve büyük olur, oyuncular için daha zor
+- **Azaltılırsa:** Moblar zayıflar ve küçülür, oyuncular için daha kolay
+
+**Önerilen Aralık:**
+- Can değerleri: 50.0 - 500.0
+- Hasar değerleri: 5.0 - 20.0
+- Boyut değerleri: 10 - 30
+
+**Denge Notu:** Mobların güçleri oyun dengesine göre ayarlanmalı. Çok güçlü moblar oyuncuları zorlar, çok zayıf moblar oyunu kolaylaştırır.
+
+---
+
 **Son Güncelleme:** Bu döküman, oyunun mevcut versiyonuna göre güncellenmiştir. Yeni özellikler eklendikçe bu döküman da güncellenecektir.
 

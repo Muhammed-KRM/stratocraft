@@ -1,6 +1,16 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -22,7 +32,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.util.*;
+import me.mami.stratocraft.Main;
 
 /**
  * Eski BossManager için sadeleştirilmiş adaptor.
@@ -36,6 +46,7 @@ import java.util.*;
  */
 public class BossManager {
     private final Main plugin;
+    private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
 
     // Eski sistemle uyum için, sadece temel bilgiler tutuluyor
     private final Map<UUID, BossData> activeBosses = new HashMap<>();
@@ -47,14 +58,14 @@ public class BossManager {
 
     // Ritüel cooldown’ları (merkez blok konumu → son kullanım zamanı)
     private final Map<Location, Long> ritualCooldowns = new HashMap<>();
-    private static final long RITUAL_COOLDOWN = 60_000L; // 60 sn
+    private long ritualCooldown = 60_000L; // 60 sn (config'den)
 
     // Zayıf nokta & kalkan süreleri (sadece durum bilgisini sağlamak için)
     private final Map<UUID, Long> weakPointCooldowns = new HashMap<>();
-    private static final long WEAK_POINT_DURATION = 5_000L;
+    private long weakPointDuration = 5_000L; // Config'den
 
     private final Map<UUID, Long> shieldCooldowns = new HashMap<>();
-    private static final long SHIELD_DURATION = 3_000L;
+    private long shieldDuration = 3_000L; // Config'den
 
     public BossManager(Main plugin) {
         if (plugin == null) {
@@ -66,6 +77,17 @@ public class BossManager {
         startAbilityTask();
         // BossBar task'ını başlat
         startBossBarTask();
+    }
+    
+    public void setBalanceConfig(me.mami.stratocraft.manager.GameBalanceConfig config) {
+        this.balanceConfig = config;
+        if (config != null) {
+            this.maxBossBarDistance = config.getBossMaxBossBarDistance();
+            this.maxBossBarsPerPlayer = config.getBossMaxBossBarsPerPlayer();
+            this.ritualCooldown = config.getBossRitualCooldown();
+            this.weakPointDuration = config.getBossWeakPointDuration();
+            this.shieldDuration = config.getBossShieldDuration();
+        }
     }
 
     /**
@@ -1076,7 +1098,7 @@ public class BossManager {
         Location ritualLoc = loc.clone();
         ritualLoc.setY(ritualLoc.getBlockY());
         Long lastUse = ritualCooldowns.get(ritualLoc);
-        if (lastUse != null && System.currentTimeMillis() - lastUse < RITUAL_COOLDOWN) {
+        if (lastUse != null && System.currentTimeMillis() - lastUse < ritualCooldown) {
             return false;
         }
 

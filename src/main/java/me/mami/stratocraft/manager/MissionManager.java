@@ -1,21 +1,28 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.model.Mission;
-import me.mami.stratocraft.manager.ItemManager;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import java.util.*;
+
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.model.Mission;
 
 public class MissionManager {
     private final Map<UUID, Mission> activeMissions = new HashMap<>();
     private final Random random = new Random();
     private DifficultyManager difficultyManager;
     private Main plugin;
+    private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
 
     public MissionManager() {
         // Eski constructor - geriye uyumluluk
@@ -32,6 +39,38 @@ public class MissionManager {
     
     public void setPlugin(Main plugin) {
         this.plugin = plugin;
+    }
+    
+    public void setBalanceConfig(me.mami.stratocraft.manager.GameBalanceConfig config) {
+        this.balanceConfig = config;
+    }
+    
+    private int getTier1KillMobRewardAmount() {
+        return balanceConfig != null ? balanceConfig.getMissionTier1KillMobRewardAmount() : 5;
+    }
+    
+    private int getTier1GatherRewardAmount() {
+        return balanceConfig != null ? balanceConfig.getMissionTier1GatherRewardAmount() : 3;
+    }
+    
+    private int getTier2KillMobRewardAmount() {
+        return balanceConfig != null ? balanceConfig.getMissionTier2KillMobRewardAmount() : 5;
+    }
+    
+    private int getTier1KillMobTarget() {
+        return balanceConfig != null ? balanceConfig.getMissionTier1KillMobTarget() : 10;
+    }
+    
+    private int getTier1GatherTarget() {
+        return balanceConfig != null ? balanceConfig.getMissionTier1GatherTarget() : 64;
+    }
+    
+    private int getTier2KillMobTarget() {
+        return balanceConfig != null ? balanceConfig.getMissionTier2KillMobTarget() : 20;
+    }
+    
+    private int getTier2GatherTarget() {
+        return balanceConfig != null ? balanceConfig.getMissionTier2GatherTarget() : 10;
     }
 
     public void interactWithTotem(Player p, Material totemMaterial) {
@@ -80,28 +119,39 @@ public class MissionManager {
         Mission mission;
         // Totem seviye sistemi
         if (tier == Material.COBBLESTONE || tier == Material.STONE) {
-            // Taş Totem - Basit görevler
+            // Taş Totem - Basit görevler (config'den)
+            int tier1KillTarget = getTier1KillMobTarget();
+            int tier1KillReward = getTier1KillMobRewardAmount();
+            int tier1GatherTarget = getTier1GatherTarget();
+            int tier1GatherReward = getTier1GatherRewardAmount();
+            
             if (random.nextBoolean()) {
-                mission = new Mission(p.getUniqueId(), Mission.Type.KILL_MOB, EntityType.ZOMBIE, 10, new ItemStack(Material.IRON_INGOT, 5));
-                p.sendMessage("§e[LONCA] §7Yeni Görev: 10 Zombi Öldür.");
+                mission = new Mission(p.getUniqueId(), Mission.Type.KILL_MOB, EntityType.ZOMBIE, tier1KillTarget, new ItemStack(Material.IRON_INGOT, tier1KillReward));
+                p.sendMessage("§e[LONCA] §7Yeni Görev: " + tier1KillTarget + " Zombi Öldür.");
             } else {
-                mission = new Mission(p.getUniqueId(), Mission.Type.GATHER_ITEM, Material.OAK_LOG, 64, new ItemStack(Material.GOLD_INGOT, 3));
-                p.sendMessage("§e[LONCA] §7Yeni Görev: 64 Odun Topla.");
+                mission = new Mission(p.getUniqueId(), Mission.Type.GATHER_ITEM, Material.OAK_LOG, tier1GatherTarget, new ItemStack(Material.GOLD_INGOT, tier1GatherReward));
+                p.sendMessage("§e[LONCA] §7Yeni Görev: " + tier1GatherTarget + " Odun Topla.");
             }
         } else if (tier == Material.DIAMOND_BLOCK || tier == Material.DIAMOND) {
-            // Elmas Totem - Zor görevler
+            // Elmas Totem - Zor görevler (config'den)
+            int tier2KillTarget = getTier2KillMobTarget();
+            int tier2KillReward = getTier2KillMobRewardAmount();
+            int tier2GatherTarget = getTier2GatherTarget();
+            
             if (random.nextBoolean()) {
                 ItemStack reward = random.nextBoolean() ? ItemManager.RECIPE_BOOK_TECTONIC : ItemManager.DEVIL_HORN;
-                mission = new Mission(p.getUniqueId(), Mission.Type.KILL_MOB, EntityType.ENDERMAN, 20, reward);
-                p.sendMessage("§6[LONCA] §cZorlu Görev: 20 Enderman Avla.");
+                mission = new Mission(p.getUniqueId(), Mission.Type.KILL_MOB, EntityType.ENDERMAN, tier2KillTarget, reward);
+                p.sendMessage("§6[LONCA] §cZorlu Görev: " + tier2KillTarget + " Enderman Avla.");
             } else {
-                ItemStack reward = ItemManager.TITANIUM_INGOT != null ? ItemManager.TITANIUM_INGOT : new ItemStack(Material.DIAMOND, 5);
-                mission = new Mission(p.getUniqueId(), Mission.Type.GATHER_ITEM, Material.DEEPSLATE_DIAMOND_ORE, 10, reward);
-                p.sendMessage("§6[LONCA] §cZorlu Görev: 10 Derin Elmas Madeni Topla.");
+                ItemStack reward = ItemManager.TITANIUM_INGOT != null ? ItemManager.TITANIUM_INGOT : new ItemStack(Material.DIAMOND, tier2KillReward);
+                mission = new Mission(p.getUniqueId(), Mission.Type.GATHER_ITEM, Material.DEEPSLATE_DIAMOND_ORE, tier2GatherTarget, reward);
+                p.sendMessage("§6[LONCA] §cZorlu Görev: " + tier2GatherTarget + " Derin Elmas Madeni Topla.");
             }
         } else {
-            // Varsayılan
-            mission = new Mission(p.getUniqueId(), Mission.Type.KILL_MOB, EntityType.ZOMBIE, 10, new ItemStack(Material.IRON_INGOT, 5));
+            // Varsayılan (config'den)
+            int tier1KillTarget = getTier1KillMobTarget();
+            int tier1KillReward = getTier1KillMobRewardAmount();
+            mission = new Mission(p.getUniqueId(), Mission.Type.KILL_MOB, EntityType.ZOMBIE, tier1KillTarget, new ItemStack(Material.IRON_INGOT, tier1KillReward));
             p.sendMessage("§e[LONCA] §7Yeni Görev: 10 Zombi Öldür.");
         }
         activeMissions.put(p.getUniqueId(), mission);

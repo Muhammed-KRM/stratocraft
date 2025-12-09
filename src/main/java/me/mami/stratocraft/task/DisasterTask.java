@@ -80,23 +80,25 @@ public class DisasterTask extends BukkitRunnable {
     @Override
     public void run() {
         Disaster disaster = disasterManager.getActiveDisaster();
-        if (disaster == null || disaster.isDead()) {
-            // Felaket bittiğinde force-loaded chunk'ları temizle
+        if (disaster == null) {
             cleanupForceLoadedChunks();
-            
-            // Doğa olayları için entity yok
-            if (disaster != null && disaster.getCategory() == Disaster.Category.NATURAL) {
-                handleNaturalDisaster(disaster);
-            }
             return;
         }
-
-        // Süre doldu mu kontrol et
+        
+        // Süre doldu mu kontrol et (tüm felaketler için, öncelikli)
         if (disaster.isExpired()) {
             disaster.kill();
             disasterManager.setActiveDisaster(null);
-            cleanupForceLoadedChunks(); // Chunk'ları temizle
-            Bukkit.getServer().broadcastMessage(org.bukkit.ChatColor.GREEN + "" + org.bukkit.ChatColor.BOLD + "Felaket süresi doldu!");
+            cleanupForceLoadedChunks();
+            String disasterName = disasterManager.getDisasterDisplayName(disaster.getType());
+            Bukkit.getServer().broadcastMessage(org.bukkit.ChatColor.GREEN + "" + org.bukkit.ChatColor.BOLD + 
+                "Felaket süresi doldu: " + disasterName);
+            return;
+        }
+        
+        // Felaket ölü mü kontrol et (canlı felaketler için)
+        if (disaster.isDead()) {
+            cleanupForceLoadedChunks();
             return;
         }
 
@@ -419,6 +421,16 @@ public class DisasterTask extends BukkitRunnable {
      */
     private void handleNaturalDisaster(Disaster disaster) {
         if (disaster == null) return;
+        
+        // Süre doldu mu kontrol et (doğa olayları için önemli)
+        if (disaster.isExpired()) {
+            disaster.kill();
+            disasterManager.setActiveDisaster(null);
+            cleanupForceLoadedChunks();
+            Bukkit.getServer().broadcastMessage(org.bukkit.ChatColor.GREEN + "" + org.bukkit.ChatColor.BOLD + 
+                "Doğa olayı süresi doldu: " + disasterManager.getDisasterDisplayName(disaster.getType()));
+            return;
+        }
         
         DisasterConfig config = getConfig(disaster);
         DisasterHandler handler = handlerRegistry.getHandler(disaster.getType());

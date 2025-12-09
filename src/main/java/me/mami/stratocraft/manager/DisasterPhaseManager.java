@@ -1,13 +1,14 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.model.Disaster;
-import me.mami.stratocraft.model.DisasterPhase;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.model.Disaster;
+import me.mami.stratocraft.model.DisasterPhase;
 
 /**
  * Felaket Faz Yönetim Sistemi
@@ -82,7 +83,7 @@ public class DisasterPhaseManager {
                         " §7faz değişti: §6" + oldPhase.getDisplayName() + 
                         " §7-> §c" + newPhase.getDisplayName();
         
-        Bukkit.broadcastMessage(message);
+        Bukkit.getServer().broadcastMessage(message);
         
         // Ses efekti (tüm oyunculara)
         try {
@@ -127,7 +128,7 @@ public class DisasterPhaseManager {
                             double distance = player.getLocation().distance(disaster.getEntity().getLocation());
                             if (distance < 50) {
                                 player.addPotionEffect(new PotionEffect(
-                                    PotionEffectType.SLOWNESS, 60, 0, false, false
+                                    PotionEffectType.SLOW, 60, 0, false, false
                                 ));
                             }
                         } catch (Exception e) {

@@ -1,7 +1,10 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.model.Shop;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -9,17 +12,25 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
-import java.util.ArrayList;
+
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.model.Shop;
 
 public class ShopManager {
     private final Map<Location, Shop> shops = new HashMap<>();
     private final Main plugin;
+    private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
 
     public ShopManager() {
         this.plugin = Main.getInstance();
+    }
+    
+    public void setBalanceConfig(me.mami.stratocraft.manager.GameBalanceConfig config) {
+        this.balanceConfig = config;
+    }
+    
+    private double getTaxPercentage() {
+        return balanceConfig != null ? balanceConfig.getShopTaxPercentage() : 0.05;
     }
 
     public void createShop(Player owner, Location chestLoc, ItemStack sell, ItemStack price, boolean protectedZone) {
@@ -69,10 +80,11 @@ public class ShopManager {
 
         buyer.getInventory().removeItem(shop.getPriceItem()); 
         
-        // Vergi hesaplama (%5) - Anlık bölge kontrolüne göre
+        // Vergi hesaplama (config'den) - Anlık bölge kontrolüne göre
         if (isProtectedZone) {
+            double taxPercentage = getTaxPercentage();
             ItemStack taxItem = shop.getPriceItem().clone();
-            taxItem.setAmount((int) Math.ceil(taxItem.getAmount() * 0.05));
+            taxItem.setAmount((int) Math.ceil(taxItem.getAmount() * taxPercentage));
             chest.getInventory().addItem(taxItem);
             
             ItemStack ownerPayment = shop.getPriceItem().clone();

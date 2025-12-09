@@ -1,32 +1,49 @@
 package me.mami.stratocraft.listener;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.manager.WeaponModeManager;
-import org.bukkit.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
-import org.bukkit.entity.*;
+import org.bukkit.entity.AreaEffectCloud;
+import org.bukkit.entity.Arrow;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Fireball;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.entity.Snowball;
+import org.bukkit.entity.Trident;
+import org.bukkit.entity.WitherSkull;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityShootBowEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
-import org.bukkit.NamespacedKey;
-import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.entity.ProjectileHitEvent;
-import org.bukkit.event.entity.EntityShootBowEvent;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.manager.WeaponModeManager;
 
 /**
  * Özel silah yeteneklerini yöneten listener
@@ -136,27 +153,33 @@ public class SpecialWeaponListener implements Listener {
         if (weaponLevel == 3 && (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK)) {
             event.setCancelled(true);
             
-            // Ray trace ile hedef bul
-            RayTraceResult result = player.rayTraceBlocks(20);
+            // Ray trace ile hedef bul - Config'den menzil
+            me.mami.stratocraft.manager.GameBalanceConfig balanceConfig = plugin.getConfigManager() != null ? 
+                plugin.getConfigManager().getGameBalanceConfig() : null;
+            int range = balanceConfig != null ? balanceConfig.getWeaponLevel3Range() : 20;
+            RayTraceResult result = player.rayTraceBlocks(range);
             Location targetLoc;
             
             if (result != null && result.getHitBlock() != null) {
                 targetLoc = result.getHitBlock().getLocation();
             } else {
-                // 20 blok ileriye patlama
-                Vector direction = player.getLocation().getDirection().multiply(20);
+                // Config'den menzil kadar ileriye patlama
+                Vector direction = player.getLocation().getDirection().multiply(range);
                 targetLoc = player.getLocation().add(direction);
             }
             
-            // Patlama oluştur
-            player.getWorld().createExplosion(targetLoc, 3.0f, false, false);
+            // Patlama oluştur - Config'den güç
+            double explosionPower = balanceConfig != null ? balanceConfig.getWeaponLevel3ExplosionPower() : 3.0;
+            player.getWorld().createExplosion(targetLoc, (float)explosionPower, false, false);
             player.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, targetLoc, 1);
             player.getWorld().playSound(targetLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
             
-            // Yakındaki canlılara hasar ver
-            for (Entity entity : player.getWorld().getNearbyEntities(targetLoc, 5, 5, 5)) {
+            // Yakındaki canlılara hasar ver - Config'den radius ve hasar
+            int radius = balanceConfig != null ? balanceConfig.getWeaponLevel3Radius() : 5;
+            double damage = balanceConfig != null ? balanceConfig.getWeaponLevel3Damage() : 10.0;
+            for (Entity entity : player.getWorld().getNearbyEntities(targetLoc, radius, radius, radius)) {
                 if (entity instanceof LivingEntity && entity != player) {
-                    ((LivingEntity) entity).damage(10.0);
+                    ((LivingEntity) entity).damage(damage);
                 }
             }
             
@@ -170,8 +193,11 @@ public class SpecialWeaponListener implements Listener {
             long currentTime = System.currentTimeMillis();
             Long lastLaser = lastLaserTime.get(player.getUniqueId());
             
-            // Cooldown kontrolü (0.5 saniye)
-            if (lastLaser != null && currentTime - lastLaser < 500) {
+            // Cooldown kontrolü - Config'den
+            me.mami.stratocraft.manager.GameBalanceConfig balanceConfig = plugin.getConfigManager() != null ? 
+                plugin.getConfigManager().getGameBalanceConfig() : null;
+            long laserCooldown = balanceConfig != null ? balanceConfig.getWeaponLevel4LaserCooldown() : 500L;
+            if (lastLaser != null && currentTime - lastLaser < laserCooldown) {
                 return;
             }
             
