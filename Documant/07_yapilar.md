@@ -12,6 +12,7 @@ Yapılar, oyunda **pasif güç veren** veya **özel işlevler sağlayan** fiziks
 2. [Klan Yapıları](#klan-yapilari)
 3. [Dışarı Yapılan Yapılar - A](#dişari-yapilar-a-klan-özel)
 4. [Dışarı Yapılan Yapılar - B](#dişari-yapilar-b-herkes)
+5. [Yapı Güç Sistemi](#yapı-güç-sistemi) ⭐ YENİ
 
 ---
 
@@ -560,6 +561,79 @@ Spawn yakınına (Dışarı-B):
 - Çok ucuz (Taş, Odun)
 - Yeni oyuncular bile yapabilir
 - Sosyal yardım amaçlı
+
+---
+
+---
+
+## 🏗️ YAPI GÜÇ SİSTEMİ (YENİ)
+
+### ✅ Yapı Seviyesi Güç Kazanma
+
+**Yapılar artık klan gücüne katkı sağlıyor!**
+
+Her yapı, seviyesine göre **Güç Puanı (Power Score)** verir ve klanın toplam gücünü artırır.
+
+### Yapı Gücü Hesaplama
+
+**Yapı Seviyesi → Güç:**
+```
+- Seviye 1: 100 puan
+- Seviye 2: 250 puan
+- Seviye 3: 500 puan
+- Seviye 4: 1200 puan
+- Seviye 5: 2000 puan
+```
+
+**Klan Kristali:**
+```
+Klan Kristali: +500 puan (sabit bonus)
+- Sadece kristal varsa ve ölü değilse
+```
+
+### Örnek Hesaplama
+
+**Örnek Klan:**
+```
+- Klan Kristali: +500 puan
+- Simya Kulesi (Seviye 3): +500 puan
+- Tektonik Sabitleyici (Seviye 4): +1200 puan
+- Toplam Yapı Gücü: 500 + 500 + 1200 = 2200 puan
+```
+
+### Klan Gücüne Etkisi
+
+**Yapı Gücü:**
+- Klanın toplam gücüne eklenir
+- Klan seviyesi hesaplamasında kullanılır
+- Felaket zorluğunu etkiler
+
+### Komutlar
+
+**Yapı gücünü görmek için:**
+```
+/sgp clan
+```
+
+**Klan güç bileşenlerini görmek için:**
+```
+/sgp components
+```
+
+### Config Ayarları
+
+Yapı güç değerleri `config.yml` dosyasından ayarlanabilir:
+
+```yaml
+clan-power-system:
+  structure-power:
+    crystal-base: 500
+    level-1: 100
+    level-2: 250
+    level-3: 500
+    level-4: 1200
+    level-5: 2000
+```
 
 ---
 

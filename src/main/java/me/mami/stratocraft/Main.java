@@ -67,6 +67,11 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.NewBossArenaManager newBossArenaManager;
     private me.mami.stratocraft.manager.BreedingManager breedingManager;
     private me.mami.stratocraft.listener.SpecialWeaponListener specialWeaponListener;
+    private me.mami.stratocraft.manager.StratocraftPowerSystem stratocraftPowerSystem;
+    
+    // Güç sistemi yardımcıları (test için)
+    private me.mami.stratocraft.manager.SimpleRankingSystem simpleRankingSystem;
+    private me.mami.stratocraft.manager.SimplePowerHistory simplePowerHistory;
     private me.mami.stratocraft.manager.HUDManager hudManager;
     
     public me.mami.stratocraft.listener.SpecialWeaponListener getSpecialWeaponListener() {
@@ -153,6 +158,12 @@ public class Main extends JavaPlugin {
         disasterManager.setTerritoryManager(territoryManager);
         disasterManager.setDifficultyManager(difficultyManager); // DifficultyManager'ı set et
         disasterManager.setConfigManager(configManager.getDisasterConfigManager()); // ConfigManager'ı set et
+        
+        // Dinamik Zorluk Sistemi Başlatma (tüm manager'lar hazır olduktan sonra)
+        initializeDynamicDifficultySystem();
+        
+        // Klan Güç Sistemi Başlatma
+        initializeClanPowerSystem();
 
         // 2. Dinleyicileri Kaydet
         // Eski batarya sistemi kaldırıldı, yeni sistem kullanılıyor
@@ -299,6 +310,11 @@ public class Main extends JavaPlugin {
         // Veri yükleme
         dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener, allianceManager, disasterManager);
         
+        // Güç profillerini yükle (StratocraftPowerSystem varsa)
+        if (stratocraftPowerSystem != null) {
+            stratocraftPowerSystem.loadAllPlayerProfiles();
+        }
+        
         // HUD Manager'ı başlat (missionManager'dan sonra)
         if (hudManager != null && missionManager != null) {
             hudManager.setManagers(disasterManager, newBatteryManager, shopManager, missionManager, 
@@ -345,6 +361,9 @@ public class Main extends JavaPlugin {
             
             @org.bukkit.event.EventHandler
             public void onPlayerQuit(org.bukkit.event.player.PlayerQuitEvent event) {
+                if (disasterManager != null) {
+                    disasterManager.onPlayerQuit(event.getPlayer());
+                }
                 if (hudManager != null) {
                     hudManager.onPlayerQuit(event.getPlayer());
                 }
@@ -386,6 +405,13 @@ public class Main extends JavaPlugin {
         // 4. Tab Completers
         getCommand("klan").setTabCompleter(new me.mami.stratocraft.command.ClanTabCompleter());
         getCommand("kontrat").setTabCompleter(new me.mami.stratocraft.command.ContractTabCompleter());
+        
+        // ✅ GÜÇ SİSTEMİ KOMUTU: SGP komutunu kaydet
+        if (getCommand("sgp") != null) {
+            me.mami.stratocraft.command.SGPCommand sgpCommand = new me.mami.stratocraft.command.SGPCommand();
+            getCommand("sgp").setExecutor(sgpCommand);
+            getCommand("sgp").setTabCompleter(sgpCommand);
+        }
         
         // Silah modu komutu
         if (getCommand("weaponmode") != null) {
@@ -643,6 +669,11 @@ public class Main extends JavaPlugin {
             // Kapanış işlemlerinde her zaman senkron kayıt
             dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener, allianceManager, disasterManager, true);
             getLogger().info("Stratocraft: Veriler kaydedildi.");
+            
+            // Güç profillerini kaydet (sync - onDisable)
+            if (stratocraftPowerSystem != null) {
+                stratocraftPowerSystem.saveAllPlayerProfilesSync();
+            }
         }
 
         // Tuzakları da kaydet (eğer trapManager varsa)
@@ -791,5 +822,127 @@ public class Main extends JavaPlugin {
     
     public me.mami.stratocraft.manager.BreedingManager getBreedingManager() {
         return breedingManager;
+    }
+    
+    /**
+     * Dinamik Zorluk Sistemi Başlatma
+     * Tüm manager'lar hazır olduktan sonra çağrılmalı
+     */
+    private void initializeDynamicDifficultySystem() {
+        if (configManager == null || disasterManager == null) {
+            getLogger().warning("Dinamik Zorluk Sistemi başlatılamadı: ConfigManager veya DisasterManager null!");
+            return;
+        }
+        
+        // Config'den güç ayarlarını al
+        me.mami.stratocraft.manager.DisasterPowerConfig powerConfig = 
+            configManager.getDisasterPowerConfig();
+        
+        if (powerConfig == null) {
+            getLogger().warning("Dinamik Zorluk Sistemi başlatılamadı: DisasterPowerConfig null!");
+            return;
+        }
+        
+        // PlayerPowerCalculator oluştur
+        me.mami.stratocraft.manager.PlayerPowerCalculator playerPowerCalculator = 
+            new me.mami.stratocraft.manager.PlayerPowerCalculator(
+                powerConfig,
+                clanManager,
+                trainingManager,
+                buffManager,
+                specialItemManager
+            );
+        
+        // ServerPowerCalculator oluştur
+        me.mami.stratocraft.manager.ServerPowerCalculator serverPowerCalculator = 
+            new me.mami.stratocraft.manager.ServerPowerCalculator(
+                playerPowerCalculator,
+                powerConfig
+            );
+        
+        // DisasterManager'a bağla
+        disasterManager.initializeDynamicDifficulty(
+            powerConfig,
+            playerPowerCalculator,
+            serverPowerCalculator
+        );
+        
+        getLogger().info("Dinamik Zorluk Sistemi başarıyla başlatıldı!");
+    }
+    
+    /**
+     * Klan Güç Sistemi Başlatma
+     */
+    private void initializeClanPowerSystem() {
+        if (clanManager == null || trainingManager == null || specialItemManager == null || 
+            configManager == null || buffManager == null || territoryManager == null || 
+            siegeManager == null) {
+            getLogger().warning("Stratocraft Güç Sistemi başlatılamadı: Gerekli yöneticiler null!");
+            return;
+        }
+        
+        // StratocraftPowerSystem oluştur (yeni hibrit sistem)
+        stratocraftPowerSystem = new me.mami.stratocraft.manager.StratocraftPowerSystem(
+            this,
+            clanManager,
+            trainingManager,
+            specialItemManager,
+            buffManager,
+            territoryManager,
+            siegeManager
+        );
+        
+        // Config'den ayarları yükle
+        stratocraftPowerSystem.loadConfig(configManager.getConfig());
+        
+        // Event listener'ı kaydet (Delta sistemi için TerritoryManager gerekli)
+        Bukkit.getPluginManager().registerEvents(
+            new me.mami.stratocraft.listener.PowerSystemListener(
+                stratocraftPowerSystem, 
+                clanManager, 
+                territoryManager
+            ), 
+            this
+        );
+        
+        // ✅ FELAKET SİSTEMİ ENTEGRASYONU: DisasterManager'a yeni güç sistemini bağla
+        if (disasterManager != null) {
+            disasterManager.setStratocraftPowerSystem(stratocraftPowerSystem);
+        }
+        
+        // ✅ TEST SİSTEMLERİ: Basit sıralama ve geçmiş sistemlerini başlat
+        simpleRankingSystem = new me.mami.stratocraft.manager.SimpleRankingSystem(this);
+        simplePowerHistory = new me.mami.stratocraft.manager.SimplePowerHistory(this);
+        
+        getLogger().info("Stratocraft Güç Sistemi başarıyla başlatıldı!");
+    }
+    
+    /**
+     * SimpleRankingSystem getter
+     */
+    public me.mami.stratocraft.manager.SimpleRankingSystem getSimpleRankingSystem() {
+        return simpleRankingSystem;
+    }
+    
+    /**
+     * SimplePowerHistory getter
+     */
+    public me.mami.stratocraft.manager.SimplePowerHistory getSimplePowerHistory() {
+        return simplePowerHistory;
+    }
+    
+    /**
+     * StratocraftPowerSystem getter
+     */
+    public me.mami.stratocraft.manager.StratocraftPowerSystem getStratocraftPowerSystem() {
+        return stratocraftPowerSystem;
+    }
+    
+    /**
+     * @deprecated ClanPowerSystem yerine StratocraftPowerSystem kullanın
+     */
+    @Deprecated
+    public me.mami.stratocraft.manager.ClanPowerSystem getClanPowerSystem() {
+        return null; // Eski sistem kaldırıldı
     }
 }

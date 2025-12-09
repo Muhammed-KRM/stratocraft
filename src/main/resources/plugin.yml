@@ -22,6 +22,10 @@ commands:
     description: Silah modu değiştirme komutu
     usage: /weaponmode <1|2|3>
     aliases: [wm, weaponmode]
+  sgp:
+    description: Güç sistemi komutları
+    usage: /sgp [me|player|clan|top|components|help]
+    aliases: [power, guc]
 permissions:
   stratocraft.*:
     description: Tüm Stratocraft yetkileri

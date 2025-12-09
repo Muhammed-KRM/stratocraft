@@ -13,6 +13,7 @@ Stratocraft'ta **her özel isimli canlı eğitilebilir**! Ritüel tabanlı siste
 3. [Boss Eğitme Ritüelleri](#boss-eğitme-ritüelleri)
 4. [Binilebilir Canlılar](#binilebilir-canlılar)
 5. [Sahiplik ve Paylaşım](#sahiplik-ve-paylaşım)
+6. [Ustalık Güç Sistemi](#ustalık-güç-sistemi) ⭐ YENİ
 
 ---
 
@@ -473,6 +474,76 @@ Not: Sadece sahip veya klan üyesi yapabilir
 3. Eline Dragon Egg al
 4. Shift + Sağ tık (ejderhaya)
 5. Eğitildi! Artık binebilirsin!
+```
+
+---
+
+---
+
+## 🎓 USTALIK GÜÇ SİSTEMİ (YENİ)
+
+### ✅ Ritüel Ustalığı Güç Kazanma
+
+**Ritüelleri kullandıkça ustalık kazanırsın ve güçlenirsin!**
+
+Her ritüel için **%100 üzerine çıkış** yaptığında, o ritüel için bonus güç kazanırsın.
+
+### Nasıl Çalışır?
+
+**1. Ustalık Hesaplama:**
+```
+Her ritüel kullanımı = Ustalık artışı
+100 kullanım = %100 ustalık
+200 kullanım = %200 ustalık
+```
+
+**2. Güç Hesaplama:**
+```
+Ustalık Gücü = 150 × (Ustalık% / 100)^1.4
+
+Örnekler:
+- %150 ustalık: 150 × (1.5)^1.4 ≈ 250 puan
+- %200 ustalık: 150 × (2.0)^1.4 ≈ 400 puan
+- %300 ustalık: 150 × (3.0)^1.4 ≈ 700 puan
+```
+
+**3. Desteklenen Ritüeller:**
+- ✅ Tüm batarya tipleri
+- ✅ Tüm ritüel tipleri
+- ✅ Her ritüel için ayrı ustalık takibi
+
+### Önemli Notlar
+
+**%100 Altı Ustalık:**
+- ❌ %100 altı ustalık güç vermez
+- ✅ Sadece %100 üzerine çıkış güç verir
+
+**Oyuncu Gücüne Etkisi:**
+- Ustalık gücü, oyuncunun **Progression Power**'ına eklenir
+- Toplam SGP hesaplamasında kullanılır
+- Felaket zorluğunu etkiler
+
+### Komutlar
+
+**Ustalık gücünü görmek için:**
+```
+/sgp components
+```
+
+**Toplam gücü görmek için:**
+```
+/sgp
+```
+
+### Config Ayarları
+
+Ustalık güç değerleri `config.yml` dosyasından ayarlanabilir:
+
+```yaml
+clan-power-system:
+  mastery:
+    base-power: 150
+    exponent: 1.4
 ```
 
 ---

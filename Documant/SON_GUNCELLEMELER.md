@@ -288,5 +288,132 @@ List<RecipeChecker> matchingCenterBlock = allRecipeCheckers.stream()
 
 ---
 
+---
+
+## ⚡ GÜÇ SİSTEMİ GÜNCELLEMELERİ (YENİ)
+
+### ✅ 1. Stratocraft Güç Sistemi (SGP)
+
+**Değişiklik:**
+- **StratocraftPowerSystem** oluşturuldu
+- Oyuncu ve klan güç hesaplama sistemi
+- Hibrit seviye sistemi (karekök + logaritmik)
+- PvP koruma sistemi
+
+**Özellikler:**
+- **Combat Power**: Eşya + Buff gücü
+- **Progression Power**: Ustalık + Ritüel gücü
+- **Total SGP**: Ağırlıklı toplam (Combat × 0.6 + Progression × 0.4)
+
+### ✅ 2. Ritüel Güç Entegrasyonu
+
+**Değişiklik:**
+- Ritüel başarılı olduğunda güç kazanma
+- Ritüel kaynak tüketimi takibi
+- Sadece başarılı ritüeller güç verir
+
+**Entegre Edilen Ritüeller:**
+- ✅ Üye Alma Ritüeli (Ateş Ritüeli)
+- ✅ Ayrılma Ritüeli (Kağıt Ritüeli)
+- ✅ Batarya Ateşleme (Tüm 75 batarya)
+
+### ✅ 3. Felaket-Güç Sistemi Entegrasyonu
+
+**Değişiklik:**
+- Felaketler artık oyuncu gücüne göre ayarlanıyor
+- Dinamik zorluk sistemi
+- 4 fazlı felaket sistemi
+
+**Özellikler:**
+- Sunucu güç puanı hesaplama
+- Cache sistemi (10 saniye)
+- Geriye dönük uyumluluk
+
+### ✅ 4. Komut Sistemi (/sgp)
+
+**Değişiklik:**
+- **SGPCommand** oluşturuldu
+- Güç görüntüleme komutları
+- Top sıralama sistemi
+
+**Komutlar:**
+- `/sgp` - Kendi gücünü göster
+- `/sgp player <oyuncu>` - Oyuncu gücü
+- `/sgp clan` - Klan gücü
+- `/sgp top [limit]` - Top oyuncular
+- `/sgp components` - Güç bileşenleri
+
+### ✅ 5. Güç Sıralaması (Basit)
+
+**Değişiklik:**
+- **SimpleRankingSystem** oluşturuldu
+- Top oyuncu ve klan listesi
+- Cache sistemi (5 saniye)
+
+### ✅ 6. Güç Geçmişi (Basit)
+
+**Değişiklik:**
+- **SimplePowerHistory** oluşturuldu
+- Güç değişimlerini loglama
+- Sadece önemli değişimler (100+ veya %10+)
+
+### ✅ 7. HUD Entegrasyonu
+
+**Değişiklik:**
+- HUD'da güç bilgisi gösterimi
+- Cache sistemi (5 saniye)
+- Thread-safe yapı
+
+**Format:**
+```
+💪 Güç: 1234 SGP (Seviye 5)
+```
+
+### ✅ 8. Performans Optimizasyonları
+
+**Değişiklikler:**
+- Cache sistemleri (Player, Clan, Server, Ranking, HUD)
+- Thread-safety (ConcurrentHashMap, synchronized)
+- Event-based tracking (ritüel blok/kaynak)
+- LRU Cache (offline player power)
+- Double-check locking
+
+### ✅ 9. Config Tabanlı Yönetim
+
+**Değişiklik:**
+- Tüm güç değerleri config'den
+- Varsayılan değerler mevcut
+- Kolay dengeleme
+
+**Config Yolu:**
+```yaml
+clan-power-system:
+  item-power: ...
+  ritual-blocks: ...
+  ritual-resources: ...
+  structure-power: ...
+  mastery: ...
+  level-system: ...
+  protection: ...
+  power-weights: ...
+```
+
+---
+
+## 📊 ÖZET TABLO (GÜNCELLENMİŞ)
+
+| Sistem | Ana Değişiklik | Dosyalar | Etki |
+|--------|----------------|----------|------|
+| **Batarya** | 75 batarya sistemi, esnek tarifler | `NewBatteryManager.java` | Yüksek |
+| **Boss Arena** | Performans optimizasyonları, kule sistemi | `NewBossArenaManager.java` | Yüksek |
+| **Tarif** | Hayalet tarif gösterimi | `GhostRecipeManager.java` | Orta |
+| **Mayın** | 25 mayın entegrasyonu, hayalet tarifler | `NewMineManager.java`, `GhostRecipeManager.java` | Orta |
+| **Güç Sistemi** | SGP sistemi, ritüel entegrasyonu | `StratocraftPowerSystem.java` | Çok Yüksek |
+| **Felaket** | Dinamik zorluk, faz sistemi | `DisasterManager.java`, `DisasterPhaseManager.java` | Çok Yüksek |
+| **Komut** | /sgp komutları | `SGPCommand.java` | Orta |
+| **HUD** | Güç bilgisi gösterimi | `HUDManager.java` | Orta |
+
+---
+
 **Son Güncelleme:** 2024
-**Versiyon:** 1.0
+**Versiyon:** 2.0

@@ -3,18 +3,23 @@ package me.mami.stratocraft.manager;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * TrainingManager - Antrenman mekaniği
  * Oyuncular yeni ritüeller/bataryalar için antrenman yapmalı
  * Antrenman sırasında güç 1/5'inde olur
+ * 
+ * Thread-Safe: ConcurrentHashMap kullanılıyor (1000 oyuncu için güvenli)
  */
 public class TrainingManager {
     // Oyuncu UUID -> Ritüel ID -> Kullanım sayısı
-    private final Map<UUID, Map<String, Integer>> playerTraining = new HashMap<>();
+    // Thread-safe: ConcurrentHashMap (multi-thread güvenli)
+    private final Map<UUID, Map<String, Integer>> playerTraining = new ConcurrentHashMap<>();
     
     // Ritüel ID -> Gerekli kullanım sayısı (seviyeye göre)
-    private final Map<String, Integer> requiredUses = new HashMap<>();
+    // Read-only after init, thread-safe
+    private final Map<String, Integer> requiredUses = new ConcurrentHashMap<>();
     
     public TrainingManager() {
         initializeRequiredUses();
@@ -82,7 +87,11 @@ public class TrainingManager {
      * Oyuncu bir ritüel/batarya kullandığında çağrılır
      */
     public void recordUse(UUID playerId, String ritualId) {
-        Map<String, Integer> playerRituals = playerTraining.computeIfAbsent(playerId, k -> new HashMap<>());
+        // Thread-safe: computeIfAbsent + ConcurrentHashMap
+        Map<String, Integer> playerRituals = playerTraining.computeIfAbsent(
+            playerId, 
+            k -> new ConcurrentHashMap<>() // Thread-safe inner map
+        );
         int currentUses = playerRituals.getOrDefault(ritualId, 0);
         playerRituals.put(ritualId, currentUses + 1);
     }
@@ -288,10 +297,15 @@ public class TrainingManager {
     
     /**
      * DataManager için - antrenman verilerini yükle
+     * Thread-safe: ConcurrentHashMap'e dönüştür
      */
     public void loadTrainingData(Map<UUID, Map<String, Integer>> data) {
         if (data != null) {
-            playerTraining.putAll(data);
+            // Thread-safe kopya oluştur
+            for (Map.Entry<UUID, Map<String, Integer>> entry : data.entrySet()) {
+                Map<String, Integer> innerMap = new ConcurrentHashMap<>(entry.getValue());
+                playerTraining.put(entry.getKey(), innerMap);
+            }
         }
     }
 }

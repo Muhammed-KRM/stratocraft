@@ -210,7 +210,57 @@ public class HUDManager {
             lines.add(buff);
         }
         
+        // 7. ✅ GÜÇ BİLGİSİ (her zaman göster)
+        HUDLine power = getPowerInfo(player);
+        if (power != null) {
+            lines.add(new HUDLine("§7")); // Boş satır
+            lines.add(power);
+        }
+        
         return lines;
+    }
+    
+    // ✅ PERFORMANS: Güç bilgisi cache (her saniye hesaplama yerine)
+    // ✅ THREAD-SAFETY: ConcurrentHashMap kullan (main thread'de çalışsa da güvenli)
+    private final java.util.Map<java.util.UUID, me.mami.stratocraft.model.PlayerPowerProfile> powerCache = 
+        new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<java.util.UUID, Long> powerCacheTime = 
+        new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long POWER_CACHE_DURATION = 5000L; // 5 saniye cache
+    
+    /**
+     * Oyuncu güç bilgisi (HUD için)
+     * ✅ PERFORMANS: Cache kullanarak her saniye hesaplama yapmıyor
+     */
+    private HUDLine getPowerInfo(Player player) {
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        if (plugin == null) return null;
+        
+        me.mami.stratocraft.manager.StratocraftPowerSystem powerSystem = plugin.getStratocraftPowerSystem();
+        if (powerSystem == null) return null;
+        
+        // Cache kontrolü
+        java.util.UUID playerId = player.getUniqueId();
+        long now = System.currentTimeMillis();
+        
+        me.mami.stratocraft.model.PlayerPowerProfile profile = powerCache.get(playerId);
+        Long cacheTime = powerCacheTime.get(playerId);
+        
+        if (profile == null || cacheTime == null || now - cacheTime > POWER_CACHE_DURATION) {
+            // Cache'den al veya hesapla
+            profile = powerSystem.calculatePlayerProfile(player);
+            powerCache.put(playerId, profile);
+            powerCacheTime.put(playerId, now);
+        }
+        
+        // Güç bilgisi: SGP ve Seviye
+        double totalSGP = profile.getTotalSGP();
+        int level = profile.getPlayerLevel();
+        
+        // Format: "💪 Güç: 1234.56 SGP (Seviye 5)"
+        String powerText = "§e💪 Güç: §f" + String.format("%.0f", totalSGP) + " SGP §7(Seviye " + level + ")";
+        
+        return new HUDLine(powerText);
     }
     
     /**
@@ -428,6 +478,13 @@ public class HUDManager {
     public void onPlayerQuit(Player player) {
         clearHUD(player);
         lastShopOfferTime.remove(player.getUniqueId());
+        
+        // ✅ PERFORMANS: Cache'leri temizle
+        if (player != null) {
+            java.util.UUID playerId = player.getUniqueId();
+            powerCache.remove(playerId);
+            powerCacheTime.remove(playerId);
+        }
     }
     
     /**

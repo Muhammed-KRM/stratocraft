@@ -63,6 +63,20 @@ public class CombatListener implements Listener {
             return; // Admin bypass yetkisi varsa korumaları atla
         }
 
+        // ========== GÜÇ SİSTEMİ KORUMA KONTROLÜ (Öncelikli) ==========
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        if (plugin != null && plugin.getStratocraftPowerSystem() != null) {
+            me.mami.stratocraft.manager.StratocraftPowerSystem powerSystem = 
+                plugin.getStratocraftPowerSystem();
+            
+            // Güç sistemi koruma kontrolü (histerezis ile exploit önleme)
+            if (!powerSystem.canAttackPlayer(attacker, defender)) {
+                event.setCancelled(true);
+                // Mesaj zaten canAttackPlayer içinde gönderildi
+                return;
+            }
+        }
+
         Clan clanA = clanManager.getClanByPlayer(attacker.getUniqueId());
         Clan clanD = clanManager.getClanByPlayer(defender.getUniqueId());
 

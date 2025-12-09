@@ -5,6 +5,8 @@ import me.mami.stratocraft.handler.DisasterHandler;
 import me.mami.stratocraft.handler.DisasterHandlerRegistry;
 import me.mami.stratocraft.manager.DisasterConfigManager;
 import me.mami.stratocraft.manager.DisasterManager;
+import me.mami.stratocraft.manager.DisasterPhaseConfig;
+import me.mami.stratocraft.manager.DisasterPhaseManager;
 import me.mami.stratocraft.manager.TerritoryManager;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Disaster;
@@ -26,6 +28,7 @@ public class DisasterTask extends BukkitRunnable {
     private final TerritoryManager territoryManager;
     private final DisasterConfigManager configManager;
     private final DisasterHandlerRegistry handlerRegistry;
+    private DisasterPhaseManager phaseManager;
     
     // Chunk yönetimi: Force-loaded chunk'ları takip et
     private final java.util.Map<String, org.bukkit.Chunk> forceLoadedChunks = new java.util.HashMap<>();
@@ -54,6 +57,14 @@ public class DisasterTask extends BukkitRunnable {
         }
         // Handler Registry oluştur
         this.handlerRegistry = new DisasterHandlerRegistry(territoryManager);
+        
+        // Faz Manager oluştur (plugin zaten yukarıda alındı)
+        if (plugin != null && plugin.getConfigManager() != null) {
+            DisasterPhaseConfig phaseConfig = plugin.getConfigManager().getDisasterPhaseConfig();
+            if (phaseConfig != null) {
+                this.phaseManager = new DisasterPhaseManager(phaseConfig, plugin);
+            }
+        }
     }
     
     /**
@@ -130,6 +141,11 @@ public class DisasterTask extends BukkitRunnable {
         Location current = entity.getLocation();
         DisasterConfig config = getConfig(disaster);
         
+        // FAZ SİSTEMİ: Faz kontrolü ve geçişi
+        if (phaseManager != null) {
+            phaseManager.checkAndUpdatePhase(disaster);
+        }
+        
         // Hedef kristali güncelle (config'den aralık)
         updateTargetCrystal(disaster, current, config);
         
@@ -144,7 +160,11 @@ public class DisasterTask extends BukkitRunnable {
             long timeSinceCrystalDestroyed = System.currentTimeMillis() - crystalDestroyedTime;
             if (timeSinceCrystalDestroyed < POST_CRYSTAL_FIGHT_DURATION) {
                 // Oyuncularla agresif savaş (daha sık saldırı)
-                attackNearbyPlayersIfNeeded(disaster, entity, current, config, true);
+                long attackInterval = config.getAttackInterval();
+                if (phaseManager != null) {
+                    attackInterval = phaseManager.getAttackInterval(disaster);
+                }
+                attackNearbyPlayersIfNeeded(disaster, entity, current, config, true, attackInterval);
             } else {
                 // 1 dakika sonra yeni kristal bul
                 crystalDestroyed = false;
@@ -154,8 +174,15 @@ public class DisasterTask extends BukkitRunnable {
                 lastCrystalCacheUpdate = 0;
             }
         } else {
-            // Normal durum: 2 dakikada bir oyunculara saldırır
-            attackNearbyPlayersIfNeeded(disaster, entity, current, config, false);
+            // FAZ SİSTEMİ: Faz'a göre saldırı aralığı ve oyuncu saldırısı kontrolü
+            if (phaseManager != null && phaseManager.shouldAttackPlayers(disaster)) {
+                // Faz'a göre saldırı aralığı al
+                long attackInterval = phaseManager.getAttackInterval(disaster);
+                attackNearbyPlayersIfNeeded(disaster, entity, current, config, false, attackInterval);
+            } else {
+                // Normal durum: Config'den saldırı aralığı
+                attackNearbyPlayersIfNeeded(disaster, entity, current, config, false, config.getAttackInterval());
+            }
         }
         
         // Chunk yüklü mü kontrol et, değilse yükle (entity hareket edebilsin diye)
@@ -249,23 +276,42 @@ public class DisasterTask extends BukkitRunnable {
     /**
      * Config'den aralık ile yakındaki oyunculara saldır
      * @param aggressiveMode Kristal yok edildikten sonra agresif mod (daha sık saldırı)
+     * @param attackInterval Saldırı aralığı (ms) - faz sisteminden veya config'den
      */
-    private void attackNearbyPlayersIfNeeded(Disaster disaster, Entity entity, Location current, DisasterConfig config, boolean aggressiveMode) {
+    private void attackNearbyPlayersIfNeeded(Disaster disaster, Entity entity, Location current, 
+                                             DisasterConfig config, boolean aggressiveMode, long attackInterval) {
         UUID entityId = entity.getUniqueId();
         long now = System.currentTimeMillis();
         
         // Agresif modda daha sık saldır (normal aralığın yarısı)
-        long attackInterval = aggressiveMode ? config.getAttackInterval() / 2 : config.getAttackInterval();
+        long finalAttackInterval = aggressiveMode ? attackInterval / 2 : attackInterval;
         
         Long lastAttack = lastAttackTime.get(entityId);
-        if (lastAttack != null && now - lastAttack < attackInterval) {
+        if (lastAttack != null && now - lastAttack < finalAttackInterval) {
             return; // Henüz aralık geçmedi
+        }
+        
+        // FAZ SİSTEMİ: Faz'a göre oyuncu saldırısı kontrolü
+        if (phaseManager != null && !phaseManager.shouldAttackPlayers(disaster) && !aggressiveMode) {
+            return; // Bu fazda oyunculara saldırmıyor
         }
         
         // Config'den yarıçap ile yakındaki oyuncuları bul ve saldır
         DisasterBehavior.attackPlayers(entity, current, config, disaster.getDamageMultiplier());
         
         lastAttackTime.put(entityId, now);
+    }
+    
+    /**
+     * Overload: Eski metod imzası (geriye dönük uyumluluk)
+     */
+    private void attackNearbyPlayersIfNeeded(Disaster disaster, Entity entity, Location current, 
+                                             DisasterConfig config, boolean aggressiveMode) {
+        long attackInterval = config.getAttackInterval();
+        if (phaseManager != null) {
+            attackInterval = phaseManager.getAttackInterval(disaster);
+        }
+        attackNearbyPlayersIfNeeded(disaster, entity, current, config, aggressiveMode, attackInterval);
     }
     
     /**

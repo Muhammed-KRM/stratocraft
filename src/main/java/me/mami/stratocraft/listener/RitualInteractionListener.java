@@ -125,6 +125,22 @@ public class RitualInteractionListener implements Listener {
         
         leader.sendMessage("§aRitüel tamamlandı! " + recruitedPlayers.size() + " kişi katıldı.");
         
+        // ✅ GÜÇ SİSTEMİ ENTEGRASYONU: Ritüel başarılı oldu
+        // ✅ NULL KONTROLÜ: Klan ve başarı kontrolü
+        if (clan != null && recruitedPlayers.size() > 0) {
+            me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+            if (plugin != null && plugin.getStratocraftPowerSystem() != null) {
+                java.util.Map<String, Integer> usedResources = new java.util.HashMap<>();
+                usedResources.put("FLINT_AND_STEEL", 1); // Çakmak tüketildi
+                
+                plugin.getStratocraftPowerSystem().onRitualSuccess(
+                    clan,
+                    "RECRUITMENT_RITUAL",
+                    usedResources
+                );
+            }
+        }
+        
         // Çakmağı tüket (dayanıklılık azalt)
         if (handItem.getDurability() >= handItem.getType().getMaxDurability() - 1) {
             handItem.setAmount(0);
@@ -395,6 +411,23 @@ public class RitualInteractionListener implements Listener {
         // Title
         p.sendTitle("§e§lYEMİN KIRILDI", "§7" + clan.getName() + " klanından ayrıldın", 10, 70, 20);
         p.sendMessage("§e§l" + clan.getName() + " §7klanından ayrıldın!");
+        
+        // ✅ GÜÇ SİSTEMİ ENTEGRASYONU: Ritüel başarılı oldu (ayrılma ritüeli)
+        // ✅ NULL KONTROLÜ: Klan kontrolü (ayrıldıktan sonra clan null olabilir, önce kaydet)
+        me.mami.stratocraft.model.Clan ritualClan = clan; // Ayrılmadan önce kaydet
+        if (ritualClan != null) {
+            me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+            if (plugin != null && plugin.getStratocraftPowerSystem() != null) {
+                java.util.Map<String, Integer> usedResources = new java.util.HashMap<>();
+                usedResources.put("PAPER", 1); // Kağıt tüketildi
+                
+                plugin.getStratocraftPowerSystem().onRitualSuccess(
+                    ritualClan,
+                    "LEAVE_RITUAL",
+                    usedResources
+                );
+            }
+        }
         
         // Klan üyelerine bildir (isteğe bağlı)
         String playerName = p.getName();

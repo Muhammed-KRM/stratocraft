@@ -80,6 +80,10 @@ public class Disaster {
     private long startTime;         // Başlangıç zamanı
     private long duration;           // Süre (ms)
     
+    // Faz sistemi
+    private DisasterPhase currentPhase; // Mevcut faz
+    private long lastPhaseTransitionTime; // Son faz geçiş zamanı
+    
     public Disaster(Type type, Category category, int level, Entity entity, Location target, 
                    double maxHealth, double damageMultiplier, long duration) {
         this.type = type;
@@ -94,6 +98,10 @@ public class Disaster {
         this.duration = duration;
         this.startTime = System.currentTimeMillis();
         this.groupEntities = new java.util.ArrayList<>();
+        
+        // Faz sistemi: Başlangıçta EXPLORATION fazında
+        this.currentPhase = DisasterPhase.EXPLORATION;
+        this.lastPhaseTransitionTime = System.currentTimeMillis();
         
         // Canavar felaket tipini belirle
         if (category == Category.CREATURE) {
@@ -140,6 +148,56 @@ public class Disaster {
         return Math.max(0, duration - elapsed);
     }
     public boolean isExpired() { return getRemainingTime() <= 0; }
+    
+    // Faz sistemi getters/setters
+    public DisasterPhase getCurrentPhase() { return currentPhase; }
+    public void setCurrentPhase(DisasterPhase phase) { 
+        this.currentPhase = phase;
+        this.lastPhaseTransitionTime = System.currentTimeMillis();
+    }
+    public long getLastPhaseTransitionTime() { return lastPhaseTransitionTime; }
+    
+    /**
+     * Can yüzdesine göre mevcut fazı hesapla ve güncelle
+     * 
+     * @return Eski faz (faz değiştiyse), null (faz değişmediyse)
+     */
+    public DisasterPhase updatePhase() {
+        // maxHealth kontrolü (sıfıra bölme hatası önleme)
+        if (maxHealth <= 0) {
+            return null;
+        }
+        
+        double currentHealth = getCurrentHealth();
+        double healthPercent = currentHealth / maxHealth;
+        
+        // Can yüzdesi kontrolü
+        if (healthPercent < 0.0) healthPercent = 0.0;
+        if (healthPercent > 1.0) healthPercent = 1.0;
+        
+        DisasterPhase newPhase = DisasterPhase.getCurrentPhase(healthPercent);
+        
+        if (newPhase != currentPhase) {
+            DisasterPhase oldPhase = currentPhase;
+            setCurrentPhase(newPhase);
+            return oldPhase; // Eski fazı döndür (geçiş bildirimi için)
+        }
+        
+        return null; // Faz değişmedi
+    }
+    
+    /**
+     * Can yüzdesini al (0.0 - 1.0 arası)
+     * 
+     * @return Can yüzdesi (0.0 - 1.0)
+     */
+    public double getHealthPercent() {
+        if (maxHealth <= 0) return 0.0;
+        double percent = getCurrentHealth() / maxHealth;
+        if (percent < 0.0) return 0.0;
+        if (percent > 1.0) return 1.0;
+        return percent;
+    }
     
     public boolean isDead() { 
         if (isDead) return true;

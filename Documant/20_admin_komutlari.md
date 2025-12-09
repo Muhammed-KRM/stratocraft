@@ -16,6 +16,7 @@ Admin komutları, **sadece yöneticilerin** kullanabileceği özel komutlardır.
 2. [Eşya Komutları](#eşya-komutlari)
 3. [Mob Komutları](#mob-komutlari)
 4. [Sistem Komutları](#sistem-komutlari)
+5. [Güç Sistemi Komutları](#güç-sistemi-komutlari) ⭐ YENİ
 
 ---
 
@@ -1012,6 +1013,139 @@ if (!overflow.isEmpty()) {
 - **Efekt**: Patlama + Poison + Slowness + Blindness + Weakness + Ateş + Yıldırım
 - **Kullanım**: Tüm efektlerin birleşimi
 - **Komut**: `/stratocraft mine give 5 chaos`
+
+---
+
+---
+
+## 💪 GÜÇ SİSTEMİ KOMUTLARI (YENİ)
+
+### `/sgp` - Güç Sistemi Komutları
+
+**Açıklama**: Oyuncu ve klan güç bilgilerini gösterir
+
+**Yetki**: Herkes kullanabilir
+
+**Alt Komutlar:**
+
+#### `/sgp` veya `/sgp me`
+**Açıklama**: Kendi gücünü gösterir
+
+**Kullanım**:
+```
+/sgp
+/sgp me
+```
+
+**Çıktı**:
+```
+╔════════════════════════════════╗
+║  OyuncuAdı Güç Bilgileri
+╠════════════════════════════════╣
+Toplam SGP: 1234.56
+Combat Power: 800.00
+Progression Power: 434.56
+Seviye: 5
+╚════════════════════════════════╝
+```
+
+#### `/sgp player <oyuncu>`
+**Açıklama**: Belirtilen oyuncunun gücünü gösterir
+
+**Kullanım**:
+```
+/sgp player OyuncuAdı
+/sgp p OyuncuAdı
+```
+
+#### `/sgp clan`
+**Açıklama**: Kendi klanının gücünü gösterir
+
+**Kullanım**:
+```
+/sgp clan
+/sgp c
+```
+
+**Çıktı**:
+```
+╔════════════════════════════════╗
+║  KlanAdı Klan Güç Bilgileri
+╠════════════════════════════════╣
+Toplam Klan Gücü: 50000.00
+Klan Seviyesi: 8
+╚════════════════════════════════╝
+```
+
+#### `/sgp top [limit]`
+**Açıklama**: En güçlü oyuncuları listeler
+
+**Kullanım**:
+```
+/sgp top
+/sgp top 20
+```
+
+**Çıktı**:
+```
+╔════════════════════════════════╗
+║  Top 10 Oyuncu
+╠════════════════════════════════╣
+🥇 1. Oyuncu1 - 5000.00 SGP (Seviye 10)
+🥈 2. Oyuncu2 - 4500.00 SGP (Seviye 9)
+🥉 3. Oyuncu3 - 4000.00 SGP (Seviye 8)
+...
+╚════════════════════════════════╝
+```
+
+#### `/sgp components`
+**Açıklama**: Güç bileşenlerini detaylı gösterir
+
+**Kullanım**:
+```
+/sgp components
+/sgp comp
+```
+
+**Çıktı**:
+```
+╔════════════════════════════════╗
+║  OyuncuAdı Güç Bileşenleri
+╠════════════════════════════════╣
+Eşya Gücü: 840.00
+Ustalık Gücü: 250.00
+Buff Gücü: 50.00
+Ritüel Gücü: 0.00
+╠════════════════════════════════╣
+Combat Power: 890.00
+Progression Power: 250.00
+╚════════════════════════════════╝
+```
+
+#### `/sgp help`
+**Açıklama**: Komut yardımını gösterir
+
+**Kullanım**:
+```
+/sgp help
+/sgp ?
+```
+
+### Komut Kısaltmaları
+
+```
+/sgp = /sgp me
+/sgp p <oyuncu> = /sgp player <oyuncu>
+/sgp c = /sgp clan
+/sgp comp = /sgp components
+```
+
+### HUD Entegrasyonu
+
+**Güç bilgisi otomatik olarak HUD'da görünür:**
+- Sağ taraftaki bilgi panosunda
+- Her saniye güncellenir (cache ile optimize)
+- Format: `💪 Güç: 1234 SGP (Seviye 5)`
 
 ---
 

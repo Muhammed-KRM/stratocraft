@@ -8,6 +8,7 @@
 4. [Boss Droplari](#boss-droplari)
 5. [Klan Eşyaları](#klan-eşyalari)
 6. [Tarif Kitapları](#tarif-kitaplari)
+7. [Eşya Güç Sistemi](#eşya-güç-sistemi) ⭐ YENİ
 
 ---
 
@@ -1464,6 +1465,93 @@ Mayınlar **basınç plakaları** olarak verilir ve yere koyulduğunda otomatik 
 - Farklı seviyeler farklı plaka tipleri
 - Seviye 3+ mayınlarda parlayan efekt
 - Özel isimler ve açıklamalar
+
+---
+
+---
+
+## ⚔️ EŞYA GÜÇ SİSTEMİ (YENİ)
+
+### ✅ Silah ve Zırh Güç Puanları
+
+**Eşyalar artık oyuncu gücüne katkı sağlıyor!**
+
+Her silah ve zırh parçası, seviyesine göre **Güç Puanı (Power Score)** verir.
+
+### Silah Gücü
+
+**Silah Seviyesi → Güç:**
+```
+- Seviye 1: 60 puan
+- Seviye 2: 150 puan
+- Seviye 3: 400 puan
+- Seviye 4: 900 puan
+- Seviye 5: 1600 puan
+```
+
+**Not:** Sadece ana eldeki silah güç verir
+
+### Zırh Gücü
+
+**Zırh Seviyesi → Güç (Parça Başına):**
+```
+- Seviye 1: 40 puan/parça
+- Seviye 2: 100 puan/parça
+- Seviye 3: 250 puan/parça
+- Seviye 4: 600 puan/parça
+- Seviye 5: 1000 puan/parça
+```
+
+**Tam Set Bonusu:**
+```
+4 parça zırh giyildiğinde:
+- %10 ekstra güç bonusu
+- Tüm zırh gücü × 1.1
+```
+
+### Örnek Hesaplama
+
+**Örnek Oyuncu:**
+```
+- Silah: Seviye 3 → 400 puan
+- Zırh: Seviye 2 (4 parça) → 100 × 4 = 400 puan
+- Tam Set Bonusu: 400 × 1.1 = 440 puan
+- Toplam Eşya Gücü: 400 + 440 = 840 puan
+```
+
+### Komutlar
+
+**Eşya gücünü görmek için:**
+```
+/sgp components
+```
+
+**Toplam gücü görmek için:**
+```
+/sgp
+```
+
+### Config Ayarları
+
+Eşya güç değerleri `config.yml` dosyasından ayarlanabilir:
+
+```yaml
+clan-power-system:
+  item-power:
+    weapon:
+      level-1: 60
+      level-2: 150
+      level-3: 400
+      level-4: 900
+      level-5: 1600
+    armor:
+      level-1: 40
+      level-2: 100
+      level-3: 250
+      level-4: 600
+      level-5: 1000
+    armor-set-bonus: 1.1
+```
 
 ---
 

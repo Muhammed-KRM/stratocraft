@@ -15,6 +15,7 @@ Ritüeller, Stratocraft'ta **fiziksel blok düzenekleriyle** yapılan özel etki
 5. [Boss Çağırma Ritüelleri](#boss-çağırma-ritüelleri)
 6. [Canlı Eğitme Ritüelleri](#canlı-eğitme-ritüelleri)
 7. [Çiftleşme Ritüelleri](#çiftleşme-ritüelleri)
+8. [Ritüel Güç Sistemi](#ritüel-güç-sistemi) ⭐ YENİ
 
 ---
 
@@ -961,6 +962,69 @@ Canlı Eğit:
 Canlı Çiftleştir:
 → 1 Dişi + 1 Erkek + Yemek ver (Doğal)
 → Veya Çiftleştirme Tesisi kullan
+```
+
+---
+
+---
+
+## ⚡ RİTÜEL GÜÇ SİSTEMİ (YENİ)
+
+### ✅ Ritüel Başarılı Olduğunda Güç Kazanma
+
+**Ritüeller artık klan gücüne katkı sağlıyor!**
+
+Başarılı ritüeller, klanın **Ritüel Kaynak Gücü**ne eklenir ve klanın toplam gücünü artırır.
+
+### Nasıl Çalışır?
+
+**1. Ritüel Başarılı Olduğunda:**
+```
+- Ritüel başarıyla tamamlanır
+- Kullanılan kaynaklar kaydedilir
+- Klan gücüne eklenir
+```
+
+**2. Güç Hesaplama:**
+```
+Ritüel Kaynak Gücü = Σ (Kaynak Tipi × Miktar × Ritüel Çarpanı)
+
+Örnek:
+- Demir: 5 puan/kaynak
+- Elmas: 10 puan/kaynak
+- Kızıl Elmas: 18 puan/kaynak
+- Karanlık Madde: 50 puan/kaynak
+```
+
+**3. Desteklenen Ritüeller:**
+- ✅ **Üye Alma Ritüeli** (Ateş Ritüeli) - Çakmak tüketir
+- ✅ **Ayrılma Ritüeli** (Kağıt Ritüeli) - Kağıt tüketir
+- ✅ **Batarya Ateşleme** - Yakıt tipine göre (Demir, Elmas, Kızıl Elmas, Karanlık Madde)
+
+### Önemli Notlar
+
+**Sadece Başarılı Ritüeller:**
+- ❌ Başarısız ritüeller güç vermez
+- ✅ Sadece başarıyla tamamlanan ritüeller güç verir
+
+**Klan Gücüne Etkisi:**
+- Ritüel gücü, klanın toplam gücüne eklenir
+- Klan seviyesi hesaplamasında kullanılır
+- Felaket zorluğunu etkiler
+
+### Config Ayarları
+
+Ritüel güç değerleri `config.yml` dosyasından ayarlanabilir:
+
+```yaml
+clan-power-system:
+  ritual-resources:
+    iron: 5
+    diamond: 10
+    red-diamond: 18
+    dark-matter: 50
+    titanium: 15
+    default: 3
 ```
 
 ---

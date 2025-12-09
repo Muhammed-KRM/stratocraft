@@ -104,6 +104,16 @@ Klan A (Seviye 5) → Klan B (Seviye 1):
 
 **Rütbe Sistemi**: Lider → General → Üye → Acemi (her rütbenin farklı yetkileri var)
 
+**Güç Sistemi (YENİ)**: 
+- **Stratocraft Güç Puanı (SGP)**: Her oyuncu ve klanın güç puanı vardır
+- **Combat Power**: Eşya gücü (silah + zırh) + Buff gücü
+- **Progression Power**: Ustalık gücü + Ritüel gücü (bloklar + kaynaklar)
+- **Oyuncu Seviyesi**: Hibrit algoritma (1-10: karekök, 11+: logaritmik)
+- **Klan Seviyesi**: Logaritmik algoritma (maksimum 15)
+- **PvP Koruma**: Güçlü oyuncular zayıf oyunculara saldıramaz (onurlu savaş aralığı, acemi koruması)
+- **HUD Entegrasyonu**: Güç bilgisi sağ taraftaki bilgi panosunda görünür (`💪 Güç: 1234 SGP (Seviye 5)`)
+- **Komutlar**: `/sgp` komutu ile güç bilgilerini görüntüle, top sıralamalarına bak
+
 **İttifak Sistemi**: Klanlar arası kalıcı anlaşmalar. İki lider elinde Elmas ile ritüel yaparak ittifak kurulur. İttifaklı klanlara saldırılamaz; ihlal edilirse ağır ceza uygulanır (klan bakiyesinin %20'si + Hain etiketi). Detaylar için `01_klan_sistemi.md` dosyasına bakın.
 
 ---
@@ -123,7 +133,9 @@ Felaketler **doğa olaylarıdır**, normal boss değil! Merkezden uzakta spawn o
 8. **Deprem (Earthquake)**: Yeri sarsar, binaları yıkar
 9. **Volkanik Patlama (Volcanic Eruption)**: Lav fışkırır, kül bulutu yayar
 
-**Dinamik Güç Sistemi**: Felaketler, oyuncu sayısı ve klan seviyelerine göre güçlenir!
+**Dinamik Güç Sistemi**: Felaketler, oyuncuların gerçek güç puanlarına (SGP) göre güçlenir! Artık sadece oyuncu sayısına değil, eşya gücü, ustalık, ritüel gücü ve yapı gücüne göre ayarlanır.
+
+**4 Fazlı Felaket Sistemi**: Felaketler artık 4 fazdan geçer (Keşif → Saldırı → Öfke → Çaresizlik). Her fazda farklı hız, saldırı aralığı ve özel yetenekler aktif olur.
 
 **BossBar Görüntüsü**: 
 - **Yaratık Felaketleri** (Titan Golem, Abyssal Worm, Chaos Dragon, Void Titan, Ice Leviathan): Ekranın üstünde can ve kalan süre gösterilir
@@ -549,7 +561,7 @@ Bu döküman, Stratocraft'ın temel felsefesini ve amacını anlatır. Detaylı 
 - **17_egitme_sistemi.md**: Canlı eğitme, ritüeller, binme
 - **18_ureme_sistemi.md**: Çiftleştirme, üreme tesisleri, yumurta
 - **19_zorluk_sistemi.md**: Zorluk bölgeleri, mob/maden kısıtlamaları
-- **20_admin_komutlari.md**: Admin komutları, test araçları
+- **20_admin_komutlari.md**: Admin komutları, test araçları, `/sgp` güç sistemi komutları
 
 ---
 
@@ -562,6 +574,39 @@ Stratocraft, **mühendislik ve strateji** üzerine kurulu bir oyundur. Komutlar 
 - ✅ Takım çalışması = Hayatta kalma
 - ✅ Mühendislik = Zafer
 - ✅ Strateji = Üstünlük
+- ✅ Güç Sistemi = Adil Rekabet (PvP koruma, dinamik felaket zorluğu)
+
+---
+
+## 🆕 YENİ ÖZELLİKLER (Son Güncellemeler)
+
+### ⚡ Güç Sistemi (Stratocraft Power System - SGP)
+
+**Tamamlanan Özellikler:**
+- ✅ **Oyuncu Güç Hesaplama**: Eşya, ustalık, ritüel, buff güçleri
+- ✅ **Klan Güç Hesaplama**: Üye güçleri, yapılar, ritüel blokları/kaynakları
+- ✅ **Hibrit Seviye Sistemi**: Oyuncu seviyesi (karekök + logaritmik), Klan seviyesi (logaritmik)
+- ✅ **PvP Koruma Sistemi**: Onurlu savaş aralığı, acemi koruması, klan içi koruma
+- ✅ **Histerezis Sistemi**: Zırh çıkarma exploit önleme (60 saniye gecikme)
+- ✅ **Felaket Entegrasyonu**: Dinamik zorluk sistemi (oyuncu gücüne göre)
+- ✅ **4 Fazlı Felaket Sistemi**: Keşif → Saldırı → Öfke → Çaresizlik
+- ✅ **Ritüel Güç Entegrasyonu**: Başarılı ritüeller ve batarya ateşlemeleri güç verir
+- ✅ **HUD Entegrasyonu**: Güç bilgisi sağ taraftaki bilgi panosunda görünür
+- ✅ **Komut Sistemi**: `/sgp` komutu ile güç görüntüleme, top sıralamaları
+- ✅ **Performans Optimizasyonları**: Cache sistemleri, thread-safety, event-based tracking
+
+**Detaylar için:**
+- `01_klan_sistemi.md` - Klan Güç Sistemi bölümü
+- `10_felaketler.md` - Dinamik Güç Sistemi ve Faz Sistemi bölümleri
+- `03_rituel_sistemi.md` - Ritüel Güç Sistemi bölümü
+- `04_batarya_sistemi.md` - Batarya Güç Sistemi bölümü
+- `05_ozel_esyalar.md` - Eşya Güç Sistemi bölümü
+- `17_egitme_sistemi.md` - Ustalık Güç Sistemi bölümü
+- `07_yapilar.md` - Yapı Güç Sistemi bölümü
+- `20_admin_komutlari.md` - Güç Sistemi Komutları bölümü
+- `19_zorluk_sistemi.md` - Dinamik Zorluk Sistemi bölümü
+
+---
 
 **🎮 Klanını kur, bölgeni genişlet, yapılarını inşa et, felaketlere hükmet!**
 

@@ -16,6 +16,7 @@ Klan, Stratocraft'ta hayatta kalmanın temeli. Kendi bölgenizi oluşturun, yap�
 4. [Rütbe Sistemi](#rütbe-sistemi)
 5. [Savaş ve İlan](#savaş-ve-ilan)
 6. [İttifaklar](#ittifaklar)
+7. [Klan Güç Sistemi](#klan-güç-sistemi) ⭐ YENİ
 
 ---
 
@@ -609,6 +610,218 @@ Gün 6: İlk Üyeler
 Gün 7: İlk Yapı
 → Savunma yapısı kur
 → Savaşa hazırlan!
+```
+
+---
+
+---
+
+## 💪 KLAN GÜÇ SİSTEMİ (YENİ)
+
+### ✅ Stratocraft Güç Sistemi (SGP)
+
+**Klanlar artık güç puanlarına sahip!**
+
+Her klanın bir **Klan Güç Puanı (Clan Power)** vardır ve bu puan klanın seviyesini belirler.
+
+### Klan Gücü Hesaplama
+
+**Klan Gücü = Üye Güçleri + Yapı Gücü + Ritüel Blok Gücü + Ritüel Kaynak Gücü**
+
+#### 1. Üye Güçleri
+```
+Tüm klan üyelerinin toplam SGP'si
+- Online üyeler: Gerçek zamanlı hesaplama
+- Offline üyeler: Cache'den (24 saat geçerli)
+```
+
+#### 2. Yapı Gücü
+```
+Yapı Seviyesi → Güç:
+- Seviye 1: 100 puan
+- Seviye 2: 250 puan
+- Seviye 3: 500 puan
+- Seviye 4: 1200 puan
+- Seviye 5: 2000 puan
+- Klan Kristali: +500 puan (sabit)
+```
+
+#### 3. Ritüel Blok Gücü
+```
+Ritüel Blokları → Güç:
+- Demir Blok: 8 puan/blok
+- Obsidyen: 30 puan/blok
+- Elmas Blok: 25 puan/blok
+- Altın Blok: 12 puan/blok
+- Zümrüt Blok: 35 puan/blok
+- Netherite Blok: 150 puan/blok
+```
+
+**Not:** Event-based tracking sistemi kullanılır (performans için)
+
+#### 4. Ritüel Kaynak Gücü
+```
+Ritüel Kaynakları → Güç:
+- Demir: 5 puan/kaynak
+- Elmas: 10 puan/kaynak
+- Kızıl Elmas: 18 puan/kaynak
+- Karanlık Madde: 50 puan/kaynak
+- Titanyum: 15 puan/kaynak
+```
+
+**Not:** Sadece başarılı ritüeller güç verir
+
+### Klan Seviyesi
+
+**Klan seviyesi, klan gücüne göre logaritmik olarak hesaplanır:**
+
+```
+Seviye = log(Klan Gücü / 500) × 2.0
+
+Maksimum Seviye: 15
+```
+
+### Komutlar
+
+**Klan gücünü görmek için:**
+```
+/sgp clan
+```
+
+**Top klanları görmek için:**
+```
+/sgp top clans [limit]
+```
+
+### Oyuncu Seviyesi
+
+**Oyuncu seviyesi, hibrit algoritma ile hesaplanır:**
+
+```
+Aşama 1 (1-10 Seviye): Karekök (hızlı ilerleme)
+Seviye = √(Güç / 100)
+
+Aşama 2 (11+ Seviye): Logaritmik (zor ilerleme)
+Seviye = 10 + log₁₀(Güç / 10000) × 3.0
+
+Maksimum Seviye: 20
+```
+
+**Örnek:**
+```
+500 puan → Seviye 2 (karekök)
+5000 puan → Seviye 7 (karekök)
+10000 puan → Seviye 10 (karekök)
+50000 puan → Seviye 14 (logaritmik)
+```
+
+### PvP Koruma Sistemi
+
+**Güçlü oyuncular zayıf oyunculara saldıramaz!**
+
+#### 1. Onurlu Savaş Aralığı (Honorable Combat Range)
+```
+Kural:
+Hedef Gücü < Saldıran Gücü × 0.5 ise
+    → Saldırı YASAK
+
+Örnek:
+Saldıran: 10,000 puan
+Hedef: 4,000 puan
+Eşik: 10,000 × 0.5 = 5,000 puan
+
+4,000 < 5,000 → Saldırı YASAK ❌
+```
+
+#### 2. Acemi Koruması (Rookie Protection)
+```
+Kural:
+Hedef Gücü < 5,000 puan VE
+Saldıran Gücü > 10,000 puan VE
+Hedef ilk saldıran DEĞİLSE
+    → Saldırı YASAK
+
+Amaç: Yeni oyuncuları güçlü oyunculardan korumak
+```
+
+#### 3. Klan Savaşı İstisnası
+```
+Klan savaşında:
+→ Tüm koruma kuralları DEVRE DIŞI
+→ Stratejik saldırılar yapılabilir
+```
+
+#### 4. Klan İçi Koruma
+```
+Aynı klandaki oyuncular için:
+→ Daha katı eşik (%60)
+→ Veya tamamen kapalı (config'den)
+```
+
+#### 5. Histerezis Sistemi (Zırh Çıkarma Exploit Önleme)
+```
+Zırh çıkarıldığında:
+→ Güç hemen düşmez
+→ 60 saniye gecikme ile düşer
+→ Bu süre içinde koruma aktif kalır
+
+Amaç: Hızlı zırh çıkarıp takma exploit'ini önlemek
+```
+
+### HUD Entegrasyonu
+
+**Güç bilgisi otomatik olarak HUD'da görünür:**
+```
+Sağ taraftaki bilgi panosunda:
+💪 Güç: 1234 SGP (Seviye 5)
+
+- Her saniye güncellenir (cache ile optimize)
+- Thread-safe yapı
+- 5 saniyelik cache (performans)
+```
+
+### Config Ayarları
+
+Klan güç değerleri `config.yml` dosyasından ayarlanabilir:
+
+```yaml
+clan-power-system:
+  structure-power:
+    crystal-base: 500
+    level-1: 100
+    level-2: 250
+    level-3: 500
+    level-4: 1200
+    level-5: 2000
+  ritual-blocks:
+    iron: 8
+    obsidian: 30
+    diamond: 25
+    gold: 12
+    emerald: 35
+    titanyum: 150
+  ritual-resources:
+    iron: 5
+    diamond: 10
+    red-diamond: 18
+    dark-matter: 50
+  level-system:
+    player-base-power: 100
+    player-switch-power: 10000
+    player-log-multiplier: 3.0
+    player-max-level: 20
+    clan-base-power: 500
+    clan-multiplier: 2.0
+    max-clan-level: 15
+  protection:
+    threshold: 0.5
+    clan-threshold: 0.6
+    rookie-threshold: 5000
+    strong-player-threshold: 10000
+    gear-decrease-delay: 60000
+  power-weights:
+    combat: 0.6
+    progression: 0.4
 ```
 
 ---

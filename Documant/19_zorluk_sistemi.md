@@ -395,4 +395,70 @@ Seviye = 3 (Zor)
 
 ---
 
+---
+
+## ⚡ DİNAMİK ZORLUK SİSTEMİ (YENİ)
+
+### ✅ Felaket Zorluğu Oyuncu Gücüne Göre Ayarlanıyor
+
+**Felaketler artık oyuncuların gerçek gücüne göre güçleniyor!**
+
+Felaket sistemi, **Stratocraft Güç Sistemi (SGP)** ile entegre edilmiştir. Artık felaketler sadece oyuncu sayısına değil, oyuncuların **gerçek güç puanlarına** göre güçlenir.
+
+### Güç Hesaplama Formülü
+
+**Yeni Formül:**
+```
+Sunucu Güç Puanı = Ortalama Oyuncu Gücü × Oyuncu Sayısı Çarpanı
+
+Felaket Güç Çarpanı = 1.0 + (Sunucu Güç Puanı / 100.0) × Güç Artış Hızı
+
+Felaket Can = Temel Can × Felaket Güç Çarpanı
+Felaket Hasar = Temel Hasar × Felaket Güç Çarpanı
+```
+
+### Oyuncu Güç Puanı (SGP) Hesaplama
+
+**SGP = (Combat Power × 0.6) + (Progression Power × 0.4)**
+
+**Combat Power:**
+- Eşya Gücü (Silah + Zırh)
+- Buff Gücü (Potion efektleri, Klan buffları)
+
+**Progression Power:**
+- Ustalık Gücü (Ritüel ustalığı)
+- Ritüel Gücü (Ritüel blokları ve kaynakları)
+
+### Config Ayarları
+
+Tüm güç hesaplama parametreleri `config.yml` dosyasından ayarlanabilir:
+
+```yaml
+disaster:
+  power:
+    dynamic-difficulty:
+      enabled: true
+      power-scaling-factor: 1.0
+      min-power-multiplier: 0.5
+      max-power-multiplier: 5.0
+      player-count-multiplier:
+        1: 1.0
+        5: 1.2
+        10: 1.5
+        20: 2.0
+```
+
+### Önemli Notlar
+
+**Geriye Dönük Uyumluluk:**
+- Eğer yeni güç sistemi yüklenmemişse, eski sistem kullanılır
+- Eski sistem: `Güç = TemelGüç × (1 + OyuncuSayısı × 0.1 + OrtKlanSeviyesi × 0.15)`
+
+**Performans:**
+- Sunucu güç hesaplama cache'i: 10 saniye
+- Oyuncu güç hesaplama cache'i: 5 saniye
+- Thread-safe yapı
+
+---
+
 **🎮 Merkezden uzaklaş, güçlen, efsanevi ol!**

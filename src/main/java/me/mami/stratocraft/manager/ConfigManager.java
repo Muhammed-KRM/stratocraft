@@ -64,10 +64,14 @@ public class ConfigManager {
     
     // ========== FELAKET CONFIG YÖNETİCİSİ ==========
     private DisasterConfigManager disasterConfigManager;
+    private DisasterPowerConfig disasterPowerConfig;
+    private DisasterPhaseConfig disasterPhaseConfig;
 
     public ConfigManager(Main plugin) {
         this.plugin = plugin;
         this.disasterConfigManager = new DisasterConfigManager();
+        this.disasterPowerConfig = new DisasterPowerConfig();
+        this.disasterPhaseConfig = new DisasterPhaseConfig();
         loadConfig();
     }
 
@@ -129,6 +133,12 @@ public class ConfigManager {
         
         // Felaket Config Yöneticisi
         disasterConfigManager.loadConfigs(config);
+        
+        // Felaket Güç Config Yöneticisi (Yeni Dinamik Zorluk Sistemi)
+        disasterPowerConfig.loadFromConfig(config);
+        
+        // Felaket Faz Config Yöneticisi (Faz Sistemi)
+        disasterPhaseConfig.loadFromConfig(config);
     }
 
     public void reloadConfig() {
@@ -175,6 +185,8 @@ public class ConfigManager {
     
     // ========== FELAKET CONFIG GETTER ==========
     public DisasterConfigManager getDisasterConfigManager() { return disasterConfigManager; }
+    public DisasterPowerConfig getDisasterPowerConfig() { return disasterPowerConfig; }
+    public DisasterPhaseConfig getDisasterPhaseConfig() { return disasterPhaseConfig; }
     
     // Config erişimi için (CaravanManager gibi yerler için)
     public FileConfiguration getConfig() { return config; }

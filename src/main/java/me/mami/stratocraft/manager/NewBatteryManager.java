@@ -486,9 +486,13 @@ public class NewBatteryManager {
     
     /**
      * Bataryayı ateşle (ana metod)
+     * ✅ MANTIK DÜZELTMESİ: Sadece başarılı batarya ateşlemelerinde güç ver
      */
     public void fireBattery(Player player, NewBatteryData data) {
+        if (player == null || data == null) return;
+        
         String batteryName = data.getBatteryName();
+        boolean success = false;
         
         // Kategori belirleme (isimden)
         if (batteryName.contains("Yıldırım") || batteryName.contains("Cehennem") || 
@@ -499,6 +503,7 @@ public class NewBatteryManager {
             batteryName.contains("Lava") || batteryName.contains("Boss") ||
             batteryName.contains("Alan") || batteryName.contains("Dağ")) {
             fireAttackBattery(player, data);
+            success = true; // Saldırı bataryaları genelde başarılı olur
         } else if (batteryName.contains("Köprü") || batteryName.contains("Duvar") ||
                    batteryName.contains("Kafes") || batteryName.contains("Kale") ||
                    batteryName.contains("Hapishane") || batteryName.contains("Kule") ||
@@ -508,9 +513,49 @@ public class NewBatteryManager {
                    batteryName.contains("Cam") || batteryName.contains("Taş") ||
                    batteryName.contains("Ahşap")) {
             fireConstructionBattery(player, data);
+            success = true; // Oluşturma bataryaları genelde başarılı olur
         } else {
             // Destek bataryaları
             fireSupportBattery(player, data);
+            success = true; // Destek bataryaları genelde başarılı olur
+        }
+        
+        // ✅ GÜÇ SİSTEMİ ENTEGRASYONU: Sadece başarılı batarya ateşlemelerinde güç ver
+        // Not: Batarya sisteminde başarısızlık durumu yok gibi görünüyor, 
+        // ama gelecekte eklenebilir diye kontrol ekliyoruz
+        if (success) {
+            me.mami.stratocraft.manager.TerritoryManager territoryManager = plugin.getTerritoryManager();
+            if (territoryManager != null) {
+                me.mami.stratocraft.model.Clan clan = territoryManager.getTerritoryOwner(player.getLocation());
+                // ✅ NULL KONTROLÜ: Klan yoksa oyuncunun klanını kontrol et
+                if (clan == null && plugin.getClanManager() != null) {
+                    clan = plugin.getClanManager().getClanByPlayer(player.getUniqueId());
+                }
+                
+                if (clan != null && plugin.getStratocraftPowerSystem() != null) {
+                    // Batarya yakıt tipine göre kaynak belirle
+                    java.util.Map<String, Integer> usedResources = new java.util.HashMap<>();
+                    org.bukkit.Material fuel = data.getFuel();
+                    
+                    if (fuel == org.bukkit.Material.IRON_INGOT) {
+                        usedResources.put("IRON", 1);
+                    } else if (fuel == org.bukkit.Material.DIAMOND) {
+                        usedResources.put("DIAMOND", 1);
+                    } else if (fuel == org.bukkit.Material.EMERALD) {
+                        usedResources.put("RED_DIAMOND", 1); // Kızıl elmas (emerald olarak kullanılıyor)
+                    } else if (data.isDarkMatter()) {
+                        usedResources.put("DARK_MATTER", 1);
+                    } else {
+                        usedResources.put("DEFAULT", 1);
+                    }
+                    
+                    plugin.getStratocraftPowerSystem().onRitualSuccess(
+                        clan,
+                        "BATTERY_" + batteryName.replace(" ", "_").toUpperCase(),
+                        usedResources
+                    );
+                }
+            }
         }
     }
     

@@ -22,41 +22,161 @@ Felaketler **oyuncuları merkezden çok uzaklaşmamasını ve merkeze çok yakı
 
 ---
 
-## 💪 DİNAMİK GÜÇ SİSTEMİ
+## 💪 DİNAMİK GÜÇ SİSTEMİ (GÜNCELLENMİŞ)
 
-### Güç Hesaplama Formülü
+### ✅ Yeni Stratocraft Güç Sistemi Entegrasyonu
 
-**Felaketler dinamik güçte!**
+**Felaketler artık oyuncuların gerçek gücüne göre ayarlanıyor!**
+
+Felaket sistemi, **Stratocraft Güç Sistemi (SGP)** ile entegre edilmiştir. Artık felaketler sadece oyuncu sayısına değil, oyuncuların **gerçek güç puanlarına** göre güçlenir.
+
+### Güç Hesaplama Formülü (Yeni Sistem)
+
+**Yeni Formül:**
+```
+Sunucu Güç Puanı = Ortalama Oyuncu Gücü × Oyuncu Sayısı Çarpanı
+
+Felaket Güç Çarpanı = 1.0 + (Sunucu Güç Puanı / 100.0) × Güç Artış Hızı
+
+Felaket Can = Temel Can × Felaket Güç Çarpanı
+Felaket Hasar = Temel Hasar × Felaket Güç Çarpanı
+```
+
+**Oyuncu Güç Puanı (SGP) Hesaplama:**
+```
+SGP = (Combat Power × 0.6) + (Progression Power × 0.4)
+
+Combat Power = Eşya Gücü + Buff Gücü
+Progression Power = Ustalık Gücü + Ritüel Gücü
+```
+
+**Eşya Gücü:**
+- Silah seviyesi (1-5): 60-1600 puan
+- Zırh seviyesi (1-5): 40-1000 puan (parça başına)
+- Tam set bonusu: %10 ekstra
+
+**Ustalık Gücü:**
+- Her ritüel için %100 üzerine çıkış = Bonus güç
+- Formül: `150 × (Ustalık% / 100)^1.4`
+
+**Ritüel Gücü:**
+- Ritüel blokları (Demir, Obsidyen, Elmas, vb.)
+- Ritüel kaynakları (Demir, Elmas, Kızıl Elmas, Karanlık Madde)
+
+**Yapı Gücü:**
+- Klan yapıları seviyesine göre (1-5): 100-2000 puan
+- Klan kristali: +500 puan
+
+### Eski Sistem (Geriye Dönük Uyumluluk)
+
+Eğer yeni güç sistemi yüklenmemişse, eski sistem kullanılır:
 
 ```
 Formül:
 Güç = TemelGüç × (1 + OyuncuSayısı × 0.1 + OrtKlanSeviyesi × 0.15)
-
-Örnek:
-Temel Güç: 100
-Oyuncu Sayısı: 10
-Ortalama Klan Seviyesi: 3
-
-Güç = 100 × (1 + 10 × 0.1 + 3 × 0.15)
-    = 100 × (1 + 1.0 + 0.45)
-    = 100 × 2.45
-    = 245
-
-Sonuç: Felaket 245 güçte spawn olur!
 ```
 
-**Faktörler**:
+### Config Ayarları
+
+Tüm güç hesaplama parametreleri `config.yml` dosyasından ayarlanabilir:
+
+```yaml
+disaster:
+  power:
+    dynamic-difficulty:
+      enabled: true
+      power-scaling-factor: 1.0
+      min-power-multiplier: 0.5
+      max-power-multiplier: 5.0
+      player-count-multiplier:
+        1: 1.0
+        5: 1.2
+        10: 1.5
+        20: 2.0
 ```
-1. Oyuncu Sayısı:
-   - Daha fazla oyuncu = Daha güçlü felaket
-   - Her oyuncu +%10 güç
 
-2. Klan Seviyesi:
-   - Yüksek seviye klanlar = Daha güçlü felaket
-   - Her seviye +%15 güç
+---
 
-3. Temel Güç:
-   - Felaket seviyesine göre (1-4)
+## 🔄 FELAKET FAZ SİSTEMİ (YENİ)
+
+### ✅ 4 Fazlı Felaket Sistemi
+
+Felaketler artık **4 fazdan** geçer ve her fazda farklı davranışlar sergiler!
+
+### Fazlar
+
+#### 1. Keşif Fazı (EXPLORATION) - %100-75 Can
+```
+Özellikler:
+- Hız: Normal (1.0x)
+- Saldırı Aralığı: 2 dakika
+- Özel Yetenek: Yok
+- Oyuncu Saldırısı: Evet
+```
+
+#### 2. Saldırı Fazı (ASSAULT) - %75-50 Can
+```
+Özellikler:
+- Hız: Hızlı (1.2x)
+- Saldırı Aralığı: 90 saniye
+- Özel Yetenek: 1 yetenek aktif
+- Oyuncu Saldırısı: Evet
+```
+
+#### 3. Öfke Fazı (RAGE) - %50-25 Can
+```
+Özellikler:
+- Hız: Çok Hızlı (1.5x)
+- Saldırı Aralığı: 60 saniye
+- Özel Yetenek: 2 yetenek aktif
+- Oyuncu Saldırısı: Evet
+```
+
+#### 4. Çaresizlik Fazı (DESPERATION) - %25-0 Can
+```
+Özellikler:
+- Hız: Maksimum (2.0x)
+- Saldırı Aralığı: 30 saniye
+- Özel Yetenek: 3 yetenek aktif
+- Oyuncu Saldırısı: Evet (son çare!)
+```
+
+### Faz Geçiş Bildirimleri
+
+Her faz geçişinde tüm oyunculara bildirim gönderilir:
+
+```
+"§c⚠ FELAKET UYARISI: [Felaket Adı] [Faz Adı] fazına geçti!"
+```
+
+### Config Ayarları
+
+Faz sistemi parametreleri `config.yml` dosyasından ayarlanabilir:
+
+```yaml
+disaster:
+  phase-system:
+    enabled: true
+    exploration:
+      health-threshold: 0.75
+      attack-interval: 120000
+      ability-count: 0
+      speed-multiplier: 1.0
+    assault:
+      health-threshold: 0.50
+      attack-interval: 90000
+      ability-count: 1
+      speed-multiplier: 1.2
+    rage:
+      health-threshold: 0.25
+      attack-interval: 60000
+      ability-count: 2
+      speed-multiplier: 1.5
+    desperation:
+      health-threshold: 0.0
+      attack-interval: 30000
+      ability-count: 3
+      speed-multiplier: 2.0
 ```
 
 ---

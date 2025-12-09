@@ -13,6 +13,7 @@ Bataryalar **sanal olarak** envanterinize yüklenir ve savaşta kullanılır. **
 3. [Batarya Türleri](#batarya-türleri)
 4. [Ateşleme Sistemi](#ateşleme-sistemi)
 5. [Stratejik Kullanım](#stratejik-kullanim)
+6. [Batarya Güç Sistemi](#batarya-güç-sistemi) ⭐ YENİ
 
 ---
 
@@ -2104,3 +2105,68 @@ Bu rapor şunları içerir:
 - Kod mantığı ve yapısı
 - Mevcut sistemdeki sorunlar ve çözümler
 - Önerilen kod yapısı
+
+---
+
+## ⚡ BATARYA GÜÇ SİSTEMİ (YENİ)
+
+### ✅ Batarya Ateşleme Güç Kazanma
+
+**Bataryalar artık klan gücüne katkı sağlıyor!**
+
+Başarıyla ateşlenen bataryalar, klanın **Ritüel Kaynak Gücü**ne eklenir ve klanın toplam gücünü artırır.
+
+### Nasıl Çalışır?
+
+**1. Batarya Ateşlendiğinde:**
+```
+- Batarya başarıyla ateşlenir
+- Kullanılan yakıt tipi kaydedilir
+- Klan gücüne eklenir
+```
+
+**2. Güç Hesaplama:**
+```
+Batarya Gücü = Yakıt Tipi Gücü × Ritüel Çarpanı
+
+Yakıt Tipleri:
+- Demir Külçe: 5 puan
+- Elmas: 10 puan
+- Kızıl Elmas (Emerald): 18 puan
+- Karanlık Madde: 50 puan
+```
+
+**3. Desteklenen Bataryalar:**
+- ✅ Tüm 75 batarya tipi
+- ✅ Saldırı bataryaları
+- ✅ Oluşturma bataryaları
+- ✅ Destek bataryaları
+
+### Önemli Notlar
+
+**Sadece Başarılı Ateşlemeler:**
+- ❌ Başarısız ateşlemeler güç vermez
+- ✅ Sadece başarıyla ateşlenen bataryalar güç verir
+
+**Klan Gücüne Etkisi:**
+- Batarya gücü, klanın toplam gücüne eklenir
+- Klan seviyesi hesaplamasında kullanılır
+- Felaket zorluğunu etkiler
+
+### Config Ayarları
+
+Batarya güç değerleri `config.yml` dosyasından ayarlanabilir:
+
+```yaml
+clan-power-system:
+  ritual-resources:
+    iron: 5
+    diamond: 10
+    red-diamond: 18
+    dark-matter: 50
+    default: 3
+```
+
+---
+
+**🎮 Bataryalarla savaş, zafer kazan!**

@@ -28,8 +28,116 @@ disaster:
   
   # Güç Hesaplama
   power:
+    # Eski sistem (geriye dönük uyumluluk için)
     player-multiplier: 0.1        # Oyuncu başına çarpan
     clan-multiplier: 0.15         # Klan seviyesi başına çarpan
+    
+    # YENİ: Dinamik Zorluk Sistemi
+    dynamic-difficulty:
+      enabled: true                # Dinamik zorluk sistemi aktif mi?
+      power-scaling-factor: 1.0   # Güç artış hızı (0.5-2.0 arası önerilir)
+      min-power-multiplier: 0.5   # Minimum güç çarpanı (felaketler hiç bu kadar zayıf olmaz)
+      max-power-multiplier: 5.0   # Maksimum güç çarpanı (felaketler hiç bu kadar güçlü olmaz)
+      
+      # Ağırlık çarpanları (toplam 1.0 olmalı)
+      weights:
+        structure: 0.3            # Yapı gücü ağırlığı (%30)
+        item: 0.4                  # Eşya gücü ağırlığı (%40)
+        buff: 0.15                 # Buff gücü ağırlığı (%15)
+        training: 0.1              # Eğitim gücü ağırlığı (%10)
+        clan-tech: 0.05            # Klan tech gücü ağırlığı (%5)
+      
+      # Yapı tipi çarpanları (yapı seviyesi × çarpan = yapı gücü)
+      structure-multipliers:
+        battery: 2.0              # Batarya (Simya Kulesi)
+        research-center: 1.5      # Araştırma Merkezi (Kütüphane)
+        production: 1.2            # Üretim Yapıları (Matkap, Rafineri, vb.)
+        defense: 1.8               # Savunma Yapıları (Taret, Duvar, vb.)
+        default: 1.0               # Diğer yapılar
+      
+      # Oyuncu sayısı çarpanları (daha fazla oyuncu = daha zor)
+      player-count-multipliers:
+        "1-3": 0.8                 # 1-3 oyuncu: %80 zorluk
+        "4-6": 1.0                 # 4-6 oyuncu: %100 zorluk (normal)
+        "7-10": 1.3                # 7-10 oyuncu: %130 zorluk
+        "11-15": 1.6               # 11-15 oyuncu: %160 zorluk
+        "16+": 2.0                 # 16+ oyuncu: %200 zorluk (maksimum)
+      
+      # Eşya güç değerleri
+      item-power:
+        weapon-base: 5.0           # Silah temel güç (Seviye 1 = 5, Seviye 2 = 10, Seviye 3 = 20, vb.)
+        armor-base: 3.0             # Zırh temel güç (Seviye 1 = 3, Seviye 2 = 6, Seviye 3 = 12, vb.)
+        armor-set-bonus: 1.5       # Tam zırh seti bonusu (%50 artış)
+        special-item-tier-1: 10.0  # Tier 1 özel eşya gücü
+        special-item-tier-2: 25.0  # Tier 2 özel eşya gücü
+        special-item-tier-3: 50.0  # Tier 3 özel eşya gücü
+        special-item-tier-4: 100.0 # Tier 4 özel eşya gücü
+      
+      # Buff çarpanları
+      buff-multipliers:
+        damage-boost: 2.0          # Hasar artırımı çarpanı
+        defense-boost: 1.5          # Savunma artırımı çarpanı
+        speed-boost: 0.5            # Hız artırımı çarpanı
+        regeneration: 1.0           # İyileştirme çarpanı
+        other: 0.8                  # Diğer bufflar çarpanı
+        base-value: 10.0            # Buff temel değeri (amplifier × base-value × multiplier)
+      
+      # Eğitim güç değerleri
+      training:
+        level-multiplier: 5.0      # Eğitim seviyesi çarpanı (seviye × multiplier = güç)
+      
+      # Klan tech güç değerleri
+      clan-tech:
+        level-multiplier: 10.0      # Klan tech seviyesi çarpanı (seviye × multiplier = güç)
+  
+  # FAZ SİSTEMİ (4 Faz: Exploration, Assault, Rage, Desperation)
+  phase-system:
+    # Faz geçiş eşikleri (can yüzdesi: 0.0 - 1.0)
+    health-thresholds:
+      exploration:
+        max: 1.0    # %100 - %75 arası
+        min: 0.75
+      assault:
+        max: 0.75   # %75 - %50 arası
+        min: 0.50
+      rage:
+        max: 0.50   # %50 - %25 arası
+        min: 0.25
+      desperation:
+        max: 0.25   # %25 - %0 arası
+        min: 0.0
+    
+    # Faz saldırı aralıkları (ms)
+    attack-intervals:
+      exploration: 120000   # 2 dakika
+      assault: 90000        # 1.5 dakika
+      rage: 60000          # 1 dakika
+      desperation: 30000    # 30 saniye
+    
+    # Faz aktif yetenek sayıları
+    ability-counts:
+      exploration: 0       # Özel yetenek yok
+      assault: 2           # 1-2 yetenek aktif
+      rage: 5              # Tüm yetenekler aktif
+      desperation: 10       # Sürekli yetenek kullanımı
+    
+    # Faz hareket hızı çarpanları
+    speed-multipliers:
+      exploration: 1.0      # Normal hız
+      assault: 1.2          # %20 daha hızlı
+      rage: 1.5             # %50 daha hızlı
+      desperation: 2.0      # %100 daha hızlı (2x)
+    
+    # Faz oyuncu saldırısı ayarları
+    attack-players:
+      exploration: false    # Oyunculara saldırmaz
+      assault: false        # Oyunculara saldırmaz
+      rage: true           # Oyunculara saldırır
+      desperation: true    # Oyunculara sürekli saldırır
+    
+    # Faz geçiş bildirimleri
+    transition-messages: true   # Faz geçişinde mesaj gönder
+    transition-effects: true    # Faz geçişinde efekt uygula
   
   # Seviye Bazlı Güçler
   levels:
@@ -325,4 +433,85 @@ biomes:
       - "END_BARRENS"
       - "END_HIGHLANDS"
       - "THE_END"
+
+# ========== KLAN GÜÇ SİSTEMİ ==========
+# Oyuncu ve klan güç puanları, seviyeler ve koruma sistemi
+clan-power-system:
+  # Item güç puanları (silah ve zırh seviyeleri)
+  item-power:
+    weapon:
+      level-1: 60      # 1. seviye silah
+      level-2: 150     # 2. seviye silah
+      level-3: 400     # 3. seviye silah
+      level-4: 900     # 4. seviye silah
+      level-5: 1600    # 5. seviye silah (rapor: 1600)
+    armor:
+      level-1: 40      # 1. seviye zırh (parça başına)
+      level-2: 100     # 2. seviye zırh
+      level-3: 250     # 3. seviye zırh
+      level-4: 600     # 4. seviye zırh
+      level-5: 1000    # 5. seviye zırh
+    armor-set-bonus: 1.1  # Tam set bonusu (%10)
+  
+  # Ritüel blok güç puanları (ritüellerde kullanılan bloklar)
+  ritual-blocks:
+    iron: 8            # Demir blok
+    obsidian: 30       # Obsidyen blok
+    diamond: 25        # Elmas blok
+    gold: 12           # Altın blok
+    emerald: 35        # Zümrüt blok
+    titanyum: 150      # Titanyum/Netherite blok (efsanevi)
+    default: 5         # Diğer bloklar
+  
+  # Ritüel kaynak güç puanları (ritüelleri aktif eden kaynaklar)
+  ritual-resources:
+    iron: 5            # Demir
+    diamond: 10        # Elmas
+    red-diamond: 18    # Kızıl elmas
+    dark-matter: 50    # Karanlık madde
+    titanium: 15      # Titanyum
+    default: 3         # Diğer kaynaklar
+  
+  # Antrenman/Ustalık güç puanları
+  mastery:
+    base-power: 150    # Temel güç (rapor: 150)
+    exponent: 1.4      # Üstel artış katsayısı (rapor: 1.4)
+    # Formül: basePower × (masteryPercent / 100) ^ exponent
+    # Örnek: %150 = 150 × (1.5)^1.4 ≈ 250 puan
+    # Örnek: %200 = 150 × (2.0)^1.4 ≈ 400 puan
+  
+  # Klan yapı güç puanları
+  structure-power:
+    crystal-base: 500  # Klan kristali sabit bonus
+    level-1: 100      # 1. seviye yapı
+    level-2: 250      # 2. seviye yapı
+    level-3: 500      # 3. seviye yapı
+    level-4: 1200     # 4. seviye yapı
+    level-5: 2000     # 5. seviye yapı
+  
+  # Güç seviyesi sistemi (hibrit algoritma)
+  level-system:
+    # Oyuncu seviyesi (hibrit: karekök + logaritmik)
+    player-base-power: 100      # Seviye 1 için temel güç
+    player-switch-power: 10000  # Karekök -> Logaritmik geçiş noktası
+    player-log-multiplier: 3.0  # Logaritmik kısım için çarpan
+    player-max-level: 20        # Maksimum oyuncu seviyesi
+    
+    # Klan seviyesi (logaritmik)
+    clan-base-power: 500   # Klan seviye 1 için temel güç
+    clan-multiplier: 2.0   # Klan seviye artış hızı
+    max-clan-level: 15     # Maksimum klan seviyesi
+  
+  # Koruma sistemi (güçsüz oyunculara saldırı engelleme)
+  protection:
+    threshold: 0.5         # %50 - Hedef, saldıranın gücünün %50'sinden düşükse saldırı yapılamaz
+    clan-threshold: 0.6    # %60 - Klan içi koruma (daha yüksek eşik)
+    rookie-threshold: 5000      # Acemi koruması eşiği (bu puan altındaki oyuncular korunur)
+    strong-player-threshold: 10000  # Güçlü oyuncu eşiği (bu puan üstündeki oyuncular acemiye saldıramaz)
+    gear-decrease-delay: 60000  # Histerezis: Güç düşüşü gecikmesi (ms) - 60 saniye (zırh çıkarma exploit önleme)
+  
+  # Güç ağırlıkları (SGP hesaplama için)
+  power-weights:
+    combat: 0.6        # Combat Power ağırlığı (eşya + buff)
+    progression: 0.4   # Progression Power ağırlığı (ustalık + ritüel)
 

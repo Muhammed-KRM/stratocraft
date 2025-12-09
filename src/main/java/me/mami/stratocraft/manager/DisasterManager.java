@@ -30,6 +30,14 @@ public class DisasterManager {
     private DifficultyManager difficultyManager; // Final değil, sonradan set edilecek
     private DisasterConfigManager configManager; // Config yöneticisi
     
+    // Yeni dinamik zorluk sistemi (interface kullanarak gelecekte değiştirilebilir)
+    private DisasterPowerConfig powerConfig;
+    private IPowerCalculator playerPowerCalculator;
+    private IServerPowerCalculator serverPowerCalculator;
+    
+    // Yeni Stratocraft Güç Sistemi (köprü fonksiyon için)
+    private me.mami.stratocraft.manager.StratocraftPowerSystem stratocraftPowerSystem;
+    
     private Disaster activeDisaster = null;
     private long lastDisasterTime = System.currentTimeMillis();
     
@@ -132,6 +140,9 @@ public class DisasterManager {
         if (plugin.getConfigManager() != null) {
             this.configManager = plugin.getConfigManager().getDisasterConfigManager();
         }
+        
+        // Dinamik zorluk sistemini başlat (config yüklendikten sonra Main.java'da çağrılacak)
+        // initializeDynamicDifficulty() Main.java'da çağrılmalı
     }
     
     /**
@@ -151,7 +162,9 @@ public class DisasterManager {
     /**
      * Güç hesaplama formülü (Config'den okur)
      * 
-     * Formül: basePower * (1 + playerCount * playerMultiplier + avgClanLevel * clanMultiplier)
+     * İki sistem desteklenir:
+     * 1. Yeni Dinamik Zorluk Sistemi (önerilen)
+     * 2. Eski Sistem (geriye dönük uyumluluk)
      * 
      * @param level Felaket seviyesi
      * @return Hesaplanmış güç
@@ -162,9 +175,138 @@ public class DisasterManager {
         if (configManager != null) {
             levelConfig = configManager.getConfigForLevel(level);
         } else {
-            // Config yoksa varsayılan değerler
             levelConfig = new me.mami.stratocraft.model.DisasterConfig();
         }
+        
+        // Config'den temel güç
+        double baseHealth = levelConfig.getBaseHealth() * levelConfig.getHealthMultiplier();
+        double baseDamage = levelConfig.getBaseDamage() * levelConfig.getDamageMultiplier();
+        
+        // Yeni dinamik zorluk sistemi aktif mi?
+        if (powerConfig != null && powerConfig.isDynamicDifficultyEnabled() && 
+            serverPowerCalculator != null) {
+            return calculateDisasterPowerDynamic(levelConfig, baseHealth, baseDamage);
+        }
+        
+        // Eski sistem (geriye dönük uyumluluk)
+        return calculateDisasterPowerLegacy(levelConfig, baseHealth, baseDamage);
+    }
+    
+    /**
+     * Yeni dinamik zorluk sistemi ile güç hesaplama
+     */
+    private DisasterPower calculateDisasterPowerDynamic(
+            me.mami.stratocraft.model.DisasterConfig levelConfig,
+            double baseHealth, double baseDamage) {
+        
+        // ✅ GÜÇ SİSTEMİ ENTEGRASYONU: Yeni sistem varsa onu kullan, yoksa eski sistemi kullan
+        double serverPower;
+        
+        if (stratocraftPowerSystem != null) {
+            // Yeni Stratocraft Güç Sistemi kullan
+            serverPower = calculateServerPowerWithNewSystem();
+        } else if (serverPowerCalculator != null) {
+            // Eski sistem (geriye dönük uyumluluk)
+            serverPower = serverPowerCalculator.calculateServerPower();
+        } else {
+            // Hiçbir sistem yok, varsayılan değer
+            serverPower = 0.0;
+        }
+        
+        // Güç çarpanı hesaplama
+        double powerScalingFactor = powerConfig.getPowerScalingFactor();
+        double powerMultiplier = 1.0 + (serverPower / 100.0) * powerScalingFactor;
+        
+        // Maksimum ve minimum sınırlar
+        double minMultiplier = powerConfig.getMinPowerMultiplier();
+        double maxMultiplier = powerConfig.getMaxPowerMultiplier();
+        powerMultiplier = Math.max(minMultiplier, Math.min(maxMultiplier, powerMultiplier));
+        
+        // Hesaplanmış güç
+        double calculatedHealth = baseHealth * powerMultiplier;
+        double calculatedDamage = baseDamage * powerMultiplier;
+        
+        return new DisasterPower(calculatedHealth, calculatedDamage, powerMultiplier);
+    }
+    
+    // ✅ PERFORMANS: Sunucu güç cache (felaket spawn'larında gereksiz hesaplama önleme)
+    private double cachedServerPowerNewSystem = 0.0;
+    private long lastServerPowerUpdate = 0;
+    private static final long SERVER_POWER_CACHE_DURATION = 10000L; // 10 saniye
+    
+    /**
+     * Yeni Stratocraft Güç Sistemi ile sunucu gücü hesapla (köprü fonksiyon)
+     * ✅ PERFORMANS: Cache kullanarak gereksiz hesaplamaları önler
+     */
+    private double calculateServerPowerWithNewSystem() {
+        if (stratocraftPowerSystem == null) return 0.0;
+        
+        long now = System.currentTimeMillis();
+        
+        // Cache kontrolü
+        if (now - lastServerPowerUpdate < SERVER_POWER_CACHE_DURATION) {
+            return cachedServerPowerNewSystem;
+        }
+        
+        java.util.Collection<? extends org.bukkit.entity.Player> players = org.bukkit.Bukkit.getOnlinePlayers();
+        if (players.isEmpty()) {
+            cachedServerPowerNewSystem = 0.0;
+            lastServerPowerUpdate = now;
+            return 0.0;
+        }
+        
+        double totalPower = 0.0;
+        int activePlayerCount = 0;
+        
+        // Tüm oyuncuların güç puanlarını topla (yeni sistemden - cache kullanır)
+        for (org.bukkit.entity.Player player : players) {
+            if (player.isOnline() && !player.isDead()) {
+                me.mami.stratocraft.model.PlayerPowerProfile profile = 
+                    stratocraftPowerSystem.calculatePlayerProfile(player); // Cache kullanır
+                // Felaket için combat power önemli (config'den ayarlanabilir)
+                double playerPower = profile.getTotalCombatPower();
+                totalPower += playerPower;
+                activePlayerCount++;
+            }
+        }
+        
+        if (activePlayerCount == 0) {
+            cachedServerPowerNewSystem = 0.0;
+            lastServerPowerUpdate = now;
+            return 0.0;
+        }
+        
+        // Ortalama güç
+        double averagePower = totalPower / activePlayerCount;
+        
+        // Oyuncu sayısı çarpanı (config'den)
+        // ✅ NULL KONTROLÜ: powerConfig null olabilir
+        double playerCountMultiplier = 1.0;
+        if (powerConfig != null) {
+            playerCountMultiplier = powerConfig.getPlayerCountMultiplier(activePlayerCount);
+        }
+        
+        // Sunucu güç puanı = Ortalama × Oyuncu Sayısı Çarpanı
+        cachedServerPowerNewSystem = averagePower * playerCountMultiplier;
+        lastServerPowerUpdate = now;
+        
+        return cachedServerPowerNewSystem;
+    }
+    
+    /**
+     * Sunucu güç cache'ini temizle (oyuncu giriş/çıkışında çağrılabilir)
+     */
+    public void clearServerPowerCache() {
+        cachedServerPowerNewSystem = 0.0;
+        lastServerPowerUpdate = 0;
+    }
+    
+    /**
+     * Eski sistem ile güç hesaplama (geriye dönük uyumluluk)
+     */
+    private DisasterPower calculateDisasterPowerLegacy(
+            me.mami.stratocraft.model.DisasterConfig levelConfig,
+            double baseHealth, double baseDamage) {
         
         // Oyuncu sayısı
         int playerCount = Bukkit.getOnlinePlayers().size();
@@ -180,11 +322,11 @@ public class DisasterManager {
             avgClanLevel = (double) totalLevel / clans.size();
         }
         
-        // Config'den temel güç ve çarpanlar
-        double baseHealth = levelConfig.getBaseHealth() * levelConfig.getHealthMultiplier();
-        double baseDamage = levelConfig.getBaseDamage() * levelConfig.getDamageMultiplier();
-        double playerMultiplier = levelConfig.getPlayerMultiplier();
-        double clanMultiplier = levelConfig.getClanMultiplier();
+        // Eski çarpanlar
+        double playerMultiplier = powerConfig != null ? 
+            powerConfig.getLegacyPlayerMultiplier() : levelConfig.getPlayerMultiplier();
+        double clanMultiplier = powerConfig != null ? 
+            powerConfig.getLegacyClanMultiplier() : levelConfig.getClanMultiplier();
         
         // Güç çarpanı
         double powerMultiplier = 1.0 + (playerCount * playerMultiplier) + (avgClanLevel * clanMultiplier);
@@ -194,6 +336,25 @@ public class DisasterManager {
         double calculatedDamage = baseDamage * powerMultiplier;
         
         return new DisasterPower(calculatedHealth, calculatedDamage, powerMultiplier);
+    }
+    
+    /**
+     * Dinamik zorluk sistemini başlat
+     * Interface kullanarak gelecekte farklı implementasyonlar eklenebilir
+     */
+    public void initializeDynamicDifficulty(DisasterPowerConfig powerConfig,
+                                           IPowerCalculator playerPowerCalculator,
+                                           IServerPowerCalculator serverPowerCalculator) {
+        this.powerConfig = powerConfig;
+        this.playerPowerCalculator = playerPowerCalculator;
+        this.serverPowerCalculator = serverPowerCalculator;
+    }
+    
+    /**
+     * Yeni Stratocraft Güç Sistemini set et (köprü fonksiyon için)
+     */
+    public void setStratocraftPowerSystem(me.mami.stratocraft.manager.StratocraftPowerSystem powerSystem) {
+        this.stratocraftPowerSystem = powerSystem;
     }
     
     /**
@@ -978,14 +1139,28 @@ public class DisasterManager {
     }
     
     /**
-     * Yeni oyuncu giriş yaptığında BossBar'a ekle
+     * Yeni oyuncu giriş yaptığında BossBar'a ekle ve cache'i temizle (güç hesaplama için)
      */
     public void onPlayerJoin(Player player) {
+        // Cache'i temizle (yeni oyuncu gücü hesaplanacak)
+        if (serverPowerCalculator != null) {
+            serverPowerCalculator.clearCache();
+        }
         if (disasterBossBar != null) {
             disasterBossBar.addPlayer(player);
         }
         if (countdownScoreboard != null) {
             player.setScoreboard(countdownScoreboard);
+        }
+    }
+    
+    /**
+     * Oyuncu çıkış yaptığında cache'i temizle
+     */
+    public void onPlayerQuit(Player player) {
+        // Cache'i temizle (oyuncu çıktı, güç hesaplaması değişecek)
+        if (serverPowerCalculator != null) {
+            serverPowerCalculator.clearCache();
         }
     }
     
