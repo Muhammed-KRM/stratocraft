@@ -307,8 +307,8 @@ hydra
 behemoth
 
 Felaketler (9 tip):
-TITAN_GOLEM, ABYSSAL_WORM, CHAOS_DRAGON, VOID_TITAN, ICE_LEVIATHAN
-SOLAR_FLARE, EARTHQUAKE, METEOR_SHOWER, VOLCANIC_ERUPTION
+Felaket Bossları: CATASTROPHIC_TITAN, CATASTROPHIC_ABYSSAL_WORM, CATASTROPHIC_CHAOS_DRAGON, CATASTROPHIC_VOID_TITAN, CATASTROPHIC_ICE_LEVIATHAN
+Doğa Olayları: SOLAR_FLARE, EARTHQUAKE, METEOR_SHOWER, VOLCANIC_ERUPTION
 ```
 
 ---
@@ -327,7 +327,7 @@ SOLAR_FLARE, EARTHQUAKE, METEOR_SHOWER, VOLCANIC_ERUPTION
 
 **Alt Komutlar**:
 ```
-start <type> [level] [konum] - Felaket başlat
+start [Kategori seviyesi] <Felaket ismi> <İç seviye> [konum] - Felaket başlat
 stop - Felaketi durdur
 info - Aktif felaket bilgisi
 list - Tüm felaket tiplerini listele
@@ -336,38 +336,52 @@ clear - Felaketi yok et
 
 **Kullanım**:
 ```
-/scadmin disaster start titan_golem 3
-/scadmin disaster start solar_flare 1 ben
-/scadmin disaster start abyssal_worm 2 1000 64 1000
+/scadmin disaster start 3 CATASTROPHIC_TITAN 3 ben
+/scadmin disaster start 1 SOLAR_FLARE 2 ben
+/scadmin disaster start 2 CATASTROPHIC_ABYSSAL_WORM 1 1000 64 1000
 /scadmin disaster stop
 /scadmin disaster info
 /scadmin disaster list
 ```
 
+**Parametreler**:
+- `[Kategori seviyesi]`: 1-3 (opsiyonel, belirtilmezse otomatik belirlenir)
+  - Kategori 1: Her gün gelen felaketler
+  - Kategori 2: 3 günde bir gelen felaketler
+  - Kategori 3: 7 günde bir gelen felaketler
+- `<Felaket ismi>`: Felaket tipi (zorunlu)
+- `<İç seviye>`: 1-3 (zorunlu) - Felaketin gücünü belirler
+  - İç Seviye 1: Zayıf form (düşük can/hasar)
+  - İç Seviye 2: Orta form (orta can/hasar)
+  - İç Seviye 3: Güçlü form (yüksek can/hasar)
+- `[konum]`: `ben` (oyuncunun yanında) veya `X Y Z` (koordinat) - opsiyonel
+
 **Felaket Tipleri** (9 adet):
 
-**Canlı Felaketler**:
+**Felaket Bossları** (Normal bosslardan ayrı, çok daha güçlü):
 ```
-TITAN_GOLEM - Titan Golem (Seviye 3)
-ABYSSAL_WORM - Hiçlik Solucanı (Seviye 2)
-CHAOS_DRAGON - Khaos Ejderi (Seviye 3)
-VOID_TITAN - Boşluk Titanı (Seviye 3)
-ICE_LEVIATHAN - Buzul Leviathan (Seviye 2)
+CATASTROPHIC_TITAN - Felaket Titanı (Kategori: 3, 7 günde bir, 30 blok boyunda)
+CATASTROPHIC_ABYSSAL_WORM - Felaket Hiçlik Solucanı (Kategori: 2, 3 günde bir)
+CATASTROPHIC_CHAOS_DRAGON - Felaket Khaos Ejderi (Kategori: 3, 7 günde bir)
+CATASTROPHIC_VOID_TITAN - Felaket Boşluk Titanı (Kategori: 3, 7 günde bir)
+CATASTROPHIC_ICE_LEVIATHAN - Felaket Buzul Leviathan (Kategori: 2, 3 günde bir)
 ```
 
 **Doğa Olayları**:
 ```
-SOLAR_FLARE - Güneş Fırtınası (Seviye 1)
-EARTHQUAKE - Deprem (Seviye 2)
-METEOR_SHOWER - Meteor Yağmuru (Seviye 2)
-VOLCANIC_ERUPTION - Volkanik Patlama (Seviye 3)
+SOLAR_FLARE - Güneş Fırtınası (Kategori: 1, her gün)
+EARTHQUAKE - Deprem (Kategori: 2, 3 günde bir)
+METEOR_SHOWER - Meteor Yağmuru (Kategori: 2, 3 günde bir)
+VOLCANIC_ERUPTION - Volkanik Patlama (Kategori: 3, 7 günde bir)
 ```
 
 **Notlar**:
-- `[level]`: 1-3 arası (varsayılan: tip'e göre)
+- Kategori seviyesi belirtilmezse, felaket tipine göre otomatik belirlenir
+- İç seviye felaketin gücünü, canını ve hasarını belirler
 - `[konum]`: `ben` (oyuncunun yanında) veya `X Y Z` (koordinat)
-- Canlı felaketler için **BossBar** gösterilir (can ve süre)
+- Felaket bossları için **BossBar** gösterilir (can ve süre)
 - Doğa olayları için **ActionBar** gösterilir (sadece süre)
+- **Önemli:** Felaket bossları normal bosslardan tamamen ayrıdır. Normal bosslar eğitilebilir, felaket bossları sadece klan kristallerini yok etmek için var.
 
 ---
 
@@ -788,7 +802,7 @@ if (!overflow.isEmpty()) {
 /scadmin spawn hell_dragon
 
 3. Felaket test:
-/scadmin disaster titan_golem
+/scadmin disaster start CATASTROPHIC_TITAN 3 ben
 
 4. Yapı kur:
 /scadmin build alchemy_tower 5

@@ -8,7 +8,7 @@ Stratocraft'a hoş geldiniz. Burası sıradan bir Minecraft dünyası değil; s�
 
 ## 🎯 Ana Amaç Nedir?
 
-Bu dünyadaki tek amacınız **Hayatta Kalmak** değildir; **Felaketlere Hükmetmektir**. Dünya, belirli aralıklarla "Yürüyen Dağlar" (Titan Golem) veya "Güneş Fırtınaları" (Solar Flare) gibi devasa Felaketler tarafından saldırıya uğrar. Tek başınıza hayatta kalamazsınız.
+Bu dünyadaki tek amacınız **Hayatta Kalmak** değildir; **Felaketlere Hükmetmektir**. Dünya, belirli aralıklarla "Felaket Titanı" (30 blok boyunda dev golem) veya "Güneş Fırtınaları" (Solar Flare) gibi devasa Felaketler tarafından saldırıya uğrar. Tek başınıza hayatta kalamazsınız.
 
 ### Oyun Döngüsü Şöyledir:
 
@@ -123,7 +123,7 @@ Klan A (Seviye 5) → Klan B (Seviye 1):
 Felaketler **doğa olaylarıdır**, normal boss değil! Merkezden uzakta spawn olur ve merkeze doğru ilerleyerek yoldaki baseleri yok eder.
 
 **9 Felaket Tipi**:
-1. **Yürüyen Dağ (Titan Golem)**: Dev Giant, toprak fırlatır, zıplar, şok dalgası yaratır
+1. **Felaket Titanı (CATASTROPHIC_TITAN)**: 30 blok boyunda dev golem, toprak fırlatır, zıplar, şok dalgası yaratır, klan kristallerini yok eder
 2. **Hiçlik Solucanı (Abyssal Worm)**: Yeraltından ilerler, temelleri kazar
 3. **Güneş Fırtınası (Solar Flare)**: 10 dakika süren olay, yüzeydekiler yanar
 4. **Buzul Leviathan**: Suda yüzer, baseleri dondurur
@@ -138,7 +138,7 @@ Felaketler **doğa olaylarıdır**, normal boss değil! Merkezden uzakta spawn o
 **4 Fazlı Felaket Sistemi**: Felaketler artık 4 fazdan geçer (Keşif → Saldırı → Öfke → Çaresizlik). Her fazda farklı hız, saldırı aralığı ve özel yetenekler aktif olur.
 
 **BossBar Görüntüsü**: 
-- **Yaratık Felaketleri** (Titan Golem, Abyssal Worm, Chaos Dragon, Void Titan, Ice Leviathan): Ekranın üstünde can ve kalan süre gösterilir
+- **Felaket Bossları** (Felaket Titanı, Felaket Hiçlik Solucanı, Felaket Khaos Ejderi, Felaket Boşluk Titanı, Felaket Buzul Leviathan): Ekranın üstünde can ve kalan süre gösterilir. Normal bosslardan tamamen ayrı, çok daha güçlü.
 - **Doğal Felaketler** (Solar Flare, Meteor Shower, Earthquake, Volcanic Eruption): ActionBar'da kalan süre gösterilir
 - **Bosslar**: Tüm bossların canı ve fazı (multi-phase bosslar için) ekranın üstünde gösterilir
 

@@ -9,7 +9,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
-import org.bukkit.entity.Giant;
+import org.bukkit.entity.IronGolem;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -31,9 +31,9 @@ public class TitanGolemHandler extends BaseCreatureHandler {
     
     @Override
     public void handle(Disaster disaster, Entity entity, DisasterConfig config) {
-        if (!(entity instanceof Giant)) return;
+        if (!(entity instanceof IronGolem)) return;
         
-        Giant golem = (Giant) entity;
+        IronGolem golem = (IronGolem) entity;
         Location current = golem.getLocation();
         Location target = disaster.getTargetCrystal() != null ? disaster.getTargetCrystal() : disaster.getTarget();
         if (target == null) return;
@@ -51,7 +51,7 @@ public class TitanGolemHandler extends BaseCreatureHandler {
             golem.setVelocity(jumpVector);
             
             // Zıplama sonrası patlama (0.8 saniye sonra)
-            final Giant finalGolem = golem;
+            final IronGolem finalGolem = golem;
             Bukkit.getScheduler().runTaskLater(
                 me.mami.stratocraft.Main.getInstance(),
                 () -> {
@@ -98,6 +98,77 @@ public class TitanGolemHandler extends BaseCreatureHandler {
         // Pasif patlama (Titan Golem özel)
         if (tickCounter % config.getExplosionInterval() == 0) {
             DisasterUtils.createExplosion(current, config.getPassiveExplosionPower() * disaster.getDamageMultiplier(), false);
+        }
+    }
+    
+    @Override
+    public void useSpecialAbilities(Disaster disaster, Entity entity, DisasterConfig config, me.mami.stratocraft.model.DisasterPhase phase) {
+        if (!(entity instanceof IronGolem)) return;
+        
+        IronGolem golem = (IronGolem) entity;
+        Location current = golem.getLocation();
+        
+        // Faz bazlı özel yetenekler
+        switch (phase) {
+            case RAGE:
+                // RAGE fazında: Daha sık blok fırlatma
+                if (tickCounter % (config.getBlockThrowInterval() / 2) == 0) {
+                    throwBlocksAtPlayers(golem, current, config);
+                }
+                break;
+            case DESPERATION:
+                // DESPERATION fazında: Sürekli patlama
+                if (tickCounter % 40 == 0) {
+                    DisasterUtils.createExplosion(current, config.getPassiveExplosionPower() * 1.5, true);
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    
+    @Override
+    public void changeEnvironment(Disaster disaster, Entity entity, DisasterConfig config) {
+        if (!(entity instanceof IronGolem)) return;
+        
+        IronGolem golem = (IronGolem) entity;
+        Location current = golem.getLocation();
+        
+        // Çevre değişimi: Etrafındaki blokları obsidyene çevir
+        if (tickCounter % 200 == 0) { // Her 10 saniyede bir
+            int radius = 5;
+            for (int x = -radius; x <= radius; x++) {
+                for (int z = -radius; z <= radius; z++) {
+                    if (x * x + z * z <= radius * radius) {
+                        org.bukkit.block.Block block = current.clone().add(x, -1, z).getBlock();
+                        if (block.getType() != Material.OBSIDIAN && 
+                            block.getType() != Material.BEDROCK &&
+                            block.getType() != Material.AIR) {
+                            block.setType(Material.OBSIDIAN);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Oyunculara blok fırlat
+     */
+    private void throwBlocksAtPlayers(IronGolem golem, Location current, DisasterConfig config) {
+        for (Player player : current.getWorld().getPlayers()) {
+            if (DisasterUtils.calculateDistance(current, player.getLocation()) <= config.getAttackRadius()) {
+                Location playerLoc = player.getLocation();
+                Vector throwDirection = DisasterUtils.calculateDirection(current, playerLoc);
+                
+                FallingBlock fallingBlock = current.getWorld().spawnFallingBlock(
+                    current.clone().add(0, 3, 0),
+                    Material.DIRT.createBlockData()
+                );
+                fallingBlock.setVelocity(throwDirection.multiply(1.2).setY(0.5));
+                fallingBlock.setHurtEntities(true);
+                fallingBlock.setDropItem(false);
+            }
         }
     }
     

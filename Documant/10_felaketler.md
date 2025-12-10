@@ -4,10 +4,13 @@
 
 Felaketler **oyuncuları merkezden çok uzaklaşmamasını ve merkeze çok yakın yerleşmemelerini sağlamak** için tasarlanmış **çok güçlü** sistemlerdir. **Tek başına başa çıkılamaz**, mutlaka takım çalışması gerektirir.
 
+**Önemli:** Felaket bossları normal bosslardan **tamamen ayrıdır**. Normal bosslar (Titan Golem, Hydra, vb.) eğitilebilir ve klan üyesi olabilir, ama felaket bossları sadece klan kristallerini yok etmek için var ve çok daha güçlüdür.
+
 **Ana Amaç:**
 - Merkezden uzaklaşmayı engellemek
 - Merkeze çok yakın yerleşmeyi engellemek
 - Klan kristallerini öncelikli hedef almak
+- **2 dakikada bir** yakındaki oyunculara saldırmak (felaket bossları için)
 
 ---
 
@@ -183,41 +186,72 @@ disaster:
 
 ### Felaket Seviyeleri
 
-**4 Seviye Felaket Sistemi:**
+**İki Katmanlı Seviye Sistemi:**
 
-#### Seviye 1 (Günlük)
+Felaket sistemi iki katmanlı seviye sistemine sahiptir:
+
+### 1. Kategori Seviyeleri (Otomatik Spawn Sıklığı)
+
+Kategori seviyeleri felaketlerin otomatik spawn sıklığını belirler:
+
+#### Kategori Seviyesi 1 (Her Gün)
 ```
 Temel Güç: 500 HP
 Can Çarpanı: 1.0x
 Hasar Çarpanı: 1.0x
 Spawn Sıklığı: Her gün
-Örnekler: Mini felaketler, Güneş Patlaması, Mini dalgalar
+Örnekler: Güneş Patlaması, Mini felaketler, Mini dalgalar (100-500 adet)
 ```
 
-#### Seviye 2 (Orta)
+#### Kategori Seviyesi 2 (3 Günde Bir)
 ```
 Temel Güç: 1500 HP
 Can Çarpanı: 1.5x
 Hasar Çarpanı: 1.5x
 Spawn Sıklığı: 3 günde bir
-Örnekler: Deprem, Fırtına, Orta güçte grup (30 adet)
+Örnekler: Deprem, Fırtına, Felaket Hiçlik Solucanı, Felaket Buzul Leviathan, Orta güçte grup (30 adet)
 ```
 
-#### Seviye 3 (Büyük)
+#### Kategori Seviyesi 3 (7 Günde Bir - Haftada Bir)
 ```
 Temel Güç: 5000 HP
 Can Çarpanı: 2.0x
 Hasar Çarpanı: 2.0x
-Spawn Sıklığı: Haftada bir
-Örnekler: Tek Boss (Titan Golem, Khaos Ejderi), Volkanik Patlama
+Spawn Sıklığı: 7 günde bir (haftada bir)
+Örnekler: Felaket Titanı (30 blok boyunda), Felaket Khaos Ejderi, Felaket Boşluk Titanı, Volkanik Patlama
 ```
 
-#### Seviye 4 (Mega)
+### 2. İç Seviyeler (Admin Komutunda Belirtilen - Felaketin Gücü)
+
+İç seviyeler admin komutunda belirtilir ve felaketin gücünü (can/hasar) belirler:
+
+#### İç Seviye 1 (Zayıf Form)
 ```
-Temel Güç: 10000+ HP
-Can Çarpanı: 3.0x
-Hasar Çarpanı: 3.0x
-Spawn Sıklığı: 2 haftada bir
+Güç Çarpanı: 0.8x
+Kullanım: Test veya zayıf felaket için
+```
+
+#### İç Seviye 2 (Orta Form)
+```
+Güç Çarpanı: 1.0x
+Kullanım: Normal felaket gücü
+```
+
+#### İç Seviye 3 (Güçlü Form)
+```
+Güç Çarpanı: 1.5x
+Kullanım: Güçlü felaket için
+```
+
+**Örnek:** 
+- `CATASTROPHIC_TITAN` kategori seviyesi 3'tür (7 günde bir otomatik spawn)
+- Ama admin komutunda `/stratocraft disaster start 3 CATASTROPHIC_TITAN 1 ben` ile zayıf form çağırabilirsiniz
+- Veya `/stratocraft disaster start 3 CATASTROPHIC_TITAN 3 ben` ile güçlü form çağırabilirsiniz
+
+#### Özel Event Felaketleri
+```
+Admin tarafından manuel başlatılan özel felaketler.
+Kategori seviyesi yok, sadece iç seviye (1-3) belirlenir.
 Örnekler: Çok güçlü boss, Mini felaket dalgası (100-500 adet)
 ```
 
@@ -239,13 +273,15 @@ Canavar felaketler **merkezden uzakta** spawn olur ve **merkeze doğru ilerleyer
 
 **Alt Kategoriler:**
 
-#### 1. Tek Boss Felaketi (SINGLE_BOSS)
-Çok güçlü tek bir boss. Örnekler:
-- **Titan Golem** (Seviye 3)
-- **Khaos Ejderi** (Seviye 3)
-- **Boşluk Titanı** (Seviye 3)
-- **Hiçlik Solucanı** (Seviye 2)
-- **Buzul Leviathan** (Seviye 2)
+#### 1. Felaket Bossları (SINGLE_BOSS) - Normal Bosslardan Ayrı
+Çok güçlü tek bir felaket bossu. Normal bosslardan tamamen ayrı, çok daha güçlü. Örnekler:
+- **Felaket Titanı (CATASTROPHIC_TITAN)** - Kategori: 3 (7 günde bir) - 30 blok boyunda dev golem
+- **Felaket Khaos Ejderi (CATASTROPHIC_CHAOS_DRAGON)** - Kategori: 3 (7 günde bir)
+- **Felaket Boşluk Titanı (CATASTROPHIC_VOID_TITAN)** - Kategori: 3 (7 günde bir)
+- **Felaket Hiçlik Solucanı (CATASTROPHIC_ABYSSAL_WORM)** - Kategori: 2 (3 günde bir)
+- **Felaket Buzul Leviathan (CATASTROPHIC_ICE_LEVIATHAN)** - Kategori: 2 (3 günde bir)
+
+**Not:** Bu felaket bossları normal boss sisteminden tamamen ayrıdır. Normal bosslar (Titan Golem, Hydra, vb.) eğitilebilir ve klan üyesi olabilir, ama felaket bossları sadece klan kristallerini yok etmek için var.
 
 **İstatistikler:**
 - Can: 10,000-50,000 HP
@@ -481,7 +517,7 @@ AMAÇ: İntikam almak için güçlenirler
 /stratocraft disaster test <type> <level> [konum]
 
 Örnekler:
-/stratocraft disaster test TITAN_GOLEM 3 ben
+/stratocraft disaster test CATASTROPHIC_TITAN 3 ben
 /stratocraft disaster test EARTHQUAKE 2 100 64 200
 /stratocraft disaster test SOLAR_FLARE 1
 ```
@@ -518,12 +554,24 @@ AMAÇ: İntikam almak için güçlenirler
 
 #### Felaket Başlat
 ```
-/stratocraft disaster start <type> [level] [konum]
+/stratocraft disaster start [Kategori seviyesi] <Felaket ismi> <İç seviye> [konum]
+
+Parametreler:
+- [Kategori seviyesi]: 1-3 (opsiyonel, belirtilmezse otomatik)
+  - 1: Her gün gelen felaketler
+  - 2: 3 günde bir gelen felaketler
+  - 3: 7 günde bir gelen felaketler
+- <Felaket ismi>: Felaket tipi (zorunlu)
+- <İç seviye>: 1-3 (zorunlu) - Felaketin gücünü belirler
+  - 1: Zayıf form (düşük can/hasar)
+  - 2: Orta form (orta can/hasar)
+  - 3: Güçlü form (yüksek can/hasar)
+- [konum]: ben (oyuncunun yanında) veya X Y Z (koordinat) - opsiyonel
 
 Örnekler:
-/stratocraft disaster start TITAN_GOLEM 3
-/stratocraft disaster start SOLAR_FLARE 1 ben
-/stratocraft disaster start EARTHQUAKE 2 100 64 200
+/stratocraft disaster start 3 CATASTROPHIC_TITAN 3 ben
+/stratocraft disaster start 1 SOLAR_FLARE 2 ben
+/stratocraft disaster start 2 EARTHQUAKE 1 100 64 200
 ```
 
 #### Felaketi Durdur
@@ -597,13 +645,13 @@ AMAÇ: İntikam almak için güçlenirler!
 
 ## 📊 FELAKET TİPLERİ ÖZET TABLOSU
 
-| Felaket | Kategori | Tip | Seviye | Spawn Sıklığı | Süre |
-|---------|----------|-----|--------|---------------|------|
-| Titan Golem | Canavar | Tek Boss | 3 | Haftada bir | 30 dk |
-| Khaos Ejderi | Canavar | Tek Boss | 3 | Haftada bir | 30 dk |
-| Boşluk Titanı | Canavar | Tek Boss | 3 | Haftada bir | 30 dk |
-| Hiçlik Solucanı | Canavar | Tek Boss | 2 | 3 günde bir | 20 dk |
-| Buzul Leviathan | Canavar | Tek Boss | 2 | 3 günde bir | 20 dk |
+| Felaket | Kategori | Tip | Kategori Seviyesi | Spawn Sıklığı | Süre |
+|---------|----------|-----|------------------|---------------|------|
+| Felaket Titanı (CATASTROPHIC_TITAN) | Canavar | Felaket Bossu | 3 | 7 günde bir | 30 dk |
+| Felaket Khaos Ejderi (CATASTROPHIC_CHAOS_DRAGON) | Canavar | Felaket Bossu | 3 | 7 günde bir | 30 dk |
+| Felaket Boşluk Titanı (CATASTROPHIC_VOID_TITAN) | Canavar | Felaket Bossu | 3 | 7 günde bir | 30 dk |
+| Felaket Hiçlik Solucanı (CATASTROPHIC_ABYSSAL_WORM) | Canavar | Felaket Bossu | 2 | 3 günde bir | 20 dk |
+| Felaket Buzul Leviathan (CATASTROPHIC_ICE_LEVIATHAN) | Canavar | Felaket Bossu | 2 | 3 günde bir | 20 dk |
 | Zombi Ordusu | Canavar | Grup (30) | 2 | 3 günde bir | 20 dk |
 | İskelet Lejyonu | Canavar | Grup (30) | 2 | 3 günde bir | 20 dk |
 | Creeper Dalgası | Canavar | Mini Dalga (100-500) | 1 | Her gün | 10 dk |

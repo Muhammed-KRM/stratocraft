@@ -7,22 +7,34 @@ import org.bukkit.entity.Entity;
  * Gelişmiş Felaket Sistemi
  * 
  * Kategoriler:
- * - CREATURE: Canlı felaketler (boss gibi, merkeze ilerler)
+ * - CREATURE: Canlı felaketler (felaket bossları, normal bosslardan ayrı, çok daha güçlü)
  * - NATURAL: Doğa olayları (güneş patlaması, deprem)
+ * - MINI: Mini felaketler
  * 
- * Seviyeler:
- * - 1: Güçsüz, kısa sürer, her gün
- * - 2: Orta, 3 günde bir
- * - 3: Güçlü, 7 günde bir
+ * Seviye Sistemi (İki Katmanlı):
+ * 
+ * 1. KATEGORİ SEVİYELERİ (Otomatik spawn sıklığı):
+ *    - Seviye 1: Her gün gelen felaketler (SOLAR_FLARE, CREEPER_SWARM, vb.)
+ *    - Seviye 2: 3 günde bir gelen felaketler (CATASTROPHIC_ABYSSAL_WORM, EARTHQUAKE, vb.)
+ *    - Seviye 3: 7 günde bir gelen felaketler (CATASTROPHIC_TITAN, CATASTROPHIC_CHAOS_DRAGON, vb.)
+ *    - Özel Event: Admin tarafından manuel başlatılan özel felaketler
+ * 
+ * 2. İÇ SEVİYELER (Admin komutunda belirtilen, felaketin gücünü belirler):
+ *    - Seviye 1: Zayıf form (düşük can/hasar)
+ *    - Seviye 2: Orta form (orta can/hasar)
+ *    - Seviye 3: Güçlü form (yüksek can/hasar)
+ * 
+ * Örnek: CATASTROPHIC_TITAN kategori seviyesi 3 (7 günde bir), ama admin komutunda
+ *        iç seviye 1-3 arası belirtilebilir (güçlü/güçsüz form).
  */
 public class Disaster {
     public enum Type { 
-        // Canlı Felaketler - Tek Boss
-        TITAN_GOLEM,        // Seviye 3 - Titan Golem
-        ABYSSAL_WORM,       // Seviye 2 - Hiçlik Solucanı
-        CHAOS_DRAGON,       // Seviye 3 - Khaos Ejderi
-        VOID_TITAN,         // Seviye 3 - Boşluk Titanı
-        ICE_LEVIATHAN,      // Seviye 2 - Buzul Leviathan
+        // Canlı Felaketler - Tek Boss (Felaket Bossları - Normal bosslardan ayrı)
+        CATASTROPHIC_TITAN,        // Seviye 3 - Felaket Titanı (30 blok boyunda dev golem)
+        CATASTROPHIC_ABYSSAL_WORM, // Seviye 2 - Felaket Hiçlik Solucanı
+        CATASTROPHIC_CHAOS_DRAGON, // Seviye 3 - Felaket Khaos Ejderi
+        CATASTROPHIC_VOID_TITAN,   // Seviye 3 - Felaket Boşluk Titanı
+        CATASTROPHIC_ICE_LEVIATHAN,// Seviye 2 - Felaket Buzul Leviathan
         
         // Canlı Felaketler - Grup (30 adet)
         ZOMBIE_HORDE,       // Seviye 2 - 30 Orta Güçte Zombi
@@ -63,7 +75,7 @@ public class Disaster {
     
     private final Type type;
     private final Category category;
-    private final int level;        // 1-4 seviye
+    private final int level;        // İç seviye (1-3): Admin komutunda belirtilen, felaketin gücünü belirler
     private final Entity entity;    // Bossun Minecraft Entity'si (canlı felaketler için)
     private Location target;        // Merkez noktası (canlı felaketler için)
     private Location targetCrystalLocation; // Klan kristali hedefi (canlı felaketler için)
@@ -261,11 +273,11 @@ public class Disaster {
      */
     public static Category getCategory(Type type) {
         switch (type) {
-            case TITAN_GOLEM:
-            case ABYSSAL_WORM:
-            case CHAOS_DRAGON:
-            case VOID_TITAN:
-            case ICE_LEVIATHAN:
+            case CATASTROPHIC_TITAN:
+            case CATASTROPHIC_ABYSSAL_WORM:
+            case CATASTROPHIC_CHAOS_DRAGON:
+            case CATASTROPHIC_VOID_TITAN:
+            case CATASTROPHIC_ICE_LEVIATHAN:
             case ZOMBIE_HORDE:
             case SKELETON_LEGION:
             case SPIDER_SWARM:
@@ -292,11 +304,11 @@ public class Disaster {
      */
     public static CreatureDisasterType getCreatureDisasterType(Type type) {
         switch (type) {
-            case TITAN_GOLEM:
-            case ABYSSAL_WORM:
-            case CHAOS_DRAGON:
-            case VOID_TITAN:
-            case ICE_LEVIATHAN:
+            case CATASTROPHIC_TITAN:
+            case CATASTROPHIC_ABYSSAL_WORM:
+            case CATASTROPHIC_CHAOS_DRAGON:
+            case CATASTROPHIC_VOID_TITAN:
+            case CATASTROPHIC_ICE_LEVIATHAN:
                 return CreatureDisasterType.SINGLE_BOSS;
             case ZOMBIE_HORDE:
             case SKELETON_LEGION:
@@ -311,7 +323,8 @@ public class Disaster {
     }
     
     /**
-     * Tip'e göre seviye
+     * Tip'e göre varsayılan kategori seviyesi (otomatik spawn sıklığı)
+     * Not: Bu kategori seviyesidir. Admin komutunda iç seviye (1-3) belirtilebilir.
      */
     public static int getDefaultLevel(Type type) {
         switch (type) {
@@ -322,18 +335,18 @@ public class Disaster {
             case MOB_INVASION:
             case PLAYER_BUFF_WAVE:
                 return 1;
-            case ABYSSAL_WORM:
+            case CATASTROPHIC_ABYSSAL_WORM:
             case EARTHQUAKE:
             case STORM:
             case METEOR_SHOWER:
-            case ICE_LEVIATHAN:
+            case CATASTROPHIC_ICE_LEVIATHAN:
             case ZOMBIE_HORDE:
             case SKELETON_LEGION:
             case SPIDER_SWARM:
                 return 2;
-            case TITAN_GOLEM:
-            case CHAOS_DRAGON:
-            case VOID_TITAN:
+            case CATASTROPHIC_TITAN:
+            case CATASTROPHIC_CHAOS_DRAGON:
+            case CATASTROPHIC_VOID_TITAN:
             case VOLCANIC_ERUPTION:
                 return 3;
             default:

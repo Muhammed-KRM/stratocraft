@@ -229,6 +229,15 @@ public class DisasterTask extends BukkitRunnable {
         
         // Tek boss felaketler için handler kullan
         handler.handle(disaster, entity, config);
+        
+        // Özel yetenekleri kullan (faz bazlı)
+        me.mami.stratocraft.model.DisasterPhase currentPhase = disaster.getCurrentPhase();
+        if (currentPhase != null) {
+            handler.useSpecialAbilities(disaster, entity, config, currentPhase);
+        }
+        
+        // Çevre değişimi (bazı felaketler için)
+        handler.changeEnvironment(disaster, entity, config);
     }
     
     /**
@@ -422,13 +431,17 @@ public class DisasterTask extends BukkitRunnable {
     private void handleNaturalDisaster(Disaster disaster) {
         if (disaster == null) return;
         
-        // Süre doldu mu kontrol et (doğa olayları için önemli)
-        if (disaster.isExpired()) {
+        // Süre doldu mu kontrol et (doğa olayları için önemli - öncelikli kontrol)
+        // isExpired() kontrolü run() metodunda da var ama burada da kontrol ediyoruz
+        if (disaster.isExpired() || disaster.getRemainingTime() <= 0) {
+            // Felaketi durdur
             disaster.kill();
             disasterManager.setActiveDisaster(null);
             cleanupForceLoadedChunks();
+            String disasterName = disasterManager.getDisasterDisplayName(disaster.getType());
             Bukkit.getServer().broadcastMessage(org.bukkit.ChatColor.GREEN + "" + org.bukkit.ChatColor.BOLD + 
-                "Doğa olayı süresi doldu: " + disasterManager.getDisasterDisplayName(disaster.getType()));
+                "Doğa olayı süresi doldu: " + disasterName);
+            // BossBar'ı temizle (DisasterManager'da otomatik temizleniyor)
             return;
         }
         

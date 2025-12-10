@@ -51,21 +51,27 @@ Bu rapor, Stratocraft plugin'indeki tüm sistemlerin mevcut durumunu, çalışan
 #### ✅ Çalışan Özellikler:
 - ✅ Felaket spawn sistemi (otomatik + admin komutu)
 - ✅ Felaket tipleri (CREATURE, NATURAL, MINI)
-- ✅ Felaket fazları (EXPLORATION, ASSAULT, RAGE, DESPERATION)
-- ✅ BossBar/ActionBar gösterimi
-- ✅ HUD entegrasyonu (aktif felaket bilgisi)
-- ✅ Doğal felaketlerin otomatik bitmesi
-- ✅ Titan Golem sağlık sorunu çözüldü (AttributeModifier)
-- ✅ Dinamik zorluk sistemi (oyuncu gücüne göre)
-- ✅ Admin komutları (`/scadmin disaster start/stop/list`)
+- ✅ Felaket fazları (EXPLORATION, ASSAULT, RAGE, DESPERATION) - **TAM ÇALIŞIYOR**
+- ✅ Faz geçiş sistemi - **ÇALIŞIYOR** (DisasterPhaseManager ile kontrol ediliyor)
+- ✅ Faz geçiş mesajları - **ÇALIŞIYOR** (broadcast mesaj + ses efekti)
+- ✅ Faz geçiş efektleri - **ÇALIŞIYOR** (RAGE/DESPERATION fazlarında oyunculara SLOW efekti)
+- ✅ Faz bazlı özellikler - **ÇALIŞIYOR** (hareket hızı, saldırı aralığı, oyuncu saldırısı)
+- ✅ BossBar/ActionBar gösterimi - **ÇALIŞIYOR**
+- ✅ BossBar faz bazlı renk değişimi - **ÇALIŞIYOR** (EXPLORATION: Mavi, ASSAULT: Sarı, RAGE: Kırmızı, DESPERATION: Mor)
+- ✅ HUD entegrasyonu (aktif felaket bilgisi) - **ÇALIŞIYOR**
+- ✅ Doğal felaketlerin otomatik bitmesi - **ÇALIŞIYOR** (isExpired() ve getRemainingTime() kontrolü)
+- ✅ Felaket Titanı (CATASTROPHIC_TITAN) - 30 blok boyutunda, IronGolem AI ile hareket ediyor - **ÇALIŞIYOR**
+- ✅ Dinamik zorluk sistemi (oyuncu gücüne göre) - **ÇALIŞIYOR**
+- ✅ Admin komutları (`/scadmin disaster start/stop/list`) - **ÇALIŞIYOR** (yeni format: [Kategori] [Felaket] [İç Seviye] [Konum])
+- ✅ İki katmanlı seviye sistemi (Kategori seviyeleri + İç seviyeler) - **ÇALIŞIYOR**
+- ✅ Felaket bossları normal bosslardan tamamen ayrıldı - **ÇALIŞIYOR**
+- ✅ Tüm seviyelerin sayaçları (Scoreboard'da gösteriliyor) - **ÇALIŞIYOR**
 
-#### ⚠️ Eksik/Çalışmayan Özellikler:
-- ⚠️ **Faz geçiş efektleri** - Kod var ama tam test edilmemiş
-- ⚠️ **Arena transformasyonu** - Sadece boss sisteminde var, felaketlerde yok
-- ⚠️ **Zayıf nokta sistemi** - Sadece boss sisteminde var
-- ⚠️ **Özel yetenekler** - Bazı felaketlerde eksik (ör: çevre değişimi)
-- ⚠️ **BossBar renk değişimi** - Fazlara göre renk değişimi yok
-- ⚠️ **Felaket öncesi uyarı sistemi** - Sadece countdown var, görsel uyarı yok
+#### ✅ Tamamlanan Özellikler (Yeni Eklenen):
+- ✅ **Arena transformasyonu** - Felaketler için arena transformasyon sistemi eklendi (`DisasterArenaManager`)
+- ✅ **Zayıf nokta sistemi** - Felaketler için zayıf nokta sistemi eklendi (3x hasar, 5 saniye aktif, 15 saniye cooldown)
+- ✅ **Özel yetenekler** - Handler sistemine tam özel yetenek implementasyonu eklendi (faz bazlı yetenekler, çevre değişimi)
+- ✅ **Felaket öncesi görsel uyarı sistemi** - 2 dakika önce görsel efektler eklendi (partiküller, ses efektleri, title mesajları)
 
 **Döküman:** `Documant/10_felaketler.md`, `FELAKET_SISTEMI_EKLENECEK_OZELLIKLER.md`  
 **Kod:** `DisasterManager.java`, `DisasterTask.java`, `DisasterPhaseManager.java`

@@ -42,6 +42,9 @@ public class DisasterManager {
     // Yeni Stratocraft Güç Sistemi (köprü fonksiyon için)
     private me.mami.stratocraft.manager.StratocraftPowerSystem stratocraftPowerSystem;
     
+    // Arena transformasyon sistemi
+    private DisasterArenaManager arenaManager;
+    
     private Disaster activeDisaster = null;
     private long lastDisasterTime = System.currentTimeMillis();
     
@@ -53,6 +56,12 @@ public class DisasterManager {
     // Plan'a göre: 2 dakika önce uyarı sistemi
     private long lastWarningTime = 0;
     private static final long WARNING_INTERVAL = 120000L; // 2 dakika = 120000 ms
+    
+    // Zayıf nokta sistemi
+    private final java.util.Map<java.util.UUID, Long> weakPointCooldowns = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long WEAK_POINT_DURATION = 5000L; // 5 saniye
+    private static final long WEAK_POINT_COOLDOWN = 15000L; // 15 saniye cooldown
+    private org.bukkit.scheduler.BukkitTask weakPointTask;
     
     /**
      * Aktif felaket durumunu kaydet (DataManager için)
@@ -121,10 +130,11 @@ public class DisasterManager {
         }
     }
     
-    // Spawn zamanları (ms)
-    private static final long LEVEL_1_INTERVAL = 86400000L;  // 1 gün
-    private static final long LEVEL_2_INTERVAL = 259200000L; // 3 gün
-    private static final long LEVEL_3_INTERVAL = 604800000L; // 7 gün
+    // Kategori Seviyesi Spawn Zamanları (ms)
+    // Bu seviyeler felaketlerin otomatik spawn sıklığını belirler
+    private static final long LEVEL_1_INTERVAL = 86400000L;  // Seviye 1: Her gün (1 gün)
+    private static final long LEVEL_2_INTERVAL = 259200000L; // Seviye 2: 3 günde bir
+    private static final long LEVEL_3_INTERVAL = 604800000L; // Seviye 3: 7 günde bir (haftada bir)
     
     // BossBar (ekranda sayaç)
     private BossBar disasterBossBar = null;
@@ -379,7 +389,26 @@ public class DisasterManager {
     /**
      * Felaket başlat
      */
+    /**
+     * Felaket başlat (geriye dönük uyumluluk - kategori seviyesi otomatik, level = iç seviye)
+     */
     public void triggerDisaster(Disaster.Type type, int level) {
+        int categoryLevel = Disaster.getDefaultLevel(type);
+        triggerDisaster(type, categoryLevel, level);
+    }
+    
+    /**
+     * Felaket başlat (geriye dönük uyumluluk - kategori seviyesi otomatik, level = iç seviye)
+     */
+    public void triggerDisaster(Disaster.Type type, int level, org.bukkit.Location spawnLoc) {
+        int categoryLevel = Disaster.getDefaultLevel(type);
+        triggerDisaster(type, categoryLevel, level, spawnLoc);
+    }
+    
+    /**
+     * Felaket başlat (yeni format - kategori seviyesi ve iç seviye ayrı)
+     */
+    public void triggerDisaster(Disaster.Type type, int categoryLevel, int internalLevel) {
         World world = org.bukkit.Bukkit.getWorlds().get(0);
         org.bukkit.Location centerLoc = null;
         if (difficultyManager != null) {
@@ -389,10 +418,10 @@ public class DisasterManager {
             centerLoc = world.getSpawnLocation();
         }
         
-        // Config'den spawn mesafesini al
+        // Config'den spawn mesafesini al (iç seviye kullanılır)
         double spawnDistance = 5000.0; // Varsayılan
         if (configManager != null) {
-            me.mami.stratocraft.model.DisasterConfig config = configManager.getConfig(type, level);
+            me.mami.stratocraft.model.DisasterConfig config = configManager.getConfig(type, internalLevel);
             spawnDistance = config.getSpawnDistance();
         }
         
@@ -410,13 +439,13 @@ public class DisasterManager {
         int y = world.getHighestBlockYAt(x, z);
         org.bukkit.Location spawnLoc = new org.bukkit.Location(world, x, y + 1, z);
         
-        triggerDisaster(type, level, spawnLoc);
+        triggerDisaster(type, categoryLevel, internalLevel, spawnLoc);
     }
     
     /**
-     * Felaket başlat (konum belirtilmiş)
+     * Felaket başlat (yeni format - kategori seviyesi ve iç seviye ayrı, konum belirtilmiş)
      */
-    public void triggerDisaster(Disaster.Type type, int level, org.bukkit.Location spawnLoc) {
+    public void triggerDisaster(Disaster.Type type, int categoryLevel, int internalLevel, org.bukkit.Location spawnLoc) {
         if (activeDisaster != null && !activeDisaster.isDead()) {
             org.bukkit.Bukkit.broadcastMessage("§cZaten aktif bir felaket var!");
             return;
@@ -432,8 +461,9 @@ public class DisasterManager {
         // NOT: DisasterTask içinde chunk yönetimi yapılıyor, burada sadece spawn chunk'ını yükle
         
         Disaster.Category category = Disaster.getCategory(type);
-        DisasterPower power = calculateDisasterPower(level);
-        long duration = Disaster.getDefaultDuration(type, level);
+        // İç seviye güç hesaplaması için kullanılır
+        DisasterPower power = calculateDisasterPower(internalLevel);
+        long duration = Disaster.getDefaultDuration(type, categoryLevel);
         
         Entity entity = null;
         
@@ -455,7 +485,8 @@ public class DisasterManager {
         if (targetLoc == null) {
             targetLoc = spawnLoc.getWorld().getSpawnLocation();
         }
-        activeDisaster = new Disaster(type, category, level, entity, 
+        // Disaster oluştururken iç seviyeyi kullan (güç seviyesi)
+        activeDisaster = new Disaster(type, category, internalLevel, entity, 
                                      targetLoc, 
                                      power.health, power.damage, duration);
         
@@ -493,6 +524,16 @@ public class DisasterManager {
         // BossBar oluştur (canlı felaketler için)
         createBossBar(activeDisaster);
         
+        // Arena transformasyonunu başlat (canlı felaketler için)
+        if (category == Disaster.Category.CREATURE && entity != null) {
+            arenaManager.startArenaTransformation(
+                spawnLoc,
+                type,
+                internalLevel,
+                entity.getUniqueId()
+            );
+        }
+        
         lastDisasterTime = System.currentTimeMillis();
     }
     
@@ -515,33 +556,50 @@ public class DisasterManager {
         org.bukkit.entity.Entity entity = null;
         
         switch (type) {
-            case TITAN_GOLEM:
-                entity = world.spawnEntity(loc, EntityType.GIANT);
-                entity.setCustomName("§4§lTITAN GOLEM");
+            case CATASTROPHIC_TITAN:
+                // Felaket Titanı - 30 blok boyutunda dev golem
+                // IronGolem AI'sı var ve hareket edebilir, boyutunu scale ile büyütüyoruz
+                entity = world.spawnEntity(loc, EntityType.IRON_GOLEM);
+                entity.setCustomName("§4§lFELAKET TİTANI");
+                // IronGolem'i güçlendir ve boyutunu büyüt (30 blok = ~11 kat büyük)
+                if (entity instanceof org.bukkit.entity.LivingEntity) {
+                    org.bukkit.entity.LivingEntity living = (org.bukkit.entity.LivingEntity) entity;
+                    // Boyut: Normal IronGolem ~2.7 blok, 30 blok için ~11.1 kat
+                    if (living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_SCALE) != null) {
+                        living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_SCALE).setBaseValue(11.1);
+                    }
+                    if (living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH) != null) {
+                        living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(config.getMaxHealth());
+                    }
+                    if (living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_ATTACK_DAMAGE) != null) {
+                        living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(config.getBaseDamage() * power.multiplier);
+                    }
+                    living.setHealth(config.getMaxHealth());
+                }
                 break;
                 
-            case ABYSSAL_WORM:
+            case CATASTROPHIC_ABYSSAL_WORM:
                 entity = world.spawnEntity(loc, EntityType.SILVERFISH);
-                entity.setCustomName("§5§lHİÇLİK SOLUCANI");
+                entity.setCustomName("§5§lFELAKET HİÇLİK SOLUCANI");
                 if (entity instanceof org.bukkit.entity.LivingEntity) {
                     ((org.bukkit.entity.LivingEntity) entity).addPotionEffect(new org.bukkit.potion.PotionEffect(
                         org.bukkit.potion.PotionEffectType.INVISIBILITY, 999999, 0, false, false));
                 }
                 break;
                 
-            case CHAOS_DRAGON:
+            case CATASTROPHIC_CHAOS_DRAGON:
                 entity = world.spawnEntity(loc, EntityType.ENDER_DRAGON);
-                entity.setCustomName("§5§lKHAOS EJDERİ");
+                entity.setCustomName("§5§lFELAKET KHAOS EJDERİ");
                 break;
                 
-            case VOID_TITAN:
+            case CATASTROPHIC_VOID_TITAN:
                 entity = world.spawnEntity(loc, EntityType.WITHER);
-                entity.setCustomName("§8§lBOŞLUK TİTANI");
+                entity.setCustomName("§8§lFELAKET BOŞLUK TİTANI");
                 break;
                 
-            case ICE_LEVIATHAN:
+            case CATASTROPHIC_ICE_LEVIATHAN:
                 entity = world.spawnEntity(loc, EntityType.ELDER_GUARDIAN);
-                entity.setCustomName("§b§lBUZUL LEVİATHAN");
+                entity.setCustomName("§b§lFELAKET BUZUL LEVİATHAN");
                 if (entity instanceof org.bukkit.entity.LivingEntity) {
                     ((org.bukkit.entity.LivingEntity) entity).addPotionEffect(new org.bukkit.potion.PotionEffect(
                         org.bukkit.potion.PotionEffectType.SLOW, 999999, 0, false, false));
@@ -594,14 +652,8 @@ public class DisasterManager {
             plugin.getLogger().info("BossBar oluşturuldu: " + disasterName + " (Can: " + health + "/" + maxHealth + ")");
         } else if (disaster != null && disaster.getCategory() == Disaster.Category.NATURAL) {
             // Doğa olayları için ActionBar kullan (BossBar yok)
-            String disasterName = getDisasterDisplayName(disaster.getType());
-            String timeLeft = formatTime(disaster.getRemainingTime());
-            String actionBarText = "§c§l" + disasterName + " §7| §e⏰ " + timeLeft;
-            
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
-                    net.md_5.bungee.api.chat.TextComponent.fromLegacyText(actionBarText));
-            }
+            // ActionBar güncellemesi bossBarUpdateTask içinde yapılıyor
+            // Burada sadece ilk gösterimi yapıyoruz
         }
         
         // Güncelleme task'ı
@@ -625,8 +677,28 @@ public class DisasterManager {
             }
             
             // Can ve zaman bilgisi
+            // Health sync: Entity'den can al (eğer entity varsa)
             double health = activeDisaster.getCurrentHealth();
             double maxHealth = activeDisaster.getMaxHealth();
+            
+            // Entity varsa ve canlı felaket ise, entity'den can al
+            if (activeDisaster.getCategory() == Disaster.Category.CREATURE && activeDisaster.getEntity() != null) {
+                Entity entity = activeDisaster.getEntity();
+                if (entity instanceof org.bukkit.entity.LivingEntity) {
+                    org.bukkit.entity.LivingEntity living = (org.bukkit.entity.LivingEntity) entity;
+                    health = living.getHealth();
+                    // Max health'i de entity'den al (attribute modifier varsa)
+                    if (living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH) != null) {
+                        maxHealth = living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue();
+                    }
+                }
+            }
+            
+            // Health değerlerini sınırla
+            if (health < 0) health = 0;
+            if (maxHealth <= 0) maxHealth = 1.0; // Sıfıra bölme hatası önleme
+            if (health > maxHealth) health = maxHealth;
+            
             double healthPercent = Math.max(0.0, Math.min(1.0, health / maxHealth));
             String timeLeft = formatTime(activeDisaster.getRemainingTime());
             String disasterName = getDisasterDisplayName(activeDisaster.getType());
@@ -638,13 +710,42 @@ public class DisasterManager {
                 disasterBossBar.setTitle(bossBarTitle);
                 disasterBossBar.setProgress(healthPercent);
                 
-                // Can durumuna göre renk değiştir
-                if (healthPercent > 0.6) {
-                    disasterBossBar.setColor(BarColor.RED);
-                } else if (healthPercent > 0.3) {
-                    disasterBossBar.setColor(BarColor.YELLOW);
+                // Faz bazlı renk değiştir (öncelikli)
+                DisasterPhase currentPhase = activeDisaster.getCurrentPhase();
+                if (currentPhase != null) {
+                    switch (currentPhase) {
+                        case EXPLORATION:
+                            disasterBossBar.setColor(BarColor.BLUE); // Mavi (keşif fazı)
+                            break;
+                        case ASSAULT:
+                            disasterBossBar.setColor(BarColor.YELLOW); // Sarı (saldırı fazı)
+                            break;
+                        case RAGE:
+                            disasterBossBar.setColor(BarColor.RED); // Kırmızı (öfke fazı)
+                            break;
+                        case DESPERATION:
+                            disasterBossBar.setColor(BarColor.PURPLE); // Mor (son çare fazı)
+                            break;
+                        default:
+                            // Can durumuna göre renk değiştir (fallback)
+                            if (healthPercent > 0.6) {
+                                disasterBossBar.setColor(BarColor.RED);
+                            } else if (healthPercent > 0.3) {
+                                disasterBossBar.setColor(BarColor.YELLOW);
+                            } else {
+                                disasterBossBar.setColor(BarColor.GREEN);
+                            }
+                            break;
+                    }
                 } else {
-                    disasterBossBar.setColor(BarColor.GREEN);
+                    // Faz bilgisi yoksa can durumuna göre renk değiştir
+                    if (healthPercent > 0.6) {
+                        disasterBossBar.setColor(BarColor.RED);
+                    } else if (healthPercent > 0.3) {
+                        disasterBossBar.setColor(BarColor.YELLOW);
+                    } else {
+                        disasterBossBar.setColor(BarColor.GREEN);
+                    }
                 }
                 
                 // Yeni oyuncuları ekle (optimizasyon: sadece yeni oyuncular varsa)
@@ -654,16 +755,23 @@ public class DisasterManager {
                         disasterBossBar.addPlayer(player);
                     }
                 }
-            } else {
-                // Doğa olayları için ActionBar kullan
+            } else if (activeDisaster.getCategory() == Disaster.Category.NATURAL) {
+                // Doğa olayları için ActionBar kullan (her saniye güncelle)
                 java.util.Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
                 String actionBarText = "§c§l" + disasterName + " §7| §e⏰ " + timeLeft;
                 for (Player player : onlinePlayers) {
-                    player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
-                        net.md_5.bungee.api.chat.TextComponent.fromLegacyText(actionBarText));
+                    if (player != null && player.isOnline()) {
+                        try {
+                            player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                                net.md_5.bungee.api.chat.TextComponent.fromLegacyText(actionBarText));
+                        } catch (Exception e) {
+                            // ActionBar gönderme hatası (oyuncu çıkış yapmış olabilir)
+                            plugin.getLogger().fine("ActionBar gönderilemedi: " + e.getMessage());
+                        }
+                    }
                 }
             }
-        }, 0L, 20L); // Her saniye
+        }, 0L, 20L); // Her saniye güncelle
     }
     
     /**
@@ -743,11 +851,11 @@ public class DisasterManager {
      */
     public String getDisasterDisplayName(Disaster.Type type) {
         switch (type) {
-            case TITAN_GOLEM: return "Titan Golem";
-            case ABYSSAL_WORM: return "Hiçlik Solucanı";
-            case CHAOS_DRAGON: return "Khaos Ejderi";
-            case VOID_TITAN: return "Boşluk Titanı";
-            case ICE_LEVIATHAN: return "Buzul Leviathan";
+            case CATASTROPHIC_TITAN: return "Felaket Titanı";
+            case CATASTROPHIC_ABYSSAL_WORM: return "Felaket Hiçlik Solucanı";
+            case CATASTROPHIC_CHAOS_DRAGON: return "Felaket Khaos Ejderi";
+            case CATASTROPHIC_VOID_TITAN: return "Felaket Boşluk Titanı";
+            case CATASTROPHIC_ICE_LEVIATHAN: return "Felaket Buzul Leviathan";
             case ZOMBIE_HORDE: return "Zombi Ordusu";
             case SKELETON_LEGION: return "İskelet Lejyonu";
             case SPIDER_SWARM: return "Örümcek Sürüsü";
@@ -811,28 +919,34 @@ public class DisasterManager {
         // Countdown Scoreboard'ı güncelle
         updateCountdownBossBar();
         
-        // Seviye 1 kontrolü (her gün)
+        // Seviye 1 kontrolü (her gün) - Kategori seviyesi 1, iç seviye 2 (orta form)
         if (shouldSpawnDisaster(1)) {
             Disaster.Type[] level1Types = {Disaster.Type.SOLAR_FLARE};
             Disaster.Type randomType = level1Types[new java.util.Random().nextInt(level1Types.length)];
-            triggerDisaster(randomType, (int) 1);
+            int categoryLevel = 1;
+            int internalLevel = 2; // Orta form (otomatik spawn için)
+            triggerDisaster(randomType, categoryLevel, internalLevel);
             return;
         }
         
-        // Seviye 2 kontrolü (3 günde bir)
+        // Seviye 2 kontrolü (3 günde bir) - Kategori seviyesi 2, iç seviye 2 (orta form)
         if (shouldSpawnDisaster(2)) {
-            Disaster.Type[] level2Types = {Disaster.Type.ABYSSAL_WORM, Disaster.Type.EARTHQUAKE, Disaster.Type.METEOR_SHOWER};
+            Disaster.Type[] level2Types = {Disaster.Type.CATASTROPHIC_ABYSSAL_WORM, Disaster.Type.EARTHQUAKE, Disaster.Type.METEOR_SHOWER};
             Disaster.Type randomType = level2Types[new java.util.Random().nextInt(level2Types.length)];
-            triggerDisaster(randomType, (int) 2);
+            int categoryLevel = 2;
+            int internalLevel = 2; // Orta form (otomatik spawn için)
+            triggerDisaster(randomType, categoryLevel, internalLevel);
             return;
         }
         
-        // Seviye 3 kontrolü (7 günde bir)
+        // Seviye 3 kontrolü (7 günde bir) - Kategori seviyesi 3, iç seviye 2 (orta form)
         if (shouldSpawnDisaster(3)) {
-            Disaster.Type[] level3Types = {Disaster.Type.TITAN_GOLEM, Disaster.Type.CHAOS_DRAGON, 
-                                          Disaster.Type.VOID_TITAN, Disaster.Type.VOLCANIC_ERUPTION};
+            Disaster.Type[] level3Types = {Disaster.Type.CATASTROPHIC_TITAN, Disaster.Type.CATASTROPHIC_CHAOS_DRAGON, 
+                                          Disaster.Type.CATASTROPHIC_VOID_TITAN, Disaster.Type.VOLCANIC_ERUPTION};
             Disaster.Type randomType = level3Types[new java.util.Random().nextInt(level3Types.length)];
-            triggerDisaster(randomType, (int) 3);
+            int categoryLevel = 3;
+            int internalLevel = 2; // Orta form (otomatik spawn için)
+            triggerDisaster(randomType, categoryLevel, internalLevel);
             return;
         }
         
@@ -889,10 +1003,11 @@ public class DisasterManager {
         };
         
         Disaster.Type randomType = miniTypes[random.nextInt(miniTypes.length)];
-        int level = Disaster.getDefaultLevel(randomType);
+        int categoryLevel = Disaster.getDefaultLevel(randomType);
+        int internalLevel = 2; // Orta form (otomatik spawn için)
         
         // Mini felaketler için özel spawn (entity yok, sadece efektler)
-        triggerDisaster(randomType, level);
+        triggerDisaster(randomType, categoryLevel, internalLevel);
         
         lastMiniDisasterTime = System.currentTimeMillis();
         miniDisasterCountToday++;
@@ -987,14 +1102,24 @@ public class DisasterManager {
                     default: continue;
                 }
                 
-                long remaining = interval - currentElapsed;
-                if (remaining > 0 && remaining < currentNextSpawnTime) {
-                    currentNextSpawnTime = remaining;
-                    currentNextLevel = level;
-                }
+            long remaining = interval - currentElapsed;
+            if (remaining > 0 && remaining < currentNextSpawnTime) {
+                currentNextSpawnTime = remaining;
+                currentNextLevel = level;
             }
             
-            if (currentNextSpawnTime == Long.MAX_VALUE || currentNextSpawnTime <= 0) {
+            // Görsel uyarı sistemi (2 dakika önce)
+            if (remaining > 0 && remaining <= WARNING_INTERVAL) {
+                // Rastgele bir felaket tipi seç (gerçek felaket tipi bilinmiyor)
+                Disaster.Type[] allTypes = Disaster.Type.values();
+                if (allTypes.length > 0) {
+                    Disaster.Type warningType = allTypes[new Random().nextInt(allTypes.length)];
+                    showVisualWarning(warningType, remaining);
+                }
+            }
+        }
+        
+        if (currentNextSpawnTime == Long.MAX_VALUE || currentNextSpawnTime <= 0) {
                 // En kısa interval'i bul
                 long minInterval = Math.min(LEVEL_1_INTERVAL, Math.min(LEVEL_2_INTERVAL, LEVEL_3_INTERVAL));
                 long timeSinceLast = currentElapsed % minInterval;
@@ -1028,34 +1153,84 @@ public class DisasterManager {
                 countdownScoreboard.resetScores(entry);
             }
             
-            // Yeni bilgileri ekle
-            String timeText = formatTime(currentNextSpawnTime);
-            String levelText = "Seviye " + currentNextLevel;
+            // Tüm seviyelerin kalan sürelerini hesapla ve göster
+            int scoreIndex = 10; // Scoreboard'da yukarıdan aşağıya (yüksek score = yukarıda)
             
-            // Scoreboard entry'leri (yukarıdan aşağıya)
-            org.bukkit.scoreboard.Team team1 = countdownScoreboard.getTeam("team1");
-            if (team1 == null) {
-                team1 = countdownScoreboard.registerNewTeam("team1");
+            // Başlık
+            org.bukkit.scoreboard.Team teamTitle = countdownScoreboard.getTeam("teamTitle");
+            if (teamTitle == null) {
+                teamTitle = countdownScoreboard.registerNewTeam("teamTitle");
             }
-            team1.addEntry("§7");
-            team1.setPrefix("§7");
-            countdownObjective.getScore("§7").setScore(3);
+            teamTitle.addEntry("§e§l");
+            teamTitle.setPrefix("§e§l⏰ FELAKET SAYACI");
+            countdownObjective.getScore("§e§l").setScore(scoreIndex--);
             
-            org.bukkit.scoreboard.Team team2 = countdownScoreboard.getTeam("team2");
-            if (team2 == null) {
-                team2 = countdownScoreboard.registerNewTeam("team2");
+            // Boş satır
+            org.bukkit.scoreboard.Team teamSpace1 = countdownScoreboard.getTeam("teamSpace1");
+            if (teamSpace1 == null) {
+                teamSpace1 = countdownScoreboard.registerNewTeam("teamSpace1");
             }
-            team2.addEntry("§6");
-            team2.setPrefix("§e⏰ Sonraki: §6" + levelText);
-            countdownObjective.getScore("§6").setScore(2);
+            teamSpace1.addEntry("§7 ");
+            teamSpace1.setPrefix("§7 ");
+            countdownObjective.getScore("§7 ").setScore(scoreIndex--);
             
-            org.bukkit.scoreboard.Team team3 = countdownScoreboard.getTeam("team3");
-            if (team3 == null) {
-                team3 = countdownScoreboard.registerNewTeam("team3");
+            // Her seviye için sayaç göster
+            for (int level = 1; level <= 3; level++) {
+                long interval;
+                String levelName;
+                switch (level) {
+                    case 1: 
+                        interval = LEVEL_1_INTERVAL;
+                        levelName = "§7Her Gün";
+                        break;
+                    case 2: 
+                        interval = LEVEL_2_INTERVAL;
+                        levelName = "§73 Gün";
+                        break;
+                    case 3: 
+                        interval = LEVEL_3_INTERVAL;
+                        levelName = "§77 Gün";
+                        break;
+                    default: continue;
+                }
+                
+                long remaining = interval - currentElapsed;
+                // Eğer süre dolmuşsa, bir sonraki döngüyü hesapla
+                if (remaining <= 0) {
+                    remaining = interval - (currentElapsed % interval);
+                }
+                
+                String timeText = formatTime(remaining);
+                
+                // Seviye bilgisi
+                org.bukkit.scoreboard.Team teamLevel = countdownScoreboard.getTeam("teamLevel" + level);
+                if (teamLevel == null) {
+                    teamLevel = countdownScoreboard.registerNewTeam("teamLevel" + level);
+                }
+                teamLevel.addEntry("§" + level);
+                teamLevel.setPrefix("§eSeviye " + level + ": §7" + levelName);
+                countdownObjective.getScore("§" + level).setScore(scoreIndex--);
+                
+                // Kalan süre
+                org.bukkit.scoreboard.Team teamTime = countdownScoreboard.getTeam("teamTime" + level);
+                if (teamTime == null) {
+                    teamTime = countdownScoreboard.registerNewTeam("teamTime" + level);
+                }
+                teamTime.addEntry("§" + (level + 3));
+                teamTime.setPrefix("§7  Kalan: §e" + timeText);
+                countdownObjective.getScore("§" + (level + 3)).setScore(scoreIndex--);
+                
+                // Seviyeler arası boşluk (son seviye hariç)
+                if (level < 3) {
+                    org.bukkit.scoreboard.Team teamSpace = countdownScoreboard.getTeam("teamSpace" + level);
+                    if (teamSpace == null) {
+                        teamSpace = countdownScoreboard.registerNewTeam("teamSpace" + level);
+                    }
+                    teamSpace.addEntry("§" + (level + 6));
+                    teamSpace.setPrefix("§7 ");
+                    countdownObjective.getScore("§" + (level + 6)).setScore(scoreIndex--);
+                }
             }
-            team3.addEntry("§5");
-            team3.setPrefix("§7Kalan: §e" + timeText);
-            countdownObjective.getScore("§5").setScore(1);
             
             // Tüm oyunculara scoreboard'u ata
             for (Player player : Bukkit.getOnlinePlayers()) {
@@ -1063,34 +1238,89 @@ public class DisasterManager {
             }
         }, 0L, 20L); // Her saniye
         
-        // İlk güncelleme
-        String timeText = formatTime(nextSpawnTime);
-        String levelText = "Seviye " + nextLevel;
+        // İlk güncelleme - Tüm seviyelerin sayaçlarını göster
+        int scoreIndex = 10; // Scoreboard'da yukarıdan aşağıya (yüksek score = yukarıda)
         
-        // Scoreboard entry'leri (yukarıdan aşağıya)
-        org.bukkit.scoreboard.Team team1 = countdownScoreboard.getTeam("team1");
-        if (team1 == null) {
-            team1 = countdownScoreboard.registerNewTeam("team1");
+        // Tüm entry'leri temizle
+        for (String entry : countdownScoreboard.getEntries()) {
+            countdownScoreboard.resetScores(entry);
         }
-        team1.addEntry("§7");
-        team1.setPrefix("§7");
-        countdownObjective.getScore("§7").setScore(3);
         
-        org.bukkit.scoreboard.Team team2 = countdownScoreboard.getTeam("team2");
-        if (team2 == null) {
-            team2 = countdownScoreboard.registerNewTeam("team2");
+        // Başlık
+        org.bukkit.scoreboard.Team teamTitle = countdownScoreboard.getTeam("teamTitle");
+        if (teamTitle == null) {
+            teamTitle = countdownScoreboard.registerNewTeam("teamTitle");
         }
-        team2.addEntry("§6");
-        team2.setPrefix("§e⏰ Sonraki: §6" + levelText);
-        countdownObjective.getScore("§6").setScore(2);
+        teamTitle.addEntry("§e§l");
+        teamTitle.setPrefix("§e§l⏰ FELAKET SAYACI");
+        countdownObjective.getScore("§e§l").setScore(scoreIndex--);
         
-        org.bukkit.scoreboard.Team team3 = countdownScoreboard.getTeam("team3");
-        if (team3 == null) {
-            team3 = countdownScoreboard.registerNewTeam("team3");
+        // Boş satır
+        org.bukkit.scoreboard.Team teamSpace1 = countdownScoreboard.getTeam("teamSpace1");
+        if (teamSpace1 == null) {
+            teamSpace1 = countdownScoreboard.registerNewTeam("teamSpace1");
         }
-        team3.addEntry("§5");
-        team3.setPrefix("§7Kalan: §e" + timeText);
-        countdownObjective.getScore("§5").setScore(1);
+        teamSpace1.addEntry("§7 ");
+        teamSpace1.setPrefix("§7 ");
+        countdownObjective.getScore("§7 ").setScore(scoreIndex--);
+        
+        // Her seviye için sayaç göster
+        for (int level = 1; level <= 3; level++) {
+            long interval;
+            String levelName;
+            switch (level) {
+                case 1: 
+                    interval = LEVEL_1_INTERVAL;
+                    levelName = "§7Her Gün";
+                    break;
+                case 2: 
+                    interval = LEVEL_2_INTERVAL;
+                    levelName = "§73 Gün";
+                    break;
+                case 3: 
+                    interval = LEVEL_3_INTERVAL;
+                    levelName = "§77 Gün";
+                    break;
+                default: continue;
+            }
+            
+            long remaining = interval - elapsed;
+            // Eğer süre dolmuşsa, bir sonraki döngüyü hesapla
+            if (remaining <= 0) {
+                remaining = interval - (elapsed % interval);
+            }
+            
+            String timeText = formatTime(remaining);
+            
+            // Seviye bilgisi
+            org.bukkit.scoreboard.Team teamLevel = countdownScoreboard.getTeam("teamLevel" + level);
+            if (teamLevel == null) {
+                teamLevel = countdownScoreboard.registerNewTeam("teamLevel" + level);
+            }
+            teamLevel.addEntry("§" + level);
+            teamLevel.setPrefix("§eSeviye " + level + ": §7" + levelName);
+            countdownObjective.getScore("§" + level).setScore(scoreIndex--);
+            
+            // Kalan süre
+            org.bukkit.scoreboard.Team teamTime = countdownScoreboard.getTeam("teamTime" + level);
+            if (teamTime == null) {
+                teamTime = countdownScoreboard.registerNewTeam("teamTime" + level);
+            }
+            teamTime.addEntry("§" + (level + 3));
+            teamTime.setPrefix("§7  Kalan: §e" + timeText);
+            countdownObjective.getScore("§" + (level + 3)).setScore(scoreIndex--);
+            
+            // Seviyeler arası boşluk (son seviye hariç)
+            if (level < 3) {
+                org.bukkit.scoreboard.Team teamSpace = countdownScoreboard.getTeam("teamSpace" + level);
+                if (teamSpace == null) {
+                    teamSpace = countdownScoreboard.registerNewTeam("teamSpace" + level);
+                }
+                teamSpace.addEntry("§" + (level + 6));
+                teamSpace.setPrefix("§7 ");
+                countdownObjective.getScore("§" + (level + 6)).setScore(scoreIndex--);
+            }
+        }
         
         // Tüm oyunculara scoreboard'u ata
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -1110,6 +1340,14 @@ public class DisasterManager {
             if (bossBarUpdateTask != null) {
                 bossBarUpdateTask.cancel();
                 bossBarUpdateTask = null;
+            }
+            // Arena transformasyonunu durdur
+            if (arenaManager != null && d != null && d.getEntity() != null) {
+                arenaManager.stopArenaTransformation(d.getEntity().getUniqueId());
+            }
+            // Zayıf nokta cooldown'unu temizle
+            if (d != null && d.getEntity() != null) {
+                weakPointCooldowns.remove(d.getEntity().getUniqueId());
             }
             // Felaket bittiğinde countdown'u tekrar göster
             updateCountdownBossBar();
@@ -1284,7 +1522,7 @@ public class DisasterManager {
     
     public void forceWormSurface(org.bukkit.Location seismicLocation) {
         Disaster disaster = getActiveDisaster();
-        if (disaster == null || disaster.getType() != Disaster.Type.ABYSSAL_WORM) return;
+        if (disaster == null || disaster.getType() != Disaster.Type.CATASTROPHIC_ABYSSAL_WORM) return;
         
         org.bukkit.entity.Entity worm = disaster.getEntity();
         if (worm == null) return;
@@ -1546,5 +1784,149 @@ public class DisasterManager {
         
         org.bukkit.Bukkit.broadcastMessage("§c§l⚠ MİNİ FELAKET DALGASI BAŞLADI! ⚠");
         org.bukkit.Bukkit.broadcastMessage("§4§l" + actualCount + " adet mini canavar spawn oldu!");
+    }
+    
+    // ========== ZAYIF NOKTA SİSTEMİ ==========
+    
+    /**
+     * Zayıf nokta task'ını başlat
+     */
+    private void startWeakPointTask() {
+        weakPointTask = new org.bukkit.scheduler.BukkitRunnable() {
+            @Override
+            public void run() {
+                if (activeDisaster == null || activeDisaster.isDead()) return;
+                
+                Entity entity = activeDisaster.getEntity();
+                if (entity == null || entity.isDead() || !(entity instanceof org.bukkit.entity.LivingEntity)) {
+                    return;
+                }
+                
+                UUID disasterId = entity.getUniqueId();
+                long currentTime = System.currentTimeMillis();
+                
+                // Zayıf nokta cooldown kontrolü
+                Long weakPointTime = weakPointCooldowns.get(disasterId);
+                if (weakPointTime == null || currentTime > weakPointTime + WEAK_POINT_COOLDOWN) {
+                    // Yeni zayıf nokta aktivasyonu
+                    activateWeakPoint(activeDisaster, (org.bukkit.entity.LivingEntity) entity);
+                }
+            }
+        }.runTaskTimer(plugin, 100L, 100L); // Her 5 saniyede bir kontrol
+    }
+    
+    /**
+     * Zayıf noktayı aktif et
+     */
+    private void activateWeakPoint(Disaster disaster, org.bukkit.entity.LivingEntity entity) {
+        UUID disasterId = entity.getUniqueId();
+        weakPointCooldowns.put(disasterId, System.currentTimeMillis() + WEAK_POINT_DURATION);
+        
+        // Görsel gösterge - başın etrafında parlak partiküller
+        new org.bukkit.scheduler.BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!weakPointCooldowns.containsKey(disasterId) || 
+                    System.currentTimeMillis() > weakPointCooldowns.get(disasterId) ||
+                    entity.isDead()) {
+                    cancel();
+                    return;
+                }
+                
+                org.bukkit.Location headLoc = entity.getLocation().add(0, 2, 0);
+                entity.getWorld().spawnParticle(
+                    org.bukkit.Particle.END_ROD, 
+                    headLoc, 20, 0.3, 0.3, 0.3, 0.1
+                );
+                entity.getWorld().spawnParticle(
+                    org.bukkit.Particle.CRIT_MAGIC, 
+                    headLoc, 15, 0.5, 0.5, 0.5, 0.1
+                );
+                
+                // Oyunculara uyarı
+                for (Player player : entity.getWorld().getPlayers()) {
+                    if (player.getLocation().distance(entity.getLocation()) <= 30) {
+                        player.sendActionBar("§e§l⚡ ZAYIF NOKTA AÇIK! BAŞA SALDIR!");
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 5L);
+    }
+    
+    /**
+     * Zayıf nokta aktif mi?
+     */
+    public boolean isWeakPointActive(UUID disasterId) {
+        Long until = weakPointCooldowns.get(disasterId);
+        return until != null && System.currentTimeMillis() < until;
+    }
+    
+    /**
+     * Zayıf nokta çarpanını al
+     */
+    public double getWeakPointMultiplier(UUID disasterId) {
+        if (isWeakPointActive(disasterId)) {
+            return 3.0; // 3x hasar
+        }
+        return 1.0;
+    }
+    
+    // ========== GÖRSEL UYARI SİSTEMİ ==========
+    
+    /**
+     * Felaket öncesi görsel uyarı sistemi (2 dakika önce)
+     */
+    public void showVisualWarning(Disaster.Type type, long timeUntilDisaster) {
+        if (timeUntilDisaster > WARNING_INTERVAL) {
+            return; // 2 dakikadan fazla varsa uyarı gösterme
+        }
+        
+        long now = System.currentTimeMillis();
+        if (now - lastWarningTime < WARNING_INTERVAL) {
+            return; // Son uyarıdan 2 dakika geçmediyse tekrar gösterme
+        }
+        
+        lastWarningTime = now;
+        
+        // Tüm oyunculara görsel efektler
+        for (Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
+            // Partikül efektleri
+            org.bukkit.Location loc = player.getLocation();
+            player.getWorld().spawnParticle(
+                org.bukkit.Particle.VILLAGER_ANGRY,
+                loc.add(0, 2, 0),
+                50,
+                2.0, 2.0, 2.0,
+                0.1
+            );
+            player.getWorld().spawnParticle(
+                org.bukkit.Particle.LAVA,
+                loc,
+                30,
+                1.0, 0.5, 1.0,
+                0.05
+            );
+            
+            // Ses efektleri
+            player.playSound(loc, org.bukkit.Sound.ENTITY_WITHER_SPAWN, 0.5f, 0.8f);
+            player.playSound(loc, org.bukkit.Sound.ENTITY_ENDER_DRAGON_GROWL, 0.3f, 1.2f);
+            
+            // Ekran titremesi (Title)
+            String disasterName = getDisasterDisplayName(type);
+            player.sendTitle(
+                "§c§l⚠ UYARI ⚠",
+                "§e" + disasterName + " §7yaklaşıyor!",
+                10, 60, 20
+            );
+            
+            // ActionBar mesajı
+            long seconds = timeUntilDisaster / 1000;
+            player.sendActionBar("§c§l⚠ FELAKET YAKLAŞIYOR! §e" + seconds + " §7saniye kaldı!");
+        }
+        
+        // Broadcast mesajı
+        String disasterName = getDisasterDisplayName(type);
+        org.bukkit.Bukkit.broadcastMessage("§c§l⚠ FELAKET UYARISI ⚠");
+        org.bukkit.Bukkit.broadcastMessage("§e" + disasterName + " §7yaklaşıyor! Hazırlanın!");
     }
 }

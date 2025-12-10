@@ -162,9 +162,9 @@ disaster:
       health-multiplier: 3.0
       damage-multiplier: 3.0
   
-  # Felaket Tipi Bazlı Ayarlar
+  # Felaket Tipi Bazlı Ayarlar (Felaket Bossları - Normal bosslardan ayrı)
   types:
-    TITAN_GOLEM:
+    CATASTROPHIC_TITAN:
       move-speed: 0.4
       jump-height: 1.2
       can-jump: true
@@ -176,8 +176,10 @@ disaster:
       explosion-power: 4.0
       block-break-radius: 3
       passive-explosion-power: 2.0
+      size-scale: 11.1  # 30 blok boyut için (~11 kat büyük)
+      attack-interval: 120000  # 2 dakikada bir saldırı (klan yok etme özelliği)
     
-    ABYSSAL_WORM:
+    CATASTROPHIC_ABYSSAL_WORM:
       move-speed: 0.3
       jump-height: 0.0
       can-jump: false
@@ -185,7 +187,7 @@ disaster:
       teleport-distance: 5
       dig-speed: 1.0
     
-    CHAOS_DRAGON:
+    CATASTROPHIC_CHAOS_DRAGON:
       move-speed: 0.5
       jump-height: 0.0
       can-jump: false
@@ -194,7 +196,7 @@ disaster:
       fire-breath-range: 50
       fire-damage: 5.0
     
-    VOID_TITAN:
+    CATASTROPHIC_VOID_TITAN:
       move-speed: 0.3
       jump-height: 0.0
       can-jump: false
@@ -203,7 +205,7 @@ disaster:
       void-explosion-power: 4.0
       void-explosion-radius: 10
     
-    ICE_LEVIATHAN:
+    CATASTROPHIC_ICE_LEVIATHAN:
       move-speed: 0.3
       jump-height: 0.0
       can-jump: false

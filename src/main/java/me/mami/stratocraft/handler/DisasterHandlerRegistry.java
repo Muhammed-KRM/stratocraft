@@ -24,12 +24,12 @@ public class DisasterHandlerRegistry {
      * Tüm handler'ları kaydet
      */
     private void registerHandlers() {
-        // Tek Boss Felaketler
-        handlers.put(Disaster.Type.TITAN_GOLEM, new TitanGolemHandler(territoryManager));
-        handlers.put(Disaster.Type.ABYSSAL_WORM, new AbyssalWormHandler(territoryManager));
-        handlers.put(Disaster.Type.CHAOS_DRAGON, new ChaosDragonHandler(territoryManager));
-        handlers.put(Disaster.Type.VOID_TITAN, new VoidTitanHandler(territoryManager));
-        handlers.put(Disaster.Type.ICE_LEVIATHAN, new IceLeviathanHandler(territoryManager));
+        // Tek Boss Felaketler (Felaket Bossları)
+        handlers.put(Disaster.Type.CATASTROPHIC_TITAN, new TitanGolemHandler(territoryManager));
+        handlers.put(Disaster.Type.CATASTROPHIC_ABYSSAL_WORM, new AbyssalWormHandler(territoryManager));
+        handlers.put(Disaster.Type.CATASTROPHIC_CHAOS_DRAGON, new ChaosDragonHandler(territoryManager));
+        handlers.put(Disaster.Type.CATASTROPHIC_VOID_TITAN, new VoidTitanHandler(territoryManager));
+        handlers.put(Disaster.Type.CATASTROPHIC_ICE_LEVIATHAN, new IceLeviathanHandler(territoryManager));
         
         // Grup Felaketler (30 adet)
         handlers.put(Disaster.Type.ZOMBIE_HORDE, new GroupDisasterHandler(territoryManager));
