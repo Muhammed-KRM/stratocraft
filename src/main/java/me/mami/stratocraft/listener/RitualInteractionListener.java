@@ -157,7 +157,7 @@ public class RitualInteractionListener implements Listener {
                 try {
                     plugin.getClanMissionSystem().updateMissionProgress(
                         clan, 
-                        p.getUniqueId(), 
+                        leader.getUniqueId(), 
                         me.mami.stratocraft.manager.clan.ClanMissionSystem.MissionType.USE_RITUAL, 
                         1
                     );

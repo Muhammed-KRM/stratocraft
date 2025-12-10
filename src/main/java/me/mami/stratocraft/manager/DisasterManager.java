@@ -17,6 +17,8 @@ import org.bukkit.scheduler.BukkitTask;
 import me.mami.stratocraft.Main;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Disaster;
+import me.mami.stratocraft.model.DisasterPhase;
+import java.util.UUID;
 
 /**
  * Gelişmiş Felaket Yönetim Sistemi
@@ -515,7 +517,7 @@ public class DisasterManager {
         // Broadcast (BossBar'dan önce, herkes görsün)
         String disasterName = getDisasterDisplayName(type);
         org.bukkit.Bukkit.broadcastMessage("§c§l⚠ FELAKET BAŞLADI! ⚠");
-        org.bukkit.Bukkit.broadcastMessage("§4§l" + disasterName + " §7(Seviye " + level + ")");
+        org.bukkit.Bukkit.broadcastMessage("§4§l" + disasterName + " §7(Seviye " + internalLevel + ")");
         org.bukkit.Bukkit.broadcastMessage("§7Güç Çarpanı: §e" + String.format("%.2f", power.multiplier) + "x");
         if (entity != null) {
             org.bukkit.Bukkit.broadcastMessage("§7Konum: §e" + spawnLoc.getBlockX() + ", " + spawnLoc.getBlockY() + ", " + spawnLoc.getBlockZ());
@@ -565,16 +567,24 @@ public class DisasterManager {
                 if (entity instanceof org.bukkit.entity.LivingEntity) {
                     org.bukkit.entity.LivingEntity living = (org.bukkit.entity.LivingEntity) entity;
                     // Boyut: Normal IronGolem ~2.7 blok, 30 blok için ~11.1 kat
-                    if (living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_SCALE) != null) {
-                        living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_SCALE).setBaseValue(11.1);
+                    // GENERIC_SCALE sadece 1.20.5+ için var, eski versiyonlarda yok
+                    try {
+                        org.bukkit.attribute.Attribute scaleAttr = org.bukkit.attribute.Attribute.valueOf("GENERIC_SCALE");
+                        if (living.getAttribute(scaleAttr) != null) {
+                            living.getAttribute(scaleAttr).setBaseValue(11.1);
+                        }
+                    } catch (IllegalArgumentException e) {
+                        // GENERIC_SCALE bu versiyonda yok, atla
                     }
                     if (living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH) != null) {
-                        living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(config.getMaxHealth());
+                        double maxHealth = config.getBaseHealth() * config.getHealthMultiplier() * power.health;
+                        living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(maxHealth);
                     }
                     if (living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_ATTACK_DAMAGE) != null) {
                         living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(config.getBaseDamage() * power.multiplier);
                     }
-                    living.setHealth(config.getMaxHealth());
+                    double maxHealth = config.getBaseHealth() * config.getHealthMultiplier() * power.health;
+                    living.setHealth(maxHealth);
                 }
                 break;
                 

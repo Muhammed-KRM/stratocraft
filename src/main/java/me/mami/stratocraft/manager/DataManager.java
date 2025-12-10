@@ -120,7 +120,7 @@ public class DataManager {
                        ShopManager shopManager, VirtualStorageListener virtualStorage, 
                        AllianceManager allianceManager, DisasterManager disasterManager, boolean forceSync) {
         saveAll(clanManager, contractManager, shopManager, virtualStorage, allianceManager, 
-                disasterManager, null, null, null, forceSync);
+                disasterManager, null, null, null, null, forceSync);
     }
     
     /**
@@ -862,15 +862,15 @@ public class DataManager {
                     UUID clanId = entry.getKey();
                     me.mami.stratocraft.manager.clan.ClanMissionSystem.ClanMission mission = entry.getValue();
                     
-                    if (mission != null && !mission.isCompleted()) {
+                    if (mission != null && mission.isActive()) {
                         MissionData missionData = new MissionData();
                         missionData.clanId = clanId.toString();
                         missionData.type = mission.getType() != null ? mission.getType().name() : null;
-                        missionData.targetAmount = mission.getTargetAmount();
-                        missionData.currentProgress = mission.getCurrentProgress();
-                        missionData.createdAt = mission.getCreatedAt();
-                        missionData.deadline = mission.getDeadline();
-                        missionData.completed = mission.isCompleted();
+                        missionData.targetAmount = mission.getTarget();
+                        missionData.currentProgress = mission.getProgress();
+                        missionData.createdAt = mission.getCreatedTime();
+                        missionData.deadline = mission.getExpiryTime();
+                        missionData.completed = !mission.isActive() || (mission.getProgress() >= mission.getTarget());
                         
                         // Üye ilerlemeleri
                         try {
@@ -1367,8 +1367,8 @@ public class DataManager {
         
         List<ContractData> contractDataList = safeJsonParse(file, new TypeToken<List<ContractData>>(){});
         if (contractDataList == null) return;
-            
-            for (ContractData data : contractDataList) {
+        
+        for (ContractData data : contractDataList) {
                 // Data validation
                 if (data.id == null || !isValidUUID(data.id)) {
                     plugin.getLogger().warning("Geçersiz contract ID atlandı");
@@ -1405,7 +1405,6 @@ public class DataManager {
                 } catch (Exception e) {
                     plugin.getLogger().warning("Contract yükleme hatası: " + data.id + " - " + e.getMessage());
                 }
-            }
         }
     }
     
@@ -1417,8 +1416,8 @@ public class DataManager {
         
         List<ShopData> shopDataList = safeJsonParse(file, new TypeToken<List<ShopData>>(){});
         if (shopDataList == null) return;
-            
-            for (ShopData data : shopDataList) {
+        
+        for (ShopData data : shopDataList) {
                 // Data validation
                 if (data.owner == null || !isValidUUID(data.owner)) {
                     plugin.getLogger().warning("Geçersiz shop owner atlandı");
@@ -1439,27 +1438,29 @@ public class DataManager {
                             data.protectedZone
                     );
                 
-                // KRİTİK: Teklifleri yükle (veri kaybı önleme)
-                if (data.offers != null) {
-                    for (OfferData offerData : data.offers) {
-                        // Sadece kabul/reddedilmemiş teklifleri yükle
-                        if (!offerData.accepted && !offerData.rejected) {
-                            Shop.Offer offer = new Shop.Offer(
-                                    UUID.fromString(offerData.offerer),
-                                    deserializeItemStack(offerData.offerItem),
-                                    offerData.offerAmount
-                            );
-                            shop.addOffer(offer);
+                    // KRİTİK: Teklifleri yükle (veri kaybı önleme)
+                    if (data.offers != null) {
+                        for (OfferData offerData : data.offers) {
+                            // Sadece kabul/reddedilmemiş teklifleri yükle
+                            if (!offerData.accepted && !offerData.rejected) {
+                                Shop.Offer offer = new Shop.Offer(
+                                        UUID.fromString(offerData.offerer),
+                                        deserializeItemStack(offerData.offerItem),
+                                        offerData.offerAmount
+                                );
+                                shop.addOffer(offer);
+                            }
                         }
                     }
+                    
+                    // Teklif ayarlarını yükle
+                    shop.setAcceptOffers(data.acceptOffers);
+                    shop.setMaxOffers(data.maxOffers);
+                    
+                    shopManager.loadShop(shop);
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Shop yükleme hatası: " + data.id + " - " + e.getMessage());
                 }
-                
-                // Teklif ayarlarını yükle
-                shop.setAcceptOffers(data.acceptOffers);
-                shop.setMaxOffers(data.maxOffers);
-                
-                shopManager.loadShop(shop);
-            }
         }
     }
     
@@ -1502,8 +1503,8 @@ public class DataManager {
         
         List<AllianceData> allianceDataList = safeJsonParse(file, new TypeToken<List<AllianceData>>(){});
         if (allianceDataList == null) return;
-            
-            for (AllianceData data : allianceDataList) {
+        
+        for (AllianceData data : allianceDataList) {
                 // Data validation
                 if (data.id == null || !isValidUUID(data.id)) {
                     plugin.getLogger().warning("Geçersiz alliance ID atlandı");
@@ -1528,20 +1529,22 @@ public class DataManager {
                         (data.expiresAt - data.createdAt) / (24 * 60 * 60 * 1000) : 0;
                     
                     me.mami.stratocraft.model.Alliance alliance = new me.mami.stratocraft.model.Alliance(
-                    UUID.fromString(data.clan1Id),
-                    UUID.fromString(data.clan2Id),
-                    type,
-                    durationDays
-                );
-                alliance.setId(UUID.fromString(data.id));
-                alliance.setActive(data.active);
-                if (data.broken && data.breakerClanId != null) {
-                    alliance.breakAlliance(UUID.fromString(data.breakerClanId));
+                        UUID.fromString(data.clan1Id),
+                        UUID.fromString(data.clan2Id),
+                        type,
+                        durationDays
+                    );
+                    alliance.setId(UUID.fromString(data.id));
+                    alliance.setActive(data.active);
+                    if (data.broken && data.breakerClanId != null) {
+                        alliance.breakAlliance(UUID.fromString(data.breakerClanId));
+                    }
+                    
+                    // AllianceManager'a yükle
+                    allianceManager.loadAlliance(alliance);
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Alliance yükleme hatası: " + data.id + " - " + e.getMessage());
                 }
-                
-                // AllianceManager'a yükle
-                allianceManager.loadAlliance(alliance);
-            }
         }
     }
     
@@ -1648,90 +1651,89 @@ public class DataManager {
         
         Map<String, BankData> banks = safeJsonParse(file, new TypeToken<Map<String, BankData>>(){});
         if (banks == null) return;
+        
+        for (BankData data : banks.values()) {
+            UUID clanId = UUID.fromString(data.clanId);
+            Clan clan = clanManager.getClanById(clanId);
+            if (clan == null) continue;
             
-            for (BankData data : banks.values()) {
-                UUID clanId = UUID.fromString(data.clanId);
-                Clan clan = clanManager.getClanById(clanId);
-                if (clan == null) continue;
-                
-                // Banka sandığı konumu
-                if (data.chestLocation != null) {
-                    Location chestLoc = deserializeLocation(data.chestLocation);
-                    try {
-                        java.lang.reflect.Field bankChestLocationsField = 
-                            me.mami.stratocraft.manager.clan.ClanBankSystem.class.getDeclaredField("bankChestLocations");
-                        bankChestLocationsField.setAccessible(true);
-                        @SuppressWarnings("unchecked")
-                        Map<UUID, Location> bankChestLocations = 
-                            (Map<UUID, Location>) bankChestLocationsField.get(bankSystem);
-                        if (bankChestLocations != null) {
-                            bankChestLocations.put(clanId, chestLoc);
-                        }
-                    } catch (Exception e) {
-                        plugin.getLogger().warning("Banka sandığı konumu yükleme hatası: " + e.getMessage());
+            // Banka sandığı konumu
+            if (data.chestLocation != null) {
+                Location chestLoc = deserializeLocation(data.chestLocation);
+                try {
+                    java.lang.reflect.Field bankChestLocationsField = 
+                        me.mami.stratocraft.manager.clan.ClanBankSystem.class.getDeclaredField("bankChestLocations");
+                    bankChestLocationsField.setAccessible(true);
+                    @SuppressWarnings("unchecked")
+                    Map<UUID, Location> bankChestLocations = 
+                        (Map<UUID, Location>) bankChestLocationsField.get(bankSystem);
+                    if (bankChestLocations != null) {
+                        bankChestLocations.put(clanId, chestLoc);
                     }
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Banka sandığı konumu yükleme hatası: " + e.getMessage());
                 }
-                
-                // Maaş zamanları
-                if (data.lastSalaryTime != null) {
-                    try {
-                        java.lang.reflect.Field lastSalaryTimeField = 
-                            me.mami.stratocraft.manager.clan.ClanBankSystem.class.getDeclaredField("lastSalaryTime");
-                        lastSalaryTimeField.setAccessible(true);
-                        @SuppressWarnings("unchecked")
-                        Map<UUID, Long> lastSalaryTime = 
-                            (Map<UUID, Long>) lastSalaryTimeField.get(bankSystem);
-                        if (lastSalaryTime != null) {
-                            for (Map.Entry<String, Long> entry : data.lastSalaryTime.entrySet()) {
-                                lastSalaryTime.put(UUID.fromString(entry.getKey()), entry.getValue());
-                            }
+            }
+            
+            // Maaş zamanları
+            if (data.lastSalaryTime != null) {
+                try {
+                    java.lang.reflect.Field lastSalaryTimeField = 
+                        me.mami.stratocraft.manager.clan.ClanBankSystem.class.getDeclaredField("lastSalaryTime");
+                    lastSalaryTimeField.setAccessible(true);
+                    @SuppressWarnings("unchecked")
+                    Map<UUID, Long> lastSalaryTime = 
+                        (Map<UUID, Long>) lastSalaryTimeField.get(bankSystem);
+                    if (lastSalaryTime != null) {
+                        for (Map.Entry<String, Long> entry : data.lastSalaryTime.entrySet()) {
+                            lastSalaryTime.put(UUID.fromString(entry.getKey()), entry.getValue());
                         }
-                    } catch (Exception e) {
-                        plugin.getLogger().warning("Maaş zamanları yükleme hatası: " + e.getMessage());
                     }
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Maaş zamanları yükleme hatası: " + e.getMessage());
                 }
-                
-                // Transfer kontratları
-                if (data.transferContracts != null && !data.transferContracts.isEmpty()) {
-                    try {
-                        java.lang.reflect.Field transferContractsField = 
-                            me.mami.stratocraft.manager.clan.ClanBankSystem.class.getDeclaredField("transferContracts");
-                        transferContractsField.setAccessible(true);
-                        @SuppressWarnings("unchecked")
-                        Map<UUID, List<me.mami.stratocraft.manager.clan.ClanBankSystem.TransferContract>> transferContracts = 
-                            (Map<UUID, List<me.mami.stratocraft.manager.clan.ClanBankSystem.TransferContract>>) 
-                            transferContractsField.get(bankSystem);
+            }
+            
+            // Transfer kontratları
+            if (data.transferContracts != null && !data.transferContracts.isEmpty()) {
+                try {
+                    java.lang.reflect.Field transferContractsField = 
+                        me.mami.stratocraft.manager.clan.ClanBankSystem.class.getDeclaredField("transferContracts");
+                    transferContractsField.setAccessible(true);
+                    @SuppressWarnings("unchecked")
+                    Map<UUID, List<me.mami.stratocraft.manager.clan.ClanBankSystem.TransferContract>> transferContracts = 
+                        (Map<UUID, List<me.mami.stratocraft.manager.clan.ClanBankSystem.TransferContract>>) 
+                        transferContractsField.get(bankSystem);
+                    
+                    if (transferContracts != null) {
+                        List<me.mami.stratocraft.manager.clan.ClanBankSystem.TransferContract> contracts = 
+                            transferContracts.computeIfAbsent(clanId, k -> Collections.synchronizedList(new ArrayList<>()));
                         
-                        if (transferContracts != null) {
-                            List<me.mami.stratocraft.manager.clan.ClanBankSystem.TransferContract> contracts = 
-                                transferContracts.computeIfAbsent(clanId, k -> Collections.synchronizedList(new ArrayList<>()));
+                        for (TransferContractData contractData : data.transferContracts) {
+                            me.mami.stratocraft.manager.clan.ClanBankSystem.TransferContract contract = 
+                                new me.mami.stratocraft.manager.clan.ClanBankSystem.TransferContract();
+                            contract.setClanId(clanId);
+                            if (contractData.creatorId != null) {
+                                contract.setCreatorId(UUID.fromString(contractData.creatorId));
+                            }
+                            if (contractData.targetPlayerId != null) {
+                                contract.setTargetPlayerId(UUID.fromString(contractData.targetPlayerId));
+                            }
+                            if (contractData.material != null) {
+                                contract.setMaterial(Material.valueOf(contractData.material));
+                            }
+                            contract.setAmount(contractData.amount);
+                            contract.setInterval(contractData.interval);
+                            contract.setLastTransferTime(contractData.lastTransferTime);
+                            contract.setActive(contractData.active);
                             
-                            for (TransferContractData contractData : data.transferContracts) {
-                                me.mami.stratocraft.manager.clan.ClanBankSystem.TransferContract contract = 
-                                    new me.mami.stratocraft.manager.clan.ClanBankSystem.TransferContract();
-                                contract.setClanId(clanId);
-                                if (contractData.creatorId != null) {
-                                    contract.setCreatorId(UUID.fromString(contractData.creatorId));
-                                }
-                                if (contractData.targetPlayerId != null) {
-                                    contract.setTargetPlayerId(UUID.fromString(contractData.targetPlayerId));
-                                }
-                                if (contractData.material != null) {
-                                    contract.setMaterial(Material.valueOf(contractData.material));
-                                }
-                                contract.setAmount(contractData.amount);
-                                contract.setInterval(contractData.interval);
-                                contract.setLastTransferTime(contractData.lastTransferTime);
-                                contract.setActive(contractData.active);
-                                
-                                synchronized (contracts) {
-                                    contracts.add(contract);
-                                }
+                            synchronized (contracts) {
+                                contracts.add(contract);
                             }
                         }
-                    } catch (Exception e) {
-                        plugin.getLogger().warning("Transfer kontratları yükleme hatası: " + e.getMessage());
                     }
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Transfer kontratları yükleme hatası: " + e.getMessage());
                 }
             }
         }
@@ -1753,37 +1755,36 @@ public class DataManager {
                     "), migration gerekebilir.");
             }
         }
+        
+        // Görev tahtası konumları
+        if (data.containsKey("missionBoardLocations")) {
+            Map<String, String> locations = gson.fromJson(
+                gson.toJsonTree(data.get("missionBoardLocations")),
+                new TypeToken<Map<String, String>>(){}.getType());
             
-            // Görev tahtası konumları
-            if (data.containsKey("missionBoardLocations")) {
-                Map<String, String> locations = gson.fromJson(
-                    gson.toJsonTree(data.get("missionBoardLocations")),
-                    new TypeToken<Map<String, String>>(){}.getType());
-                
-                if (locations != null) {
-                    try {
-                        java.lang.reflect.Field missionBoardLocationsField = 
-                            me.mami.stratocraft.manager.clan.ClanMissionSystem.class.getDeclaredField("missionBoardLocations");
-                        missionBoardLocationsField.setAccessible(true);
-                        @SuppressWarnings("unchecked")
-                        Map<UUID, Location> missionBoardLocations = 
-                            (Map<UUID, Location>) missionBoardLocationsField.get(missionSystem);
-                        
-                        if (missionBoardLocations != null) {
-                            for (Map.Entry<String, String> entry : locations.entrySet()) {
-                                missionBoardLocations.put(UUID.fromString(entry.getKey()), 
-                                    deserializeLocation(entry.getValue()));
-                            }
+            if (locations != null) {
+                try {
+                    java.lang.reflect.Field missionBoardLocationsField = 
+                        me.mami.stratocraft.manager.clan.ClanMissionSystem.class.getDeclaredField("missionBoardLocations");
+                    missionBoardLocationsField.setAccessible(true);
+                    @SuppressWarnings("unchecked")
+                    Map<UUID, Location> missionBoardLocations = 
+                        (Map<UUID, Location>) missionBoardLocationsField.get(missionSystem);
+                    
+                    if (missionBoardLocations != null) {
+                        for (Map.Entry<String, String> entry : locations.entrySet()) {
+                            missionBoardLocations.put(UUID.fromString(entry.getKey()), 
+                                deserializeLocation(entry.getValue()));
                         }
-                    } catch (Exception e) {
-                        plugin.getLogger().warning("Görev tahtası konumları yükleme hatası: " + e.getMessage());
                     }
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Görev tahtası konumları yükleme hatası: " + e.getMessage());
                 }
             }
-            
-            // Aktif görevler - Basitleştirilmiş versiyon (reflection çok karmaşık)
-            // Görevler runtime'da oluşturulabilir, sadece konumları yüklemek yeterli
         }
+        
+        // Aktif görevler - Basitleştirilmiş versiyon (reflection çok karmaşık)
+        // Görevler runtime'da oluşturulabilir, sadece konumları yüklemek yeterli
     }
     
     private void loadClanActivity(me.mami.stratocraft.manager.clan.ClanActivitySystem activitySystem) throws IOException {
@@ -1792,23 +1793,22 @@ public class DataManager {
         
         Map<String, Long> lastOnlineTime = safeJsonParse(file, new TypeToken<Map<String, Long>>(){});
         if (lastOnlineTime == null) return;
+        
+        try {
+            java.lang.reflect.Field lastOnlineTimeField = 
+                me.mami.stratocraft.manager.clan.ClanActivitySystem.class.getDeclaredField("lastOnlineTime");
+            lastOnlineTimeField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            Map<UUID, Long> activityMap = 
+                (Map<UUID, Long>) lastOnlineTimeField.get(activitySystem);
             
-            try {
-                java.lang.reflect.Field lastOnlineTimeField = 
-                    me.mami.stratocraft.manager.clan.ClanActivitySystem.class.getDeclaredField("lastOnlineTime");
-                lastOnlineTimeField.setAccessible(true);
-                @SuppressWarnings("unchecked")
-                Map<UUID, Long> activityMap = 
-                    (Map<UUID, Long>) lastOnlineTimeField.get(activitySystem);
-                
-                if (activityMap != null) {
-                    for (Map.Entry<String, Long> entry : lastOnlineTime.entrySet()) {
-                        activityMap.put(UUID.fromString(entry.getKey()), entry.getValue());
-                    }
+            if (activityMap != null) {
+                for (Map.Entry<String, Long> entry : lastOnlineTime.entrySet()) {
+                    activityMap.put(UUID.fromString(entry.getKey()), entry.getValue());
                 }
-            } catch (Exception e) {
-                plugin.getLogger().warning("Aktivite verileri yükleme hatası: " + e.getMessage());
             }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Aktivite verileri yükleme hatası: " + e.getMessage());
         }
     }
     
@@ -1861,103 +1861,102 @@ public class DataManager {
         }
         
         if (snapshot.activeTraps.isEmpty() && snapshot.inactiveCores.isEmpty()) return;
+        
+        try {
+            // Reflection ile activeTraps ve inactiveTrapCores field'larına eriş
+            java.lang.reflect.Field activeTrapsField = 
+                me.mami.stratocraft.manager.TrapManager.class.getDeclaredField("activeTraps");
+            activeTrapsField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            Map<Location, me.mami.stratocraft.manager.TrapManager.TrapData> activeTraps = 
+                (Map<Location, me.mami.stratocraft.manager.TrapManager.TrapData>) activeTrapsField.get(trapManager);
             
-            try {
-                // Reflection ile activeTraps ve inactiveTrapCores field'larına eriş
-                java.lang.reflect.Field activeTrapsField = 
-                    me.mami.stratocraft.manager.TrapManager.class.getDeclaredField("activeTraps");
-                activeTrapsField.setAccessible(true);
-                @SuppressWarnings("unchecked")
-                Map<Location, me.mami.stratocraft.manager.TrapManager.TrapData> activeTraps = 
-                    (Map<Location, me.mami.stratocraft.manager.TrapManager.TrapData>) activeTrapsField.get(trapManager);
-                
-                java.lang.reflect.Field inactiveTrapCoresField = 
-                    me.mami.stratocraft.manager.TrapManager.class.getDeclaredField("inactiveTrapCores");
-                inactiveTrapCoresField.setAccessible(true);
-                @SuppressWarnings("unchecked")
-                Map<Location, UUID> inactiveTrapCores = 
-                    (Map<Location, UUID>) inactiveTrapCoresField.get(trapManager);
-                
-                // Aktif tuzakları yükle
-                if (snapshot.activeTraps != null && activeTraps != null) {
-                    for (TrapData trapData : snapshot.activeTraps) {
-                        Location loc = deserializeLocation(trapData.location);
-                        if (loc == null || loc.getWorld() == null) continue;
-                        
-                        UUID ownerId = trapData.ownerId != null ? UUID.fromString(trapData.ownerId) : null;
-                        UUID clanId = trapData.ownerClanId != null ? UUID.fromString(trapData.ownerClanId) : null;
-                        me.mami.stratocraft.manager.TrapManager.TrapType type = 
-                            trapData.type != null ? me.mami.stratocraft.manager.TrapManager.TrapType.valueOf(trapData.type) : null;
-                        int fuel = trapData.fuel;
-                        
-                        if (ownerId == null || type == null) continue;
-                        
-                        // TrapData oluştur
-                        me.mami.stratocraft.manager.TrapManager.TrapData trap = 
-                            new me.mami.stratocraft.manager.TrapManager.TrapData(ownerId, clanId, type, fuel, loc);
-                        
-                        // Frame blocks'u set et
-                        if (trapData.frameBlocks != null && !trapData.frameBlocks.isEmpty()) {
-                            try {
-                                java.lang.reflect.Field frameBlocksField = 
-                                    me.mami.stratocraft.manager.TrapManager.TrapData.class.getDeclaredField("frameBlocks");
-                                frameBlocksField.setAccessible(true);
-                                @SuppressWarnings("unchecked")
-                                List<Location> frameBlocks = 
-                                    (List<Location>) frameBlocksField.get(trap);
-                                
-                                if (frameBlocks != null) {
-                                    for (String frameLocStr : trapData.frameBlocks) {
-                                        Location frameLoc = deserializeLocation(frameLocStr);
-                                        if (frameLoc != null) {
-                                            frameBlocks.add(frameLoc);
-                                        }
+            java.lang.reflect.Field inactiveTrapCoresField = 
+                me.mami.stratocraft.manager.TrapManager.class.getDeclaredField("inactiveTrapCores");
+            inactiveTrapCoresField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            Map<Location, UUID> inactiveTrapCores = 
+                (Map<Location, UUID>) inactiveTrapCoresField.get(trapManager);
+            
+            // Aktif tuzakları yükle
+            if (snapshot.activeTraps != null && activeTraps != null) {
+                for (TrapData trapData : snapshot.activeTraps) {
+                    Location loc = deserializeLocation(trapData.location);
+                    if (loc == null || loc.getWorld() == null) continue;
+                    
+                    UUID ownerId = trapData.ownerId != null ? UUID.fromString(trapData.ownerId) : null;
+                    UUID clanId = trapData.ownerClanId != null ? UUID.fromString(trapData.ownerClanId) : null;
+                    me.mami.stratocraft.manager.TrapManager.TrapType type = 
+                        trapData.type != null ? me.mami.stratocraft.manager.TrapManager.TrapType.valueOf(trapData.type) : null;
+                    int fuel = trapData.fuel;
+                    
+                    if (ownerId == null || type == null) continue;
+                    
+                    // TrapData oluştur
+                    me.mami.stratocraft.manager.TrapManager.TrapData trap = 
+                        new me.mami.stratocraft.manager.TrapManager.TrapData(ownerId, clanId, type, fuel, loc);
+                    
+                    // Frame blocks'u set et
+                    if (trapData.frameBlocks != null && !trapData.frameBlocks.isEmpty()) {
+                        try {
+                            java.lang.reflect.Field frameBlocksField = 
+                                me.mami.stratocraft.manager.TrapManager.TrapData.class.getDeclaredField("frameBlocks");
+                            frameBlocksField.setAccessible(true);
+                            @SuppressWarnings("unchecked")
+                            List<Location> frameBlocks = 
+                                (List<Location>) frameBlocksField.get(trap);
+                            
+                            if (frameBlocks != null) {
+                                for (String frameLocStr : trapData.frameBlocks) {
+                                    Location frameLoc = deserializeLocation(frameLocStr);
+                                    if (frameLoc != null) {
+                                        frameBlocks.add(frameLoc);
                                     }
                                 }
-                            } catch (Exception e) {
-                                plugin.getLogger().warning("Frame blocks yükleme hatası: " + e.getMessage());
                             }
-                        }
-                        
-                        // isCovered set et
-                        try {
-                            java.lang.reflect.Field isCoveredField = 
-                                me.mami.stratocraft.manager.TrapManager.TrapData.class.getDeclaredField("isCovered");
-                            isCoveredField.setAccessible(true);
-                            isCoveredField.set(trap, trapData.isCovered);
                         } catch (Exception e) {
-                            plugin.getLogger().warning("isCovered set etme hatası: " + e.getMessage());
-                        }
-                        
-                        activeTraps.put(loc, trap);
-                        
-                        // Metadata'yı geri yükle
-                        Block block = loc.getBlock();
-                        if (block.getType() == Material.LODESTONE) {
-                            block.setMetadata("TrapCore", new org.bukkit.metadata.FixedMetadataValue(plugin, true));
-                            if (ownerId != null) {
-                                block.setMetadata("TrapOwner", new org.bukkit.metadata.FixedMetadataValue(plugin, ownerId.toString()));
-                            }
+                            plugin.getLogger().warning("Frame blocks yükleme hatası: " + e.getMessage());
                         }
                     }
-                }
-                
-                // İnaktif tuzak çekirdeklerini yükle
-                if (snapshot.inactiveCores != null && inactiveTrapCores != null) {
-                    for (InactiveTrapCoreData coreData : snapshot.inactiveCores) {
-                        Location loc = deserializeLocation(coreData.location);
-                        if (loc == null || loc.getWorld() == null) continue;
-                        
-                        UUID ownerId = coreData.ownerId != null ? UUID.fromString(coreData.ownerId) : null;
+                    
+                    // isCovered set et
+                    try {
+                        java.lang.reflect.Field isCoveredField = 
+                            me.mami.stratocraft.manager.TrapManager.TrapData.class.getDeclaredField("isCovered");
+                        isCoveredField.setAccessible(true);
+                        isCoveredField.set(trap, trapData.isCovered);
+                    } catch (Exception e) {
+                        plugin.getLogger().warning("isCovered set etme hatası: " + e.getMessage());
+                    }
+                    
+                    activeTraps.put(loc, trap);
+                    
+                    // Metadata'yı geri yükle
+                    Block block = loc.getBlock();
+                    if (block.getType() == Material.LODESTONE) {
+                        block.setMetadata("TrapCore", new org.bukkit.metadata.FixedMetadataValue(plugin, true));
                         if (ownerId != null) {
-                            inactiveTrapCores.put(loc, ownerId);
+                            block.setMetadata("TrapOwner", new org.bukkit.metadata.FixedMetadataValue(plugin, ownerId.toString()));
                         }
                     }
                 }
-            } catch (Exception e) {
-                plugin.getLogger().warning("Trap yükleme hatası: " + e.getMessage());
-                e.printStackTrace();
             }
+            
+            // İnaktif tuzak çekirdeklerini yükle
+            if (snapshot.inactiveCores != null && inactiveTrapCores != null) {
+                for (InactiveTrapCoreData coreData : snapshot.inactiveCores) {
+                    Location loc = deserializeLocation(coreData.location);
+                    if (loc == null || loc.getWorld() == null) continue;
+                    
+                    UUID ownerId = coreData.ownerId != null ? UUID.fromString(coreData.ownerId) : null;
+                    if (ownerId != null) {
+                        inactiveTrapCores.put(loc, ownerId);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Trap yükleme hatası: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     

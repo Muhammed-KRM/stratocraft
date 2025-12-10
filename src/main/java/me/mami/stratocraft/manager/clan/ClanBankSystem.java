@@ -114,14 +114,15 @@ public class ClanBankSystem {
         try {
             for (org.bukkit.entity.Entity entity : chestLoc.getWorld()
                     .getNearbyEntities(chestLoc, 2, 2, 2)) {
-            if (entity instanceof ItemFrame) {
-                ItemFrame frame = (ItemFrame) entity;
-                ItemStack item = frame.getItem();
-                if (item != null && item.getType() == Material.NAME_TAG) {
-                    if (item.hasItemMeta()) {
-                        String displayName = item.getItemMeta().getDisplayName();
-                        if (displayName != null && displayName.contains("KLAN_BANKASI")) {
-                            return true;
+                if (entity instanceof ItemFrame) {
+                    ItemFrame frame = (ItemFrame) entity;
+                    ItemStack item = frame.getItem();
+                    if (item != null && item.getType() == Material.NAME_TAG) {
+                        if (item.hasItemMeta()) {
+                            String displayName = item.getItemMeta().getDisplayName();
+                            if (displayName != null && displayName.contains("KLAN_BANKASI")) {
+                                return true;
+                            }
                         }
                     }
                 }
@@ -185,24 +186,21 @@ public class ClanBankSystem {
                 return null;
             }
             
-            if (block.getState() instanceof EnderChest) {
-                EnderChest enderChest = (EnderChest) block.getState();
-                Inventory inventory = enderChest.getInventory();
-                
-                // Cache'e kaydet
-                if (inventory != null) {
-                    bankChestCache.put(clanId, inventory);
-                    bankChestCacheTime.put(clanId, now);
-                }
-                
-                return inventory;
+            // EnderChest bir BlockState ama InventoryHolder değil
+            // Klan bankası için sanal bir inventory oluştur
+            Inventory inventory = bankChestCache.get(clanId);
+            if (inventory == null) {
+                // Yeni bir inventory oluştur (27 slot - ender chest boyutu)
+                inventory = org.bukkit.Bukkit.createInventory(null, 27, "§5Klan Bankası");
+                bankChestCache.put(clanId, inventory);
             }
+            bankChestCacheTime.put(clanId, now);
+            
+            return inventory;
         } catch (Exception e) {
             plugin.getLogger().warning("Banka sandığı alınırken hata: " + e.getMessage());
             return null;
         }
-        
-        return null;
     }
     
     /**

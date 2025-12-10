@@ -5,6 +5,7 @@ import me.mami.stratocraft.model.Disaster;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -299,7 +300,7 @@ public class DisasterArenaManager {
                     );
                     
                     if (block.getType() == Material.AIR || 
-                        block.getType() == Material.GRASS ||
+                        block.getType() == Material.GRASS_BLOCK ||
                         block.getType() == Material.DIRT) {
                         block.setType(towerMaterial);
                     }
@@ -357,7 +358,7 @@ public class DisasterArenaManager {
         
         Block block = world.getBlockAt(loc);
         if (block.getType() == Material.AIR || 
-            block.getType() == Material.GRASS ||
+            block.getType() == Material.GRASS_BLOCK ||
             block.getType() == Material.DIRT) {
             block.setType(hazardMaterial);
         }

@@ -259,8 +259,8 @@ public class ClanStatsMenu implements Listener {
             if (activeMission != null) {
                 lore.add("§7Aktif Görev: §aVar");
                 lore.add("§7Tip: §e" + getMissionTypeName(activeMission.getType()));
-                lore.add("§7İlerleme: §e" + activeMission.getCurrentProgress() + 
-                    "§7/§e" + activeMission.getTargetAmount());
+                lore.add("§7İlerleme: §e" + activeMission.getProgress() + 
+                    "§7/§e" + activeMission.getTarget());
             } else {
                 lore.add("§7Aktif Görev: §7Yok");
             }
@@ -306,13 +306,13 @@ public class ClanStatsMenu implements Listener {
             lore.add("§7═══════════════════════");
             lore.add("§7Erişilebilir Özellikler:");
             
-            if (levelBonusSystem.hasClanFeature(clan, ClanLevelBonusSystem.ClanFeature.ADVANCED_STRUCTURES)) {
+            if (levelBonusSystem.hasClanFeature(clan, ClanLevelBonusSystem.ClanFeature.SPECIAL_STRUCTURES)) {
                 lore.add("§a  ✓ Gelişmiş Yapılar");
             }
             if (levelBonusSystem.hasClanFeature(clan, ClanLevelBonusSystem.ClanFeature.ALLIANCE_SYSTEM)) {
                 lore.add("§a  ✓ İttifak Sistemi");
             }
-            if (levelBonusSystem.hasClanFeature(clan, ClanLevelBonusSystem.ClanFeature.SIEGE_WEAPONS)) {
+            if (levelBonusSystem.hasClanFeature(clan, ClanLevelBonusSystem.ClanFeature.CLAN_WARS)) {
                 lore.add("§a  ✓ Kuşatma Silahları");
             }
         } else {
@@ -451,7 +451,7 @@ public class ClanStatsMenu implements Listener {
         if (powerSystem == null) return 0.0;
         
         try {
-            return powerSystem.calculateClanProfile(clan).getTotalSGP();
+            return powerSystem.calculateClanProfile(clan).getTotalClanPower();
         } catch (Exception e) {
             return 0.0;
         }

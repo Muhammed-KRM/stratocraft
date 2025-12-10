@@ -1,0 +1,39 @@
+[33mcommit daf653195375c86a439c594f41792ce44eeb739f[m
+Author: Muhammed-KRM <ustunmuhammed09@gmail.com>
+Date:   Wed Dec 10 18:00:29 2025 +0300
+
+    Geliştirme: Klan sistemi güncellendi. Yeni klan menüleri (KlanMenüsü, KontratMenüsü) eklendi ve mevcut sistemlerle entegrasyon sağlandı. Klan koruma sistemi ve görev sistemi entegre edildi, ayrıca otomatik kayıt ve veri yönetimi iyileştirildi. Config dosyasında yeni ayarlar eklendi ve mevcut ayarlar güncellendi. Bu değişiklikler, sistemin işlevselliğini artırmayı ve oyuncu deneyimini zenginleştirmeyi hedefliyor.
+
+ .../ADMIN_KOMUTLARI_VE_SISTEM_KONTROL_RAPORU.md    |  320 [32m++++[m
+ Documant/DATA_PERSISTENCE_ENTEGRASYON_REHBERI.md   |  203 [32m+++[m
+ ...DATA_PERSISTENCE_GEREKLI_FONKSIYONLAR_RAPORU.md |  327 [32m++++[m
+ .../KLAN_SISTEMI_KONTROL_VE_DUZELTME_RAPORU.md     |  379 [32m+++++[m
+ Documant/PERSISTENCE_SISTEMI_DURUM_RAPORU.md       |  177 [32m+++[m
+ Documant/PERSISTENCE_SISTEMI_TAMAMLANDI_RAPORU.md  |  161 [32m++[m
+ src/main/java/me/mami/stratocraft/Main.java        |  373 [32m++++[m[31m-[m
+ .../stratocraft/command/AdminCommandExecutor.java  |  739 [32m++++++++[m[31m-[m
+ .../me/mami/stratocraft/gui/ClanMemberMenu.java    |  736 [32m+++++++++[m
+ .../java/me/mami/stratocraft/gui/ClanMenu.java     |  280 [32m+++[m[31m-[m
+ .../me/mami/stratocraft/gui/ClanMissionMenu.java   |  385 [32m+++++[m
+ .../me/mami/stratocraft/gui/ClanStatsMenu.java     |  571 [32m+++++++[m
+ .../java/me/mami/stratocraft/gui/ContractMenu.java |  671 [32m++++++++[m[31m-[m
+ .../stratocraft/listener/ClanSystemListener.java   |  201 [32m+++[m
+ .../mami/stratocraft/listener/CombatListener.java  |   35 [32m+[m[31m-[m
+ .../listener/RitualInteractionListener.java        |   29 [32m+[m
+ .../stratocraft/listener/TerritoryListener.java    |   14 [32m+[m
+ .../me/mami/stratocraft/manager/ClanManager.java   |  319 [32m+++[m[31m-[m
+ .../me/mami/stratocraft/manager/DataManager.java   | 1581 [32m++++++++++++++++++[m[31m--[m
+ .../me/mami/stratocraft/manager/ShopManager.java   |  169 [32m++[m[31m-[m
+ .../manager/clan/ClanActivitySystem.java           |  186 [32m+++[m
+ .../stratocraft/manager/clan/ClanBankSystem.java   |  682 [32m+++++++++[m
+ .../manager/clan/ClanLevelBonusSystem.java         |  195 [32m+++[m
+ .../manager/clan/ClanMissionSystem.java            |  721 [32m+++++++++[m
+ .../manager/clan/ClanProtectionSystem.java         |  400 [32m+++++[m
+ .../stratocraft/manager/clan/ClanRankSystem.java   |  220 [32m+++[m
+ .../manager/clan/config/ClanBankConfig.java        |  172 [32m+++[m
+ .../manager/clan/config/ClanLevelBonusConfig.java  |   57 [32m+[m
+ .../manager/clan/config/ClanMissionConfig.java     |   68 [32m+[m
+ .../manager/clan/config/ClanProtectionConfig.java  |   99 [32m++[m
+ src/main/java/me/mami/stratocraft/model/Clan.java  |   44 [32m+[m[31m-[m
+ src/main/resources/config.yml                      |   61 [32m+[m[31m-[m
+ 32 files changed, 10220 insertions(+), 355 deletions(-)

@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -89,7 +90,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "arena":
                 return handleArena(p, args);
             case "data":
-                return handleDataManager(p, args);
+                p.sendMessage("§cData manager komutu henüz implement edilmedi.");
+                return true;
             default:
                 showHelp(sender);
                 return true;
@@ -5425,12 +5427,20 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         crystalEntity.setBeamTarget(null);
         
         // Chat input için beklet (TerritoryListener'daki sistemi kullan)
-        me.mami.stratocraft.listener.TerritoryListener territoryListener = 
-            plugin.getServer().getPluginManager().getRegisteredListeners(plugin).stream()
-                .filter(listener -> listener.getListener() instanceof me.mami.stratocraft.listener.TerritoryListener)
-                .map(listener -> (me.mami.stratocraft.listener.TerritoryListener) listener.getListener())
-                .findFirst()
-                .orElse(null);
+        me.mami.stratocraft.listener.TerritoryListener territoryListener = null;
+        try {
+            // HandlerList kullanarak listener'ları bul
+            org.bukkit.event.HandlerList handlerList = org.bukkit.event.player.PlayerInteractEvent.getHandlerList();
+            for (org.bukkit.plugin.RegisteredListener registeredListener : handlerList.getRegisteredListeners()) {
+                if (registeredListener.getListener() instanceof me.mami.stratocraft.listener.TerritoryListener) {
+                    territoryListener = (me.mami.stratocraft.listener.TerritoryListener) registeredListener.getListener();
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            // Fallback: Direkt plugin'den al
+            plugin.getLogger().warning("TerritoryListener bulunamadı: " + e.getMessage());
+        }
         
         if (territoryListener == null) {
             p.sendMessage("§cTerritoryListener bulunamadı! Klan oluşturulamadı.");

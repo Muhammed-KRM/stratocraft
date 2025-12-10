@@ -311,7 +311,7 @@ public class ClanMissionMenu implements Listener {
                 return "Item Yatırma";
             case BUILD_STRUCTURE:
                 return "Yapı İnşa";
-            case COMPLETE_RITUAL:
+            case USE_RITUAL:
                 return "Ritüel Tamamla";
             case WIN_WAR:
                 return "Savaş Kazan";
