@@ -217,6 +217,20 @@ public class TerritoryListener implements Listener {
     }
     
     /**
+     * Admin komutu için klan kurulumu başlat (public metod)
+     */
+    public void startAdminClanCreation(Player player, Location crystalLoc, org.bukkit.entity.EnderCrystal crystalEntity, Block placeLocation) {
+        // Chat input için beklet
+        waitingForClanName.put(player.getUniqueId(), new PendingClanCreation(crystalLoc, crystalEntity, placeLocation));
+        player.sendMessage("§6§l════════════════════════════");
+        player.sendMessage("§e§lKLAN KURULUYOR!");
+        player.sendMessage("§7Çitler ve kristal oluşturuldu!");
+        player.sendMessage("§7Lütfen chat'e klan ismini yazın:");
+        player.sendMessage("§7(İptal için 'iptal' yazın)");
+        player.sendMessage("§6§l════════════════════════════");
+    }
+    
+    /**
      * Kristal yerleştirme işlemini tamamla (main thread'de)
      */
     private void continueCrystalPlacement(Player player, Block placeLocation) {

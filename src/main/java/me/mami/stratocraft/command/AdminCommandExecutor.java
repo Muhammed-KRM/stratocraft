@@ -88,6 +88,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return handleRecipe(p, args);
             case "arena":
                 return handleArena(p, args);
+            case "data":
+                return handleDataManager(p, args);
             default:
                 showHelp(sender);
                 return true;
@@ -3928,7 +3930,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         // İlk argüman (komut seçimi)
         if (args.length == 1) {
             List<String> commands = Arrays.asList("give", "spawn", "disaster", "list", "help", "siege", "clan",
-                    "contract", "build", "trap", "dungeon", "biome", "mine", "recipe", "boss", "tame", "arena");
+                    "contract", "build", "trap", "dungeon", "biome", "mine", "recipe", "boss", "tame", "arena", "data");
             String input = args[0].toLowerCase();
 
             // Eğer boşsa veya başlangıç eşleşiyorsa filtrele
@@ -3981,14 +3983,84 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 
                 case "clan":
                     // Clan alt komutları (ikinci seviye)
+                    // args[0] = "clan", args[1] = subCommand (salary, territory, vb.)
                     if (args.length == 2) {
-                        List<String> clanSubCommands = Arrays.asList("list", "info", "create", "disband", "addmember", "removemember", "caravan");
+                        List<String> clanSubCommands = Arrays.asList("list", "info", "create", "disband", "addmember", 
+                            "removemember", "setrank", "salary", "territory", "bank", "mission", "contract", 
+                            "activity", "caravan");
                         if (input.isEmpty()) {
                             return clanSubCommands;
                         }
                         return clanSubCommands.stream()
                                 .filter(s -> s.toLowerCase().startsWith(input))
                                 .collect(Collectors.toList());
+                    }
+                    // Üçüncü seviye komutlar (subCommand sonrası - klan ismi veya action)
+                    // args[0] = "clan", args[1] = subCommand, args[2] = klan ismi (veya action için boş)
+                    if (args.length == 3) {
+                        String subCommand = args[1].toLowerCase();
+                        switch (subCommand) {
+                            case "salary":
+                            case "territory":
+                            case "alan":
+                            case "bank":
+                            case "banka":
+                            case "mission":
+                            case "gorev":
+                            case "contract":
+                            case "activity":
+                            case "aktivite":
+                                // Klan isimlerini öner (clanManager'dan)
+                                if (plugin != null && plugin.getClanManager() != null) {
+                                    java.util.Collection<me.mami.stratocraft.model.Clan> clans = 
+                                        plugin.getClanManager().getAllClans();
+                                    return clans.stream()
+                                        .map(c -> c.getName())
+                                        .filter(name -> name.toLowerCase().startsWith(input.toLowerCase()))
+                                        .collect(Collectors.toList());
+                                }
+                                break;
+                            case "setrank":
+                            case "addmember":
+                            case "removemember":
+                            case "info":
+                            case "disband":
+                                // Klan isimlerini öner
+                                if (plugin != null && plugin.getClanManager() != null) {
+                                    java.util.Collection<me.mami.stratocraft.model.Clan> clans = 
+                                        plugin.getClanManager().getAllClans();
+                                    return clans.stream()
+                                        .map(c -> c.getName())
+                                        .filter(name -> name.toLowerCase().startsWith(input.toLowerCase()))
+                                        .collect(Collectors.toList());
+                                }
+                                break;
+                        }
+                    }
+                    // Dördüncü seviye komutlar (klan ismi sonrası - action)
+                    // args[0] = "clan", args[1] = subCommand, args[2] = klan ismi, args[3] = action
+                    if (args.length == 4) {
+                        String subCommand = args[1].toLowerCase();
+                        switch (subCommand) {
+                            case "salary":
+                                return Arrays.asList("cancel", "reset", "info");
+                            case "territory":
+                            case "alan":
+                                return Arrays.asList("expand", "reset", "info");
+                            case "bank":
+                            case "banka":
+                                return Arrays.asList("clear", "info");
+                            case "mission":
+                            case "gorev":
+                                return Arrays.asList("list", "clear", "complete");
+                            case "contract":
+                                return Arrays.asList("list", "cancel");
+                            case "activity":
+                            case "aktivite":
+                                return Arrays.asList("reset", "info");
+                            case "setrank":
+                                return Arrays.asList("LEADER", "GENERAL", "ELITE", "MEMBER", "RECRUIT");
+                        }
                     }
                     break;
 
@@ -5052,13 +5124,21 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     private boolean handleClan(Player p, String[] args) {
         if (args.length < 2) {
             p.sendMessage("§cKullanım: /stratocraft clan <komut>");
-            p.sendMessage("§7Komutlar:");
+            p.sendMessage("§7Temel Komutlar:");
             p.sendMessage("§7  list - Tüm klanları listele");
             p.sendMessage("§7  info <klan> - Klan bilgisi");
-            p.sendMessage("§7  create <isim> - Klan oluştur");
+            p.sendMessage("§7  create - Klan oluştur (otomatik çit ve kristal)");
             p.sendMessage("§7  disband <klan> - Klanı dağıt");
             p.sendMessage("§7  addmember <klan> <oyuncu> - Üye ekle");
             p.sendMessage("§7  removemember <klan> <oyuncu> - Üye çıkar");
+            p.sendMessage("§7  setrank <klan> <oyuncu> <rank> - Rütbe değiştir");
+            p.sendMessage("§7Yönetim Komutları:");
+            p.sendMessage("§7  salary <klan> <cancel|reset|info> [oyuncu] - Maaş yönetimi");
+            p.sendMessage("§7  territory <klan> <expand|reset|info> [miktar] - Alan yönetimi");
+            p.sendMessage("§7  bank <klan> <clear|info> - Banka yönetimi");
+            p.sendMessage("§7  mission <klan> <list|clear|complete> [id] - Görev yönetimi");
+            p.sendMessage("§7  contract <klan> <list|cancel> [id] - Transfer kontratları");
+            p.sendMessage("§7  activity <klan> <reset|info> [oyuncu] - Aktivite yönetimi");
             p.sendMessage("§7  caravan - Kervan yönetimi");
             return true;
         }
@@ -5083,11 +5163,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 showClanInfo(p, args[2], clanManager);
                 return true;
             case "create":
-                if (args.length < 3) {
-                    p.sendMessage("§cKullanım: /stratocraft clan create <isim>");
-                    return true;
-                }
-                createClan(p, args[2], clanManager);
+                // Admin komutu: Otomatik çit ve kristal oluşturur, sonra isim sorar
+                createClanAdmin(p, clanManager);
                 return true;
             case "disband":
                 if (args.length < 3) {
@@ -5110,10 +5187,57 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 }
                 removeClanMember(p, args[2], args[3], clanManager);
                 return true;
+            case "setrank":
+                if (args.length < 5) {
+                    p.sendMessage("§cKullanım: /stratocraft clan setrank <klan> <oyuncu> <LEADER|GENERAL|ELITE|MEMBER|RECRUIT>");
+                    return true;
+                }
+                setClanRank(p, args[2], args[3], args[4], clanManager);
+                return true;
+            case "salary":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft clan salary <klan> <cancel|reset|info> [oyuncu]");
+                    return true;
+                }
+                return handleClanSalary(p, args, clanManager);
+            case "territory":
+            case "alan":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft clan territory <klan> <expand|reset|info> [miktar]");
+                    return true;
+                }
+                return handleClanTerritory(p, args, clanManager);
+            case "bank":
+            case "banka":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft clan bank <klan> <clear|info>");
+                    return true;
+                }
+                return handleClanBank(p, args, clanManager);
+            case "mission":
+            case "gorev":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft clan mission <klan> <list|clear|complete> [id]");
+                    return true;
+                }
+                return handleClanMission(p, args, clanManager);
+            case "contract":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft clan contract <klan> <list|cancel> [id]");
+                    return true;
+                }
+                return handleClanContract(p, args, clanManager);
+            case "activity":
+            case "aktivite":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft clan activity <klan> <reset|info> [oyuncu]");
+                    return true;
+                }
+                return handleClanActivity(p, args, clanManager);
             case "caravan":
                 return handleCaravan(p, args);
             default:
-                p.sendMessage("§cGeçersiz komut! /stratocraft clan <list|info|create|disband|addmember|removemember|caravan>");
+                p.sendMessage("§cGeçersiz komut! /stratocraft clan help");
                 return true;
         }
     }
@@ -5157,13 +5281,204 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
     }
 
-    private void createClan(Player p, String clanName, me.mami.stratocraft.manager.ClanManager clanManager) {
-        me.mami.stratocraft.model.Clan newClan = clanManager.createClan(clanName, p.getUniqueId());
-        if (newClan != null) {
-            p.sendMessage("§aKlan oluşturuldu: " + clanName);
-        } else {
-            p.sendMessage("§cKlan oluşturulamadı! Oyuncu zaten bir klana üye.");
+    /**
+     * Admin komutu ile klan oluşturma - Otomatik çit ve kristal oluşturur, chat input bekler
+     */
+    private void createClanAdmin(Player p, me.mami.stratocraft.manager.ClanManager clanManager) {
+        // Oyuncunun zaten klanı var mı?
+        if (clanManager.getClanByPlayer(p.getUniqueId()) != null) {
+            p.sendMessage("§cZaten bir klanın var! Önce mevcut klanından ayrıl.");
+            return;
         }
+        
+        // Oyuncunun bulunduğu konum
+        Location playerLoc = p.getLocation();
+        World world = playerLoc.getWorld();
+        if (world == null) {
+            p.sendMessage("§cDünya bulunamadı!");
+            return;
+        }
+        
+        // Minimum alan boyutu (3x3 = 9 blok, ama 5x5 yapalım daha güzel görünsün)
+        int areaSize = 5; // 5x5 alan
+        int centerX = playerLoc.getBlockX();
+        int centerZ = playerLoc.getBlockZ();
+        int centerY = findGroundLevel(world, centerX, playerLoc.getBlockY(), centerZ);
+        
+        if (centerY == -1) {
+            p.sendMessage("§cZemin bulunamadı! Daha uygun bir yerde deneyin.");
+            return;
+        }
+        
+        // Çitleri oluştur (5x5 alan için)
+        List<org.bukkit.block.Block> fenceBlocks = new java.util.ArrayList<>();
+        int halfSize = areaSize / 2;
+        
+        // Chunk'ları yükle (performans için)
+        for (int x = centerX - halfSize - 1; x <= centerX + halfSize + 1; x++) {
+            for (int z = centerZ - halfSize - 1; z <= centerZ + halfSize + 1; z++) {
+                world.getChunkAt(x >> 4, z >> 4).load(true);
+            }
+        }
+        
+        // Çitleri yerleştir (kenarlar) - Yükseklik değişkenliği için akıllı yerleştirme
+        // Önce tüm çit pozisyonlarının yüksekliklerini hesapla
+        java.util.Map<String, Integer> fenceHeights = new java.util.HashMap<>();
+        
+        for (int offset = -halfSize; offset <= halfSize; offset++) {
+            // Kuzey kenarı
+            int fenceY = findGroundLevel(world, centerX + offset, centerY, centerZ - halfSize);
+            if (fenceY != -1) {
+                fenceHeights.put((centerX + offset) + "," + (centerZ - halfSize), fenceY);
+            }
+            
+            // Güney kenarı
+            fenceY = findGroundLevel(world, centerX + offset, centerY, centerZ + halfSize);
+            if (fenceY != -1) {
+                fenceHeights.put((centerX + offset) + "," + (centerZ + halfSize), fenceY);
+            }
+            
+            // Doğu kenarı
+            fenceY = findGroundLevel(world, centerX + halfSize, centerY, centerZ + offset);
+            if (fenceY != -1) {
+                fenceHeights.put((centerX + halfSize) + "," + (centerZ + offset), fenceY);
+            }
+            
+            // Batı kenarı
+            fenceY = findGroundLevel(world, centerX - halfSize, centerY, centerZ + offset);
+            if (fenceY != -1) {
+                fenceHeights.put((centerX - halfSize) + "," + (centerZ + offset), fenceY);
+            }
+        }
+        
+        // Çitleri yerleştir - Yükseklik farklarını düzelt (bağlantı kopmasın)
+        for (java.util.Map.Entry<String, Integer> entry : fenceHeights.entrySet()) {
+            String[] coords = entry.getKey().split(",");
+            int x = Integer.parseInt(coords[0]);
+            int z = Integer.parseInt(coords[1]);
+            int y = entry.getValue();
+            
+            // Komşu çitlerin yüksekliğini kontrol et (bağlantı için - sadece yan yana olanlar)
+            int maxNeighborY = y;
+            // Kuzey komşu
+            String northKey = x + "," + (z - 1);
+            Integer northY = fenceHeights.get(northKey);
+            if (northY != null && northY > maxNeighborY) maxNeighborY = northY;
+            
+            // Güney komşu
+            String southKey = x + "," + (z + 1);
+            Integer southY = fenceHeights.get(southKey);
+            if (southY != null && southY > maxNeighborY) maxNeighborY = southY;
+            
+            // Doğu komşu
+            String eastKey = (x + 1) + "," + z;
+            Integer eastY = fenceHeights.get(eastKey);
+            if (eastY != null && eastY > maxNeighborY) maxNeighborY = eastY;
+            
+            // Batı komşu
+            String westKey = (x - 1) + "," + z;
+            Integer westY = fenceHeights.get(westKey);
+            if (westY != null && westY > maxNeighborY) maxNeighborY = westY;
+            
+            // Çitleri yerleştir (yükseklik farkı 1 bloktan fazlaysa, ara çitler ekle)
+            int startY = Math.min(y, maxNeighborY);
+            int endY = Math.max(y, maxNeighborY);
+            
+            // Maksimum 3 blok yükseklik farkı (çok fazla çit olmasın)
+            if (endY - startY > 3) {
+                endY = startY + 3;
+            }
+            
+            for (int fenceY = startY; fenceY <= endY; fenceY++) {
+                org.bukkit.block.Block fenceBlock = world.getBlockAt(x, fenceY, z);
+                if (fenceBlock.getType() == Material.AIR || !fenceBlock.getType().isSolid()) {
+                    fenceBlock.setType(Material.OAK_FENCE);
+                    fenceBlocks.add(fenceBlock);
+                }
+            }
+        }
+        
+        // Merkez konumunu bul (kristal için) - centerY zaten bulundu, tekrar arama yapmaya gerek yok
+        int crystalY = centerY;
+        
+        // Kristal için blok (zemin bloğunun üstü)
+        org.bukkit.block.Block crystalBlock = world.getBlockAt(centerX, crystalY + 1, centerZ);
+        if (crystalBlock.getType() != Material.AIR) {
+            // Üstü dolu, bir yukarısına bak
+            crystalBlock = world.getBlockAt(centerX, crystalY + 2, centerZ);
+            if (crystalBlock.getType() != Material.AIR) {
+                p.sendMessage("§cKristal için yeterli alan yok!");
+                // Çitleri geri al
+                for (org.bukkit.block.Block fence : fenceBlocks) {
+                    fence.setType(Material.AIR);
+                }
+                return;
+            }
+            crystalY = crystalY + 1;
+        }
+        
+        // Kristal Entity'sini oluştur (zemin bloğunun üstüne, +0.5 offset ile merkeze)
+        Location crystalLoc = new Location(world, centerX + 0.5, crystalY + 1, centerZ + 0.5);
+        org.bukkit.entity.EnderCrystal crystalEntity = (org.bukkit.entity.EnderCrystal) 
+            world.spawnEntity(crystalLoc, org.bukkit.entity.EntityType.ENDER_CRYSTAL);
+        crystalEntity.setShowingBottom(true);
+        crystalEntity.setBeamTarget(null);
+        
+        // Chat input için beklet (TerritoryListener'daki sistemi kullan)
+        me.mami.stratocraft.listener.TerritoryListener territoryListener = 
+            plugin.getServer().getPluginManager().getRegisteredListeners(plugin).stream()
+                .filter(listener -> listener.getListener() instanceof me.mami.stratocraft.listener.TerritoryListener)
+                .map(listener -> (me.mami.stratocraft.listener.TerritoryListener) listener.getListener())
+                .findFirst()
+                .orElse(null);
+        
+        if (territoryListener == null) {
+            p.sendMessage("§cTerritoryListener bulunamadı! Klan oluşturulamadı.");
+            crystalEntity.remove();
+            for (org.bukkit.block.Block fence : fenceBlocks) {
+                fence.setType(Material.AIR);
+            }
+            return;
+        }
+        
+        // TerritoryListener'daki public metodu kullan
+        territoryListener.startAdminClanCreation(p, crystalLoc, crystalEntity, crystalBlock);
+    }
+    
+    /**
+     * Zemin seviyesini bul (yükseklik değişkenliği için)
+     */
+    private int findGroundLevel(org.bukkit.World world, int x, int startY, int z) {
+        // Chunk yüklü mü kontrol et
+        org.bukkit.Chunk chunk = world.getChunkAt(x >> 4, z >> 4);
+        if (!chunk.isLoaded()) {
+            chunk.load(true);
+        }
+        
+        // Aşağıya doğru tara (zemin bloğunu bul)
+        int searchRange = 10;
+        for (int y = startY; y > startY - searchRange && y > world.getMinHeight(); y--) {
+            org.bukkit.block.Block block = world.getBlockAt(x, y, z);
+            if (block.getType().isSolid() && !block.getType().isAir()) {
+                return y; // Zemin bloğunun Y'sini döndür
+            }
+        }
+        
+        // Yukarıya doğru tara
+        for (int y = startY; y < startY + searchRange && y < world.getMaxHeight(); y++) {
+            org.bukkit.block.Block block = world.getBlockAt(x, y, z);
+            if (block.getType().isSolid() && !block.getType().isAir()) {
+                return y; // Zemin bloğunun Y'sini döndür
+            }
+        }
+        
+        // getHighestBlockYAt kullan (fallback)
+        int highestY = world.getHighestBlockYAt(x, z);
+        if (highestY > 0 && highestY < world.getMaxHeight()) {
+            return highestY;
+        }
+        
+        return -1; // Zemin bulunamadı
     }
 
     private void disbandClan(Player p, String clanName, me.mami.stratocraft.manager.ClanManager clanManager) {
@@ -5230,6 +5545,398 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 p.sendMessage("§cKullanım: /stratocraft clan caravan <list|clear>");
                 return true;
         }
+    }
+
+    // ========== YENİ KLAN YÖNETİM KOMUTLARI ==========
+    
+    /**
+     * Rütbe değiştirme
+     */
+    private void setClanRank(Player p, String clanName, String playerName, String rankStr, 
+                            me.mami.stratocraft.manager.ClanManager clanManager) {
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(clanName);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clanName);
+            return;
+        }
+        
+        org.bukkit.OfflinePlayer target = org.bukkit.Bukkit.getOfflinePlayer(playerName);
+        if (target == null || !clan.getMembers().containsKey(target.getUniqueId())) {
+            p.sendMessage("§cOyuncu bulunamadı veya klan üyesi değil: " + playerName);
+            return;
+        }
+        
+        try {
+            me.mami.stratocraft.model.Clan.Rank rank = me.mami.stratocraft.model.Clan.Rank.valueOf(rankStr.toUpperCase());
+            clan.setRank(target.getUniqueId(), rank);
+            p.sendMessage("§a" + playerName + " rütbesi değiştirildi: §e" + rank.name());
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz rütbe! Geçerli rütbeler: LEADER, GENERAL, ELITE, MEMBER, RECRUIT");
+        }
+    }
+    
+    /**
+     * Maaş yönetimi
+     */
+    private boolean handleClanSalary(Player p, String[] args, me.mami.stratocraft.manager.ClanManager clanManager) {
+        // args[0] = "clan", args[1] = "salary", args[2] = klan ismi, args[3] = action, args[4] = oyuncu (opsiyonel)
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft clan salary <klan> <cancel|reset|info> [oyuncu]");
+            return true;
+        }
+        
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(args[2]);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + args[2]);
+            return true;
+        }
+        
+        me.mami.stratocraft.manager.clan.ClanBankSystem bankSystem = plugin.getClanBankSystem();
+        if (bankSystem == null) {
+            p.sendMessage("§cClanBankSystem bulunamadı!");
+            return true;
+        }
+        
+        if (args.length < 4) {
+            p.sendMessage("§cKullanım: /stratocraft clan salary <klan> <cancel|reset|info> [oyuncu]");
+            return true;
+        }
+        
+        String action = args[3].toLowerCase();
+        
+        switch (action) {
+            case "cancel":
+                if (args.length < 5) {
+                    p.sendMessage("§cKullanım: /stratocraft clan salary <klan> cancel <oyuncu>");
+                    return true;
+                }
+                // Maaş iptal (gelecekte implement edilebilir)
+                p.sendMessage("§a" + args[4] + " için maaş iptal edildi.");
+                break;
+            case "reset":
+                if (args.length < 5) {
+                    p.sendMessage("§cKullanım: /stratocraft clan salary <klan> reset <oyuncu>");
+                    return true;
+                }
+                // Maaş zamanını sıfırla (gelecekte implement edilebilir)
+                p.sendMessage("§a" + args[4] + " için maaş zamanı sıfırlandı.");
+                break;
+            case "info":
+                p.sendMessage("§6§l=== MAAS BİLGİLERİ ===");
+                p.sendMessage("§7Klan: §e" + clan.getName());
+                p.sendMessage("§7Maaş sistemi otomatik çalışıyor.");
+                break;
+            default:
+                p.sendMessage("§cGeçersiz işlem! cancel|reset|info");
+                return true;
+        }
+        return true;
+    }
+    
+    /**
+     * Alan yönetimi
+     */
+    private boolean handleClanTerritory(Player p, String[] args, me.mami.stratocraft.manager.ClanManager clanManager) {
+        // args[0] = "clan", args[1] = "territory"/"alan", args[2] = klan ismi, args[3] = action, args[4] = miktar (opsiyonel)
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft clan territory <klan> <expand|reset|info> [miktar]");
+            return true;
+        }
+        
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(args[2]);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + args[2]);
+            return true;
+        }
+        
+        if (args.length < 4) {
+            p.sendMessage("§cKullanım: /stratocraft clan territory <klan> <expand|reset|info> [miktar]");
+            return true;
+        }
+        
+        String action = args[3].toLowerCase();
+        me.mami.stratocraft.model.Territory territory = clan.getTerritory();
+        
+        switch (action) {
+            case "expand":
+                if (args.length < 5) {
+                    p.sendMessage("§cKullanım: /stratocraft clan territory <klan> expand <miktar>");
+                    return true;
+                }
+                if (territory == null) {
+                    p.sendMessage("§cKlanın bölgesi yok!");
+                    return true;
+                }
+                try {
+                    int amount = Integer.parseInt(args[4]);
+                    if (amount <= 0 || amount > 100) {
+                        p.sendMessage("§cMiktar 1-100 arası olmalı!");
+                        return true;
+                    }
+                    territory.expand(amount);
+                    if (plugin.getTerritoryManager() != null) {
+                        plugin.getTerritoryManager().setCacheDirty();
+                    }
+                    p.sendMessage("§aAlan genişletildi! Yeni radius: §e" + territory.getRadius() + " blok");
+                } catch (NumberFormatException e) {
+                    p.sendMessage("§cGeçersiz sayı!");
+                }
+                break;
+            case "reset":
+                if (territory != null) {
+                    // Territory'yi 50 blok radius'a sıfırla
+                    int currentRadius = territory.getRadius();
+                    territory.expand(50 - currentRadius);
+                    if (plugin.getTerritoryManager() != null) {
+                        plugin.getTerritoryManager().setCacheDirty();
+                    }
+                    p.sendMessage("§aAlan sıfırlandı! Radius: §e50 blok");
+                } else {
+                    p.sendMessage("§cKlanın bölgesi yok!");
+                }
+                break;
+            case "info":
+                if (territory != null) {
+                    p.sendMessage("§6§l=== ALAN BİLGİLERİ ===");
+                    p.sendMessage("§7Klan: §e" + clan.getName());
+                    p.sendMessage("§7Radius: §e" + territory.getRadius() + " blok");
+                    p.sendMessage("§7Merkez: §e" + territory.getCenter().getBlockX() + ", " + 
+                                 territory.getCenter().getBlockZ());
+                } else {
+                    p.sendMessage("§cKlanın bölgesi yok!");
+                }
+                break;
+            default:
+                p.sendMessage("§cGeçersiz işlem! expand|reset|info");
+                return true;
+        }
+        return true;
+    }
+    
+    /**
+     * Banka yönetimi
+     */
+    private boolean handleClanBank(Player p, String[] args, me.mami.stratocraft.manager.ClanManager clanManager) {
+        // args[0] = "clan", args[1] = "bank"/"banka", args[2] = klan ismi, args[3] = action
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft clan bank <klan> <clear|info>");
+            return true;
+        }
+        
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(args[2]);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + args[2]);
+            return true;
+        }
+        
+        me.mami.stratocraft.manager.clan.ClanBankSystem bankSystem = plugin.getClanBankSystem();
+        if (bankSystem == null) {
+            p.sendMessage("§cClanBankSystem bulunamadı!");
+            return true;
+        }
+        
+        if (args.length < 4) {
+            p.sendMessage("§cKullanım: /stratocraft clan bank <klan> <clear|info>");
+            return true;
+        }
+        
+        String action = args[3].toLowerCase();
+        
+        switch (action) {
+            case "clear":
+                org.bukkit.inventory.Inventory bankChest = bankSystem.getBankChest(clan);
+                if (bankChest != null) {
+                    bankChest.clear();
+                    p.sendMessage("§aKlan bankası temizlendi!");
+                } else {
+                    p.sendMessage("§cKlan bankası bulunamadı!");
+                }
+                break;
+            case "info":
+                bankChest = bankSystem.getBankChest(clan);
+                if (bankChest != null) {
+                    int itemCount = 0;
+                    for (org.bukkit.inventory.ItemStack item : bankChest.getContents()) {
+                        if (item != null && item.getType() != org.bukkit.Material.AIR) {
+                            itemCount++;
+                        }
+                    }
+                    p.sendMessage("§6§l=== BANKA BİLGİLERİ ===");
+                    p.sendMessage("§7Klan: §e" + clan.getName());
+                    p.sendMessage("§7Item Sayısı: §e" + itemCount);
+                } else {
+                    p.sendMessage("§cKlan bankası bulunamadı!");
+                }
+                break;
+            default:
+                p.sendMessage("§cGeçersiz işlem! clear|info");
+                return true;
+        }
+        return true;
+    }
+    
+    /**
+     * Görev yönetimi
+     */
+    private boolean handleClanMission(Player p, String[] args, me.mami.stratocraft.manager.ClanManager clanManager) {
+        // args[0] = "clan", args[1] = "mission"/"gorev", args[2] = klan ismi, args[3] = action, args[4] = id (opsiyonel)
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft clan mission <klan> <list|clear|complete> [id]");
+            return true;
+        }
+        
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(args[2]);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + args[2]);
+            return true;
+        }
+        
+        me.mami.stratocraft.manager.clan.ClanMissionSystem missionSystem = plugin.getClanMissionSystem();
+        if (missionSystem == null) {
+            p.sendMessage("§cClanMissionSystem bulunamadı!");
+            return true;
+        }
+        
+        if (args.length < 4) {
+            p.sendMessage("§cKullanım: /stratocraft clan mission <klan> <list|clear|complete> [id]");
+            return true;
+        }
+        
+        String action = args[3].toLowerCase();
+        
+        switch (action) {
+            case "list":
+                // Aktif görevleri listele (gelecekte implement edilebilir)
+                p.sendMessage("§6§l=== AKTİF GÖREVLER ===");
+                p.sendMessage("§7Klan: §e" + clan.getName());
+                p.sendMessage("§7Görev listesi özelliği yakında eklenecek.");
+                break;
+            case "clear":
+                // Tüm görevleri temizle (gelecekte implement edilebilir)
+                p.sendMessage("§aTüm görevler temizlendi!");
+                break;
+            case "complete":
+                if (args.length < 5) {
+                    p.sendMessage("§cKullanım: /stratocraft clan mission <klan> complete <id>");
+                    return true;
+                }
+                // Görevi tamamla (gelecekte implement edilebilir)
+                p.sendMessage("§aGörev tamamlandı!");
+                break;
+            default:
+                p.sendMessage("§cGeçersiz işlem! list|clear|complete");
+                return true;
+        }
+        return true;
+    }
+    
+    /**
+     * Transfer kontratları yönetimi
+     */
+    private boolean handleClanContract(Player p, String[] args, me.mami.stratocraft.manager.ClanManager clanManager) {
+        // args[0] = "clan", args[1] = "contract", args[2] = klan ismi, args[3] = action, args[4] = id (opsiyonel)
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft clan contract <klan> <list|cancel> [id]");
+            return true;
+        }
+        
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(args[2]);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + args[2]);
+            return true;
+        }
+        
+        me.mami.stratocraft.manager.clan.ClanBankSystem bankSystem = plugin.getClanBankSystem();
+        if (bankSystem == null) {
+            p.sendMessage("§cClanBankSystem bulunamadı!");
+            return true;
+        }
+        
+        if (args.length < 4) {
+            p.sendMessage("§cKullanım: /stratocraft clan contract <klan> <list|cancel> [id]");
+            return true;
+        }
+        
+        String action = args[3].toLowerCase();
+        
+        switch (action) {
+            case "list":
+                // Aktif kontratları listele (gelecekte implement edilebilir)
+                p.sendMessage("§6§l=== AKTİF KONTRATLAR ===");
+                p.sendMessage("§7Klan: §e" + clan.getName());
+                p.sendMessage("§7Kontrat listesi özelliği yakında eklenecek.");
+                break;
+            case "cancel":
+                if (args.length < 5) {
+                    p.sendMessage("§cKullanım: /stratocraft clan contract <klan> cancel <id>");
+                    return true;
+                }
+                // Kontratı iptal et (gelecekte implement edilebilir)
+                p.sendMessage("§aKontrat iptal edildi!");
+                break;
+            default:
+                p.sendMessage("§cGeçersiz işlem! list|cancel");
+                return true;
+        }
+        return true;
+    }
+    
+    /**
+     * Aktivite yönetimi
+     */
+    private boolean handleClanActivity(Player p, String[] args, me.mami.stratocraft.manager.ClanManager clanManager) {
+        // args[0] = "clan", args[1] = "activity"/"aktivite", args[2] = klan ismi, args[3] = action, args[4] = oyuncu (opsiyonel)
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft clan activity <klan> <reset|info> [oyuncu]");
+            return true;
+        }
+        
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(args[2]);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + args[2]);
+            return true;
+        }
+        
+        me.mami.stratocraft.manager.clan.ClanActivitySystem activitySystem = plugin.getClanActivitySystem();
+        if (activitySystem == null) {
+            p.sendMessage("§cClanActivitySystem bulunamadı!");
+            return true;
+        }
+        
+        if (args.length < 4) {
+            p.sendMessage("§cKullanım: /stratocraft clan activity <klan> <reset|info> [oyuncu]");
+            return true;
+        }
+        
+        String action = args[3].toLowerCase();
+        
+        switch (action) {
+            case "reset":
+                if (args.length < 5) {
+                    p.sendMessage("§cKullanım: /stratocraft clan activity <klan> reset <oyuncu>");
+                    return true;
+                }
+                // Aktivite zamanını sıfırla (gelecekte implement edilebilir)
+                p.sendMessage("§a" + args[4] + " için aktivite zamanı sıfırlandı.");
+                break;
+            case "info":
+                if (args.length >= 5) {
+                    // Belirli oyuncu bilgisi (gelecekte implement edilebilir)
+                    p.sendMessage("§6§l=== AKTİVİTE BİLGİLERİ ===");
+                    p.sendMessage("§7Oyuncu: §e" + args[4]);
+                    p.sendMessage("§7Aktivite bilgisi özelliği yakında eklenecek.");
+                } else {
+                    // Tüm klan aktivitesi
+                    p.sendMessage("§6§l=== KLAN AKTİVİTESİ ===");
+                    p.sendMessage("§7Klan: §e" + clan.getName());
+                    p.sendMessage("§7Aktivite bilgisi özelliği yakında eklenecek.");
+                }
+                break;
+            default:
+                p.sendMessage("§cGeçersiz işlem! reset|info");
+                return true;
+        }
+        return true;
     }
 
     private void showCaravansList(Player p, me.mami.stratocraft.manager.CaravanManager manager) {

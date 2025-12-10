@@ -63,17 +63,40 @@ public class CombatListener implements Listener {
             return; // Admin bypass yetkisi varsa korumaları atla
         }
 
-        // ========== GÜÇ SİSTEMİ KORUMA KONTROLÜ (Öncelikli) ==========
+        // ========== YENİ KLAN KORUMA SİSTEMİ (Öncelikli) ==========
         me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
-        if (plugin != null && plugin.getStratocraftPowerSystem() != null) {
-            me.mami.stratocraft.manager.StratocraftPowerSystem powerSystem = 
-                plugin.getStratocraftPowerSystem();
+        if (plugin != null && plugin.getClanProtectionSystem() != null) {
+            me.mami.stratocraft.manager.clan.ClanProtectionSystem protectionSystem = 
+                plugin.getClanProtectionSystem();
             
-            // Güç sistemi koruma kontrolü (histerezis ile exploit önleme)
-            if (!powerSystem.canAttackPlayer(attacker, defender)) {
+            // Yeni koruma sistemi kontrolü (güç + seviye + aktivite)
+            if (!protectionSystem.canAttackPlayer(attacker, defender)) {
                 event.setCancelled(true);
                 // Mesaj zaten canAttackPlayer içinde gönderildi
                 return;
+            }
+            
+            // Hasar azaltma hesapla (sadece saldırı yapılabilir durumda)
+            // Not: canAttackPlayer true döndüyse, güç farkına göre hasar azaltma yapılabilir
+            double damageReduction = protectionSystem.calculateDamageReduction(attacker, defender);
+            if (damageReduction < 1.0 && damageReduction > 0) {
+                double originalDamage = event.getDamage();
+                double reducedDamage = originalDamage * damageReduction;
+                // Minimum hasar kontrolü (0.5'ten az olamaz)
+                event.setDamage(Math.max(0.5, reducedDamage));
+            }
+        } else {
+            // Fallback: Eski güç sistemi (geriye dönük uyumluluk)
+            if (plugin != null && plugin.getStratocraftPowerSystem() != null) {
+                me.mami.stratocraft.manager.StratocraftPowerSystem powerSystem = 
+                    plugin.getStratocraftPowerSystem();
+                
+                // Güç sistemi koruma kontrolü (histerezis ile exploit önleme)
+                if (!powerSystem.canAttackPlayer(attacker, defender)) {
+                    event.setCancelled(true);
+                    // Mesaj zaten canAttackPlayer içinde gönderildi
+                    return;
+                }
             }
         }
 

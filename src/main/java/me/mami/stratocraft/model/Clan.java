@@ -7,7 +7,7 @@ import java.util.*;
 
 public class Clan {
     public enum Rank {
-        LEADER(4), GENERAL(3), MEMBER(2), RECRUIT(1);
+        LEADER(5), ELITE(4), GENERAL(3), MEMBER(2), RECRUIT(1);
         private final int level;
 
         Rank(int level) {
@@ -21,9 +21,10 @@ public class Clan {
 
     private UUID id = UUID.randomUUID();
     private String name;
-    private final Map<UUID, Rank> members = new HashMap<>();
-    private final List<Structure> structures = new ArrayList<>();
-    private final Set<UUID> guests = new HashSet<>();
+    // Thread-safe: Collections.synchronizedMap kullan (veya ConcurrentHashMap)
+    private final Map<UUID, Rank> members = Collections.synchronizedMap(new HashMap<>());
+    private final List<Structure> structures = Collections.synchronizedList(new ArrayList<>());
+    private final Set<UUID> guests = Collections.synchronizedSet(new HashSet<>());
     private Territory territory;
     private double bankBalance = 0;
     private int storedXP = 0; // XP Bankası için
@@ -43,8 +44,25 @@ public class Clan {
     public String getName() { return name; }
     public void setName(String newName) { this.name = newName; } // Klan ismi değiştirme için
     public Map<UUID, Rank> getMembers() { return members; }
-    public void addMember(UUID uuid, Rank rank) { members.put(uuid, rank); }
-    public Rank getRank(UUID uuid) { return members.get(uuid); }
+    public void addMember(UUID uuid, Rank rank) { 
+        if (uuid != null && rank != null) {
+            members.put(uuid, rank);
+        }
+    }
+    public Rank getRank(UUID uuid) { 
+        if (uuid == null) return null;
+        return members.get(uuid); 
+    }
+    
+    /**
+     * Rütbe değiştir (ClanRankSystem için)
+     */
+    public void setRank(UUID uuid, Rank rank) {
+        if (uuid == null || rank == null) return;
+        if (members.containsKey(uuid)) {
+            members.put(uuid, rank);
+        }
+    }
 
     public List<Structure> getStructures() { return structures; }
     public void addStructure(Structure s) { structures.add(s); }
@@ -99,11 +117,15 @@ public class Clan {
     }
     
     public UUID getLeader() {
-        return members.entrySet().stream()
-                .filter(entry -> entry.getValue() == Rank.LEADER)
-                .map(Map.Entry::getKey)
-                .findFirst()
-                .orElse(null);
+        // Thread-safe: Synchronized
+        synchronized (members) {
+            for (Map.Entry<UUID, Rank> entry : members.entrySet()) {
+                if (entry.getValue() == Rank.LEADER) {
+                    return entry.getKey();
+                }
+            }
+        }
+        return null;
     }
     
     // Grace Period (Başlangıç Koruması)

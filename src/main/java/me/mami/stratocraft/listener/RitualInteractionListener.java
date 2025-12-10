@@ -151,6 +151,20 @@ public class RitualInteractionListener implements Listener {
                     usedResources
                 );
             }
+            
+            // ✅ KLAN GÖREV SİSTEMİ ENTEGRASYONU: Ritüel görevi ilerlemesi
+            if (plugin != null && plugin.getClanMissionSystem() != null) {
+                try {
+                    plugin.getClanMissionSystem().updateMissionProgress(
+                        clan, 
+                        p.getUniqueId(), 
+                        me.mami.stratocraft.manager.clan.ClanMissionSystem.MissionType.USE_RITUAL, 
+                        1
+                    );
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Görev ilerlemesi hatası (Ritüel): " + e.getMessage());
+                }
+            }
         }
         
         // Çakmağı tüket (dayanıklılık azalt)
@@ -438,6 +452,21 @@ public class RitualInteractionListener implements Listener {
                     "LEAVE_RITUAL",
                     usedResources
                 );
+            }
+            
+            // ✅ KLAN GÖREV SİSTEMİ ENTEGRASYONU: Ritüel görevi ilerlemesi (ayrılma ritüeli)
+            // Not: Ayrılma ritüeli de bir ritüel olduğu için görev ilerlemesi eklenebilir
+            if (plugin != null && plugin.getClanMissionSystem() != null) {
+                try {
+                    plugin.getClanMissionSystem().updateMissionProgress(
+                        ritualClan, 
+                        p.getUniqueId(), 
+                        me.mami.stratocraft.manager.clan.ClanMissionSystem.MissionType.USE_RITUAL, 
+                        1
+                    );
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Görev ilerlemesi hatası (Ayrılma Ritüeli): " + e.getMessage());
+                }
             }
         }
         

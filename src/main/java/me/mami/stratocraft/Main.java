@@ -48,6 +48,10 @@ public class Main extends JavaPlugin {
     private ConfigManager configManager;
     private me.mami.stratocraft.util.LangManager langManager;
     private me.mami.stratocraft.gui.ClanMenu clanMenu;
+    private me.mami.stratocraft.gui.ClanMissionMenu clanMissionMenu;
+    private me.mami.stratocraft.gui.ClanMemberMenu clanMemberMenu;
+    private me.mami.stratocraft.gui.ClanStatsMenu clanStatsMenu;
+    private me.mami.stratocraft.gui.ContractMenu contractMenu;
     private me.mami.stratocraft.manager.CombatLogManager combatLogManager;
     private me.mami.stratocraft.manager.EconomyManager economyManager;
     private me.mami.stratocraft.manager.SiegeWeaponManager siegeWeaponManager;
@@ -108,7 +112,7 @@ public class Main extends JavaPlugin {
         
         // Şimdi recipe'leri kaydet (ItemManager.RUSTY_HOOK vb. artık null değil)
         specialItemManager.registerRecipes();
-        clanManager = new ClanManager();
+        clanManager = new ClanManager(this);
         territoryManager = new TerritoryManager(clanManager);
         clanManager.setTerritoryManager(territoryManager); // Cache güncellemesi için
         batteryManager = new BatteryManager(this);
@@ -194,6 +198,9 @@ public class Main extends JavaPlugin {
         
         // Klan Güç Sistemi Başlatma
         initializeClanPowerSystem();
+        
+        // Yeni Klan Sistemleri Başlatma
+        initializeClanSystems();
 
         // 2. Dinleyicileri Kaydet
         // Eski batarya sistemi kaldırıldı, yeni sistem kullanılıyor
@@ -334,8 +341,20 @@ public class Main extends JavaPlugin {
         // Seviyeli Silah ve Zırh Listener
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.WeaponArmorListener(), this);
 
-        // Veri yükleme
-        dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener, allianceManager, disasterManager);
+        // Veri yükleme (yeni sistemlerle)
+        dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener, 
+                allianceManager, disasterManager, clanBankSystem, clanMissionSystem, clanActivitySystem, trapManager);
+        
+        // Periyodik otomatik kayıt başlat
+        if (dataManager != null) {
+            dataManager.startAutoSave(() -> {
+                // Auto-save callback: Tüm verileri kaydet (async)
+                dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener, 
+                        allianceManager, disasterManager, clanBankSystem, clanMissionSystem, 
+                        clanActivitySystem, trapManager, false);
+                return null;
+            });
+        }
         
         // Güç profillerini yükle (StratocraftPowerSystem varsa)
         if (stratocraftPowerSystem != null) {
@@ -561,9 +580,114 @@ public class Main extends JavaPlugin {
                     } else {
                         p.sendMessage("§eZaten bir bölgeniz var. Yeni kristal dikmek için mevcut bölgeyi kaldırın.");
                     }
+                } else if (args.length > 0 && args[0].equalsIgnoreCase("alan")) {
+                    // Alan genişletme - YENİ
+                    Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
+                    if (clan == null) {
+                        p.sendMessage("§cBir klana üye değilsiniz!");
+                        return true;
+                    }
+                    if (clan.getRank(p.getUniqueId()) != Clan.Rank.LEADER
+                            && clan.getRank(p.getUniqueId()) != Clan.Rank.GENERAL) {
+                        p.sendMessage("§cBu işlem için yetkiniz yok!");
+                        return true;
+                    }
+                    if (clan.getTerritory() == null) {
+                        p.sendMessage("§cÖnce bir bölgeniz olmalı! Kristal dikin.");
+                        return true;
+                    }
+                    
+                    if (args.length > 1 && args[1].equalsIgnoreCase("genislet")) {
+                        if (args.length > 2) {
+                            try {
+                                int amount = Integer.parseInt(args[2]);
+                                if (amount <= 0 || amount > 100) {
+                                    p.sendMessage("§cGenişletme miktarı 1-100 arası olmalı!");
+                                    return true;
+                                }
+                                
+                                Territory territory = clan.getTerritory();
+                                int currentRadius = territory.getRadius();
+                                int newRadius = currentRadius + amount;
+                                
+                                // Maksimum radius kontrolü (config'den alınabilir)
+                                int maxRadius = 500; // Varsayılan maksimum
+                                if (newRadius > maxRadius) {
+                                    p.sendMessage("§cMaksimum alan boyutu: " + maxRadius + " blok!");
+                                    return true;
+                                }
+                                
+                                territory.expand(amount);
+                                territoryManager.setCacheDirty(); // Cache'i güncelle
+                                p.sendMessage("§aAlan genişletildi! Yeni radius: §e" + newRadius + " blok");
+                            } catch (NumberFormatException e) {
+                                p.sendMessage("§cGeçersiz sayı! Kullanım: /klan alan genislet <miktar>");
+                            }
+                        } else {
+                            p.sendMessage("§cKullanım: /klan alan genislet <miktar>");
+                        }
+                    } else {
+                        Territory territory = clan.getTerritory();
+                        p.sendMessage("§a§l═══════════════════════════");
+                        p.sendMessage("§aAlan Bilgileri:");
+                        p.sendMessage("§7Mevcut Radius: §e" + territory.getRadius() + " blok");
+                        p.sendMessage("§7Alanı genişletmek için: §e/klan alan genislet <miktar>");
+                        p.sendMessage("§a§l═══════════════════════════");
+                    }
+                } else if (args.length > 0 && args[0].equalsIgnoreCase("maas")) {
+                    // Maaş yönetimi - YENİ
+                    Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
+                    if (clan == null) {
+                        p.sendMessage("§cBir klana üye değilsiniz!");
+                        return true;
+                    }
+                    if (clan.getRank(p.getUniqueId()) != Clan.Rank.LEADER
+                            && clan.getRank(p.getUniqueId()) != Clan.Rank.GENERAL) {
+                        p.sendMessage("§cBu işlem için yetkiniz yok!");
+                        return true;
+                    }
+                    
+                    if (args.length > 1 && args[1].equalsIgnoreCase("iptal")) {
+                        // Maaş iptal et (belirli bir üye için)
+                        if (args.length > 2) {
+                            String targetName = args[2];
+                            org.bukkit.OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(targetName);
+                            if (targetPlayer == null || !clan.getMembers().containsKey(targetPlayer.getUniqueId())) {
+                                p.sendMessage("§cOyuncu bulunamadı veya klan üyesi değil!");
+                                return true;
+                            }
+                            
+                            // Maaş iptal etme (gelecekte implement edilebilir)
+                            p.sendMessage("§a" + targetName + " için maaş iptal edildi.");
+                        } else {
+                            p.sendMessage("§cKullanım: /klan maas iptal <oyuncu>");
+                        }
+                    } else if (args.length > 1 && args[1].equalsIgnoreCase("aktif")) {
+                        // Maaş aktifleştir (belirli bir üye için)
+                        if (args.length > 2) {
+                            String targetName = args[2];
+                            org.bukkit.OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(targetName);
+                            if (targetPlayer == null || !clan.getMembers().containsKey(targetPlayer.getUniqueId())) {
+                                p.sendMessage("§cOyuncu bulunamadı veya klan üyesi değil!");
+                                return true;
+                            }
+                            
+                            // Maaş aktifleştirme (gelecekte implement edilebilir)
+                            p.sendMessage("§a" + targetName + " için maaş aktifleştirildi.");
+                        } else {
+                            p.sendMessage("§cKullanım: /klan maas aktif <oyuncu>");
+                        }
+                    } else {
+                        p.sendMessage("§a§l═══════════════════════════");
+                        p.sendMessage("§aMaaş Yönetimi:");
+                        p.sendMessage("§7Maaş iptal et: §e/klan maas iptal <oyuncu>");
+                        p.sendMessage("§7Maaş aktifleştir: §e/klan maas aktif <oyuncu>");
+                        p.sendMessage("§a§l═══════════════════════════");
+                    }
                 } else {
-                    p.sendMessage("§eKullanım: /klan <menü|bilgi|kur|ayril|kristal>");
+                    p.sendMessage("§eKullanım: /klan <menü|bilgi|kur|ayril|kristal|alan|maas>");
                     p.sendMessage("§7Oyuncular: menü, bilgi");
+                    p.sendMessage("§7Lider/General: alan, maas");
                     p.sendMessage("§7Adminler: kur, ayril, kristal");
                 }
                 return true;
@@ -576,13 +700,24 @@ public class Main extends JavaPlugin {
                 if (sender instanceof Player) {
                     Player p = (Player) sender;
                     if (args.length > 0 && args[0].equalsIgnoreCase("list")) {
-                        p.sendMessage("§eAktif Sözleşmeler:");
-                        int i = 1;
-                        for (me.mami.stratocraft.model.Contract contract : contractManager.getContracts()) {
-                            p.sendMessage("§7" + i + ". " + contract.getMaterial() + " x" + contract.getAmount() +
-                                    " → " + contract.getReward() + " altın (ID: "
-                                    + contract.getId().toString().substring(0, 8) + ")");
-                            i++;
+                        // GUI menüsünü aç
+                        if (contractMenu != null) {
+                            contractMenu.openMainMenu(p, 1);
+                        } else {
+                            // Fallback: Eski liste gösterimi
+                            p.sendMessage("§eAktif Sözleşmeler:");
+                            int i = 1;
+                            for (me.mami.stratocraft.model.Contract contract : contractManager.getContracts()) {
+                                if (contract.getMaterial() != null) {
+                                    p.sendMessage("§7" + i + ". " + contract.getMaterial() + " x" + contract.getAmount() +
+                                            " → " + contract.getReward() + " altın (ID: "
+                                            + contract.getId().toString().substring(0, 8) + ")");
+                                } else {
+                                    p.sendMessage("§7" + i + ". " + contract.getType() + " → " + contract.getReward() + " altın (ID: "
+                                            + contract.getId().toString().substring(0, 8) + ")");
+                                }
+                                i++;
+                            }
                         }
                     } else if (args.length > 0 && args[0].equalsIgnoreCase("olustur")) {
                         Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
@@ -705,12 +840,6 @@ public class Main extends JavaPlugin {
             getLogger().info("Stratocraft: Batarya sistemi temizlendi (geçici bloklar kaldırıldı).");
         }
 
-        // Tuzakları kaydet
-        if (trapManager != null) {
-            trapManager.saveTraps();
-            getLogger().info("Stratocraft: Tuzaklar kaydedildi.");
-        }
-        
         // Mayınları kaydet (NewMineManager otomatik kaydediliyor)
         if (newMineManager != null) {
             newMineManager.shutdown();
@@ -723,8 +852,10 @@ public class Main extends JavaPlugin {
         // tamamlanmayabilir
         if (dataManager != null && clanManager != null && contractManager != null &&
                 shopManager != null && virtualStorageListener != null && allianceManager != null && disasterManager != null) {
-            // Kapanış işlemlerinde her zaman senkron kayıt
-            dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener, allianceManager, disasterManager, true);
+            // Kapanış işlemlerinde her zaman senkron kayıt (yeni sistemlerle)
+            // Tuzaklar da DataManager üzerinden kaydediliyor
+            dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener, 
+                    allianceManager, disasterManager, clanBankSystem, clanMissionSystem, clanActivitySystem, trapManager, true);
             getLogger().info("Stratocraft: Veriler kaydedildi.");
             
             // Güç profillerini kaydet (sync - onDisable)
@@ -732,11 +863,14 @@ public class Main extends JavaPlugin {
                 stratocraftPowerSystem.saveAllPlayerProfilesSync();
             }
         }
-
-        // Tuzakları da kaydet (eğer trapManager varsa)
-        if (trapManager != null) {
-            trapManager.saveTraps();
+        
+        // Periyodik otomatik kayıt durdur
+        if (dataManager != null) {
+            dataManager.stopAutoSave();
         }
+        
+        // NOT: Tuzaklar artık DataManager üzerinden kaydediliyor
+        // TrapManager.saveTraps() çağrılmıyor çünkü duplikasyon olur
         getLogger().info("Stratocraft: Plugin kapatılıyor.");
     }
 
@@ -807,6 +941,22 @@ public class Main extends JavaPlugin {
 
     public me.mami.stratocraft.gui.ClanMenu getClanMenu() {
         return clanMenu;
+    }
+    
+    public me.mami.stratocraft.gui.ClanMissionMenu getClanMissionMenu() {
+        return clanMissionMenu;
+    }
+    
+    public me.mami.stratocraft.gui.ClanMemberMenu getClanMemberMenu() {
+        return clanMemberMenu;
+    }
+    
+    public me.mami.stratocraft.gui.ClanStatsMenu getClanStatsMenu() {
+        return clanStatsMenu;
+    }
+    
+    public me.mami.stratocraft.gui.ContractMenu getContractMenu() {
+        return contractMenu;
     }
 
     public BatteryManager getBatteryManager() {
@@ -995,6 +1145,183 @@ public class Main extends JavaPlugin {
      */
     public me.mami.stratocraft.manager.StratocraftPowerSystem getStratocraftPowerSystem() {
         return stratocraftPowerSystem;
+    }
+    
+    // ========== YENİ KLAN SİSTEMLERİ ==========
+    private me.mami.stratocraft.manager.clan.ClanProtectionSystem clanProtectionSystem;
+    private me.mami.stratocraft.manager.clan.ClanRankSystem clanRankSystem;
+    private me.mami.stratocraft.manager.clan.ClanLevelBonusSystem clanLevelBonusSystem;
+    private me.mami.stratocraft.manager.clan.ClanActivitySystem clanActivitySystem;
+    private me.mami.stratocraft.manager.clan.ClanBankSystem clanBankSystem;
+    private me.mami.stratocraft.manager.clan.ClanMissionSystem clanMissionSystem;
+    
+    /**
+     * Yeni Klan Sistemleri Başlatma
+     */
+    private void initializeClanSystems() {
+        if (clanManager == null || configManager == null) {
+            getLogger().warning("Klan sistemleri başlatılamadı: Gerekli yöneticiler null!");
+            return;
+        }
+        
+        // StratocraftPowerSystem gerekli (ClanProtectionSystem ve ClanLevelBonusSystem için)
+        if (stratocraftPowerSystem == null) {
+            getLogger().warning("Klan sistemleri başlatılamadı: StratocraftPowerSystem null!");
+            return;
+        }
+        
+        // 1. ClanActivitySystem (diğer sistemlerden bağımsız)
+        clanActivitySystem = new me.mami.stratocraft.manager.clan.ClanActivitySystem(
+            this, clanManager);
+        clanActivitySystem.loadConfig(configManager.getConfig());
+        
+        // 2. ClanRankSystem (ClanActivitySystem'dan bağımsız)
+        clanRankSystem = new me.mami.stratocraft.manager.clan.ClanRankSystem(
+            this, clanManager);
+        
+        // 2.5. ClanMemberMenu (ClanRankSystem gerekli)
+        clanMemberMenu = new me.mami.stratocraft.gui.ClanMemberMenu(
+            this, clanManager, clanRankSystem);
+        Bukkit.getPluginManager().registerEvents(clanMemberMenu, this);
+        
+        // 3. ClanLevelBonusSystem (StratocraftPowerSystem ve BuffManager gerekli)
+        clanLevelBonusSystem = new me.mami.stratocraft.manager.clan.ClanLevelBonusSystem(
+            this, stratocraftPowerSystem, buffManager);
+        clanLevelBonusSystem.loadConfig(configManager.getConfig());
+        
+        // 4. ClanProtectionSystem (StratocraftPowerSystem, SiegeManager, ClanActivitySystem gerekli)
+        clanProtectionSystem = new me.mami.stratocraft.manager.clan.ClanProtectionSystem(
+            this, clanManager, stratocraftPowerSystem, siegeManager, clanActivitySystem);
+        clanProtectionSystem.loadConfig(configManager.getConfig());
+        
+        // 5. ClanBankSystem (ClanRankSystem gerekli)
+        clanBankSystem = new me.mami.stratocraft.manager.clan.ClanBankSystem(
+            this, clanManager, clanRankSystem);
+        clanBankSystem.loadConfig(configManager.getConfig());
+        
+        // 6. ClanMissionSystem (ClanRankSystem gerekli)
+        clanMissionSystem = new me.mami.stratocraft.manager.clan.ClanMissionSystem(
+            this, clanManager, clanRankSystem);
+        clanMissionSystem.loadConfig(configManager.getConfig());
+        
+        // 7. ClanMissionMenu (GUI menüsü)
+        clanMissionMenu = new me.mami.stratocraft.gui.ClanMissionMenu(
+            this, clanManager, clanMissionSystem);
+        Bukkit.getPluginManager().registerEvents(clanMissionMenu, this);
+        
+        // 8. ClanStatsMenu (GUI menüsü)
+        clanStatsMenu = new me.mami.stratocraft.gui.ClanStatsMenu(this, clanManager);
+        Bukkit.getPluginManager().registerEvents(clanStatsMenu, this);
+        
+        // 9. ContractMenu (GUI menüsü) - ContractManager ve ClanManager gerekli
+        if (contractManager != null) {
+            contractMenu = new me.mami.stratocraft.gui.ContractMenu(
+                this, contractManager, clanManager);
+            Bukkit.getPluginManager().registerEvents(contractMenu, this);
+        }
+        
+        // ClanManager'a yeni sistemleri bağla (setter injection)
+        if (clanManager != null) {
+            clanManager.setClanActivitySystem(clanActivitySystem);
+            clanManager.setClanBankSystem(clanBankSystem);
+            clanManager.setClanMissionSystem(clanMissionSystem);
+        }
+        
+        // Event listener'ı kaydet
+        me.mami.stratocraft.listener.ClanSystemListener clanSystemListener = 
+            new me.mami.stratocraft.listener.ClanSystemListener(this, clanManager);
+        clanSystemListener.setProtectionSystem(clanProtectionSystem);
+        clanSystemListener.setActivitySystem(clanActivitySystem);
+        clanSystemListener.setBankSystem(clanBankSystem);
+        clanSystemListener.setMissionSystem(clanMissionSystem);
+        Bukkit.getPluginManager().registerEvents(clanSystemListener, this);
+        
+        // Scheduled task'ları başlat
+        startClanSystemTasks();
+        
+        getLogger().info("Yeni Klan Sistemleri başarıyla başlatıldı!");
+    }
+    
+    /**
+     * Klan sistemleri scheduled task'larını başlat
+     */
+    private void startClanSystemTasks() {
+        // Config'den interval'leri al (varsayılan değerler)
+        long salaryInterval = 72000L; // 1 saat = 72000 tick (varsayılan)
+        long contractInterval = 6000L; // 5 dakika = 6000 tick (varsayılan)
+        
+        if (configManager != null && configManager.getConfig() != null) {
+            // Config'den oku (eğer varsa)
+            salaryInterval = configManager.getConfig().getLong(
+                "clan.bank-system.salary.task-interval", 72000L);
+            contractInterval = configManager.getConfig().getLong(
+                "clan.bank-system.contract.task-interval", 6000L);
+        }
+        
+        // Geçersiz değer kontrolleri
+        if (salaryInterval < 1200L) salaryInterval = 72000L; // Minimum 1 dakika
+        if (contractInterval < 200L) contractInterval = 6000L; // Minimum 10 saniye
+        
+        // Otomatik maaş dağıtımı (config'den interval)
+        Bukkit.getScheduler().runTaskTimer(this, () -> {
+            try {
+                if (clanBankSystem != null) {
+                    clanBankSystem.distributeSalaries();
+                }
+            } catch (Exception e) {
+                getLogger().warning("Maaş dağıtımı hatası: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }, salaryInterval, salaryInterval);
+        
+        // Otomatik transfer kontratları (config'den interval)
+        Bukkit.getScheduler().runTaskTimer(this, () -> {
+            try {
+                if (clanBankSystem != null) {
+                    clanBankSystem.processTransferContracts();
+                }
+            } catch (Exception e) {
+                getLogger().warning("Transfer kontratları işleme hatası: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }, contractInterval, contractInterval);
+        
+        // Süresi dolmuş görevleri temizle (her 1 saat)
+        Bukkit.getScheduler().runTaskTimer(this, () -> {
+            try {
+                if (clanMissionSystem != null) {
+                    clanMissionSystem.cleanupExpiredMissions();
+                }
+            } catch (Exception e) {
+                getLogger().warning("Görev temizleme hatası: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }, 72000L, 72000L); // 1 saat = 72000 tick
+    }
+    
+    // Getters
+    public me.mami.stratocraft.manager.clan.ClanProtectionSystem getClanProtectionSystem() {
+        return clanProtectionSystem;
+    }
+    
+    public me.mami.stratocraft.manager.clan.ClanRankSystem getClanRankSystem() {
+        return clanRankSystem;
+    }
+    
+    public me.mami.stratocraft.manager.clan.ClanLevelBonusSystem getClanLevelBonusSystem() {
+        return clanLevelBonusSystem;
+    }
+    
+    public me.mami.stratocraft.manager.clan.ClanActivitySystem getClanActivitySystem() {
+        return clanActivitySystem;
+    }
+    
+    public me.mami.stratocraft.manager.clan.ClanBankSystem getClanBankSystem() {
+        return clanBankSystem;
+    }
+    
+    public me.mami.stratocraft.manager.clan.ClanMissionSystem getClanMissionSystem() {
+        return clanMissionSystem;
     }
     
     /**

@@ -60,13 +60,22 @@ public class ShopManager {
             return;
         }
         
+        // KRİTİK: Null check'ler
+        ItemStack priceItem = shop.getPriceItem();
+        ItemStack sellingItem = shop.getSellingItem();
+        
+        if (priceItem == null || sellingItem == null) {
+            buyer.sendMessage("§cMarket bilgileri hatalı!");
+            return;
+        }
+        
         // KRİTİK: Stok kontrolü - GUI snapshot yerine anlık kontrol
-        if (!chest.getInventory().containsAtLeast(shop.getSellingItem(), shop.getSellingItem().getAmount())) {
+        if (!chest.getInventory().containsAtLeast(sellingItem, sellingItem.getAmount())) {
             buyer.sendMessage("§cMarket stoğu tükenmiş!");
             return;
         }
 
-        if (!buyer.getInventory().containsAtLeast(shop.getPriceItem(), shop.getPriceItem().getAmount())) {
+        if (!buyer.getInventory().containsAtLeast(priceItem, priceItem.getAmount())) {
             buyer.sendMessage("§cYeterli ödemeye sahip değilsin!");
             return;
         }
@@ -78,39 +87,102 @@ public class ShopManager {
             isProtectedZone = (territoryOwner != null);
         }
 
-        buyer.getInventory().removeItem(shop.getPriceItem()); 
+        // KRİTİK: Ödemeyi al (clone kullan - orijinal item'ı koru)
+        ItemStack paymentClone = priceItem.clone();
+        HashMap<Integer, ItemStack> removeResult = buyer.getInventory().removeItem(paymentClone);
         
-        // Vergi hesaplama (config'den) - Anlık bölge kontrolüne göre
-        if (isProtectedZone) {
-            double taxPercentage = getTaxPercentage();
-            ItemStack taxItem = shop.getPriceItem().clone();
-            taxItem.setAmount((int) Math.ceil(taxItem.getAmount() * taxPercentage));
-            chest.getInventory().addItem(taxItem);
-            
-            ItemStack ownerPayment = shop.getPriceItem().clone();
-            ownerPayment.setAmount(ownerPayment.getAmount() - taxItem.getAmount());
-            chest.getInventory().addItem(ownerPayment);
-        } else {
-            chest.getInventory().addItem(shop.getPriceItem());
+        // Ödeme alınamadı mı? (race condition önleme)
+        if (!removeResult.isEmpty()) {
+            buyer.sendMessage("§cÖdeme alınamadı! Lütfen tekrar deneyin.");
+            return;
         }
         
-        // KRİTİK: Stok tekrar kontrolü (race condition önleme)
-        if (!chest.getInventory().containsAtLeast(shop.getSellingItem(), shop.getSellingItem().getAmount())) {
+        // KRİTİK: Stok tekrar kontrolü (race condition önleme - ödeme alındıktan sonra)
+        if (!chest.getInventory().containsAtLeast(sellingItem, sellingItem.getAmount())) {
             // Stok tükendi, ödemeyi geri ver
-            buyer.getInventory().addItem(shop.getPriceItem());
+            HashMap<Integer, ItemStack> refundResult = buyer.getInventory().addItem(paymentClone);
+            if (!refundResult.isEmpty()) {
+                // Envanter dolu, yere düşür
+                for (ItemStack remaining : refundResult.values()) {
+                    if (remaining != null) {
+                        buyer.getWorld().dropItemNaturally(buyer.getLocation(), remaining);
+                    }
+                }
+            }
             buyer.sendMessage("§cMarket stoğu tükenmiş! Ödemeniz iade edildi.");
             return;
         }
         
-        chest.getInventory().removeItem(shop.getSellingItem());
+        // Stoktan item'i al
+        HashMap<Integer, ItemStack> removeStockResult = chest.getInventory().removeItem(sellingItem);
+        if (!removeStockResult.isEmpty()) {
+            // Stok alınamadı (çok nadir durum), ödemeyi geri ver
+            HashMap<Integer, ItemStack> refundResult = buyer.getInventory().addItem(paymentClone);
+            if (!refundResult.isEmpty()) {
+                for (ItemStack remaining : refundResult.values()) {
+                    if (remaining != null) {
+                        buyer.getWorld().dropItemNaturally(buyer.getLocation(), remaining);
+                    }
+                }
+            }
+            buyer.sendMessage("§cStok alınamadı! Ödemeniz iade edildi.");
+            return;
+        }
+        
+        // Vergi hesaplama (config'den) - Anlık bölge kontrolüne göre
+        if (isProtectedZone) {
+            double taxPercentage = getTaxPercentage();
+            ItemStack taxItem = paymentClone.clone();
+            taxItem.setAmount((int) Math.ceil(taxItem.getAmount() * taxPercentage));
+            
+            // Vergiyi sandığa ekle
+            HashMap<Integer, ItemStack> taxOverflow = chest.getInventory().addItem(taxItem);
+            if (!taxOverflow.isEmpty()) {
+                // Sandık dolu, vergi yere düşer (nadir durum)
+                for (ItemStack remaining : taxOverflow.values()) {
+                    if (remaining != null) {
+                        buyer.getWorld().dropItemNaturally(buyer.getLocation(), remaining);
+                    }
+                }
+            }
+            
+            // Sahibin ödemesini hesapla
+            ItemStack ownerPayment = paymentClone.clone();
+            ownerPayment.setAmount(ownerPayment.getAmount() - taxItem.getAmount());
+            if (ownerPayment.getAmount() > 0) {
+                HashMap<Integer, ItemStack> ownerOverflow = chest.getInventory().addItem(ownerPayment);
+                if (!ownerOverflow.isEmpty()) {
+                    // Sandık dolu, sahibin ödemesi yere düşer (nadir durum)
+                    for (ItemStack remaining : ownerOverflow.values()) {
+                        if (remaining != null) {
+                            buyer.getWorld().dropItemNaturally(buyer.getLocation(), remaining);
+                        }
+                    }
+                }
+            }
+        } else {
+            // Vergi yok, tüm ödemeyi sandığa ekle
+            HashMap<Integer, ItemStack> paymentOverflow = chest.getInventory().addItem(paymentClone);
+            if (!paymentOverflow.isEmpty()) {
+                // Sandık dolu, ödeme yere düşer (nadir durum)
+                for (ItemStack remaining : paymentOverflow.values()) {
+                    if (remaining != null) {
+                        buyer.getWorld().dropItemNaturally(buyer.getLocation(), remaining);
+                    }
+                }
+            }
+        }
         
         // KRİTİK: Envanter kontrolü - Ödül yere düşebilir
-        if (buyer.getInventory().firstEmpty() == -1) {
+        HashMap<Integer, ItemStack> rewardOverflow = buyer.getInventory().addItem(sellingItem);
+        if (!rewardOverflow.isEmpty()) {
             // Envanter dolu, yere düşür
-            buyer.getWorld().dropItemNaturally(buyer.getLocation(), shop.getSellingItem());
+            for (ItemStack remaining : rewardOverflow.values()) {
+                if (remaining != null) {
+                    buyer.getWorld().dropItemNaturally(buyer.getLocation(), remaining);
+                }
+            }
             buyer.sendMessage("§eEnvanterin dolu! Ödül yere düştü.");
-        } else {
-            buyer.getInventory().addItem(shop.getSellingItem());
         }
         
         buyer.sendMessage("§aSatın alma başarılı!" + (isProtectedZone ? " §7(%5 vergi alındı)" : ""));
@@ -195,18 +267,57 @@ public class ShopManager {
             return;
         }
         
-        // Takas yap
+        // Takas yap (null check ve overflow kontrolü ile)
+        ItemStack offerItemClone = offer.getOfferItem().clone();
+        offerItemClone.setAmount(offer.getOfferAmount());
+        ItemStack sellingItemClone = shop.getSellingItem().clone();
+        
         // 1. Teklif verenden teklif item'ını al
-        offerer.getInventory().removeItem(new ItemStack(offer.getOfferItem().getType(), offer.getOfferAmount()));
+        HashMap<Integer, ItemStack> offerRemoveResult = offerer.getInventory().removeItem(offerItemClone);
+        if (!offerRemoveResult.isEmpty()) {
+            owner.sendMessage("§cTeklif veren oyuncunun envanterinde yeterli item yok!");
+            return;
+        }
         
         // 2. Mağaza sahibinden satılan item'ı al
-        owner.getInventory().removeItem(shop.getSellingItem());
+        HashMap<Integer, ItemStack> ownerRemoveResult = owner.getInventory().removeItem(sellingItemClone);
+        if (!ownerRemoveResult.isEmpty()) {
+            // Satılan item alınamadı, teklif item'ını geri ver
+            HashMap<Integer, ItemStack> refundResult = offerer.getInventory().addItem(offerItemClone);
+            if (!refundResult.isEmpty()) {
+                for (ItemStack remaining : refundResult.values()) {
+                    if (remaining != null) {
+                        offerer.getWorld().dropItemNaturally(offerer.getLocation(), remaining);
+                    }
+                }
+            }
+            owner.sendMessage("§cEnvanterinde satılan item yok!");
+            return;
+        }
         
-        // 3. Teklif verene satılan item'ı ver
-        offerer.getInventory().addItem(shop.getSellingItem());
+        // 3. Teklif verene satılan item'ı ver (overflow kontrolü)
+        HashMap<Integer, ItemStack> offerAddResult = offerer.getInventory().addItem(sellingItemClone);
+        if (!offerAddResult.isEmpty()) {
+            // Envanter dolu, yere düşür
+            for (ItemStack remaining : offerAddResult.values()) {
+                if (remaining != null) {
+                    offerer.getWorld().dropItemNaturally(offerer.getLocation(), remaining);
+                }
+            }
+            offerer.sendMessage("§eEnvanterin dolu! Ödül yere düştü.");
+        }
         
-        // 4. Mağaza sahibine teklif item'ını ver
-        owner.getInventory().addItem(new ItemStack(offer.getOfferItem().getType(), offer.getOfferAmount()));
+        // 4. Mağaza sahibine teklif item'ını ver (overflow kontrolü)
+        HashMap<Integer, ItemStack> ownerAddResult = owner.getInventory().addItem(offerItemClone);
+        if (!ownerAddResult.isEmpty()) {
+            // Envanter dolu, yere düşür
+            for (ItemStack remaining : ownerAddResult.values()) {
+                if (remaining != null) {
+                    owner.getWorld().dropItemNaturally(owner.getLocation(), remaining);
+                }
+            }
+            owner.sendMessage("§eEnvanterin dolu! Ödül yere düştü.");
+        }
         
         // Mesajlar
         owner.sendMessage("§aTeklif kabul edildi! Takas tamamlandı.");

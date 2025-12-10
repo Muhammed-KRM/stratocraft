@@ -4,8 +4,62 @@
 
 # Klan Ayarları
 clan:
-  max-members: 10        # Maksimum klan üye sayısı
+  max-members: 10        # Maksimum klan üye sayısı (kullanılmıyor - sınırsız)
   max-guests: 5          # Maksimum misafir sayısı
+  
+  # Koruma Sistemi
+  protection-system:
+    power-threshold: 0.40          # Güç bazlı koruma eşiği (%40)
+    max-level-diff: 5              # Maksimum seviye farkı
+    rookie-power-threshold: 3000.0  # Acemi güç eşiği
+    rookie-level-threshold: 5        # Acemi seviye eşiği
+    strong-player-threshold: 10000.0 # Güçlü oyuncu eşiği
+    inactive-threshold: 604800000    # Aktivite koruması (7 gün - ms)
+    clan-threshold: 0.50             # Klan içi koruma eşiği (%50)
+    damage-reduction-min: 0.05       # Minimum hasar (%5)
+    damage-reduction-max: 0.50       # Maksimum hasar (%50)
+  
+  # Seviye Bonusları
+  level-bonuses:
+    level-4-power-bonus: 0.05       # Seviye 4-7 güç bonusu (%5)
+    level-8-power-bonus: 0.10       # Seviye 8-12 güç bonusu (%10)
+    level-13-power-bonus: 0.15       # Seviye 13-15 güç bonusu (%15)
+  
+  # Aktivite Sistemi
+  activity-system:
+    inactive-threshold: 2592000000   # 30 gün offline (ms)
+  
+  # Görev Sistemi
+  mission-system:
+    mission-duration: 604800000      # Görev süresi (ms) - 7 gün
+    rewards:
+      diamond: 5                     # Elmas ödülü
+      gold: 10                       # Altın ödülü
+      xp: 100                        # XP ödülü
+  
+  # Banka Sistemi
+  bank-system:
+    # Çekme yetkileri
+    withdraw:
+      general: true                  # General çekebilir mi?
+      elite: true                     # Elite çekebilir mi?
+      member: false                   # Member çekebilir mi?
+    
+    # Otomatik maaş sistemi
+    salary:
+      interval: 86400000             # Maaş aralığı (ms) - 24 saat
+      items:
+        leader:
+          DIAMOND: 10                # Lider maaşı: 10 Elmas
+          GOLD_INGOT: 50             # Lider maaşı: 50 Altın
+        general:
+          DIAMOND: 5                  # General maaşı: 5 Elmas
+          GOLD_INGOT: 25             # General maaşı: 25 Altın
+        elite:
+          GOLD_INGOT: 15             # Elite maaşı: 15 Altın
+        member:
+          IRON_INGOT: 10             # Member maaşı: 10 Demir
+        # Recruit maaş almaz
 
 # Kuşatma Ayarları
 siege:
@@ -783,6 +837,11 @@ game-balance:
     level5-duration: 432000000       # Seviye 5 süre (ms) - 5 gün
     natural-duration: 60000          # Doğal çiftleştirme süresi (ms) - 1 dakika
     min-food-blocks: 3              # Minimum yiyecek bloğu sayısı
+
+  # Data Manager Ayarları
+  data-manager:
+    auto-save-enabled: true          # Periyodik otomatik kayıt aktif mi?
+    auto-save-interval: 300000       # Otomatik kayıt aralığı (ms) - 5 dakika
 
   # Special Weapon Sistemi (Özel Silah)
   special-weapon:
