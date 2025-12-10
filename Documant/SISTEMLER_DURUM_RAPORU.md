@@ -27,8 +27,8 @@ Bu rapor, Stratocraft plugin'indeki tüm sistemlerin mevcut durumunu, çalışan
 12. ✅ **Özel Moblar** - %100 çalışıyor
 
 ### ⚠️ Kısmen Çalışan Sistemler (7)
-1. ⚠️ **Klan Sistemi** - %70 çalışıyor (GUI menüler, banka, görevler eksik)
-2. ⚠️ **Kontrat Sistemi** - %60 çalışıyor (GUI menü, item-based ekonomi eksik)
+1. ⚠️ **Klan Sistemi** - %85 çalışıyor (GUI menüler tamamlandı, item-based ekonomi kısmen eksik)
+2. ⚠️ **Kontrat Sistemi** - %80 çalışıyor (GUI menüler tamamlandı, wizard kısmen eksik, item-based ekonomi eksik)
 3. ⚠️ **Yapılar Sistemi** - %80 çalışıyor (bazı yapılar eksik)
 4. ⚠️ **Kuşatma Sistemi** - %80 çalışıyor (bazı özellikler eksik)
 5. ⚠️ **Kervan Sistemi** - %70 çalışıyor (tetikleyici eksik)
@@ -80,27 +80,44 @@ Bu rapor, Stratocraft plugin'indeki tüm sistemlerin mevcut durumunu, çalışan
 
 ### 2. 👥 KLAN SİSTEMİ
 
-**Durum:** ⚠️ %70 Çalışıyor
+**Durum:** ⚠️ %85 Çalışıyor
 
 #### ✅ Çalışan Özellikler:
 - ✅ Klan kurma (Klan Kristali ile)
 - ✅ Üye yönetimi (ritüel ile)
-- ✅ Rütbe sistemi (LEADER, GENERAL, MEMBER, RECRUIT)
+- ✅ Rütbe sistemi (LEADER, GENERAL, ELITE, MEMBER, RECRUIT)
 - ✅ Bölge sistemi entegrasyonu
 - ✅ Grace period (24 saat koruma)
 - ✅ Klan güç sistemi
 - ✅ Klan seviye sistemi
-- ✅ Klan bankası (temel)
+- ✅ Klan bankası (temel + item-based)
 - ✅ Klan chat sistemi
-- ✅ Klan menüsü (GUI - basit)
+- ✅ Klan menüsü (GUI - genişletilmiş)
+- ✅ **Klan Üye Yönetimi GUI Menüsü** - **TAMAMLANDI** (`ClanMemberMenu.java`)
+  - ✅ Üye listesi görüntüleme (rütbe sırasına göre)
+  - ✅ Online/Offline durumu
+  - ✅ Aktivite bilgisi (son görülme zamanı)
+  - ✅ Rütbe değiştirme (Lider/General)
+  - ✅ Üye çıkarma (Lider/General, onay sistemi)
+- ✅ **Klan Görev Sistemi GUI Menüsü** - **TAMAMLANDI** (`ClanMissionMenu.java`)
+  - ✅ Aktif görev görüntüleme
+  - ✅ Görev ilerlemesi takibi
+  - ✅ Üye bazlı ilerleme gösterimi
+  - ✅ Görev oluşturma (Lider/General)
+  - ✅ Görev iptal etme
+- ✅ **Klan İstatistikleri GUI Menüsü** - **TAMAMLANDI** (`ClanStatsMenu.java`)
+  - ✅ Genel bilgiler (seviye, üye sayısı, kuruluş tarihi)
+  - ✅ Güç istatistikleri (toplam, ortalama, en güçlü üye)
+  - ✅ Üye istatistikleri (online/offline, rütbe dağılımı)
+  - ✅ Yapı istatistikleri (toplam, teknoloji seviyesi)
+  - ✅ Görev istatistikleri (aktif görev, ilerleme)
+  - ✅ Seviye bonusları (güç bonusu, erişilebilir özellikler)
+  - ✅ En aktif üyeler (8 üye)
+  - ✅ En güçlü üyeler (8 üye)
 
 #### ⚠️ Eksik/Çalışmayan Özellikler:
-- ❌ **Gelişmiş GUI menüler** - `KLAN_SISTEMI_OZELLIK_ONERILERI.md`'deki detaylı menüler yok
-  - ❌ Klan bankası GUI menüsü (item-based ekonomi)
-  - ❌ Klan görev sistemi GUI menüsü
-  - ❌ Klan istatistikleri GUI menüsü
-  - ❌ Klan yapıları GUI menüsü
-  - ❌ Klan üye yönetimi GUI menüsü
+- ⚠️ **Klan yapıları GUI menüsü** - Yapı yönetimi için GUI yok
+- ⚠️ **Item-based ekonomi tam entegrasyonu** - Klan bankası item-based ama bazı özellikler eksik
 - ❌ **Item-based ekonomi** - Para sistemi var, item-based yok
   - ❌ Maaş sistemi (item-based)
   - ❌ Otomatik transfer kontratları
@@ -152,7 +169,7 @@ Bu rapor, Stratocraft plugin'indeki tüm sistemlerin mevcut durumunu, çalışan
 
 ### 4. 📜 KONTRAT SİSTEMİ
 
-**Durum:** ⚠️ %60 Çalışıyor
+**Durum:** ⚠️ %80 Çalışıyor
 
 #### ✅ Çalışan Özellikler:
 - ✅ Kontrat oluşturma (6 tip: MATERIAL_DELIVERY, PLAYER_KILL, TERRITORY_RESTRICT, NON_AGGRESSION, BASE_PROTECTION, STRUCTURE_BUILD)
@@ -163,12 +180,17 @@ Bu rapor, Stratocraft plugin'indeki tüm sistemlerin mevcut durumunu, çalışan
 - ✅ Can geri kazanım sistemi
 - ✅ Kontrat panosu (Contract Board) - fiziksel
 - ✅ Admin komutları
+- ✅ **Kontrat Sistemi GUI Menüleri** - **TAMAMLANDI** (`ContractMenu.java`)
+  - ✅ Kontrat listesi GUI menüsü (sayfalama, 45 kontrat/sayfa)
+  - ✅ Kontrat detayları GUI menüsü (tüm bilgiler, tip bazlı özel bilgiler)
+  - ✅ Kontrat kabul etme (kan imzası, 1 kalp kaybı)
+  - ✅ Kontrat reddetme
+  - ✅ Kontrat oluşturma wizard başlangıcı (tip seçimi)
+  - ✅ NBT tabanlı UUID takibi (güvenilir kontrat tespiti)
+  - ✅ `/kontrat list` komutu GUI menüsünü açıyor
 
 #### ⚠️ Eksik/Çalışmayan Özellikler:
-- ❌ **GUI menü sistemi** - `ContractMenu.java` var ama tam entegre değil
-  - ❌ Kontrat oluşturma GUI menüsü (çok adımlı wizard)
-  - ❌ Kontrat listesi GUI menüsü
-  - ❌ Kontrat detayları GUI menüsü
+- ⚠️ **Kontrat oluşturma wizard tamamlanması** - Tip seçimi var, kapsam/ödül/ceza/süre adımları eksik
 - ❌ **Item-based ekonomi entegrasyonu** - Para sistemi var, item-based yok
   - ❌ Ödül/ceza item-based değil
   - ❌ Otomatik transfer kontratları yok
@@ -552,18 +574,26 @@ Bu rapor, Stratocraft plugin'indeki tüm sistemlerin mevcut durumunu, çalışan
 
 ## 🎯 ÖNCELİKLİ EKSİKLER
 
+### ✅ TAMAMLANAN ÖZELLİKLER (2024)
+
+1. ✅ **Klan Sistemi GUI Menüleri** - **TAMAMLANDI**
+   - ✅ Klan görev sistemi GUI menüsü (`ClanMissionMenu.java`)
+   - ✅ Klan istatistikleri GUI menüsü (`ClanStatsMenu.java`)
+   - ✅ Klan üye yönetimi GUI menüsü (`ClanMemberMenu.java`)
+   - ⚠️ Klan yapıları GUI menüsü (henüz yok)
+
+2. ✅ **Kontrat Sistemi GUI Menüleri** - **TAMAMLANDI** (wizard kısmen)
+   - ⚠️ Kontrat oluşturma wizard (tip seçimi var, kapsam/ödül/ceza/süre adımları eksik)
+   - ✅ Kontrat listesi GUI menüsü (`ContractMenu.java`)
+   - ✅ Kontrat detayları GUI menüsü (`ContractMenu.java`)
+
 ### 🔥 YÜKSEK ÖNCELİK (Hemen Yapılmalı)
 
-1. **Klan Sistemi GUI Menüleri**
-   - Klan bankası GUI menüsü (item-based)
-   - Klan görev sistemi GUI menüsü
-   - Klan istatistikleri GUI menüsü
-   - Klan üye yönetimi GUI menüsü
-
-2. **Kontrat Sistemi GUI Menüleri**
-   - Kontrat oluşturma wizard (çok adımlı)
-   - Kontrat listesi GUI menüsü
-   - Kontrat detayları GUI menüsü
+1. **Kontrat oluşturma wizard tamamlanması**
+   - Kapsam seçimi (PLAYER_TO_PLAYER, CLAN_TO_CLAN, vb.)
+   - Ödül/Ceza belirleme
+   - Süre belirleme
+   - Tip'e özel parametreler (malzeme, hedef oyuncu, vb.)
 
 3. **Item-Based Ekonomi Entegrasyonu**
    - Maaş sistemi (item-based)
@@ -618,8 +648,8 @@ Bu rapor, Stratocraft plugin'indeki tüm sistemlerin mevcut durumunu, çalışan
 - ❌ **Eksik Özellikler:** ~60 özellik
 
 ### GUI Menü Durumu:
-- ✅ **Mevcut GUI Menüler:** 5 (ClanMenu, ShopMenu, MissionMenu, ContractMenu, RecipeMenu)
-- ❌ **Eksik GUI Menüler:** ~15 (Klan bankası, Kontrat wizard, İttifak, vb.)
+- ✅ **Mevcut GUI Menüler:** 9 (ClanMenu, ClanMemberMenu, ClanMissionMenu, ClanStatsMenu, ShopMenu, MissionMenu, ContractMenu, RecipeMenu, vb.)
+- ⚠️ **Kısmen Eksik GUI Menüler:** ~10 (Kontrat wizard tamamlanması, Klan yapıları, İttifak, vb.)
 
 ---
 

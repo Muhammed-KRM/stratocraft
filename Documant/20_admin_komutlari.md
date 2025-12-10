@@ -434,9 +434,11 @@ VOLCANIC_ERUPTION - Volkanik Patlama (Kategori: 3, 7 günde bir)
 
 **Kullanım**:
 ```
-/scadmin contract list - Aktif kontratları listele
+/scadmin contract list - Aktif kontratları listele (GUI menüsü açılır)
 /scadmin contract clear - Tüm kontratları temizle
 ```
+
+**Not**: `/kontrat list` komutu da GUI menüsünü açar (`ContractMenu.java`)
 
 ---
 
