@@ -129,6 +129,9 @@ public class ContractManager {
                     // Oyuncu offline - veriyi kaydet, giriş yaptığında ödülü ver
                     Bukkit.getLogger().info("Sözleşme tamamlandı ama oyuncu offline: " + contract.getAcceptor());
                 }
+                
+                // Kontrat geçmişine ekle
+                addToContractHistory(contract);
             }
         }
     }
@@ -136,6 +139,8 @@ public class ContractManager {
     public void checkExpiredContracts() {
         for (Contract contract : new ArrayList<>(activeContracts)) {
             if (contract.isExpired() && contract.getAcceptor() != null) {
+                // Kontrat geçmişine ekle
+                addToContractHistory(contract);
                 punishBreach(contract.getAcceptor());
                 activeContracts.remove(contract);
             }
@@ -421,8 +426,23 @@ public class ContractManager {
             killerPlayer.sendMessage("§a§l════════════════════════════");
         }
         
+        // Kontrat geçmişine ekle
+        addToContractHistory(contract);
+        
         // Kontratı listeden kaldır
         activeContracts.remove(contract);
+    }
+    
+    /**
+     * Kontrat geçmişine ekle (ContractMenu için)
+     */
+    public void addToContractHistory(Contract contract) {
+        if (contract == null) return;
+        
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        if (plugin != null && plugin.getContractMenu() != null) {
+            plugin.getContractMenu().addContractToHistory(contract);
+        }
     }
 }
 

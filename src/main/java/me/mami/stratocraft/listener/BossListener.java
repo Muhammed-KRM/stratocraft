@@ -380,6 +380,9 @@ public class BossListener implements Listener {
                 }
             }
         }
+        
+        // Faz geçişi kontrolü (hasar aldıktan sonra)
+        bossManager.checkPhaseTransition(bossData);
     }
     
     /**

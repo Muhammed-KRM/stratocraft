@@ -152,5 +152,53 @@ public class ShopMenu {
             return (seconds / 3600) + " saat önce";
         }
     }
+    
+    /**
+     * Market Listesi Menüsü (Market yapısından erişim için)
+     */
+    public static Inventory createMarketListMenu(java.util.List<Shop> shops, int page) {
+        Inventory menu = Bukkit.createInventory(null, 54, "§aMarket Listesi - Sayfa " + page);
+        
+        int itemsPerPage = 45;
+        int startIndex = (page - 1) * itemsPerPage;
+        int endIndex = Math.min(startIndex + itemsPerPage, shops.size());
+        
+        int slot = 0;
+        for (int i = startIndex; i < endIndex; i++) {
+            Shop shop = shops.get(i);
+            if (shop == null) continue;
+            
+            ItemStack shopItem = shop.getSellingItem().clone();
+            ItemMeta meta = shopItem.getItemMeta();
+            if (meta != null) {
+                List<String> lore = new ArrayList<>();
+                lore.add("§7Satılan: §e" + shop.getSellingItem().getType().name() + " x" + shop.getSellingItem().getAmount());
+                lore.add("§7Fiyat: §e" + shop.getPriceItem().getType().name() + " x" + shop.getPriceItem().getAmount());
+                lore.add("§7Sahibi: §e" + Bukkit.getOfflinePlayer(shop.getOwnerId()).getName());
+                if (shop.isAcceptOffers()) {
+                    lore.add("§7Teklif: §aKabul Ediliyor");
+                }
+                lore.add("");
+                lore.add("§eTıklayın: §7Mağazayı aç");
+                meta.setLore(lore);
+                shopItem.setItemMeta(meta);
+            }
+            menu.setItem(slot, shopItem);
+            slot++;
+        }
+        
+        // Sayfalama butonları
+        if (page > 1) {
+            menu.setItem(45, createButton(Material.ARROW, "§eÖnceki Sayfa", null));
+        }
+        if (endIndex < shops.size()) {
+            menu.setItem(53, createButton(Material.ARROW, "§eSonraki Sayfa", null));
+        }
+        
+        // Kapat butonu
+        menu.setItem(49, createButton(Material.BARRIER, "§cKapat", null));
+        
+        return menu;
+    }
 }
 

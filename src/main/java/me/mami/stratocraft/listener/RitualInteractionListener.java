@@ -1211,6 +1211,11 @@ public class RitualInteractionListener implements Listener {
         ItemStack handItem = p.getInventory().getItemInMainHand();
         if (handItem == null || handItem.getType() != Material.COMPASS) return;
         
+        // Personal Terminal kontrolü - eğer Personal Terminal ise bu listener'ı atla
+        if (me.mami.stratocraft.manager.ItemManager.isCustomItem(handItem, "PERSONAL_TERMINAL")) {
+            return; // Personal Terminal başka listener'da işlenecek
+        }
+        
         // Oyuncunun klanını bul (kendi klanı veya yakındaki bir klan)
         Clan targetClan = clanManager.getClanByPlayer(p.getUniqueId());
         

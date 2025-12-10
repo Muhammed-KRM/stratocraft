@@ -214,21 +214,35 @@ public class DisasterTask extends BukkitRunnable {
             }
         }
         
-        // Handler sistemi kullan
+        // Handler sistemi kullan - hedef kristale hareket etmesi için
         DisasterHandler handler = handlerRegistry.getHandler(disaster.getType());
+        
+        // Hedef kristal ayarlandıysa, disaster'a bildir
+        Location targetCrystal = disaster.getTargetCrystal();
+        if (targetCrystal != null) {
+            disaster.setTarget(targetCrystal);
+        }
         
         // Grup felaketler için özel işleme
         if (disaster.getCreatureDisasterType() == Disaster.CreatureDisasterType.MEDIUM_GROUP || 
             disaster.getCreatureDisasterType() == Disaster.CreatureDisasterType.MINI_SWARM) {
             java.util.List<Entity> groupEntities = disaster.getGroupEntities();
-            if (groupEntities != null && !groupEntities.isEmpty()) {
+            if (groupEntities != null && !groupEntities.isEmpty() && handler != null) {
                 handler.handleGroup(disaster, groupEntities, config);
             }
             return;
         }
         
         // Tek boss felaketler için handler kullan
-        handler.handle(disaster, entity, config);
+        if (handler != null) {
+            handler.handle(disaster, entity, config);
+        } else {
+            // Handler yoksa, manuel hareket
+            Location target = disaster.getTargetCrystal() != null ? disaster.getTargetCrystal() : disaster.getTarget();
+            if (target != null) {
+                me.mami.stratocraft.util.DisasterBehavior.moveToTarget(entity, target, config);
+            }
+        }
         
         // Özel yetenekleri kullan (faz bazlı)
         me.mami.stratocraft.model.DisasterPhase currentPhase = disaster.getCurrentPhase();

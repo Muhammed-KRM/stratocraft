@@ -62,16 +62,52 @@ public class StructureActivationListener implements Listener {
             return;
         }
 
-        // Oyuncu bir klana üye mi?
+        // Pattern kontrolü - önce pattern'i kontrol et
+        Structure detectedStructure = detectStructurePattern(clicked, player);
+        if (detectedStructure == null)
+            return;
+
+        // Kişisel yapılar (klan zorunlu değil)
+        if (detectedStructure.getType() == Type.PERSONAL_MISSION_GUILD ||
+            detectedStructure.getType() == Type.CONTRACT_OFFICE ||
+            detectedStructure.getType() == Type.MARKET_PLACE ||
+            detectedStructure.getType() == Type.RECIPE_LIBRARY) {
+            
+            // Kişisel yapılar için klan kontrolü yok
+            // Yapıyı en yakın klana ekle (varsa) veya geçici olarak sakla
+            Clan nearbyClan = territoryManager.getTerritoryOwner(clicked.getLocation());
+            if (nearbyClan != null) {
+                nearbyClan.addStructure(detectedStructure);
+            } else {
+                // Klansız bölgede - geçici yapı (ileride global yapı sistemi eklenebilir)
+                // Şimdilik en yakın klana ekle (oyuncunun klanı varsa)
+                Clan playerClan = clanManager.getClanByPlayer(player.getUniqueId());
+                if (playerClan != null) {
+                    playerClan.addStructure(detectedStructure);
+                }
+            }
+            
+            event.setCancelled(true);
+            setCooldown(player.getUniqueId());
+            activateStructureEffects(player, detectedStructure);
+            player.sendMessage("§a§l" + getStructureName(detectedStructure.getType()) +
+                    " AKTİVE EDİLDİ! (Seviye " + detectedStructure.getLevel() + ")");
+            player.playSound(clicked.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1f, 1f);
+            return;
+        }
+
+        // Klan yapıları için kontrol
         Clan clan = clanManager.getClanByPlayer(player.getUniqueId());
         if (clan == null) {
-            return; // Klansız oyuncu yapı aktive edemez
+            player.sendMessage("§cKlan yapıları için bir klana üye olmanız gerekiyor!");
+            return;
         }
 
         // Klan bölgesinde mi?
         Clan owner = territoryManager.getTerritoryOwner(clicked.getLocation());
         if (owner == null || !owner.equals(clan)) {
-            return; // Kendi bölgesinde değil
+            player.sendMessage("§cKlan yapıları sadece kendi bölgenizde kurulabilir!");
+            return;
         }
 
         // Yetki kontrolü: Recruit yapı aktive edemez
@@ -80,24 +116,19 @@ public class StructureActivationListener implements Listener {
             return;
         }
 
-        // Pattern kontrolü - her yapı tipi için kontrol et
-        Structure detectedStructure = detectStructurePattern(clicked, player);
+        // Yapıyı klana ekle
+        clan.addStructure(detectedStructure);
 
-        if (detectedStructure != null) {
-            // Yapıyı klana ekle
-            clan.addStructure(detectedStructure);
+        // Cooldown ekle
+        setCooldown(player.getUniqueId());
 
-            // Cooldown ekle
-            setCooldown(player.getUniqueId());
+        // Başarı mesajı ve efektler
+        event.setCancelled(true);
+        activateStructureEffects(player, detectedStructure);
 
-            // Başarı mesajı ve efektler
-            event.setCancelled(true);
-            activateStructureEffects(player, detectedStructure);
-
-            player.sendMessage("§a§l" + getStructureName(detectedStructure.getType()) +
-                    " AKTİVE EDİLDİ! (Seviye " + detectedStructure.getLevel() + ")");
-            player.playSound(clicked.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1f, 1f);
-        }
+        player.sendMessage("§a§l" + getStructureName(detectedStructure.getType()) +
+                " AKTİVE EDİLDİ! (Seviye " + detectedStructure.getLevel() + ")");
+        player.playSound(clicked.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1f, 1f);
     }
 
     /**
@@ -131,7 +162,50 @@ public class StructureActivationListener implements Listener {
         if (autoTurret != null)
             return autoTurret;
 
-        // Eklenebilir: Diğer yapılar...
+        // 6. KİŞİSEL GÖREV LONCASI (Personal Mission Guild) - Lectern + Taş
+        Structure personalMissionGuild = checkPersonalMissionGuild(center);
+        if (personalMissionGuild != null)
+            return personalMissionGuild;
+
+        // 7. KLAN YÖNETİM MERKEZİ (Clan Management Center) - Beacon + Demir Bloğu
+        Structure clanManagementCenter = checkClanManagementCenter(center);
+        if (clanManagementCenter != null)
+            return clanManagementCenter;
+
+        // 8. KLAN BANKASI (Clan Bank) - Ender Chest + Demir Bloğu
+        Structure clanBank = checkClanBank(center);
+        if (clanBank != null)
+            return clanBank;
+
+        // 9. KLAN GÖREV LONCASI (Clan Mission Guild) - Lectern + Demir Bloğu
+        Structure clanMissionGuild = checkClanMissionGuild(center);
+        if (clanMissionGuild != null)
+            return clanMissionGuild;
+
+        // 10. EĞİTİM ALANI (Training Arena) - Enchanting Table + Demir Bloğu
+        Structure trainingArena = checkTrainingArena(center);
+        if (trainingArena != null)
+            return trainingArena;
+
+        // 11. KERVAN İSTASYONU (Caravan Station) - Chest + Demir Bloğu
+        Structure caravanStation = checkCaravanStation(center);
+        if (caravanStation != null)
+            return caravanStation;
+
+        // 12. KONTRAT BÜROSU (Contract Office) - Anvil + Taş
+        Structure contractOffice = checkContractOffice(center);
+        if (contractOffice != null)
+            return contractOffice;
+
+        // 13. MARKET (Market Place) - Chest + Sign + Taş
+        Structure marketPlace = checkMarketPlace(center);
+        if (marketPlace != null)
+            return marketPlace;
+
+        // 14. TARİF KÜTÜPHANESİ (Recipe Library) - Lectern + Bookshelf
+        Structure recipeLibrary = checkRecipeLibrary(center);
+        if (recipeLibrary != null)
+            return recipeLibrary;
 
         return null;
     }
@@ -323,6 +397,257 @@ public class StructureActivationListener implements Listener {
         int level = Math.min(3, Math.max(1, height - 1));
 
         return new Structure(Type.AUTO_TURRET, center.getLocation(), level);
+    }
+
+    // ========== YÖNETİM YAPILARI PATTERN KONTROLLERİ ==========
+
+    /**
+     * Kişisel Görev Loncası: Lectern + 2x2 Taş taban (her yere yapılabilir)
+     */
+    private Structure checkPersonalMissionGuild(Block center) {
+        if (center.getType() != Material.LECTERN)
+            return null;
+
+        // 2x2 Taş taban kontrolü
+        Block below = center.getRelative(BlockFace.DOWN);
+        int stoneCount = 0;
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                Block checkBlock = below.getRelative(x, 0, z);
+                if (checkBlock.getType() == Material.STONE || 
+                    checkBlock.getType() == Material.COBBLESTONE ||
+                    checkBlock.getType() == Material.STONE_BRICKS) {
+                    stoneCount++;
+                }
+            }
+        }
+
+        if (stoneCount < 3) // En az 3/4 blok
+            return null;
+
+        return new Structure(Type.PERSONAL_MISSION_GUILD, center.getLocation(), 1);
+    }
+
+    /**
+     * Klan Yönetim Merkezi: Beacon + 3x3 Demir Bloğu taban
+     */
+    private Structure checkClanManagementCenter(Block center) {
+        if (center.getType() != Material.BEACON)
+            return null;
+
+        Block below = center.getRelative(BlockFace.DOWN);
+        if (!check3x3Platform(below, Material.IRON_BLOCK)) {
+            return null;
+        }
+
+        // Seviye: Demir Bloğu sayısına göre
+        int ironCount = 0;
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                if (x == 0 && z == 0) continue;
+                Block checkBlock = below.getRelative(x, 0, z);
+                if (checkBlock.getType() == Material.IRON_BLOCK) {
+                    ironCount++;
+                }
+            }
+        }
+
+        int level = 1;
+        if (ironCount >= 6) level = 2;
+        if (ironCount >= 8) level = 3;
+
+        return new Structure(Type.CLAN_MANAGEMENT_CENTER, center.getLocation(), level);
+    }
+
+    /**
+     * Klan Bankası: Ender Chest + 2x2 Demir Bloğu taban
+     */
+    private Structure checkClanBank(Block center) {
+        if (center.getType() != Material.ENDER_CHEST)
+            return null;
+
+        Block below = center.getRelative(BlockFace.DOWN);
+        int ironCount = 0;
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                Block checkBlock = below.getRelative(x, 0, z);
+                if (checkBlock.getType() == Material.IRON_BLOCK) {
+                    ironCount++;
+                }
+            }
+        }
+
+        if (ironCount < 3)
+            return null;
+
+        int level = ironCount >= 4 ? 2 : 1;
+        return new Structure(Type.CLAN_BANK, center.getLocation(), level);
+    }
+
+    /**
+     * Klan Görev Loncası: Lectern + 2x2 Demir Bloğu taban
+     */
+    private Structure checkClanMissionGuild(Block center) {
+        if (center.getType() != Material.LECTERN)
+            return null;
+
+        Block below = center.getRelative(BlockFace.DOWN);
+        int ironCount = 0;
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                Block checkBlock = below.getRelative(x, 0, z);
+                if (checkBlock.getType() == Material.IRON_BLOCK) {
+                    ironCount++;
+                }
+            }
+        }
+
+        if (ironCount < 3)
+            return null;
+
+        int level = ironCount >= 4 ? 2 : 1;
+        return new Structure(Type.CLAN_MISSION_GUILD, center.getLocation(), level);
+    }
+
+    /**
+     * Eğitim Alanı: Enchanting Table + 2x2 Demir Bloğu taban
+     */
+    private Structure checkTrainingArena(Block center) {
+        if (center.getType() != Material.ENCHANTING_TABLE)
+            return null;
+
+        Block below = center.getRelative(BlockFace.DOWN);
+        int ironCount = 0;
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                Block checkBlock = below.getRelative(x, 0, z);
+                if (checkBlock.getType() == Material.IRON_BLOCK) {
+                    ironCount++;
+                }
+            }
+        }
+
+        if (ironCount < 3)
+            return null;
+
+        int level = ironCount >= 4 ? 2 : 1;
+        return new Structure(Type.TRAINING_ARENA, center.getLocation(), level);
+    }
+
+    /**
+     * Kervan İstasyonu: Chest + 2x2 Demir Bloğu taban
+     */
+    private Structure checkCaravanStation(Block center) {
+        if (center.getType() != Material.CHEST)
+            return null;
+
+        Block below = center.getRelative(BlockFace.DOWN);
+        int ironCount = 0;
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                Block checkBlock = below.getRelative(x, 0, z);
+                if (checkBlock.getType() == Material.IRON_BLOCK) {
+                    ironCount++;
+                }
+            }
+        }
+
+        if (ironCount < 3)
+            return null;
+
+        int level = ironCount >= 4 ? 2 : 1;
+        return new Structure(Type.CARAVAN_STATION, center.getLocation(), level);
+    }
+
+    /**
+     * Kontrat Bürosu: Anvil + 2x2 Taş taban (her yere yapılabilir)
+     */
+    private Structure checkContractOffice(Block center) {
+        if (center.getType() != Material.ANVIL && 
+            center.getType() != Material.CHIPPED_ANVIL &&
+            center.getType() != Material.DAMAGED_ANVIL)
+            return null;
+
+        Block below = center.getRelative(BlockFace.DOWN);
+        int stoneCount = 0;
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                Block checkBlock = below.getRelative(x, 0, z);
+                if (checkBlock.getType() == Material.STONE || 
+                    checkBlock.getType() == Material.COBBLESTONE ||
+                    checkBlock.getType() == Material.STONE_BRICKS) {
+                    stoneCount++;
+                }
+            }
+        }
+
+        if (stoneCount < 3)
+            return null;
+
+        return new Structure(Type.CONTRACT_OFFICE, center.getLocation(), 1);
+    }
+
+    /**
+     * Market: Chest + Sign + 2x2 Taş taban (her yere yapılabilir)
+     */
+    private Structure checkMarketPlace(Block center) {
+        if (center.getType() != Material.CHEST)
+            return null;
+
+        // Sign kontrolü (yanında veya üstünde)
+        boolean hasSign = false;
+        for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP}) {
+            Block checkBlock = center.getRelative(face);
+            if (checkBlock.getType().name().contains("SIGN")) {
+                hasSign = true;
+                break;
+            }
+        }
+
+        if (!hasSign)
+            return null;
+
+        Block below = center.getRelative(BlockFace.DOWN);
+        int stoneCount = 0;
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                Block checkBlock = below.getRelative(x, 0, z);
+                if (checkBlock.getType() == Material.STONE || 
+                    checkBlock.getType() == Material.COBBLESTONE ||
+                    checkBlock.getType() == Material.STONE_BRICKS) {
+                    stoneCount++;
+                }
+            }
+        }
+
+        if (stoneCount < 3)
+            return null;
+
+        return new Structure(Type.MARKET_PLACE, center.getLocation(), 1);
+    }
+
+    /**
+     * Tarif Kütüphanesi: Lectern + Bookshelf yanında (her yere yapılabilir)
+     */
+    private Structure checkRecipeLibrary(Block center) {
+        if (center.getType() != Material.LECTERN)
+            return null;
+
+        // Bookshelf kontrolü (yanında en az 2 tane)
+        int bookshelfCount = 0;
+        for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST}) {
+            Block checkBlock = center.getRelative(face);
+            if (checkBlock.getType() == Material.BOOKSHELF || 
+                checkBlock.getType() == Material.CHISELED_BOOKSHELF) {
+                bookshelfCount++;
+            }
+        }
+
+        if (bookshelfCount < 2)
+            return null;
+
+        int level = bookshelfCount >= 4 ? 2 : 1;
+        return new Structure(Type.RECIPE_LIBRARY, center.getLocation(), level);
     }
 
     // ========== YARDIMCI METODLAR ==========

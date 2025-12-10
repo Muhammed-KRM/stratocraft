@@ -36,7 +36,18 @@ public class Structure {
         INVISIBILITY_CLOAK,   // Görünmezlik Perdesi
         ARMORY,               // Cephanelik
         LIBRARY,              // Kütüphane
-        WARNING_SIGN          // Yasaklı Bölge Tabelası
+        WARNING_SIGN,         // Yasaklı Bölge Tabelası
+        
+        // --- YÖNETİM & MENÜ YAPILARI ---
+        PERSONAL_MISSION_GUILD,  // Kişisel Görev Loncası (her yere yapılabilir)
+        CLAN_MANAGEMENT_CENTER, // Klan Yönetim Merkezi (Klan menüleri)
+        CLAN_BANK,              // Klan Bankası
+        CLAN_MISSION_GUILD,     // Klan Görev Loncası (sadece klan içine)
+        TRAINING_ARENA,         // Eğitim Alanı (Eğitilmiş Canlılar, Üreme)
+        CARAVAN_STATION,        // Kervan İstasyonu
+        CONTRACT_OFFICE,        // Kontrat Bürosu (genel)
+        MARKET_PLACE,           // Market
+        RECIPE_LIBRARY          // Tarif Kütüphanesi
     }
 
     private final Type type;

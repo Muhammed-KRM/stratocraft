@@ -144,7 +144,21 @@ public class ClanMenu implements Listener {
             menu.setItem(15, expand);
         }
 
-        // Market Butonu (Slot 16)
+        // Yapılar Butonu (Slot 16) - YENİ
+        ItemStack structures = new ItemStack(Material.BEACON);
+        ItemMeta structuresMeta = structures.getItemMeta();
+        if (structuresMeta != null) {
+            int structureCount = clan.getStructures() != null ? clan.getStructures().size() : 0;
+            structuresMeta.setDisplayName("§aKlan Yapıları");
+            structuresMeta.setLore(Arrays.asList(
+                "§7Toplam Yapı: §e" + structureCount,
+                "§7Yapıları görüntüle ve yönet"
+            ));
+            structures.setItemMeta(structuresMeta);
+        }
+        menu.setItem(16, structures);
+        
+        // Market Butonu (Slot 17) - Slot değişti
         ItemStack market = new ItemStack(Material.EMERALD);
         ItemMeta marketMeta = market.getItemMeta();
         if (marketMeta != null) {
@@ -152,9 +166,30 @@ public class ClanMenu implements Listener {
             marketMeta.setLore(Arrays.asList("§7Klan marketini aç"));
             market.setItemMeta(marketMeta);
         }
-        menu.setItem(16, market);
+        menu.setItem(17, market);
 
-        // Yükseltmeler Butonu (Slot 17)
+        // Kervan Butonu (Slot 17) - YENİ
+        ItemStack caravan = new ItemStack(Material.CHEST_MINECART);
+        ItemMeta caravanMeta = caravan.getItemMeta();
+        if (caravanMeta != null) {
+            int caravanCount = 0;
+            if (plugin != null && plugin.getCaravanManager() != null) {
+                for (UUID memberId : clan.getMembers().keySet()) {
+                    if (plugin.getCaravanManager().getCaravan(memberId) != null) {
+                        caravanCount++;
+                    }
+                }
+            }
+            caravanMeta.setDisplayName("§aKervan");
+            caravanMeta.setLore(Arrays.asList(
+                "§7Aktif Kervan: §e" + caravanCount,
+                "§7Kervanları görüntüle ve yönet"
+            ));
+            caravan.setItemMeta(caravanMeta);
+        }
+        menu.setItem(17, caravan);
+        
+        // Yükseltmeler Butonu (Slot 20) - Slot değişti
         ItemStack upgrades = new ItemStack(Material.ANVIL);
         ItemMeta upgradesMeta = upgrades.getItemMeta();
         if (upgradesMeta != null) {
@@ -162,9 +197,62 @@ public class ClanMenu implements Listener {
             upgradesMeta.setLore(Arrays.asList("§7Yapı yükseltmelerini görüntüle"));
             upgrades.setItemMeta(upgradesMeta);
         }
-        menu.setItem(17, upgrades);
+        menu.setItem(20, upgrades);
         
-        // İstatistikler Butonu (Slot 18) - YENİ
+        // İttifaklar Butonu (Slot 18) - YENİ
+        ItemStack alliances = new ItemStack(Material.DIAMOND);
+        ItemMeta alliancesMeta = alliances.getItemMeta();
+        if (alliancesMeta != null) {
+            int allianceCount = 0;
+            if (plugin != null && plugin.getAllianceManager() != null) {
+                allianceCount = plugin.getAllianceManager().getAlliances(clan.getId()).size();
+            }
+            alliancesMeta.setDisplayName("§aİttifaklar");
+            alliancesMeta.setLore(Arrays.asList(
+                "§7Aktif İttifak: §e" + allianceCount,
+                "§7İttifakları görüntüle ve yönet"
+            ));
+            alliances.setItemMeta(alliancesMeta);
+        }
+        menu.setItem(18, alliances);
+        
+        // Eğitme/Üreme Butonu (Slot 19) - YENİ
+        ItemStack taming = new ItemStack(Material.SPAWNER);
+        ItemMeta tamingMeta = taming.getItemMeta();
+        if (tamingMeta != null) {
+            int creatureCount = 0;
+            if (plugin != null && plugin.getTamingManager() != null) {
+                for (UUID memberId : clan.getMembers().keySet()) {
+                    org.bukkit.OfflinePlayer member = org.bukkit.Bukkit.getOfflinePlayer(memberId);
+                    if (member != null && member.isOnline() && member.getPlayer() != null) {
+                        creatureCount += me.mami.stratocraft.util.TamingHelper.getTamedCreatures(
+                            member.getPlayer(), plugin.getTamingManager()).size();
+                    }
+                }
+            }
+            tamingMeta.setDisplayName("§aEğitme/Üreme");
+            tamingMeta.setLore(Arrays.asList(
+                "§7Eğitilmiş Canlı: §e" + creatureCount,
+                "§7Canlıları görüntüle ve yönet"
+            ));
+            taming.setItemMeta(tamingMeta);
+        }
+        menu.setItem(19, taming);
+        
+        // Eğitim Menüsü Butonu (Slot 20) - YENİ
+        ItemStack training = new ItemStack(Material.EXPERIENCE_BOTTLE);
+        ItemMeta trainingMeta = training.getItemMeta();
+        if (trainingMeta != null) {
+            trainingMeta.setDisplayName("§aEğitim İlerlemesi");
+            trainingMeta.setLore(Arrays.asList(
+                "§7Antrenman ve mastery seviyeleri",
+                "§7Ritüel/batarya eğitim durumu"
+            ));
+            training.setItemMeta(trainingMeta);
+        }
+        menu.setItem(20, training);
+        
+        // İstatistikler Butonu (Slot 21) - Slot değişti
         ItemStack stats = new ItemStack(Material.PAPER);
         ItemMeta statsMeta = stats.getItemMeta();
         if (statsMeta != null) {
@@ -175,7 +263,7 @@ public class ClanMenu implements Listener {
             ));
             stats.setItemMeta(statsMeta);
         }
-        menu.setItem(18, stats);
+        menu.setItem(21, stats);
 
         // Bakiye Butonu (Slot 22)
         ItemStack balance = new ItemStack(Material.GOLD_INGOT);
@@ -288,6 +376,16 @@ public class ClanMenu implements Listener {
                 player.closeInventory();
                 break;
 
+            case BEACON:
+                // Yapılar menüsü - YENİ
+                if (plugin != null && plugin.getClanStructureMenu() != null) {
+                    plugin.getClanStructureMenu().openMainMenu(player);
+                } else {
+                    player.sendMessage("§cYapı sistemi aktif değil!");
+                    player.closeInventory();
+                }
+                break;
+                
             case EMERALD:
                 // Market menüsü
                 player.sendMessage("§aMarket menüsü yakında eklenecek!");
@@ -298,6 +396,16 @@ public class ClanMenu implements Listener {
                 // Yükseltmeler menüsü
                 player.sendMessage("§aYükseltmeler menüsü yakında eklenecek!");
                 player.closeInventory();
+                break;
+                
+            case EXPERIENCE_BOTTLE:
+                // Eğitim menüsü - YENİ
+                if (plugin != null && plugin.getTrainingMenu() != null) {
+                    plugin.getTrainingMenu().openMainMenu(player);
+                } else {
+                    player.sendMessage("§cEğitim sistemi aktif değil!");
+                    player.closeInventory();
+                }
                 break;
                 
             case PAPER:

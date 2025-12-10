@@ -52,6 +52,14 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.gui.ClanMemberMenu clanMemberMenu;
     private me.mami.stratocraft.gui.ClanStatsMenu clanStatsMenu;
     private me.mami.stratocraft.gui.ContractMenu contractMenu;
+    private me.mami.stratocraft.gui.PowerMenu powerMenu;
+    private me.mami.stratocraft.gui.ClanBankMenu clanBankMenu;
+    private me.mami.stratocraft.gui.ClanStructureMenu clanStructureMenu;
+    private me.mami.stratocraft.gui.AllianceMenu allianceMenu;
+    private me.mami.stratocraft.gui.CaravanMenu caravanMenu;
+    private me.mami.stratocraft.gui.TamingMenu tamingMenu;
+    private me.mami.stratocraft.gui.BreedingMenu breedingMenu;
+    private me.mami.stratocraft.gui.TrainingMenu trainingMenu;
     private me.mami.stratocraft.manager.CombatLogManager combatLogManager;
     private me.mami.stratocraft.manager.EconomyManager economyManager;
     private me.mami.stratocraft.manager.SiegeWeaponManager siegeWeaponManager;
@@ -79,6 +87,7 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.SimplePowerHistory simplePowerHistory;
     private me.mami.stratocraft.manager.HUDManager hudManager;
     private me.mami.stratocraft.manager.BatteryParticleManager batteryParticleManager;
+    private me.mami.stratocraft.manager.DisasterArenaManager disasterArenaManager;
     
     public me.mami.stratocraft.listener.SpecialWeaponListener getSpecialWeaponListener() {
         return specialWeaponListener;
@@ -156,6 +165,9 @@ public class Main extends JavaPlugin {
         newBossArenaManager = new me.mami.stratocraft.manager.NewBossArenaManager(this);
         breedingManager = new me.mami.stratocraft.manager.BreedingManager(this);
         
+        // DisasterArenaManager initialize et
+        disasterArenaManager = new me.mami.stratocraft.manager.DisasterArenaManager(this);
+        
         // MissionManager'ı DifficultyManager ile başlat
         missionManager = new me.mami.stratocraft.manager.MissionManager(difficultyManager, this);
 
@@ -170,6 +182,12 @@ public class Main extends JavaPlugin {
         disasterManager.setTerritoryManager(territoryManager);
         disasterManager.setDifficultyManager(difficultyManager); // DifficultyManager'ı set et
         disasterManager.setConfigManager(configManager.getDisasterConfigManager()); // ConfigManager'ı set et
+        disasterManager.setArenaManager(disasterArenaManager); // DisasterArenaManager'ı set et
+        
+        // BossManager'a DifficultyManager'ı set et (zorluk seviyesine göre boss gücü)
+        if (bossManager != null && difficultyManager != null) {
+            bossManager.setDifficultyManager(difficultyManager);
+        }
         
         // ✅ CONFIG ENTEGRASYONU: Manager'lara GameBalanceConfig'i set et
         if (configManager != null && configManager.getGameBalanceConfig() != null) {
@@ -219,6 +237,7 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new TerritoryListener(territoryManager, siegeManager), this);
         Bukkit.getPluginManager().registerEvents(new StructureActivationListener(clanManager, territoryManager), this); // YAPI
                                                                                                                         // AKTİVASYONU
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.StructureMenuListener(this, clanManager, territoryManager), this); // YAPI MENÜLERİ
         Bukkit.getPluginManager().registerEvents(new SiegeListener(siegeManager, territoryManager), this);
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.EnderPearlListener(territoryManager), this);
         Bukkit.getPluginManager().registerEvents(new ScavengerListener(scavengerManager), this);
@@ -958,6 +977,38 @@ public class Main extends JavaPlugin {
     public me.mami.stratocraft.gui.ContractMenu getContractMenu() {
         return contractMenu;
     }
+    
+    public me.mami.stratocraft.gui.PowerMenu getPowerMenu() {
+        return powerMenu;
+    }
+    
+    public me.mami.stratocraft.gui.ClanBankMenu getClanBankMenu() {
+        return clanBankMenu;
+    }
+    
+    public me.mami.stratocraft.gui.ClanStructureMenu getClanStructureMenu() {
+        return clanStructureMenu;
+    }
+    
+    public me.mami.stratocraft.gui.AllianceMenu getAllianceMenu() {
+        return allianceMenu;
+    }
+    
+    public me.mami.stratocraft.gui.CaravanMenu getCaravanMenu() {
+        return caravanMenu;
+    }
+    
+    public me.mami.stratocraft.gui.TamingMenu getTamingMenu() {
+        return tamingMenu;
+    }
+    
+    public me.mami.stratocraft.gui.BreedingMenu getBreedingMenu() {
+        return breedingMenu;
+    }
+    
+    public me.mami.stratocraft.gui.TrainingMenu getTrainingMenu() {
+        return trainingMenu;
+    }
 
     public BatteryManager getBatteryManager() {
         return batteryManager;
@@ -1218,7 +1269,62 @@ public class Main extends JavaPlugin {
             contractMenu = new me.mami.stratocraft.gui.ContractMenu(
                 this, contractManager, clanManager);
             Bukkit.getPluginManager().registerEvents(contractMenu, this);
+            
+            // 10. PowerMenu (Güç sistemi GUI)
+            if (stratocraftPowerSystem != null) {
+                powerMenu = new me.mami.stratocraft.gui.PowerMenu(this, stratocraftPowerSystem);
+                Bukkit.getPluginManager().registerEvents(powerMenu, this);
+            }
+            
+            // 11. ClanBankMenu (Klan bankası GUI)
+            if (clanBankSystem != null) {
+                clanBankMenu = new me.mami.stratocraft.gui.ClanBankMenu(this, clanManager, clanBankSystem);
+                Bukkit.getPluginManager().registerEvents(clanBankMenu, this);
+            }
+            
+            // 12. ClanStructureMenu (Klan yapıları GUI)
+            if (stratocraftPowerSystem != null) {
+                clanStructureMenu = new me.mami.stratocraft.gui.ClanStructureMenu(
+                    this, clanManager, stratocraftPowerSystem);
+                Bukkit.getPluginManager().registerEvents(clanStructureMenu, this);
+            }
         }
+        
+        // 13. AllianceMenu (İttifak GUI)
+        if (allianceManager != null) {
+            allianceMenu = new me.mami.stratocraft.gui.AllianceMenu(this, clanManager, allianceManager);
+            Bukkit.getPluginManager().registerEvents(allianceMenu, this);
+        }
+        
+        // 14. CaravanMenu (Kervan GUI)
+        if (caravanManager != null && configManager != null && configManager.getGameBalanceConfig() != null) {
+            me.mami.stratocraft.manager.GameBalanceConfig balanceConfig = configManager.getGameBalanceConfig();
+            caravanMenu = new me.mami.stratocraft.gui.CaravanMenu(
+                this, clanManager, caravanManager, balanceConfig);
+            Bukkit.getPluginManager().registerEvents(caravanMenu, this);
+        }
+        
+        // 15. TamingMenu (Eğitme GUI)
+        if (tamingManager != null) {
+            tamingMenu = new me.mami.stratocraft.gui.TamingMenu(this, clanManager, tamingManager);
+            Bukkit.getPluginManager().registerEvents(tamingMenu, this);
+        }
+        
+        // 16. BreedingMenu (Üreme GUI)
+        if (breedingManager != null && tamingManager != null) {
+            breedingMenu = new me.mami.stratocraft.gui.BreedingMenu(
+                this, clanManager, tamingManager, breedingManager);
+            Bukkit.getPluginManager().registerEvents(breedingMenu, this);
+        }
+        
+        // 17. TrainingMenu (Eğitim GUI)
+        if (trainingManager != null) {
+            trainingMenu = new me.mami.stratocraft.gui.TrainingMenu(this, trainingManager);
+            Bukkit.getPluginManager().registerEvents(trainingMenu, this);
+        }
+        
+        // 18. PersonalTerminalListener (Kişisel Terminal)
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.PersonalTerminalListener(this), this);
         
         // ClanManager'a yeni sistemleri bağla (setter injection)
         if (clanManager != null) {

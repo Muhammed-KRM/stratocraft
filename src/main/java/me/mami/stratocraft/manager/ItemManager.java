@@ -194,6 +194,17 @@ public class ItemManager {
     public static ItemStack RECIPE_SUMMON_CORE;
     public static ItemStack RECIPE_BREEDING_CORE;
     public static ItemStack RECIPE_GENDER_SCANNER;
+    
+    // Yönetim Yapıları Tarif Kitapları
+    public static ItemStack RECIPE_PERSONAL_MISSION_GUILD;
+    public static ItemStack RECIPE_CLAN_MANAGEMENT_CENTER;
+    public static ItemStack RECIPE_CLAN_BANK;
+    public static ItemStack RECIPE_CLAN_MISSION_GUILD;
+    public static ItemStack RECIPE_TRAINING_ARENA;
+    public static ItemStack RECIPE_CARAVAN_STATION;
+    public static ItemStack RECIPE_CONTRACT_OFFICE;
+    public static ItemStack RECIPE_MARKET_PLACE;
+    public static ItemStack RECIPE_RECIPE_LIBRARY;
 
     // Yeni Madenler
     public static ItemStack SULFUR_ORE;
@@ -218,6 +229,8 @@ public class ItemManager {
     public static ItemStack BREEDING_CORE; // Üreme Çekirdeği
     public static ItemStack GENDER_SCANNER; // Cinsiyet Ayırıcı
     public static ItemStack CASUSLUK_DURBUN; // Casusluk Dürbünü
+    public static ItemStack PERSONAL_TERMINAL; // Kişisel Yönetim Terminali
+    public static ItemStack CONTRACT_PAPER; // Kontrat Kağıdı
     
     // ========== YENİ MAYIN SİSTEMİ (25 Mayın + Gizleme Aleti) ==========
     // Seviye 1
@@ -626,6 +639,9 @@ public class ItemManager {
         BREEDING_CORE = create(Material.BEACON, "BREEDING_CORE", "§d§lÜreme Çekirdeği");
         GENDER_SCANNER = create(Material.SPYGLASS, "GENDER_SCANNER", "§bCinsiyet Ayırıcı");
         CASUSLUK_DURBUN = create(Material.SPYGLASS, "CASUSLUK_DURBUN", "§eCasusluk Dürbünü");
+        PERSONAL_TERMINAL = create(Material.COMPASS, "PERSONAL_TERMINAL", "§e§lKişisel Yönetim Terminali");
+        CONTRACT_PAPER = create(Material.PAPER, "CONTRACT_PAPER", "§6§lKontrat Kağıdı");
+        CONTRACT_PAPER = create(Material.PAPER, "CONTRACT_PAPER", "§6§lKontrat Kağıdı");
 
         // ========== ÖZEL ZIRHLAR ==========
         initSpecialArmors();
@@ -754,6 +770,9 @@ public class ItemManager {
         
         // Kanca tarifleri (Golden Hook eksikti)
         registerGoldenHookRecipe();
+        
+        // Kişisel Yönetim Terminali tarifi
+        registerPersonalTerminalRecipe();
         
         // NOT: Özel silah tarifleri (registerSpecialWeaponRecipes) init() içinde zaten çağrılıyor (satır 494)
         // Burada tekrar çağrılmamalı, duplicate recipe hatasına neden olur
@@ -2728,6 +2747,32 @@ public class ItemManager {
     /**
      * Altın Kanca tarifi
      */
+    /**
+     * Kişisel Yönetim Terminali tarifi (basit - yeni başlayanlar için)
+     */
+    private void registerPersonalTerminalRecipe() {
+        ShapelessRecipe terminalRecipe = new ShapelessRecipe(
+            new NamespacedKey(Main.getInstance(), "craft_personal_terminal"),
+            PERSONAL_TERMINAL.clone());
+        // 8x Kağıt + 1x Kırmızı Taş
+        for (int i = 0; i < 8; i++) {
+            terminalRecipe.addIngredient(Material.PAPER);
+        }
+        terminalRecipe.addIngredient(Material.REDSTONE);
+        Bukkit.addRecipe(terminalRecipe);
+        
+        // Kontrat Kağıdı tarifi (basit)
+        ShapelessRecipe contractPaperRecipe = new ShapelessRecipe(
+            new NamespacedKey(Main.getInstance(), "craft_contract_paper"),
+            CONTRACT_PAPER.clone());
+        // 3x Kağıt + 1x Mürekkep
+        for (int i = 0; i < 3; i++) {
+            contractPaperRecipe.addIngredient(Material.PAPER);
+        }
+        contractPaperRecipe.addIngredient(Material.INK_SAC);
+        Bukkit.addRecipe(contractPaperRecipe);
+    }
+    
     private void registerGoldenHookRecipe() {
         // Altın Kanca: 2 Altın + 1 İp + 1 Demir
         ShapedRecipe goldenHook = new ShapedRecipe(

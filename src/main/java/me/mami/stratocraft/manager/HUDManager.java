@@ -225,6 +225,17 @@ public class HUDManager {
             lines.add(power);
         }
         
+        // 8. ✅ KİŞİSEL TERMİNAL KONTROLÜ (item yoksa bilgilendirme)
+        HUDLine terminalHint = getPersonalTerminalHint(player);
+        if (terminalHint != null) {
+            lines.add(new HUDLine("§7")); // Boş satır
+            lines.add(terminalHint);
+            HUDLine recipeHint = getPersonalTerminalRecipeHint(player);
+            if (recipeHint != null) {
+                lines.add(recipeHint);
+            }
+        }
+        
         return lines;
     }
     
@@ -450,6 +461,43 @@ public class HUDManager {
         }
         
         return null;
+    }
+    
+    /**
+     * Kişisel Terminal bilgilendirmesi (item yoksa göster)
+     */
+    private HUDLine getPersonalTerminalHint(Player player) {
+        // Envanterde Personal Terminal var mı kontrol et
+        if (hasPersonalTerminal(player)) {
+            return null; // Item varsa bilgilendirme gösterme
+        }
+        
+        // Item yoksa bilgilendirme göster
+        return new HUDLine("§e⚠ Kişisel Yönetim Terminali yapmanız gerekiyor!");
+    }
+    
+    /**
+     * Oyuncunun envanterinde Personal Terminal var mı?
+     */
+    private boolean hasPersonalTerminal(Player player) {
+        if (player == null) return false;
+        
+        for (org.bukkit.inventory.ItemStack item : player.getInventory().getContents()) {
+            if (item != null && me.mami.stratocraft.manager.ItemManager.isCustomItem(item, "PERSONAL_TERMINAL")) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Kişisel Terminal tarif bilgisi (ikinci satır)
+     */
+    private HUDLine getPersonalTerminalRecipeHint(Player player) {
+        if (hasPersonalTerminal(player)) {
+            return null;
+        }
+        return new HUDLine("§7Tarif: §e8x Kağıt + 1x Kırmızı Taş");
     }
     
     /**

@@ -931,15 +931,16 @@ public class DataManager {
         
         try {
             // Reflection kullanarak private field'lara eriş
-            java.lang.reflect.Field lastOnlineTimeField = 
-                me.mami.stratocraft.manager.clan.ClanActivitySystem.class.getDeclaredField("lastOnlineTime");
-            lastOnlineTimeField.setAccessible(true);
+            // Field adı: lastActivityTime (lastOnlineTime değil)
+            java.lang.reflect.Field lastActivityTimeField = 
+                me.mami.stratocraft.manager.clan.ClanActivitySystem.class.getDeclaredField("lastActivityTime");
+            lastActivityTimeField.setAccessible(true);
             @SuppressWarnings("unchecked")
-            Map<UUID, Long> lastOnlineTime = 
-                (Map<UUID, Long>) lastOnlineTimeField.get(activitySystem);
+            Map<UUID, Long> lastActivityTime = 
+                (Map<UUID, Long>) lastActivityTimeField.get(activitySystem);
             
-            if (lastOnlineTime != null) {
-                for (Map.Entry<UUID, Long> entry : lastOnlineTime.entrySet()) {
+            if (lastActivityTime != null) {
+                for (Map.Entry<UUID, Long> entry : lastActivityTime.entrySet()) {
                     snapshot.lastOnlineTime.put(entry.getKey().toString(), entry.getValue());
                 }
             }
@@ -1795,12 +1796,13 @@ public class DataManager {
         if (lastOnlineTime == null) return;
         
         try {
-            java.lang.reflect.Field lastOnlineTimeField = 
-                me.mami.stratocraft.manager.clan.ClanActivitySystem.class.getDeclaredField("lastOnlineTime");
-            lastOnlineTimeField.setAccessible(true);
+            // Field adı: lastActivityTime (lastOnlineTime değil)
+            java.lang.reflect.Field lastActivityTimeField = 
+                me.mami.stratocraft.manager.clan.ClanActivitySystem.class.getDeclaredField("lastActivityTime");
+            lastActivityTimeField.setAccessible(true);
             @SuppressWarnings("unchecked")
             Map<UUID, Long> activityMap = 
-                (Map<UUID, Long>) lastOnlineTimeField.get(activitySystem);
+                (Map<UUID, Long>) lastActivityTimeField.get(activitySystem);
             
             if (activityMap != null) {
                 for (Map.Entry<String, Long> entry : lastOnlineTime.entrySet()) {

@@ -511,7 +511,8 @@ public class GhostRecipeListener implements Listener {
         String title = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(event.getView().title());
         
         // Title kontrolü - daha esnek (renk kodları olmadan da çalışır)
-        if (!title.contains("Tarif:") && !title.contains("Tarif Bulunamadı")) return;
+        // Tarif Kütüphanesi menüsü de kontrol edilmeli
+        if (!title.contains("Tarif:") && !title.contains("Tarif Bulunamadı") && !title.contains("Tarif Kütüphanesi")) return;
         
         // KRİTİK: TÜM TIKLAMALARI ENGELLE (en başta)
         event.setCancelled(true);
@@ -522,11 +523,44 @@ public class GhostRecipeListener implements Listener {
         Inventory clickedInventory = event.getClickedInventory();
         int slot = event.getSlot();
         int rawSlot = event.getRawSlot();
+        ItemStack clicked = event.getCurrentItem();
+        
+        // Tarif Kütüphanesi menüsü kontrolü
+        if (title.contains("Tarif Kütüphanesi")) {
+            // Sayfa numarasını al
+            int currentPage = 1;
+            try {
+                String pageStr = title.split(" - Sayfa ")[1];
+                currentPage = Integer.parseInt(pageStr);
+            } catch (Exception e) {
+                // Sayfa numarası parse edilemedi
+            }
+            
+            if (clicked != null) {
+                if (clicked.getType() == Material.ARROW) {
+                    if (slot == 45) {
+                        // Önceki sayfa
+                        player.openInventory(RecipeMenu.createRecipeLibraryMenu(player, currentPage - 1));
+                    } else if (slot == 53) {
+                        // Sonraki sayfa
+                        player.openInventory(RecipeMenu.createRecipeLibraryMenu(player, currentPage + 1));
+                    }
+                } else if (clicked.getType() == Material.BARRIER) {
+                    player.closeInventory();
+                } else {
+                    // Tarif seçildi - Tarif detay menüsünü aç
+                    String recipeId = getRecipeIdFromItem(clicked);
+                    if (recipeId != null) {
+                        player.openInventory(RecipeMenu.createRecipeMenu(recipeId));
+                    }
+                }
+            }
+            return;
+        }
         
         // GUI envanterinden tıklama kontrolü
         if (clickedInventory != null && clickedInventory.equals(topInventory)) {
             // GUI envanterinden tıklama - item transfer engelle
-            ItemStack clicked = event.getCurrentItem();
             
             if (clicked == null || clicked.getType() == Material.AIR) {
                 // Boş slot - engelle

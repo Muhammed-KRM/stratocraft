@@ -149,6 +149,42 @@ public class ShopListener implements Listener {
             }
         }
         
+        // Market listesi menüsü
+        else if (title.startsWith("§aMarket Listesi")) {
+            event.setCancelled(true);
+            ItemStack clicked = event.getCurrentItem();
+            if (clicked == null || clicked.getType() == Material.AIR) return;
+            
+            // Sayfa numarasını al
+            int currentPage = Integer.parseInt(title.split(" - Sayfa ")[1]);
+            
+            if (clicked.getType() == Material.ARROW) {
+                if (event.getSlot() == 45) {
+                    // Önceki sayfa
+                    java.util.List<Shop> shops = shopManager.getAllShops();
+                    player.openInventory(me.mami.stratocraft.gui.ShopMenu.createMarketListMenu(shops, currentPage - 1));
+                } else if (event.getSlot() == 53) {
+                    // Sonraki sayfa
+                    java.util.List<Shop> shops = shopManager.getAllShops();
+                    player.openInventory(me.mami.stratocraft.gui.ShopMenu.createMarketListMenu(shops, currentPage + 1));
+                }
+            } else if (clicked.getType() == Material.BARRIER) {
+                player.closeInventory();
+            } else {
+                // Shop seçildi - Shop'u bul ve menüyü aç
+                Shop selectedShop = null;
+                for (Shop shop : shopManager.getAllShops()) {
+                    if (shop.getSellingItem().isSimilar(clicked)) {
+                        selectedShop = shop;
+                        break;
+                    }
+                }
+                if (selectedShop != null) {
+                    player.openInventory(ShopMenu.createShopMenu(selectedShop));
+                }
+            }
+        }
+        
         // Teklif verme menüsü
         else if (title.equals("§eTeklif Ver")) {
             event.setCancelled(true);

@@ -176,6 +176,13 @@ public class DisasterManager {
     }
     
     /**
+     * ArenaManager'ı set et
+     */
+    public void setArenaManager(DisasterArenaManager arenaManager) {
+        this.arenaManager = arenaManager;
+    }
+    
+    /**
      * Güç hesaplama formülü (Config'den okur)
      * 
      * İki sistem desteklenir:

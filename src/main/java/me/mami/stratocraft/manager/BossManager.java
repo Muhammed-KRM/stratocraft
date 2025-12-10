@@ -47,6 +47,7 @@ import me.mami.stratocraft.Main;
 public class BossManager {
     private final Main plugin;
     private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
+    private me.mami.stratocraft.manager.DifficultyManager difficultyManager;
 
     // Eski sistemle uyum için, sadece temel bilgiler tutuluyor
     private final Map<UUID, BossData> activeBosses = new HashMap<>();
@@ -88,6 +89,13 @@ public class BossManager {
             this.weakPointDuration = config.getBossWeakPointDuration();
             this.shieldDuration = config.getBossShieldDuration();
         }
+    }
+    
+    /**
+     * DifficultyManager'ı set et (zorluk seviyesine göre boss gücü ayarlama için)
+     */
+    public void setDifficultyManager(me.mami.stratocraft.manager.DifficultyManager difficultyManager) {
+        this.difficultyManager = difficultyManager;
     }
 
     /**
@@ -258,6 +266,125 @@ public class BossManager {
         }
     }
 
+    // =====================================================================
+    //  F A Z   S İ S T E M İ
+    // =====================================================================
+    
+    /**
+     * Faz geçişi kontrolü (sağlık yüzdesine göre)
+     */
+    public boolean checkPhaseTransition(BossData boss) {
+        if (boss == null || boss.getEntity() == null || !boss.getEntity().isValid()) {
+            return false;
+        }
+        
+        LivingEntity entity = boss.getEntity();
+        double maxHealth = entity.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+        double currentHealth = entity.getHealth();
+        double healthPercent = currentHealth / maxHealth;
+        
+        int currentPhase = boss.getPhase();
+        int maxPhase = boss.getMaxPhase();
+        
+        // Faz geçişi gerekli mi?
+        if (me.mami.stratocraft.util.BossPhaseHelper.shouldTransitionPhase(
+                healthPercent, currentPhase, maxPhase)) {
+            transitionToPhase(boss, currentPhase + 1);
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Faz geçişi yap
+     */
+    public void transitionToPhase(BossData boss, int newPhase) {
+        if (boss == null || boss.getEntity() == null || !boss.getEntity().isValid()) {
+            return;
+        }
+        
+        int oldPhase = boss.getPhase();
+        int maxPhase = boss.getMaxPhase();
+        
+        if (newPhase <= oldPhase || newPhase > maxPhase) {
+            return; // Geçersiz faz
+        }
+        
+        // Fazı güncelle
+        while (boss.getPhase() < newPhase) {
+            boss.nextPhase();
+        }
+        
+        // Faz efektlerini uygula
+        applyPhaseEffects(boss, newPhase);
+        
+        // Zayıf noktaları güncelle
+        updateWeakPoints(boss);
+        
+        // Bildirim gönder
+        String message = me.mami.stratocraft.util.BossPhaseHelper.getPhaseTransitionMessage(
+            oldPhase, newPhase, boss.getType());
+        Bukkit.broadcastMessage(message);
+        
+        // Ses efekti
+        LivingEntity entity = boss.getEntity();
+        entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_WITHER_SPAWN, 1.0f, 0.8f);
+        entity.getWorld().spawnParticle(Particle.TOTEM, entity.getLocation().add(0, 2, 0), 50, 1, 1, 1, 0.3);
+    }
+    
+    /**
+     * Zayıf noktaları güncelle (faz değişince)
+     */
+    public void updateWeakPoints(BossData boss) {
+        if (boss == null || boss.getEntity() == null || !boss.getEntity().isValid()) {
+            return;
+        }
+        
+        LivingEntity entity = boss.getEntity();
+        int phase = boss.getPhase();
+        
+        // Zayıf nokta süresini sıfırla (yeni fazda aktif olsun)
+        weakPointCooldowns.remove(entity.getUniqueId());
+        
+        // Yeni faz için zayıf nokta aktif et
+        activateWeakPoint(entity.getUniqueId());
+    }
+    
+    /**
+     * Faz efektlerini uygula
+     */
+    public void applyPhaseEffects(BossData boss, int phase) {
+        if (boss == null || boss.getEntity() == null || !boss.getEntity().isValid()) {
+            return;
+        }
+        
+        LivingEntity entity = boss.getEntity();
+        
+        // Faz 2: Hız artışı
+        if (phase >= 2) {
+            entity.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, 0, false, false));
+        }
+        
+        // Faz 3: Güç artışı
+        if (phase >= 3) {
+            entity.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, Integer.MAX_VALUE, 0, false, false));
+        }
+        
+        // Yetenek cooldown'unu azalt (faz ilerledikçe daha sık yetenek kullanır)
+        long baseCooldown = 6000L; // 6 saniye
+        long phaseCooldown = baseCooldown - (phase * 1000L); // Her fazda 1 saniye azalır
+        boss.setAbilityCooldownMs(Math.max(2000L, phaseCooldown)); // Minimum 2 saniye
+    }
+    
+    /**
+     * Zayıf noktayı aktif et
+     */
+    private void activateWeakPoint(UUID bossId) {
+        if (bossId == null) return;
+        weakPointCooldowns.put(bossId, System.currentTimeMillis() + weakPointDuration);
+    }
+    
     // =====================================================================
     //  Y E T E N E K   S İ S T E M İ
     // =====================================================================
@@ -1079,6 +1206,61 @@ public class BossManager {
         Long until = shieldCooldowns.get(bossId);
         return until != null && System.currentTimeMillis() < until;
     }
+    
+    /**
+     * Zorluk seviyesine göre boss gücünü ayarla
+     */
+    private void applyDifficultyToBoss(LivingEntity boss, int difficultyLevel) {
+        if (boss == null || !boss.isValid() || difficultyLevel <= 0) {
+            return;
+        }
+        
+        // Zorluk seviyesine göre can artışı (%20 per level)
+        double healthMultiplier = 1.0 + (difficultyLevel * 0.2);
+        org.bukkit.attribute.AttributeInstance maxHealthAttr = boss.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
+        if (maxHealthAttr != null) {
+            double baseHealth = maxHealthAttr.getBaseValue();
+            maxHealthAttr.setBaseValue(baseHealth * healthMultiplier);
+            boss.setHealth(boss.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue());
+        }
+        
+        // Zorluk seviyesine göre hasar artışı (%15 per level)
+        double damageMultiplier = 1.0 + (difficultyLevel * 0.15);
+        org.bukkit.attribute.AttributeInstance attackDamageAttr = boss.getAttribute(org.bukkit.attribute.Attribute.GENERIC_ATTACK_DAMAGE);
+        if (attackDamageAttr != null) {
+            double baseDamage = attackDamageAttr.getBaseValue();
+            attackDamageAttr.setBaseValue(baseDamage * damageMultiplier);
+        }
+        
+        // Zorluk seviyesine göre savunma artışı (%10 per level)
+        double defenseMultiplier = 1.0 + (difficultyLevel * 0.10);
+        org.bukkit.attribute.AttributeInstance armorAttr = boss.getAttribute(org.bukkit.attribute.Attribute.GENERIC_ARMOR);
+        if (armorAttr != null) {
+            double baseArmor = armorAttr.getBaseValue();
+            armorAttr.setBaseValue(baseArmor * defenseMultiplier);
+        }
+        
+        // Yüksek zorluk seviyelerinde ekstra efektler
+        if (difficultyLevel >= 4) {
+            boss.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.DAMAGE_RESISTANCE, 
+                Integer.MAX_VALUE, 
+                0, 
+                false, 
+                false
+            ));
+        }
+        
+        if (difficultyLevel >= 5) {
+            boss.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                org.bukkit.potion.PotionEffectType.INCREASE_DAMAGE, 
+                Integer.MAX_VALUE, 
+                0, 
+                false, 
+                false
+            ));
+        }
+    }
 
     // =====================================================================
     //  B O S S   S P A W N   L O J I Ğ I
@@ -1119,12 +1301,23 @@ public class BossManager {
         // BossBar oluştur (boss canlarının gösterilmesi için)
         createBossBar(bossEntity, type);
 
+        // Zorluk seviyesine göre boss gücünü ayarla
+        if (difficultyManager != null) {
+            int difficultyLevel = difficultyManager.getDifficultyLevel(loc);
+            applyDifficultyToBoss(bossEntity, difficultyLevel);
+        }
+        
         // Arena dönüşümünü başlat (güçlü boss'lar için yayılmalı alan)
         try {
             me.mami.stratocraft.manager.NewBossArenaManager arenaMgr =
                     me.mami.stratocraft.Main.getInstance().getNewBossArenaManager();
             if (arenaMgr != null) {
                 int level = getDefaultLevelForType(type);
+                // Zorluk seviyesini de dikkate al
+                if (difficultyManager != null) {
+                    int difficultyLevel = difficultyManager.getDifficultyLevel(loc);
+                    level = Math.max(level, difficultyLevel); // Daha yüksek seviyeyi kullan
+                }
                 arenaMgr.startArenaTransformation(loc, type, level, bossEntity.getUniqueId());
             }
         } catch (Exception ignored) {

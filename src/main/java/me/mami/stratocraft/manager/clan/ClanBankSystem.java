@@ -639,6 +639,20 @@ public class ClanBankSystem {
     }
     
     /**
+     * Son maaş zamanı
+     */
+    public long getLastSalaryTime(UUID playerId) {
+        return lastSalaryTime.getOrDefault(playerId, 0L);
+    }
+    
+    /**
+     * Transfer kontratları
+     */
+    public List<TransferContract> getTransferContracts(UUID clanId) {
+        return transferContracts.getOrDefault(clanId, new ArrayList<>());
+    }
+    
+    /**
      * Transfer Kontratı Model
      */
     public static class TransferContract {

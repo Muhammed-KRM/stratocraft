@@ -1,15 +1,16 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.Block;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
-
-import java.util.*;
 
 /**
  * GhostRecipeManager - Hayalet tarif sistemi
@@ -155,6 +156,106 @@ public class GhostRecipeManager {
         addSimpleStructureRecipe("ARMORY", Material.CHEST, Material.IRON_BLOCK);
         addSimpleStructureRecipe("LIBRARY", Material.LECTERN, Material.BOOKSHELF);
         addSimpleStructureRecipe("WARNING_SIGN", Material.OAK_SIGN, Material.REDSTONE_BLOCK);
+        
+        // ========== YÖNETİM YAPILARI ==========
+        
+        // Kişisel Görev Loncası (PERSONAL_MISSION_GUILD)
+        GhostRecipeData personalMissionGuild = new GhostRecipeData();
+        personalMissionGuild.addBlock(new Vector(0, 0, 0), Material.LECTERN);
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                personalMissionGuild.addBlock(new Vector(x, -1, z), Material.STONE);
+            }
+        }
+        recipeData.put("PERSONAL_MISSION_GUILD", personalMissionGuild);
+        recipeData.put("RECIPE_PERSONAL_MISSION_GUILD", personalMissionGuild);
+        
+        // Klan Yönetim Merkezi (CLAN_MANAGEMENT_CENTER)
+        GhostRecipeData clanManagementCenter = new GhostRecipeData();
+        clanManagementCenter.addBlock(new Vector(0, 0, 0), Material.BEACON);
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                if (x == 0 && z == 0) continue;
+                clanManagementCenter.addBlock(new Vector(x, -1, z), Material.IRON_BLOCK);
+            }
+        }
+        recipeData.put("CLAN_MANAGEMENT_CENTER", clanManagementCenter);
+        recipeData.put("RECIPE_CLAN_MANAGEMENT_CENTER", clanManagementCenter);
+        
+        // Klan Bankası (CLAN_BANK)
+        GhostRecipeData clanBank = new GhostRecipeData();
+        clanBank.addBlock(new Vector(0, 0, 0), Material.ENDER_CHEST);
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                clanBank.addBlock(new Vector(x, -1, z), Material.IRON_BLOCK);
+            }
+        }
+        recipeData.put("CLAN_BANK", clanBank);
+        recipeData.put("RECIPE_CLAN_BANK", clanBank);
+        
+        // Klan Görev Loncası (CLAN_MISSION_GUILD)
+        GhostRecipeData clanMissionGuild = new GhostRecipeData();
+        clanMissionGuild.addBlock(new Vector(0, 0, 0), Material.LECTERN);
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                clanMissionGuild.addBlock(new Vector(x, -1, z), Material.IRON_BLOCK);
+            }
+        }
+        recipeData.put("CLAN_MISSION_GUILD", clanMissionGuild);
+        recipeData.put("RECIPE_CLAN_MISSION_GUILD", clanMissionGuild);
+        
+        // Eğitim Alanı (TRAINING_ARENA)
+        GhostRecipeData trainingArena = new GhostRecipeData();
+        trainingArena.addBlock(new Vector(0, 0, 0), Material.ENCHANTING_TABLE);
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                trainingArena.addBlock(new Vector(x, -1, z), Material.IRON_BLOCK);
+            }
+        }
+        recipeData.put("TRAINING_ARENA", trainingArena);
+        recipeData.put("RECIPE_TRAINING_ARENA", trainingArena);
+        
+        // Kervan İstasyonu (CARAVAN_STATION)
+        GhostRecipeData caravanStation = new GhostRecipeData();
+        caravanStation.addBlock(new Vector(0, 0, 0), Material.CHEST);
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                caravanStation.addBlock(new Vector(x, -1, z), Material.IRON_BLOCK);
+            }
+        }
+        recipeData.put("CARAVAN_STATION", caravanStation);
+        recipeData.put("RECIPE_CARAVAN_STATION", caravanStation);
+        
+        // Kontrat Bürosu (CONTRACT_OFFICE)
+        GhostRecipeData contractOffice = new GhostRecipeData();
+        contractOffice.addBlock(new Vector(0, 0, 0), Material.ANVIL);
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                contractOffice.addBlock(new Vector(x, -1, z), Material.STONE);
+            }
+        }
+        recipeData.put("CONTRACT_OFFICE", contractOffice);
+        recipeData.put("RECIPE_CONTRACT_OFFICE", contractOffice);
+        
+        // Market (MARKET_PLACE)
+        GhostRecipeData marketPlace = new GhostRecipeData();
+        marketPlace.addBlock(new Vector(0, 0, 0), Material.CHEST);
+        marketPlace.addBlock(new Vector(1, 0, 0), Material.OAK_SIGN); // Sign yanında
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                marketPlace.addBlock(new Vector(x, -1, z), Material.STONE);
+            }
+        }
+        recipeData.put("MARKET_PLACE", marketPlace);
+        recipeData.put("RECIPE_MARKET_PLACE", marketPlace);
+        
+        // Tarif Kütüphanesi (RECIPE_LIBRARY)
+        GhostRecipeData recipeLibrary = new GhostRecipeData();
+        recipeLibrary.addBlock(new Vector(0, 0, 0), Material.LECTERN);
+        recipeLibrary.addBlock(new Vector(1, 0, 0), Material.BOOKSHELF); // Bookshelf yanında
+        recipeLibrary.addBlock(new Vector(-1, 0, 0), Material.BOOKSHELF); // Bookshelf yanında
+        recipeData.put("RECIPE_LIBRARY", recipeLibrary);
+        recipeData.put("RECIPE_RECIPE_LIBRARY", recipeLibrary);
         
         // ========== ÖZEL EŞYALAR ==========
         // Eşyalar için tarif kitapları sadece bilgilendirme amaçlı, hayalet blok göstermez
@@ -433,9 +534,13 @@ public class GhostRecipeManager {
             Material material = entry.getValue();
             Location blockLoc = baseLocation.clone().add(offset);
             
+            // BUG DÜZELTME: Blokların ortasına değil üstüne denk gelmesi için
+            // blockLoc'u blok merkezine hizala (0.5, 0, 0.5 offset)
+            Location standLoc = blockLoc.getBlock().getLocation().add(0.5, 0, 0.5);
+            
             // ArmorStand ile hayalet blok göster
             ArmorStand stand = (ArmorStand) baseLocation.getWorld().spawnEntity(
-                blockLoc, EntityType.ARMOR_STAND);
+                standLoc, EntityType.ARMOR_STAND);
             stand.setVisible(false);
             stand.setGravity(false);
             stand.setInvulnerable(true);
@@ -446,6 +551,7 @@ public class GhostRecipeManager {
             org.bukkit.inventory.ItemStack blockItem = new org.bukkit.inventory.ItemStack(material);
             stand.getEquipment().setHelmet(blockItem);
             
+            // BUG DÜZELTME: Blok konumunu kaydet (hayalet blok kontrolü için)
             recipe.getGhostBlocks().put(blockLoc, stand);
         }
         
@@ -494,8 +600,10 @@ public class GhostRecipeManager {
         GhostRecipeData data = recipe.getData();
         Location baseLoc = recipe.getBaseLocation();
         
-        // Blok konumunu baseLocation'a göre offset'e çevir
-        Vector offset = blockLocation.toVector().subtract(baseLoc.toVector());
+        // BUG DÜZELTME: Blok konumunu baseLocation'a göre offset'e çevir
+        // blockLocation'ı blok merkezine hizala (getBlock().getLocation() kullan)
+        Location blockCenter = blockLocation.getBlock().getLocation();
+        Vector offset = blockCenter.toVector().subtract(baseLoc.getBlock().getLocation().toVector());
         
         // Bu konumda blok var mı?
         Material requiredMaterial = data.getBlocks().get(offset);
@@ -504,11 +612,11 @@ public class GhostRecipeManager {
         // Doğru blok mu?
         if (requiredMaterial != placedMaterial) return;
         
-        // Hayalet bloku kaldır
-        ArmorStand stand = recipe.getGhostBlocks().get(blockLocation);
+        // Hayalet bloku kaldır (blockCenter kullan)
+        ArmorStand stand = recipe.getGhostBlocks().get(blockCenter);
         if (stand != null) {
             stand.remove();
-            recipe.getGhostBlocks().remove(blockLocation);
+            recipe.getGhostBlocks().remove(blockCenter);
         }
         
         // Tüm bloklar tamamlandı mı?
@@ -517,7 +625,7 @@ public class GhostRecipeManager {
                 removeActiveGhostRecipe(player.getUniqueId());
                 player.sendMessage("§aTarif tamamlandı!");
             } else {
-                removeFixedGhostRecipe(blockLocation);
+                removeFixedGhostRecipe(baseLoc);
             }
         }
     }

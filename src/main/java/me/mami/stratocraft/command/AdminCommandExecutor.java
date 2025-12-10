@@ -2456,6 +2456,34 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "recipe_book_tectonic":
             case "tarif_tektonik":
                 return ItemManager.RECIPE_BOOK_TECTONIC != null ? ItemManager.RECIPE_BOOK_TECTONIC.clone() : null;
+            // Yeni yapı tarif kitapları
+            case "recipe_personal_mission_guild":
+            case "tarif_kisisel_gorev_loncasi":
+                return ItemManager.RECIPE_PERSONAL_MISSION_GUILD != null ? ItemManager.RECIPE_PERSONAL_MISSION_GUILD.clone() : null;
+            case "recipe_clan_management_center":
+            case "tarif_klan_yonetim_merkezi":
+                return ItemManager.RECIPE_CLAN_MANAGEMENT_CENTER != null ? ItemManager.RECIPE_CLAN_MANAGEMENT_CENTER.clone() : null;
+            case "recipe_clan_bank":
+            case "tarif_klan_bankasi":
+                return ItemManager.RECIPE_CLAN_BANK != null ? ItemManager.RECIPE_CLAN_BANK.clone() : null;
+            case "recipe_clan_mission_guild":
+            case "tarif_klan_gorev_loncasi":
+                return ItemManager.RECIPE_CLAN_MISSION_GUILD != null ? ItemManager.RECIPE_CLAN_MISSION_GUILD.clone() : null;
+            case "recipe_training_arena":
+            case "tarif_egitim_alani":
+                return ItemManager.RECIPE_TRAINING_ARENA != null ? ItemManager.RECIPE_TRAINING_ARENA.clone() : null;
+            case "recipe_caravan_station":
+            case "tarif_kervan_istasyonu":
+                return ItemManager.RECIPE_CARAVAN_STATION != null ? ItemManager.RECIPE_CARAVAN_STATION.clone() : null;
+            case "recipe_contract_office":
+            case "tarif_kontrat_burosu":
+                return ItemManager.RECIPE_CONTRACT_OFFICE != null ? ItemManager.RECIPE_CONTRACT_OFFICE.clone() : null;
+            case "recipe_market_place":
+            case "tarif_pazar_yeri":
+                return ItemManager.RECIPE_MARKET_PLACE != null ? ItemManager.RECIPE_MARKET_PLACE.clone() : null;
+            case "recipe_recipe_library":
+            case "tarif_tarif_kutuphanesi":
+                return ItemManager.RECIPE_RECIPE_LIBRARY != null ? ItemManager.RECIPE_RECIPE_LIBRARY.clone() : null;
             case "hell_fruit":
             case "cehennem_meyvesi":
                 return ItemManager.HELL_FRUIT != null ? ItemManager.HELL_FRUIT.clone() : null;
@@ -3403,6 +3431,41 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "recipe_tectonic_stabilizer":
             case "tarif_tektonik_sabitleyici":
                 return ItemManager.RECIPE_TECTONIC_STABILIZER != null ? ItemManager.RECIPE_TECTONIC_STABILIZER.clone() : null;
+            // Yeni yönetim yapıları
+            case "recipe_personal_mission_guild":
+            case "tarif_kisisel_gorev_loncasi":
+            case "tarif_kişisel_görev_loncası":
+                return ItemManager.RECIPE_PERSONAL_MISSION_GUILD != null ? ItemManager.RECIPE_PERSONAL_MISSION_GUILD.clone() : null;
+            case "recipe_clan_management_center":
+            case "tarif_klan_yonetim_merkezi":
+            case "tarif_klan_yönetim_merkezi":
+                return ItemManager.RECIPE_CLAN_MANAGEMENT_CENTER != null ? ItemManager.RECIPE_CLAN_MANAGEMENT_CENTER.clone() : null;
+            case "recipe_clan_bank":
+            case "tarif_klan_bankasi":
+            case "tarif_klan_bankası":
+                return ItemManager.RECIPE_CLAN_BANK != null ? ItemManager.RECIPE_CLAN_BANK.clone() : null;
+            case "recipe_clan_mission_guild":
+            case "tarif_klan_gorev_loncasi":
+            case "tarif_klan_görev_loncası":
+                return ItemManager.RECIPE_CLAN_MISSION_GUILD != null ? ItemManager.RECIPE_CLAN_MISSION_GUILD.clone() : null;
+            case "recipe_training_arena":
+            case "tarif_egitim_alani":
+            case "tarif_eğitim_alanı":
+                return ItemManager.RECIPE_TRAINING_ARENA != null ? ItemManager.RECIPE_TRAINING_ARENA.clone() : null;
+            case "recipe_caravan_station":
+            case "tarif_kervan_istasyonu":
+                return ItemManager.RECIPE_CARAVAN_STATION != null ? ItemManager.RECIPE_CARAVAN_STATION.clone() : null;
+            case "recipe_contract_office":
+            case "tarif_kontrat_burosu":
+            case "tarif_kontrat_bürosu":
+                return ItemManager.RECIPE_CONTRACT_OFFICE != null ? ItemManager.RECIPE_CONTRACT_OFFICE.clone() : null;
+            case "recipe_market_place":
+            case "tarif_market":
+                return ItemManager.RECIPE_MARKET_PLACE != null ? ItemManager.RECIPE_MARKET_PLACE.clone() : null;
+            case "recipe_recipe_library":
+            case "tarif_tarif_kutuphanesi":
+            case "tarif_tarif_kütüphanesi":
+                return ItemManager.RECIPE_RECIPE_LIBRARY != null ? ItemManager.RECIPE_RECIPE_LIBRARY.clone() : null;
             default:
                 return null;
         }
@@ -4604,7 +4667,12 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     "recipe_food_silo", "recipe_oil_refinery", "recipe_healing_beacon",
                     "recipe_weather_machine", "recipe_crop_accelerator", "recipe_mob_grinder",
                     "recipe_invisibility_cloak", "recipe_armory", "recipe_library",
-                    "recipe_warning_sign", "recipe_tectonic"
+                    "recipe_warning_sign", "recipe_tectonic",
+                    // Yeni yönetim yapıları
+                    "recipe_personal_mission_guild", "recipe_clan_management_center",
+                    "recipe_clan_bank", "recipe_clan_mission_guild", "recipe_training_arena",
+                    "recipe_caravan_station", "recipe_contract_office", "recipe_market_place",
+                    "recipe_recipe_library"
                 ));
                 // Özel eşya tarifleri
                 recipeBooks.addAll(Arrays.asList(
@@ -4723,7 +4791,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         "gravity_well", "lava_trencher", "watchtower", "drone_station", "xp_bank", "mag_rail",
                         "teleporter", "food_silo", "oil_refinery", "weather_machine", "crop_accelerator",
                         "mob_grinder", "invisibility_cloak", "armory", "library", "warning_sign", "auto_drill", "core",
-                        "fortress_wall");
+                        "fortress_wall",
+                        // Yeni yönetim yapıları
+                        "personal_mission_guild", "clan_management_center", "clan_bank", "clan_mission_guild",
+                        "training_arena", "caravan_station", "contract_office", "market_place", "recipe_library");
                 return filterList(structures, input);
             default:
                 return new ArrayList<>();
@@ -6962,7 +7033,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * Klan yapıları oluşturma (şema ile)
+     * Klan yapıları oluşturma (şema ile veya direkt bloklarla)
      */
     private boolean buildClanStructure(Player p, String type, int level) {
         org.bukkit.Location loc = p.getLocation();
@@ -6970,6 +7041,38 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         // Yerinde blok varsa temizle
         me.mami.stratocraft.manager.StructureBuilder.clearArea(loc, 10, 10, 10);
 
+        // Yeni yönetim yapıları için direkt blok yerleştirme
+        String typeLower = type.toLowerCase();
+        if (typeLower.equals("personal_mission_guild") || typeLower.equals("kisisel_gorev_loncasi")) {
+            buildPersonalMissionGuild(p, loc);
+            return true;
+        } else if (typeLower.equals("clan_management_center") || typeLower.equals("klan_yonetim_merkezi")) {
+            buildClanManagementCenter(p, loc, level);
+            return true;
+        } else if (typeLower.equals("clan_bank") || typeLower.equals("klan_bankasi")) {
+            buildClanBank(p, loc, level);
+            return true;
+        } else if (typeLower.equals("clan_mission_guild") || typeLower.equals("klan_gorev_loncasi")) {
+            buildClanMissionGuild(p, loc, level);
+            return true;
+        } else if (typeLower.equals("training_arena") || typeLower.equals("egitim_alani")) {
+            buildTrainingArena(p, loc, level);
+            return true;
+        } else if (typeLower.equals("caravan_station") || typeLower.equals("kervan_istasyonu")) {
+            buildCaravanStation(p, loc, level);
+            return true;
+        } else if (typeLower.equals("contract_office") || typeLower.equals("kontrat_burosu")) {
+            buildContractOffice(p, loc);
+            return true;
+        } else if (typeLower.equals("market_place") || typeLower.equals("market")) {
+            buildMarketPlace(p, loc);
+            return true;
+        } else if (typeLower.equals("recipe_library") || typeLower.equals("tarif_kutuphanesi")) {
+            buildRecipeLibrary(p, loc, level);
+            return true;
+        }
+
+        // Eski yapılar için şema sistemi
         // Şema dosya adını belirle
         String schematicName = getSchematicName(type, level);
         boolean schematicExists = me.mami.stratocraft.manager.StructureBuilder.schematicExists(schematicName);
@@ -6998,6 +7101,168 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         giveStructureActivationMaterials(p, type, level);
 
         return true;
+    }
+    
+    /**
+     * Kişisel Görev Loncası yapısını oluştur
+     */
+    private void buildPersonalMissionGuild(Player p, org.bukkit.Location loc) {
+        // 2x2 Taş taban
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                loc.clone().add(x, 0, z).getBlock().setType(Material.STONE);
+            }
+        }
+        // Üstüne Lectern
+        loc.clone().add(0.5, 1, 0.5).getBlock().setType(Material.LECTERN);
+        
+        p.sendMessage("§a§lKişisel Görev Loncası OLUŞTURULDU!");
+        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+    }
+    
+    /**
+     * Klan Yönetim Merkezi yapısını oluştur
+     */
+    private void buildClanManagementCenter(Player p, org.bukkit.Location loc, int level) {
+        // 3x3 Demir Bloğu taban
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                loc.clone().add(x, 0, z).getBlock().setType(Material.IRON_BLOCK);
+            }
+        }
+        // Üstüne Beacon
+        loc.clone().add(0, 1, 0).getBlock().setType(Material.BEACON);
+        
+        p.sendMessage("§a§lKlan Yönetim Merkezi OLUŞTURULDU!");
+        p.sendMessage("§7Seviye: §e" + level);
+        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+    }
+    
+    /**
+     * Klan Bankası yapısını oluştur
+     */
+    private void buildClanBank(Player p, org.bukkit.Location loc, int level) {
+        // 2x2 Demir Bloğu taban
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                loc.clone().add(x, 0, z).getBlock().setType(Material.IRON_BLOCK);
+            }
+        }
+        // Üstüne Ender Chest
+        loc.clone().add(0.5, 1, 0.5).getBlock().setType(Material.ENDER_CHEST);
+        
+        p.sendMessage("§a§lKlan Bankası OLUŞTURULDU!");
+        p.sendMessage("§7Seviye: §e" + level);
+        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+    }
+    
+    /**
+     * Klan Görev Loncası yapısını oluştur
+     */
+    private void buildClanMissionGuild(Player p, org.bukkit.Location loc, int level) {
+        // 2x2 Demir Bloğu taban
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                loc.clone().add(x, 0, z).getBlock().setType(Material.IRON_BLOCK);
+            }
+        }
+        // Üstüne Lectern
+        loc.clone().add(0.5, 1, 0.5).getBlock().setType(Material.LECTERN);
+        
+        p.sendMessage("§a§lKlan Görev Loncası OLUŞTURULDU!");
+        p.sendMessage("§7Seviye: §e" + level);
+        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+    }
+    
+    /**
+     * Eğitim Alanı yapısını oluştur
+     */
+    private void buildTrainingArena(Player p, org.bukkit.Location loc, int level) {
+        // 2x2 Demir Bloğu taban
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                loc.clone().add(x, 0, z).getBlock().setType(Material.IRON_BLOCK);
+            }
+        }
+        // Üstüne Enchanting Table
+        loc.clone().add(0.5, 1, 0.5).getBlock().setType(Material.ENCHANTING_TABLE);
+        
+        p.sendMessage("§a§lEğitim Alanı OLUŞTURULDU!");
+        p.sendMessage("§7Seviye: §e" + level);
+        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+    }
+    
+    /**
+     * Kervan İstasyonu yapısını oluştur
+     */
+    private void buildCaravanStation(Player p, org.bukkit.Location loc, int level) {
+        // 2x2 Demir Bloğu taban
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                loc.clone().add(x, 0, z).getBlock().setType(Material.IRON_BLOCK);
+            }
+        }
+        // Üstüne Chest
+        loc.clone().add(0.5, 1, 0.5).getBlock().setType(Material.CHEST);
+        
+        p.sendMessage("§a§lKervan İstasyonu OLUŞTURULDU!");
+        p.sendMessage("§7Seviye: §e" + level);
+        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+    }
+    
+    /**
+     * Kontrat Bürosu yapısını oluştur
+     */
+    private void buildContractOffice(Player p, org.bukkit.Location loc) {
+        // 2x2 Taş taban
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                loc.clone().add(x, 0, z).getBlock().setType(Material.STONE);
+            }
+        }
+        // Üstüne Anvil
+        loc.clone().add(0.5, 1, 0.5).getBlock().setType(Material.ANVIL);
+        
+        p.sendMessage("§a§lKontrat Bürosu OLUŞTURULDU!");
+        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+    }
+    
+    /**
+     * Market yapısını oluştur
+     */
+    private void buildMarketPlace(Player p, org.bukkit.Location loc) {
+        // 2x2 Taş taban
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                loc.clone().add(x, 0, z).getBlock().setType(Material.STONE);
+            }
+        }
+        // Üstüne Chest
+        loc.clone().add(0.5, 1, 0.5).getBlock().setType(Material.CHEST);
+        // Yanına Sign
+        loc.clone().add(1.5, 1, 0.5).getBlock().setType(Material.OAK_SIGN);
+        
+        p.sendMessage("§a§lMarket OLUŞTURULDU!");
+        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+    }
+    
+    /**
+     * Tarif Kütüphanesi yapısını oluştur
+     */
+    private void buildRecipeLibrary(Player p, org.bukkit.Location loc, int level) {
+        // Lectern merkez
+        loc.clone().add(0.5, 1, 0.5).getBlock().setType(Material.LECTERN);
+        // Yanına Bookshelf'ler (en az 2)
+        loc.clone().add(1.5, 1, 0.5).getBlock().setType(Material.BOOKSHELF);
+        loc.clone().add(-0.5, 1, 0.5).getBlock().setType(Material.BOOKSHELF);
+        if (level >= 2) {
+            loc.clone().add(0.5, 1, 1.5).getBlock().setType(Material.BOOKSHELF);
+            loc.clone().add(0.5, 1, -0.5).getBlock().setType(Material.BOOKSHELF);
+        }
+        
+        p.sendMessage("§a§lTarif Kütüphanesi OLUŞTURULDU!");
+        p.sendMessage("§7Seviye: §e" + level);
+        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
     }
 
     /**
@@ -7082,6 +7347,33 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return "Otomatik Madenci";
             case "core":
                 return "Ana Kristal";
+            case "personal_mission_guild":
+            case "kisisel_gorev_loncasi":
+                return "Kişisel Görev Loncası";
+            case "clan_management_center":
+            case "klan_yonetim_merkezi":
+                return "Klan Yönetim Merkezi";
+            case "clan_bank":
+            case "klan_bankasi":
+                return "Klan Bankası";
+            case "clan_mission_guild":
+            case "klan_gorev_loncasi":
+                return "Klan Görev Loncası";
+            case "training_arena":
+            case "egitim_alani":
+                return "Eğitim Alanı";
+            case "caravan_station":
+            case "kervan_istasyonu":
+                return "Kervan İstasyonu";
+            case "contract_office":
+            case "kontrat_burosu":
+                return "Kontrat Bürosu";
+            case "market_place":
+            case "market":
+                return "Market";
+            case "recipe_library":
+            case "tarif_kutuphanesi":
+                return "Tarif Kütüphanesi";
             default:
                 return type;
         }

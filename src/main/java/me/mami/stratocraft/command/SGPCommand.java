@@ -52,15 +52,25 @@ public class SGPCommand implements CommandExecutor, TabCompleter {
         }
         
         if (args.length == 0) {
-            // Kendi gücünü göster
-            showPlayerPower(player, player, powerSystem);
+            // GUI menü aç
+            if (plugin.getPowerMenu() != null) {
+                plugin.getPowerMenu().openMainMenu(player);
+            } else {
+                // Fallback: Chat mesajı
+                showPlayerPower(player, player, powerSystem);
+            }
             return true;
         }
         
         switch (args[0].toLowerCase()) {
             case "me":
             case "self":
-                showPlayerPower(player, player, powerSystem);
+                // GUI menü aç
+                if (plugin.getPowerMenu() != null) {
+                    plugin.getPowerMenu().openMainMenu(player);
+                } else {
+                    showPlayerPower(player, player, powerSystem);
+                }
                 break;
                 
             case "player":
@@ -84,28 +94,42 @@ public class SGPCommand implements CommandExecutor, TabCompleter {
                     player.sendMessage("§cBir klana ait değilsiniz!");
                     return true;
                 }
-                showClanPower(player, clan, powerSystem);
+                // GUI menü aç
+                if (plugin.getPowerMenu() != null) {
+                    plugin.getPowerMenu().openClanPowerMenu(player);
+                } else {
+                    showClanPower(player, clan, powerSystem);
+                }
                 break;
                 
             case "top":
-                int limit = 10;
-                if (args.length > 1) {
-                    try {
-                        limit = Integer.parseInt(args[1]);
-                        if (limit < 1 || limit > 100) {
+                // GUI menü aç
+                if (plugin.getPowerMenu() != null) {
+                    plugin.getPowerMenu().openTopPlayersMenu(player, 1);
+                } else {
+                    int limit = 10;
+                    if (args.length > 1) {
+                        try {
+                            limit = Integer.parseInt(args[1]);
+                            if (limit < 1 || limit > 100) {
+                                limit = 10;
+                            }
+                        } catch (NumberFormatException e) {
                             limit = 10;
                         }
-                    } catch (NumberFormatException e) {
-                        limit = 10;
                     }
+                    showTopPlayers(player, limit, plugin);
                 }
-                // ✅ PERFORMANS: SimpleRankingSystem kullan (cache'li)
-                showTopPlayers(player, limit, plugin);
                 break;
                 
             case "components":
             case "comp":
-                showPowerComponents(player, player, powerSystem);
+                // GUI menü aç
+                if (plugin.getPowerMenu() != null) {
+                    plugin.getPowerMenu().openComponentsMenu(player);
+                } else {
+                    showPowerComponents(player, player, powerSystem);
+                }
                 break;
                 
             case "help":

@@ -169,21 +169,27 @@ public class ClanSystemListener implements Listener {
         Block clicked = event.getClickedBlock();
         if (clicked == null) return;
         
-        // Banka sistemi entegrasyonu (gelecekte GUI açılabilir)
+        // Banka sistemi entegrasyonu - GUI aç
         if (bankSystem != null && clicked.getType() == Material.ENDER_CHEST) {
             // Metadata kontrolü (ClanBankSystem'den)
             if (clicked.hasMetadata("ClanBank")) {
-                // Banka GUI açılabilir (gelecekte)
-                // Şimdilik sadece metadata kontrolü
+                event.setCancelled(true);
+                // Banka GUI aç
+                if (plugin.getClanBankMenu() != null) {
+                    plugin.getClanBankMenu().openMainMenu(player);
+                }
             }
         }
         
-        // Görev tahtası entegrasyonu (gelecekte GUI açılabilir)
+        // Görev tahtası entegrasyonu - GUI aç
         if (missionSystem != null && clicked.getType() == Material.LECTERN) {
             // Metadata kontrolü (ClanMissionSystem'den)
             if (clicked.hasMetadata("ClanMissionBoard")) {
-                // Görev GUI açılabilir (gelecekte)
-                // Şimdilik sadece metadata kontrolü
+                event.setCancelled(true);
+                // Görev GUI aç
+                if (plugin.getClanMissionMenu() != null) {
+                    plugin.getClanMissionMenu().openMenu(player);
+                }
             }
         }
     }

@@ -580,5 +580,99 @@ public class RecipeMenu {
             }
         }
     }
+    
+    /**
+     * Tarif Kütüphanesi Menüsü (Tarif Kütüphanesi yapısından erişim için)
+     */
+    public static Inventory createRecipeLibraryMenu(org.bukkit.entity.Player player, int page) {
+        Inventory menu = Bukkit.createInventory(null, 54, "§eTarif Kütüphanesi - Sayfa " + page);
+        
+        // Tüm tarif kitaplarını topla
+        java.util.List<ItemStack> recipeBooks = getAllRecipeBooks();
+        
+        int itemsPerPage = 45;
+        int startIndex = (page - 1) * itemsPerPage;
+        int endIndex = Math.min(startIndex + itemsPerPage, recipeBooks.size());
+        
+        int slot = 0;
+        for (int i = startIndex; i < endIndex; i++) {
+            ItemStack recipeBook = recipeBooks.get(i);
+            if (recipeBook == null) continue;
+            
+            // Tarif ID'sini al
+            String recipeId = getRecipeIdFromItem(recipeBook);
+            if (recipeId == null) continue;
+            
+            // Item meta'yı kopyala ve lore ekle
+            ItemStack displayItem = recipeBook.clone();
+            ItemMeta meta = displayItem.getItemMeta();
+            if (meta != null) {
+                List<String> lore = meta.getLore();
+                if (lore == null) lore = new ArrayList<>();
+                lore.add("");
+                lore.add("§eTıklayın: §7Tarif detaylarını görüntüle");
+                meta.setLore(lore);
+                displayItem.setItemMeta(meta);
+            }
+            menu.setItem(slot, displayItem);
+            slot++;
+        }
+        
+        // Sayfalama butonları
+        if (page > 1) {
+            menu.setItem(45, createButton(Material.ARROW, "§eÖnceki Sayfa", null));
+        }
+        if (endIndex < recipeBooks.size()) {
+            menu.setItem(53, createButton(Material.ARROW, "§eSonraki Sayfa", null));
+        }
+        
+        // Kapat butonu
+        menu.setItem(49, createButton(Material.BARRIER, "§cKapat", null));
+        
+        return menu;
+    }
+    
+    /**
+     * Tüm tarif kitaplarını topla (reflection ile ItemManager'dan)
+     */
+    private static java.util.List<ItemStack> getAllRecipeBooks() {
+        java.util.List<ItemStack> recipeBooks = new ArrayList<>();
+        
+        try {
+            java.lang.reflect.Field[] fields = me.mami.stratocraft.manager.ItemManager.class.getFields();
+            for (java.lang.reflect.Field field : fields) {
+                if (field.getName().startsWith("RECIPE_") && 
+                    field.getType() == ItemStack.class) {
+                    ItemStack recipeBook = (ItemStack) field.get(null);
+                    if (recipeBook != null) {
+                        recipeBooks.add(recipeBook);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Reflection hatası - boş liste döndür
+        }
+        
+        return recipeBooks;
+    }
+    
+    /**
+     * ItemStack'ten tarif ID'sini al
+     */
+    private static String getRecipeIdFromItem(ItemStack item) {
+        if (item == null || item.getItemMeta() == null) return null;
+        
+        org.bukkit.persistence.PersistentDataContainer container = 
+            item.getItemMeta().getPersistentDataContainer();
+        org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey(
+            me.mami.stratocraft.Main.getInstance(), "custom_item_id");
+        
+        String itemId = container.get(key, org.bukkit.persistence.PersistentDataType.STRING);
+        if (itemId != null && itemId.startsWith("RECIPE_")) {
+            return itemId;
+        }
+        
+        return null;
+    }
 }
 
