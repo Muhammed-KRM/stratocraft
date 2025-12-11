@@ -1,5 +1,6 @@
 package me.mami.stratocraft.listener;
 
+import me.mami.stratocraft.Main;
 import me.mami.stratocraft.manager.ClanManager;
 import me.mami.stratocraft.manager.TerritoryManager;
 import me.mami.stratocraft.model.Clan;
@@ -677,6 +678,7 @@ public class StructureActivationListener implements Listener {
 
     /**
      * Yapı aktivasyon efektleri
+     * ✅ GÜÇLENDİRİLDİ: Daha fazla partikül, ses ve görsel efekt
      */
     private void activateStructureEffects(Player player, Structure structure) {
         Location loc = structure.getLocation();
@@ -684,17 +686,36 @@ public class StructureActivationListener implements Listener {
         if (world == null)
             return;
 
-        // Partikül efektleri
-        world.spawnParticle(Particle.TOTEM, loc, 50, 1, 1, 1, 0.3);
-        world.spawnParticle(Particle.END_ROD, loc, 30, 0.5, 0.5, 0.5, 0.1);
-
-        // Ses
-        world.playSound(loc, Sound.BLOCK_BEACON_POWER_SELECT, 1f, 1.5f);
-
-        // Title
-        player.sendTitle("§6§lYAPI AKTİVE!",
-                "§e" + getStructureName(structure.getType()),
-                10, 40, 10);
+        // ✅ GÜÇLENDİRİLDİ: Daha fazla partikül efektleri (görünürlük için)
+        world.spawnParticle(Particle.TOTEM, loc.clone().add(0, 1, 0), 100, 1.5, 1.5, 1.5, 0.5);
+        world.spawnParticle(Particle.END_ROD, loc.clone().add(0, 1, 0), 50, 1.0, 1.0, 1.0, 0.2);
+        world.spawnParticle(Particle.VILLAGER_HAPPY, loc.clone().add(0, 1, 0), 30, 0.8, 0.8, 0.8, 0.1);
+        world.spawnParticle(Particle.ENCHANTMENT_TABLE, loc.clone().add(0, 1, 0), 40, 1.2, 1.2, 1.2, 0.3);
+        
+        // ✅ GÜÇLENDİRİLDİ: Daha fazla ses efekti
+        world.playSound(loc, Sound.BLOCK_BEACON_POWER_SELECT, 1.5f, 1.5f);
+        world.playSound(loc, Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.2f);
+        world.playSound(loc, Sound.ENTITY_PLAYER_LEVELUP, 0.8f, 1.0f);
+        world.playSound(loc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+        
+        // ✅ GÜÇLENDİRİLDİ: Daha görünür title ve actionbar
+        player.sendTitle("§6§l⚡ YAPI AKTİVE! ⚡",
+                "§e" + getStructureName(structure.getType()) + " §7(Seviye " + structure.getLevel() + ")",
+                10, 60, 20);
+        player.sendActionBar("§a§l✓ " + getStructureName(structure.getType()) + " başarıyla aktifleştirildi!");
+        
+        // ✅ GÜÇLENDİRİLDİ: Yapı etrafında ışık efekti (glow)
+        Main plugin = Main.getInstance();
+        if (plugin != null) {
+            for (int i = 0; i < 5; i++) {
+                final int delay = i * 4; // Her 4 tick'te bir
+                org.bukkit.Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (world != null && loc.getWorld() != null) {
+                        world.spawnParticle(Particle.END_ROD, loc.clone().add(0, 1, 0), 20, 1.5, 1.5, 1.5, 0.1);
+                    }
+                }, delay);
+            }
+        }
     }
 
     /**

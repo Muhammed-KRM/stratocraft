@@ -430,7 +430,7 @@ public class DisasterTask extends BukkitRunnable {
         // Handler sistemi kullan - hedef kristale hareket etmesi için
         DisasterHandler handler = handlerRegistry.getHandler(disaster.getType());
         
-        // ✅ Hedef kristal ayarlandıysa, disaster'a bildir
+        // ✅ Hedef kristal ayarlandıysa, disaster'a bildir (HANDLER ÇAĞRISINDAN ÖNCE)
         Location targetCrystal = disaster.getTargetCrystal();
         if (targetCrystal != null) {
             disaster.setTarget(targetCrystal);

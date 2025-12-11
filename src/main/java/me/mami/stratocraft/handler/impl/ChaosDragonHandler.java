@@ -51,16 +51,18 @@ public class ChaosDragonHandler extends BaseCreatureHandler {
         // ✅ EnderDragon için özel hareket - AI kullanarak hedefe git
         // EnderDragon'ın kendi AI'sı var, ama hedefi manuel olarak ayarlamalıyız
         if (target != null && current.getWorld().equals(target.getWorld())) {
-            // ✅ Mesafe kontrolünü kaldırdık - Her zaman hareket etsin (ilk spawn'da da çalışsın)
+            // ✅ DÜZELTME: Mesafe kontrolünü kaldırdık - Her zaman hareket etsin (ilk spawn'da da çalışsın)
             // Velocity ile hareket ettir (EnderDragon için daha etkili)
             org.bukkit.util.Vector direction = me.mami.stratocraft.util.DisasterUtils.calculateDirection(current, target);
             double speed = config.getMoveSpeed();
             org.bukkit.util.Vector velocity = direction.multiply(speed);
             // EnderDragon için Y eksenini de kullan (uçabilir)
             velocity.setY(Math.max(0, direction.getY() * speed * 0.5)); // Y ekseni için daha yavaş
+            
+            // ✅ DÜZELTME: Velocity'yi her tick'te uygula (hareket etmesi için)
             dragon.setVelocity(velocity);
             
-            // Yüz yönlendirme
+            // ✅ DÜZELTME: Yüz yönlendirmeyi her tick'te yap (hedef takibi için)
             me.mami.stratocraft.util.DisasterBehavior.faceTarget(entity, target);
         }
         

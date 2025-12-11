@@ -69,6 +69,7 @@ public class StructureMenuListener implements Listener {
     
     /**
      * Konumdaki yapıyı bul
+     * ✅ DÜZELTME: Kişisel yapılar klansız bölgede de olabilir, bu yüzden tüm klanları kontrol et
      */
     private Structure findStructureAt(org.bukkit.Location location) {
         // Tüm klanları kontrol et
@@ -86,6 +87,35 @@ public class StructureMenuListener implements Listener {
                     } else {
                         // Klan yapıları: Klan kontrolü yapılacak (openMenuForStructure'da)
                         return structure;
+                    }
+                }
+            }
+        }
+        
+        // ✅ DÜZELTME: Eğer klanlarda bulunamadıysa, oyuncunun klanını kontrol et
+        // (Yapı aktivasyon sonrası oyuncunun klanına eklenmiş olabilir)
+        Player nearbyPlayer = null;
+        double minDistance = Double.MAX_VALUE;
+        for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+            double dist = p.getLocation().distance(location);
+            if (dist < 10 && dist < minDistance) {
+                minDistance = dist;
+                nearbyPlayer = p;
+            }
+        }
+        
+        if (nearbyPlayer != null) {
+            Clan playerClan = clanManager.getClanByPlayer(nearbyPlayer.getUniqueId());
+            if (playerClan != null) {
+                for (Structure structure : playerClan.getStructures()) {
+                    if (structure.getLocation().distance(location) <= 2.0) {
+                        Structure.Type type = structure.getType();
+                        if (type == Structure.Type.PERSONAL_MISSION_GUILD ||
+                            type == Structure.Type.CONTRACT_OFFICE ||
+                            type == Structure.Type.MARKET_PLACE ||
+                            type == Structure.Type.RECIPE_LIBRARY) {
+                            return structure;
+                        }
                     }
                 }
             }

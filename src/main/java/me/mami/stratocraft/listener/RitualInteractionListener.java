@@ -1197,11 +1197,59 @@ public class RitualInteractionListener implements Listener {
     }
     
     // ========== KLAN İSTATİSTİKLERİ: "Bilgi Taşı" (KOLAY) ==========
+    // ✅ DÜZELTME: Pusula ile sol tık ışınlanmayı engelle
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onCompassTeleportPrevent(PlayerInteractEvent event) {
+        // Sol tık kontrolü (Minecraft'ın lodestone pusula sistemi)
+        if (event.getAction() != Action.LEFT_CLICK_AIR && event.getAction() != Action.LEFT_CLICK_BLOCK) return;
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        
+        Player p = event.getPlayer();
+        ItemStack handItem = p.getInventory().getItemInMainHand();
+        if (handItem == null || handItem.getType() != Material.COMPASS) return;
+        
+        // Personal Terminal kontrolü - eğer Personal Terminal ise bu listener'ı atla
+        if (me.mami.stratocraft.manager.ItemManager.isCustomItem(handItem, "PERSONAL_TERMINAL")) {
+            return; // Personal Terminal başka listener'da işlenecek
+        }
+        
+        // ✅ DÜZELTME: Normal pusula ile sol tık ışınlanmayı engelle
+        // Minecraft'ın lodestone pusula sistemi otomatik çalışıyor, bunu engellemek için event'i iptal et
+        event.setCancelled(true);
+    }
+    
+    // ✅ DÜZELTME: Pusula ile sağ tık ışınlanmayı engelle (Minecraft'ın lodestone pusula sistemi)
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onCompassRightClickPrevent(PlayerInteractEvent event) {
+        // Sağ tık kontrolü (Minecraft'ın lodestone pusula sistemi)
+        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        
+        Player p = event.getPlayer();
+        ItemStack handItem = p.getInventory().getItemInMainHand();
+        if (handItem == null || handItem.getType() != Material.COMPASS) return;
+        
+        // Personal Terminal kontrolü - eğer Personal Terminal ise bu listener'ı atla
+        if (me.mami.stratocraft.manager.ItemManager.isCustomItem(handItem, "PERSONAL_TERMINAL")) {
+            return; // Personal Terminal başka listener'da işlenecek
+        }
+        
+        // Shift + Sağ tık ise klan bilgisi göster (onClanStatsView'da işlenecek)
+        if (p.isSneaking()) {
+            return; // onClanStatsView'da işlenecek
+        }
+        
+        // ✅ DÜZELTME: Normal pusula ile sağ tık ışınlanmayı engelle
+        // Minecraft'ın lodestone pusula sistemi otomatik çalışıyor, bunu engellemek için event'i iptal et
+        event.setCancelled(true);
+    }
+    
     // Oyuncu elinde Kompas ile herhangi bir yerde shift+sağ tık yapar (Kristal yakınında olmasına gerek yok)
     
     @EventHandler(priority = EventPriority.HIGH)
     public void onClanStatsView(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        // ✅ DÜZELTME: Hem RIGHT_CLICK_BLOCK hem RIGHT_CLICK_AIR kontrol et
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.RIGHT_CLICK_AIR) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
         if (!event.getPlayer().isSneaking()) return;
         
@@ -1215,6 +1263,11 @@ public class RitualInteractionListener implements Listener {
         if (me.mami.stratocraft.manager.ItemManager.isCustomItem(handItem, "PERSONAL_TERMINAL")) {
             return; // Personal Terminal başka listener'da işlenecek
         }
+        
+        // ✅ DÜZELTME: Normal pusula ile ışınlanmayı engelle (sadece özel item'lere güç ver)
+        // Eğer özel bir item değilse, sadece bilgi göster (ışınlanma yok)
+        // Minecraft'ın lodestone pusula sistemi otomatik çalışıyor, bunu engellemek için event'i iptal et
+        event.setCancelled(true);
         
         // Oyuncunun klanını bul (kendi klanı veya yakındaki bir klan)
         Clan targetClan = clanManager.getClanByPlayer(p.getUniqueId());
