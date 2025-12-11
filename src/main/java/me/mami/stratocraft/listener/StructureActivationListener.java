@@ -718,6 +718,25 @@ public class StructureActivationListener implements Listener {
                 return "Şifa Kulesi";
             case GLOBAL_MARKET_GATE:
                 return "Global Pazar Kapısı";
+            // Yönetim & Menü Yapıları
+            case PERSONAL_MISSION_GUILD:
+                return "Kişisel Görev Loncası";
+            case CLAN_MANAGEMENT_CENTER:
+                return "Klan Yönetim Merkezi";
+            case CLAN_BANK:
+                return "Klan Bankası";
+            case CLAN_MISSION_GUILD:
+                return "Klan Görev Loncası";
+            case TRAINING_ARENA:
+                return "Eğitim Alanı";
+            case CARAVAN_STATION:
+                return "Kervan İstasyonu";
+            case CONTRACT_OFFICE:
+                return "Kontrat Bürosu";
+            case MARKET_PLACE:
+                return "Market";
+            case RECIPE_LIBRARY:
+                return "Tarif Kütüphanesi";
             default:
                 return type.name();
         }

@@ -21,11 +21,11 @@ public class DisasterArenaManager {
     private final Main plugin;
     private final Map<UUID, DisasterArenaData> activeArenas;
     
-    // Config ayarları
-    private int blocksPerCycle = 5;
-    private long taskInterval = 40L; // 2 saniye
-    private double arenaExpansionLimit = 100.0; // Oyuncu 100 blok içindeyse arena genişler
-    private double currentFarDistance = 150.0; // Oyuncu 150 blok içindeyse arena aktif
+    // ✅ PERFORMANS OPTİMİZASYONU: Config ayarları (azaltıldı)
+    private int blocksPerCycle = 2; // 5 -> 2 (blok dönüşüm sayısı azaltıldı)
+    private long taskInterval = 80L; // 40L -> 80L (2 saniye -> 4 saniye, daha az sıklıkta çalışır)
+    private double arenaExpansionLimit = 70.0; // 100.0 -> 70.0 (daha yakın mesafe)
+    private double currentFarDistance = 100.0; // 150.0 -> 100.0 (daha yakın mesafe)
     
     private BukkitTask arenaTask;
     
@@ -40,11 +40,11 @@ public class DisasterArenaManager {
      * Config'den ayarları yükle
      */
     private void loadConfig() {
-        // Config'den okunabilir, şimdilik varsayılan değerler
-        blocksPerCycle = 5;
-        taskInterval = 40L;
-        arenaExpansionLimit = 100.0;
-        currentFarDistance = 150.0;
+        // ✅ PERFORMANS OPTİMİZASYONU: Varsayılan değerler (azaltıldı)
+        blocksPerCycle = 2; // 5 -> 2
+        taskInterval = 80L; // 40L -> 80L (4 saniye)
+        arenaExpansionLimit = 70.0; // 100.0 -> 70.0
+        currentFarDistance = 100.0; // 150.0 -> 100.0
     }
     
     /**
@@ -59,7 +59,8 @@ public class DisasterArenaManager {
         int maxRadius = getArenaRadius(level);
         createDisasterTowers(arena, maxRadius);
         
-        plugin.getLogger().info("Felaket arena transformasyonu başlatıldı: " + disasterId);
+        // ✅ PERFORMANS: Log seviyesini düşür (çok fazla log üretiyor)
+        plugin.getLogger().fine("Felaket arena transformasyonu başlatıldı: " + disasterId);
     }
     
     /**
@@ -69,19 +70,32 @@ public class DisasterArenaManager {
         DisasterArenaData arena = activeArenas.remove(disasterId);
         if (arena != null) {
             // Arena bloklarını temizle (opsiyonel)
-            plugin.getLogger().info("Felaket arena transformasyonu durduruldu: " + disasterId);
+            // ✅ PERFORMANS: Log seviyesini düşür (çok fazla log üretiyor)
+            plugin.getLogger().fine("Felaket arena transformasyonu durduruldu: " + disasterId);
         }
     }
     
     /**
+     * ✅ Plugin kapatılırken tüm arena task'larını durdur
+     */
+    public void shutdown() {
+        if (arenaTask != null) {
+            arenaTask.cancel();
+            arenaTask = null;
+        }
+        activeArenas.clear();
+    }
+    
+    /**
      * Arena yarıçapını seviyeye göre hesapla
+     * ✅ PERFORMANS OPTİMİZASYONU: Yarıçaplar azaltıldı
      */
     private int getArenaRadius(int level) {
         switch (level) {
-            case 1: return 20;
-            case 2: return 30;
-            case 3: return 40;
-            default: return 25;
+            case 1: return 15; // 20 -> 15
+            case 2: return 22; // 30 -> 22
+            case 3: return 30; // 40 -> 30
+            default: return 20; // 25 -> 20
         }
     }
     
@@ -149,21 +163,23 @@ public class DisasterArenaManager {
         boolean isWithinExpansionLimit = nearestPlayerDistance <= arenaExpansionLimit;
         
         if (isWithinExpansionLimit) {
-            // Her 60 saniyede bir (30 döngü) yeni kuleler
-            if (arena.getCycleCount() % 30 == 0) {
+            // ✅ PERFORMANS OPTİMİZASYONU: Daha az sıklıkta kule ve tehlike oluştur
+            // Her 120 saniyede bir (15 döngü, 80L * 15 = 1200 tick = 60 saniye) yeni kuleler
+            if (arena.getCycleCount() % 15 == 0) {
                 createDisasterTowers(arena, maxRadius);
             }
             
-            // Rastgele tehlikeler oluştur
-            if (arena.getCycleCount() % 20 == 0) {
+            // Rastgele tehlikeler oluştur (her 80 saniyede bir, 10 döngü)
+            if (arena.getCycleCount() % 10 == 0) {
                 createRandomHazards(arena, maxRadius);
             }
         }
         
+        // ✅ PERFORMANS OPTİMİZASYONU: Daha yavaş genişleme
         // Mevcut genişleme yarıçapını artır
         double currentRadius = arena.getCurrentRadius();
         if (isWithinExpansionLimit && currentRadius < maxRadius) {
-            arena.setCurrentRadius(currentRadius + 1.2); // Her 2 saniyede 1.2 blok genişle
+            arena.setCurrentRadius(currentRadius + 0.6); // 1.2 -> 0.6 (her 4 saniyede 0.6 blok genişle)
         }
         
         // Şu anki radius'ta blokları dönüştür
@@ -184,7 +200,22 @@ public class DisasterArenaManager {
             int z = (int) (center.getZ() + distance * Math.sin(angle));
             
             Chunk chunk = world.getChunkAt(x >> 4, z >> 4);
+            // ✅ KRİTİK: Chunk yüklü ve FULL olmalı (generation sırasında blok değiştirmeyi engelle)
             if (!chunk.isLoaded()) {
+                continue;
+            }
+            
+            // ✅ Chunk generation kontrolü - sadece FULL chunk'larda blok değiştir
+            // Generation sırasında blok değiştirmek "setBlock in a far chunk" hatasına neden olur
+            try {
+                // Chunk'ın FULL olup olmadığını kontrol et (basit yöntem)
+                // Chunk generation sırasında blok erişimi hata verebilir
+                org.bukkit.ChunkSnapshot snapshot = chunk.getChunkSnapshot(false, false, false);
+                if (snapshot == null) {
+                    continue; // Chunk henüz FULL değil, atla
+                }
+            } catch (Exception e) {
+                // Chunk erişilemez durumda veya generation sırasında, atla
                 continue;
             }
             
@@ -204,6 +235,26 @@ public class DisasterArenaManager {
      */
     private void transformSingleBlock(Location loc, DisasterArenaData arena) {
         Block block = loc.getBlock();
+        
+        // ✅ KRİTİK: Chunk generation kontrolü - sadece FULL chunk'larda blok değiştir
+        Chunk chunk = block.getChunk();
+        if (!chunk.isLoaded()) {
+            return; // Chunk yüklü değil
+        }
+        
+        // ✅ Chunk generation durumunu kontrol et
+        // Generation sırasında blok değiştirmek "setBlock in a far chunk" hatasına neden olur
+        try {
+            // Chunk'ın FULL olup olmadığını kontrol et (basit yöntem)
+            org.bukkit.ChunkSnapshot snapshot = chunk.getChunkSnapshot(false, false, false);
+            if (snapshot == null) {
+                return; // Chunk henüz FULL değil, generation devam ediyor
+            }
+        } catch (Exception e) {
+            // Chunk erişilemez durumda veya generation sırasında, atla
+            return;
+        }
+        
         Material currentType = block.getType();
         
         // Hava veya yapılamaz blokları atla
@@ -219,15 +270,17 @@ public class DisasterArenaManager {
         if (targetMaterial != null && currentType != targetMaterial) {
             block.setType(targetMaterial);
             
-            // Partikül efekti
-            loc.getWorld().spawnParticle(
-                Particle.BLOCK_CRACK,
-                loc.add(0.5, 0.5, 0.5),
-                10,
-                0.3, 0.3, 0.3,
-                0.1,
-                targetMaterial.createBlockData()
-            );
+            // ✅ PERFORMANS OPTİMİZASYONU: Partikül efekti azaltıldı (sadece %50 ihtimalle)
+            if (new Random().nextInt(2) == 0) { // %50 ihtimalle partikül göster
+                loc.getWorld().spawnParticle(
+                    Particle.BLOCK_CRACK,
+                    loc.add(0.5, 0.5, 0.5),
+                    5, // 10 -> 5 (partikül sayısı azaltıldı)
+                    0.3, 0.3, 0.3,
+                    0.1,
+                    targetMaterial.createBlockData()
+                );
+            }
         }
     }
     
@@ -253,13 +306,14 @@ public class DisasterArenaManager {
     
     /**
      * Felaket kuleleri oluştur
+     * ✅ PERFORMANS OPTİMİZASYONU: Kule sayısı azaltıldı
      */
     private void createDisasterTowers(DisasterArenaData arena, int maxRadius) {
         Location center = arena.getCenter();
         World world = center.getWorld();
         if (world == null) return;
         
-        int towerCount = 5 + new Random().nextInt(5); // 5-9 kule
+        int towerCount = 3 + new Random().nextInt(3); // 5-9 -> 3-5 kule (azaltıldı)
         
         for (int i = 0; i < towerCount; i++) {
             double angle = Math.random() * 2 * Math.PI;
@@ -281,14 +335,31 @@ public class DisasterArenaManager {
     
     /**
      * Kule oluştur
+     * ✅ PERFORMANS OPTİMİZASYONU: Kule boyutları azaltıldı
      */
     private void createTower(Location loc, DisasterArenaData arena) {
         World world = loc.getWorld();
         if (world == null) return;
         
+        // ✅ KRİTİK: Chunk generation kontrolü
+        Chunk chunk = loc.getChunk();
+        if (!chunk.isLoaded()) {
+            return; // Chunk yüklü değil
+        }
+        
+        // ✅ Chunk generation durumunu kontrol et
+        try {
+            org.bukkit.ChunkSnapshot snapshot = chunk.getChunkSnapshot(false, false, false);
+            if (snapshot == null) {
+                return; // Chunk henüz FULL değil, generation devam ediyor
+            }
+        } catch (Exception e) {
+            return; // Chunk erişilemez durumda
+        }
+        
         Material towerMaterial = getTransformationMaterial(arena.getDisasterType());
-        int height = 2 + new Random().nextInt(14); // 2-15 blok yükseklik
-        int width = 1 + new Random().nextInt(6); // 1-6 blok genişlik
+        int height = 2 + new Random().nextInt(6); // 2-15 -> 2-8 blok yükseklik (azaltıldı)
+        int width = 1 + new Random().nextInt(2); // 1-6 -> 1-3 blok genişlik (azaltıldı)
         
         for (int y = 0; y < height; y++) {
             for (int x = -width/2; x <= width/2; x++) {
@@ -298,6 +369,11 @@ public class DisasterArenaManager {
                         loc.getBlockY() + y,
                         loc.getBlockZ() + z
                     );
+                    
+                    // ✅ Chunk kontrolü (her blok için)
+                    if (!block.getChunk().isLoaded()) {
+                        continue; // Bu blok yüklü chunk'ta değil
+                    }
                     
                     if (block.getType() == Material.AIR || 
                         block.getType() == Material.GRASS_BLOCK ||
@@ -311,13 +387,14 @@ public class DisasterArenaManager {
     
     /**
      * Rastgele tehlikeler oluştur
+     * ✅ PERFORMANS OPTİMİZASYONU: Tehlike sayısı azaltıldı
      */
     private void createRandomHazards(DisasterArenaData arena, int maxRadius) {
         Location center = arena.getCenter();
         World world = center.getWorld();
         if (world == null) return;
         
-        int hazardCount = 3 + new Random().nextInt(5); // 3-7 tehlike
+        int hazardCount = 2 + new Random().nextInt(3); // 3-7 -> 2-4 tehlike (azaltıldı)
         
         for (int i = 0; i < hazardCount; i++) {
             double angle = Math.random() * 2 * Math.PI;
@@ -328,6 +405,16 @@ public class DisasterArenaManager {
             
             Chunk chunk = world.getChunkAt(x >> 4, z >> 4);
             if (!chunk.isLoaded()) continue;
+            
+            // ✅ KRİTİK: Chunk generation kontrolü - sadece FULL chunk'larda tehlike oluştur
+            try {
+                org.bukkit.ChunkSnapshot snapshot = chunk.getChunkSnapshot(false, false, false);
+                if (snapshot == null) {
+                    continue; // Chunk henüz FULL değil, generation devam ediyor
+                }
+            } catch (Exception e) {
+                continue; // Chunk erişilemez durumda
+            }
             
             int y = findGroundLevel(world, x, center.getBlockY(), z);
             if (y == -1) continue;
@@ -357,6 +444,23 @@ public class DisasterArenaManager {
         }
         
         Block block = world.getBlockAt(loc);
+        
+        // ✅ KRİTİK: Chunk generation kontrolü
+        Chunk chunk = block.getChunk();
+        if (!chunk.isLoaded()) {
+            return; // Chunk yüklü değil
+        }
+        
+        // ✅ Chunk generation durumunu kontrol et
+        try {
+            org.bukkit.ChunkSnapshot snapshot = chunk.getChunkSnapshot(false, false, false);
+            if (snapshot == null) {
+                return; // Chunk henüz FULL değil, generation devam ediyor
+            }
+        } catch (Exception e) {
+            return; // Chunk erişilemez durumda
+        }
+        
         if (block.getType() == Material.AIR || 
             block.getType() == Material.GRASS_BLOCK ||
             block.getType() == Material.DIRT) {

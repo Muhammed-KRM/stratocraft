@@ -178,6 +178,51 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     }
     
     /**
+     * Config reload komutu
+     */
+    private boolean handleReload(Player p) {
+        try {
+            // ConfigManager reload
+            if (plugin.getConfigManager() != null) {
+                plugin.getConfigManager().reloadConfig();
+                p.sendMessage("§aConfig dosyaları yeniden yüklendi!");
+            } else {
+                p.sendMessage("§cConfigManager bulunamadı!");
+                return false;
+            }
+            
+            // LangManager reload (eğer varsa)
+            if (plugin.getLangManager() != null) {
+                try {
+                    plugin.getLangManager().reloadLang();
+                    p.sendMessage("§aDil dosyaları yeniden yüklendi!");
+                } catch (Exception e) {
+                    p.sendMessage("§eDil dosyaları yüklenirken hata: " + e.getMessage());
+                    plugin.getLogger().warning("LangManager reload hatası: " + e.getMessage());
+                }
+            }
+            
+            // NewBossArenaManager reload (eğer varsa)
+            if (plugin.getNewBossArenaManager() != null) {
+                try {
+                    plugin.getNewBossArenaManager().reloadConfig();
+                    p.sendMessage("§aBoss Arena ayarları yeniden yüklendi!");
+                } catch (Exception e) {
+                    p.sendMessage("§eBoss Arena ayarları yüklenirken hata: " + e.getMessage());
+                    plugin.getLogger().warning("NewBossArenaManager reload hatası: " + e.getMessage());
+                }
+            }
+            
+            return true;
+        } catch (Exception e) {
+            p.sendMessage("§cConfig yükleme hatası: " + e.getMessage());
+            plugin.getLogger().severe("Config reload hatası: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
      * Arena yönetim komutları
      */
     private boolean handleArena(Player p, String[] args) {
@@ -998,10 +1043,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             }
         }
         
-        disasterManager.spawnGroupDisaster(entityType, count, spawnLoc);
+        // internalLevel: 1=Düşük, 2=Orta, 3=Yüksek (test için varsayılan: 2)
+        int internalLevel = 2;
+        disasterManager.spawnGroupDisaster(entityType, count, spawnLoc, internalLevel);
         p.sendMessage("§a§lGRUP FELAKET TEST BAŞLATILDI!");
         p.sendMessage("§7Entity: §e" + entityType.name());
         p.sendMessage("§7Sayı: §e" + count);
+        p.sendMessage("§7Güç Seviyesi: §e" + internalLevel + " (Orta)");
         return true;
     }
     
@@ -1052,10 +1100,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             }
         }
         
-        disasterManager.spawnSwarmDisaster(entityType, count, spawnLoc);
+        // internalLevel: 1=Düşük, 2=Orta, 3=Yüksek (test için varsayılan: 2)
+        int internalLevel = 2;
+        disasterManager.spawnSwarmDisaster(entityType, count, spawnLoc, internalLevel);
         p.sendMessage("§a§lMİNİ DALGA TEST BAŞLATILDI!");
         p.sendMessage("§7Entity: §e" + entityType.name());
         p.sendMessage("§7Sayı: §e" + count);
+        p.sendMessage("§7Güç Seviyesi: §e" + internalLevel + " (Orta)");
         return true;
     }
     
@@ -4314,14 +4365,49 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 case "disaster":
                     // Disaster start için yeni format: [Kategori seviyesi] [Felaket ismi] [İç seviye] [Koordinat]
                     if (category.equalsIgnoreCase("start")) {
-                        // args.length == 3: Kategori seviyesi öner
-                        List<String> suggestions = Arrays.asList("1", "2", "3");
-                        if (input.isEmpty()) {
-                            return suggestions;
+                        if (args.length == 3) {
+                            // Kategori seviyesi öner
+                            List<String> suggestions = Arrays.asList("1", "2", "3");
+                            if (input.isEmpty()) {
+                                return suggestions;
+                            }
+                            return suggestions.stream()
+                                    .filter(s -> s.startsWith(input))
+                                    .collect(Collectors.toList());
+                        } else if (args.length == 4) {
+                            // Felaket tipi öner
+                            List<String> disasterTypes = Arrays.asList(
+                                "CATASTROPHIC_TITAN", "CATASTROPHIC_ABYSSAL_WORM", "CATASTROPHIC_CHAOS_DRAGON",
+                                "CATASTROPHIC_VOID_TITAN", "CATASTROPHIC_ICE_LEVIATHAN",
+                                "ZOMBIE_HORDE", "SKELETON_LEGION", "SPIDER_SWARM",
+                                "CREEPER_SWARM", "ZOMBIE_WAVE",
+                                "SOLAR_FLARE", "EARTHQUAKE", "STORM", "METEOR_SHOWER", "VOLCANIC_ERUPTION"
+                            );
+                            if (input.isEmpty()) {
+                                return disasterTypes;
+                            }
+                            return disasterTypes.stream()
+                                    .filter(s -> s.startsWith(input.toUpperCase()))
+                                    .collect(Collectors.toList());
+                        } else if (args.length == 5) {
+                            // İç seviye öner
+                            List<String> levels = Arrays.asList("1", "2", "3");
+                            if (input.isEmpty()) {
+                                return levels;
+                            }
+                            return levels.stream()
+                                    .filter(s -> s.startsWith(input))
+                                    .collect(Collectors.toList());
+                        } else if (args.length == 6) {
+                            // Konum öner
+                            List<String> locationOptions = Arrays.asList("ben", "me");
+                            if (input.isEmpty()) {
+                                return locationOptions;
+                            }
+                            return locationOptions.stream()
+                                    .filter(s -> s.startsWith(input.toLowerCase()))
+                                    .collect(Collectors.toList());
                         }
-                        return suggestions.stream()
-                                .filter(s -> s.startsWith(input))
-                                .collect(Collectors.toList());
                     }
                     // Diğer disaster komutları (stop, info, list, clear, test)
                     List<String> disasterCommands = Arrays.asList("start", "stop", "info", "list", "clear", "test");
@@ -5368,10 +5454,11 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             }
         }
         
-        // Çitleri yerleştir (kenarlar) - Yükseklik değişkenliği için akıllı yerleştirme
+        // Çitleri yerleştir (kenarlar + köşeler) - Yükseklik değişkenliği için akıllı yerleştirme
         // Önce tüm çit pozisyonlarının yüksekliklerini hesapla
         java.util.Map<String, Integer> fenceHeights = new java.util.HashMap<>();
         
+        // Kenarları oluştur (minimum 5x5 = 20 çit + 4 köşe = 24 çit)
         for (int offset = -halfSize; offset <= halfSize; offset++) {
             // Kuzey kenarı
             int fenceY = findGroundLevel(world, centerX + offset, centerY, centerZ - halfSize);
@@ -5385,16 +5472,20 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 fenceHeights.put((centerX + offset) + "," + (centerZ + halfSize), fenceY);
             }
             
-            // Doğu kenarı
-            fenceY = findGroundLevel(world, centerX + halfSize, centerY, centerZ + offset);
-            if (fenceY != -1) {
-                fenceHeights.put((centerX + halfSize) + "," + (centerZ + offset), fenceY);
+            // Doğu kenarı (köşeler hariç - zaten eklenmiş)
+            if (offset != -halfSize && offset != halfSize) {
+                fenceY = findGroundLevel(world, centerX + halfSize, centerY, centerZ + offset);
+                if (fenceY != -1) {
+                    fenceHeights.put((centerX + halfSize) + "," + (centerZ + offset), fenceY);
+                }
             }
             
-            // Batı kenarı
-            fenceY = findGroundLevel(world, centerX - halfSize, centerY, centerZ + offset);
-            if (fenceY != -1) {
-                fenceHeights.put((centerX - halfSize) + "," + (centerZ + offset), fenceY);
+            // Batı kenarı (köşeler hariç - zaten eklenmiş)
+            if (offset != -halfSize && offset != halfSize) {
+                fenceY = findGroundLevel(world, centerX - halfSize, centerY, centerZ + offset);
+                if (fenceY != -1) {
+                    fenceHeights.put((centerX - halfSize) + "," + (centerZ + offset), fenceY);
+                }
             }
         }
         
@@ -5428,20 +5519,33 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             if (westY != null && westY > maxNeighborY) maxNeighborY = westY;
             
             // Çitleri yerleştir (yükseklik farkı 1 bloktan fazlaysa, ara çitler ekle)
+            // Bağlantı kopmaması için: Her çit, komşularının en yüksek noktasına kadar uzanmalı
             int startY = Math.min(y, maxNeighborY);
             int endY = Math.max(y, maxNeighborY);
             
-            // Maksimum 3 blok yükseklik farkı (çok fazla çit olmasın)
-            if (endY - startY > 3) {
-                endY = startY + 3;
+            // Maksimum 5 blok yükseklik farkı (tepeler/çukurlar için daha esnek)
+            if (endY - startY > 5) {
+                // Çok fazla fark varsa, ortada bir yerde dur (doğal görünsün)
+                int midY = (startY + endY) / 2;
+                startY = midY - 2;
+                endY = midY + 2;
             }
             
+            // Çitleri yerleştir (bağlantı kopmasın)
             for (int fenceY = startY; fenceY <= endY; fenceY++) {
                 org.bukkit.block.Block fenceBlock = world.getBlockAt(x, fenceY, z);
-                if (fenceBlock.getType() == Material.AIR || !fenceBlock.getType().isSolid()) {
+                // Sadece hava veya yumuşak blokların üzerine yerleştir
+                if (fenceBlock.getType() == Material.AIR || 
+                    (!fenceBlock.getType().isSolid() && fenceBlock.getType() != Material.OAK_FENCE)) {
                     fenceBlock.setType(Material.OAK_FENCE);
                     fenceBlocks.add(fenceBlock);
                 }
+            }
+            
+            // Üstteki hava bloklarını temizle (çitlerin görünürlüğü için)
+            org.bukkit.block.Block aboveBlock = world.getBlockAt(x, endY + 1, z);
+            if (aboveBlock.getType() == Material.AIR && endY + 1 < world.getMaxHeight()) {
+                // Üstteki hava bloğunu kontrol et (görünürlük için)
             }
         }
         

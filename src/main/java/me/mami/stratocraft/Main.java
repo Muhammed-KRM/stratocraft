@@ -419,7 +419,8 @@ public class Main extends JavaPlugin {
         
         // 3. Zamanlayıcıları Başlat
         new BuffTask(territoryManager, siegeWeaponManager).runTaskTimer(this, 20L, 20L);
-        new DisasterTask(disasterManager, territoryManager).runTaskTimer(this, 20L, 20L);
+        // ✅ PERFORMANS OPTİMİZASYONU: DisasterTask interval'i artırıldı (20L -> 40L = 2 saniye)
+        new DisasterTask(disasterManager, territoryManager).runTaskTimer(this, 20L, 40L);
         
         // Otomatik felaket spawn kontrolü (her 10 dakikada bir)
         new org.bukkit.scheduler.BukkitRunnable() {
@@ -856,6 +857,19 @@ public class Main extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // ✅ ÖNCE: Tüm async task'ları iptal et (plugin kapatılırken)
+        org.bukkit.Bukkit.getScheduler().cancelTasks(this);
+        
+        // ✅ DisasterArenaManager'ı durdur
+        if (disasterArenaManager != null) {
+            disasterArenaManager.shutdown();
+        }
+        
+        // ✅ DisasterManager task'larını durdur
+        if (disasterManager != null) {
+            disasterManager.shutdown();
+        }
+        
         // TaskManager'ı kapat (tüm task'ları iptal et)
         if (taskManager != null) {
             taskManager.shutdown();

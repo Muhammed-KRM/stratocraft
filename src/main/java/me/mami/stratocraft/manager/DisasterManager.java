@@ -48,7 +48,9 @@ public class DisasterManager {
     private DisasterArenaManager arenaManager;
     
     private Disaster activeDisaster = null;
-    private long lastDisasterTime = System.currentTimeMillis();
+    // ✅ PERFORMANS: lastDisasterTime başlangıçta 0 olmalı (hiç felaket spawn olmadıysa)
+    // Eğer System.currentTimeMillis() kullanırsak, elapsed çok büyük olur ve mod işlemi yanlış sonuç verir
+    private long lastDisasterTime = 0; // Başlangıçta 0, ilk felaket spawn olduğunda güncellenir
     
     // Mini felaket sistemi
     private long lastMiniDisasterTime = System.currentTimeMillis();
@@ -142,9 +144,8 @@ public class DisasterManager {
     private BossBar disasterBossBar = null;
     private BukkitTask bossBarUpdateTask = null;
     
-    // Countdown Scoreboard (spawn olacağı zamanı gösterir - sağ üst köşe)
-    private org.bukkit.scoreboard.Scoreboard countdownScoreboard = null;
-    private org.bukkit.scoreboard.Objective countdownObjective = null;
+    // ✅ Countdown Scoreboard kaldırıldı - Artık HUDManager'daki bilgi panelinde gösteriliyor
+    // Sadece uyarılar için task (scoreboard yok)
     private BukkitTask countdownUpdateTask = null;
     
     public DisasterManager(Main plugin) {
@@ -435,9 +436,11 @@ public class DisasterManager {
         }
         
         // Merkezden en uzak noktayı bul (config'den okunan mesafe)
+        // 360 derece rastgele açı kullan (4 yön yerine tüm yönler)
         int distance = (int) spawnDistance;
-        int x = centerLoc.getBlockX() + (new java.util.Random().nextBoolean() ? distance : -distance);
-        int z = centerLoc.getBlockZ() + (new java.util.Random().nextBoolean() ? distance : -distance);
+        double angle = random.nextDouble() * 2 * Math.PI; // 0-360 derece arası rastgele açı
+        int x = centerLoc.getBlockX() + (int)(Math.cos(angle) * distance);
+        int z = centerLoc.getBlockZ() + (int)(Math.sin(angle) * distance);
         
         // Chunk'ı force load et (felaket hareket edebilsin diye)
         int chunkX = x >> 4;
@@ -519,23 +522,41 @@ public class DisasterManager {
                                      targetLoc, 
                                      power.health, power.damage, duration);
         
-        // Hedef kristali belirle
+        // ✅ Hedef kristali belirle (İLK HEDEF BELİRLEME - ÖNEMLİ!)
+        // Entity spawn olduktan SONRA hedef belirle (entity location'ı doğru olsun)
         setDisasterTarget(activeDisaster);
         
-        // Countdown Scoreboard'ı kaldır
-        if (countdownObjective != null) {
-            countdownObjective.unregister();
-            countdownObjective = null;
-        }
-        if (countdownScoreboard != null) {
-            // Tüm oyuncuların scoreboard'unu temizle
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                if (player.getScoreboard().equals(countdownScoreboard)) {
-                    player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
+        // ✅ Entity'nin hemen hareket etmesi için hedefi kontrol et ve ayarla
+        if (entity != null) {
+            // Hedef yoksa veya null ise, yeniden belirle
+            Location currentTarget = activeDisaster.getTargetCrystal() != null ? 
+                activeDisaster.getTargetCrystal() : activeDisaster.getTarget();
+            if (currentTarget == null) {
+                // Entity location'ı ile yeniden hedef belirle
+                setDisasterTarget(activeDisaster);
+                currentTarget = activeDisaster.getTargetCrystal() != null ? 
+                    activeDisaster.getTargetCrystal() : activeDisaster.getTarget();
+            }
+            
+            // ✅ Hedefi kesinlikle ayarla (ilk spawn'da hareket etmesi için)
+            if (currentTarget != null) {
+                activeDisaster.setTarget(currentTarget);
+            }
+            
+            // EnderDragon gibi özel entity'ler için hedefi hemen ayarla
+            if (entity instanceof org.bukkit.entity.EnderDragon) {
+                org.bukkit.entity.EnderDragon dragon = (org.bukkit.entity.EnderDragon) entity;
+                Location finalTarget = activeDisaster.getTargetCrystal() != null ? 
+                    activeDisaster.getTargetCrystal() : activeDisaster.getTarget();
+                if (finalTarget != null) {
+                    // Dragon'un hedefini ayarla (ilk spawn'da hemen hareket etmesi için)
+                    activeDisaster.setTarget(finalTarget);
                 }
             }
-            countdownScoreboard = null;
         }
+        
+        // ✅ Countdown Scoreboard kaldırıldı - Artık HUDManager'daki bilgi panelinde gösteriliyor
+        // Sadece task'ı durdur (scoreboard yok artık)
         if (countdownUpdateTask != null) {
             countdownUpdateTask.cancel();
             countdownUpdateTask = null;
@@ -840,10 +861,29 @@ public class DisasterManager {
         }
         
         if (nextSpawnTime == Long.MAX_VALUE || nextSpawnTime <= 0) {
+            // ✅ Eğer hiç felaket spawn olmadıysa veya tüm interval'ler geçmişse
             long minInterval = Math.min(LEVEL_1_INTERVAL, Math.min(LEVEL_2_INTERVAL, LEVEL_3_INTERVAL));
-            long timeSinceLast = elapsed % minInterval;
-            nextSpawnTime = minInterval - timeSinceLast;
+            
+            // ✅ lastDisasterTime 0 ise (hiç felaket spawn olmadıysa), en kısa interval'i göster
+            if (lastDisasterTime == 0) {
+                nextSpawnTime = minInterval;
+            } else {
+                // Mod işlemi yap (elapsed çok büyükse bile doğru sonuç verir)
+                long timeSinceLast = elapsed % minInterval;
+                nextSpawnTime = minInterval - timeSinceLast;
+                
+                // ✅ Eğer nextSpawnTime çok büyükse (mod işlemi yanlış sonuç vermişse), sıfırla
+                if (nextSpawnTime > minInterval || nextSpawnTime < 0) {
+                    nextSpawnTime = minInterval;
+                }
+            }
             nextLevel = 1;
+        }
+        
+        // ✅ Negatif değer kontrolü (güvenlik)
+        if (nextSpawnTime < 0 || nextSpawnTime > LEVEL_3_INTERVAL * 2) {
+            // Çok büyük veya negatif değer, varsayılan değer kullan
+            nextSpawnTime = LEVEL_1_INTERVAL; // Varsayılan: 1 gün
         }
         
         String timeText = formatTime(nextSpawnTime);
@@ -932,20 +972,7 @@ public class DisasterManager {
      */
     public void checkAutoSpawn() {
         if (activeDisaster != null && !activeDisaster.isDead()) {
-            // Aktif felaket varsa countdown'u kaldır
-            if (countdownObjective != null) {
-                countdownObjective.unregister();
-                countdownObjective = null;
-            }
-            if (countdownScoreboard != null) {
-                // Tüm oyuncuların scoreboard'unu temizle
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    if (player.getScoreboard().equals(countdownScoreboard)) {
-                        player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
-                    }
-                }
-                countdownScoreboard = null;
-            }
+            // Aktif felaket varsa task'ı durdur (scoreboard yok artık)
             if (countdownUpdateTask != null) {
                 countdownUpdateTask.cancel();
                 countdownUpdateTask = null;
@@ -1087,38 +1114,19 @@ public class DisasterManager {
             nextLevel = 1; // En kısa interval seviye 1
         }
         
-        // Scoreboard oluştur (sağ üst köşe için)
-        if (countdownScoreboard == null) {
-            countdownScoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
-        }
+        // ✅ FELAKET SAYACI HUD'U KAPALI - Artık sadece bilgi panelinde gösteriliyor
+        // Scoreboard oluşturma ve güncelleme kodu kaldırıldı
+        // Felaket sayacı artık HUDManager'daki bilgi panelinde gösteriliyor
         
-        // Objective oluştur veya güncelle
-        if (countdownObjective == null) {
-            countdownObjective = countdownScoreboard.registerNewObjective("disaster_countdown", "dummy", "§e§l⏰ FELAKET SAYACI");
-            countdownObjective.setDisplaySlot(org.bukkit.scoreboard.DisplaySlot.SIDEBAR);
-        }
-        
-        // Güncelleme task'ı
+        // Görsel uyarı sistemi ve uyarı mesajları çalışmaya devam ediyor
+        // Güncelleme task'ı sadece uyarılar için çalışıyor (scoreboard yok)
         if (countdownUpdateTask != null) {
             countdownUpdateTask.cancel();
         }
         
         countdownUpdateTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             if (activeDisaster != null && !activeDisaster.isDead()) {
-                // Aktif felaket varsa countdown'u kaldır
-                if (countdownObjective != null) {
-                    countdownObjective.unregister();
-                    countdownObjective = null;
-                }
-                if (countdownScoreboard != null) {
-                    // Tüm oyuncuların scoreboard'unu temizle
-                    for (Player player : Bukkit.getOnlinePlayers()) {
-                        if (player.getScoreboard().equals(countdownScoreboard)) {
-                            player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
-                        }
-                    }
-                    countdownScoreboard = null;
-                }
+                // Aktif felaket varsa task'ı durdur
                 if (countdownUpdateTask != null) {
                     countdownUpdateTask.cancel();
                     countdownUpdateTask = null;
@@ -1139,24 +1147,24 @@ public class DisasterManager {
                     default: continue;
                 }
                 
-            long remaining = interval - currentElapsed;
-            if (remaining > 0 && remaining < currentNextSpawnTime) {
-                currentNextSpawnTime = remaining;
-                currentNextLevel = level;
-            }
-            
-            // Görsel uyarı sistemi (2 dakika önce)
-            if (remaining > 0 && remaining <= WARNING_INTERVAL) {
-                // Rastgele bir felaket tipi seç (gerçek felaket tipi bilinmiyor)
-                Disaster.Type[] allTypes = Disaster.Type.values();
-                if (allTypes.length > 0) {
-                    Disaster.Type warningType = allTypes[new Random().nextInt(allTypes.length)];
-                    showVisualWarning(warningType, remaining);
+                long remaining = interval - currentElapsed;
+                if (remaining > 0 && remaining < currentNextSpawnTime) {
+                    currentNextSpawnTime = remaining;
+                    currentNextLevel = level;
+                }
+                
+                // Görsel uyarı sistemi (2 dakika önce)
+                if (remaining > 0 && remaining <= WARNING_INTERVAL) {
+                    // Rastgele bir felaket tipi seç (gerçek felaket tipi bilinmiyor)
+                    Disaster.Type[] allTypes = Disaster.Type.values();
+                    if (allTypes.length > 0) {
+                        Disaster.Type warningType = allTypes[new Random().nextInt(allTypes.length)];
+                        showVisualWarning(warningType, remaining);
+                    }
                 }
             }
-        }
-        
-        if (currentNextSpawnTime == Long.MAX_VALUE || currentNextSpawnTime <= 0) {
+            
+            if (currentNextSpawnTime == Long.MAX_VALUE || currentNextSpawnTime <= 0) {
                 // En kısa interval'i bul
                 long minInterval = Math.min(LEVEL_1_INTERVAL, Math.min(LEVEL_2_INTERVAL, LEVEL_3_INTERVAL));
                 long timeSinceLast = currentElapsed % minInterval;
@@ -1176,193 +1184,8 @@ public class DisasterManager {
                 }
             }
             
-            // Scoreboard'u güncelle (sağ üst köşe)
-            if (countdownScoreboard == null) {
-                countdownScoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
-            }
-            if (countdownObjective == null) {
-                countdownObjective = countdownScoreboard.registerNewObjective("disaster_countdown", "dummy", "§e§l⏰ FELAKET SAYACI");
-                countdownObjective.setDisplaySlot(org.bukkit.scoreboard.DisplaySlot.SIDEBAR);
-            }
-            
-            // Tüm entry'leri temizle
-            for (String entry : countdownScoreboard.getEntries()) {
-                countdownScoreboard.resetScores(entry);
-            }
-            
-            // Tüm seviyelerin kalan sürelerini hesapla ve göster
-            int scoreIndex = 10; // Scoreboard'da yukarıdan aşağıya (yüksek score = yukarıda)
-            
-            // Başlık
-            org.bukkit.scoreboard.Team teamTitle = countdownScoreboard.getTeam("teamTitle");
-            if (teamTitle == null) {
-                teamTitle = countdownScoreboard.registerNewTeam("teamTitle");
-            }
-            teamTitle.addEntry("§e§l");
-            teamTitle.setPrefix("§e§l⏰ FELAKET SAYACI");
-            countdownObjective.getScore("§e§l").setScore(scoreIndex--);
-            
-            // Boş satır
-            org.bukkit.scoreboard.Team teamSpace1 = countdownScoreboard.getTeam("teamSpace1");
-            if (teamSpace1 == null) {
-                teamSpace1 = countdownScoreboard.registerNewTeam("teamSpace1");
-            }
-            teamSpace1.addEntry("§7 ");
-            teamSpace1.setPrefix("§7 ");
-            countdownObjective.getScore("§7 ").setScore(scoreIndex--);
-            
-            // Her seviye için sayaç göster
-            for (int level = 1; level <= 3; level++) {
-                long interval;
-                String levelName;
-                switch (level) {
-                    case 1: 
-                        interval = LEVEL_1_INTERVAL;
-                        levelName = "§7Her Gün";
-                        break;
-                    case 2: 
-                        interval = LEVEL_2_INTERVAL;
-                        levelName = "§73 Gün";
-                        break;
-                    case 3: 
-                        interval = LEVEL_3_INTERVAL;
-                        levelName = "§77 Gün";
-                        break;
-                    default: continue;
-                }
-                
-                long remaining = interval - currentElapsed;
-                // Eğer süre dolmuşsa, bir sonraki döngüyü hesapla
-                if (remaining <= 0) {
-                    remaining = interval - (currentElapsed % interval);
-                }
-                
-                String timeText = formatTime(remaining);
-                
-                // Seviye bilgisi
-                org.bukkit.scoreboard.Team teamLevel = countdownScoreboard.getTeam("teamLevel" + level);
-                if (teamLevel == null) {
-                    teamLevel = countdownScoreboard.registerNewTeam("teamLevel" + level);
-                }
-                teamLevel.addEntry("§" + level);
-                teamLevel.setPrefix("§eSeviye " + level + ": §7" + levelName);
-                countdownObjective.getScore("§" + level).setScore(scoreIndex--);
-                
-                // Kalan süre
-                org.bukkit.scoreboard.Team teamTime = countdownScoreboard.getTeam("teamTime" + level);
-                if (teamTime == null) {
-                    teamTime = countdownScoreboard.registerNewTeam("teamTime" + level);
-                }
-                teamTime.addEntry("§" + (level + 3));
-                teamTime.setPrefix("§7  Kalan: §e" + timeText);
-                countdownObjective.getScore("§" + (level + 3)).setScore(scoreIndex--);
-                
-                // Seviyeler arası boşluk (son seviye hariç)
-                if (level < 3) {
-                    org.bukkit.scoreboard.Team teamSpace = countdownScoreboard.getTeam("teamSpace" + level);
-                    if (teamSpace == null) {
-                        teamSpace = countdownScoreboard.registerNewTeam("teamSpace" + level);
-                    }
-                    teamSpace.addEntry("§" + (level + 6));
-                    teamSpace.setPrefix("§7 ");
-                    countdownObjective.getScore("§" + (level + 6)).setScore(scoreIndex--);
-                }
-            }
-            
-            // Tüm oyunculara scoreboard'u ata
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                player.setScoreboard(countdownScoreboard);
-            }
+            // ✅ Scoreboard kodu kaldırıldı - Artık HUDManager'daki bilgi panelinde gösteriliyor
         }, 0L, 20L); // Her saniye
-        
-        // İlk güncelleme - Tüm seviyelerin sayaçlarını göster
-        int scoreIndex = 10; // Scoreboard'da yukarıdan aşağıya (yüksek score = yukarıda)
-        
-        // Tüm entry'leri temizle
-        for (String entry : countdownScoreboard.getEntries()) {
-            countdownScoreboard.resetScores(entry);
-        }
-        
-        // Başlık
-        org.bukkit.scoreboard.Team teamTitle = countdownScoreboard.getTeam("teamTitle");
-        if (teamTitle == null) {
-            teamTitle = countdownScoreboard.registerNewTeam("teamTitle");
-        }
-        teamTitle.addEntry("§e§l");
-        teamTitle.setPrefix("§e§l⏰ FELAKET SAYACI");
-        countdownObjective.getScore("§e§l").setScore(scoreIndex--);
-        
-        // Boş satır
-        org.bukkit.scoreboard.Team teamSpace1 = countdownScoreboard.getTeam("teamSpace1");
-        if (teamSpace1 == null) {
-            teamSpace1 = countdownScoreboard.registerNewTeam("teamSpace1");
-        }
-        teamSpace1.addEntry("§7 ");
-        teamSpace1.setPrefix("§7 ");
-        countdownObjective.getScore("§7 ").setScore(scoreIndex--);
-        
-        // Her seviye için sayaç göster
-        for (int level = 1; level <= 3; level++) {
-            long interval;
-            String levelName;
-            switch (level) {
-                case 1: 
-                    interval = LEVEL_1_INTERVAL;
-                    levelName = "§7Her Gün";
-                    break;
-                case 2: 
-                    interval = LEVEL_2_INTERVAL;
-                    levelName = "§73 Gün";
-                    break;
-                case 3: 
-                    interval = LEVEL_3_INTERVAL;
-                    levelName = "§77 Gün";
-                    break;
-                default: continue;
-            }
-            
-            long remaining = interval - elapsed;
-            // Eğer süre dolmuşsa, bir sonraki döngüyü hesapla
-            if (remaining <= 0) {
-                remaining = interval - (elapsed % interval);
-            }
-            
-            String timeText = formatTime(remaining);
-            
-            // Seviye bilgisi
-            org.bukkit.scoreboard.Team teamLevel = countdownScoreboard.getTeam("teamLevel" + level);
-            if (teamLevel == null) {
-                teamLevel = countdownScoreboard.registerNewTeam("teamLevel" + level);
-            }
-            teamLevel.addEntry("§" + level);
-            teamLevel.setPrefix("§eSeviye " + level + ": §7" + levelName);
-            countdownObjective.getScore("§" + level).setScore(scoreIndex--);
-            
-            // Kalan süre
-            org.bukkit.scoreboard.Team teamTime = countdownScoreboard.getTeam("teamTime" + level);
-            if (teamTime == null) {
-                teamTime = countdownScoreboard.registerNewTeam("teamTime" + level);
-            }
-            teamTime.addEntry("§" + (level + 3));
-            teamTime.setPrefix("§7  Kalan: §e" + timeText);
-            countdownObjective.getScore("§" + (level + 3)).setScore(scoreIndex--);
-            
-            // Seviyeler arası boşluk (son seviye hariç)
-            if (level < 3) {
-                org.bukkit.scoreboard.Team teamSpace = countdownScoreboard.getTeam("teamSpace" + level);
-                if (teamSpace == null) {
-                    teamSpace = countdownScoreboard.registerNewTeam("teamSpace" + level);
-                }
-                teamSpace.addEntry("§" + (level + 6));
-                teamSpace.setPrefix("§7 ");
-                countdownObjective.getScore("§" + (level + 6)).setScore(scoreIndex--);
-            }
-        }
-        
-        // Tüm oyunculara scoreboard'u ata
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.setScoreboard(countdownScoreboard);
-        }
     }
     
     // Getter/Setter
@@ -1412,19 +1235,7 @@ public class DisasterManager {
             bossBarUpdateTask = null;
         }
         
-        if (countdownObjective != null) {
-            countdownObjective.unregister();
-            countdownObjective = null;
-        }
-        if (countdownScoreboard != null) {
-            // Tüm oyuncuların scoreboard'unu temizle
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                if (player.getScoreboard().equals(countdownScoreboard)) {
-                    player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
-                }
-            }
-            countdownScoreboard = null;
-        }
+        // ✅ Countdown Scoreboard kaldırıldı - Artık HUDManager'daki bilgi panelinde gösteriliyor
         if (countdownUpdateTask != null) {
             countdownUpdateTask.cancel();
             countdownUpdateTask = null;
@@ -1445,6 +1256,40 @@ public class DisasterManager {
     }
     
     /**
+     * ✅ Plugin kapatılırken tüm task'ları durdur
+     */
+    public void shutdown() {
+        // BossBar task'ını durdur
+        if (bossBarUpdateTask != null) {
+            bossBarUpdateTask.cancel();
+            bossBarUpdateTask = null;
+        }
+        
+        // Countdown task'ını durdur
+        if (countdownUpdateTask != null) {
+            countdownUpdateTask.cancel();
+            countdownUpdateTask = null;
+        }
+        
+        // Weak point task'ını durdur
+        if (weakPointTask != null) {
+            weakPointTask.cancel();
+            weakPointTask = null;
+        }
+        
+        // BossBar'ı temizle
+        if (disasterBossBar != null) {
+            disasterBossBar.removeAll();
+            disasterBossBar = null;
+        }
+        
+        // Arena manager'ı durdur
+        if (arenaManager != null && activeDisaster != null && activeDisaster.getEntity() != null) {
+            arenaManager.stopArenaTransformation(activeDisaster.getEntity().getUniqueId());
+        }
+    }
+    
+    /**
      * Yeni oyuncu giriş yaptığında BossBar'a ekle ve cache'i temizle (güç hesaplama için)
      */
     public void onPlayerJoin(Player player) {
@@ -1455,9 +1300,7 @@ public class DisasterManager {
         if (disasterBossBar != null) {
             disasterBossBar.addPlayer(player);
         }
-        if (countdownScoreboard != null) {
-            player.setScoreboard(countdownScoreboard);
-        }
+        // ✅ Countdown Scoreboard kaldırıldı - Artık HUDManager'daki bilgi panelinde gösteriliyor
     }
     
     /**

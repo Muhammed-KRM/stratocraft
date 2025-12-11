@@ -4,13 +4,11 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import me.mami.stratocraft.Main;
 import me.mami.stratocraft.manager.DataManager;
-import org.bukkit.Location;
 
 import java.sql.*;
 import java.util.*;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Level;
 
 /**
  * SQLite Veri Yönetim Sistemi
@@ -100,18 +98,29 @@ public class SQLiteDataManager {
     
     /**
      * Kontrat snapshot'ını SQLite'a kaydet
+     * 
+     * ⚠️ NOT: Bu metod transaction içinde çağrılmalı (saveAll içinden)
+     * Eğer tek başına çağrılıyorsa transaction başlatılır
      */
-    public void saveContractSnapshot(DataManager.ContractSnapshot snapshot) throws SQLException {
+    public void saveContractSnapshot(DataManager.ContractSnapshot snapshot, boolean inTransaction) throws SQLException {
         if (snapshot == null || snapshot.contracts == null) return;
         
-        saveLock.lock();
+        if (!inTransaction) {
+            saveLock.lock();
+            try {
+                databaseManager.beginTransaction();
+            } catch (SQLException e) {
+                saveLock.unlock();
+                throw e;
+            }
+        }
+        
         try {
-            databaseManager.beginTransaction();
             Connection conn = databaseManager.getConnection();
             
             // Önce tüm eski kontratları sil (tam senkronizasyon için)
-            try (Statement stmt = conn.createStatement()) {
-                stmt.execute("DELETE FROM contracts");
+            try (Statement deleteStmt = conn.createStatement()) {
+                deleteStmt.execute("DELETE FROM contracts");
             }
             
             try (PreparedStatement stmt = conn.prepareStatement(
@@ -124,13 +133,13 @@ public class SQLiteDataManager {
                     String jsonData = gson.toJson(contract);
                     
                     stmt.setString(1, contract.id);
-                    stmt.setString(2, contract.issuerId != null ? contract.issuerId : contract.issuer);
-                    stmt.setString(3, contract.acceptorId != null ? contract.acceptorId : contract.acceptor);
-                    stmt.setString(4, contract.material);
+                    stmt.setString(2, contract.issuer != null ? contract.issuer : "");
+                    stmt.setString(3, contract.acceptor != null ? contract.acceptor : "");
+                    stmt.setString(4, contract.material != null ? contract.material : "");
                     stmt.setInt(5, contract.amount);
-                    stmt.setString(6, contract.rewardString != null ? contract.rewardString : String.valueOf(contract.reward));
+                    stmt.setString(6, String.valueOf(contract.reward));
                     stmt.setTimestamp(7, contract.deadline != 0 ? new Timestamp(contract.deadline) : null);
-                    stmt.setBoolean(8, contract.deliveredBool || contract.delivered > 0);
+                    stmt.setBoolean(8, contract.delivered > 0);
                     stmt.setString(9, jsonData);
                     stmt.addBatch(); // ✅ OPTIMIZATION: Batch insert
                 }
@@ -192,11 +201,11 @@ public class SQLiteDataManager {
                     stmt.setString(1, shop.id);
                     stmt.setString(2, shop.ownerId != null ? shop.ownerId : shop.owner);
                     // Location kontrolü (LocationData veya fallback)
-                    if (shop.location != null) {
-                        stmt.setString(3, shop.location.world);
-                        stmt.setInt(4, shop.location.x);
-                        stmt.setInt(5, shop.location.y);
-                        stmt.setInt(6, shop.location.z);
+                    if (shop.locationData != null) {
+                        stmt.setString(3, shop.locationData.world);
+                        stmt.setInt(4, (int) shop.locationData.x);
+                        stmt.setInt(5, (int) shop.locationData.y);
+                        stmt.setInt(6, (int) shop.locationData.z);
                     } else if (shop.locationString != null && shop.locationString.contains(":")) {
                         // Fallback: locationString'den parse et
                         String[] parts = shop.locationString.split(":");
@@ -344,14 +353,14 @@ public class SQLiteDataManager {
                     stmt.setString(2, snapshot.disaster.type);
                     stmt.setString(3, snapshot.disaster.category);
                     stmt.setInt(4, snapshot.disaster.level);
-                    stmt.setTimestamp(5, snapshot.disaster.startTime != null ? 
+                    stmt.setTimestamp(5, snapshot.disaster.startTime != 0 ? 
                         new Timestamp(snapshot.disaster.startTime) : null);
                     stmt.setLong(6, snapshot.disaster.duration);
                     stmt.setBoolean(7, true);
                     stmt.setString(8, jsonData);
                     stmt.addBatch(); // ✅ OPTIMIZATION: Batch insert
+                    stmt.executeBatch(); // ✅ OPTIMIZATION: Tüm batch'i bir seferde çalıştır
                 }
-                stmt.executeBatch(); // ✅ OPTIMIZATION: Tüm batch'i bir seferde çalıştır
             }
             
             if (!inTransaction) {
@@ -578,9 +587,9 @@ public class SQLiteDataManager {
                     if (trap.location != null) {
                         // LocationData formatında
                         world = trap.location.world;
-                        x = trap.location.x;
-                        y = trap.location.y;
-                        z = trap.location.z;
+                        x = (int) trap.location.x;
+                        y = (int) trap.location.y;
+                        z = (int) trap.location.z;
                     } else if (trap.id != null && trap.id.contains(":")) {
                         // ID'den parse et (fallback)
                         String[] parts = trap.id.split(":");

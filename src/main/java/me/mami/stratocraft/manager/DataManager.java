@@ -49,6 +49,11 @@ public class DataManager {
     private boolean autoSaveEnabled = true;
     private org.bukkit.scheduler.BukkitTask autoSaveTask;
     
+    // SQLite entegrasyonu
+    private boolean useSQLite = false;
+    private me.mami.stratocraft.database.DatabaseManager databaseManager;
+    private me.mami.stratocraft.database.SQLiteDataManager sqliteDataManager;
+    
     public DataManager(Main plugin) {
         this.plugin = plugin;
         this.dataFolder = plugin.getDataFolder();
@@ -545,7 +550,9 @@ public class DataManager {
     
     public static class LocationData {
         public String world;
-        public int x, y, z;
+        public double x, y, z;
+        public float yaw = 0.0f;
+        public float pitch = 0.0f;
     }
     
     /**
@@ -656,11 +663,11 @@ public class DataManager {
                     Location loc = shop.getLocation();
                     data.locationString = serializeLocation(loc); // JSON için
                     // SQLite için LocationData
-                    data.location = new LocationData();
-                    data.location.world = loc.getWorld() != null ? loc.getWorld().getName() : "world";
-                    data.location.x = loc.getBlockX();
-                    data.location.y = loc.getBlockY();
-                    data.location.z = loc.getBlockZ();
+                    data.locationData = new LocationData();
+                    data.locationData.world = loc.getWorld() != null ? loc.getWorld().getName() : "world";
+                    data.locationData.x = loc.getBlockX();
+                    data.locationData.y = loc.getBlockY();
+                    data.locationData.z = loc.getBlockZ();
                     data.sellItem = serializeItemStack(shop.getSellingItem());
                     data.priceItem = serializeItemStack(shop.getPriceItem());
                     data.protectedZone = shop.isProtectedZone();
@@ -1105,8 +1112,56 @@ public class DataManager {
             }
             
             // Geçici dosyayı hedef dosyaya taşı (atomic operation)
-            if (!tempFile.renameTo(targetFile)) {
-                throw new IOException("Dosya taşıma başarısız: " + targetFile.getName());
+            // Windows'ta renameTo() bazen başarısız olabilir, Files.move() kullan
+            try {
+                // Önce hedef dosyayı sil (varsa)
+                if (targetFile.exists()) {
+                    // Windows'ta dosya kilitlenmesi olabilir, birkaç kez dene
+                    int attempts = 0;
+                    while (attempts < 3 && !targetFile.delete()) {
+                        attempts++;
+                        try {
+                            Thread.sleep(50); // 50ms bekle
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                    }
+                    if (targetFile.exists()) {
+                        // Hala varsa, .old uzantısıyla yeniden adlandır
+                        File oldFile = new File(targetFile.getParentFile(), targetFile.getName() + ".old");
+                        if (oldFile.exists()) {
+                            oldFile.delete();
+                        }
+                        targetFile.renameTo(oldFile);
+                    }
+                }
+                
+                // Geçici dosyayı hedef dosyaya taşı
+                if (!tempFile.renameTo(targetFile)) {
+                    // renameTo() başarısız oldu, Files.move() dene
+                    try {
+                        java.nio.file.Files.move(
+                            tempFile.toPath(),
+                            targetFile.toPath(),
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                            java.nio.file.StandardCopyOption.ATOMIC_MOVE
+                        );
+                    } catch (IOException nioe) {
+                        // Files.move() da başarısız, normal kopyalama yap
+                        try (java.io.FileInputStream fis = new java.io.FileInputStream(tempFile);
+                             java.io.FileOutputStream fos = new java.io.FileOutputStream(targetFile)) {
+                            byte[] buffer = new byte[8192];
+                            int bytesRead;
+                            while ((bytesRead = fis.read(buffer)) != -1) {
+                                fos.write(buffer, 0, bytesRead);
+                            }
+                        }
+                        tempFile.delete(); // Geçici dosyayı sil
+                    }
+                }
+            } catch (Exception moveException) {
+                throw new IOException("Dosya taşıma başarısız: " + targetFile.getName() + " - " + moveException.getMessage(), moveException);
             }
         } catch (Exception e) {
             // Hata durumunda geçici dosyayı temizle
@@ -1892,9 +1947,34 @@ public class DataManager {
             
             if (activeTrapsData != null) {
                 for (Map<String, Object> trapData : activeTrapsData) {
-                    TrapData trap = gson.fromJson(gson.toJsonTree(trapData), TrapData.class);
-                    if (trap != null) {
-                        snapshot.activeTraps.add(trap);
+                    try {
+                        // Eski STRING formatını destekle (backward compatibility)
+                        if (trapData.containsKey("location") && trapData.get("location") instanceof String) {
+                            // Eski format: location bir STRING
+                            String locationStr = (String) trapData.get("location");
+                            Location loc = deserializeLocation(locationStr);
+                            if (loc != null && loc.getWorld() != null) {
+                                // Location'dan LocationData'ya çevir
+                                LocationData locData = new LocationData();
+                                locData.world = loc.getWorld().getName();
+                                locData.x = loc.getX();
+                                locData.y = loc.getY();
+                                locData.z = loc.getZ();
+                                locData.yaw = loc.getYaw();
+                                locData.pitch = loc.getPitch();
+                                trapData.put("location", gson.toJsonTree(locData).getAsJsonObject());
+                            } else {
+                                continue; // Geçersiz location, bu trap'i atla
+                            }
+                        }
+                        
+                        TrapData trap = gson.fromJson(gson.toJsonTree(trapData), TrapData.class);
+                        if (trap != null && trap.location != null) {
+                            snapshot.activeTraps.add(trap);
+                        }
+                    } catch (Exception e) {
+                        plugin.getLogger().warning("Trap yükleme hatası (atlanıyor): " + e.getMessage());
+                        // Hatalı trap'i atla, devam et
                     }
                 }
             }
@@ -1936,7 +2016,14 @@ public class DataManager {
             // Aktif tuzakları yükle
             if (snapshot.activeTraps != null && activeTraps != null) {
                 for (TrapData trapData : snapshot.activeTraps) {
-                    Location loc = deserializeLocation(trapData.location);
+                    Location loc = null;
+                    if (trapData.location != null) {
+                        // LocationData'dan Location'a çevir
+                        org.bukkit.World world = Bukkit.getWorld(trapData.location.world);
+                        if (world != null) {
+                            loc = new Location(world, trapData.location.x, trapData.location.y, trapData.location.z);
+                        }
+                    }
                     if (loc == null || loc.getWorld() == null) continue;
                     
                     UUID ownerId = trapData.ownerId != null ? UUID.fromString(trapData.ownerId) : null;
@@ -2000,7 +2087,17 @@ public class DataManager {
             // İnaktif tuzak çekirdeklerini yükle
             if (snapshot.inactiveCores != null && inactiveTrapCores != null) {
                 for (InactiveTrapCoreData coreData : snapshot.inactiveCores) {
-                    Location loc = deserializeLocation(coreData.location);
+                    Location loc = null;
+                    // Eski STRING formatını destekle (backward compatibility)
+                    if (coreData.location instanceof String) {
+                        loc = deserializeLocation((String) coreData.location);
+                    } else if (coreData.location != null) {
+                        // Yeni format: LocationData object
+                        // Bu durumda coreData.location bir LocationData olmalı
+                        // Ancak InactiveTrapCoreData.location String olarak tanımlı
+                        // Bu yüzden bu durumda deserializeLocation kullan
+                        continue; // Şimdilik atla, ileride LocationData'ya çevrilebilir
+                    }
                     if (loc == null || loc.getWorld() == null) continue;
                     
                     UUID ownerId = coreData.ownerId != null ? UUID.fromString(coreData.ownerId) : null;
@@ -2190,28 +2287,35 @@ public class DataManager {
     }
     
     public static class ContractData {
-        String id;
-        String issuer;
-        String acceptor;
-        String material;
-        int amount;
-        double reward;
-        int delivered;
-        long deadline;
+        public String id;
+        public String issuer;
+        public String issuerId; // SQLite için
+        public String acceptor;
+        public String acceptorId; // SQLite için
+        public String material;
+        public int amount;
+        public double reward;
+        public String rewardString; // SQLite için
+        public int delivered;
+        public boolean deliveredBool; // SQLite için
+        public long deadline;
     }
     
-    private static class ShopData {
+    public static class ShopData {
         @SuppressWarnings("unused")
-        String id;
-        String owner;
-        String location;
-        String sellItem;
-        String priceItem;
-        boolean protectedZone;
+        public String id;
+        public String owner;
+        public String ownerId; // SQLite için
+        public String location; // String format (JSON için)
+        public LocationData locationData; // SQLite için (LocationData tipinde)
+        public String locationString; // Fallback için
+        public String sellItem;
+        public String priceItem;
+        public boolean protectedZone;
         // KRİTİK: Teklif sistemi verileri
-        List<OfferData> offers = new ArrayList<>();
-        boolean acceptOffers = true;
-        int maxOffers = 10;
+        public List<OfferData> offers = new ArrayList<>();
+        public boolean acceptOffers = true;
+        public int maxOffers = 10;
     }
     
     private static class OfferData {
@@ -2223,13 +2327,13 @@ public class DataManager {
         boolean rejected = false;
     }
     
-    private static class DisasterStateData {
-        String type;
-        String category;
-        int level;
-        long startTime;
-        long duration;
-        String target;
+    public static class DisasterStateData {
+        public String type;
+        public String category;
+        public int level;
+        public long startTime;
+        public long duration;
+        public String target;
     }
     
     // Location adapter for Gson

@@ -215,8 +215,14 @@ public class DisasterTask extends BukkitRunnable {
             if (!centerCrystals.isEmpty()) {
                 // Klan var, en yakın klana saldır
                 Location nearestCrystal = centerCrystals.get(0);  // En yakın klan
-                disaster.setTargetCrystal(nearestCrystal);
-                disaster.setTarget(nearestCrystal);
+                
+                // Eğer hedef kristal değiştiyse veya yoksa güncelle
+                if (disaster.getTargetCrystal() == null || 
+                    !disaster.getTargetCrystal().equals(nearestCrystal)) {
+                    disaster.setTargetCrystal(nearestCrystal);
+                    disaster.setTarget(nearestCrystal);
+                    crystalDestroyed = false; // Yeni hedef, reset
+                }
                 
                 // Kristal kontrolü ve yok etme
                 if (!crystalDestroyed) {
@@ -225,21 +231,35 @@ public class DisasterTask extends BukkitRunnable {
                 
                 // Kristal yok edildikten sonra oyuncularla savaş (1-2 dakikada bir)
                 if (crystalDestroyed) {
-                    long timeSinceCrystalDestroyed = System.currentTimeMillis() - crystalDestroyedTime;
-                    if (timeSinceCrystalDestroyed < POST_CRYSTAL_FIGHT_DURATION) {
-                        // Oyuncularla agresif savaş (daha sık saldırı)
-                        long attackInterval = config.getAttackInterval();
-                        if (phaseManager != null) {
-                            attackInterval = phaseManager.getAttackInterval(disaster);
-                        }
-                        attackNearbyPlayersIfNeeded(disaster, entity, current, config, true, attackInterval);
-                    } else {
-                        // 1 dakika sonra yeni kristal bul
-                        crystalDestroyed = false;
+                    // ÖNCE: Yeni klan kontrolü yap (öncelikli) - 1 dakika beklemeden
+                    java.util.List<org.bukkit.Location> checkCrystals = 
+                        disasterManager.findCrystalsInRadius(centerLoc, 1000.0);
+                    
+                    if (!checkCrystals.isEmpty()) {
+                        // Yeni klan görüldü, ona yönel (1 dakika bekleme iptal)
+                        Location checkCrystal = checkCrystals.get(0);
+                        disaster.setTargetCrystal(checkCrystal);
+                        disaster.setTarget(checkCrystal);
+                        crystalDestroyed = false; // Reset
                         crystalDestroyedTime = 0;
-                        disaster.setTargetCrystal(null);
-                        cachedNearestCrystal = null;
-                        lastCrystalCacheUpdate = 0;
+                        // Devam et, yeni klana git
+                    } else {
+                        long timeSinceCrystalDestroyed = System.currentTimeMillis() - crystalDestroyedTime;
+                        if (timeSinceCrystalDestroyed < POST_CRYSTAL_FIGHT_DURATION) {
+                            // Oyuncularla agresif savaş (daha sık saldırı)
+                            long attackInterval = config.getAttackInterval();
+                            if (phaseManager != null) {
+                                attackInterval = phaseManager.getAttackInterval(disaster);
+                            }
+                            attackNearbyPlayersIfNeeded(disaster, entity, current, config, true, attackInterval);
+                        } else {
+                            // 1 dakika sonra yeni kristal bul
+                            crystalDestroyed = false;
+                            crystalDestroyedTime = 0;
+                            disaster.setTargetCrystal(null);
+                            cachedNearestCrystal = null;
+                            lastCrystalCacheUpdate = 0;
+                        }
                     }
                 } else {
                     // Normal durum: Config'den saldırı aralığı (1-2 dakikada bir)
@@ -262,12 +282,20 @@ public class DisasterTask extends BukkitRunnable {
                     disaster.setTarget(nearestCrystal);
                     crystalDestroyed = false;
                 } else {
-                    // Klan yok, en yakın oyuncuya saldır
-                    long attackInterval = config.getAttackInterval();
-                    if (phaseManager != null) {
-                        attackInterval = phaseManager.getAttackInterval(disaster);
+                    // Klan yok, en yakın oyuncuya saldır VE HEDEF AYARLA
+                    org.bukkit.entity.Player nearestPlayer = findNearestPlayer(current, config.getAttackRadius());
+                    if (nearestPlayer != null) {
+                        // Oyuncuya hedef ayarla (hareket etmesi için)
+                        disaster.setTarget(nearestPlayer.getLocation());
+                        long attackInterval = config.getAttackInterval();
+                        if (phaseManager != null) {
+                            attackInterval = phaseManager.getAttackInterval(disaster);
+                        }
+                        attackNearestPlayerIfNeeded(disaster, entity, current, config, attackInterval);
+                    } else {
+                        // Oyuncu yoksa merkezde kal
+                        disaster.setTarget(centerLoc);
                     }
-                    attackNearestPlayerIfNeeded(disaster, entity, current, config, attackInterval);
                 }
             }
         } else {
@@ -289,33 +317,47 @@ public class DisasterTask extends BukkitRunnable {
                 
                 // Kristal yok edildikten sonra oyuncularla savaş (1-2 dakikada bir)
                 if (crystalDestroyed) {
-                    long timeSinceCrystalDestroyed = System.currentTimeMillis() - crystalDestroyedTime;
-                    if (timeSinceCrystalDestroyed < POST_CRYSTAL_FIGHT_DURATION) {
-                        // Oyuncularla agresif savaş (daha sık saldırı)
-                        long attackInterval = config.getAttackInterval();
-                        if (phaseManager != null) {
-                            attackInterval = phaseManager.getAttackInterval(disaster);
-                        }
-                        attackNearbyPlayersIfNeeded(disaster, entity, current, config, true, attackInterval);
-                    } else {
-                        // 1 dakika sonra yeni kristal bul
-                        crystalDestroyed = false;
+                    // ÖNCE: Yeni klan kontrolü yap (öncelikli) - 1 dakika beklemeden
+                    java.util.List<org.bukkit.Location> checkCrystals = 
+                        disasterManager.findCrystalsInRadius(current, 1000.0);
+                    
+                    if (!checkCrystals.isEmpty()) {
+                        // Yeni klan görüldü, ona yönel (1 dakika bekleme iptal)
+                        Location checkCrystal = checkCrystals.get(0);
+                        disaster.setTargetCrystal(checkCrystal);
+                        disaster.setTarget(checkCrystal);
+                        crystalDestroyed = false; // Reset
                         crystalDestroyedTime = 0;
-                        disaster.setTargetCrystal(null);
-                        cachedNearestCrystal = null;
-                        lastCrystalCacheUpdate = 0;
+                        // Devam et, yeni klana git
+                    } else {
+                        long timeSinceCrystalDestroyed = System.currentTimeMillis() - crystalDestroyedTime;
+                        if (timeSinceCrystalDestroyed < POST_CRYSTAL_FIGHT_DURATION) {
+                            // Oyuncularla agresif savaş (daha sık saldırı)
+                            long attackInterval = config.getAttackInterval();
+                            if (phaseManager != null) {
+                                attackInterval = phaseManager.getAttackInterval(disaster);
+                            }
+                            attackNearbyPlayersIfNeeded(disaster, entity, current, config, true, attackInterval);
+                        } else {
+                            // 1 dakika sonra yeni kristal bul
+                            crystalDestroyed = false;
+                            crystalDestroyedTime = 0;
+                            disaster.setTargetCrystal(null);
+                            cachedNearestCrystal = null;
+                            lastCrystalCacheUpdate = 0;
+                        }
                     }
                 } else {
                     // Normal durum: Config'den saldırı aralığı (1-2 dakikada bir)
                     // Oyunculara saldırırken klan kontrolü yap
-                    java.util.List<org.bukkit.Location> nearbyCrystals = 
+                    java.util.List<org.bukkit.Location> checkCrystals = 
                         disasterManager.findCrystalsInRadius(current, 1000.0);
                     
-                    if (!nearbyCrystals.isEmpty()) {
+                    if (!checkCrystals.isEmpty()) {
                         // Yeni klan görüldü, ona yönel
-                        Location nearestCrystal = nearbyCrystals.get(0);
-                        disaster.setTargetCrystal(nearestCrystal);
-                        disaster.setTarget(nearestCrystal);
+                        Location checkCrystal = checkCrystals.get(0);
+                        disaster.setTargetCrystal(checkCrystal);
+                        disaster.setTarget(checkCrystal);
                         crystalDestroyed = false;
                     } else {
                         // Klan yok, oyunculara saldır
@@ -333,14 +375,14 @@ public class DisasterTask extends BukkitRunnable {
                 
                 // Merkeze ilerlerken de oyunculara saldır (1-2 dakikada bir)
                 // Ayrıca oyunculara saldırırken klan kontrolü yap
-                java.util.List<org.bukkit.Location> nearbyCrystals = 
+                java.util.List<org.bukkit.Location> checkCrystals2 = 
                     disasterManager.findCrystalsInRadius(current, 1000.0);
                 
-                if (!nearbyCrystals.isEmpty()) {
+                if (!checkCrystals2.isEmpty()) {
                     // Yeni klan görüldü, ona yönel
-                    Location nearestCrystal = nearbyCrystals.get(0);
-                    disaster.setTargetCrystal(nearestCrystal);
-                    disaster.setTarget(nearestCrystal);
+                    Location checkCrystal2 = checkCrystals2.get(0);
+                    disaster.setTargetCrystal(checkCrystal2);
+                    disaster.setTarget(checkCrystal2);
                     crystalDestroyed = false;
                 } else {
                     // Klan yok, oyunculara saldır (merkeze ilerlerken)
@@ -353,41 +395,73 @@ public class DisasterTask extends BukkitRunnable {
             }
         }
         
-        // Chunk yüklü mü kontrol et, değilse yükle (entity hareket edebilsin diye)
+        // ✅ PERFORMANS OPTİMİZASYONU: Chunk yükleme işlemini optimize et
+        // Force load yerine normal load kullan (sunucu donmasını önler)
         if (current.getWorld() != null) {
             int chunkX = current.getBlockX() >> 4;
             int chunkZ = current.getBlockZ() >> 4;
             String chunkKey = chunkX + ";" + chunkZ;
             
-            // Mevcut chunk'ı force load et
+            // Mevcut chunk'ı kontrol et ve yükle (force load yerine normal load)
             org.bukkit.Chunk currentChunk = current.getWorld().getChunkAt(chunkX, chunkZ);
             if (!currentChunk.isLoaded()) {
-                currentChunk.load(true);
+                // ✅ Normal load kullan (force load sunucuyu dondurabilir)
+                currentChunk.load(false); // false = force load değil, normal load
             }
-            currentChunk.setForceLoaded(true);
-            forceLoadedChunks.put(chunkKey, currentChunk);
+            // ✅ Force load kullanma (memory leak ve sunucu donmasına neden olur)
+            // currentChunk.setForceLoaded(true); // KALDIRILDI
             
-            // Eski chunk'ları unload et
+            // Eski chunk referanslarını temizle (memory leak önleme)
             java.util.Iterator<java.util.Map.Entry<String, org.bukkit.Chunk>> iterator = 
                 forceLoadedChunks.entrySet().iterator();
             while (iterator.hasNext()) {
                 java.util.Map.Entry<String, org.bukkit.Chunk> entry = iterator.next();
                 if (!entry.getKey().equals(chunkKey)) {
-                    // Bu chunk artık kullanılmıyor, unload et
-                    entry.getValue().setForceLoaded(false);
+                    // Bu chunk artık kullanılmıyor, referansı kaldır
+                    // ✅ Force load kaldırma işlemi yapılmıyor (zaten force load kullanmıyoruz)
                     iterator.remove();
                 }
             }
+            
+            // Mevcut chunk'ı kaydet (sadece referans için)
+            forceLoadedChunks.put(chunkKey, currentChunk);
         }
         
         // Handler sistemi kullan - hedef kristale hareket etmesi için
         DisasterHandler handler = handlerRegistry.getHandler(disaster.getType());
         
-        // Hedef kristal ayarlandıysa, disaster'a bildir
+        // ✅ Hedef kristal ayarlandıysa, disaster'a bildir
         Location targetCrystal = disaster.getTargetCrystal();
         if (targetCrystal != null) {
             disaster.setTarget(targetCrystal);
-        } else if (!merkezeUlasildi) {
+        } else if (merkezeUlasildi) {
+            // ✅ Merkeze ulaştıysa ve kristal yoksa, en yakın oyuncuya hedef ayarla
+            // Önce klan kontrolü yap (1000 blok yarıçap)
+            java.util.List<org.bukkit.Location> centerCrystals = 
+                disasterManager.findCrystalsInRadius(current, 1000.0);
+            
+            if (!centerCrystals.isEmpty()) {
+                // Klan var, en yakın klana yönel
+                Location nearestCrystal = centerCrystals.get(0);
+                disaster.setTargetCrystal(nearestCrystal);
+                disaster.setTarget(nearestCrystal);
+            } else {
+                // Klan yok, en yakın oyuncuya hedef ayarla
+                org.bukkit.entity.Player nearestPlayer = findNearestPlayer(current, config.getAttackRadius());
+                if (nearestPlayer != null) {
+                    disaster.setTarget(nearestPlayer.getLocation());
+                    // ✅ Oyuncuya saldır (merkeze ulaştıktan sonra)
+                    long attackInterval = config.getAttackInterval();
+                    if (phaseManager != null) {
+                        attackInterval = phaseManager.getAttackInterval(disaster);
+                    }
+                    attackNearestPlayerIfNeeded(disaster, entity, current, config, attackInterval);
+                } else {
+                    // Oyuncu yoksa merkezde kal
+                    disaster.setTarget(centerLoc);
+                }
+            }
+        } else {
             // Merkeze ulaşmadıysa ve kristal yoksa merkeze git
             disaster.setTarget(centerLoc);
         }
@@ -400,12 +474,12 @@ public class DisasterTask extends BukkitRunnable {
                 // Grup felaketler için de kristal kontrolü yap (en yakın entity ile)
                 if (!crystalDestroyed && disaster.getTargetCrystal() != null) {
                     // En yakın entity'yi bul
-                    Location targetCrystal = disaster.getTargetCrystal();
+                    Location groupTargetCrystal = disaster.getTargetCrystal();
                     Entity nearestEntity = null;
                     double minDistance = Double.MAX_VALUE;
                     for (Entity e : groupEntities) {
                         if (e == null || e.isDead() || !e.isValid()) continue;
-                        double dist = e.getLocation().distance(targetCrystal);
+                        double dist = e.getLocation().distance(groupTargetCrystal);
                         if (dist < minDistance) {
                             minDistance = dist;
                             nearestEntity = e;
@@ -438,14 +512,21 @@ public class DisasterTask extends BukkitRunnable {
             return;
         }
         
+        // ✅ HEDEF KONTROLÜ - Eğer hedef yoksa veya null ise, yeniden belirle
+        Location currentTarget = disaster.getTargetCrystal() != null ? disaster.getTargetCrystal() : disaster.getTarget();
+        if (currentTarget == null) {
+            // Hedef yoksa, yeniden belirle
+            disasterManager.setDisasterTarget(disaster);
+            currentTarget = disaster.getTargetCrystal() != null ? disaster.getTargetCrystal() : disaster.getTarget();
+        }
+        
         // Tek boss felaketler için handler kullan
         if (handler != null) {
             handler.handle(disaster, entity, config);
         } else {
             // Handler yoksa, manuel hareket
-            Location target = disaster.getTargetCrystal() != null ? disaster.getTargetCrystal() : disaster.getTarget();
-            if (target != null) {
-                me.mami.stratocraft.util.DisasterBehavior.moveToTarget(entity, target, config);
+            if (currentTarget != null) {
+                me.mami.stratocraft.util.DisasterBehavior.moveToTarget(entity, currentTarget, config);
             }
         }
         
@@ -648,6 +729,31 @@ public class DisasterTask extends BukkitRunnable {
         if (center == null || disasterManager == null) return false;
         java.util.List<org.bukkit.Location> crystals = disasterManager.findCrystalsInRadius(center, radius);
         return !crystals.isEmpty();
+    }
+    
+    /**
+     * En yakın oyuncuyu bul
+     */
+    private org.bukkit.entity.Player findNearestPlayer(Location current, double radius) {
+        if (current == null || current.getWorld() == null) return null;
+        
+        org.bukkit.entity.Player nearestPlayer = null;
+        double minDistance = Double.MAX_VALUE;
+        
+        for (org.bukkit.entity.Player player : current.getWorld().getPlayers()) {
+            if (player.isDead() || !player.isOnline()) continue;
+            
+            Location playerLoc = player.getLocation();
+            if (!playerLoc.getWorld().equals(current.getWorld())) continue;
+            
+            double distance = current.distance(playerLoc);
+            if (distance <= radius && distance < minDistance) {
+                minDistance = distance;
+                nearestPlayer = player;
+            }
+        }
+        
+        return nearestPlayer;
     }
     
     /**

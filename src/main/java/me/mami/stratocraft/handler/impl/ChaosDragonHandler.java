@@ -1,5 +1,6 @@
 package me.mami.stratocraft.handler.impl;
 
+import me.mami.stratocraft.Main;
 import me.mami.stratocraft.model.Disaster;
 import me.mami.stratocraft.model.DisasterConfig;
 import me.mami.stratocraft.util.DisasterUtils;
@@ -8,7 +9,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Player;
 
-import java.util.List;
 import java.util.Random;
 
 /**
@@ -29,18 +29,52 @@ public class ChaosDragonHandler extends BaseCreatureHandler {
         EnderDragon dragon = (EnderDragon) entity;
         Location current = dragon.getLocation();
         Location target = disaster.getTargetCrystal() != null ? disaster.getTargetCrystal() : disaster.getTarget();
-        if (target == null) return;
+        if (target == null) {
+            // Hedef yoksa, merkeze git
+            Main plugin = Main.getInstance();
+            if (plugin != null && plugin.getDifficultyManager() != null) {
+                target = plugin.getDifficultyManager().getCenterLocation();
+            }
+            if (target == null) {
+                target = current.getWorld().getSpawnLocation();
+            }
+            disaster.setTarget(target);
+        }
         
-        // Temel hareket
+        // ✅ HEDEF KONTROLÜ - Eğer hedef kristal varsa, ona yönel
+        // Önce kristal kontrolü yap (klanlara saldırması için)
+        if (disaster.getTargetCrystal() != null) {
+            target = disaster.getTargetCrystal();
+            disaster.setTarget(target);
+        }
+        
+        // ✅ EnderDragon için özel hareket - AI kullanarak hedefe git
+        // EnderDragon'ın kendi AI'sı var, ama hedefi manuel olarak ayarlamalıyız
+        if (target != null && current.getWorld().equals(target.getWorld())) {
+            // ✅ Mesafe kontrolünü kaldırdık - Her zaman hareket etsin (ilk spawn'da da çalışsın)
+            // Velocity ile hareket ettir (EnderDragon için daha etkili)
+            org.bukkit.util.Vector direction = me.mami.stratocraft.util.DisasterUtils.calculateDirection(current, target);
+            double speed = config.getMoveSpeed();
+            org.bukkit.util.Vector velocity = direction.multiply(speed);
+            // EnderDragon için Y eksenini de kullan (uçabilir)
+            velocity.setY(Math.max(0, direction.getY() * speed * 0.5)); // Y ekseni için daha yavaş
+            dragon.setVelocity(velocity);
+            
+            // Yüz yönlendirme
+            me.mami.stratocraft.util.DisasterBehavior.faceTarget(entity, target);
+        }
+        
+        // Temel hareket (BaseCreatureHandler'dan) - Blok kırma ve diğer özellikler
+        // ✅ BaseCreatureHandler zaten disaster.getTargetCrystal() kullanıyor, bu yüzden kristal hedefi doğru çalışacak
         super.handle(disaster, entity, config);
         
-        // Ateş püskürtme yeteneği
+        // ✅ PERFORMANS OPTİMİZASYONU: Ateş püskürtme yeteneği (partikül sayısı azaltıldı)
         if (random.nextInt(100) < config.getFireBreathChance()) {
             for (Player player : current.getWorld().getPlayers()) {
                 if (DisasterUtils.calculateDistance(current, player.getLocation()) <= config.getFireBreathRange()) {
                     Location playerLoc = player.getLocation();
-                    // Ateş partikülü
-                    playerLoc.getWorld().spawnParticle(org.bukkit.Particle.FLAME, playerLoc, 20, 1, 1, 1, 0.1);
+                    // Ateş partikülü (20 -> 10, performans için)
+                    playerLoc.getWorld().spawnParticle(org.bukkit.Particle.FLAME, playerLoc, 10, 1, 1, 1, 0.1);
                     // Hasar
                     player.setFireTicks((int)(100 * disaster.getDamageMultiplier()));
                     player.damage(config.getFireDamage() * disaster.getDamageMultiplier(), dragon);

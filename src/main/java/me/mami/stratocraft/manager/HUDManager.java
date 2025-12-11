@@ -154,7 +154,7 @@ public class HUDManager {
         List<HUDLine> lines = new ArrayList<>();
         
         // 1. Aktif Felaket Bilgisi (varsa öncelikli)
-        List<HUDLine> activeDisasterInfo = getActiveDisasterInfo();
+        List<HUDLine> activeDisasterInfo = getActiveDisasterInfo(player);
         if (activeDisasterInfo != null && !activeDisasterInfo.isEmpty()) {
             lines.addAll(activeDisasterInfo);
             lines.add(new HUDLine("§7")); // Boş satır
@@ -285,7 +285,7 @@ public class HUDManager {
     /**
      * Aktif felaket bilgisi (HUD için)
      */
-    private List<HUDLine> getActiveDisasterInfo() {
+    private List<HUDLine> getActiveDisasterInfo(Player player) {
         if (disasterManager == null) return null;
         
         Disaster activeDisaster = disasterManager.getActiveDisaster();
@@ -312,6 +312,12 @@ public class HUDManager {
             String healthColor = healthPercent > 60 ? "§c" : healthPercent > 30 ? "§e" : "§a";
             lines.add(new HUDLine("§7Can: " + healthColor + String.format("%.0f/%.0f", health, maxHealth) + 
                 " §7(" + String.format("%.0f%%", healthPercent) + ")"));
+            
+            // Felaket konum bilgisi (oyuncuya göre)
+            String locationInfo = getDisasterLocationInfo(activeDisaster, player);
+            if (locationInfo != null) {
+                lines.add(new HUDLine(locationInfo));
+            }
         }
         
         // Kalan süre
@@ -320,6 +326,87 @@ public class HUDManager {
         lines.add(new HUDLine("§7Kalan Süre: §e" + timeText));
         
         return lines;
+    }
+    
+    /**
+     * Felaket konum bilgisi (oyuncuya göre mesafe ve yön)
+     */
+    private String getDisasterLocationInfo(Disaster disaster, Player player) {
+        if (disaster == null || player == null) return null;
+        
+        // Canlı felaketler için entity konumu
+        org.bukkit.Location disasterLoc = null;
+        if (disaster.getCategory() == Disaster.Category.CREATURE) {
+            if (disaster.getEntity() != null && !disaster.getEntity().isDead()) {
+                disasterLoc = disaster.getEntity().getLocation();
+            } else if (disaster.getGroupEntities() != null && !disaster.getGroupEntities().isEmpty()) {
+                // Grup felaketler için ilk entity'nin konumu
+                for (org.bukkit.entity.Entity entity : disaster.getGroupEntities()) {
+                    if (entity != null && !entity.isDead() && entity.isValid()) {
+                        disasterLoc = entity.getLocation();
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (disasterLoc == null) return null;
+        
+        org.bukkit.Location playerLoc = player.getLocation();
+        if (!disasterLoc.getWorld().equals(playerLoc.getWorld())) {
+            return "§7Konum: §cFarklı Dünya";
+        }
+        
+        // Mesafe hesapla
+        double distance = playerLoc.distance(disasterLoc);
+        String distanceText;
+        if (distance >= 1000) {
+            distanceText = String.format("%.1f km", distance / 1000.0);
+        } else {
+            distanceText = String.format("%.0f m", distance);
+        }
+        
+        // Yön hesapla (8 yön: N, NE, E, SE, S, SW, W, NW)
+        String direction = calculateDirection(playerLoc, disasterLoc);
+        
+        return "§7Konum: §e" + direction + " §7(" + distanceText + ")";
+    }
+    
+    /**
+     * İki konum arasındaki yönü hesapla (8 yön)
+     */
+    private String calculateDirection(org.bukkit.Location from, org.bukkit.Location to) {
+        if (from == null || to == null) return "?";
+        if (!from.getWorld().equals(to.getWorld())) return "?";
+        
+        double dx = to.getX() - from.getX();
+        double dz = to.getZ() - from.getZ();
+        
+        // Yaw açısını hesapla (0-360 derece)
+        double angle = Math.toDegrees(Math.atan2(-dx, dz));
+        if (angle < 0) {
+            angle += 360;
+        }
+        
+        // 8 yön: N, NE, E, SE, S, SW, W, NW
+        // Her yön 45 derece aralığında
+        if (angle >= 337.5 || angle < 22.5) {
+            return "§bKuzey";
+        } else if (angle >= 22.5 && angle < 67.5) {
+            return "§bKuzey-Doğu";
+        } else if (angle >= 67.5 && angle < 112.5) {
+            return "§eDoğu";
+        } else if (angle >= 112.5 && angle < 157.5) {
+            return "§aGüney-Doğu";
+        } else if (angle >= 157.5 && angle < 202.5) {
+            return "§aGüney";
+        } else if (angle >= 202.5 && angle < 247.5) {
+            return "§6Güney-Batı";
+        } else if (angle >= 247.5 && angle < 292.5) {
+            return "§6Batı";
+        } else {
+            return "§bKuzey-Batı";
+        }
     }
     
     /**

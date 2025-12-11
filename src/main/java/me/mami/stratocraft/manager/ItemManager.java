@@ -639,8 +639,11 @@ public class ItemManager {
         BREEDING_CORE = create(Material.BEACON, "BREEDING_CORE", "§d§lÜreme Çekirdeği");
         GENDER_SCANNER = create(Material.SPYGLASS, "GENDER_SCANNER", "§bCinsiyet Ayırıcı");
         CASUSLUK_DURBUN = create(Material.SPYGLASS, "CASUSLUK_DURBUN", "§eCasusluk Dürbünü");
-        PERSONAL_TERMINAL = create(Material.COMPASS, "PERSONAL_TERMINAL", "§e§lKişisel Yönetim Terminali");
-        CONTRACT_PAPER = create(Material.PAPER, "CONTRACT_PAPER", "§6§lKontrat Kağıdı");
+        PERSONAL_TERMINAL = create(Material.COMPASS, "PERSONAL_TERMINAL", "§e§lKişisel Yönetim Terminali",
+            java.util.Arrays.asList(
+                "§7Kişisel işlemlerinizi yönetin",
+                "§7Sağ tık ile menüyü açın"
+            ));
         CONTRACT_PAPER = create(Material.PAPER, "CONTRACT_PAPER", "§6§lKontrat Kağıdı");
 
         // ========== ÖZEL ZIRHLAR ==========
@@ -1008,6 +1011,26 @@ public class ItemManager {
         meta.setDisplayName(name);
         List<String> lore = new ArrayList<>();
         lore.add("§7Stratocraft Özel Eşyası");
+        meta.setLore(lore);
+        meta.getPersistentDataContainer().set(new NamespacedKey(Main.getInstance(), "custom_id"),
+                PersistentDataType.STRING, id);
+        item.setItemMeta(meta);
+        return item;
+    }
+    
+    /**
+     * Overload: Lore ile item oluştur
+     */
+    private ItemStack create(Material mat, String id, String name, List<String> customLore) {
+        ItemStack item = new ItemStack(mat);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(name);
+        List<String> lore = new ArrayList<>();
+        if (customLore != null && !customLore.isEmpty()) {
+            lore.addAll(customLore);
+        } else {
+            lore.add("§7Stratocraft Özel Eşyası");
+        }
         meta.setLore(lore);
         meta.getPersistentDataContainer().set(new NamespacedKey(Main.getInstance(), "custom_id"),
                 PersistentDataType.STRING, id);

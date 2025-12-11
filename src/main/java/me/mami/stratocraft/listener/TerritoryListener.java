@@ -23,8 +23,11 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.Particle;
+import org.bukkit.Color;
 
 import java.util.*;
 
@@ -218,6 +221,7 @@ public class TerritoryListener implements Listener {
     
     /**
      * Admin komutu için klan kurulumu başlat (public metod)
+     * ✅ Çitler zaten createClanAdmin'de oluşturuldu, burada sadece chat input bekliyoruz
      */
     public void startAdminClanCreation(Player player, Location crystalLoc, org.bukkit.entity.EnderCrystal crystalEntity, Block placeLocation) {
         // Chat input için beklet
@@ -228,6 +232,8 @@ public class TerritoryListener implements Listener {
         player.sendMessage("§7Lütfen chat'e klan ismini yazın:");
         player.sendMessage("§7(İptal için 'iptal' yazın)");
         player.sendMessage("§6§l════════════════════════════");
+        // ✅ Çitler zaten createClanAdmin'de oluşturuldu, burada sadece chat input bekliyoruz
+        // Çitler korunacak çünkü zaten dünyada var
     }
     
     /**
@@ -306,7 +312,13 @@ public class TerritoryListener implements Listener {
             if (newClan != null) {
                 newClan.setCrystalLocation(pending.crystalLoc);
                 newClan.setCrystalEntity(pending.crystalEntity);
-                newClan.setTerritory(new Territory(newClan.getId(), pending.crystalLoc));
+                // Minimum sınır ile Territory oluştur (50 blok radius)
+                Territory territory = new Territory(newClan.getId(), pending.crystalLoc);
+                // Territory constructor'ında zaten radius = 50, ama emin olmak için:
+                if (territory.getRadius() < 50) {
+                    territory.expand(50 - territory.getRadius());
+                }
+                newClan.setTerritory(territory);
                 newClan.setHasCrystal(true); // Kristal var
                 territoryManager.setCacheDirty(); // Cache'i güncelle
                 
@@ -322,6 +334,85 @@ public class TerritoryListener implements Listener {
             
             waitingForClanName.remove(player.getUniqueId());
         });
+    }
+    
+    // Partikül cooldown (performans için)
+    private final Map<UUID, Long> lastBoundaryParticleTime = new HashMap<>();
+    private static final long BOUNDARY_PARTICLE_COOLDOWN = 1000L; // 1 saniye
+    
+    /**
+     * Klan sınırlarını partikül ile göster (klan üyelerine)
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerMove(PlayerMoveEvent event) {
+        // PERFORMANS: Sadece blok değiştiyse çalış
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
+            event.getFrom().getBlockY() == event.getTo().getBlockY() &&
+            event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
+            return;
+        }
+        
+        Player player = event.getPlayer();
+        Location to = event.getTo();
+        if (to == null) return;
+        
+        // Cooldown kontrolü
+        long now = System.currentTimeMillis();
+        Long lastTime = lastBoundaryParticleTime.get(player.getUniqueId());
+        if (lastTime != null && (now - lastTime) < BOUNDARY_PARTICLE_COOLDOWN) {
+            return; // Cooldown'da
+        }
+        
+        // Oyuncunun klanını kontrol et
+        Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
+        if (playerClan == null) return; // Klan üyesi değil
+        
+        Territory territory = playerClan.getTerritory();
+        if (territory == null || territory.getCenter() == null) return;
+        
+        // Oyuncu kendi klanının sınırına yakın mı? (10 blok mesafe)
+        Location center = territory.getCenter();
+        double distanceToCenter = center.distance(to);
+        double radius = territory.getRadius();
+        double distanceToBoundary = Math.abs(distanceToCenter - radius);
+        
+        // Sınırın 10 blok yakınındaysa partikül göster
+        if (distanceToBoundary <= 10) {
+            // Sınır çizgisini göster (her 2 blokta bir partikül)
+            showTerritoryBoundary(player, territory, to);
+            lastBoundaryParticleTime.put(player.getUniqueId(), now);
+        }
+    }
+    
+    /**
+     * Klan sınırını partikül ile göster
+     */
+    private void showTerritoryBoundary(Player player, Territory territory, Location playerLoc) {
+        Location center = territory.getCenter();
+        if (center == null || center.getWorld() == null) return;
+        if (!center.getWorld().equals(playerLoc.getWorld())) return;
+        
+        double radius = territory.getRadius();
+        double angle = Math.atan2(playerLoc.getZ() - center.getZ(), playerLoc.getX() - center.getX());
+        
+        // Sınır çizgisinde birkaç noktada partikül göster
+        for (int i = -2; i <= 2; i++) {
+            double offsetAngle = angle + (i * 0.3); // Her 0.3 radyan (yaklaşık 17 derece)
+            double x = center.getX() + (radius * Math.cos(offsetAngle));
+            double z = center.getZ() + (radius * Math.sin(offsetAngle));
+            
+            // Yükseklik: Oyuncunun göz seviyesi ± 2 blok
+            double y = playerLoc.getY() + (i * 0.5);
+            
+            Location particleLoc = new Location(center.getWorld(), x, y, z);
+            
+            // Mesafe kontrolü (performans)
+            if (playerLoc.distance(particleLoc) > 20) continue;
+            
+            // Klan rengine göre partikül (yeşil - kendi klanı)
+            player.spawnParticle(Particle.REDSTONE, particleLoc, 1, 0, 0, 0, 0,
+                new Particle.DustOptions(Color.fromRGB(0, 255, 0), 1.0f)); // Yeşil
+        }
     }
     
     // Flood Fill Algoritması ile Çit Kontrolü
@@ -555,7 +646,12 @@ public class TerritoryListener implements Listener {
                             finalCrystal.teleport(finalNewLoc);
                             finalOwner.setCrystalLocation(finalNewLoc);
                             finalOwner.setCrystalEntity(finalCrystal); // Entity referansını güncelle
-                            finalOwner.setTerritory(new Territory(finalOwner.getId(), finalNewLoc));
+                            // Minimum sınır ile Territory oluştur (50 blok radius)
+                            Territory territory = new Territory(finalOwner.getId(), finalNewLoc);
+                            if (territory.getRadius() < 50) {
+                                territory.expand(50 - territory.getRadius());
+                            }
+                            finalOwner.setTerritory(territory);
                             territoryManager.setCacheDirty(); // Cache'i güncelle
                             
                             // Efektler

@@ -181,3 +181,4 @@ public class StructureValidator {
             this.expectedMaterial = expectedMaterial;
         }
     }
+}

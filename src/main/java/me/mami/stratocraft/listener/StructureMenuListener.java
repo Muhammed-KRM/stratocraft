@@ -178,9 +178,9 @@ public class StructureMenuListener implements Listener {
                     player.sendMessage("§cBu yapıya erişim yetkiniz yok!");
                     return;
                 }
-                // Eğitilmiş Canlılar menüsü aç
+                // Eğitilmiş Canlılar menüsü aç (klan modu)
                 if (plugin.getTamingMenu() != null) {
-                    plugin.getTamingMenu().openMainMenu(player);
+                    plugin.getTamingMenu().openMainMenu(player, false);
                 }
                 break;
                 
