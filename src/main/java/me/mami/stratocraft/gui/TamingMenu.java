@@ -37,6 +37,9 @@ public class TamingMenu implements Listener {
     // Açık detay menüleri (player -> entity)
     private final java.util.Map<UUID, LivingEntity> openDetailMenus = new java.util.concurrent.ConcurrentHashMap<>();
     
+    // Kişisel mod takibi (player -> personalOnly)
+    private final java.util.Map<UUID, Boolean> personalMode = new java.util.concurrent.ConcurrentHashMap<>();
+    
     public TamingMenu(Main plugin, ClanManager clanManager, TamingManager tamingManager) {
         this.plugin = plugin;
         this.clanManager = clanManager;
@@ -55,6 +58,22 @@ public class TamingMenu implements Listener {
      */
     public void openMainMenu(Player player, boolean personalOnly) {
         if (player == null) return;
+        
+        // Manager null kontrolleri
+        if (tamingManager == null) {
+            player.sendMessage("§cEğitme sistemi aktif değil!");
+            plugin.getLogger().warning("TamingManager null! Menü açılamıyor.");
+            return;
+        }
+        
+        if (!personalOnly && clanManager == null) {
+            player.sendMessage("§cKlan sistemi aktif değil!");
+            plugin.getLogger().warning("ClanManager null! Menü açılamıyor.");
+            return;
+        }
+        
+        // Kişisel mod bilgisini sakla
+        personalMode.put(player.getUniqueId(), personalOnly);
         
         // Oyuncunun eğitilmiş canlılarını getir
         List<LivingEntity> tamedCreatures = TamingHelper.getTamedCreatures(player, tamingManager);
@@ -132,8 +151,9 @@ public class TamingMenu implements Listener {
         menu.setItem(49, createButton(Material.GOLDEN_APPLE, "§a§lÜREME MENÜSÜ", 
             Arrays.asList("§7Üreme çiftlerini yönet")));
         
-        // Geri butonu
-        menu.setItem(53, createButton(Material.ARROW, "§7Geri", Arrays.asList("§7Ana klan menüsüne dön")));
+        // Geri butonu - kişisel modda Personal Terminal'e dön
+        String backText = personalOnly ? "§7Kişisel Terminal'e dön" : "§7Ana klan menüsüne dön";
+        menu.setItem(53, createButton(Material.ARROW, "§7Geri", Arrays.asList(backText)));
         
         player.openInventory(menu);
         player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
@@ -212,9 +232,21 @@ public class TamingMenu implements Listener {
         int slot = event.getSlot();
         
         if (slot == 53) {
-            // Geri butonu
-            if (plugin.getClanMenu() != null) {
-                plugin.getClanMenu().openMenu(player);
+            // Geri butonu - kişisel modda Personal Terminal'e dön
+            Boolean isPersonal = personalMode.getOrDefault(player.getUniqueId(), false);
+            if (isPersonal) {
+                // Personal Terminal'e dön
+                if (plugin.getPersonalTerminalListener() != null) {
+                    plugin.getPersonalTerminalListener().openMainMenu(player);
+                } else {
+                    player.closeInventory();
+                    player.sendMessage("§eKişisel Terminal'e dönmek için terminal item'ına sağ tık yapın.");
+                }
+            } else {
+                // Klan menüsüne dön
+                if (plugin.getClanMenu() != null) {
+                    plugin.getClanMenu().openMenu(player);
+                }
             }
             return;
         }
@@ -272,11 +304,20 @@ public class TamingMenu implements Listener {
         if (slot == 31 && clicked.getType() == Material.ENDER_PEARL) {
             // Işınlanma
             org.bukkit.Location loc = creature.getLocation();
-            if (loc != null && loc.getWorld() != null) {
-                player.teleport(loc.add(0.5, 1, 0.5));
-                player.sendMessage("§aCanlının konumuna ışınlandınız!");
-                player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+            if (loc == null || loc.getWorld() == null) {
+                player.sendMessage("§cCanlının konumu geçersiz!");
+                return;
             }
+            
+            // World null check
+            if (loc.getWorld() == null) {
+                player.sendMessage("§cCanlının dünyası geçersiz!");
+                return;
+            }
+            
+            player.teleport(loc.add(0.5, 1, 0.5));
+            player.sendMessage("§aCanlının konumuna ışınlandınız!");
+            player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
         } else if (slot == 40 && clicked.getType() == Material.SADDLE) {
             // Binme
             if (tamingManager.isRideable(creature)) {

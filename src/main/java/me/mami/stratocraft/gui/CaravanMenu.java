@@ -58,6 +58,15 @@ public class CaravanMenu implements Listener {
     public void openMainMenu(Player player) {
         if (player == null) return;
         
+        // Manager null kontrolleri
+        if (clanManager == null) {
+            player.sendMessage("§cKlan sistemi aktif değil!");
+            if (plugin != null) {
+                plugin.getLogger().warning("ClanManager null! Menü açılamıyor.");
+            }
+            return;
+        }
+        
         Clan clan = clanManager.getClanByPlayer(player.getUniqueId());
         if (clan == null) {
             player.sendMessage("§cBir klana üye değilsiniz!");
@@ -483,11 +492,19 @@ public class CaravanMenu implements Listener {
         if (slot == 31 && clicked.getType() == Material.ENDER_PEARL) {
             // Işınlanma
             Location loc = caravan.getLocation();
-            if (loc != null && loc.getWorld() != null) {
-                player.teleport(loc.add(0.5, 1, 0.5));
-                player.sendMessage("§aKervanın konumuna ışınlandınız!");
-                player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+            if (loc == null) {
+                player.sendMessage("§cKervan konumu geçersiz!");
+                return;
             }
+            
+            if (loc.getWorld() == null) {
+                player.sendMessage("§cKervan dünyası geçersiz!");
+                return;
+            }
+            
+            player.teleport(loc.add(0.5, 1, 0.5));
+            player.sendMessage("§aKervanın konumuna ışınlandınız!");
+            player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
         }
     }
     

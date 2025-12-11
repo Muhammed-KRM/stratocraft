@@ -52,6 +52,13 @@ public class ClanStructureMenu implements Listener {
     public void openMainMenu(Player player) {
         if (player == null) return;
         
+        // Manager null kontrolü
+        if (clanManager == null) {
+            player.sendMessage("§cKlan sistemi aktif değil!");
+            plugin.getLogger().warning("ClanManager null! Menü açılamıyor.");
+            return;
+        }
+        
         Clan clan = clanManager.getClanByPlayer(player.getUniqueId());
         if (clan == null) {
             player.sendMessage("§cBir klana üye değilsiniz!");
@@ -402,16 +409,22 @@ public class ClanStructureMenu implements Listener {
             if (StructureHelper.canUpgrade(structure, clan, player)) {
                 openUpgradeMenu(player, structure);
             }
-        } else if (slot == 40) {
+        } else         if (slot == 40) {
             // Işınlanma butonu
             org.bukkit.Location loc = structure.getLocation();
-            if (loc != null && loc.getWorld() != null) {
-                player.teleport(loc.add(0.5, 1, 0.5));
-                player.sendMessage("§aYapının konumuna ışınlandınız!");
-                player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
-            } else {
+            if (loc == null) {
                 player.sendMessage("§cYapı konumu geçersiz!");
+                return;
             }
+            
+            if (loc.getWorld() == null) {
+                player.sendMessage("§cYapı dünyası geçersiz!");
+                return;
+            }
+            
+            player.teleport(loc.add(0.5, 1, 0.5));
+            player.sendMessage("§aYapının konumuna ışınlandınız!");
+            player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
         }
     }
     

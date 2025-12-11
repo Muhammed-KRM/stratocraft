@@ -96,6 +96,12 @@ public class Disaster {
     private DisasterPhase currentPhase; // Mevcut faz
     private long lastPhaseTransitionTime; // Son faz geçiş zamanı
     
+    // Merkeze ulaşma zamanı (3 saat kuralı için)
+    private long centerReachedTime = 0;
+    
+    // Hasar takibi (hasar bazlı ödül dağıtımı için)
+    private final java.util.Map<java.util.UUID, Double> playerDamage = new java.util.concurrent.ConcurrentHashMap<>();
+    
     public Disaster(Type type, Category category, int level, Entity entity, Location target, 
                    double maxHealth, double damageMultiplier, long duration) {
         this.type = type;
@@ -201,6 +207,24 @@ public class Disaster {
     }
     public long getLastPhaseTransitionTime() { return lastPhaseTransitionTime; }
     
+    // Merkeze ulaşma zamanı getter/setter
+    public long getCenterReachedTime() { return centerReachedTime; }
+    public void setCenterReachedTime(long time) { this.centerReachedTime = time; }
+    
+    // Hasar takibi metodları
+    public void addPlayerDamage(java.util.UUID playerId, double damage) {
+        if (playerId == null || damage <= 0) return;
+        playerDamage.put(playerId, playerDamage.getOrDefault(playerId, 0.0) + damage);
+    }
+    
+    public java.util.Map<java.util.UUID, Double> getPlayerDamage() {
+        return new java.util.HashMap<>(playerDamage);
+    }
+    
+    public double getTotalDamage() {
+        return playerDamage.values().stream().mapToDouble(Double::doubleValue).sum();
+    }
+    
     /**
      * Can yüzdesine göre mevcut fazı hesapla ve güncelle
      * 
@@ -266,6 +290,8 @@ public class Disaster {
             }
         }
         groupEntities.clear();
+        // Hasar takibini temizle
+        playerDamage.clear();
     }
     
     /**

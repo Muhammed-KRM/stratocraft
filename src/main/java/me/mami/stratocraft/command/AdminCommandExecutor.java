@@ -4312,27 +4312,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 case "disaster":
                     // Disaster start için yeni format: [Kategori seviyesi] [Felaket ismi] [İç seviye] [Koordinat]
                     if (category.equalsIgnoreCase("start")) {
-                        // args.length == 3: Kategori seviyesi veya felaket ismi öner
-                        List<String> suggestions = new ArrayList<>();
-                        suggestions.addAll(Arrays.asList("1", "2", "3")); // Kategori seviyeleri
-                        // Felaket tiplerini de ekle
-                        suggestions.addAll(Arrays.asList(
-                            // Felaket Bossları
-                            "CATASTROPHIC_TITAN", "CATASTROPHIC_ABYSSAL_WORM", "CATASTROPHIC_CHAOS_DRAGON", "CATASTROPHIC_VOID_TITAN", "CATASTROPHIC_ICE_LEVIATHAN",
-                            // Grup (30 adet)
-                            "ZOMBIE_HORDE", "SKELETON_LEGION", "SPIDER_SWARM",
-                            // Mini Dalga (100-500 adet)
-                            "CREEPER_SWARM", "ZOMBIE_WAVE",
-                            // Doğa Olayları
-                            "SOLAR_FLARE", "EARTHQUAKE", "STORM", "METEOR_SHOWER", "VOLCANIC_ERUPTION",
-                            // Mini Felaketler
-                            "BOSS_BUFF_WAVE", "MOB_INVASION", "PLAYER_BUFF_WAVE"
-                        ));
+                        // args.length == 3: Kategori seviyesi öner
+                        List<String> suggestions = Arrays.asList("1", "2", "3");
                         if (input.isEmpty()) {
                             return suggestions;
                         }
                         return suggestions.stream()
-                                .filter(s -> s.toLowerCase().startsWith(input.toLowerCase()))
+                                .filter(s -> s.startsWith(input))
                                 .collect(Collectors.toList());
                     }
                     // Diğer disaster komutları (stop, info, list, clear, test)
@@ -4452,10 +4438,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 }
             } else if (commandName.equals("disaster") && category.equalsIgnoreCase("start")) {
                 // Yeni format: [Kategori seviyesi] [Felaket ismi] [İç seviye] [Koordinat]
-                // args.length == 4: Kategori seviyesi veya felaket ismi belirtilmiş, şimdi felaket ismi veya iç seviye öner
+                // args.length == 4: Kategori seviyesi belirtilmiş, felaket isimlerini öner
                 String input = args[3].toLowerCase();
                 
-                // Eğer 3. argüman sayı ise (kategori seviyesi), felaket isimlerini öner
+                // Kategori seviyesi kontrolü
                 try {
                     Integer.parseInt(args[2]);
                     // Kategori seviyesi belirtilmiş, felaket isimlerini öner
@@ -4473,16 +4459,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
                 } catch (NumberFormatException e) {
-                    // Kategori seviyesi belirtilmemiş, 3. argüman felaket ismi, şimdi iç seviye öner
-                    List<String> suggestions = new ArrayList<>();
-                    suggestions.addAll(Arrays.asList("1", "2", "3")); // İç seviyeler
-                    
-                    if (input.isEmpty()) {
-                        return suggestions;
-                    }
-                    return suggestions.stream()
-                            .filter(s -> s.startsWith(input))
-                            .collect(Collectors.toList());
+                    // Kategori seviyesi belirtilmemiş, boş liste döndür
+                    return new ArrayList<>();
                 }
             }
         }
@@ -4507,20 +4485,14 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             }
         }
         
-        // Altıncı argüman (disaster koordinatları - Y)
-        if (args.length == 6 && args[0].equalsIgnoreCase("disaster") && args[1].equalsIgnoreCase("start")) {
+        // Yedinci argüman (disaster koordinatları - Y)
+        if (args.length == 7 && args[0].equalsIgnoreCase("disaster") && args[1].equalsIgnoreCase("start")) {
             // Y koordinatı için boş liste
             return new ArrayList<>();
         }
         
-        // Yedinci argüman (disaster koordinatları - Z)
-        if (args.length == 7 && args[0].equalsIgnoreCase("disaster") && args[1].equalsIgnoreCase("start")) {
-            // Z koordinatı için boş liste
-            return new ArrayList<>();
-        }
-        
-        // Yedinci argüman (disaster koordinatları)
-        if (args.length == 7 && args[0].equalsIgnoreCase("disaster") && args[1].equalsIgnoreCase("start")) {
+        // Sekizinci argüman (disaster koordinatları - Z)
+        if (args.length == 8 && args[0].equalsIgnoreCase("disaster") && args[1].equalsIgnoreCase("start")) {
             // Z koordinatı için boş liste
             return new ArrayList<>();
         }

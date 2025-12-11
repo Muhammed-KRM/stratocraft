@@ -478,11 +478,31 @@ public class DisasterManager {
         
         // Canlı felaketler için entity oluştur
         if (category == Disaster.Category.CREATURE) {
-            entity = spawnCreatureDisaster(type, spawnLoc, power);
-            if (entity == null) {
-                org.bukkit.Bukkit.broadcastMessage("§c§l⚠ FELAKET SPAWN HATASI! ⚠");
-                org.bukkit.Bukkit.broadcastMessage("§7Felaket tipi için entity oluşturulamadı: §e" + type.name());
-                return;
+            Disaster.CreatureDisasterType creatureType = Disaster.getCreatureDisasterType(type);
+            
+            if (creatureType == Disaster.CreatureDisasterType.MEDIUM_GROUP) {
+                // Grup felaket spawn (30 adet)
+                org.bukkit.entity.EntityType entityType = getEntityTypeForDisaster(type);
+                if (entityType != null) {
+                    spawnGroupDisaster(entityType, 30, spawnLoc, internalLevel);
+                    return; // spawnGroupDisaster içinde activeDisaster set ediliyor
+                }
+            } else if (creatureType == Disaster.CreatureDisasterType.MINI_SWARM) {
+                // Mini dalga spawn (100-500 adet)
+                org.bukkit.entity.EntityType entityType = getEntityTypeForDisaster(type);
+                if (entityType != null) {
+                    int count = 100 + (int)(Math.random() * 400); // 100-500 arası rastgele
+                    spawnSwarmDisaster(entityType, count, spawnLoc, internalLevel);
+                    return; // spawnSwarmDisaster içinde activeDisaster set ediliyor
+                }
+            } else {
+                // Tek boss felaket spawn
+                entity = spawnCreatureDisaster(type, spawnLoc, power);
+                if (entity == null) {
+                    org.bukkit.Bukkit.broadcastMessage("§c§l⚠ FELAKET SPAWN HATASI! ⚠");
+                    org.bukkit.Bukkit.broadcastMessage("§7Felaket tipi için entity oluşturulamadı: §e" + type.name());
+                    return;
+                }
             }
         }
         
@@ -1463,14 +1483,26 @@ public class DisasterManager {
     }
     
     public void dropRewards(Disaster disaster) {
-        if (disaster == null || disaster.getEntity() == null) return;
-        org.bukkit.Location loc = disaster.getEntity().getLocation();
+        if (disaster == null) return;
+        
+        // Entity lokasyonu (grup felaketler için ilk entity veya tek boss için entity)
+        org.bukkit.Location loc = null;
+        if (disaster.getEntity() != null) {
+            loc = disaster.getEntity().getLocation();
+        } else if (disaster.getGroupEntities() != null && !disaster.getGroupEntities().isEmpty()) {
+            org.bukkit.entity.Entity firstEntity = disaster.getGroupEntities().get(0);
+            if (firstEntity != null && !firstEntity.isDead()) {
+                loc = firstEntity.getLocation();
+            }
+        }
+        
+        if (loc == null) return;
         
         // Enkaz yığını oluştur
         createWreckageStructure(loc);
         
-        // Plan'a göre: Felaket yok edilince ödül
-        // Ödüller düşür
+        // 1. ÖLDÜĞÜ YERDE ÖZEL İTEMLER DÜŞÜR (her zaman)
+        // Rastgele özel itemler düşür
         if (Math.random() < 0.5) {
             if (me.mami.stratocraft.manager.ItemManager.DARK_MATTER != null) {
                 loc.getWorld().dropItemNaturally(loc, me.mami.stratocraft.manager.ItemManager.DARK_MATTER.clone());
@@ -1481,11 +1513,56 @@ public class DisasterManager {
             }
         }
         
-        // Plan'a göre: Klan kristali korunursa bonus ödül
+        // 2. HASAR BAZLI ÖDÜL DAĞITIMI
+        java.util.Map<java.util.UUID, Double> playerDamage = disaster.getPlayerDamage();
+        double totalDamage = disaster.getTotalDamage();
+        
+        if (totalDamage > 0 && !playerDamage.isEmpty()) {
+            // Toplam ödül miktarı (felaket seviyesine göre)
+            int baseRewardCount = 5 + (disaster.getLevel() * 3); // Seviye 1: 8, Seviye 2: 11, Seviye 3: 14
+            
+            for (java.util.Map.Entry<java.util.UUID, Double> entry : playerDamage.entrySet()) {
+                org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(entry.getKey());
+                if (player == null || !player.isOnline()) continue;
+                
+                double damagePercent = entry.getValue() / totalDamage;
+                int rewardCount = (int) Math.max(1, Math.round(baseRewardCount * damagePercent));
+                
+                // Oyuncuya ödül ver (inventory'sine)
+                org.bukkit.Location playerLoc = player.getLocation();
+                for (int i = 0; i < rewardCount; i++) {
+                    if (Math.random() < 0.5) {
+                        if (me.mami.stratocraft.manager.ItemManager.DARK_MATTER != null) {
+                            if (player.getInventory().firstEmpty() != -1) {
+                                player.getInventory().addItem(me.mami.stratocraft.manager.ItemManager.DARK_MATTER.clone());
+                            } else {
+                                playerLoc.getWorld().dropItemNaturally(playerLoc, me.mami.stratocraft.manager.ItemManager.DARK_MATTER.clone());
+                            }
+                        }
+                    } else {
+                        if (me.mami.stratocraft.manager.ItemManager.STAR_CORE != null) {
+                            if (player.getInventory().firstEmpty() != -1) {
+                                player.getInventory().addItem(me.mami.stratocraft.manager.ItemManager.STAR_CORE.clone());
+                            } else {
+                                playerLoc.getWorld().dropItemNaturally(playerLoc, me.mami.stratocraft.manager.ItemManager.STAR_CORE.clone());
+                            }
+                        }
+                    }
+                }
+                
+                // Oyuncuya bilgi ver
+                player.sendMessage("§a§lFELAKET ÖDÜLÜ!");
+                player.sendMessage("§7Verdiğin hasar: §e" + String.format("%.1f", entry.getValue()));
+                player.sendMessage("§7Hasar yüzdesi: §e" + String.format("%.1f", damagePercent * 100) + "%");
+                player.sendMessage("§7Aldığın ödül: §e" + rewardCount + " item");
+            }
+        }
+        
+        // 3. KLAN KRISTALİ KORUNURSA BONUS ÖDÜL
         if (territoryManager != null) {
             Clan affectedClan = territoryManager.getTerritoryOwner(loc);
             if (affectedClan != null && affectedClan.getCrystalEntity() != null && !affectedClan.getCrystalEntity().isDead()) {
-                // Kristal korundu - bonus ödül
+                // Kristal korundu - bonus ödül (öldüğü yerde)
                 if (me.mami.stratocraft.manager.ItemManager.DARK_MATTER != null) {
                     loc.getWorld().dropItemNaturally(loc, me.mami.stratocraft.manager.ItemManager.DARK_MATTER.clone());
                 }
@@ -1497,7 +1574,7 @@ public class DisasterManager {
             }
         }
         
-        // Kahraman Buff'ı
+        // 4. KAHRAMAN BUFF'I
         if (territoryManager != null && buffManager != null) {
             Clan affectedClan = territoryManager.getTerritoryOwner(loc);
             if (affectedClan != null) {
@@ -1506,7 +1583,7 @@ public class DisasterManager {
         }
         
         Bukkit.getServer().broadcastMessage(org.bukkit.ChatColor.GREEN + "" + org.bukkit.ChatColor.BOLD + 
-            "Felaket yok edildi! Ödüller düştü!");
+            "Felaket yok edildi! Ödüller dağıtıldı!");
     }
     
     private void createWreckageStructure(org.bukkit.Location center) {
@@ -1579,6 +1656,38 @@ public class DisasterManager {
     }
     
     /**
+     * Belirtilen yarıçap içindeki tüm klan kristallerini bul
+     * @param from Merkez konum
+     * @param radius Yarıçap (blok)
+     * @return Yarıçap içindeki kristal lokasyonları listesi (en yakından en uzağa sıralı)
+     */
+    public java.util.List<org.bukkit.Location> findCrystalsInRadius(org.bukkit.Location from, double radius) {
+        if (from == null || clanManager == null) return new java.util.ArrayList<>();
+        
+        java.util.List<org.bukkit.Location> crystals = new java.util.ArrayList<>();
+        
+        for (Clan clan : clanManager.getAllClans()) {
+            if (clan == null || !clan.hasCrystal()) continue;
+            
+            org.bukkit.Location crystalLoc = clan.getCrystalLocation();
+            if (crystalLoc == null) continue;
+            
+            // Aynı dünyada mı kontrol et
+            if (!crystalLoc.getWorld().equals(from.getWorld())) continue;
+            
+            double distance = from.distance(crystalLoc);
+            if (distance <= radius) {
+                crystals.add(crystalLoc);
+            }
+        }
+        
+        // Mesafeye göre sırala (en yakından en uzağa)
+        crystals.sort((a, b) -> Double.compare(from.distance(a), from.distance(b)));
+        
+        return crystals;
+    }
+    
+    /**
      * Felaket hedefini belirle (kristal veya merkez)
      */
     public void setDisasterTarget(Disaster disaster) {
@@ -1618,9 +1727,29 @@ public class DisasterManager {
     private java.util.Random random = new java.util.Random();
     
     /**
-     * Grup felaket spawn (30 adet orta güçte) - Config kullanır
+     * Felaket tipine göre EntityType belirle
      */
-    public void spawnGroupDisaster(org.bukkit.entity.EntityType entityType, int count, org.bukkit.Location spawnLoc) {
+    private org.bukkit.entity.EntityType getEntityTypeForDisaster(Disaster.Type type) {
+        switch (type) {
+            case ZOMBIE_HORDE:
+            case ZOMBIE_WAVE:
+                return org.bukkit.entity.EntityType.ZOMBIE;
+            case SKELETON_LEGION:
+                return org.bukkit.entity.EntityType.SKELETON;
+            case SPIDER_SWARM:
+                return org.bukkit.entity.EntityType.SPIDER;
+            case CREEPER_SWARM:
+                return org.bukkit.entity.EntityType.CREEPER;
+            default:
+                return null;
+        }
+    }
+    
+    /**
+     * Grup felaket spawn (30 adet orta güçte) - Config kullanır
+     * @param internalLevel Admin komutunda belirtilen iç seviye (1-3) - güç seviyesi
+     */
+    public void spawnGroupDisaster(org.bukkit.entity.EntityType entityType, int count, org.bukkit.Location spawnLoc, int internalLevel) {
         if (activeDisaster != null && !activeDisaster.isDead()) {
             org.bukkit.Bukkit.broadcastMessage("§cZaten aktif bir felaket var!");
             return;
@@ -1631,13 +1760,13 @@ public class DisasterManager {
         
         // EntityType'a göre felaket tipi belirle
         Disaster.Type disasterType = getDisasterTypeFromEntityType(entityType, true);
-        int level = Disaster.getDefaultLevel(disasterType);
-        DisasterPower power = calculateDisasterPower(level);
+        // Admin komutundaki internalLevel kullan (güç seviyesi)
+        DisasterPower power = calculateDisasterPower(internalLevel);
         
-        // Config'den ayarları al
+        // Config'den ayarları al (internalLevel kullan)
         me.mami.stratocraft.model.DisasterConfig config = null;
         if (configManager != null) {
-            config = configManager.getConfig(disasterType, level);
+            config = configManager.getConfig(disasterType, internalLevel);
         }
         if (config == null) {
             config = new me.mami.stratocraft.model.DisasterConfig();
@@ -1677,12 +1806,12 @@ public class DisasterManager {
         Disaster disaster = new Disaster(
             disasterType,
             Disaster.Category.CREATURE,
-            level,
+            internalLevel, // Admin komutundaki iç seviye
             entities.isEmpty() ? null : entities.get(0),
             targetLoc,
             power.health,
             power.damage,
-            Disaster.getDefaultDuration(disasterType, level)
+            Disaster.getDefaultDuration(disasterType, Disaster.getDefaultLevel(disasterType))
         );
         
         // Grup entity'lerini ekle
@@ -1721,8 +1850,9 @@ public class DisasterManager {
     
     /**
      * Mini felaket dalgası spawn (100-500 adet) - Config kullanır
+     * @param internalLevel Admin komutunda belirtilen iç seviye (1-3) - güç seviyesi
      */
-    public void spawnSwarmDisaster(org.bukkit.entity.EntityType entityType, int count, org.bukkit.Location spawnLoc) {
+    public void spawnSwarmDisaster(org.bukkit.entity.EntityType entityType, int count, org.bukkit.Location spawnLoc, int internalLevel) {
         if (activeDisaster != null && !activeDisaster.isDead()) {
             org.bukkit.Bukkit.broadcastMessage("§cZaten aktif bir felaket var!");
             return;
@@ -1733,13 +1863,13 @@ public class DisasterManager {
         
         // EntityType'a göre felaket tipi belirle
         Disaster.Type disasterType = getDisasterTypeFromEntityType(entityType, false);
-        int level = Disaster.getDefaultLevel(disasterType);
-        DisasterPower power = calculateDisasterPower(level);
+        // Admin komutundaki internalLevel kullan (güç seviyesi)
+        DisasterPower power = calculateDisasterPower(internalLevel);
         
-        // Config'den ayarları al
+        // Config'den ayarları al (internalLevel kullan)
         me.mami.stratocraft.model.DisasterConfig config = null;
         if (configManager != null) {
-            config = configManager.getConfig(disasterType, level);
+            config = configManager.getConfig(disasterType, internalLevel);
         }
         if (config == null) {
             config = new me.mami.stratocraft.model.DisasterConfig();
@@ -1783,12 +1913,12 @@ public class DisasterManager {
         Disaster disaster = new Disaster(
             disasterType,
             Disaster.Category.CREATURE,
-            level,
+            internalLevel, // Admin komutundaki iç seviye
             entities.isEmpty() ? null : entities.get(0),
             targetLoc,
             power.health * healthPercentage,
             power.damage * healthPercentage,
-            Disaster.getDefaultDuration(disasterType, level)
+            Disaster.getDefaultDuration(disasterType, Disaster.getDefaultLevel(disasterType))
         );
         
         // Grup entity'lerini ekle

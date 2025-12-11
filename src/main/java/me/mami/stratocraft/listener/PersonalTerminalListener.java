@@ -30,39 +30,45 @@ public class PersonalTerminalListener implements Listener {
     
     @EventHandler(priority = EventPriority.HIGH)
     public void onTerminalClick(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_AIR && 
-            event.getAction() != Action.RIGHT_CLICK_BLOCK) {
-            return;
-        }
-        
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
         
         if (item == null) return;
         
-        // Personal Terminal kontrolü
+        // Personal Terminal kontrolü - hem sağ hem sol tık
         if (ItemManager.isCustomItem(item, "PERSONAL_TERMINAL")) {
-            event.setCancelled(true);
-            openMainMenu(player);
+            // Sadece sağ tık ile menü aç
+            if (event.getAction() == Action.RIGHT_CLICK_AIR || 
+                event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+                event.setCancelled(true);
+                openMainMenu(player);
+            } else if (event.getAction() == Action.LEFT_CLICK_AIR || 
+                       event.getAction() == Action.LEFT_CLICK_BLOCK) {
+                // Sol tık yapıldığında sadece event'i iptal et (ışınlanmayı önle)
+                event.setCancelled(true);
+            }
             return;
         }
         
-        // Kontrat Kağıdı kontrolü
+        // Kontrat Kağıdı kontrolü - sadece sağ tık
         if (ItemManager.isCustomItem(item, "CONTRACT_PAPER")) {
-            event.setCancelled(true);
-            if (plugin.getContractMenu() != null) {
-                plugin.getContractMenu().openMainMenu(player, 0);
-            } else {
-                player.sendMessage("§cKontrat sistemi aktif değil!");
+            if (event.getAction() == Action.RIGHT_CLICK_AIR || 
+                event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+                event.setCancelled(true);
+                if (plugin.getContractMenu() != null) {
+                    plugin.getContractMenu().openMainMenu(player, 0);
+                } else {
+                    player.sendMessage("§cKontrat sistemi aktif değil!");
+                }
             }
             return;
         }
     }
     
     /**
-     * Ana terminal menüsünü aç
+     * Ana terminal menüsünü aç (public - diğer menülerden erişim için)
      */
-    private void openMainMenu(Player player) {
+    public void openMainMenu(Player player) {
         if (player == null) return;
         
         org.bukkit.inventory.Inventory menu = org.bukkit.Bukkit.createInventory(null, 27, "§e§lKişisel Yönetim Terminali");
@@ -131,7 +137,7 @@ public class PersonalTerminalListener implements Listener {
         switch (slot) {
             case 10: // Güç Menüsü
                 if (plugin.getPowerMenu() != null) {
-                    plugin.getPowerMenu().openMainMenu(player);
+                    plugin.getPowerMenu().openMainMenu(player, true); // Kişisel modda aç
                 } else {
                     player.sendMessage("§cGüç sistemi aktif değil!");
                 }

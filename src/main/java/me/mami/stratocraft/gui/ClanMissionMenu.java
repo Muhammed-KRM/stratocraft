@@ -41,6 +41,21 @@ public class ClanMissionMenu implements Listener {
      * Ana görev menüsünü aç
      */
     public void openMenu(Player player) {
+        if (player == null) return;
+        
+        // Manager null kontrolleri
+        if (clanManager == null) {
+            player.sendMessage("§cKlan sistemi aktif değil!");
+            plugin.getLogger().warning("ClanManager null! Menü açılamıyor.");
+            return;
+        }
+        
+        if (missionSystem == null) {
+            player.sendMessage("§cGörev sistemi aktif değil!");
+            plugin.getLogger().warning("ClanMissionSystem null! Menü açılamıyor.");
+            return;
+        }
+        
         Clan clan = clanManager.getClanByPlayer(player.getUniqueId());
         if (clan == null) {
             player.sendMessage("§cBir klana üye değilsin!");

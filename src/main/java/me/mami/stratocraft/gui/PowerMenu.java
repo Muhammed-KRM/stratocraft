@@ -37,6 +37,9 @@ public class PowerMenu implements Listener {
     // Sayfa numaraları (player -> page)
     private final java.util.Map<UUID, Integer> currentPages = new java.util.concurrent.ConcurrentHashMap<>();
     
+    // Kişisel mod takibi (player -> personalMode)
+    private final java.util.Map<UUID, Boolean> personalMode = new java.util.concurrent.ConcurrentHashMap<>();
+    
     public PowerMenu(Main plugin, StratocraftPowerSystem powerSystem) {
         this.plugin = plugin;
         this.powerSystem = powerSystem;
@@ -46,7 +49,17 @@ public class PowerMenu implements Listener {
      * Ana güç menüsünü aç
      */
     public void openMainMenu(Player player) {
+        openMainMenu(player, false);
+    }
+    
+    /**
+     * Ana güç menüsünü aç (kişisel mod takibi ile)
+     */
+    public void openMainMenu(Player player, boolean fromPersonalTerminal) {
         if (player == null || powerSystem == null) return;
+        
+        // Kişisel mod bilgisini sakla
+        personalMode.put(player.getUniqueId(), fromPersonalTerminal);
         
         Inventory menu = Bukkit.createInventory(null, 27, "§6Güç Sistemi");
         
@@ -62,15 +75,20 @@ public class PowerMenu implements Listener {
         menu.setItem(11, createButton(Material.DIAMOND, "§e§lKendi Gücüm", myPowerLore));
         
         // Klan gücü (eğer klan varsa)
-        Clan clan = plugin.getClanManager().getClanByPlayer(player.getUniqueId());
-        if (clan != null) {
-            ClanPowerProfile clanProfile = powerSystem.calculateClanProfile(clan);
-            List<String> clanPowerLore = new ArrayList<>();
-            clanPowerLore.add("§7═══════════════════════");
-            clanPowerLore.add("§eToplam Klan Gücü: §f" + String.format("%.2f", clanProfile.getTotalClanPower()));
-            clanPowerLore.add("§eKlan Seviyesi: §f" + clanProfile.getClanLevel());
-            clanPowerLore.add("§7═══════════════════════");
-            menu.setItem(13, createButton(Material.BEACON, "§e§lKlan Gücü", clanPowerLore));
+        me.mami.stratocraft.manager.ClanManager clanManager = plugin.getClanManager();
+        if (clanManager == null) {
+            plugin.getLogger().warning("ClanManager null! Klan gücü gösterilemiyor.");
+        } else {
+            Clan clan = clanManager.getClanByPlayer(player.getUniqueId());
+            if (clan != null) {
+                ClanPowerProfile clanProfile = powerSystem.calculateClanProfile(clan);
+                List<String> clanPowerLore = new ArrayList<>();
+                clanPowerLore.add("§7═══════════════════════");
+                clanPowerLore.add("§eToplam Klan Gücü: §f" + String.format("%.2f", clanProfile.getTotalClanPower()));
+                clanPowerLore.add("§eKlan Seviyesi: §f" + clanProfile.getClanLevel());
+                clanPowerLore.add("§7═══════════════════════");
+                menu.setItem(13, createButton(Material.BEACON, "§e§lKlan Gücü", clanPowerLore));
+            }
         }
         
         // Top oyuncular
@@ -273,8 +291,13 @@ public class PowerMenu implements Listener {
                 break;
                 
             case BARRIER:
-                // Kapat
-                player.closeInventory();
+                // Kapat veya Personal Terminal'e dön
+                Boolean isPersonal = personalMode.getOrDefault(player.getUniqueId(), false);
+                if (isPersonal && plugin.getPersonalTerminalListener() != null) {
+                    plugin.getPersonalTerminalListener().openMainMenu(player);
+                } else {
+                    player.closeInventory();
+                }
                 break;
         }
     }
@@ -299,7 +322,13 @@ public class PowerMenu implements Listener {
                 } else if (slot == 53) {
                     openTopPlayersMenu(player, currentPage + 1);
                 } else if (slot == 49) {
-                    openMainMenu(player);
+                    // Geri butonu - Personal Terminal'e dön (kişisel modda)
+                    Boolean isPersonal = personalMode.getOrDefault(player.getUniqueId(), false);
+                    if (isPersonal && plugin.getPersonalTerminalListener() != null) {
+                        plugin.getPersonalTerminalListener().openMainMenu(player);
+                    } else {
+                        openMainMenu(player);
+                    }
                 }
                 break;
         }
@@ -315,7 +344,13 @@ public class PowerMenu implements Listener {
         if (clicked == null || clicked.getType() == Material.AIR) return;
         
         if (clicked.getType() == Material.ARROW) {
-            openMainMenu(player);
+            // Geri butonu - Personal Terminal'e dön (kişisel modda)
+            Boolean isPersonal = personalMode.getOrDefault(player.getUniqueId(), false);
+            if (isPersonal && plugin.getPersonalTerminalListener() != null) {
+                plugin.getPersonalTerminalListener().openMainMenu(player);
+            } else {
+                openMainMenu(player);
+            }
         }
     }
     
@@ -329,7 +364,13 @@ public class PowerMenu implements Listener {
         if (clicked == null || clicked.getType() == Material.AIR) return;
         
         if (clicked.getType() == Material.ARROW) {
-            openMainMenu(player);
+            // Geri butonu - Personal Terminal'e dön (kişisel modda)
+            Boolean isPersonal = personalMode.getOrDefault(player.getUniqueId(), false);
+            if (isPersonal && plugin.getPersonalTerminalListener() != null) {
+                plugin.getPersonalTerminalListener().openMainMenu(player);
+            } else {
+                openMainMenu(player);
+            }
         }
     }
     

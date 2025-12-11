@@ -50,6 +50,19 @@ public class AllianceMenu implements Listener {
     public void openMainMenu(Player player) {
         if (player == null) return;
         
+        // Manager null kontrolleri
+        if (clanManager == null) {
+            player.sendMessage("§cKlan sistemi aktif değil!");
+            plugin.getLogger().warning("ClanManager null! Menü açılamıyor.");
+            return;
+        }
+        
+        if (allianceManager == null) {
+            player.sendMessage("§cİttifak sistemi aktif değil!");
+            plugin.getLogger().warning("AllianceManager null! Menü açılamıyor.");
+            return;
+        }
+        
         Clan clan = clanManager.getClanByPlayer(player.getUniqueId());
         if (clan == null) {
             player.sendMessage("§cBir klana üye değilsiniz!");

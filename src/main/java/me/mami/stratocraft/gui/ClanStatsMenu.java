@@ -105,6 +105,7 @@ public class ClanStatsMenu implements Listener {
         
         // Üye sayısı
         int memberCount = clan.getMembers() != null ? clan.getMembers().size() : 0;
+        // Members null check zaten yukarıda yapıldı
         lore.add("§7Üye Sayısı: §e" + memberCount);
         
         // Online üye sayısı
@@ -217,7 +218,14 @@ public class ClanStatsMenu implements Listener {
         lore.add("§7═══════════════════════");
         
         // Toplam yapı sayısı
-        int structureCount = clan.getStructures() != null ? clan.getStructures().size() : 0;
+        int structureCount = 0;
+        if (clan.getStructures() != null) {
+            structureCount = clan.getStructures().size();
+        } else {
+            if (plugin != null) {
+                plugin.getLogger().warning("Klan yapıları null! Klan: " + clan.getName());
+            }
+        }
         lore.add("§7Toplam Yapı: §e" + structureCount);
         
         // Teknoloji seviyesi
@@ -441,6 +449,7 @@ public class ClanStatsMenu implements Listener {
         
         // Fallback: Üye sayısına göre seviye
         int memberCount = clan.getMembers() != null ? clan.getMembers().size() : 0;
+        // Members null check zaten yukarıda yapıldı
         return Math.max(1, memberCount / 5);
     }
     

@@ -53,6 +53,19 @@ public class BreedingMenu implements Listener {
     public void openMainMenu(Player player) {
         if (player == null) return;
         
+        // Manager null kontrolleri
+        if (breedingManager == null) {
+            player.sendMessage("§cÜreme sistemi aktif değil!");
+            plugin.getLogger().warning("BreedingManager null! Menü açılamıyor.");
+            return;
+        }
+        
+        if (tamingManager == null) {
+            player.sendMessage("§cEğitme sistemi aktif değil!");
+            plugin.getLogger().warning("TamingManager null! Menü açılamıyor.");
+            return;
+        }
+        
         // Kişisel menü - klan kontrolü yok, sadece oyuncunun çiftlerini göster
         // Aktif üreme çiftlerini bul (sadece oyuncunun)
         List<BreedingPair> activePairs = getActiveBreedingPairs(player, null);
@@ -267,9 +280,12 @@ public class BreedingMenu implements Listener {
         int slot = event.getSlot();
         
         if (slot == 53) {
-            // Geri butonu
-            if (plugin.getTamingMenu() != null) {
-                plugin.getTamingMenu().openMainMenu(player);
+            // Geri butonu - Personal Terminal'e dön (kişisel menü)
+            if (plugin.getPersonalTerminalListener() != null) {
+                plugin.getPersonalTerminalListener().openMainMenu(player);
+            } else {
+                player.closeInventory();
+                player.sendMessage("§eKişisel Terminal'e dönmek için terminal item'ına sağ tık yapın.");
             }
             return;
         }
@@ -281,11 +297,8 @@ public class BreedingMenu implements Listener {
         }
         
         if (slot < 45) {
-            // Üreme çifti seçildi
-            Clan clan = clanManager.getClanByPlayer(player.getUniqueId());
-            if (clan == null) return;
-            
-            List<BreedingPair> activePairs = getActiveBreedingPairs(player, clan);
+            // Üreme çifti seçildi - kişisel menü, klan kontrolü yok
+            List<BreedingPair> activePairs = getActiveBreedingPairs(player, null);
             if (slot < activePairs.size()) {
                 BreedingPair pair = activePairs.get(slot);
                 if (pair != null) {
@@ -304,8 +317,12 @@ public class BreedingMenu implements Listener {
         int slot = event.getSlot();
         
         if (slot == 45) {
-            // Geri butonu
-            openMainMenu(player);
+            // Geri butonu - Personal Terminal'e dön (kişisel menü)
+            if (plugin.getPersonalTerminalListener() != null) {
+                plugin.getPersonalTerminalListener().openMainMenu(player);
+            } else {
+                openMainMenu(player);
+            }
         }
     }
     
@@ -321,8 +338,12 @@ public class BreedingMenu implements Listener {
         int slot = event.getSlot();
         
         if (slot == 45) {
-            // Geri butonu
-            openMainMenu(player);
+            // Geri butonu - Personal Terminal'e dön (kişisel menü)
+            if (plugin.getPersonalTerminalListener() != null) {
+                plugin.getPersonalTerminalListener().openMainMenu(player);
+            } else {
+                openMainMenu(player);
+            }
             return;
         }
         

@@ -61,8 +61,28 @@ public class ClanMissionSystem {
     public boolean createMissionBoard(Player player, Location lecternLoc) {
         if (player == null || lecternLoc == null) return false;
         
+        // World null check (block alınmadan önce)
+        if (lecternLoc.getWorld() == null) {
+            player.sendMessage("§cGeçersiz konum!");
+            plugin.getLogger().warning("Görev tahtası konumu dünyası null!");
+            return false;
+        }
+        
+        // Manager null kontrolleri
+        if (clanManager == null) {
+            player.sendMessage("§cKlan sistemi aktif değil!");
+            plugin.getLogger().warning("ClanManager null! Görev tahtası oluşturulamıyor.");
+            return false;
+        }
+        
+        if (rankSystem == null) {
+            player.sendMessage("§cYetki sistemi aktif değil!");
+            plugin.getLogger().warning("ClanRankSystem null! Görev tahtası oluşturulamıyor.");
+            return false;
+        }
+        
         Block block = lecternLoc.getBlock();
-        if (block.getType() != Material.LECTERN) {
+        if (block == null || block.getType() != Material.LECTERN) {
             player.sendMessage("§cGörev tahtası için Lectern gerekli!");
             return false;
         }
@@ -132,6 +152,19 @@ public class ClanMissionSystem {
     public boolean createMission(Player creator, MissionType type, int target, 
                                 Material targetMaterial, String description) {
         if (creator == null || type == null || target <= 0) return false;
+        
+        // Manager null kontrolleri
+        if (clanManager == null) {
+            creator.sendMessage("§cKlan sistemi aktif değil!");
+            plugin.getLogger().warning("ClanManager null! Görev oluşturulamıyor.");
+            return false;
+        }
+        
+        if (rankSystem == null) {
+            creator.sendMessage("§cYetki sistemi aktif değil!");
+            plugin.getLogger().warning("ClanRankSystem null! Görev oluşturulamıyor.");
+            return false;
+        }
         
         Clan clan = clanManager.getClanByPlayer(creator.getUniqueId());
         if (clan == null) {
@@ -215,31 +248,42 @@ public class ClanMissionSystem {
         if (block == null || block.getType() != Material.LECTERN) return;
         
         try {
-            if (block.getState() instanceof Lectern) {
-                Lectern lectern = (Lectern) block.getState();
+            org.bukkit.block.BlockState blockState = block.getState();
+            if (blockState == null || !(blockState instanceof Lectern)) {
+                plugin.getLogger().warning("Görev tahtası block state null veya Lectern değil!");
+                return;
+            }
+            
+            Lectern lectern = (Lectern) blockState;
+            
+            // Inventory null check
+            org.bukkit.inventory.Inventory inventory = lectern.getInventory();
+            if (inventory == null) {
+                plugin.getLogger().warning("Görev tahtası envanteri null!");
+                return;
+            }
+            
+            // Kitap oluştur
+            ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
+            BookMeta bookMeta = (BookMeta) book.getItemMeta();
+            
+            if (bookMeta != null) {
+                bookMeta.setTitle("§6Klan Görevi");
+                bookMeta.setAuthor("Klan Sistemi");
                 
-                // Kitap oluştur
-                ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
-                BookMeta bookMeta = (BookMeta) book.getItemMeta();
+                // İçerik
+                List<String> pages = new ArrayList<>();
+                pages.add("§lKlan Görevi\n\n" + 
+                    "§7Tip: §e" + getMissionTypeName(mission.getType()) + "\n" +
+                    "§7Hedef: §e" + mission.getTarget() + "\n" +
+                    "§7İlerleme: §e" + mission.getProgress() + "/" + mission.getTarget() + "\n\n" +
+                    "§7Açıklama:\n" + (mission.getDescription() != null ? mission.getDescription() : ""));
                 
-                if (bookMeta != null) {
-                    bookMeta.setTitle("§6Klan Görevi");
-                    bookMeta.setAuthor("Klan Sistemi");
-                    
-                    // İçerik
-                    List<String> pages = new ArrayList<>();
-                    pages.add("§lKlan Görevi\n\n" + 
-                        "§7Tip: §e" + getMissionTypeName(mission.getType()) + "\n" +
-                        "§7Hedef: §e" + mission.getTarget() + "\n" +
-                        "§7İlerleme: §e" + mission.getProgress() + "/" + mission.getTarget() + "\n\n" +
-                        "§7Açıklama:\n" + (mission.getDescription() != null ? mission.getDescription() : ""));
-                    
-                    bookMeta.setPages(pages);
-                    book.setItemMeta(bookMeta);
-                    
-                    lectern.getInventory().setItem(0, book);
-                    lectern.update();
-                }
+                bookMeta.setPages(pages);
+                book.setItemMeta(bookMeta);
+                
+                inventory.setItem(0, book);
+                lectern.update();
             }
         } catch (Exception e) {
             plugin.getLogger().warning("Görev kitabı yerleştirme hatası: " + e.getMessage());
@@ -259,11 +303,19 @@ public class ClanMissionSystem {
         // Görev tipi eşleşiyor mu?
         if (mission.getType() != type) return;
         
+        // Member progress null check
+        Map<UUID, Integer> memberProgress = mission.getMemberProgress();
+        if (memberProgress == null) {
+            plugin.getLogger().warning("Görev üye ilerlemesi null! Yeni map oluşturuluyor.");
+            memberProgress = new ConcurrentHashMap<>();
+            mission.setMemberProgress(memberProgress);
+        }
+        
         // Thread-safe: Synchronized
-        synchronized (mission.getMemberProgress()) {
+        synchronized (memberProgress) {
             // Üye ilerlemesi güncelle
-            int currentProgress = mission.getMemberProgress().getOrDefault(memberId, 0);
-            mission.getMemberProgress().put(memberId, currentProgress + amount);
+            int currentProgress = memberProgress.getOrDefault(memberId, 0);
+            memberProgress.put(memberId, currentProgress + amount);
             
             // Toplam ilerleme hesapla (optimize: sadece değişen değeri ekle)
             int oldTotal = mission.getProgress();
@@ -285,8 +337,15 @@ public class ClanMissionSystem {
         
         mission.setActive(false);
         
+        // Members null check
+        java.util.Map<UUID, ?> members = clan.getMembers();
+        if (members == null) {
+            plugin.getLogger().warning("Klan üyeleri null! Görev tamamlanamıyor. Klan: " + clan.getName());
+            return;
+        }
+        
         // Thread-safe: Copy of keySet kullan
-        java.util.Set<UUID> memberIds = new java.util.HashSet<>(clan.getMembers().keySet());
+        java.util.Set<UUID> memberIds = new java.util.HashSet<>(members.keySet());
         
         // Batch processing: Tüm online oyuncuları bir kez al
         java.util.Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
@@ -305,8 +364,9 @@ public class ClanMissionSystem {
                         rewardedCount++;
                     }
                 } catch (Exception e) {
+                    String memberName = member != null ? member.getName() : "null";
                     plugin.getLogger().warning("Ödül dağıtımı hatası (Üye: " + 
-                        member.getName() + "): " + e.getMessage());
+                        (memberName != null ? memberName : "null") + "): " + e.getMessage());
                 }
                 processed++;
             }
@@ -354,16 +414,33 @@ public class ClanMissionSystem {
                     try {
                         // World null check
                         if (member.getWorld() == null) {
-                            plugin.getLogger().warning("Oyuncu dünyası null! Üye: " + member.getName());
+                            String memberName = member.getName();
+                            plugin.getLogger().warning("Oyuncu dünyası null! Üye: " + (memberName != null ? memberName : "null"));
                             continue;
                         }
                         
-                        HashMap<Integer, ItemStack> overflow = member.getInventory().addItem(reward);
+                        // Location null check
+                        Location memberLoc = member.getLocation();
+                        if (memberLoc == null || memberLoc.getWorld() == null) {
+                            String memberName = member.getName();
+                            plugin.getLogger().warning("Oyuncu konumu null! Üye: " + (memberName != null ? memberName : "null"));
+                            continue;
+                        }
+                        
+                        // Inventory null check
+                        org.bukkit.inventory.Inventory inventory = member.getInventory();
+                        if (inventory == null) {
+                            String memberName = member.getName();
+                            plugin.getLogger().warning("Oyuncu envanteri null! Üye: " + (memberName != null ? memberName : "null"));
+                            continue;
+                        }
+                        
+                        HashMap<Integer, ItemStack> overflow = inventory.addItem(reward);
                         if (!overflow.isEmpty()) {
                             // Envanter dolu, yere düşür
                             for (ItemStack remaining : overflow.values()) {
                                 if (remaining != null) {
-                                    member.getWorld().dropItemNaturally(member.getLocation(), remaining);
+                                    memberLoc.getWorld().dropItemNaturally(memberLoc, remaining);
                                 }
                             }
                         }
@@ -499,11 +576,23 @@ public class ClanMissionSystem {
         if (block == null || block.getType() != Material.LECTERN) return;
         
         try {
-            if (block.getState() instanceof Lectern) {
-                Lectern lectern = (Lectern) block.getState();
-                lectern.getInventory().clear();
-                lectern.update();
+            org.bukkit.block.BlockState blockState = block.getState();
+            if (blockState == null || !(blockState instanceof Lectern)) {
+                plugin.getLogger().warning("Görev tahtası block state null veya Lectern değil!");
+                return;
             }
+            
+            Lectern lectern = (Lectern) blockState;
+            
+            // Inventory null check
+            org.bukkit.inventory.Inventory inventory = lectern.getInventory();
+            if (inventory == null) {
+                plugin.getLogger().warning("Görev tahtası envanteri null!");
+                return;
+            }
+            
+            inventory.clear();
+            lectern.update();
         } catch (Exception e) {
             plugin.getLogger().warning("Görev kitabı kaldırma hatası: " + e.getMessage());
             e.printStackTrace();
@@ -516,8 +605,15 @@ public class ClanMissionSystem {
     private void broadcastToClan(Clan clan, String message) {
         if (clan == null || message == null) return;
         
+        // Members null check
+        java.util.Map<UUID, ?> members = clan.getMembers();
+        if (members == null) {
+            plugin.getLogger().warning("Klan üyeleri null! Klan: " + clan.getName());
+            return;
+        }
+        
         // Thread-safe: Copy of keySet kullan
-        java.util.Set<UUID> memberIds = new java.util.HashSet<>(clan.getMembers().keySet());
+        java.util.Set<UUID> memberIds = new java.util.HashSet<>(members.keySet());
         
         // Batch processing: Tüm online oyuncuları bir kez al
         java.util.Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
@@ -533,8 +629,9 @@ public class ClanMissionSystem {
                 try {
                     member.sendMessage(message);
                 } catch (Exception e) {
+                    String memberName = member.getName();
                     plugin.getLogger().warning("Broadcast hatası (Üye: " + 
-                        member.getName() + "): " + e.getMessage());
+                        (memberName != null ? memberName : "null") + "): " + e.getMessage());
                 }
                 processed++;
             }
@@ -618,6 +715,13 @@ public class ClanMissionSystem {
      */
     public boolean cancelMission(Clan clan, Player player) {
         if (clan == null || player == null) return false;
+        
+        // RankSystem null check
+        if (rankSystem == null) {
+            player.sendMessage("§cYetki sistemi aktif değil!");
+            plugin.getLogger().warning("ClanRankSystem null! Görev iptal edilemiyor.");
+            return false;
+        }
         
         // Yetki kontrolü
         if (!rankSystem.hasPermission(clan, player.getUniqueId(), 

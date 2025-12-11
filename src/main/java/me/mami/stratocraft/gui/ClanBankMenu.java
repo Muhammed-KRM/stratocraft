@@ -50,6 +50,13 @@ public class ClanBankMenu implements Listener {
     public void openMainMenu(Player player) {
         if (player == null || bankSystem == null) return;
         
+        // Manager null kontrolü
+        if (clanManager == null) {
+            player.sendMessage("§cKlan sistemi aktif değil!");
+            plugin.getLogger().warning("ClanManager null! Menü açılamıyor.");
+            return;
+        }
+        
         Clan clan = clanManager.getClanByPlayer(player.getUniqueId());
         if (clan == null) {
             player.sendMessage("§cBir klana üye değilsiniz!");

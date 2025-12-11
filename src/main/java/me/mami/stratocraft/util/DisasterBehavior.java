@@ -43,7 +43,7 @@ public class DisasterBehavior {
     }
     
     /**
-     * Yakındaki oyunculara saldır
+     * Yakındaki oyunculara saldır (tüm yakındaki oyunculara)
      */
     public static void attackPlayers(Entity entity, Location center, DisasterConfig config, double damageMultiplier) {
         if (entity == null || center == null || center.getWorld() == null) return;
@@ -67,6 +67,43 @@ public class DisasterBehavior {
                 // Partikül efekti
                 DisasterUtils.playEffect(playerLoc, org.bukkit.Particle.DAMAGE_INDICATOR, 10);
             }
+        }
+    }
+    
+    /**
+     * En yakındaki oyuncuya saldır (sadece en yakın oyuncuya)
+     */
+    public static void attackNearestPlayer(Entity entity, Location center, DisasterConfig config, double damageMultiplier) {
+        if (entity == null || center == null || center.getWorld() == null) return;
+        if (!(entity instanceof LivingEntity)) return;
+        
+        LivingEntity attacker = (LivingEntity) entity;
+        double attackRadius = config.getAttackRadius();
+        
+        // En yakın oyuncuyu bul
+        Player nearestPlayer = null;
+        double minDistance = Double.MAX_VALUE;
+        
+        for (Player player : center.getWorld().getPlayers()) {
+            if (player.isDead() || !player.isOnline()) continue;
+            
+            Location playerLoc = player.getLocation();
+            if (!playerLoc.getWorld().equals(center.getWorld())) continue;
+            
+            double distance = DisasterUtils.calculateDistance(center, playerLoc);
+            if (distance <= attackRadius && distance < minDistance) {
+                minDistance = distance;
+                nearestPlayer = player;
+            }
+        }
+        
+        // Sadece en yakın oyuncuya saldır
+        if (nearestPlayer != null) {
+            double damage = config.getBaseDamage() * config.getDamageMultiplier() * damageMultiplier;
+            nearestPlayer.damage(damage, attacker);
+            
+            // Partikül efekti
+            DisasterUtils.playEffect(nearestPlayer.getLocation(), org.bukkit.Particle.DAMAGE_INDICATOR, 10);
         }
     }
     

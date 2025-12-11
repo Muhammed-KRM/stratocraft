@@ -60,6 +60,7 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.gui.TamingMenu tamingMenu;
     private me.mami.stratocraft.gui.BreedingMenu breedingMenu;
     private me.mami.stratocraft.gui.TrainingMenu trainingMenu;
+    private me.mami.stratocraft.listener.PersonalTerminalListener personalTerminalListener;
     private me.mami.stratocraft.manager.CombatLogManager combatLogManager;
     private me.mami.stratocraft.manager.EconomyManager economyManager;
     private me.mami.stratocraft.manager.SiegeWeaponManager siegeWeaponManager;
@@ -274,6 +275,9 @@ public class Main extends JavaPlugin {
         
         // Boss sistemi
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.BossListener(bossManager, this), this);
+        
+        // Felaket hasar takibi
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.DisasterListener(this), this);
         
         // Canlı eğitme sistemi
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.TamingListener(tamingManager, difficultyManager, bossManager), this);
@@ -1009,6 +1013,10 @@ public class Main extends JavaPlugin {
     public me.mami.stratocraft.gui.TrainingMenu getTrainingMenu() {
         return trainingMenu;
     }
+    
+    public me.mami.stratocraft.listener.PersonalTerminalListener getPersonalTerminalListener() {
+        return personalTerminalListener;
+    }
 
     public BatteryManager getBatteryManager() {
         return batteryManager;
@@ -1324,7 +1332,8 @@ public class Main extends JavaPlugin {
         }
         
         // 18. PersonalTerminalListener (Kişisel Terminal)
-        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.PersonalTerminalListener(this), this);
+        personalTerminalListener = new me.mami.stratocraft.listener.PersonalTerminalListener(this);
+        Bukkit.getPluginManager().registerEvents(personalTerminalListener, this);
         
         // ClanManager'a yeni sistemleri bağla (setter injection)
         if (clanManager != null) {

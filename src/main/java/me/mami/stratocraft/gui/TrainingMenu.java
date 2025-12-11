@@ -40,6 +40,13 @@ public class TrainingMenu implements Listener {
     public void openMainMenu(Player player) {
         if (player == null) return;
         
+        // Manager null kontrolü
+        if (trainingManager == null) {
+            player.sendMessage("§cEğitim sistemi aktif değil!");
+            plugin.getLogger().warning("TrainingManager null! Menü açılamıyor.");
+            return;
+        }
+        
         UUID playerId = player.getUniqueId();
         
         // Tüm bataryaları/ritüelleri listele
@@ -277,9 +284,12 @@ public class TrainingMenu implements Listener {
         int slot = event.getSlot();
         
         if (slot == 53) {
-            // Geri butonu
-            if (plugin.getClanMenu() != null) {
-                plugin.getClanMenu().openMenu(player);
+            // Geri butonu - Personal Terminal'e dön (kişisel menü)
+            if (plugin.getPersonalTerminalListener() != null) {
+                plugin.getPersonalTerminalListener().openMainMenu(player);
+            } else {
+                player.closeInventory();
+                player.sendMessage("§eKişisel Terminal'e dönmek için terminal item'ına sağ tık yapın.");
             }
             return;
         }

@@ -148,7 +148,12 @@ public class ClanMenu implements Listener {
         ItemStack structures = new ItemStack(Material.BEACON);
         ItemMeta structuresMeta = structures.getItemMeta();
         if (structuresMeta != null) {
-            int structureCount = clan.getStructures() != null ? clan.getStructures().size() : 0;
+            int structureCount = 0;
+            if (clan.getStructures() != null) {
+                structureCount = clan.getStructures().size();
+            } else {
+                plugin.getLogger().warning("Klan yapıları null! Klan: " + clan.getName());
+            }
             structuresMeta.setDisplayName("§aKlan Yapıları");
             structuresMeta.setLore(Arrays.asList(
                 "§7Toplam Yapı: §e" + structureCount,

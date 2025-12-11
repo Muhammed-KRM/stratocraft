@@ -136,8 +136,18 @@ public class ContractMenu implements Listener {
     public void openMainMenu(Player player, int page) {
         if (player == null) return;
         
-        List<Contract> contracts = contractManager != null ? contractManager.getContracts() : new ArrayList<>();
-        if (contracts == null) contracts = new ArrayList<>();
+        // Manager null kontrolleri
+        if (contractManager == null) {
+            player.sendMessage("§cKontrat sistemi aktif değil!");
+            plugin.getLogger().warning("ContractManager null! Menü açılamıyor.");
+            return;
+        }
+        
+        List<Contract> contracts = contractManager.getContracts();
+        if (contracts == null) {
+            plugin.getLogger().warning("ContractManager.getContracts() null döndü!");
+            contracts = new ArrayList<>();
+        }
         
         // Sadece açık kontratları göster (acceptor == null)
         List<Contract> openContracts = new ArrayList<>();
