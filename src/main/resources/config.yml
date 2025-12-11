@@ -842,6 +842,10 @@ game-balance:
   data-manager:
     auto-save-enabled: true          # Periyodik otomatik kayıt aktif mi?
     auto-save-interval: 300000       # Otomatik kayıt aralığı (ms) - 5 dakika
+    use-sqlite: true                 # SQLite veritabanı kullan (true = SQLite, false = JSON)
+                                     # ✅ TAŞINABİLİR: SQLite dosyası (stratocraft.db) kolayca kopyalanabilir
+                                     # ✅ CRASH-SAFE: WAL modu ile crash'te bile veri kaybı olmaz
+                                     # ✅ ACID UYUMLU: Transaction garantisi (all-or-nothing)
 
   # Special Weapon Sistemi (Özel Silah)
   special-weapon:

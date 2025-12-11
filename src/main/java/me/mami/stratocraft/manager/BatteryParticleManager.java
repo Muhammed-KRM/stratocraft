@@ -105,6 +105,11 @@ public class BatteryParticleManager {
         }.runTaskTimer(plugin, 0L, updateInterval);
         
         activeParticleTasks.get(playerId).put(slot, task);
+        
+        // ✅ TASK MANAGER: Task'ı kaydet (memory leak önleme)
+        if (plugin.getTaskManager() != null) {
+            plugin.getTaskManager().registerPlayerTask(player, task);
+        }
     }
     
     /**

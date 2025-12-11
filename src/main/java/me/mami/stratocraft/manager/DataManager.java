@@ -63,6 +63,18 @@ public class DataManager {
         
         // Config'den ayarları yükle
         loadConfig();
+        
+        // ✅ SQLite başlat (eğer kullanılıyorsa)
+        if (useSQLite) {
+            try {
+                databaseManager = new me.mami.stratocraft.database.DatabaseManager(plugin);
+                sqliteDataManager = new me.mami.stratocraft.database.SQLiteDataManager(plugin, databaseManager);
+                plugin.getLogger().info("§aSQLite veritabanı sistemi aktif!");
+            } catch (Exception e) {
+                plugin.getLogger().severe("SQLite başlatma hatası, JSON moduna geçiliyor: " + e.getMessage());
+                useSQLite = false;
+            }
+        }
     }
     
     /**
@@ -73,6 +85,7 @@ public class DataManager {
         if (config != null) {
             autoSaveInterval = config.getLong("data-manager.auto-save-interval", 300000L); // 5 dakika default
             autoSaveEnabled = config.getBoolean("data-manager.auto-save-enabled", true);
+            useSQLite = config.getBoolean("data-manager.use-sqlite", true); // SQLite varsayılan olarak aktif
         }
     }
     
@@ -423,104 +436,116 @@ public class DataManager {
         saveAll(clanManager, contractManager, shopManager, virtualStorage, allianceManager, disasterManager, false);
     }
     
-    // Snapshot sınıfları
-    private static class ClanSnapshot {
-        List<ClanData> clans = new ArrayList<>();
+    // Snapshot sınıfları (SQLite entegrasyonu için public)
+    public static class ClanSnapshot {
+        public List<ClanData> clans = new ArrayList<>();
     }
     
-    private static class ContractSnapshot {
-        List<ContractData> contracts = new ArrayList<>();
+    public static class ContractSnapshot {
+        public List<ContractData> contracts = new ArrayList<>();
     }
     
-    private static class ShopSnapshot {
-        List<ShopData> shops = new ArrayList<>();
+    public static class ShopSnapshot {
+        public List<ShopData> shops = new ArrayList<>();
     }
     
-    private static class InventorySnapshot {
-        Map<String, String> inventories = new HashMap<>();
+    public static class InventorySnapshot {
+        public Map<String, String> inventories = new HashMap<>();
     }
     
-    private static class AllianceSnapshot {
-        List<AllianceData> alliances = new ArrayList<>();
+    public static class AllianceSnapshot {
+        public List<AllianceData> alliances = new ArrayList<>();
     }
     
-    private static class AllianceData {
-        String id;
-        String clan1Id;
-        String clan2Id;
-        String type;
-        long createdAt;
-        long expiresAt;
-        boolean active;
-        boolean broken;
-        String breakerClanId;
+    public static class AllianceData {
+        public String id;
+        public String clan1Id;
+        public String clan2Id;
+        public String type;
+        public long createdAt;
+        public long expiresAt;
+        public boolean active;
+        public boolean broken;
+        public String breakerClanId;
     }
     
-    private static class DisasterSnapshot {
-        DisasterStateData disaster = null;
+    public static class DisasterSnapshot {
+        public DisasterStateData disaster = null;
     }
     
-    private static class ClanBankSnapshot {
-        Map<String, BankData> banks = new HashMap<>();
+    public static class ClanBankSnapshot {
+        public Map<String, BankData> banks = new HashMap<>();
     }
     
-    private static class BankData {
-        String clanId;
-        String chestLocation; // Serialized Location
-        Map<String, Long> lastSalaryTime; // Player UUID -> Last salary time
-        List<TransferContractData> transferContracts = new ArrayList<>();
+    public static class BankData {
+        public String clanId;
+        public String chestLocation; // Serialized Location
+        public Map<String, Long> lastSalaryTime; // Player UUID -> Last salary time
+        public List<TransferContractData> transferContracts = new ArrayList<>();
     }
     
-    private static class TransferContractData {
-        String clanId;
-        String creatorId;
-        String targetPlayerId;
-        String material;
-        int amount;
-        long interval;
-        long lastTransferTime;
-        boolean active;
+    public static class TransferContractData {
+        public String clanId;
+        public String creatorId;
+        public String targetPlayerId;
+        public String material;
+        public int amount;
+        public long interval;
+        public long lastTransferTime;
+        public boolean active;
     }
     
-    private static class ClanMissionSnapshot {
-        Map<String, MissionData> missions = new HashMap<>();
-        Map<String, String> missionBoardLocations = new HashMap<>(); // Clan ID -> Location
+    public static class ClanMissionSnapshot {
+        public Map<String, MissionData> missions = new HashMap<>();
+        public Map<String, List<MissionBoardLocation>> missionBoardLocations = new HashMap<>(); // Clan ID -> List<Location>
     }
     
-    private static class MissionData {
-        String clanId;
-        String type;
-        int targetAmount;
-        int currentProgress;
-        Map<String, Integer> memberProgress = new HashMap<>(); // Player UUID -> Progress
-        Map<String, Object> rewards = new HashMap<>();
-        long createdAt;
-        long deadline;
-        boolean completed;
+    public static class MissionData {
+        public String clanId;
+        public String type;
+        public int targetAmount;
+        public int currentProgress;
+        public Map<String, Integer> memberProgress = new HashMap<>(); // Player UUID -> Progress
+        public Map<String, Object> rewards = new HashMap<>();
+        public long createdAt;
+        public long deadline;
+        public boolean completed;
     }
     
-    private static class ClanActivitySnapshot {
-        Map<String, Long> lastOnlineTime = new HashMap<>(); // Player UUID -> Last online time
+    public static class MissionBoardLocation {
+        public String world;
+        public int x, y, z;
     }
     
-    private static class TrapSnapshot {
-        List<TrapData> activeTraps = new ArrayList<>();
-        List<InactiveTrapCoreData> inactiveCores = new ArrayList<>();
+    public static class ClanActivitySnapshot {
+        public Map<String, Long> lastOnlineTime = new HashMap<>(); // Player UUID -> Last online time
     }
     
-    private static class TrapData {
-        String location; // Serialized Location
-        String ownerId;
-        String ownerClanId; // Nullable
-        String type; // TrapType.name()
-        int fuel;
-        List<String> frameBlocks = new ArrayList<>(); // Serialized Locations
-        boolean isCovered;
+    public static class TrapSnapshot {
+        public List<TrapData> activeTraps = new ArrayList<>();
+        public List<InactiveTrapCoreData> inactiveCores = new ArrayList<>();
     }
     
-    private static class InactiveTrapCoreData {
-        String location; // Serialized Location
-        String ownerId;
+    public static class TrapData {
+        public String id;
+        public String clanId;
+        public LocationData location; // Serialized Location
+        public String ownerId;
+        public String ownerClanId; // Nullable
+        public String type; // TrapType.name()
+        public int fuel;
+        public List<String> frameBlocks = new ArrayList<>(); // Serialized Locations
+        public boolean isCovered;
+    }
+    
+    public static class InactiveTrapCoreData {
+        public String location; // Serialized Location
+        public String ownerId;
+    }
+    
+    public static class LocationData {
+        public String world;
+        public int x, y, z;
     }
     
     /**
@@ -595,11 +620,15 @@ public class DataManager {
             ContractData data = new ContractData();
             data.id = contract.getId().toString();
             data.issuer = contract.getIssuer().toString();
+            data.issuerId = contract.getIssuer().toString(); // SQLite için
             data.acceptor = contract.getAcceptor() != null ? contract.getAcceptor().toString() : null;
+            data.acceptorId = contract.getAcceptor() != null ? contract.getAcceptor().toString() : null; // SQLite için
             data.material = contract.getMaterial().name();
             data.amount = contract.getAmount();
             data.reward = contract.getReward();
+            data.rewardString = String.valueOf(contract.getReward()); // SQLite için
             data.delivered = contract.getDelivered();
+            data.deliveredBool = contract.getDelivered() > 0; // SQLite için
             data.deadline = contract.getDeadline();
             snapshot.contracts.add(data);
         }
@@ -623,7 +652,15 @@ public class DataManager {
                     ShopData data = new ShopData();
                     data.id = UUID.randomUUID().toString();
                     data.owner = shop.getOwnerId().toString();
-                    data.location = serializeLocation(shop.getLocation());
+                    data.ownerId = shop.getOwnerId().toString(); // SQLite için
+                    Location loc = shop.getLocation();
+                    data.locationString = serializeLocation(loc); // JSON için
+                    // SQLite için LocationData
+                    data.location = new LocationData();
+                    data.location.world = loc.getWorld() != null ? loc.getWorld().getName() : "world";
+                    data.location.x = loc.getBlockX();
+                    data.location.y = loc.getBlockY();
+                    data.location.z = loc.getBlockZ();
                     data.sellItem = serializeItemStack(shop.getSellingItem());
                     data.priceItem = serializeItemStack(shop.getPriceItem());
                     data.protectedZone = shop.isProtectedZone();
@@ -849,10 +886,19 @@ public class DataManager {
             Map<UUID, Location> missionBoardLocations = 
                 (Map<UUID, Location>) missionBoardLocationsField.get(missionSystem);
             
-            // Görev tahtası konumları
+            // Görev tahtası konumları (SQLite için List<MissionBoardLocation> formatında)
             if (missionBoardLocations != null) {
                 for (Map.Entry<UUID, Location> entry : missionBoardLocations.entrySet()) {
-                    snapshot.missionBoardLocations.put(entry.getKey().toString(), serializeLocation(entry.getValue()));
+                    Location loc = entry.getValue();
+                    MissionBoardLocation mbLoc = new MissionBoardLocation();
+                    mbLoc.world = loc.getWorld() != null ? loc.getWorld().getName() : "world";
+                    mbLoc.x = loc.getBlockX();
+                    mbLoc.y = loc.getBlockY();
+                    mbLoc.z = loc.getBlockZ();
+                    
+                    snapshot.missionBoardLocations
+                        .computeIfAbsent(entry.getKey().toString(), k -> new ArrayList<>())
+                        .add(mbLoc);
                 }
             }
             
@@ -987,7 +1033,14 @@ public class DataManager {
                     if (trap == null || loc == null) continue;
                     
                     TrapData trapData = new TrapData();
-                    trapData.location = serializeLocation(loc);
+                    // ID oluştur (location'dan)
+                    trapData.id = loc.getWorld().getName() + ":" + loc.getBlockX() + ":" + loc.getBlockY() + ":" + loc.getBlockZ();
+                    // SQLite için LocationData
+                    trapData.location = new LocationData();
+                    trapData.location.world = loc.getWorld() != null ? loc.getWorld().getName() : "world";
+                    trapData.location.x = loc.getBlockX();
+                    trapData.location.y = loc.getBlockY();
+                    trapData.location.z = loc.getBlockZ();
                     trapData.ownerId = trap.getOwnerId() != null ? trap.getOwnerId().toString() : null;
                     trapData.ownerClanId = trap.getOwnerClanId() != null ? trap.getOwnerClanId().toString() : null;
                     trapData.type = trap.getType() != null ? trap.getType().name() : null;
@@ -2077,6 +2130,20 @@ public class DataManager {
         }
     }
     
+    /**
+     * DatabaseManager getter (SQLite için)
+     */
+    public me.mami.stratocraft.database.DatabaseManager getDatabaseManager() {
+        return databaseManager;
+    }
+    
+    /**
+     * SQLite kullanılıyor mu?
+     */
+    public boolean isUsingSQLite() {
+        return useSQLite && databaseManager != null;
+    }
+    
     private Inventory deserializeInventory(String str) {
         try {
             byte[] data = Base64.getDecoder().decode(str);
@@ -2096,33 +2163,33 @@ public class DataManager {
     
     // ========== DATA CLASSES ==========
     
-    private static class ClanData {
-        String id;
-        String name;
-        Map<String, String> members;
-        double bankBalance;
-        int storedXP;
-        long createdAt; // Grace period için
-        String crystalLocation; // Ölümsüz klan önleme için
-        List<String> guests;
-        TerritoryData territory;
-        List<StructureData> structures;
+    public static class ClanData {
+        public String id;
+        public String name;
+        public Map<String, String> members;
+        public double bankBalance;
+        public int storedXP;
+        public long createdAt; // Grace period için
+        public String crystalLocation; // Ölümsüz klan önleme için
+        public List<String> guests;
+        public TerritoryData territory;
+        public List<StructureData> structures;
     }
     
-    private static class TerritoryData {
-        String center;
-        int radius;
-        List<String> outposts;
+    public static class TerritoryData {
+        public String center;
+        public int radius;
+        public List<String> outposts;
     }
     
-    private static class StructureData {
-        String type;
-        String location;
-        int level;
-        int shieldFuel;
+    public static class StructureData {
+        public String type;
+        public String location;
+        public int level;
+        public int shieldFuel;
     }
     
-    private static class ContractData {
+    public static class ContractData {
         String id;
         String issuer;
         String acceptor;

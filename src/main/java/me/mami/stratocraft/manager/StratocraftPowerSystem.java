@@ -1214,6 +1214,24 @@ public class StratocraftPowerSystem {
         playerLookupCache.remove(playerId);
     }
     
+    /**
+     * Tüm cache'leri temizle (reload için)
+     */
+    public void clearAllCaches() {
+        playerProfileCache.clear();
+        playerProfileCacheTime.clear();
+        clanProfileCache.clear();
+        trainingDataCache.clear();
+        offlinePlayerCache.clear();
+        offlineCacheTime.clear();
+        playerLookupCache.clear();
+        ritualBlockSnapshots.clear();
+        ritualResourceStats.clear();
+        playerLocks.clear();
+        clanLocks.clear();
+        plugin.getLogger().info("StratocraftPowerSystem: Tüm cache'ler temizlendi.");
+    }
+    
     // ========== GETTERS ==========
     
     /**

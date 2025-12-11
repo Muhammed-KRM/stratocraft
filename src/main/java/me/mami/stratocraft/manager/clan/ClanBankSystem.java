@@ -228,30 +228,39 @@ public class ClanBankSystem {
             return false;
         }
         
-        // Item oluştur
+        // ⚠️ TRANSACTION MANTIĞI: Önce envanterden al, sonra bankaya ekle (dupe önleme)
+        // 1. ÖNCE ENVANTERDEN AL (transaction başlat)
+        ItemStack toRemove = item.clone();
+        toRemove.setAmount(amount);
+        HashMap<Integer, ItemStack> removeResult = player.getInventory().removeItem(toRemove);
+        
+        if (!removeResult.isEmpty()) {
+            // Envanterden alınamadı (yeterli item yok), işlem iptal
+            player.sendMessage("§cYeterli item yok!");
+            return false;
+        }
+        
+        // 2. SONRA BANKAYA EKLE
         ItemStack depositItem = item.clone();
         depositItem.setAmount(amount);
-        
-        // Sandık dolu mu kontrol et
         HashMap<Integer, ItemStack> overflow = bankChest.addItem(depositItem);
         
         if (!overflow.isEmpty()) {
-            // Sandık dolu, kalan itemleri geri ver
-            player.sendMessage("§cBanka sandığı dolu! Kalan itemler envanterine eklendi.");
-            for (ItemStack remaining : overflow.values()) {
-                HashMap<Integer, ItemStack> invOverflow = player.getInventory().addItem(remaining);
-                if (!invOverflow.isEmpty()) {
-                    // Envanter de dolu, yere düşür
-                    player.getWorld().dropItemNaturally(player.getLocation(), remaining);
+            // Sandık dolu, item'i geri ver (rollback)
+            player.sendMessage("§cBanka sandığı dolu! Itemler envanterine geri verildi.");
+            HashMap<Integer, ItemStack> refundResult = player.getInventory().addItem(toRemove);
+            if (!refundResult.isEmpty()) {
+                // Envanter dolu, yere düşür
+                for (ItemStack remaining : refundResult.values()) {
+                    if (remaining != null) {
+                        player.getWorld().dropItemNaturally(player.getLocation(), remaining);
+                    }
                 }
             }
             return false;
         }
         
-        // Itemları envanterden al
-        ItemStack toRemove = item.clone();
-        toRemove.setAmount(amount);
-        player.getInventory().removeItem(toRemove);
+        // 3. İŞLEM BAŞARILI (item zaten envanterden alındı, bankaya eklendi)
         
         player.sendMessage("§a" + amount + "x " + getItemDisplayName(item) + " bankaya yatırıldı!");
         return true;
@@ -283,28 +292,38 @@ public class ClanBankSystem {
             return false;
         }
         
-        // Sandıkta yeterli item var mı?
-        ItemStack checkItem = new ItemStack(material, amount);
-        if (!bankChest.containsAtLeast(checkItem, amount)) {
+        // ⚠️ TRANSACTION MANTIĞI: Önce bankadan al, sonra envantere ekle (dupe önleme)
+        // 1. ÖNCE BANKADAN AL (transaction başlat)
+        ItemStack toRemove = new ItemStack(material, amount);
+        HashMap<Integer, ItemStack> removeResult = bankChest.removeItem(toRemove);
+        
+        // removeItem() başarılı olursa boş HashMap döner, başarısız olursa kalan itemleri döner
+        if (removeResult == null || !removeResult.isEmpty()) {
+            // Bankadan alınamadı (yeterli item yok), işlem iptal
             player.sendMessage("§cBanka'da yeterli " + getMaterialDisplayName(material) + " yok!");
             return false;
         }
         
-        // Envanter dolu mu kontrol et
+        // 2. SONRA ENVANTERE EKLE
         ItemStack withdrawItem = new ItemStack(material, amount);
         HashMap<Integer, ItemStack> overflow = player.getInventory().addItem(withdrawItem);
         
         if (!overflow.isEmpty()) {
-            // Envanter dolu, itemleri geri bankaya koy
+            // Envanter dolu, item'i geri bankaya koy (rollback)
             player.sendMessage("§cEnvanterin dolu! Itemler bankaya geri konuldu.");
             for (ItemStack remaining : overflow.values()) {
-                bankChest.addItem(remaining);
+                if (remaining != null) {
+                    HashMap<Integer, ItemStack> refundResult = bankChest.addItem(remaining);
+                    if (!refundResult.isEmpty()) {
+                        // Banka da dolu (çok nadir), yere düşür
+                        player.getWorld().dropItemNaturally(player.getLocation(), remaining);
+                    }
+                }
             }
             return false;
         }
         
-        // Itemları bankadan al
-        bankChest.removeItem(withdrawItem);
+        // 3. İŞLEM BAŞARILI (item zaten bankadan alındı, envantere eklendi)
         player.sendMessage("§a" + amount + "x " + getMaterialDisplayName(material) + " bankadan çekildi!");
         return true;
     }

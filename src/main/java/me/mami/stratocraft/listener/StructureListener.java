@@ -60,20 +60,28 @@ public class StructureListener implements Listener {
         // 1. SİMYA KULESİ (Tarif gerektirir)
         if (b.getType() == Material.ENCHANTING_TABLE) {
             if (checkRecipe(p, "ALCHEMY_TOWER")) {
-                if (validator.validate(b.getLocation(), "alchemy_tower")) {
-                    createStructure(p, clan, b, Structure.Type.ALCHEMY_TOWER, "Simya Kulesi");
-                } else {
-                    p.sendMessage("§cYapı şemaya uymuyor! (alchemy_tower.schem)");
-                }
+                p.sendMessage("§7Yapı kontrol ediliyor...");
+                validator.validateAsync(b.getLocation(), "alchemy_tower", (isValid) -> {
+                    if (isValid) {
+                        createStructure(p, clan, b, Structure.Type.ALCHEMY_TOWER, "Simya Kulesi");
+                    } else {
+                        p.sendMessage("§cYapı şemaya uymuyor! (alchemy_tower.schem)");
+                    }
+                });
             }
         }
 
         // 2. TEKTONİK SABİTLEYİCİ (Tarif gerektirir)
         else if (b.getType() == Material.PISTON) {
             if (checkRecipe(p, "TECTONIC_STABILIZER")) {
-                if (validator.validate(b.getLocation(), "tectonic_stabilizer")) {
-                    createStructure(p, clan, b, Structure.Type.TECTONIC_STABILIZER, "Tektonik Sabitleyici");
-                }
+                p.sendMessage("§7Yapı kontrol ediliyor...");
+                validator.validateAsync(b.getLocation(), "tectonic_stabilizer", (isValid) -> {
+                    if (isValid) {
+                        createStructure(p, clan, b, Structure.Type.TECTONIC_STABILIZER, "Tektonik Sabitleyici");
+                    } else {
+                        p.sendMessage("§cYapı şemaya uymuyor! (tectonic_stabilizer.schem)");
+                    }
+                });
             }
         }
 
@@ -89,9 +97,14 @@ public class StructureListener implements Listener {
         // 4. GLOBAL PAZAR KAPISI (Tarif gerektirir)
         else if (b.getType() == Material.ENDER_CHEST) {
             if (checkRecipe(p, "GLOBAL_MARKET_GATE")) {
-                if (validator.validate(b.getLocation(), "market_gate")) {
-                    createStructure(p, clan, b, Structure.Type.GLOBAL_MARKET_GATE, "Global Pazar");
-                }
+                p.sendMessage("§7Yapı kontrol ediliyor...");
+                validator.validateAsync(b.getLocation(), "market_gate", (isValid) -> {
+                    if (isValid) {
+                        createStructure(p, clan, b, Structure.Type.GLOBAL_MARKET_GATE, "Global Pazar");
+                    } else {
+                        p.sendMessage("§cYapı şemaya uymuyor! (market_gate.schem)");
+                    }
+                });
             }
         }
         
@@ -99,9 +112,14 @@ public class StructureListener implements Listener {
         else if (b.getType() == Material.BEACON) {
             // Yeşil beacon ise zehir reaktörü
             if (checkRecipe(p, "POISON_REACTOR")) {
-                if (validator.validate(b.getLocation(), "poison_reactor")) {
-                    createStructure(p, clan, b, Structure.Type.POISON_REACTOR, "Zehir Reaktörü");
-                }
+                p.sendMessage("§7Yapı kontrol ediliyor...");
+                validator.validateAsync(b.getLocation(), "poison_reactor", (isValid) -> {
+                    if (isValid) {
+                        createStructure(p, clan, b, Structure.Type.POISON_REACTOR, "Zehir Reaktörü");
+                    } else {
+                        p.sendMessage("§cYapı şemaya uymuyor! (poison_reactor.schem)");
+                    }
+                });
             }
         }
         
@@ -120,20 +138,25 @@ public class StructureListener implements Listener {
                                    (offHand != null && offHand.getType() == Material.PISTON);
                 
                 if (hasAncientGear && hasPiston) {
-                    if (validator.validate(b.getLocation(), "auto_turret")) {
-                        createStructure(p, clan, b, Structure.Type.AUTO_TURRET, "Otomatik Taret");
-                        // Malzemeleri tüket
-                        if (mainHand != null && mainHand.getType() == Material.IRON_NUGGET) {
-                            mainHand.setAmount(mainHand.getAmount() - 1);
-                        } else if (offHand != null && offHand.getType() == Material.IRON_NUGGET) {
-                            offHand.setAmount(offHand.getAmount() - 1);
+                    p.sendMessage("§7Yapı kontrol ediliyor...");
+                    validator.validateAsync(b.getLocation(), "auto_turret", (isValid) -> {
+                        if (isValid) {
+                            createStructure(p, clan, b, Structure.Type.AUTO_TURRET, "Otomatik Taret");
+                            // Malzemeleri tüket
+                            if (mainHand != null && mainHand.getType() == Material.IRON_NUGGET) {
+                                mainHand.setAmount(mainHand.getAmount() - 1);
+                            } else if (offHand != null && offHand.getType() == Material.IRON_NUGGET) {
+                                offHand.setAmount(offHand.getAmount() - 1);
+                            }
+                            if (mainHand != null && mainHand.getType() == Material.PISTON) {
+                                mainHand.setAmount(mainHand.getAmount() - 1);
+                            } else if (offHand != null && offHand.getType() == Material.PISTON) {
+                                offHand.setAmount(offHand.getAmount() - 1);
+                            }
+                        } else {
+                            p.sendMessage("§cYapı şemaya uymuyor! (auto_turret.schem)");
                         }
-                        if (mainHand != null && mainHand.getType() == Material.PISTON) {
-                            mainHand.setAmount(mainHand.getAmount() - 1);
-                        } else if (offHand != null && offHand.getType() == Material.PISTON) {
-                            offHand.setAmount(offHand.getAmount() - 1);
-                        }
-                    }
+                    });
                 } else {
                     p.sendMessage("§cOtomatik Taret için Antik Dişli ve Piston gerekiyor!");
                 }

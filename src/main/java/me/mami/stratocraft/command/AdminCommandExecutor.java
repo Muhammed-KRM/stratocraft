@@ -56,6 +56,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         Player p = (Player) sender;
 
         switch (args[0].toLowerCase()) {
+            case "reload":
+                return handleReload(p);
             case "give":
                 return handleGive(p, args);
             case "spawn":

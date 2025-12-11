@@ -89,6 +89,7 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.HUDManager hudManager;
     private me.mami.stratocraft.manager.BatteryParticleManager batteryParticleManager;
     private me.mami.stratocraft.manager.DisasterArenaManager disasterArenaManager;
+    private me.mami.stratocraft.manager.TaskManager taskManager;
     
     public me.mami.stratocraft.listener.SpecialWeaponListener getSpecialWeaponListener() {
         return specialWeaponListener;
@@ -149,6 +150,9 @@ public class Main extends JavaPlugin {
         buffManager = new BuffManager();
         buffManager.setPlugin(this);
         hudManager = new me.mami.stratocraft.manager.HUDManager(this);
+        // TaskManager (Memory leak önleme için - diğer manager'lardan önce)
+        taskManager = new me.mami.stratocraft.manager.TaskManager(this);
+        
         batteryParticleManager = new me.mami.stratocraft.manager.BatteryParticleManager(this);
         dataManager = new DataManager(this);
         configManager = new ConfigManager(this);
@@ -852,6 +856,11 @@ public class Main extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // TaskManager'ı kapat (tüm task'ları iptal et)
+        if (taskManager != null) {
+            taskManager.shutdown();
+        }
+        
         // HUD Manager'ı durdur
         if (hudManager != null) {
             hudManager.stop();
@@ -880,6 +889,12 @@ public class Main extends JavaPlugin {
             dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener, 
                     allianceManager, disasterManager, clanBankSystem, clanMissionSystem, clanActivitySystem, trapManager, true);
             getLogger().info("Stratocraft: Veriler kaydedildi.");
+            
+            // ✅ SQLite veritabanını kapat
+            if (dataManager != null && dataManager.getDatabaseManager() != null) {
+                dataManager.getDatabaseManager().close();
+                getLogger().info("Stratocraft: SQLite veritabanı kapatıldı.");
+            }
             
             // Güç profillerini kaydet (sync - onDisable)
             if (stratocraftPowerSystem != null) {
@@ -1028,6 +1043,10 @@ public class Main extends JavaPlugin {
     
     public me.mami.stratocraft.manager.BatteryParticleManager getBatteryParticleManager() {
         return batteryParticleManager;
+    }
+    
+    public me.mami.stratocraft.manager.TaskManager getTaskManager() {
+        return taskManager;
     }
 
     public SiegeManager getSiegeManager() {
