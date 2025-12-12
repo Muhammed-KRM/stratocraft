@@ -87,7 +87,7 @@ public class StructureCoreListener implements Listener {
         player.sendMessage("§7Etrafına yapıyı kur ve aktivasyon item'ı ile aktifleştir.");
         
         // Efekt
-        player.playSound(coreLoc, Sound.BLOCK_END_CRYSTAL_PLACE, 1.0f, 1.0f);
+        player.playSound(coreLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
         Location particleLoc = coreLoc.clone().add(0.5, 0.5, 0.5);
         coreLoc.getWorld().spawnParticle(Particle.END_ROD, particleLoc, 20, 0.3, 0.3, 0.3, 0.1);
     }
@@ -238,7 +238,7 @@ public class StructureCoreListener implements Listener {
         coreLoc.getWorld().spawnParticle(Particle.END_ROD, effectLoc, 100, 1.5, 1.5, 1.5, 0.1);
         coreLoc.getWorld().spawnParticle(Particle.TOTEM, effectLoc, 50, 1.0, 1.0, 1.0, 0.05);
         coreLoc.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, effectLoc, 30, 1.0, 1.0, 1.0, 0.1);
-        coreLoc.getWorld().spawnParticle(Particle.FIREWORK, effectLoc, 20, 0.5, 0.5, 0.5, 0.1);
+        coreLoc.getWorld().spawnParticle(Particle.TOTEM, effectLoc, 20, 0.5, 0.5, 0.5, 0.1);
         
         // Başlık mesajı
         player.sendTitle("§a§l✓ BAŞARILI", "§7" + structureName + " aktif edildi!", 10, 40, 10);

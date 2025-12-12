@@ -18,9 +18,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -135,6 +138,157 @@ public class TerritoryListener implements Listener {
         event.setCancelled(true);
         event.getPlayer().sendMessage("§cBu bölge " + owner.getName() + " klanına ait! Önce kuşatma başlatmalısın.");
     }
+    
+    // ========== SANDIK AÇMA KORUMASI ==========
+    
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onInventoryOpen(InventoryOpenEvent event) {
+        // Admin bypass kontrolü
+        if (event.getPlayer() instanceof Player) {
+            Player player = (Player) event.getPlayer();
+            if (me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(player)) {
+                return; // Admin bypass yetkisi varsa korumaları atla
+            }
+        }
+        
+        // Sadece blok envanterleri (sandık, fırın vb.)
+        if (event.getInventory().getType() != InventoryType.CHEST &&
+            event.getInventory().getType() != InventoryType.ENDER_CHEST &&
+            event.getInventory().getType() != InventoryType.BARREL &&
+            event.getInventory().getType() != InventoryType.SHULKER_BOX) {
+            return;
+        }
+        
+        // Envanterin konumunu bul
+        Location invLocationTemp = null;
+        if (event.getInventory().getHolder() instanceof org.bukkit.block.BlockState) {
+            org.bukkit.block.BlockState state = (org.bukkit.block.BlockState) event.getInventory().getHolder();
+            invLocationTemp = state.getLocation();
+        } else if (event.getView().getTopInventory().getLocation() != null) {
+            invLocationTemp = event.getView().getTopInventory().getLocation();
+        }
+        
+        if (invLocationTemp == null) return;
+        final Location invLocation = invLocationTemp;
+        
+        // Bölge sahibi kontrolü
+        Clan owner = territoryManager.getTerritoryOwner(invLocation);
+        if (owner == null) return; // Sahipsiz yerse açılabilir
+        
+        // Ölümsüz klan önleme: Kristal yoksa bölge koruması yok
+        if (!owner.hasCrystal()) {
+            return; // Kristal yoksa koruma yok
+        }
+        
+        // Oyuncu kontrolü
+        if (!(event.getPlayer() instanceof Player)) return;
+        Player player = (Player) event.getPlayer();
+        
+        // Kendi yerinse açılabilir
+        Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
+        if (playerClan != null && playerClan.equals(owner)) {
+            return; // Klan üyesi açabilir
+        }
+        
+        // Misafir izni
+        if (owner.isGuest(player.getUniqueId())) {
+            return; // Misafir açabilir
+        }
+        
+        // Savaş kontrolü
+        if (siegeManager.isUnderSiege(owner)) {
+            Clan attacker = siegeManager.getAttacker(owner);
+            if (attacker != null && attacker.equals(playerClan)) {
+                return; // Savaşta saldıran klan açabilir
+            }
+        }
+        
+        // Klan bankası kontrolü (RitualInteractionListener'daki özel kontrol)
+        Block block = invLocation.getBlock();
+        if (block.hasMetadata("ClanBank")) {
+            // Klan bankası özel kontrolü RitualInteractionListener'da yapılıyor
+            return;
+        }
+        
+        // Sanal Bağlantı kontrolü (VirtualStorageListener'daki özel kontrol)
+        if (block.getType() == Material.ENDER_CHEST && playerClan != null) {
+            final Location finalInvLocation = invLocation;
+            Structure virtualLink = playerClan.getStructures().stream()
+                .filter(s -> s.getType() == Structure.Type.TELEPORTER && 
+                            s.getLocation().distance(finalInvLocation) <= 10)
+                .findFirst().orElse(null);
+            if (virtualLink != null) {
+                // Sanal Bağlantı kontrolü VirtualStorageListener'da yapılıyor
+                return;
+            }
+        }
+        
+        // Engelle
+        event.setCancelled(true);
+        player.sendMessage("§cBu sandık " + owner.getName() + " klanına ait! Önce kuşatma başlatmalısın.");
+    }
+    
+    // ========== KLAN ALANI OTOMATIK GENİŞLETME ==========
+    
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onFencePlace(BlockPlaceEvent event) {
+        Block block = event.getBlock();
+        
+        // Sadece OAK_FENCE kontrolü (Klan Çiti)
+        if (block.getType() != Material.OAK_FENCE) {
+            return;
+        }
+        
+        Player player = event.getPlayer();
+        
+        // Oyuncunun klanı var mı?
+        Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
+        if (playerClan == null) return; // Klan üyesi değil
+        
+        // Kristal var mı?
+        if (playerClan.getCrystalLocation() == null || !playerClan.hasCrystal()) {
+            return; // Kristal yok, genişletme yok
+        }
+        
+        Territory territory = playerClan.getTerritory();
+        if (territory == null) return;
+        
+        Location crystalLoc = playerClan.getCrystalLocation();
+        Location fenceLoc = block.getLocation();
+        
+        // Aynı dünya kontrolü
+        if (!crystalLoc.getWorld().equals(fenceLoc.getWorld())) {
+            return;
+        }
+        
+        // Çit kristalden ne kadar uzakta?
+        double distanceToCrystal = crystalLoc.distance(fenceLoc);
+        int currentRadius = territory.getRadius();
+        
+        // Çit mevcut sınırın dışındaysa ve kristalden 50 bloktan fazla uzaktaysa genişlet
+        if (distanceToCrystal > currentRadius && distanceToCrystal > 50) {
+            // Yeni radius: Çitin kristale olan mesafesi + 5 blok buffer
+            int newRadius = (int) Math.ceil(distanceToCrystal) + 5;
+            int expandAmount = newRadius - currentRadius;
+            
+            // Maksimum genişletme limiti (anti-abuse)
+            if (expandAmount > 0 && expandAmount <= 20) {
+                territory.expand(expandAmount);
+                territoryManager.setCacheDirty();
+                
+                // Oyuncuya bilgi ver (spam önleme için cooldown)
+                long now = System.currentTimeMillis();
+                Long lastExpandTime = lastTerritoryExpandTime.get(player.getUniqueId());
+                if (lastExpandTime == null || (now - lastExpandTime) > 5000L) { // 5 saniye cooldown
+                    player.sendMessage("§aKlan alanı genişletildi! Yeni radius: §e" + territory.getRadius() + " blok");
+                    lastTerritoryExpandTime.put(player.getUniqueId(), now);
+                }
+            }
+        }
+    }
+    
+    // Genişletme mesajı cooldown
+    private final Map<UUID, Long> lastTerritoryExpandTime = new HashMap<>();
 
     @EventHandler(priority = org.bukkit.event.EventPriority.NORMAL)
     public void onFuelAdd(PlayerInteractEvent event) {

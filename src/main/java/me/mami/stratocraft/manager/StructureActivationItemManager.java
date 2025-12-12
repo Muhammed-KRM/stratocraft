@@ -63,7 +63,8 @@ public class StructureActivationItemManager {
      */
     private void registerCustomActivationItem(Structure.Type type, String customItemId) {
         if (type == null || customItemId == null) return;
-        structureToItem.put(type, null); // Normal item yok
+        // ConcurrentHashMap null value kabul etmez, bu yüzden structureToItem'a eklemiyoruz
+        // Sadece customItemToStructure'a ekliyoruz
         customItemToStructure.put(customItemId, type);
     }
     

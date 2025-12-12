@@ -358,15 +358,27 @@ public void onBreak(BlockBreakEvent event) {
 - ❌ `InventoryOpenEvent` handler yok
 - ❌ Sandık açma koruması yok
 - ⚠️ Sadece blok kırma koruması var
+- ⚠️ Sadece klan bankası için özel kontrol var (`RitualInteractionListener.java:1118-1144`)
 
 **Sorun:**
 - Klan dışı oyuncular sandıkları açabiliyor (koruma yok)
 - Savaş durumunda da kontrol yok
+- Normal sandıklar (CHEST, TRAPPED_CHEST) korunmuyor
+
+**Mevcut Kısmi Korumalar:**
+- ✅ Klan Bankası: `RitualInteractionListener.java`'da shift+sağ tık ile özel kontrol var
+- ✅ Virtual Storage: `VirtualStorageListener.java`'da sadece ENDER_CHEST kontrolü var
 
 **Öneri:**
 - `InventoryOpenEvent` ile sandık açma koruması eklenmeli
 - `TerritoryListener.java`'ya eklenebilir
 - Aynı mantık: Klan üyesi değilse engelle, savaş durumunda izin ver
+- Kontrol edilmesi gereken sandık tipleri:
+  - `Material.CHEST`
+  - `Material.TRAPPED_CHEST`
+  - `Material.ENDER_CHEST` (sadece klan bankası değilse)
+  - `Material.BARREL`
+  - `Material.SHULKER_BOX` (ve tüm varyantları)
 
 ### 6.3. Diğer Korumalar
 
@@ -376,7 +388,7 @@ public void onBreak(BlockBreakEvent event) {
 - ✅ Su/Lav akışı koruması
 - ✅ TNT/Patlama koruması
 
-### 6.3. Oyuncu Saldırı Koruması
+### 6.4. Oyuncu Saldırı Koruması
 
 **Nasıl Çalışıyor:**
 1. **Güç bazlı koruma** (%40 eşik)

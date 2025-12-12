@@ -48,9 +48,9 @@ public class DisasterManager {
     private DisasterArenaManager arenaManager;
     
     private Disaster activeDisaster = null;
-    // ✅ PERFORMANS: lastDisasterTime başlangıçta 0 olmalı (hiç felaket spawn olmadıysa)
-    // Eğer System.currentTimeMillis() kullanırsak, elapsed çok büyük olur ve mod işlemi yanlış sonuç verir
-    private long lastDisasterTime = 0; // Başlangıçta 0, ilk felaket spawn olduğunda güncellenir
+    // ✅ lastDisasterTime başlangıçta şu anki zaman olmalı (sayaç donmasını önlemek için)
+    // İlk felaket spawn olduğunda güncellenir
+    private long lastDisasterTime = System.currentTimeMillis(); // Başlangıçta şu anki zaman
     
     // Mini felaket sistemi
     private long lastMiniDisasterTime = System.currentTimeMillis();
@@ -88,7 +88,7 @@ public class DisasterManager {
     /**
      * Felaket durumunu yükle (DataManager'dan çağrılır)
      * Not: Entity'ler kaydedilemediği için, sadece süre kontrolü yapılır
-     * Eğer süre dolmamışsa felaket iptal edilir (entity olmadan devam edemez)
+     * Entity olmadan felaket devam edemez, bu yüzden sadece log bırakıyoruz
      */
     public void loadDisasterState(DisasterState state) {
         if (state == null) return;
@@ -99,17 +99,19 @@ public class DisasterManager {
         
         if (remaining <= 0) {
             // Süre dolmuş, felaket bitti
-            plugin.getLogger().info("Kaydedilmiş felaket süresi dolmuş, iptal edildi.");
+            plugin.getLogger().info("Kaydedilmiş felaket süresi dolmuş: " + state.type.name());
+            // lastDisasterTime'ı güncelle (süre dolmuş felaket için)
+            lastDisasterTime = state.startTime + state.duration;
             return;
         }
         
-        // Entity'ler kaydedilemediği için felaketi iptal et
-        // (Entity olmadan felaket devam edemez)
-        plugin.getLogger().warning("Aktif felaket tespit edildi ancak entity'ler kaydedilemediği için iptal edildi: " + 
+        // Entity'ler kaydedilemediği için felaket devam edemez
+        // Sadece bilgi log'u bırak, zorla iptal etme
+        plugin.getLogger().info("Aktif felaket tespit edildi ancak entity'ler kaydedilemediği için devam edemiyor: " + 
             state.type.name() + " (Kalan süre: " + (remaining / 1000) + " saniye)");
         
-        // İsteğe bağlı: Felaketi yeniden başlat (ancak bu karmaşık olabilir)
-        // Şimdilik sadece iptal ediyoruz
+        // lastDisasterTime'ı güncelle (felaket başladığı zaman)
+        lastDisasterTime = state.startTime;
     }
     
     /**
@@ -833,61 +835,91 @@ public class DisasterManager {
     }
     
     /**
-     * HUD için countdown bilgisini al
+     * HUD için countdown bilgisini al (geriye uyumluluk için - sadece en yakın felaketi döndürür)
      */
     public String[] getCountdownInfo() {
+        CountdownInfo[] allInfo = getAllCountdownInfo();
+        if (allInfo == null || allInfo.length == 0) {
+            return null;
+        }
+        
+        // En yakın felaketi döndür (geriye uyumluluk için)
+        CountdownInfo nearest = allInfo[0];
+        for (CountdownInfo info : allInfo) {
+            if (info.remainingTime < nearest.remainingTime) {
+                nearest = info;
+            }
+        }
+        
+        return new String[]{"Seviye " + nearest.level, formatTime(nearest.remainingTime)};
+    }
+    
+    /**
+     * Tüm seviyeler için countdown bilgisini al (3 ayrı sayaç)
+     */
+    public static class CountdownInfo {
+        public final int level;
+        public final long remainingTime;
+        public final String levelName;
+        
+        public CountdownInfo(int level, long remainingTime, String levelName) {
+            this.level = level;
+            this.remainingTime = remainingTime;
+            this.levelName = levelName;
+        }
+    }
+    
+    /**
+     * Tüm seviyeler için countdown bilgisini al (3 ayrı sayaç)
+     */
+    public CountdownInfo[] getAllCountdownInfo() {
         if (activeDisaster != null && !activeDisaster.isDead()) {
             return null; // Aktif felaket varsa countdown gösterme
         }
         
         long elapsed = System.currentTimeMillis() - lastDisasterTime;
-        long nextSpawnTime = Long.MAX_VALUE;
-        int nextLevel = 0;
+        CountdownInfo[] infos = new CountdownInfo[3];
         
         for (int level = 1; level <= 3; level++) {
             long interval;
+            String levelName;
             switch (level) {
-                case 1: interval = LEVEL_1_INTERVAL; break;
-                case 2: interval = LEVEL_2_INTERVAL; break;
-                case 3: interval = LEVEL_3_INTERVAL; break;
-                default: continue;
+                case 1: 
+                    interval = LEVEL_1_INTERVAL;
+                    levelName = "Günlük";
+                    break;
+                case 2: 
+                    interval = LEVEL_2_INTERVAL;
+                    levelName = "3 Günlük";
+                    break;
+                case 3: 
+                    interval = LEVEL_3_INTERVAL;
+                    levelName = "Haftalık";
+                    break;
+                default: 
+                    continue;
             }
             
             long remaining = interval - elapsed;
-            if (remaining > 0 && remaining < nextSpawnTime) {
-                nextSpawnTime = remaining;
-                nextLevel = level;
-            }
-        }
-        
-        if (nextSpawnTime == Long.MAX_VALUE || nextSpawnTime <= 0) {
-            // ✅ Eğer hiç felaket spawn olmadıysa veya tüm interval'ler geçmişse
-            long minInterval = Math.min(LEVEL_1_INTERVAL, Math.min(LEVEL_2_INTERVAL, LEVEL_3_INTERVAL));
             
-            // ✅ lastDisasterTime 0 ise (hiç felaket spawn olmadıysa), en kısa interval'i göster
-            if (lastDisasterTime == 0) {
-                nextSpawnTime = minInterval;
-            } else {
-                // Mod işlemi yap (elapsed çok büyükse bile doğru sonuç verir)
-                long timeSinceLast = elapsed % minInterval;
-                nextSpawnTime = minInterval - timeSinceLast;
-                
-                // ✅ Eğer nextSpawnTime çok büyükse (mod işlemi yanlış sonuç vermişse), sıfırla
-                if (nextSpawnTime > minInterval || nextSpawnTime < 0) {
-                    nextSpawnTime = minInterval;
+            // Eğer süre geçmişse, mod işlemi yap (döngüsel sayaç)
+            if (remaining <= 0) {
+                remaining = interval - (elapsed % interval);
+                // Eğer mod işlemi sonucu 0 ise, interval'i göster
+                if (remaining == 0) {
+                    remaining = interval;
                 }
             }
-            nextLevel = 1;
+            
+            // Negatif değer kontrolü
+            if (remaining < 0 || remaining > interval * 2) {
+                remaining = interval;
+            }
+            
+            infos[level - 1] = new CountdownInfo(level, remaining, levelName);
         }
         
-        // ✅ Negatif değer kontrolü (güvenlik)
-        if (nextSpawnTime < 0 || nextSpawnTime > LEVEL_3_INTERVAL * 2) {
-            // Çok büyük veya negatif değer, varsayılan değer kullan
-            nextSpawnTime = LEVEL_1_INTERVAL; // Varsayılan: 1 gün
-        }
-        
-        String timeText = formatTime(nextSpawnTime);
-        return new String[]{"Seviye " + nextLevel, timeText};
+        return infos;
     }
     
     /**
@@ -1135,6 +1167,40 @@ public class DisasterManager {
             }
             
             long currentElapsed = System.currentTimeMillis() - lastDisasterTime;
+            
+            // ✅ Sayaç bitince otomatik spawn kontrolü
+            for (int level = 1; level <= 3; level++) {
+                long interval;
+                switch (level) {
+                    case 1: interval = LEVEL_1_INTERVAL; break;
+                    case 2: interval = LEVEL_2_INTERVAL; break;
+                    case 3: interval = LEVEL_3_INTERVAL; break;
+                    default: continue;
+                }
+                
+                long remaining = interval - currentElapsed;
+                
+                // ✅ Sayaç bitti mi? (0 veya negatif ise)
+                if (remaining <= 0) {
+                    // Sayaç bitti, otomatik spawn yap
+                    if (shouldSpawnDisaster(level)) {
+                        checkAutoSpawn(); // Otomatik spawn kontrolü
+                        return; // Spawn yapıldı, çık
+                    }
+                }
+                
+                // Görsel uyarı sistemi (2 dakika önce)
+                if (remaining > 0 && remaining <= WARNING_INTERVAL) {
+                    // Rastgele bir felaket tipi seç (gerçek felaket tipi bilinmiyor)
+                    Disaster.Type[] allTypes = Disaster.Type.values();
+                    if (allTypes.length > 0) {
+                        Disaster.Type warningType = allTypes[new Random().nextInt(allTypes.length)];
+                        showVisualWarning(warningType, remaining);
+                    }
+                }
+            }
+            
+            // ✅ En yakın spawn zamanını bul (uyarı sistemi için)
             long currentNextSpawnTime = Long.MAX_VALUE;
             int currentNextLevel = 0;
             
@@ -1151,16 +1217,6 @@ public class DisasterManager {
                 if (remaining > 0 && remaining < currentNextSpawnTime) {
                     currentNextSpawnTime = remaining;
                     currentNextLevel = level;
-                }
-                
-                // Görsel uyarı sistemi (2 dakika önce)
-                if (remaining > 0 && remaining <= WARNING_INTERVAL) {
-                    // Rastgele bir felaket tipi seç (gerçek felaket tipi bilinmiyor)
-                    Disaster.Type[] allTypes = Disaster.Type.values();
-                    if (allTypes.length > 0) {
-                        Disaster.Type warningType = allTypes[new Random().nextInt(allTypes.length)];
-                        showVisualWarning(warningType, remaining);
-                    }
                 }
             }
             
@@ -1183,9 +1239,7 @@ public class DisasterManager {
                     lastWarningTime = now;
                 }
             }
-            
-            // ✅ Scoreboard kodu kaldırıldı - Artık HUDManager'daki bilgi panelinde gösteriliyor
-        }, 0L, 20L); // Her saniye
+        }, 20L, 20L); // Her saniye güncelle
     }
     
     // Getter/Setter

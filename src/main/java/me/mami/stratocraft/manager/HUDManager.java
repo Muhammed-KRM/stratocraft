@@ -159,14 +159,10 @@ public class HUDManager {
             lines.addAll(activeDisasterInfo);
             lines.add(new HUDLine("§7")); // Boş satır
         } else {
-            // Aktif felaket yoksa countdown göster
-            HUDLine disaster = getDisasterCountdown();
-            if (disaster != null) {
-                lines.add(disaster);
-                String[] countdownInfo = disasterManager.getCountdownInfo();
-                if (countdownInfo != null && countdownInfo.length > 1) {
-                    lines.add(new HUDLine("§7Kalan: §e" + countdownInfo[1]));
-                }
+            // Aktif felaket yoksa 3 ayrı countdown göster
+            List<HUDLine> countdownLines = getDisasterCountdowns();
+            if (countdownLines != null && !countdownLines.isEmpty()) {
+                lines.addAll(countdownLines);
                 lines.add(new HUDLine("§7")); // Boş satır
             }
         }
@@ -410,7 +406,7 @@ public class HUDManager {
     }
     
     /**
-     * Felaket sayacı bilgisi
+     * Felaket sayacı bilgisi (geriye uyumluluk için)
      */
     private HUDLine getDisasterCountdown() {
         if (disasterManager == null) return null;
@@ -419,6 +415,35 @@ public class HUDManager {
         if (countdownInfo == null) return null;
         
         return new HUDLine("§e⏰ Sonraki: §6" + countdownInfo[0]);
+    }
+    
+    /**
+     * Tüm felaket sayaçları bilgisi (3 ayrı sayaç)
+     */
+    private List<HUDLine> getDisasterCountdowns() {
+        if (disasterManager == null) return null;
+        
+        DisasterManager.CountdownInfo[] allInfo = disasterManager.getAllCountdownInfo();
+        if (allInfo == null || allInfo.length == 0) {
+            return null;
+        }
+        
+        List<HUDLine> lines = new ArrayList<>();
+        lines.add(new HUDLine("§e§l⏰ FELAKET SAYAÇLARI"));
+        
+        // 3 ayrı sayaç göster
+        for (DisasterManager.CountdownInfo info : allInfo) {
+            if (info == null) continue;
+            
+            String timeText = formatTime(info.remainingTime);
+            String color = info.remainingTime <= 3600000L ? "§c" : // 1 saatten azsa kırmızı
+                          info.remainingTime <= 86400000L ? "§e" : // 1 günden azsa sarı
+                          "§a"; // Diğer durumlarda yeşil
+            
+            lines.add(new HUDLine("§7" + info.levelName + ": " + color + timeText));
+        }
+        
+        return lines;
     }
     
     /**

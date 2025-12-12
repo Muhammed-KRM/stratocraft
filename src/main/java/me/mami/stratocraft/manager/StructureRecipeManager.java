@@ -144,43 +144,49 @@ public class StructureRecipeManager {
         BlockRecipe missionGuildRecipe = BlockRecipe.builder("Görev Loncası")
             .setCore(Material.END_CRYSTAL)
             .addBlockBelow(Material.COBBLESTONE) // Altında kırıktaş
-            .addBlockAbove(Material.LECTERN); // Üstünde kürsü
-        registerCodeRecipe(Structure.Type.PERSONAL_MISSION_GUILD, missionGuildRecipe.build());
+            .addBlockAbove(Material.LECTERN) // Üstünde kürsü
+            .build();
+        registerCodeRecipe(Structure.Type.PERSONAL_MISSION_GUILD, missionGuildRecipe);
         
         // 2. Klan Bankası (CLAN_BANK)
         BlockRecipe bankRecipe = BlockRecipe.builder("Klan Bankası")
             .setCore(Material.END_CRYSTAL)
             .addBlockBelow(Material.GOLD_BLOCK) // Altında altın blok
-            .addBlockAbove(Material.CHEST); // Üstünde sandık
-        registerCodeRecipe(Structure.Type.CLAN_BANK, bankRecipe.build());
+            .addBlockAbove(Material.CHEST) // Üstünde sandık
+            .build();
+        registerCodeRecipe(Structure.Type.CLAN_BANK, bankRecipe);
         
         // 3. Kontrat Bürosu (CONTRACT_OFFICE)
         BlockRecipe contractOfficeRecipe = BlockRecipe.builder("Kontrat Bürosu")
             .setCore(Material.END_CRYSTAL)
             .addBlockBelow(Material.STONE) // Altında taş
-            .addBlockAbove(Material.CRAFTING_TABLE); // Üstünde masa
-        registerCodeRecipe(Structure.Type.CONTRACT_OFFICE, contractOfficeRecipe.build());
+            .addBlockAbove(Material.CRAFTING_TABLE) // Üstünde masa
+            .build();
+        registerCodeRecipe(Structure.Type.CONTRACT_OFFICE, contractOfficeRecipe);
         
         // 4. Klan Görev Loncası (CLAN_MISSION_GUILD)
         BlockRecipe clanMissionGuildRecipe = BlockRecipe.builder("Klan Görev Loncası")
             .setCore(Material.END_CRYSTAL)
             .addBlockBelow(Material.EMERALD_BLOCK) // Altında zümrüt blok
-            .addBlockAbove(Material.LECTERN); // Üstünde kürsü
-        registerCodeRecipe(Structure.Type.CLAN_MISSION_GUILD, clanMissionGuildRecipe.build());
+            .addBlockAbove(Material.LECTERN) // Üstünde kürsü
+            .build();
+        registerCodeRecipe(Structure.Type.CLAN_MISSION_GUILD, clanMissionGuildRecipe);
         
         // 5. Market (MARKET_PLACE)
         BlockRecipe marketRecipe = BlockRecipe.builder("Market")
             .setCore(Material.END_CRYSTAL)
             .addBlockBelow(Material.COAL_BLOCK) // Altında kömür blok
-            .addBlockAbove(Material.CHEST); // Üstünde sandık
-        registerCodeRecipe(Structure.Type.MARKET_PLACE, marketRecipe.build());
+            .addBlockAbove(Material.CHEST) // Üstünde sandık
+            .build();
+        registerCodeRecipe(Structure.Type.MARKET_PLACE, marketRecipe);
         
         // 6. Tarif Kütüphanesi (RECIPE_LIBRARY)
         BlockRecipe recipeLibraryRecipe = BlockRecipe.builder("Tarif Kütüphanesi")
             .setCore(Material.END_CRYSTAL)
             .addBlockBelow(Material.BOOKSHELF) // Altında kitaplık
-            .addBlockAbove(Material.LECTERN); // Üstünde kürsü
-        registerCodeRecipe(Structure.Type.RECIPE_LIBRARY, recipeLibraryRecipe.build());
+            .addBlockAbove(Material.LECTERN) // Üstünde kürsü
+            .build();
+        registerCodeRecipe(Structure.Type.RECIPE_LIBRARY, recipeLibraryRecipe);
         
         // Karmaşık yapılar - Şema tarifleri (mevcut sistem)
         registerSchematicRecipe(Structure.Type.ALCHEMY_TOWER, "alchemy_tower");

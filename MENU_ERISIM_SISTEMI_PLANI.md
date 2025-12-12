@@ -664,3 +664,5 @@ Bu plan, tüm menülerin komut yerine item/yapı ile erişilebilmesini sağlar. 
 **Versiyon:** 1.0
 
 
+
+

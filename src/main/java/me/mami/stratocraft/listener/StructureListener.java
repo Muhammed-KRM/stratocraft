@@ -1,11 +1,5 @@
 package me.mami.stratocraft.listener;
 
-import me.mami.stratocraft.manager.ClanManager;
-import me.mami.stratocraft.manager.ItemManager;
-import me.mami.stratocraft.manager.ResearchManager;
-import me.mami.stratocraft.manager.StructureValidator;
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.model.Structure;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -16,6 +10,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
+
+import me.mami.stratocraft.manager.ClanManager;
+import me.mami.stratocraft.manager.ItemManager;
+import me.mami.stratocraft.manager.ResearchManager;
+import me.mami.stratocraft.manager.StructureValidator;
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.Structure;
 
 public class StructureListener implements Listener {
     private final ClanManager clanManager;
@@ -296,7 +297,7 @@ public class StructureListener implements Listener {
         b.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, loc, 30, 1.0, 1.0, 1.0, 0.1);
         
         // Işık efekti (firework)
-        b.getWorld().spawnParticle(Particle.FIREWORK, loc, 20, 0.5, 0.5, 0.5, 0.1);
+        b.getWorld().spawnParticle(Particle.TOTEM, loc, 20, 0.5, 0.5, 0.5, 0.1);
         
         // Başarı mesajı (başlık)
         p.sendTitle("§a§l✓ BAŞARILI", "§7" + name + " aktif edildi!", 10, 40, 10);

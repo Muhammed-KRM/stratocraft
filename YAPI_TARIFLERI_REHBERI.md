@@ -409,3 +409,5 @@ Bu yapılar **her yere yapılabilir**, klan zorunlu değildir.
 **Versiyon:** 1.0
 
 
+
+
