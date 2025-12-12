@@ -225,6 +225,7 @@ public class ItemManager {
     public static ItemStack TITAN_GRAPPLE;
     public static ItemStack TRAP_CORE;
     public static ItemStack TAMING_CORE; // Eğitim Çekirdeği
+    public static ItemStack STRUCTURE_CORE; // Yapı Çekirdeği
     public static ItemStack SUMMON_CORE; // Çağırma Çekirdeği (Boss çağırma için)
     public static ItemStack BREEDING_CORE; // Üreme Çekirdeği
     public static ItemStack GENDER_SCANNER; // Cinsiyet Ayırıcı
@@ -637,6 +638,12 @@ public class ItemManager {
         TAMING_CORE = create(Material.HEART_OF_THE_SEA, "TAMING_CORE", "§a§lEğitim Çekirdeği");
         SUMMON_CORE = create(Material.END_CRYSTAL, "SUMMON_CORE", "§5§lÇağırma Çekirdeği");
         BREEDING_CORE = create(Material.BEACON, "BREEDING_CORE", "§d§lÜreme Çekirdeği");
+        STRUCTURE_CORE = create(Material.END_CRYSTAL, "STRUCTURE_CORE", "§e§lYapı Çekirdeği",
+            java.util.Arrays.asList(
+                "§7Yapıların temel taşı",
+                "§7Yerleştir ve etrafına yapıyı kur",
+                "§7Aktivasyon item'ı ile aktifleştir"
+            ));
         GENDER_SCANNER = create(Material.SPYGLASS, "GENDER_SCANNER", "§bCinsiyet Ayırıcı");
         CASUSLUK_DURBUN = create(Material.SPYGLASS, "CASUSLUK_DURBUN", "§eCasusluk Dürbünü");
         PERSONAL_TERMINAL = create(Material.COMPASS, "PERSONAL_TERMINAL", "§e§lKişisel Yönetim Terminali",

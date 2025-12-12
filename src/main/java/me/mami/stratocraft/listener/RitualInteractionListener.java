@@ -1197,10 +1197,14 @@ public class RitualInteractionListener implements Listener {
     }
     
     // ========== KLAN İSTATİSTİKLERİ: "Bilgi Taşı" (KOLAY) ==========
-    // ✅ DÜZELTME: Pusula ile sol tık ışınlanmayı engelle
+    /**
+     * ✅ DÜZELTME: Pusula ile sol tık ışınlanmayı engelle
+     * Sadece özel item'larda (PERSONAL_TERMINAL gibi) özel özellikler çalışmalı
+     * Normal pusulalarda Minecraft'ın lodestone sistemi çalışmamalı
+     */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onCompassTeleportPrevent(PlayerInteractEvent event) {
-        // Sol tık kontrolü (Minecraft'ın lodestone pusula sistemi)
+        // Sol tık kontrolü
         if (event.getAction() != Action.LEFT_CLICK_AIR && event.getAction() != Action.LEFT_CLICK_BLOCK) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
         
@@ -1208,20 +1212,26 @@ public class RitualInteractionListener implements Listener {
         ItemStack handItem = p.getInventory().getItemInMainHand();
         if (handItem == null || handItem.getType() != Material.COMPASS) return;
         
-        // Personal Terminal kontrolü - eğer Personal Terminal ise bu listener'ı atla
+        // ✅ Özel item kontrolü - sadece özel item'larda özel özellikler çalışmalı
+        // Personal Terminal → Menü açma (başka listener'da işlenecek)
         if (me.mami.stratocraft.manager.ItemManager.isCustomItem(handItem, "PERSONAL_TERMINAL")) {
             return; // Personal Terminal başka listener'da işlenecek
         }
         
-        // ✅ DÜZELTME: Normal pusula ile sol tık ışınlanmayı engelle
-        // Minecraft'ın lodestone pusula sistemi otomatik çalışıyor, bunu engellemek için event'i iptal et
+        // ✅ Normal pusula → Işınlanmayı engelle (Minecraft'ın lodestone sistemi)
+        // Eğer başka özel bir item varsa (örneğin TELEPORT_COMPASS), burada kontrol edilebilir
+        // Şimdilik sadece PERSONAL_TERMINAL özel item olarak kabul ediliyor
         event.setCancelled(true);
     }
     
-    // ✅ DÜZELTME: Pusula ile sağ tık ışınlanmayı engelle (Minecraft'ın lodestone pusula sistemi)
+    /**
+     * ✅ DÜZELTME: Pusula ile sağ tık ışınlanmayı engelle
+     * Sadece özel item'larda (PERSONAL_TERMINAL gibi) özel özellikler çalışmalı
+     * Normal pusulalarda Minecraft'ın lodestone sistemi çalışmamalı
+     */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onCompassRightClickPrevent(PlayerInteractEvent event) {
-        // Sağ tık kontrolü (Minecraft'ın lodestone pusula sistemi)
+        // Sağ tık kontrolü
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
         
@@ -1229,7 +1239,8 @@ public class RitualInteractionListener implements Listener {
         ItemStack handItem = p.getInventory().getItemInMainHand();
         if (handItem == null || handItem.getType() != Material.COMPASS) return;
         
-        // Personal Terminal kontrolü - eğer Personal Terminal ise bu listener'ı atla
+        // ✅ Özel item kontrolü - sadece özel item'larda özel özellikler çalışmalı
+        // Personal Terminal → Menü açma (başka listener'da işlenecek)
         if (me.mami.stratocraft.manager.ItemManager.isCustomItem(handItem, "PERSONAL_TERMINAL")) {
             return; // Personal Terminal başka listener'da işlenecek
         }
@@ -1239,8 +1250,9 @@ public class RitualInteractionListener implements Listener {
             return; // onClanStatsView'da işlenecek
         }
         
-        // ✅ DÜZELTME: Normal pusula ile sağ tık ışınlanmayı engelle
-        // Minecraft'ın lodestone pusula sistemi otomatik çalışıyor, bunu engellemek için event'i iptal et
+        // ✅ Normal pusula → Işınlanmayı engelle (Minecraft'ın lodestone sistemi)
+        // Eğer başka özel bir item varsa (örneğin TELEPORT_COMPASS), burada kontrol edilebilir
+        // Şimdilik sadece PERSONAL_TERMINAL özel item olarak kabul ediliyor
         event.setCancelled(true);
     }
     
@@ -1267,6 +1279,14 @@ public class RitualInteractionListener implements Listener {
         // ✅ DÜZELTME: Normal pusula ile ışınlanmayı engelle (sadece özel item'lere güç ver)
         // Eğer özel bir item değilse, sadece bilgi göster (ışınlanma yok)
         // Minecraft'ın lodestone pusula sistemi otomatik çalışıyor, bunu engellemek için event'i iptal et
+        
+        // ✅ Özel item kontrolü - sadece özel item'larda özel özellikler çalışmalı
+        // Personal Terminal → Menü açma (başka listener'da işlenecek)
+        if (me.mami.stratocraft.manager.ItemManager.isCustomItem(handItem, "PERSONAL_TERMINAL")) {
+            return; // Personal Terminal başka listener'da işlenecek
+        }
+        
+        // Normal pusula → Işınlanmayı engelle
         event.setCancelled(true);
         
         // Oyuncunun klanını bul (kendi klanı veya yakındaki bir klan)

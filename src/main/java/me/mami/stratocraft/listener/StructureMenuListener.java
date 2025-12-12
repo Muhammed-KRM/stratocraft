@@ -256,8 +256,56 @@ public class StructureMenuListener implements Listener {
                 player.openInventory(me.mami.stratocraft.gui.RecipeMenu.createRecipeLibraryMenu(player, 1));
                 break;
                 
+            case ALCHEMY_TOWER:
+            case TECTONIC_STABILIZER:
+            case GLOBAL_MARKET_GATE:
+            case POISON_REACTOR:
+            case AUTO_TURRET:
+            case HEALING_BEACON:
+            case XP_BANK:
+            case TELEPORTER:
+            case AUTO_DRILL:
+            case MAG_RAIL:
+            case FOOD_SILO:
+            case OIL_REFINERY:
+            case WEATHER_MACHINE:
+            case CROP_ACCELERATOR:
+            case MOB_GRINDER:
+            case INVISIBILITY_CLOAK:
+            case ARMORY:
+            case LIBRARY:
+            case WALL_GENERATOR:
+            case SIEGE_FACTORY:
+            case GRAVITY_WELL:
+            case LAVA_TRENCHER:
+            case WATCHTOWER:
+            case DRONE_STATION:
+            case WARNING_SIGN:
+            case CORE:
+                // ✅ DÜZELTME: Bu yapılar için genel yapı menüsü aç
+                // Klan yapıları için kontrol
+                clan = clanManager.getClanByPlayer(player.getUniqueId());
+                if (clan == null) {
+                    player.sendMessage("§cBir klana üye değilsiniz!");
+                    return;
+                }
+                owner = territoryManager.getTerritoryOwner(structure.getLocation());
+                if (owner == null || !owner.equals(clan)) {
+                    player.sendMessage("§cBu yapıya erişim yetkiniz yok!");
+                    return;
+                }
+                // Genel yapı detay menüsü (ClanStructureMenu'dan)
+                if (plugin.getClanStructureMenu() != null) {
+                    plugin.getClanStructureMenu().openStructureDetailMenu(player, structure);
+                } else {
+                    player.sendMessage("§e" + structure.getType().name() + " yapısı aktif!");
+                    player.sendMessage("§7Yapı seviyesi: " + structure.getLevel());
+                }
+                break;
+                
             default:
                 // Diğer yapı tipleri için menü yok
+                player.sendMessage("§eBu yapı için menü bulunmuyor.");
                 break;
         }
         

@@ -91,6 +91,11 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.DisasterArenaManager disasterArenaManager;
     private me.mami.stratocraft.manager.TaskManager taskManager;
     
+    // Yeni Yapı Sistemi Manager'ları
+    private me.mami.stratocraft.manager.StructureCoreManager structureCoreManager;
+    private me.mami.stratocraft.manager.StructureRecipeManager structureRecipeManager;
+    private me.mami.stratocraft.manager.StructureActivationItemManager structureActivationItemManager;
+    
     public me.mami.stratocraft.listener.SpecialWeaponListener getSpecialWeaponListener() {
         return specialWeaponListener;
     }
@@ -152,6 +157,11 @@ public class Main extends JavaPlugin {
         hudManager = new me.mami.stratocraft.manager.HUDManager(this);
         // TaskManager (Memory leak önleme için - diğer manager'lardan önce)
         taskManager = new me.mami.stratocraft.manager.TaskManager(this);
+        
+        // Yeni Yapı Sistemi Manager'ları
+        structureCoreManager = new me.mami.stratocraft.manager.StructureCoreManager(this);
+        structureActivationItemManager = new me.mami.stratocraft.manager.StructureActivationItemManager();
+        structureRecipeManager = new me.mami.stratocraft.manager.StructureRecipeManager(this);
         
         batteryParticleManager = new me.mami.stratocraft.manager.BatteryParticleManager(this);
         dataManager = new DataManager(this);
@@ -243,6 +253,10 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new StructureActivationListener(clanManager, territoryManager), this); // YAPI
                                                                                                                         // AKTİVASYONU
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.StructureMenuListener(this, clanManager, territoryManager), this); // YAPI MENÜLERİ
+        // Yeni Yapı Sistemi Listener'ı
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.StructureCoreListener(
+            this, structureCoreManager, structureRecipeManager, structureActivationItemManager, 
+            clanManager, territoryManager), this); // YAPI ÇEKİRDEĞİ SİSTEMİ
         Bukkit.getPluginManager().registerEvents(new SiegeListener(siegeManager, territoryManager), this);
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.EnderPearlListener(territoryManager), this);
         Bukkit.getPluginManager().registerEvents(new ScavengerListener(scavengerManager), this);
@@ -961,6 +975,18 @@ public class Main extends JavaPlugin {
 
     public TerritoryManager getTerritoryManager() {
         return territoryManager;
+    }
+    
+    public me.mami.stratocraft.manager.StructureCoreManager getStructureCoreManager() {
+        return structureCoreManager;
+    }
+    
+    public me.mami.stratocraft.manager.StructureRecipeManager getStructureRecipeManager() {
+        return structureRecipeManager;
+    }
+    
+    public me.mami.stratocraft.manager.StructureActivationItemManager getStructureActivationItemManager() {
+        return structureActivationItemManager;
     }
 
     public ContractManager getContractManager() {

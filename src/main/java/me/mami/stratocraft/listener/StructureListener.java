@@ -75,11 +75,15 @@ public class StructureListener implements Listener {
         else if (b.getType() == Material.PISTON) {
             if (checkRecipe(p, "TECTONIC_STABILIZER")) {
                 p.sendMessage("§7Yapı kontrol ediliyor...");
+                p.playSound(b.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 0.5f, 1.0f);
                 validator.validateAsync(b.getLocation(), "tectonic_stabilizer", (isValid) -> {
                     if (isValid) {
                         createStructure(p, clan, b, Structure.Type.TECTONIC_STABILIZER, "Tektonik Sabitleyici");
                     } else {
-                        p.sendMessage("§cYapı şemaya uymuyor! (tectonic_stabilizer.schem)");
+                        p.sendMessage("§c§l✗ Yapı şemaya uymuyor!");
+                        p.sendMessage("§7Lütfen §etectonic_stabilizer.schem §7şemasına uygun şekilde yapıyı kurun.");
+                        p.playSound(b.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                        b.getWorld().spawnParticle(Particle.VILLAGER_ANGRY, b.getLocation().add(0.5, 1, 0.5), 20, 0.5, 0.5, 0.5, 0.1);
                     }
                 });
             }
@@ -98,11 +102,15 @@ public class StructureListener implements Listener {
         else if (b.getType() == Material.ENDER_CHEST) {
             if (checkRecipe(p, "GLOBAL_MARKET_GATE")) {
                 p.sendMessage("§7Yapı kontrol ediliyor...");
+                p.playSound(b.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 0.5f, 1.0f);
                 validator.validateAsync(b.getLocation(), "market_gate", (isValid) -> {
                     if (isValid) {
                         createStructure(p, clan, b, Structure.Type.GLOBAL_MARKET_GATE, "Global Pazar");
                     } else {
-                        p.sendMessage("§cYapı şemaya uymuyor! (market_gate.schem)");
+                        p.sendMessage("§c§l✗ Yapı şemaya uymuyor!");
+                        p.sendMessage("§7Lütfen §emarket_gate.schem §7şemasına uygun şekilde yapıyı kurun.");
+                        p.playSound(b.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                        b.getWorld().spawnParticle(Particle.VILLAGER_ANGRY, b.getLocation().add(0.5, 1, 0.5), 20, 0.5, 0.5, 0.5, 0.1);
                     }
                 });
             }
@@ -113,11 +121,15 @@ public class StructureListener implements Listener {
             // Yeşil beacon ise zehir reaktörü
             if (checkRecipe(p, "POISON_REACTOR")) {
                 p.sendMessage("§7Yapı kontrol ediliyor...");
+                p.playSound(b.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 0.5f, 1.0f);
                 validator.validateAsync(b.getLocation(), "poison_reactor", (isValid) -> {
                     if (isValid) {
                         createStructure(p, clan, b, Structure.Type.POISON_REACTOR, "Zehir Reaktörü");
                     } else {
-                        p.sendMessage("§cYapı şemaya uymuyor! (poison_reactor.schem)");
+                        p.sendMessage("§c§l✗ Yapı şemaya uymuyor!");
+                        p.sendMessage("§7Lütfen §epoison_reactor.schem §7şemasına uygun şekilde yapıyı kurun.");
+                        p.playSound(b.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                        b.getWorld().spawnParticle(Particle.VILLAGER_ANGRY, b.getLocation().add(0.5, 1, 0.5), 20, 0.5, 0.5, 0.5, 0.1);
                     }
                 });
             }
@@ -139,6 +151,7 @@ public class StructureListener implements Listener {
                 
                 if (hasAncientGear && hasPiston) {
                     p.sendMessage("§7Yapı kontrol ediliyor...");
+                    p.playSound(b.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 0.5f, 1.0f);
                     validator.validateAsync(b.getLocation(), "auto_turret", (isValid) -> {
                         if (isValid) {
                             createStructure(p, clan, b, Structure.Type.AUTO_TURRET, "Otomatik Taret");
@@ -154,7 +167,10 @@ public class StructureListener implements Listener {
                                 offHand.setAmount(offHand.getAmount() - 1);
                             }
                         } else {
-                            p.sendMessage("§cYapı şemaya uymuyor! (auto_turret.schem)");
+                            p.sendMessage("§c§l✗ Yapı şemaya uymuyor!");
+                            p.sendMessage("§7Lütfen §eauto_turret.schem §7şemasına uygun şekilde yapıyı kurun.");
+                            p.playSound(b.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                            b.getWorld().spawnParticle(Particle.VILLAGER_ANGRY, b.getLocation().add(0.5, 1, 0.5), 20, 0.5, 0.5, 0.5, 0.1);
                         }
                     });
                 } else {
@@ -260,9 +276,30 @@ public class StructureListener implements Listener {
         consumeStructureCost(p, type);
         
         c.addStructure(new Structure(type, b.getLocation(), 1));
-        p.sendMessage("§a" + name + " aktif edildi!");
-        p.playSound(b.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1, 1);
-        b.getWorld().spawnParticle(Particle.END_ROD, b.getLocation().add(0.5, 1, 0.5), 50);
+        
+        // ✅ İYİLEŞTİRME: Daha belirgin efektler
+        org.bukkit.Location loc = b.getLocation().add(0.5, 1, 0.5);
+        
+        // Mesaj
+        p.sendMessage("§a§l✓ " + name + " başarıyla aktif edildi!");
+        p.sendMessage("§7Yapıya sağ tıklayarak menüyü açabilirsiniz.");
+        
+        // Ses efektleri
+        p.playSound(loc, Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.0f);
+        p.playSound(loc, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.2f);
+        p.playSound(loc, Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.5f);
+        
+        // Partikül efektleri (daha belirgin)
+        // Ana partikül patlaması
+        b.getWorld().spawnParticle(Particle.END_ROD, loc, 100, 1.5, 1.5, 1.5, 0.1);
+        b.getWorld().spawnParticle(Particle.TOTEM, loc, 50, 1.0, 1.0, 1.0, 0.05);
+        b.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, loc, 30, 1.0, 1.0, 1.0, 0.1);
+        
+        // Işık efekti (firework)
+        b.getWorld().spawnParticle(Particle.FIREWORK, loc, 20, 0.5, 0.5, 0.5, 0.1);
+        
+        // Başarı mesajı (başlık)
+        p.sendTitle("§a§l✓ BAŞARILI", "§7" + name + " aktif edildi!", 10, 40, 10);
     }
     
     private boolean checkStructureCost(Player p, Structure.Type type) {
