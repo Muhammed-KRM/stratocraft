@@ -60,7 +60,8 @@ public class ContractMenu implements Listener {
      * Kontrat oluşturma wizard durumu
      */
     private static class ContractWizardState {
-        Contract.ContractType type;
+        me.mami.stratocraft.enums.ContractType contractType; // Yeni enum
+        me.mami.stratocraft.enums.PenaltyType penaltyType; // Yeni enum
         Contract.ContractScope scope;
         double reward;
         double penalty;
@@ -72,7 +73,7 @@ public class ContractMenu implements Listener {
         int restrictedRadius;
         UUID nonAggressionTarget;
         String structureType;
-        int step = 0; // Wizard adımı (0 = tip seçimi, 1 = kapsam, 2 = ödül, 3 = ceza, 4 = süre, 5+ = tip'e özel)
+        int step = 0; // Wizard adımı (0 = kategori seçimi, 1 = kapsam, 2 = ödül, 3 = ceza tipi, 4 = ceza miktarı, 5 = süre, 6+ = tip'e özel)
         String waitingForInput = null; // Chat input bekleniyor mu? ("reward", "penalty", "days", "amount", "player", "location", "structure")
         Integer materialPage = 0; // Material seçim sayfası
         ContractTemplate selectedTemplate = null; // Seçilen şablon
@@ -83,7 +84,8 @@ public class ContractMenu implements Listener {
      */
     private static class ContractTemplate {
         String name;
-        Contract.ContractType type;
+        me.mami.stratocraft.enums.ContractType contractType; // Yeni enum
+        me.mami.stratocraft.enums.PenaltyType penaltyType; // Yeni enum
         Contract.ContractScope scope;
         double reward;
         double penalty;
@@ -292,31 +294,27 @@ public class ContractMenu implements Listener {
     }
     
     /**
-     * Kontrat tipi seçim menüsü
+     * Kontrat kategori seçim menüsü (YENİ: ContractType enum kullanır)
      */
     private void openTypeSelectionMenu(Player player) {
-        Inventory menu = Bukkit.createInventory(null, 27, "§6Kontrat Tipi Seç");
+        Inventory menu = Bukkit.createInventory(null, 27, "§6Kontrat Kategorisi Seç");
         
-        // Kontrat tipleri
-        Contract.ContractType[] types = {
-            Contract.ContractType.MATERIAL_DELIVERY,
-            Contract.ContractType.PLAYER_KILL,
-            Contract.ContractType.TERRITORY_RESTRICT,
-            Contract.ContractType.NON_AGGRESSION,
-            Contract.ContractType.BASE_PROTECTION,
-            Contract.ContractType.STRUCTURE_BUILD
+        // Yeni kontrat kategorileri
+        me.mami.stratocraft.enums.ContractType[] types = {
+            me.mami.stratocraft.enums.ContractType.RESOURCE_COLLECTION,
+            me.mami.stratocraft.enums.ContractType.CONSTRUCTION,
+            me.mami.stratocraft.enums.ContractType.COMBAT,
+            me.mami.stratocraft.enums.ContractType.TERRITORY
         };
         
         Material[] icons = {
-            Material.CHEST,
-            Material.DIAMOND_SWORD,
-            Material.BARRIER,
-            Material.SHIELD,
-            Material.BEACON,
-            Material.STRUCTURE_BLOCK
+            Material.CHEST,           // RESOURCE_COLLECTION
+            Material.STRUCTURE_BLOCK,  // CONSTRUCTION
+            Material.DIAMOND_SWORD,    // COMBAT
+            Material.BARRIER           // TERRITORY
         };
         
-        int[] slots = {10, 11, 12, 13, 14, 15};
+        int[] slots = {10, 12, 14, 16};
         
         for (int i = 0; i < types.length; i++) {
             menu.setItem(slots[i], createTypeButton(types[i], icons[i]));
@@ -330,9 +328,9 @@ public class ContractMenu implements Listener {
     }
     
     /**
-     * Kontrat tipi butonu oluştur
+     * Kontrat kategori butonu oluştur (YENİ: ContractType enum kullanır)
      */
-    private ItemStack createTypeButton(Contract.ContractType type, Material icon) {
+    private ItemStack createTypeButton(me.mami.stratocraft.enums.ContractType type, Material icon) {
         ItemStack item = new ItemStack(icon);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
@@ -340,7 +338,8 @@ public class ContractMenu implements Listener {
             meta.setLore(Arrays.asList(
                 "§7═══════════════════════",
                 "§7" + getContractTypeDescription(type),
-                "§7═══════════════════════"
+                "§7═══════════════════════",
+                "§aSol tıkla seç"
             ));
             item.setItemMeta(meta);
         }
@@ -348,23 +347,62 @@ public class ContractMenu implements Listener {
     }
     
     /**
-     * Kontrat tipi açıklaması
+     * Kontrat kategori açıklaması (YENİ: ContractType enum kullanır)
      */
-    private String getContractTypeDescription(Contract.ContractType type) {
+    private String getContractTypeDescription(me.mami.stratocraft.enums.ContractType type) {
+        if (type == null) return "Bilinmeyen";
+        switch (type) {
+            case RESOURCE_COLLECTION:
+                return "Kaynak toplama kontratları";
+            case CONSTRUCTION:
+                return "İnşaat kontratları";
+            case COMBAT:
+                return "Savaş kontratları (Öldürme, vurma)";
+            case TERRITORY:
+                return "Bölge kontratları (Gitme, gitmeme)";
+            default:
+                return "Bilinmeyen";
+        }
+    }
+    
+    /**
+     * Kontrat kategori ismi (YENİ: ContractType enum kullanır)
+     */
+    private String getContractTypeName(me.mami.stratocraft.enums.ContractType type) {
+        if (type == null) return "Bilinmeyen";
+        switch (type) {
+            case RESOURCE_COLLECTION:
+                return "Kaynak Toplama";
+            case CONSTRUCTION:
+                return "İnşaat";
+            case COMBAT:
+                return "Savaş";
+            case TERRITORY:
+                return "Bölge";
+            default:
+                return "Bilinmeyen";
+        }
+    }
+    
+    /**
+     * Eski Contract.ContractType için geriye uyumluluk (deprecated)
+     */
+    @Deprecated
+    private String getContractTypeName(Contract.ContractType type) {
         if (type == null) return "Bilinmeyen";
         switch (type) {
             case MATERIAL_DELIVERY:
-                return "Belirli bir malzemenin teslim edilmesi";
+                return "Malzeme Teslimi";
             case PLAYER_KILL:
-                return "Belirli bir oyuncunun öldürülmesi";
+                return "Oyuncu Öldürme";
             case TERRITORY_RESTRICT:
-                return "Belirli bölgelerde yasaklama";
+                return "Bölge Yasaklama";
             case NON_AGGRESSION:
-                return "Saldırmama anlaşması";
+                return "Saldırmama";
             case BASE_PROTECTION:
-                return "Base koruma sözleşmesi";
+                return "Base Koruma";
             case STRUCTURE_BUILD:
-                return "Belirli bir yapının inşa edilmesi";
+                return "Yapı İnşa";
             default:
                 return "Bilinmeyen";
         }
@@ -376,58 +414,54 @@ public class ContractMenu implements Listener {
     private ItemStack createContractItem(Contract contract) {
         if (contract == null) return new ItemStack(Material.BARRIER);
         
-        Material icon = getContractIcon(contract.getType());
+        // Yeni enum kullan
+        me.mami.stratocraft.enums.ContractType contractType = contract.getContractType();
+        Material icon = getContractIcon(contractType);
         ItemStack item = new ItemStack(icon);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return item;
         
-        meta.setDisplayName("§e" + getContractTypeName(contract.getType()));
+        meta.setDisplayName("§e" + getContractTypeName(contractType));
         
         List<String> lore = new ArrayList<>();
         lore.add("§7═══════════════════════");
         lore.add("§7Ödül: §a" + contract.getReward() + " Altın");
+        
+        // Ceza tipi bilgisi
+        me.mami.stratocraft.enums.PenaltyType penaltyType = contract.getPenaltyType();
+        if (penaltyType != null) {
+            lore.add("§7Ceza Tipi: §c" + getPenaltyTypeName(penaltyType));
+        }
         lore.add("§7Ceza: §c" + contract.getPenalty() + " Altın");
         lore.add("§7Süre: §e" + formatTime(contract.getDeadline()));
         
-        // Tip'e özel bilgiler
-        switch (contract.getType()) {
-            case MATERIAL_DELIVERY:
-                if (contract.getMaterial() != null) {
-                    lore.add("§7Malzeme: §e" + contract.getMaterial().name());
-                    lore.add("§7Miktar: §e" + contract.getAmount());
-                }
-                break;
-            case PLAYER_KILL:
-                if (contract.getTargetPlayer() != null) {
-                    OfflinePlayer target = Bukkit.getOfflinePlayer(contract.getTargetPlayer());
-                    lore.add("§7Hedef: §c" + (target.getName() != null ? target.getName() : "Bilinmeyen"));
-                }
-                break;
-            case TERRITORY_RESTRICT:
-                if (contract.getRestrictedAreas() != null && !contract.getRestrictedAreas().isEmpty()) {
-                    lore.add("§7Yasak Bölge: §e" + contract.getRestrictedAreas().size() + " bölge");
-                    lore.add("§7Yarıçap: §e" + contract.getRestrictedRadius() + " blok");
-                }
-                break;
-            case NON_AGGRESSION:
-                if (contract.getNonAggressionTarget() != null) {
-                    OfflinePlayer target = Bukkit.getOfflinePlayer(contract.getNonAggressionTarget());
-                    Clan targetClan = clanManager != null ? clanManager.getClanById(contract.getNonAggressionTarget()) : null;
-                    if (targetClan != null) {
-                        lore.add("§7Hedef: §eKlan: " + targetClan.getName());
-                    } else if (target.getName() != null) {
-                        lore.add("§7Hedef: §e" + target.getName());
+        // Tip'e özel bilgiler (yeni enum'lara göre)
+        if (contractType != null) {
+            switch (contractType) {
+                case RESOURCE_COLLECTION:
+                    if (contract.getMaterial() != null) {
+                        lore.add("§7Malzeme: §e" + contract.getMaterial().name());
+                        lore.add("§7Miktar: §e" + contract.getAmount());
                     }
-                }
-                break;
-            case BASE_PROTECTION:
-                lore.add("§7Base Koruma Sözleşmesi");
-                break;
-            case STRUCTURE_BUILD:
-                if (contract.getStructureType() != null) {
-                    lore.add("§7Yapı Tipi: §e" + contract.getStructureType());
-                }
-                break;
+                    break;
+                case COMBAT:
+                    if (contract.getTargetPlayer() != null) {
+                        OfflinePlayer target = Bukkit.getOfflinePlayer(contract.getTargetPlayer());
+                        lore.add("§7Hedef: §c" + (target.getName() != null ? target.getName() : "Bilinmeyen"));
+                    }
+                    break;
+                case TERRITORY:
+                    if (contract.getRestrictedAreas() != null && !contract.getRestrictedAreas().isEmpty()) {
+                        lore.add("§7Yasak Bölge: §e" + contract.getRestrictedAreas().size() + " bölge");
+                        lore.add("§7Yarıçap: §e" + contract.getRestrictedRadius() + " blok");
+                    }
+                    break;
+                case CONSTRUCTION:
+                    if (contract.getStructureType() != null) {
+                        lore.add("§7Yapı Tipi: §e" + contract.getStructureType());
+                    }
+                    break;
+            }
         }
         
         lore.add("§7═══════════════════════");
@@ -448,7 +482,9 @@ public class ContractMenu implements Listener {
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return item;
         
-        meta.setDisplayName("§e" + getContractTypeName(contract.getType()));
+        // Yeni enum kullan
+        me.mami.stratocraft.enums.ContractType contractType = contract.getContractType();
+        meta.setDisplayName("§e" + getContractTypeName(contractType));
         
         List<String> lore = new ArrayList<>();
         lore.add("§7═══════════════════════");
@@ -462,48 +498,45 @@ public class ContractMenu implements Listener {
         
         lore.add("§7═══════════════════════");
         lore.add("§7Ödül: §a" + contract.getReward() + " Altın");
+        
+        // Ceza tipi bilgisi
+        me.mami.stratocraft.enums.PenaltyType penaltyType = contract.getPenaltyType();
+        if (penaltyType != null) {
+            lore.add("§7Ceza Tipi: §c" + getPenaltyTypeName(penaltyType));
+        }
         lore.add("§7Ceza: §c" + contract.getPenalty() + " Altın");
         lore.add("§7Süre: §e" + formatTime(contract.getDeadline()));
         
-        // Tip'e göre özel bilgiler
-        switch (contract.getType()) {
-            case MATERIAL_DELIVERY:
-                if (contract.getMaterial() != null) {
+        // Tip'e göre özel bilgiler (yeni enum'lara göre)
+        if (contractType != null) {
+            switch (contractType) {
+                case RESOURCE_COLLECTION:
+                    if (contract.getMaterial() != null) {
+                        lore.add("§7═══════════════════════");
+                        lore.add("§7Malzeme: §e" + contract.getMaterial().name());
+                        lore.add("§7Miktar: §e" + contract.getAmount());
+                        lore.add("§7Teslim: §a" + contract.getDelivered() + "§7/§a" + contract.getAmount());
+                    }
+                    break;
+                case COMBAT:
+                    if (contract.getTargetPlayer() != null) {
+                        OfflinePlayer target = Bukkit.getOfflinePlayer(contract.getTargetPlayer());
+                        lore.add("§7═══════════════════════");
+                        lore.add("§7Hedef: §c" + (target.getName() != null ? target.getName() : "Bilinmeyen"));
+                    }
+                    break;
+                case TERRITORY:
                     lore.add("§7═══════════════════════");
-                    lore.add("§7Malzeme: §e" + contract.getMaterial().name());
-                    lore.add("§7Miktar: §e" + contract.getAmount());
-                    lore.add("§7Teslim: §a" + contract.getDelivered() + "§7/§a" + contract.getAmount());
-                }
-                break;
-            case PLAYER_KILL:
-                if (contract.getTargetPlayer() != null) {
-                    OfflinePlayer target = Bukkit.getOfflinePlayer(contract.getTargetPlayer());
-                    lore.add("§7═══════════════════════");
-                    lore.add("§7Hedef: §c" + (target.getName() != null ? target.getName() : "Bilinmeyen"));
-                }
-                break;
-            case TERRITORY_RESTRICT:
-                lore.add("§7═══════════════════════");
-                lore.add("§7Yasak Bölgeler: §c" + (contract.getRestrictedAreas() != null ? contract.getRestrictedAreas().size() : 0) + " adet");
-                lore.add("§7Yarıçap: §e" + contract.getRestrictedRadius() + " blok");
-                break;
-            case NON_AGGRESSION:
-                if (contract.getNonAggressionTarget() != null) {
-                    OfflinePlayer target = Bukkit.getOfflinePlayer(contract.getNonAggressionTarget());
-                    lore.add("§7═══════════════════════");
-                    lore.add("§7Hedef: §c" + (target.getName() != null ? target.getName() : "Bilinmeyen"));
-                }
-                break;
-            case STRUCTURE_BUILD:
-                if (contract.getStructureType() != null) {
-                    lore.add("§7═══════════════════════");
-                    lore.add("§7Yapı: §e" + contract.getStructureType());
-                }
-                break;
-            case BASE_PROTECTION:
-                lore.add("§7═══════════════════════");
-                lore.add("§7Base koruma sözleşmesi aktif");
-                break;
+                    lore.add("§7Yasak Bölgeler: §c" + (contract.getRestrictedAreas() != null ? contract.getRestrictedAreas().size() : 0) + " adet");
+                    lore.add("§7Yarıçap: §e" + contract.getRestrictedRadius() + " blok");
+                    break;
+                case CONSTRUCTION:
+                    if (contract.getStructureType() != null) {
+                        lore.add("§7═══════════════════════");
+                        lore.add("§7Yapı: §e" + contract.getStructureType());
+                    }
+                    break;
+            }
         }
         
         // Durum bilgisi
@@ -529,8 +562,28 @@ public class ContractMenu implements Listener {
     }
     
     /**
-     * Kontrat tipi ikonu
+     * Kontrat tipi ikonu (YENİ: ContractType enum kullanır)
      */
+    private Material getContractIcon(me.mami.stratocraft.enums.ContractType type) {
+        if (type == null) return Material.PAPER;
+        switch (type) {
+            case RESOURCE_COLLECTION:
+                return Material.CHEST;
+            case CONSTRUCTION:
+                return Material.BRICKS;
+            case COMBAT:
+                return Material.DIAMOND_SWORD;
+            case TERRITORY:
+                return Material.BARRIER;
+            default:
+                return Material.PAPER;
+        }
+    }
+    
+    /**
+     * Eski Contract.ContractType için geriye uyumluluk (deprecated)
+     */
+    @Deprecated
     private Material getContractIcon(Contract.ContractType type) {
         if (type == null) return Material.PAPER;
         switch (type) {
@@ -668,9 +721,13 @@ public class ContractMenu implements Listener {
         else if (title.equals("§6Kontrat Detayları")) {
             handleDetailMenuClick(event);
         }
-        // Kontrat tipi seçim menüsü
-        else if (title.equals("§6Kontrat Tipi Seç")) {
+        // Kontrat kategori seçim menüsü
+        else if (title.equals("§6Kontrat Kategorisi Seç") || title.equals("§6Kontrat Tipi Seç")) {
             handleTypeSelectionClick(event);
+        }
+        // Ceza tipi seçim menüsü
+        else if (title.equals("§6Ceza Tipi Seç")) {
+            handlePenaltyTypeSelectionClick(event);
         }
         // Kapsam seçim menüsü
         else if (title.equals("§6Kontrat Kapsamı Seç")) {
@@ -878,42 +935,32 @@ public class ContractMenu implements Listener {
                 break;
                 
             case CHEST:
-                state.type = Contract.ContractType.MATERIAL_DELIVERY;
+                // RESOURCE_COLLECTION
+                state.contractType = me.mami.stratocraft.enums.ContractType.RESOURCE_COLLECTION;
                 state.step = 1;
                 player.closeInventory();
                 openScopeSelectionMenu(player);
                 break;
                 
             case DIAMOND_SWORD:
-                state.type = Contract.ContractType.PLAYER_KILL;
+                // COMBAT
+                state.contractType = me.mami.stratocraft.enums.ContractType.COMBAT;
                 state.step = 1;
                 player.closeInventory();
                 openScopeSelectionMenu(player);
                 break;
                 
             case BARRIER:
-                state.type = Contract.ContractType.TERRITORY_RESTRICT;
-                state.step = 1;
-                player.closeInventory();
-                openScopeSelectionMenu(player);
-                break;
-                
-            case SHIELD:
-                state.type = Contract.ContractType.NON_AGGRESSION;
-                state.step = 1;
-                player.closeInventory();
-                openScopeSelectionMenu(player);
-                break;
-                
-            case BEACON:
-                state.type = Contract.ContractType.BASE_PROTECTION;
+                // TERRITORY
+                state.contractType = me.mami.stratocraft.enums.ContractType.TERRITORY;
                 state.step = 1;
                 player.closeInventory();
                 openScopeSelectionMenu(player);
                 break;
                 
             case STRUCTURE_BLOCK:
-                state.type = Contract.ContractType.STRUCTURE_BUILD;
+                // CONSTRUCTION
+                state.contractType = me.mami.stratocraft.enums.ContractType.CONSTRUCTION;
                 state.step = 1;
                 player.closeInventory();
                 openScopeSelectionMenu(player);
@@ -1249,10 +1296,10 @@ public class ContractMenu implements Listener {
                 else if (slot == 19) state.reward += 10;
                 else if (slot == 20) state.reward += 1;
                 else if (slot == 15) {
-                    // Onay
+                    // Onay - Ceza tipi seçimine geç
                     state.step = 3;
                     player.closeInventory();
-                    openPenaltySliderMenu(player);
+                    openPenaltyTypeSelectionMenu(player);
                     return;
                 }
                 if (state.reward < 1) state.reward = 1;
@@ -1385,8 +1432,8 @@ public class ContractMenu implements Listener {
                 else if (slot == 19) state.penalty += 10;
                 else if (slot == 20) state.penalty += 1;
                 else if (slot == 15) {
-                    // Onay
-                    state.step = 4;
+                    // Onay - Ceza miktarı belirlendi, süre seçimine geç
+                    state.step = 5;
                     player.closeInventory();
                     openTimeSelectionMenu(player);
                     return;
@@ -2290,18 +2337,23 @@ public class ContractMenu implements Listener {
     }
     
     /**
-     * State'den kontrat oluştur
+     * State'den kontrat oluştur (YENİ: ContractType ve PenaltyType enum kullanır)
      */
     private void createContractFromState(Player player, ContractWizardState state) {
         if (contractManager == null) return;
         
-        // Temel kontrat oluştur
+        // PenaltyType varsayılan değeri
+        if (state.penaltyType == null) {
+            state.penaltyType = me.mami.stratocraft.enums.PenaltyType.BANK_PENALTY;
+        }
+        
+        // Temel kontrat oluştur (YENİ: ContractType ve PenaltyType kullanır)
         contractManager.createContract(
             player.getUniqueId(),
-            state.type,
+            state.contractType,
             state.scope,
             state.reward,
-            state.penalty,
+            state.penaltyType,
             state.deadlineDays
         );
         
@@ -2309,13 +2361,12 @@ public class ContractMenu implements Listener {
         List<Contract> contracts = contractManager.getContracts();
         Contract contract = null;
         
-        // En son eklenen kontratı bul (issuer ve type eşleşen)
+        // En son eklenen kontratı bul (issuer ve contractType eşleşen)
         for (int i = contracts.size() - 1; i >= 0; i--) {
             Contract c = contracts.get(i);
             if (c != null && c.getIssuer().equals(player.getUniqueId()) && 
-                c.getType() == state.type && c.getScope() == state.scope &&
-                Math.abs(c.getReward() - state.reward) < 0.01 &&
-                Math.abs(c.getPenalty() - state.penalty) < 0.01) {
+                c.getContractType() == state.contractType && c.getScope() == state.scope &&
+                Math.abs(c.getReward() - state.reward) < 0.01) {
                 contract = c;
                 break;
             }
@@ -2326,9 +2377,9 @@ public class ContractMenu implements Listener {
             return;
         }
         
-        // Tip'e özel parametreleri set et
-        switch (state.type) {
-            case MATERIAL_DELIVERY:
+        // Kategori'ye özel parametreleri set et
+        switch (state.contractType) {
+            case RESOURCE_COLLECTION:
                 if (state.material != null) {
                     contract.setMaterial(state.material);
                 }
@@ -2336,30 +2387,42 @@ public class ContractMenu implements Listener {
                     contract.setAmount(state.amount);
                 }
                 break;
-            case PLAYER_KILL:
+            case COMBAT:
                 if (state.targetPlayer != null) {
                     contract.setTargetPlayer(state.targetPlayer);
                 }
+                if (state.nonAggressionTarget != null) {
+                    contract.setNonAggressionTarget(state.nonAggressionTarget);
+                }
                 break;
-            case TERRITORY_RESTRICT:
+            case TERRITORY:
                 if (state.restrictedAreas != null && !state.restrictedAreas.isEmpty()) {
                     contract.setRestrictedAreas(state.restrictedAreas);
                 }
                 contract.setRestrictedRadius(state.restrictedRadius > 0 ? state.restrictedRadius : 50);
                 break;
-            case NON_AGGRESSION:
-                if (state.nonAggressionTarget != null) {
-                    contract.setNonAggressionTarget(state.nonAggressionTarget);
-                }
-                break;
-            case STRUCTURE_BUILD:
+            case CONSTRUCTION:
                 if (state.structureType != null && !state.structureType.isEmpty()) {
                     contract.setStructureType(state.structureType);
                 }
                 break;
-            case BASE_PROTECTION:
-                // BASE_PROTECTION için özel işlem gerekebilir
-                break;
+        }
+        
+        // Kontratı veritabanına kaydet (otomatik kayıt için)
+        if (plugin.getDataManager() != null) {
+            plugin.getDataManager().saveAll(
+                plugin.getClanManager(),
+                contractManager,
+                null, // shopManager
+                null, // virtualStorage
+                null, // allianceManager
+                null, // disasterManager
+                null, // clanBankSystem
+                null, // clanMissionSystem
+                null, // clanActivitySystem
+                null, // trapManager
+                false // async
+            );
         }
     }
     

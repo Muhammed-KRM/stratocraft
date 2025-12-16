@@ -630,13 +630,46 @@ public class DataManager {
             data.issuerId = contract.getIssuer().toString(); // SQLite için
             data.acceptor = contract.getAcceptor() != null ? contract.getAcceptor().toString() : null;
             data.acceptorId = contract.getAcceptor() != null ? contract.getAcceptor().toString() : null; // SQLite için
-            data.material = contract.getMaterial().name();
+            data.material = contract.getMaterial() != null ? contract.getMaterial().name() : null;
             data.amount = contract.getAmount();
             data.reward = contract.getReward();
             data.rewardString = String.valueOf(contract.getReward()); // SQLite için
+            data.penalty = contract.getPenalty();
+            data.penaltyString = String.valueOf(contract.getPenalty()); // SQLite için
+            // Yeni enum'ları kaydet
+            me.mami.stratocraft.enums.ContractType contractType = contract.getContractType();
+            data.contractType = contractType != null ? contractType.name() : null;
+            me.mami.stratocraft.enums.PenaltyType penaltyType = contract.getPenaltyType();
+            data.penaltyType = penaltyType != null ? penaltyType.name() : null;
+            data.scope = contract.getScope() != null ? contract.getScope().name() : null;
             data.delivered = contract.getDelivered();
             data.deliveredBool = contract.getDelivered() > 0; // SQLite için
             data.deadline = contract.getDeadline();
+            data.breached = contract.isBreached();
+            // Tip'e özel alanlar
+            if (contract.getTargetPlayer() != null) {
+                data.targetPlayer = contract.getTargetPlayer().toString();
+            }
+            if (contract.getRestrictedAreas() != null && !contract.getRestrictedAreas().isEmpty()) {
+                // Location listesini JSON string'e çevir
+                java.util.List<java.util.Map<String, Object>> areasList = new java.util.ArrayList<>();
+                for (org.bukkit.Location loc : contract.getRestrictedAreas()) {
+                    java.util.Map<String, Object> areaMap = new java.util.HashMap<>();
+                    areaMap.put("world", loc.getWorld() != null ? loc.getWorld().getName() : "world");
+                    areaMap.put("x", loc.getBlockX());
+                    areaMap.put("y", loc.getBlockY());
+                    areaMap.put("z", loc.getBlockZ());
+                    areasList.add(areaMap);
+                }
+                data.restrictedAreas = gson.toJson(areasList);
+            }
+            data.restrictedRadius = contract.getRestrictedRadius();
+            if (contract.getNonAggressionTarget() != null) {
+                data.nonAggressionTarget = contract.getNonAggressionTarget().toString();
+            }
+            if (contract.getStructureType() != null) {
+                data.structureType = contract.getStructureType();
+            }
             snapshot.contracts.add(data);
         }
         
@@ -1495,13 +1528,46 @@ public class DataManager {
                 }
                 
                 try {
-                    Contract contract = new Contract(
+                    Contract contract = null;
+                    
+                    // Yeni format kontrolü (ContractType ve PenaltyType var mı?)
+                    if (data.contractType != null && data.penaltyType != null) {
+                        // Yeni format: ContractType ve PenaltyType kullan
+                        me.mami.stratocraft.enums.ContractType contractType = 
+                            me.mami.stratocraft.enums.ContractType.valueOf(data.contractType);
+                        me.mami.stratocraft.enums.PenaltyType penaltyType = 
+                            me.mami.stratocraft.enums.PenaltyType.valueOf(data.penaltyType);
+                        Contract.ContractScope scope = data.scope != null ? 
+                            Contract.ContractScope.valueOf(data.scope) : Contract.ContractScope.PLAYER_TO_PLAYER;
+                        
+                        long deadlineDays = (data.deadline - System.currentTimeMillis()) / (24 * 60 * 60 * 1000);
+                        if (deadlineDays < 0) deadlineDays = 1; // Geçmiş tarih kontrolü
+                        
+                        contract = new Contract(
+                            UUID.fromString(data.issuer),
+                            contractType,
+                            scope,
+                            data.reward,
+                            penaltyType,
+                            deadlineDays
+                        );
+                    } else {
+                        // Eski format: Material-based contract (geriye uyumluluk)
+                        if (data.material == null) {
+                            plugin.getLogger().warning("Contract material null, atlandı: " + data.id);
+                            continue;
+                        }
+                        long deadlineDays = (data.deadline - System.currentTimeMillis()) / (24 * 60 * 60 * 1000);
+                        if (deadlineDays < 0) deadlineDays = 1;
+                        
+                        contract = new Contract(
                             UUID.fromString(data.issuer),
                             org.bukkit.Material.valueOf(data.material),
                             data.amount,
                             data.reward,
-                            (data.deadline - System.currentTimeMillis()) / (24 * 60 * 60 * 1000)
-                    );
+                            deadlineDays
+                        );
+                    }
                     
                     // ID ve diğer alanları set et
                     contract.setId(UUID.fromString(data.id));
@@ -1509,10 +1575,49 @@ public class DataManager {
                     if (data.acceptor != null && isValidUUID(data.acceptor)) {
                         contract.setAcceptor(UUID.fromString(data.acceptor));
                     }
+                    if (data.breached) {
+                        contract.setBreached(true);
+                    }
+                    
+                    // Tip'e özel alanları yükle
+                    if (data.targetPlayer != null && isValidUUID(data.targetPlayer)) {
+                        contract.setTargetPlayer(UUID.fromString(data.targetPlayer));
+                    }
+                    if (data.restrictedAreas != null && !data.restrictedAreas.isEmpty()) {
+                        // JSON string'den Location listesine çevir
+                        try {
+                            java.lang.reflect.Type listType = new com.google.gson.reflect.TypeToken<java.util.List<java.util.Map<String, Object>>>(){}.getType();
+                            java.util.List<java.util.Map<String, Object>> areasList = gson.fromJson(data.restrictedAreas, listType);
+                            java.util.List<org.bukkit.Location> locations = new java.util.ArrayList<>();
+                            for (java.util.Map<String, Object> areaMap : areasList) {
+                                String worldName = (String) areaMap.get("world");
+                                org.bukkit.World world = Bukkit.getWorld(worldName);
+                                if (world != null) {
+                                    int x = ((Double) areaMap.get("x")).intValue();
+                                    int y = ((Double) areaMap.get("y")).intValue();
+                                    int z = ((Double) areaMap.get("z")).intValue();
+                                    locations.add(new org.bukkit.Location(world, x, y, z));
+                                }
+                            }
+                            contract.setRestrictedAreas(locations);
+                        } catch (Exception e) {
+                            plugin.getLogger().warning("Contract restrictedAreas parse hatası: " + data.id);
+                        }
+                    }
+                    if (data.restrictedRadius > 0) {
+                        contract.setRestrictedRadius(data.restrictedRadius);
+                    }
+                    if (data.nonAggressionTarget != null && isValidUUID(data.nonAggressionTarget)) {
+                        contract.setNonAggressionTarget(UUID.fromString(data.nonAggressionTarget));
+                    }
+                    if (data.structureType != null) {
+                        contract.setStructureType(data.structureType);
+                    }
                     
                     contractManager.loadContract(contract);
                 } catch (Exception e) {
                     plugin.getLogger().warning("Contract yükleme hatası: " + data.id + " - " + e.getMessage());
+                    e.printStackTrace();
                 }
         }
     }
@@ -2296,9 +2401,21 @@ public class DataManager {
         public int amount;
         public double reward;
         public String rewardString; // SQLite için
+        public double penalty;
+        public String penaltyString; // SQLite için
+        public String contractType; // Yeni: me.mami.stratocraft.enums.ContractType
+        public String penaltyType; // Yeni: me.mami.stratocraft.enums.PenaltyType
+        public String scope; // Contract.ContractScope
         public int delivered;
         public boolean deliveredBool; // SQLite için
         public long deadline;
+        // Tip'e özel alanlar
+        public String targetPlayer; // COMBAT için
+        public String restrictedAreas; // TERRITORY için (JSON string)
+        public int restrictedRadius; // TERRITORY için
+        public String nonAggressionTarget; // COMBAT (NON_AGGRESSION) için
+        public String structureType; // CONSTRUCTION için
+        public boolean breached; // İhlal durumu
     }
     
     public static class ShopData {
