@@ -15,6 +15,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import me.mami.stratocraft.Main;
+import me.mami.stratocraft.enums.MissionType;
 import me.mami.stratocraft.model.Mission;
 
 public class MissionManager {
@@ -198,9 +199,9 @@ public class MissionManager {
         // Seviyeye göre zorluk belirle
         Mission.Difficulty difficulty = getDifficultyByLevel(difficultyLevel);
         
-        // Rastgele görev tipi seç
-        Mission.Type[] availableTypes = getAvailableTypes(difficulty);
-        Mission.Type selectedType = availableTypes[random.nextInt(availableTypes.length)];
+        // Rastgele görev tipi seç (YENİ: MissionType enum kullanır)
+        MissionType[] availableTypes = getAvailableTypes(difficulty);
+        MissionType selectedType = availableTypes[random.nextInt(availableTypes.length)];
         
         // Görev oluştur
         return createMissionByType(player, selectedType, difficulty);
@@ -217,78 +218,81 @@ public class MissionManager {
     }
     
     /**
-     * Zorluğa göre mevcut görev tipleri
+     * Zorluğa göre mevcut görev tipleri (YENİ: MissionType enum kullanır)
      */
-    private Mission.Type[] getAvailableTypes(Mission.Difficulty difficulty) {
+    private MissionType[] getAvailableTypes(Mission.Difficulty difficulty) {
         switch (difficulty) {
             case EASY:
-                return new Mission.Type[]{
-                    Mission.Type.KILL_MOB,
-                    Mission.Type.GATHER_ITEM,
-                    Mission.Type.MINE_BLOCK
+                return new MissionType[]{
+                    MissionType.KILL_MOBS,
+                    MissionType.COLLECT_ITEMS,
+                    MissionType.COLLECT_ITEMS // MINE_BLOCK yerine
                 };
             case MEDIUM:
-                return new Mission.Type[]{
-                    Mission.Type.KILL_MOB,
-                    Mission.Type.GATHER_ITEM,
-                    Mission.Type.VISIT_LOCATION,
-                    Mission.Type.CRAFT_ITEM
+                return new MissionType[]{
+                    MissionType.KILL_MOBS,
+                    MissionType.COLLECT_ITEMS,
+                    MissionType.EXPLORE_AREA,
+                    MissionType.CRAFT_ITEMS
                 };
             case HARD:
-                return new Mission.Type[]{
-                    Mission.Type.KILL_MOB,
-                    Mission.Type.VISIT_LOCATION,
-                    Mission.Type.BUILD_STRUCTURE,
-                    Mission.Type.KILL_PLAYER
+                return new MissionType[]{
+                    MissionType.KILL_MOBS,
+                    MissionType.EXPLORE_AREA,
+                    MissionType.BUILD_STRUCTURE,
+                    MissionType.DEFEND_CLAN // KILL_PLAYER yerine
                 };
             case EXPERT:
-                return new Mission.Type[]{
-                    Mission.Type.BUILD_STRUCTURE,
-                    Mission.Type.KILL_PLAYER,
-                    Mission.Type.TRAVEL_DISTANCE
+                return new MissionType[]{
+                    MissionType.BUILD_STRUCTURE,
+                    MissionType.DEFEND_CLAN,
+                    MissionType.EXPLORE_AREA // TRAVEL_DISTANCE yerine
                 };
         }
-        return new Mission.Type[]{Mission.Type.KILL_MOB};
+        return new MissionType[]{MissionType.KILL_MOBS};
     }
     
     /**
-     * Tip'e göre görev oluştur
+     * Tip'e göre görev oluştur (YENİ: MissionType ve MissionScope enum kullanır)
      */
-    private Mission createMissionByType(Player player, Mission.Type type, Mission.Difficulty difficulty) {
-        int targetAmount = getTargetAmountByDifficulty(difficulty, type);
+    private Mission createMissionByType(Player player, MissionType missionType, Mission.Difficulty difficulty) {
+        int targetAmount = getTargetAmountByDifficulty(difficulty, missionType);
         ItemStack reward = getRewardByDifficulty(difficulty);
         double rewardMoney = getRewardMoneyByDifficulty(difficulty);
         long deadlineDays = getDeadlineByDifficulty(difficulty);
         
-        Mission mission = new Mission(player.getUniqueId(), type, difficulty, 
+        // Scope belirle (tip'e göre)
+        me.mami.stratocraft.enums.MissionScope scope = determineScopeFromType(missionType);
+        
+        Mission mission = new Mission(player.getUniqueId(), missionType, scope, difficulty, 
                                      targetAmount, reward, rewardMoney, deadlineDays);
         
         // Tip'e göre hedef belirle
-        switch (type) {
-            case KILL_MOB:
+        switch (missionType) {
+            case KILL_MOBS:
                 mission.setTargetEntity(getRandomMobByDifficulty(difficulty));
                 break;
-            case GATHER_ITEM:
+            case COLLECT_ITEMS:
                 mission.setTargetMaterial(getRandomMaterialByDifficulty(difficulty));
                 break;
-            case VISIT_LOCATION:
+            case EXPLORE_AREA:
                 mission.setTargetLocation(generateRandomLocation(player.getLocation(), difficulty));
                 break;
             case BUILD_STRUCTURE:
                 mission.setStructureType(getRandomStructureByDifficulty(difficulty));
                 break;
-            case KILL_PLAYER:
+            case DEFEND_CLAN:
                 // Rastgele bir online oyuncu seç (kendisi hariç)
                 mission.setTargetPlayer(getRandomOnlinePlayer(player));
                 break;
-            case TRAVEL_DISTANCE:
+            case EXPLORE_AREA:
                 mission.setTargetDistance(getTargetDistanceByDifficulty(difficulty));
                 break;
-            case CRAFT_ITEM:
+            case CRAFT_ITEMS:
                 mission.setTargetMaterial(getRandomCraftableMaterialByDifficulty(difficulty));
                 break;
-            case MINE_BLOCK:
-                mission.setTargetMaterial(getRandomMineableMaterialByDifficulty(difficulty));
+            default:
+                // Diğer tipler için varsayılan
                 break;
         }
         
@@ -296,42 +300,82 @@ public class MissionManager {
     }
     
     /**
-     * Zorluğa göre hedef miktar
+     * MissionType'dan scope belirle
      */
-    private int getTargetAmountByDifficulty(Mission.Difficulty difficulty, Mission.Type type) {
+    private me.mami.stratocraft.enums.MissionScope determineScopeFromType(MissionType type) {
+        switch (type) {
+            case BUILD_STRUCTURE:
+            case DEFEND_CLAN:
+            case COMPLETE_RITUAL:
+            case CLAN_TERRITORY:
+            case CLAN_WAR:
+            case CLAN_RESOURCE:
+                return me.mami.stratocraft.enums.MissionScope.CLAN;
+            default:
+                return me.mami.stratocraft.enums.MissionScope.PERSONAL;
+        }
+    }
+    
+    /**
+     * Zorluğa göre hedef miktar (YENİ: MissionType enum kullanır)
+     */
+    private int getTargetAmountByDifficulty(Mission.Difficulty difficulty, MissionType type) {
         int base;
         switch (type) {
-            case KILL_MOB:
-            case GATHER_ITEM:
-            case MINE_BLOCK:
+            case KILL_MOBS:
+            case COLLECT_ITEMS:
                 base = 10;
                 break;
-            case VISIT_LOCATION:
-            case BUILD_STRUCTURE:
-            case KILL_PLAYER:
+            case EXPLORE_AREA:
                 base = 1;
                 break;
-            case TRAVEL_DISTANCE:
-                base = 1000; // Blok cinsinden
+            case BUILD_STRUCTURE:
+                base = 1;
                 break;
-            case CRAFT_ITEM:
+            case DEFEND_CLAN:
+                base = 1;
+                break;
+            case CRAFT_ITEMS:
                 base = 5;
                 break;
             default:
                 base = 10;
+                break;
         }
         
         switch (difficulty) {
-            case EASY:
-                return base;
-            case MEDIUM:
-                return base * 2;
-            case HARD:
-                return base * 3;
-            case EXPERT:
-                return base * 5;
+            case EASY: return base;
+            case MEDIUM: return base * 2;
+            case HARD: return base * 3;
+            case EXPERT: return base * 5;
+            default: return base;
         }
-        return base;
+    }
+    
+    /**
+     * Zorluğa göre hedef miktar (GERİYE UYUMLULUK: eski Mission.Type enum kullanır)
+     * @deprecated MissionType kullanın
+     */
+    @Deprecated
+    private int getTargetAmountByDifficulty(Mission.Difficulty difficulty, Mission.Type type) {
+        // Eski enum'u yeni enum'a map et
+        MissionType missionType = null;
+        try {
+            missionType = MissionType.valueOf(type.name());
+        } catch (IllegalArgumentException e) {
+            switch (type) {
+                case KILL_MOB: missionType = MissionType.KILL_MOBS; break;
+                case GATHER_ITEM: missionType = MissionType.COLLECT_ITEMS; break;
+                case VISIT_LOCATION: missionType = MissionType.EXPLORE_AREA; break;
+                case BUILD_STRUCTURE: missionType = MissionType.BUILD_STRUCTURE; break;
+                case KILL_PLAYER: missionType = MissionType.DEFEND_CLAN; break;
+                case CRAFT_ITEM: missionType = MissionType.CRAFT_ITEMS; break;
+                case MINE_BLOCK: missionType = MissionType.COLLECT_ITEMS; break;
+                case TRAVEL_DISTANCE: missionType = MissionType.EXPLORE_AREA; break;
+                default: missionType = MissionType.KILL_MOBS; break;
+            }
+        }
+        return getTargetAmountByDifficulty(difficulty, missionType);
     }
     
     /**

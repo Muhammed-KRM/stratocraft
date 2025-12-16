@@ -60,6 +60,53 @@ clan:
         member:
           IRON_INGOT: 10             # Member maaşı: 10 Demir
         # Recruit maaş almaz
+  
+  # Klan Alanı Ayarları (YENİ)
+  territory:
+    # Yükseklik Ayarları
+    sky-height: 150  # Gökyüzüne yükseklik (blok)
+    ground-depth: 50  # Yer altına derinlik (blok)
+    
+    # Sınır Görselleştirme
+    boundary-particle:
+      enabled: true
+      type: REDSTONE  # Partikül tipi (REDSTONE, END_ROD, TOTEM, vb.)
+      color: GREEN  # Partikül rengi (REDSTONE için: RED, GREEN, BLUE, YELLOW, vb.)
+      density: 0.5  # Partikül yoğunluğu (0.0-1.0)
+      update-interval: 20  # Güncelleme aralığı (tick) - 20 = 1 saniye
+      visible-distance: 100  # Görünür mesafe (blok)
+      particle-spacing: 2.0  # Partikül arası mesafe (blok)
+    
+    # Alan Genişletme/Küçültme
+    expansion:
+      min-area: 9  # Minimum alan (blok²) - 3x3 = 9
+      max-area: 10000  # Maksimum alan (blok²) - 100x100 = 10000
+      cooldown: 60  # Cooldown (saniye) - Oyuncu başına
+      require-fence-connection: true  # Çitler bağlantılı olmalı mı?
+      check-overlap: true  # Diğer klan alanlarıyla çakışma kontrolü
+      overlap-buffer: 5  # Çakışma buffer mesafesi (blok)
+      max-expansion-per-action: 50  # İşlem başına maksimum genişletme (blok)
+    
+    # Çit Ayarları
+    fence:
+      material: OAK_FENCE  # Çit material'ı
+      metadata-key: "ClanFence"  # Metadata key
+      require-clan-fence-item: true  # Klan çiti item'ı gerekli mi?
+      min-fence-count: 4  # Minimum çit sayısı (alan oluşturmak için)
+      fence-connection-distance: 2  # Çit bağlantı mesafesi (blok)
+    
+    # Kristal Ayarları
+    crystal:
+      metadata-key: "ClanCrystal"  # Metadata key
+      require-clan-crystal-item: true  # Klan kristali item'ı gerekli mi?
+      min-distance-from-other: 100  # Diğer klan kristallerinden minimum mesafe (blok)
+    
+    # Sınır Hesaplama
+    boundary-calculation:
+      async: true  # Async hesaplama (büyük alanlar için)
+      cache-duration: 300000  # Cache süresi (ms) - 5 dakika
+      recalculate-on-fence-break: true  # Çit kırıldığında yeniden hesapla
+      recalculate-on-fence-place: true  # Çit yerleştirildiğinde yeniden hesapla
 
 # Kuşatma Ayarları
 siege:
@@ -349,6 +396,83 @@ radar:
 
 # Yapı Ayarları
 structure:
+  # Yapı Durumu Kontrolü
+  status-check:
+    enabled: true  # Yapı aktif/pasif durumu kontrolü
+    check-interval: 100  # Kontrol aralığı (tick) - 100 = 5 saniye
+  
+  # Yapı Efektleri
+  effects:
+    enabled: true  # Yapı efektleri aktif mi?
+    update-interval: 20  # Efekt güncelleme aralığı (tick) - 20 = 1 saniye
+    apply-on-join: true  # Oyuncu girişinde efekt uygula
+    remove-on-quit: true  # Oyuncu çıkışında efekt kaldır
+  
+  # Yapı Tarifleri
+  recipes:
+    code-based:
+      enabled: true  # Kod içi tarifler aktif mi?
+    schematic-based:
+      enabled: true  # Şema tarifleri aktif mi?
+      schematic-folder: "schematics"  # Şema klasörü
+  
+  # Yapı Aktivasyon
+  activation:
+    cooldown: 2000  # Aktivasyon cooldown (ms) - 2 saniye
+    require-item: true  # Aktivasyon item'ı gerekli mi?
+  
+  # Yapı Yükseltme
+  upgrade:
+    enabled: true  # Yapı yükseltme aktif mi?
+    max-level: 5  # Maksimum seviye
+    require-permission: true  # Yetki gerekli mi? (Lider/General)
+  
+  # Yapı Güç Hesaplama
+  power:
+    base-power: 10.0  # Temel güç
+    level-multiplier: 0.5  # Seviye çarpanı (her seviye için +%50)
+  
+  # Yapı Kategorileri (otomatik belirlenir, burada sadece özel ayarlar)
+  categories:
+    defense:
+      power-multiplier: 1.8  # Savunma yapıları güç çarpanı
+    economy:
+      power-multiplier: 1.2  # Ekonomi yapıları güç çarpanı
+    support:
+      power-multiplier: 1.0  # Destek yapıları güç çarpanı
+    management:
+      power-multiplier: 0.8  # Yönetim yapıları güç çarpanı
+  
+  # Yapı Efekt Tipleri (otomatik belirlenir, burada sadece özel ayarlar)
+  effect-types:
+    buff:
+      duration: 200  # Buff süresi (tick) - 10 saniye
+    debuff:
+      duration: 60  # Debuff süresi (tick) - 3 saniye
+    utility:
+      cooldown: 1000  # Utility cooldown (ms) - 1 saniye
+  
+  # Yapı Menü Ayarları
+  menu:
+    enabled: true  # Yapı menüleri aktif mi?
+    cooldown: 1000  # Menü açma cooldown (ms) - 1 saniye
+    show-details: true  # Detay menüsü göster
+    show-upgrade: true  # Yükseltme menüsü göster
+  
+  # Yapı Model Sistemi (YENİ)
+  model-system:
+    enabled: true  # Yeni model sistemi aktif mi?
+    use-base-structure: true  # BaseStructure kullan
+    use-clan-structure: true  # ClanStructure kullan
+    use-personal-structure: true  # PersonalStructure kullan
+    legacy-support: true  # Eski Structure.Type desteği (geriye uyumluluk)
+  
+  # Yapı Enum Sistemi (YENİ)
+  enum-system:
+    use-centralized-enums: true  # Merkezi enum sistemi kullan
+    structure-type-enum: "StructureType"  # Yapı tipi enum'u
+    structure-category-enum: "StructureCategory"  # Yapı kategori enum'u
+    structure-effect-enum: "StructureEffectType"  # Yapı efekt enum'u
   max-shield-fuel: 43200 # Maksimum kalkan yakıtı (saniye) - 12 saat
 
 # Kervan Ayarları

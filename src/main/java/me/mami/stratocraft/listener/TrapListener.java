@@ -1,5 +1,6 @@
 package me.mami.stratocraft.listener;
 
+import me.mami.stratocraft.enums.TrapType;
 import me.mami.stratocraft.manager.ItemManager;
 import me.mami.stratocraft.manager.TrapManager;
 import org.bukkit.Material;
@@ -151,7 +152,7 @@ public class TrapListener implements Listener {
             }
 
             // Tuzak tipini belirle (ikincil eşyaya göre)
-            TrapManager.TrapType trapType = determineTrapType(player);
+            TrapType trapType = determineTrapType(player);
             if (trapType == null) {
                 player.sendMessage("§cTuzak tipi belirlenemedi! Elinde şunlardan biri olmalı:");
                 player.sendMessage("§7- Magma Cream (Cehennem Tuzağı)");
@@ -174,22 +175,22 @@ public class TrapListener implements Listener {
         }
     }
 
-    private TrapManager.TrapType determineTrapType(Player player) {
+    private TrapType determineTrapType(Player player) {
         ItemStack offHand = player.getInventory().getItemInOffHand();
         ItemStack mainHand = player.getInventory().getItemInMainHand();
 
         // Off-hand kontrolü
         if (offHand != null) {
             if (offHand.getType() == Material.MAGMA_CREAM) {
-                return TrapManager.TrapType.HELL_TRAP;
+                return TrapType.HELL_TRAP;
             } else if (ItemManager.isCustomItem(offHand, "LIGHTNING_CORE")) {
-                return TrapManager.TrapType.SHOCK_TRAP;
+                return TrapType.SHOCK_TRAP;
             } else if (offHand.getType() == Material.ENDER_PEARL) {
-                return TrapManager.TrapType.BLACK_HOLE;
+                return TrapType.BLACK_HOLE;
             } else if (offHand.getType() == Material.TNT) {
-                return TrapManager.TrapType.MINE;
+                return TrapType.MINE;
             } else if (offHand.getType() == Material.SPIDER_EYE) {
-                return TrapManager.TrapType.POISON_TRAP;
+                return TrapType.POISON_TRAP;
             }
         }
 
@@ -199,15 +200,15 @@ public class TrapListener implements Listener {
                 continue;
 
             if (item.getType() == Material.MAGMA_CREAM && item != mainHand) {
-                return TrapManager.TrapType.HELL_TRAP;
+                return TrapType.HELL_TRAP;
             } else if (ItemManager.isCustomItem(item, "LIGHTNING_CORE") && item != mainHand) {
-                return TrapManager.TrapType.SHOCK_TRAP;
+                return TrapType.SHOCK_TRAP;
             } else if (item.getType() == Material.ENDER_PEARL && item != mainHand) {
-                return TrapManager.TrapType.BLACK_HOLE;
+                return TrapType.BLACK_HOLE;
             } else if (item.getType() == Material.TNT && item != mainHand) {
-                return TrapManager.TrapType.MINE;
+                return TrapType.MINE;
             } else if (item.getType() == Material.SPIDER_EYE && item != mainHand) {
-                return TrapManager.TrapType.POISON_TRAP;
+                return TrapType.POISON_TRAP;
             }
         }
 

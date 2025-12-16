@@ -2,6 +2,7 @@ package me.mami.stratocraft.manager;
 
 import me.mami.stratocraft.Main;
 import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.player.PlayerData;
 import org.bukkit.Bukkit;
 
 import java.util.*;
@@ -30,6 +31,9 @@ public class ClanManager {
     private me.mami.stratocraft.manager.clan.ClanActivitySystem clanActivitySystem;
     private me.mami.stratocraft.manager.clan.ClanBankSystem clanBankSystem;
     private me.mami.stratocraft.manager.clan.ClanMissionSystem clanMissionSystem;
+    
+    // Yeni Model Sistemi
+    private PlayerDataManager playerDataManager;
     
     public ClanManager() {
         // Varsayılan constructor
@@ -69,6 +73,13 @@ public class ClanManager {
     }
     
     /**
+     * PlayerDataManager setter (Yeni Model Sistemi)
+     */
+    public void setPlayerDataManager(PlayerDataManager playerDataManager) {
+        this.playerDataManager = playerDataManager;
+    }
+    
+    /**
      * Klan oluştur (null check ve validation ile)
      */
     public Clan createClan(String name, UUID leader) {
@@ -104,6 +115,11 @@ public class ClanManager {
             Clan c = new Clan(name, leader);
             clans.put(c.getId(), c);
             playerClanMap.put(leader, c.getId());
+            
+            // YENİ MODEL: PlayerData güncelle (klan oluşturma)
+            if (playerDataManager != null) {
+                playerDataManager.setClan(leader, c.getId(), Clan.Rank.LEADER);
+            }
             
             // Yeni sistemler: Aktivite güncelle
             if (clanActivitySystem != null) {
@@ -203,6 +219,11 @@ public class ClanManager {
             clan.addMember(memberId, rank);
             playerClanMap.put(memberId, clan.getId());
             
+            // YENİ MODEL: PlayerData güncelle
+            if (playerDataManager != null) {
+                playerDataManager.setClan(memberId, clan.getId(), rank);
+            }
+            
             // Yeni sistemler: Aktivite güncelle
             if (clanActivitySystem != null) {
                 clanActivitySystem.updateActivity(memberId);
@@ -233,6 +254,11 @@ public class ClanManager {
             }
             playerClanMap.remove(memberId);
             
+            // YENİ MODEL: PlayerData güncelle
+            if (playerDataManager != null) {
+                playerDataManager.leaveClan(memberId);
+            }
+            
             // Cache'i güncelle
             if (territoryManager != null) {
                 territoryManager.setCacheDirty();
@@ -257,9 +283,23 @@ public class ClanManager {
             // Thread-safe: Copy of keySet
             Set<UUID> memberIds = new HashSet<>(clan.getMembers().keySet());
             
-            // Tüm üyeleri playerClanMap'ten çıkar
+            // Tüm üyeleri playerClanMap'ten çıkar ve PlayerData güncelle
             for (UUID memberId : memberIds) {
                 playerClanMap.remove(memberId);
+                
+                // YENİ MODEL: PlayerData güncelle (klan dağıtma)
+                if (playerDataManager != null) {
+                    playerDataManager.leaveClan(memberId);
+                }
+            }
+            
+            // YENİ: TerritoryBoundaryManager cache'ini temizle (memory leak önleme)
+            if (territoryManager != null && plugin != null) {
+                me.mami.stratocraft.manager.TerritoryBoundaryManager boundaryManager = 
+                    plugin.getTerritoryBoundaryManager();
+                if (boundaryManager != null) {
+                    boundaryManager.removeTerritoryData(clan);
+                }
             }
             
             // Klanı listeden çıkar
@@ -275,6 +315,41 @@ public class ClanManager {
         } catch (Exception e) {
             if (plugin != null) {
                 plugin.getLogger().warning("Klan dağıtma hatası: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    /**
+     * Rütbe değiştir (PlayerData güncellemesi ile)
+     */
+    public void changeRank(Clan clan, UUID memberId, Clan.Rank newRank) {
+        if (clan == null || memberId == null || newRank == null) return;
+        
+        // Klan üyesi mi kontrol et
+        if (!clan.getMembers().containsKey(memberId)) {
+            if (plugin != null) {
+                plugin.getLogger().warning("Rütbe değiştirme hatası: Oyuncu klan üyesi değil: " + memberId);
+            }
+            return;
+        }
+        
+        try {
+            // Rütbeyi değiştir
+            clan.setRank(memberId, newRank);
+            
+            // YENİ MODEL: PlayerData güncelle
+            if (playerDataManager != null) {
+                playerDataManager.setClan(memberId, clan.getId(), newRank);
+            }
+            
+            // Cache'i güncelle
+            if (territoryManager != null) {
+                territoryManager.setCacheDirty();
+            }
+        } catch (Exception e) {
+            if (plugin != null) {
+                plugin.getLogger().warning("Rütbe değiştirme hatası: " + e.getMessage());
                 e.printStackTrace();
             }
         }

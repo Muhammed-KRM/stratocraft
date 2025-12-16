@@ -1,6 +1,7 @@
 package me.mami.stratocraft.manager;
 
 import me.mami.stratocraft.Main;
+import me.mami.stratocraft.enums.StructureType;
 import me.mami.stratocraft.model.Structure;
 import me.mami.stratocraft.util.BlockRecipe;
 import org.bukkit.Bukkit;
@@ -27,11 +28,17 @@ public class StructureRecipeManager {
     private final Main plugin;
     private final StructureValidator structureValidator;
     
-    // Kod içi tarifler: Structure.Type -> BlockRecipe
-    private final Map<Structure.Type, BlockRecipe> codeRecipes = new ConcurrentHashMap<>();
+    // Kod içi tarifler: StructureType -> BlockRecipe (YENİ)
+    private final Map<StructureType, BlockRecipe> codeRecipes = new ConcurrentHashMap<>();
     
-    // Şema tarifleri: Structure.Type -> Schematic Name
-    private final Map<Structure.Type, String> schematicRecipes = new ConcurrentHashMap<>();
+    // Şema tarifleri: StructureType -> Schematic Name (YENİ)
+    private final Map<StructureType, String> schematicRecipes = new ConcurrentHashMap<>();
+    
+    // GERİYE UYUMLULUK: Eski Structure.Type desteği
+    @Deprecated
+    private final Map<Structure.Type, BlockRecipe> legacyCodeRecipes = new ConcurrentHashMap<>();
+    @Deprecated
+    private final Map<Structure.Type, String> legacySchematicRecipes = new ConcurrentHashMap<>();
     
     public StructureRecipeManager(Main plugin) {
         this.plugin = plugin;
@@ -42,49 +49,128 @@ public class StructureRecipeManager {
     }
     
     /**
-     * Kod içi tarif kaydet
+     * Kod içi tarif kaydet (YENİ: StructureType)
      */
-    public void registerCodeRecipe(Structure.Type type, BlockRecipe recipe) {
+    public void registerCodeRecipe(StructureType type, BlockRecipe recipe) {
         if (type == null || recipe == null) return;
         codeRecipes.put(type, recipe);
     }
     
     /**
-     * Şema tarifi kaydet
+     * Şema tarifi kaydet (YENİ: StructureType)
      */
-    public void registerSchematicRecipe(Structure.Type type, String schematicName) {
+    public void registerSchematicRecipe(StructureType type, String schematicName) {
         if (type == null || schematicName == null) return;
         schematicRecipes.put(type, schematicName);
     }
     
     /**
-     * Tarif var mı kontrol et
+     * Kod içi tarif kaydet (GERİYE UYUMLULUK: Structure.Type)
+     * @deprecated StructureType kullanın
      */
-    public boolean hasRecipe(Structure.Type type) {
+    @Deprecated
+    public void registerCodeRecipe(Structure.Type type, BlockRecipe recipe) {
+        if (type == null || recipe == null) return;
+        legacyCodeRecipes.put(type, recipe);
+        // Yeni enum'a da kaydet
+        try {
+            StructureType newType = StructureType.valueOf(type.name());
+            codeRecipes.put(newType, recipe);
+        } catch (IllegalArgumentException e) {
+            // Eski enum'da yeni enum'da olmayan bir tip varsa
+        }
+    }
+    
+    /**
+     * Şema tarifi kaydet (GERİYE UYUMLULUK: Structure.Type)
+     * @deprecated StructureType kullanın
+     */
+    @Deprecated
+    public void registerSchematicRecipe(Structure.Type type, String schematicName) {
+        if (type == null || schematicName == null) return;
+        legacySchematicRecipes.put(type, schematicName);
+        // Yeni enum'a da kaydet
+        try {
+            StructureType newType = StructureType.valueOf(type.name());
+            schematicRecipes.put(newType, schematicName);
+        } catch (IllegalArgumentException e) {
+            // Eski enum'da yeni enum'da olmayan bir tip varsa
+        }
+    }
+    
+    /**
+     * Tarif var mı kontrol et (YENİ: StructureType)
+     */
+    public boolean hasRecipe(StructureType type) {
         if (type == null) return false;
         return codeRecipes.containsKey(type) || schematicRecipes.containsKey(type);
     }
     
     /**
-     * Kod içi tarif mi kontrol et
+     * Kod içi tarif mi kontrol et (YENİ: StructureType)
      */
-    public boolean isCodeRecipe(Structure.Type type) {
+    public boolean isCodeRecipe(StructureType type) {
         if (type == null) return false;
         return codeRecipes.containsKey(type);
     }
     
     /**
-     * Şema tarifi mi kontrol et
+     * Şema tarifi mi kontrol et (YENİ: StructureType)
      */
-    public boolean isSchematicRecipe(Structure.Type type) {
+    public boolean isSchematicRecipe(StructureType type) {
         if (type == null) return false;
         return schematicRecipes.containsKey(type);
     }
     
     /**
-     * Tarif doğrulama (sync - main thread'de çalışmalı)
+     * Tarif var mı kontrol et (GERİYE UYUMLULUK: Structure.Type)
+     * @deprecated StructureType kullanın
      */
-    public boolean validateStructure(Location coreLocation, Structure.Type type) {
+    @Deprecated
+    public boolean hasRecipe(Structure.Type type) {
+        if (type == null) return false;
+        try {
+            StructureType newType = StructureType.valueOf(type.name());
+            return hasRecipe(newType);
+        } catch (IllegalArgumentException e) {
+            return legacyCodeRecipes.containsKey(type) || legacySchematicRecipes.containsKey(type);
+        }
+    }
+    
+    /**
+     * Kod içi tarif mi kontrol et (GERİYE UYUMLULUK: Structure.Type)
+     * @deprecated StructureType kullanın
+     */
+    @Deprecated
+    public boolean isCodeRecipe(Structure.Type type) {
+        if (type == null) return false;
+        try {
+            StructureType newType = StructureType.valueOf(type.name());
+            return isCodeRecipe(newType);
+        } catch (IllegalArgumentException e) {
+            return legacyCodeRecipes.containsKey(type);
+        }
+    }
+    
+    /**
+     * Şema tarifi mi kontrol et (GERİYE UYUMLULUK: Structure.Type)
+     * @deprecated StructureType kullanın
+     */
+    @Deprecated
+    public boolean isSchematicRecipe(Structure.Type type) {
+        if (type == null) return false;
+        try {
+            StructureType newType = StructureType.valueOf(type.name());
+            return isSchematicRecipe(newType);
+        } catch (IllegalArgumentException e) {
+            return legacySchematicRecipes.containsKey(type);
+        }
+    }
+    
+    /**
+     * Tarif doğrulama (sync - main thread'de çalışmalı) (YENİ: StructureType)
+     */
+    public boolean validateStructure(Location coreLocation, StructureType type) {
         if (coreLocation == null || type == null) return false;
         
         // Önce kod içi tarif kontrolü
@@ -104,9 +190,9 @@ public class StructureRecipeManager {
     }
     
     /**
-     * Tarif doğrulama (async - performanslı)
+     * Tarif doğrulama (async - performanslı) (YENİ: StructureType)
      */
-    public void validateStructureAsync(Location coreLocation, Structure.Type type, Consumer<Boolean> callback) {
+    public void validateStructureAsync(Location coreLocation, StructureType type, Consumer<Boolean> callback) {
         if (coreLocation == null || type == null) {
             if (callback != null) callback.accept(false);
             return;
@@ -135,74 +221,131 @@ public class StructureRecipeManager {
     }
     
     /**
+     * Tarif doğrulama (sync - main thread'de çalışmalı) (GERİYE UYUMLULUK: Structure.Type)
+     * @deprecated StructureType kullanın
+     */
+    @Deprecated
+    public boolean validateStructure(Location coreLocation, Structure.Type type) {
+        if (coreLocation == null || type == null) return false;
+        try {
+            StructureType newType = StructureType.valueOf(type.name());
+            return validateStructure(coreLocation, newType);
+        } catch (IllegalArgumentException e) {
+            // Eski sistem
+            BlockRecipe codeRecipe = legacyCodeRecipes.get(type);
+            if (codeRecipe != null) {
+                return codeRecipe.validate(coreLocation);
+            }
+            String schematicName = legacySchematicRecipes.get(type);
+            if (schematicName != null) {
+                plugin.getLogger().warning("Sync şema doğrulama kullanılıyor, async kullanılmalı: " + type);
+                return structureValidator.validate(coreLocation, schematicName);
+            }
+            return false;
+        }
+    }
+    
+    /**
+     * Tarif doğrulama (async - performanslı) (GERİYE UYUMLULUK: Structure.Type)
+     * @deprecated StructureType kullanın
+     */
+    @Deprecated
+    public void validateStructureAsync(Location coreLocation, Structure.Type type, Consumer<Boolean> callback) {
+        if (coreLocation == null || type == null) {
+            if (callback != null) callback.accept(false);
+            return;
+        }
+        try {
+            StructureType newType = StructureType.valueOf(type.name());
+            validateStructureAsync(coreLocation, newType, callback);
+        } catch (IllegalArgumentException e) {
+            // Eski sistem
+            BlockRecipe codeRecipe = legacyCodeRecipes.get(type);
+            if (codeRecipe != null) {
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    boolean result = codeRecipe.validate(coreLocation);
+                    if (callback != null) callback.accept(result);
+                });
+                return;
+            }
+            String schematicName = legacySchematicRecipes.get(type);
+            if (schematicName != null) {
+                structureValidator.validateAsync(coreLocation, schematicName, callback);
+                return;
+            }
+            if (callback != null) callback.accept(false);
+        }
+    }
+    
+    /**
      * Tüm tarifleri kaydet (Factory Pattern)
      */
     private void registerAllRecipes() {
-        // Basit yapılar - Kod içi tarifler
+        // Basit yapılar - Kod içi tarifler (YENİ: StructureType)
         
         // 1. Görev Loncası (PERSONAL_MISSION_GUILD)
         BlockRecipe missionGuildRecipe = BlockRecipe.builder("Görev Loncası")
             .setCore(Material.END_CRYSTAL)
-            .addBlockBelow(Material.COBBLESTONE) // Altında kırıktaş
-            .addBlockAbove(Material.LECTERN) // Üstünde kürsü
+            .addBlockBelow(Material.COBBLESTONE)
+            .addBlockAbove(Material.LECTERN)
             .build();
-        registerCodeRecipe(Structure.Type.PERSONAL_MISSION_GUILD, missionGuildRecipe);
+        registerCodeRecipe(StructureType.PERSONAL_MISSION_GUILD, missionGuildRecipe);
         
         // 2. Klan Bankası (CLAN_BANK)
         BlockRecipe bankRecipe = BlockRecipe.builder("Klan Bankası")
             .setCore(Material.END_CRYSTAL)
-            .addBlockBelow(Material.GOLD_BLOCK) // Altında altın blok
-            .addBlockAbove(Material.CHEST) // Üstünde sandık
+            .addBlockBelow(Material.GOLD_BLOCK)
+            .addBlockAbove(Material.CHEST)
             .build();
-        registerCodeRecipe(Structure.Type.CLAN_BANK, bankRecipe);
+        registerCodeRecipe(StructureType.CLAN_BANK, bankRecipe);
         
         // 3. Kontrat Bürosu (CONTRACT_OFFICE)
         BlockRecipe contractOfficeRecipe = BlockRecipe.builder("Kontrat Bürosu")
             .setCore(Material.END_CRYSTAL)
-            .addBlockBelow(Material.STONE) // Altında taş
-            .addBlockAbove(Material.CRAFTING_TABLE) // Üstünde masa
+            .addBlockBelow(Material.STONE)
+            .addBlockAbove(Material.CRAFTING_TABLE)
             .build();
-        registerCodeRecipe(Structure.Type.CONTRACT_OFFICE, contractOfficeRecipe);
+        registerCodeRecipe(StructureType.CONTRACT_OFFICE, contractOfficeRecipe);
         
         // 4. Klan Görev Loncası (CLAN_MISSION_GUILD)
         BlockRecipe clanMissionGuildRecipe = BlockRecipe.builder("Klan Görev Loncası")
             .setCore(Material.END_CRYSTAL)
-            .addBlockBelow(Material.EMERALD_BLOCK) // Altında zümrüt blok
-            .addBlockAbove(Material.LECTERN) // Üstünde kürsü
+            .addBlockBelow(Material.EMERALD_BLOCK)
+            .addBlockAbove(Material.LECTERN)
             .build();
-        registerCodeRecipe(Structure.Type.CLAN_MISSION_GUILD, clanMissionGuildRecipe);
+        registerCodeRecipe(StructureType.CLAN_MISSION_GUILD, clanMissionGuildRecipe);
         
         // 5. Market (MARKET_PLACE)
         BlockRecipe marketRecipe = BlockRecipe.builder("Market")
             .setCore(Material.END_CRYSTAL)
-            .addBlockBelow(Material.COAL_BLOCK) // Altında kömür blok
-            .addBlockAbove(Material.CHEST) // Üstünde sandık
+            .addBlockBelow(Material.COAL_BLOCK)
+            .addBlockAbove(Material.CHEST)
             .build();
-        registerCodeRecipe(Structure.Type.MARKET_PLACE, marketRecipe);
+        registerCodeRecipe(StructureType.MARKET_PLACE, marketRecipe);
         
         // 6. Tarif Kütüphanesi (RECIPE_LIBRARY)
         BlockRecipe recipeLibraryRecipe = BlockRecipe.builder("Tarif Kütüphanesi")
             .setCore(Material.END_CRYSTAL)
-            .addBlockBelow(Material.BOOKSHELF) // Altında kitaplık
-            .addBlockAbove(Material.LECTERN) // Üstünde kürsü
+            .addBlockBelow(Material.BOOKSHELF)
+            .addBlockAbove(Material.LECTERN)
             .build();
-        registerCodeRecipe(Structure.Type.RECIPE_LIBRARY, recipeLibraryRecipe);
+        registerCodeRecipe(StructureType.RECIPE_LIBRARY, recipeLibraryRecipe);
         
-        // Karmaşık yapılar - Şema tarifleri (mevcut sistem)
-        registerSchematicRecipe(Structure.Type.ALCHEMY_TOWER, "alchemy_tower");
-        registerSchematicRecipe(Structure.Type.TECTONIC_STABILIZER, "tectonic_stabilizer");
-        registerSchematicRecipe(Structure.Type.POISON_REACTOR, "poison_reactor");
-        registerSchematicRecipe(Structure.Type.AUTO_TURRET, "auto_turret");
-        registerSchematicRecipe(Structure.Type.GLOBAL_MARKET_GATE, "market_gate");
+        // Karmaşık yapılar - Şema tarifleri (YENİ: StructureType)
+        registerSchematicRecipe(StructureType.ALCHEMY_TOWER, "alchemy_tower");
+        registerSchematicRecipe(StructureType.TECTONIC_STABILIZER, "tectonic_stabilizer");
+        registerSchematicRecipe(StructureType.POISON_REACTOR, "poison_reactor");
+        registerSchematicRecipe(StructureType.AUTO_TURRET, "auto_turret");
+        registerSchematicRecipe(StructureType.GLOBAL_MARKET_GATE, "market_gate");
         
         plugin.getLogger().info("§aYapı tarifleri yüklendi: " + 
             (codeRecipes.size() + schematicRecipes.size()) + " tarif");
     }
     
     /**
-     * Tarif bilgisi al (hata mesajları için)
+     * Tarif bilgisi al (hata mesajları için) (YENİ: StructureType)
      */
-    public String getRecipeInfo(Structure.Type type) {
+    public String getRecipeInfo(StructureType type) {
         if (type == null) return "Bilinmeyen yapı";
         
         BlockRecipe codeRecipe = codeRecipes.get(type);
@@ -217,6 +360,30 @@ public class StructureRecipeManager {
         }
         
         return "Tarif bulunamadı";
+    }
+    
+    /**
+     * Tarif bilgisi al (GERİYE UYUMLULUK: Structure.Type)
+     * @deprecated StructureType kullanın
+     */
+    @Deprecated
+    public String getRecipeInfo(Structure.Type type) {
+        if (type == null) return "Bilinmeyen yapı";
+        try {
+            StructureType newType = StructureType.valueOf(type.name());
+            return getRecipeInfo(newType);
+        } catch (IllegalArgumentException e) {
+            BlockRecipe codeRecipe = legacyCodeRecipes.get(type);
+            if (codeRecipe != null) {
+                return codeRecipe.getRecipeName() + " (Kod içi tarif, " + 
+                       codeRecipe.getRequirementCount() + " gereksinim)";
+            }
+            String schematicName = legacySchematicRecipes.get(type);
+            if (schematicName != null) {
+                return type.name() + " (Şema tarifi: " + schematicName + ".schem)";
+            }
+            return "Tarif bulunamadı";
+        }
     }
 }
 

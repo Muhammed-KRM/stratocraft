@@ -1,5 +1,8 @@
 package me.mami.stratocraft.model;
 
+import me.mami.stratocraft.enums.CreatureDisasterType;
+import me.mami.stratocraft.enums.DisasterCategory;
+import me.mami.stratocraft.enums.DisasterType;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 
@@ -28,6 +31,10 @@ import org.bukkit.entity.Entity;
  *        iç seviye 1-3 arası belirtilebilir (güçlü/güçsüz form).
  */
 public class Disaster {
+    /**
+     * @deprecated me.mami.stratocraft.enums.DisasterType kullanın
+     */
+    @Deprecated
     public enum Type { 
         // Canlı Felaketler - Tek Boss (Felaket Bossları - Normal bosslardan ayrı)
         CATASTROPHIC_TITAN,        // Seviye 3 - Felaket Titanı (30 blok boyunda dev golem)
@@ -58,6 +65,10 @@ public class Disaster {
         PLAYER_BUFF_WAVE    // Mini - Oyuncu buff dalgası
     }
     
+    /**
+     * @deprecated me.mami.stratocraft.enums.DisasterCategory kullanın
+     */
+    @Deprecated
     public enum Category {
         CREATURE,   // Canlı felaketler
         NATURAL,    // Doğa olayları
@@ -66,7 +77,9 @@ public class Disaster {
     
     /**
      * Canavar felaket tipi (tek boss, grup, mini dalga)
+     * @deprecated me.mami.stratocraft.enums.CreatureDisasterType kullanın
      */
+    @Deprecated
     public enum CreatureDisasterType {
         SINGLE_BOSS,    // Tek boss
         MEDIUM_GROUP,   // 30 orta güçte
@@ -102,6 +115,11 @@ public class Disaster {
     // Hasar takibi (hasar bazlı ödül dağıtımı için)
     private final java.util.Map<java.util.UUID, Double> playerDamage = new java.util.concurrent.ConcurrentHashMap<>();
     
+    /**
+     * Constructor (GERİYE UYUMLULUK: Type, Category)
+     * @deprecated DisasterType, DisasterCategory kullanın
+     */
+    @Deprecated
     public Disaster(Type type, Category category, int level, Entity entity, Location target, 
                    double maxHealth, double damageMultiplier, long duration) {
         this.type = type;
@@ -170,15 +188,64 @@ public class Disaster {
         }
     }
     
+    /**
+     * @deprecated me.mami.stratocraft.enums.DisasterType kullanın
+     */
+    @Deprecated
     public Type getType() { return type; }
+    
+    /**
+     * Yeni merkezi enum'u döndür
+     */
+    public DisasterType getDisasterType() {
+        if (type == null) return null;
+        try {
+            return DisasterType.valueOf(type.name());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+    
+    /**
+     * @deprecated me.mami.stratocraft.enums.DisasterCategory kullanın
+     */
+    @Deprecated
     public Category getCategory() { return category; }
+    
+    /**
+     * Yeni merkezi enum'u döndür
+     */
+    public DisasterCategory getDisasterCategory() {
+        if (category == null) return null;
+        try {
+            return DisasterCategory.valueOf(category.name());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
     public int getLevel() { return level; }
     public Entity getEntity() { return entity; }
     public Location getTarget() { return target; }
     public void setTarget(Location target) { this.target = target; }
     public Location getTargetCrystal() { return targetCrystalLocation; }
     public void setTargetCrystal(Location crystalLoc) { this.targetCrystalLocation = crystalLoc; }
+    /**
+     * @deprecated me.mami.stratocraft.enums.CreatureDisasterType kullanın
+     */
+    @Deprecated
     public CreatureDisasterType getCreatureDisasterType() { return creatureDisasterType; }
+    
+    /**
+     * Yeni merkezi enum'u döndür
+     */
+    public me.mami.stratocraft.enums.CreatureDisasterType getDisasterCreatureType() {
+        if (creatureDisasterType == null) return null;
+        try {
+            return me.mami.stratocraft.enums.CreatureDisasterType.valueOf(creatureDisasterType.name());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
     public java.util.List<Entity> getGroupEntities() { return groupEntities; }
     public void addGroupEntity(Entity entity) { this.groupEntities.add(entity); }
     
@@ -295,8 +362,10 @@ public class Disaster {
     }
     
     /**
-     * Tip'e göre kategori
+     * Tip'e göre kategori (GERİYE UYUMLULUK: Type)
+     * @deprecated DisasterType kullanın
      */
+    @Deprecated
     public static Category getCategory(Type type) {
         switch (type) {
             case CATASTROPHIC_TITAN:
@@ -326,8 +395,42 @@ public class Disaster {
     }
     
     /**
-     * Canavar felaket tipini belirle
+     * Tip'e göre kategori (YENİ: DisasterType)
      */
+    public static DisasterCategory getCategory(DisasterType type) {
+        if (type == null) return DisasterCategory.CREATURE;
+        switch (type) {
+            case CATASTROPHIC_TITAN:
+            case CATASTROPHIC_ABYSSAL_WORM:
+            case CATASTROPHIC_CHAOS_DRAGON:
+            case CATASTROPHIC_VOID_TITAN:
+            case CATASTROPHIC_ICE_LEVIATHAN:
+            case ZOMBIE_HORDE:
+            case SKELETON_LEGION:
+            case SPIDER_SWARM:
+            case CREEPER_SWARM:
+            case ZOMBIE_WAVE:
+                return DisasterCategory.CREATURE;
+            case SOLAR_FLARE:
+            case EARTHQUAKE:
+            case STORM:
+            case METEOR_SHOWER:
+            case VOLCANIC_ERUPTION:
+                return DisasterCategory.NATURAL;
+            case BOSS_BUFF_WAVE:
+            case MOB_INVASION:
+            case PLAYER_BUFF_WAVE:
+                return DisasterCategory.MINI;
+            default:
+                return DisasterCategory.CREATURE;
+        }
+    }
+    
+    /**
+     * Canavar felaket tipini belirle (GERİYE UYUMLULUK: Type)
+     * @deprecated DisasterType kullanın
+     */
+    @Deprecated
     public static CreatureDisasterType getCreatureDisasterType(Type type) {
         switch (type) {
             case CATASTROPHIC_TITAN:

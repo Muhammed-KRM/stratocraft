@@ -96,6 +96,15 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.StructureRecipeManager structureRecipeManager;
     private me.mami.stratocraft.manager.StructureActivationItemManager structureActivationItemManager;
     
+    // Yeni Model Sistemi Manager'ları
+    private me.mami.stratocraft.manager.PlayerDataManager playerDataManager;
+    
+    // Yapı Efekt Yönetimi
+    private me.mami.stratocraft.manager.StructureEffectManager structureEffectManager;
+    
+    // Merkezi Tarif Yönetim Sistemi
+    private me.mami.stratocraft.manager.RecipeManager recipeManager;
+    
     public me.mami.stratocraft.listener.SpecialWeaponListener getSpecialWeaponListener() {
         return specialWeaponListener;
     }
@@ -162,6 +171,12 @@ public class Main extends JavaPlugin {
         structureCoreManager = new me.mami.stratocraft.manager.StructureCoreManager(this);
         structureActivationItemManager = new me.mami.stratocraft.manager.StructureActivationItemManager();
         structureRecipeManager = new me.mami.stratocraft.manager.StructureRecipeManager(this);
+        
+        // Yeni Model Sistemi Manager'ları
+        playerDataManager = new me.mami.stratocraft.manager.PlayerDataManager(this);
+        
+        // YENİ MODEL: ClanManager'a PlayerDataManager'ı set et
+        clanManager.setPlayerDataManager(playerDataManager);
         
         batteryParticleManager = new me.mami.stratocraft.manager.BatteryParticleManager(this);
         dataManager = new DataManager(this);
@@ -249,7 +264,55 @@ public class Main extends JavaPlugin {
         combatListener.setAllianceManager(allianceManager);
         Bukkit.getPluginManager().registerEvents(combatListener, this);
         Bukkit.getPluginManager().registerEvents(new SurvivalListener(missionManager), this);
-        Bukkit.getPluginManager().registerEvents(new TerritoryListener(territoryManager, siegeManager), this);
+        // YENİ: TerritoryBoundaryManager ve TerritoryConfig
+        me.mami.stratocraft.manager.config.TerritoryConfig territoryConfig = 
+            configManager != null ? configManager.getTerritoryConfig() : null;
+        me.mami.stratocraft.manager.TerritoryBoundaryManager territoryBoundaryManager = null;
+        if (territoryConfig != null) {
+            territoryBoundaryManager = new me.mami.stratocraft.manager.TerritoryBoundaryManager(
+                this, territoryManager, territoryConfig);
+        }
+        
+        // YENİ: TerritoryListener güncelle
+        TerritoryListener territoryListener = new TerritoryListener(territoryManager, siegeManager);
+        if (territoryBoundaryManager != null) {
+            territoryListener.setBoundaryManager(territoryBoundaryManager);
+        }
+        if (territoryConfig != null) {
+            territoryListener.setTerritoryConfig(territoryConfig);
+        }
+        Bukkit.getPluginManager().registerEvents(territoryListener, this);
+        
+        // YENİ: TerritoryBoundaryParticleTask başlat
+        if (territoryConfig != null && territoryConfig.isBoundaryParticleEnabled() && territoryBoundaryManager != null) {
+            try {
+                me.mami.stratocraft.task.TerritoryBoundaryParticleTask boundaryTask = 
+                    new me.mami.stratocraft.task.TerritoryBoundaryParticleTask(
+                        this, territoryManager, territoryBoundaryManager, territoryConfig);
+                boundaryTask.start();
+            } catch (Exception e) {
+                getLogger().warning("TerritoryBoundaryParticleTask başlatılamadı: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        
+        // YENİ: ClanTerritoryMenu oluştur
+        me.mami.stratocraft.gui.ClanTerritoryMenu clanTerritoryMenu = null;
+        if (territoryBoundaryManager != null && territoryConfig != null) {
+            try {
+                clanTerritoryMenu = new me.mami.stratocraft.gui.ClanTerritoryMenu(
+                    this, clanManager, territoryManager, territoryBoundaryManager, territoryConfig);
+                Bukkit.getPluginManager().registerEvents(clanTerritoryMenu, this);
+            } catch (Exception e) {
+                getLogger().warning("ClanTerritoryMenu oluşturulamadı: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        
+        // YENİ: Getter metodları için field'ları sakla (getClanTerritoryMenu için)
+        this.clanTerritoryMenu = clanTerritoryMenu;
+        this.territoryBoundaryManager = territoryBoundaryManager;
+        this.territoryConfig = territoryConfig;
         Bukkit.getPluginManager().registerEvents(new StructureActivationListener(clanManager, territoryManager), this); // YAPI
                                                                                                                         // AKTİVASYONU
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.StructureMenuListener(this, clanManager, territoryManager), this); // YAPI MENÜLERİ
@@ -451,6 +514,10 @@ public class Main extends JavaPlugin {
             }
         }, 40L); // 2 saniye sonra (sunucu tamamen yüklendikten sonra)
         
+        // YENİ: StructureEffectManager oluştur (PlayerJoinEvent'ten önce olmalı)
+        structureEffectManager = 
+            new me.mami.stratocraft.manager.StructureEffectManager(this, clanManager, playerDataManager);
+        
         // PlayerJoinEvent listener - BossBar'a yeni oyuncuları ekle ve kontrat cezalarını uygula
         Bukkit.getPluginManager().registerEvents(new org.bukkit.event.Listener() {
             @org.bukkit.event.EventHandler
@@ -467,6 +534,10 @@ public class Main extends JavaPlugin {
                 if (hudManager != null) {
                     hudManager.onPlayerJoin(event.getPlayer());
                 }
+                // YENİ: StructureEffectManager - Oyuncu girişinde yapı efektlerini uygula
+                if (structureEffectManager != null) {
+                    structureEffectManager.onPlayerJoin(event.getPlayer());
+                }
                 // ✅ OYUNCU ADI GÜNCELLEME: Seviyeye göre renk ve seviye gösterimi
                 // PowerSystemListener zaten PlayerJoinEvent'i dinliyor ve updatePlayerName çağırıyor
             }
@@ -479,10 +550,15 @@ public class Main extends JavaPlugin {
                 if (hudManager != null) {
                     hudManager.onPlayerQuit(event.getPlayer());
                 }
+                // YENİ: StructureEffectManager - Oyuncu çıkışında yapı efektlerini kaldır
+                if (structureEffectManager != null) {
+                    structureEffectManager.onPlayerQuit(event.getPlayer());
+                }
             }
         }, this);
         
-        new me.mami.stratocraft.task.StructureEffectTask(clanManager).runTaskTimer(this, 20L, 20L); // YAPI EFEKTLERİ
+        // StructureEffectTask'ı yeni manager ile başlat
+        new me.mami.stratocraft.task.StructureEffectTask(structureEffectManager).runTaskTimer(this, 20L, 20L); // YAPI EFEKTLERİ
 
         // Casusluk Dürbünü için Scheduler - PERFORMANS OPTİMİZASYONU
         // RayTrace ağır bir işlem olduğu için sıklığı azaltıldı (5 tick -> 20 tick = 1 saniye)
@@ -988,6 +1064,18 @@ public class Main extends JavaPlugin {
     public me.mami.stratocraft.manager.StructureActivationItemManager getStructureActivationItemManager() {
         return structureActivationItemManager;
     }
+    
+    public me.mami.stratocraft.manager.PlayerDataManager getPlayerDataManager() {
+        return playerDataManager;
+    }
+    
+    public me.mami.stratocraft.manager.StructureEffectManager getStructureEffectManager() {
+        return structureEffectManager;
+    }
+    
+    public me.mami.stratocraft.manager.RecipeManager getRecipeManager() {
+        return recipeManager;
+    }
 
     public ContractManager getContractManager() {
         return contractManager;
@@ -1019,6 +1107,19 @@ public class Main extends JavaPlugin {
 
     public me.mami.stratocraft.gui.ClanMenu getClanMenu() {
         return clanMenu;
+    }
+    
+    // YENİ: Territory sistemi getter'ları
+    public me.mami.stratocraft.manager.TerritoryBoundaryManager getTerritoryBoundaryManager() {
+        return territoryBoundaryManager;
+    }
+    
+    public me.mami.stratocraft.manager.config.TerritoryConfig getTerritoryConfig() {
+        return territoryConfig;
+    }
+    
+    public me.mami.stratocraft.gui.ClanTerritoryMenu getClanTerritoryMenu() {
+        return clanTerritoryMenu;
     }
     
     public me.mami.stratocraft.gui.ClanMissionMenu getClanMissionMenu() {
@@ -1399,6 +1500,10 @@ public class Main extends JavaPlugin {
             clanManager.setClanActivitySystem(clanActivitySystem);
             clanManager.setClanBankSystem(clanBankSystem);
             clanManager.setClanMissionSystem(clanMissionSystem);
+            // YENİ MODEL: PlayerDataManager zaten yukarıda set edildi, burada tekrar kontrol et
+            if (playerDataManager != null && clanManager != null) {
+                clanManager.setPlayerDataManager(playerDataManager);
+            }
         }
         
         // Event listener'ı kaydet

@@ -1,5 +1,6 @@
 package me.mami.stratocraft.model;
 
+import me.mami.stratocraft.enums.ContractType;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import java.util.ArrayList;
@@ -7,7 +8,10 @@ import java.util.List;
 import java.util.UUID;
 
 public class Contract {
-    // Sözleşme Tipi Enum
+    /**
+     * @deprecated me.mami.stratocraft.enums.ContractType kullanın
+     */
+    @Deprecated
     public enum ContractType {
         MATERIAL_DELIVERY,    // Malzeme temini
         PLAYER_KILL,          // Oyuncu öldürme (bounty)
@@ -29,7 +33,10 @@ public class Contract {
     private UUID id = UUID.randomUUID();
     private final UUID issuer; // Sözleşmeyi veren
     private UUID acceptor = null; // Sözleşmeyi kabul eden
-    private final ContractType type; // Sözleşme tipi
+    @Deprecated
+    private final ContractType type; // Sözleşme tipi (eski enum, geriye uyumluluk için)
+    private me.mami.stratocraft.enums.ContractType contractType; // Yeni merkezi enum
+    private me.mami.stratocraft.enums.PenaltyType penaltyType; // Ceza tipi
     private final ContractScope scope; // Oyuncu mu, klan mı?
     
     // Ödül ve Ceza
@@ -59,7 +66,22 @@ public class Contract {
     // STRUCTURE_BUILD için
     private String structureType = null; // İnşa edilecek yapı tipi
     
-    // Constructor (Yeni sistem)
+    // Constructor (Yeni sistem - merkezi enum)
+    public Contract(UUID issuer, me.mami.stratocraft.enums.ContractType contractType, ContractScope scope, 
+                   double reward, me.mami.stratocraft.enums.PenaltyType penaltyType, long deadlineDays) {
+        this.issuer = issuer;
+        this.contractType = contractType;
+        this.penaltyType = penaltyType;
+        this.scope = scope;
+        this.reward = reward;
+        this.penalty = reward * 0.5; // Varsayılan ceza = ödülün yarısı
+        this.deadline = System.currentTimeMillis() + (deadlineDays * 24 * 60 * 60 * 1000);
+        // Geriye uyumluluk için eski enum'u map et
+        this.type = convertToOldContractType(contractType);
+    }
+    
+    // Constructor (Geriye uyumluluk - eski enum)
+    @Deprecated
     public Contract(UUID issuer, ContractType type, ContractScope scope, 
                    double reward, double penalty, long deadlineDays) {
         this.issuer = issuer;
@@ -68,6 +90,28 @@ public class Contract {
         this.reward = reward;
         this.penalty = penalty;
         this.deadline = System.currentTimeMillis() + (deadlineDays * 24 * 60 * 60 * 1000);
+        // Yeni enum'u map et
+        this.contractType = getContractType(); // Helper metod kullan
+        this.penaltyType = me.mami.stratocraft.enums.PenaltyType.BANK_PENALTY; // Varsayılan
+    }
+    
+    /**
+     * Eski ContractType'ı yeni ContractType'a dönüştür
+     */
+    private ContractType convertToOldContractType(me.mami.stratocraft.enums.ContractType type) {
+        if (type == null) return null;
+        try {
+            return ContractType.valueOf(type.name());
+        } catch (IllegalArgumentException e) {
+            // Yeni enum değerlerini eski enum'a map et
+            switch (type) {
+                case RESOURCE_COLLECTION: return ContractType.MATERIAL_DELIVERY;
+                case CONSTRUCTION: return ContractType.STRUCTURE_BUILD;
+                case COMBAT: return ContractType.PLAYER_KILL;
+                case TERRITORY: return ContractType.TERRITORY_RESTRICT;
+                default: return ContractType.MATERIAL_DELIVERY;
+            }
+        }
     }
     
     // Eski constructor (geriye uyumluluk)
@@ -89,7 +133,41 @@ public class Contract {
     public UUID getIssuer() { return issuer; }
     public UUID getAcceptor() { return acceptor; }
     public void setAcceptor(UUID acceptor) { this.acceptor = acceptor; }
+    /**
+     * @deprecated me.mami.stratocraft.enums.ContractType kullanın
+     */
+    @Deprecated
     public ContractType getType() { return type; }
+    
+    /**
+     * Yeni merkezi enum'u döndür
+     */
+    public me.mami.stratocraft.enums.ContractType getContractType() {
+        if (contractType != null) return contractType;
+        if (type == null) return null;
+        try {
+            return me.mami.stratocraft.enums.ContractType.valueOf(type.name());
+        } catch (IllegalArgumentException e) {
+            // Eski enum değerlerini yeni enum'a map et
+            switch (type) {
+                case MATERIAL_DELIVERY: return me.mami.stratocraft.enums.ContractType.RESOURCE_COLLECTION;
+                case PLAYER_KILL: return me.mami.stratocraft.enums.ContractType.COMBAT;
+                case TERRITORY_RESTRICT: return me.mami.stratocraft.enums.ContractType.TERRITORY;
+                case NON_AGGRESSION: return me.mami.stratocraft.enums.ContractType.COMBAT; // Saldırmama = combat
+                case BASE_PROTECTION: return me.mami.stratocraft.enums.ContractType.TERRITORY; // Base koruma = territory
+                case STRUCTURE_BUILD: return me.mami.stratocraft.enums.ContractType.CONSTRUCTION;
+                default: return me.mami.stratocraft.enums.ContractType.RESOURCE_COLLECTION;
+            }
+        }
+    }
+    
+    public me.mami.stratocraft.enums.PenaltyType getPenaltyType() {
+        return penaltyType != null ? penaltyType : me.mami.stratocraft.enums.PenaltyType.BANK_PENALTY;
+    }
+    
+    public void setPenaltyType(me.mami.stratocraft.enums.PenaltyType penaltyType) {
+        this.penaltyType = penaltyType;
+    }
     public ContractScope getScope() { return scope; }
     public double getReward() { return reward; }
     public double getPenalty() { return penalty; }

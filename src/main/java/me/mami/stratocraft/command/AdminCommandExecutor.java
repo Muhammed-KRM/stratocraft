@@ -17,6 +17,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import me.mami.stratocraft.Main;
+import me.mami.stratocraft.enums.ItemCategory;
 import me.mami.stratocraft.manager.BatteryManager;
 import me.mami.stratocraft.manager.BossManager;
 import me.mami.stratocraft.manager.DisasterManager;
@@ -75,6 +76,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return handleAlliance(p, args);
             case "build":
                 return handleBuild(p, args);
+            case "structure":
+                return handleStructure(p, args); // YENİ: Yapı yönetim komutları
             case "trap":
                 return handleTrap(p, args);
             case "mine":
@@ -326,8 +329,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     private boolean handleGive(Player p, String[] args) {
         if (args.length < 2) {
             p.sendMessage("§cKullanım: /stratocraft give <kategori> [seviye] <item> [miktar]");
-            p.sendMessage("§7Kategoriler: weapon, armor, material, mobdrop, special, ore, tool, bossitem, recipebook");
-            p.sendMessage("§7Seviyeli itemler (weapon, armor):");
+            p.sendMessage("§7Yeni Kategoriler: attack, defense, support, construction, utility");
+            p.sendMessage("§7Eski Kategoriler (geriye uyumluluk): weapon, armor, material, mobdrop, special, ore, tool, bossitem, recipebook");
+            p.sendMessage("§7Seviyeli itemler (weapon/attack, armor/defense):");
             p.sendMessage("§7  /stratocraft give weapon <seviye> <silah_tipi> [miktar]");
             p.sendMessage("§7  /stratocraft give armor <seviye> <zırh_tipi> [miktar]");
             p.sendMessage("§7  Silah tipleri: sword, axe, spear, bow, hammer");
@@ -341,6 +345,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
         // Kategori kontrolü
         String category = args[1].toLowerCase();
+        // Eski kategorileri yeni kategorilere map et (geriye uyumluluk)
+        category = mapOldCategoryToNew(category);
         String itemName;
         int amount;
         int level = -1;
@@ -379,14 +385,88 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        // Seviyeli kategoriler için özel işlem (weapon, armor)
-        if (category.equals("weapon") || category.equals("armor")) {
+        // Seviyeli kategoriler için özel işlem (weapon/attack, armor/defense)
+        // Yeni format: give weapon <kategori> <seviye> <isim> veya give attack <seviye> <isim>
+        if (category.equals("weapon") || category.equals("armor") || category.equals("attack") || category.equals("defense")) {
+            // Yeni format kontrolü: give weapon <kategori> <seviye> <isim>
+            if (category.equals("weapon") && args.length >= 3) {
+                String secondArg = args[2].toLowerCase();
+                // Eğer ikinci argüman bir sayı değilse, kategori olabilir
+                try {
+                    Integer.parseInt(secondArg);
+                    // Sayı ise eski format (give weapon <seviye> <isim>)
+                } catch (NumberFormatException e) {
+                    // Sayı değilse yeni format (give weapon <kategori> <seviye> <isim>)
+                    // Weapon'lar için kategori = "attack" (ItemCategory.ATTACK)
+                    if (secondArg.equals("attack")) {
+                        if (args.length < 4) {
+                            p.sendMessage("§cKullanım: /stratocraft give weapon attack <seviye> <isim> [miktar]");
+                            p.sendMessage("§7Seviye: 1-5");
+                            p.sendMessage("§7Örnek: /stratocraft give weapon attack 1 hız_hançeri");
+                            return true;
+                        }
+                        // Seviye kontrolü
+                        try {
+                            level = Integer.parseInt(args[3]);
+                            if (level < 1 || level > 5) {
+                                p.sendMessage("§cSeviye 1-5 arası olmalı!");
+                                return true;
+                            }
+                        } catch (NumberFormatException e2) {
+                            p.sendMessage("§cGeçersiz seviye: §e" + args[3]);
+                            return true;
+                        }
+                        // Item ismi
+                        if (args.length < 5) {
+                            p.sendMessage("§cKullanım: /stratocraft give weapon attack <seviye> <isim> [miktar]");
+                            p.sendMessage("§7Örnek: /stratocraft give weapon attack 1 hız_hançeri");
+                            return true;
+                        }
+                        itemName = args[4].toLowerCase();
+                        amount = args.length > 5 ? parseInt(args[5], 1) : 1;
+                        // İsimden item bul
+                        ItemStack weaponItem = getWeaponByName(level, itemName);
+                        if (weaponItem == null) {
+                            weaponItem = getLeveledItemByName("weapon", level, itemName);
+                        }
+                        if (weaponItem != null) {
+                            weaponItem.setAmount(amount);
+                            String displayName = getItemDisplayNameFromStack(weaponItem);
+                            if (displayName == null || displayName.isEmpty()) {
+                                displayName = itemName;
+                            }
+                            java.util.HashMap<Integer, ItemStack> overflow = p.getInventory().addItem(weaponItem);
+                            if (!overflow.isEmpty()) {
+                                for (ItemStack drop : overflow.values()) {
+                                    p.getWorld().dropItemNaturally(p.getLocation(), drop);
+                                }
+                                p.sendMessage("§a" + amount + "x " + displayName + " verildi (yere düştü)");
+                            } else {
+                                p.sendMessage("§a" + amount + "x " + displayName + " verildi");
+                            }
+                            return true;
+                        } else {
+                            p.sendMessage("§cGeçersiz silah ismi: §e" + itemName);
+                            p.sendMessage("§7Seviye " + level + " için geçerli silahlar:");
+                            showWeaponNamesByLevel(p, level);
+                            return true;
+                        }
+                    } else {
+                        p.sendMessage("§cGeçersiz kategori: §e" + secondArg);
+                        p.sendMessage("§7Kategoriler: attack");
+                        return true;
+                    }
+                }
+            }
+            
+            // Eski format: give weapon <seviye> <isim> (geriye uyumluluk)
             if (args.length < 3) {
                 p.sendMessage("§cKullanım: /stratocraft give " + category + " <seviye> <isim> [miktar]");
-                if (category.equals("weapon")) {
+                if (category.equals("weapon") || category.equals("attack")) {
+                    p.sendMessage("§7Yeni format: /stratocraft give weapon attack <seviye> <isim>");
                     p.sendMessage("§7Seviye: 1-5");
-                    p.sendMessage("§7Örnek: /stratocraft give weapon 1 hız_hançeri");
-                    p.sendMessage("§7Örnek: /stratocraft give weapon 5 zamanı_büken");
+                    p.sendMessage("§7Örnek: /stratocraft give weapon attack 1 hız_hançeri");
+                    p.sendMessage("§7Eski format: /stratocraft give weapon <seviye> <isim> (hala çalışıyor)");
                 } else {
                     p.sendMessage("§7Seviye: 1-5");
                     p.sendMessage("§7Tipler: helmet, chestplate, leggings, boots");
@@ -409,7 +489,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             // Item ismi (artık isimle çağrılıyor)
             if (args.length < 4) {
                 p.sendMessage("§cKullanım: /stratocraft give " + category + " <seviye> <isim> [miktar]");
-                if (category.equals("weapon")) {
+                if (category.equals("weapon") || category.equals("attack")) {
                     p.sendMessage("§7Örnek: /stratocraft give weapon 1 hız_hançeri");
                     p.sendMessage("§7Örnek: /stratocraft give weapon 2 alev_kılıcı");
                 }
@@ -417,7 +497,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             }
             
             // İsimden item bul (weapon için)
-            if (category.equals("weapon")) {
+            if (category.equals("weapon") || category.equals("attack")) {
                 itemName = args[3].toLowerCase();
                 // Önce yeni format (isimlerle) dene
                 ItemStack weaponItem = getWeaponByName(level, itemName);
@@ -2262,14 +2342,50 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         return null;
     }
 
+    /**
+     * Eski kategorileri yeni kategorilere map eder (geriye uyumluluk için)
+     * Not: Bu metod sadece weapon -> attack, armor -> defense mapping yapar.
+     * Diğer eski kategoriler (material, mobdrop, vb.) doğrudan getItemByName içinde handle edilir.
+     */
+    private String mapOldCategoryToNew(String category) {
+        switch (category.toLowerCase()) {
+            case "weapon":
+                return "attack";
+            case "armor":
+                return "defense";
+            case "attack":
+            case "defense":
+            case "support":
+            case "construction":
+            case "utility":
+                // Yeni kategoriler zaten doğru
+                return category;
+            default:
+                // Diğer kategoriler (material, mobdrop, vb.) eski isimlerini korur
+                // getItemByName içinde hem yeni hem eski kategoriler handle edilir
+                return category;
+        }
+    }
+
     private ItemStack getItemByName(String name, String category) {
         // Eğer kategori "all" ise, tüm kategorilerde ara
         if (category.equals("all")) {
             return getItemByNameAllCategories(name);
         }
 
-        // Kategoriye göre filtrele
+        // Önce yeni kategorilere göre filtrele
         switch (category.toLowerCase()) {
+            case "attack":
+                return getItemByNameAttack(name);
+            case "defense":
+                return getItemByNameDefense(name);
+            case "support":
+                return getItemByNameSupport(name);
+            case "construction":
+                return getItemByNameConstruction(name);
+            case "utility":
+                return getItemByNameUtility(name);
+            // Geriye uyumluluk için eski kategoriler
             case "weapon":
                 return getItemByNameWeapon(name);
             case "armor":
@@ -2295,8 +2411,29 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     }
 
     private ItemStack getItemByNameAllCategories(String name) {
-        // Tüm kategorilerde ara
-        ItemStack item = getItemByNameWeapon(name);
+        // Tüm kategorilerde ara (yeni kategoriler öncelikli)
+        ItemStack item = getItemByNameAttack(name);
+        if (item != null)
+            return item;
+
+        item = getItemByNameDefense(name);
+        if (item != null)
+            return item;
+
+        item = getItemByNameSupport(name);
+        if (item != null)
+            return item;
+
+        item = getItemByNameConstruction(name);
+        if (item != null)
+            return item;
+
+        item = getItemByNameUtility(name);
+        if (item != null)
+            return item;
+
+        // Eski kategoriler (geriye uyumluluk)
+        item = getItemByNameWeapon(name);
         if (item != null)
             return item;
 
@@ -2410,6 +2547,132 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "kule_kalkanı":
                 return ItemManager.TOWER_SHIELD != null ? ItemManager.TOWER_SHIELD.clone() : null;
             default:
+                return null;
+        }
+    }
+
+    /**
+     * Yeni kategori metodları - ItemCategory enum'una göre
+     */
+    private ItemStack getItemByNameAttack(String name) {
+        // Saldırı eşyaları: silahlar, savaş eşyaları
+        ItemStack item = getItemByNameWeapon(name);
+        if (item != null) return item;
+        
+        // WAR_FAN gibi özel saldırı eşyaları
+        switch (name.toLowerCase()) {
+            case "war_fan":
+            case "savas_yelpazesi":
+            case "savaş_yelpazesi":
+                return ItemManager.WAR_FAN != null ? ItemManager.WAR_FAN.clone() : null;
+            default:
+                return null;
+        }
+    }
+
+    private ItemStack getItemByNameDefense(String name) {
+        // Savunma eşyaları: zırhlar, kalkanlar
+        ItemStack item = getItemByNameArmor(name);
+        if (item != null) return item;
+        
+        // TOWER_SHIELD gibi özel savunma eşyaları
+        switch (name.toLowerCase()) {
+            case "tower_shield":
+            case "kule_kalkani":
+            case "kule_kalkanı":
+                return ItemManager.TOWER_SHIELD != null ? ItemManager.TOWER_SHIELD.clone() : null;
+            default:
+                return null;
+        }
+    }
+
+    private ItemStack getItemByNameSupport(String name) {
+        // Destek eşyaları: şifa, hız, efekt veren
+        switch (name.toLowerCase()) {
+            case "life_elixir":
+            case "yasam_iksiri":
+            case "yaşam_iksiri":
+                return ItemManager.LIFE_ELIXIR != null ? ItemManager.LIFE_ELIXIR.clone() : null;
+            case "speed_elixir":
+            case "hiz_iksiri":
+            case "hız_iksiri":
+                return ItemManager.SPEED_ELIXIR != null ? ItemManager.SPEED_ELIXIR.clone() : null;
+            case "regeneration_elixir":
+            case "yenilenme_iksiri":
+                return ItemManager.REGENERATION_ELIXIR != null ? ItemManager.REGENERATION_ELIXIR.clone() : null;
+            case "strength_elixir":
+            case "guc_iksiri":
+            case "güç_iksiri":
+                return ItemManager.STRENGTH_ELIXIR != null ? ItemManager.STRENGTH_ELIXIR.clone() : null;
+            case "power_fruit":
+            case "guc_meyvesi":
+            case "güç_meyvesi":
+                return ItemManager.POWER_FRUIT != null ? ItemManager.POWER_FRUIT.clone() : null;
+            case "hell_fruit":
+            case "cehennem_meyvesi":
+                return ItemManager.HELL_FRUIT != null ? ItemManager.HELL_FRUIT.clone() : null;
+            default:
+                return null;
+        }
+    }
+
+    private ItemStack getItemByNameConstruction(String name) {
+        // Oluşturma eşyaları: blok oluşturma, yapı
+        // Yapı çekirdekleri, çitler, vb.
+        switch (name.toLowerCase()) {
+            case "clan_crystal":
+            case "klan_kristali":
+                return createClanCrystal();
+            case "clan_fence":
+            case "klan_çiti":
+            case "klan_citi":
+                return createClanFence();
+            case "structure_core":
+            case "yapi_cekirdegi":
+            case "yapı_çekirdeği":
+                // STRUCTURE_CORE item'ını ItemManager'dan al
+                return ItemManager.STRUCTURE_CORE != null ? ItemManager.STRUCTURE_CORE.clone() : null;
+            default:
+                // Cevherler ve bazı malzemeler construction'a dahil
+                ItemStack item = getItemByNameOre(name);
+                if (item != null) return item;
+                return null;
+        }
+    }
+
+    private ItemStack getItemByNameUtility(String name) {
+        // Yardımcı eşyalar: COMPASS, CLOCK, RECIPE, PERSONAL_TERMINAL, vb.
+        ItemStack item = getItemByNameRecipeBook(name);
+        if (item != null) return item;
+        
+        // Özel yardımcı eşyalar
+        switch (name.toLowerCase()) {
+            case "personal_terminal":
+            case "kisisel_terminal":
+            case "kişisel_terminal":
+                return ItemManager.PERSONAL_TERMINAL != null ? ItemManager.PERSONAL_TERMINAL.clone() : null;
+            case "compass":
+            case "pusula":
+                return new ItemStack(Material.COMPASS);
+            case "clock":
+            case "saat":
+                return new ItemStack(Material.CLOCK);
+            case "spyglass":
+            case "durbun":
+            case "dürbün":
+                return new ItemStack(Material.SPYGLASS);
+            default:
+                // Material kategorisindeki bazı eşyalar utility'ye dahil
+                item = getItemByNameMaterial(name);
+                if (item != null) {
+                    // Sadece utility olanları döndür (blueprint, vb.)
+                    String lowerName = name.toLowerCase();
+                    if (lowerName.contains("blueprint") || 
+                        lowerName.contains("recipe") ||
+                        lowerName.contains("tarif")) {
+                        return item;
+                    }
+                }
                 return null;
         }
     }
@@ -4068,9 +4331,12 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
             switch (commandName) {
                 case "give":
-                    // Kategoriler
-                    List<String> giveCategories = Arrays.asList("weapon", "armor", "material", "mobdrop", "special",
-                            "ore", "tool", "bossitem", "recipebook");
+                    // Yeni kategoriler + eski kategoriler (geriye uyumluluk)
+                    List<String> giveCategories = Arrays.asList(
+                            "attack", "defense", "support", "construction", "utility",  // Yeni kategoriler
+                            "weapon", "armor", "material", "mobdrop", "special",        // Eski kategoriler
+                            "ore", "tool", "bossitem", "recipebook"                     // Eski kategoriler
+                    );
                     if (input.isEmpty()) {
                         return giveCategories;
                     }
@@ -4257,6 +4523,17 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return buildCategories.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
+                            
+                case "structure":
+                    // YENİ: Yapı yönetim komutları
+                    List<String> structureCommands = Arrays.asList("list", "info", "activate", "deactivate", 
+                        "setlevel", "setpower", "teleport", "remove", "validate", "recipe");
+                    if (input.isEmpty()) {
+                        return structureCommands;
+                    }
+                    return structureCommands.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
+                            .collect(Collectors.toList());
 
                 case "dungeon":
                     // Dungeon komutları
@@ -4437,24 +4714,48 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             }
         }
         
-        // Dördüncü argüman (seviyeli itemler için tip öner)
+        // Üçüncü argüman (weapon için kategori öner)
+        if (args.length == 3) {
+            String commandName = args[0].toLowerCase();
+            String category = args[1].toLowerCase();
+            
+            if (commandName.equals("give") && category.equals("weapon")) {
+                // Kategori öner (weapon için sadece "attack")
+                String input = args[2].toLowerCase();
+                if (input.isEmpty() || "attack".startsWith(input)) {
+                    return Arrays.asList("attack");
+                }
+            }
+        }
+        
+        // Dördüncü argüman (weapon için seviye öner veya eski format için seviye kontrolü)
         if (args.length == 4) {
             String commandName = args[0].toLowerCase();
             String category = args[1].toLowerCase();
             
-            if (commandName.equals("give") && (category.equals("weapon") || category.equals("armor"))) {
-                String levelStr = args[2];
-                String input = args[3].toLowerCase();
-                
-                try {
-                    int level = Integer.parseInt(levelStr);
-                    if (level >= 1 && level <= 5) {
-                        if (category.equals("weapon")) {
-                            // Silah isimleri (hem yeni format hem eski format)
+            if (commandName.equals("give") && category.equals("weapon")) {
+                String secondArg = args[2].toLowerCase();
+                if (secondArg.equals("attack")) {
+                    // Yeni format: give weapon attack <seviye>
+                    // Seviyeleri öner
+                    List<String> levels = Arrays.asList("1", "2", "3", "4", "5");
+                    String input = args[3].toLowerCase();
+                    if (input.isEmpty()) {
+                        return levels;
+                    }
+                    return levels.stream()
+                            .filter(s -> s.startsWith(input))
+                            .collect(Collectors.toList());
+                } else {
+                    // Eski format: give weapon <seviye> <isim>
+                    // Seviye kontrolü yap, isimleri öner
+                    String levelStr = args[2];
+                    String input = args[3].toLowerCase();
+                    try {
+                        int level = Integer.parseInt(levelStr);
+                        if (level >= 1 && level <= 5) {
                             List<String> weaponNames = new ArrayList<>();
-                            // Yeni format (isimlerle)
                             weaponNames.addAll(getWeaponNamesByLevel(level));
-                            // Eski format (sword, axe, etc.)
                             weaponNames.addAll(Arrays.asList("sword", "axe", "spear", "bow", "hammer", 
                                 "kılıç", "kilic", "balta", "mızrak", "mizrak", "trident", "yay", "çekiç", "cekiç", "pickaxe"));
                             if (input.isEmpty()) {
@@ -4463,7 +4764,20 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                             return weaponNames.stream()
                                     .filter(s -> s.toLowerCase().startsWith(input))
                                     .collect(Collectors.toList());
-                        } else if (category.equals("armor")) {
+                        }
+                    } catch (NumberFormatException e) {
+                        // Geçersiz seviye
+                    }
+                }
+            } else if (commandName.equals("give") && (category.equals("armor") || category.equals("defense"))) {
+                // Armor için eski format: give armor <seviye> <isim>
+                String levelStr = args[2];
+                String input = args[3].toLowerCase();
+                
+                try {
+                    int level = Integer.parseInt(levelStr);
+                    if (level >= 1 && level <= 5) {
+                        if (category.equals("armor") || category.equals("defense")) {
                             // Item isimleri (armor_l1_1, armor_l1_2, vb.)
                             List<String> armorNames = new ArrayList<>();
                             for (int variant = 1; variant <= 5; variant++) {
@@ -4481,18 +4795,37 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     // Geçersiz seviye
                 }
             } else if (commandName.equals("build") && category.equals("battery")) {
-                // Build battery için: build battery <seviye> <isim>
-                String levelStr = args[2];
-                String input = args[3].toLowerCase();
-                
-                try {
-                    int level = Integer.parseInt(levelStr);
-                    if (level >= 1 && level <= 5) {
-                        // Seviyeye göre batarya isimlerini öner
-                        return getBatteryNamesByLevel(level, input);
+                // Build battery için: build battery <kategori> <seviye> <isim>
+                if (args.length == 2) {
+                    // Kategorileri öner
+                    List<String> categories = Arrays.asList("attack", "construction", "support");
+                    return categories.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
+                            .collect(Collectors.toList());
+                } else if (args.length == 3) {
+                    // Kategori seçildi, seviyeleri öner
+                    String batteryCategory = args[2].toLowerCase();
+                    if (batteryCategory.equals("attack") || batteryCategory.equals("construction") || batteryCategory.equals("support")) {
+                        List<String> levels = Arrays.asList("1", "2", "3", "4", "5");
+                        return levels.stream()
+                                .filter(s -> s.startsWith(input))
+                                .collect(Collectors.toList());
                     }
-                } catch (NumberFormatException e) {
-                    // Geçersiz seviye
+                } else if (args.length == 4) {
+                    // Kategori ve seviye seçildi, isimleri öner
+                    String batteryCategory = args[2].toLowerCase();
+                    String levelStr = args[3];
+                    String input = args.length > 4 ? args[4].toLowerCase() : "";
+                    
+                    try {
+                        int level = Integer.parseInt(levelStr);
+                        if (level >= 1 && level <= 5) {
+                            // Kategori ve seviyeye göre batarya isimlerini öner
+                            return getBatteryNamesByCategoryAndLevel(batteryCategory, level, input);
+                        }
+                    } catch (NumberFormatException e) {
+                        // Geçersiz seviye
+                    }
                 }
             } else if (commandName.equals("mine") && category.equals("give")) {
                 // Mine give için seviye sonrası mayın isimleri
@@ -4871,8 +5204,90 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     }
     
     /**
-     * Seviyeye göre batarya isimlerini döndür (Yeni Sistem)
+     * Yapı yönetim komutları için tab completion (YENİ)
      */
+    private List<String> getStructureTabComplete(String[] args, String input) {
+        if (args.length < 3) {
+            return new ArrayList<>();
+        }
+        
+        String subCommand = args[2].toLowerCase();
+        
+        switch (subCommand) {
+            case "list":
+                // Klan isimleri öner
+                if (args.length == 3) {
+                    me.mami.stratocraft.manager.ClanManager clanManager = plugin.getClanManager();
+                    if (clanManager != null) {
+                        return clanManager.getAllClans().stream()
+                                .map(me.mami.stratocraft.model.Clan::getName)
+                                .filter(name -> name.toLowerCase().startsWith(input))
+                                .collect(Collectors.toList());
+                    }
+                }
+                return new ArrayList<>();
+                
+            case "info":
+            case "activate":
+            case "deactivate":
+            case "teleport":
+            case "remove":
+            case "validate":
+                // Structure ID öner (şimdilik boş)
+                return new ArrayList<>();
+                
+            case "setlevel":
+                if (args.length == 3) {
+                    // Structure ID öner (şimdilik boş)
+                    return new ArrayList<>();
+                } else if (args.length == 4) {
+                    // Seviye öner
+                    List<String> levels = Arrays.asList("1", "2", "3", "4", "5");
+                    return levels.stream()
+                            .filter(s -> s.startsWith(input))
+                            .collect(Collectors.toList());
+                }
+                return new ArrayList<>();
+                
+            case "setpower":
+                if (args.length == 3) {
+                    // Structure ID öner (şimdilik boş)
+                    return new ArrayList<>();
+                } else if (args.length == 4) {
+                    // Güç değeri öner (şimdilik boş)
+                    return new ArrayList<>();
+                }
+                return new ArrayList<>();
+                
+            case "recipe":
+                if (args.length == 3) {
+                    // Recipe komutları
+                    List<String> recipeCommands = Arrays.asList("list", "info");
+                    return recipeCommands.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
+                            .collect(Collectors.toList());
+                } else if (args.length == 4 && args[3].equalsIgnoreCase("info")) {
+                    // Yapı tipleri öner
+                    List<String> structureTypes = new ArrayList<>();
+                    for (me.mami.stratocraft.enums.StructureType type : me.mami.stratocraft.enums.StructureType.values()) {
+                        structureTypes.add(type.name().toLowerCase());
+                    }
+                    return structureTypes.stream()
+                            .filter(s -> s.startsWith(input))
+                            .collect(Collectors.toList());
+                }
+                return new ArrayList<>();
+                
+            default:
+                return new ArrayList<>();
+        }
+    }
+    
+    /**
+     * Seviyeye göre batarya isimlerini döndür (Yeni Sistem)
+     * @deprecated Kategori ve seviyeye göre kullanın: getBatteryNamesByCategoryAndLevel
+     */
+    @Deprecated
     private List<String> getBatteryNamesByLevel(int level, String input) {
         NewBatteryManager newBatteryManager = plugin.getNewBatteryManager();
         if (newBatteryManager == null) {
@@ -4895,6 +5310,84 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
         
         return filterList(normalized, input);
+    }
+
+    /**
+     * Kategori ve seviyeye göre batarya isimlerini döndür (Yeni Sistem)
+     */
+    private List<String> getBatteryNamesByCategoryAndLevel(String category, int level, String input) {
+        NewBatteryManager newBatteryManager = plugin.getNewBatteryManager();
+        if (newBatteryManager == null) {
+            return new ArrayList<>();
+        }
+        
+        List<String> batteries = newBatteryManager.getBatteryNamesByLevel(level);
+        
+        // Kategoriye göre filtrele
+        me.mami.stratocraft.enums.BatteryCategory batteryCategory;
+        try {
+            batteryCategory = me.mami.stratocraft.enums.BatteryCategory.valueOf(category.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return new ArrayList<>();
+        }
+        
+        // İsimleri normalize et ve kategoriye göre filtrele
+        List<String> normalized = new ArrayList<>();
+        for (String name : batteries) {
+            // İsimden kategoriyi tahmin et
+            me.mami.stratocraft.enums.BatteryCategory nameCategory = getBatteryCategoryFromName(name);
+            if (nameCategory == batteryCategory) {
+                String normalizedName = name.toLowerCase()
+                    .replace(" ", "_")
+                    .replace("ç", "c").replace("ğ", "g").replace("ı", "i")
+                    .replace("ö", "o").replace("ş", "s").replace("ü", "u")
+                    .replace("(", "").replace(")", "")
+                    .replace("efsanevi", "leg")
+                    .replace("gelişmiş", "adv");
+                normalized.add(normalizedName);
+            }
+        }
+        
+        return filterList(normalized, input);
+    }
+
+    /**
+     * Batarya isminden kategoriyi tahmin et
+     */
+    private me.mami.stratocraft.enums.BatteryCategory getBatteryCategoryFromName(String batteryName) {
+        String name = batteryName.toLowerCase();
+        
+        // Saldırı bataryaları
+        if (name.contains("yıldırım") || name.contains("cehennem") || 
+            name.contains("buz") || name.contains("zehir") || 
+            name.contains("şok") || name.contains("çift") ||
+            name.contains("zincir") || name.contains("asit") ||
+            name.contains("elektrik") || name.contains("meteor") ||
+            name.contains("tesla") || name.contains("ölüm") ||
+            name.contains("kıyamet") || name.contains("lava") ||
+            name.contains("boss") || name.contains("alan") ||
+            name.contains("dağ") || name.contains("fırtına") ||
+            name.contains("topu") || name.contains("oku") ||
+            name.contains("dalga") || name.contains("yağmuru") ||
+            name.contains("bombası") || name.contains("kulesi") ||
+            name.contains("kalesi") || name.contains("kılıcı") ||
+            name.contains("katili") || name.contains("reaktörü") ||
+            name.contains("tufanı") || name.contains("yok edici")) {
+            return me.mami.stratocraft.enums.BatteryCategory.ATTACK;
+        }
+        
+        // Oluşturma bataryaları
+        if (name.contains("köprü") || name.contains("duvar") || 
+            name.contains("kafes") || name.contains("kale") ||
+            name.contains("hapishane") || name.contains("kule") ||
+            name.contains("şato") || name.contains("barikat") ||
+            name.contains("tünel") || name.contains("kalesi") ||
+            name.contains("fortress") || name.contains("prison")) {
+            return me.mami.stratocraft.enums.BatteryCategory.CONSTRUCTION;
+        }
+        
+        // Destek bataryaları (varsayılan)
+        return me.mami.stratocraft.enums.BatteryCategory.SUPPORT;
     }
 
     private List<String> getAllianceTabComplete(String[] args, String input) {
@@ -5809,7 +6302,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         }
         
         if (args.length < 4) {
-            p.sendMessage("§cKullanım: /stratocraft clan territory <klan> <expand|reset|info> [miktar]");
+            p.sendMessage("§cKullanım: /stratocraft clan territory <klan> <expand|reset|info|recalculate|clearfences|showboundaries> [miktar]");
             return true;
         }
         
@@ -5861,8 +6354,87 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     p.sendMessage("§7Radius: §e" + territory.getRadius() + " blok");
                     p.sendMessage("§7Merkez: §e" + territory.getCenter().getBlockX() + ", " + 
                                  territory.getCenter().getBlockZ());
+                    
+                    // YENİ: TerritoryData bilgileri
+                    if (plugin.getTerritoryBoundaryManager() != null) {
+                        me.mami.stratocraft.model.territory.TerritoryData territoryData = 
+                            plugin.getTerritoryBoundaryManager().getTerritoryData(clan);
+                        if (territoryData != null) {
+                            p.sendMessage("§7Çit Sayısı: §e" + territoryData.getFenceCount());
+                            p.sendMessage("§7Y Yüksekliği: §e" + territoryData.getMinY() + " - " + territoryData.getMaxY());
+                            p.sendMessage("§7Alan: §e" + territoryData.calculateArea() + " blok²");
+                            p.sendMessage("§7Sınır Koordinat Sayısı: §e" + territoryData.getBoundaryCoordinates().size());
+                        }
+                    }
                 } else {
                     p.sendMessage("§cKlanın bölgesi yok!");
+                }
+                break;
+            case "recalculate":
+                // YENİ: Sınır koordinatlarını yeniden hesapla
+                if (territory != null && plugin.getTerritoryBoundaryManager() != null) {
+                    me.mami.stratocraft.model.territory.TerritoryData territoryData = 
+                        plugin.getTerritoryBoundaryManager().getTerritoryData(clan);
+                    if (territoryData != null) {
+                        plugin.getTerritoryBoundaryManager().calculateBoundaries(clan, territoryData);
+                        p.sendMessage("§a§l✓ Sınır koordinatları yeniden hesaplandı!");
+                        p.sendMessage("§7Çit Sayısı: §e" + territoryData.getFenceCount());
+                        p.sendMessage("§7Sınır Koordinat Sayısı: §e" + territoryData.getBoundaryCoordinates().size());
+                    } else {
+                        p.sendMessage("§cTerritoryData bulunamadı!");
+                    }
+                } else {
+                    p.sendMessage("§cKlanın bölgesi yok veya TerritoryBoundaryManager bulunamadı!");
+                }
+                break;
+            case "clearfences":
+                // YENİ: Tüm çit lokasyonlarını temizle
+                if (plugin.getTerritoryBoundaryManager() != null) {
+                    me.mami.stratocraft.model.territory.TerritoryData territoryData = 
+                        plugin.getTerritoryBoundaryManager().getTerritoryData(clan);
+                    if (territoryData != null) {
+                        territoryData.clearFenceLocations();
+                        p.sendMessage("§a§l✓ Tüm çit lokasyonları temizlendi!");
+                    } else {
+                        p.sendMessage("§cTerritoryData bulunamadı!");
+                    }
+                } else {
+                    p.sendMessage("§cTerritoryBoundaryManager bulunamadı!");
+                }
+                break;
+            case "showboundaries":
+                // YENİ: Sınır koordinatlarını partikül ile göster
+                if (territory != null && plugin.getTerritoryBoundaryManager() != null) {
+                    me.mami.stratocraft.model.territory.TerritoryData territoryData = 
+                        plugin.getTerritoryBoundaryManager().getTerritoryData(clan);
+                    if (territoryData != null) {
+                        List<org.bukkit.Location> boundaryLine = territoryData.getBoundaryLine();
+                        if (!boundaryLine.isEmpty()) {
+                            p.sendMessage("§aSınır partikülleri gösteriliyor... (10 saniye)");
+                            // Partikül göster (basit versiyon)
+                            int duration = 200; // 10 saniye
+                            int taskId = org.bukkit.Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+                                if (!p.isOnline()) return;
+                                for (org.bukkit.Location boundaryLoc : boundaryLine) {
+                                    double y = p.getLocation().getY() + (Math.random() * 4 - 2);
+                                    org.bukkit.Location particleLoc = boundaryLoc.clone();
+                                    particleLoc.setY(y);
+                                    p.spawnParticle(org.bukkit.Particle.REDSTONE, particleLoc, 1, 0, 0, 0, 0,
+                                        new org.bukkit.Particle.DustOptions(org.bukkit.Color.GREEN, 1.0f));
+                                }
+                            }, 0L, 10L);
+                            org.bukkit.Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                                org.bukkit.Bukkit.getScheduler().cancelTask(taskId);
+                                p.sendMessage("§7Sınır partikülleri durduruldu.");
+                            }, duration);
+                        } else {
+                            p.sendMessage("§cSınır koordinatları hesaplanmamış! Önce 'recalculate' komutunu kullanın.");
+                        }
+                    } else {
+                        p.sendMessage("§cTerritoryData bulunamadı!");
+                    }
+                } else {
+                    p.sendMessage("§cKlanın bölgesi yok veya TerritoryBoundaryManager bulunamadı!");
                 }
                 break;
             default:
@@ -6221,27 +6793,40 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         // Kategori kontrolü
         if (args.length >= 3
                 && (category.equals("weapon") || category.equals("battery") || category.equals("structure"))) {
-            // Batarya için özel kontrol: build battery <seviye> <isim> (seviye zorunlu)
+            // Batarya için özel kontrol: build battery <kategori> <seviye> <isim>
             if (category.equals("battery")) {
-                if (args.length < 4) {
-                    p.sendMessage("§cKullanım: /stratocraft build battery <seviye> <isim>");
+                if (args.length < 5) {
+                    p.sendMessage("§cKullanım: /stratocraft build battery <kategori> <seviye> <isim>");
+                    p.sendMessage("§7Kategoriler: attack, construction, support");
                     p.sendMessage("§7Seviye: 1-5 arası bir sayı");
-                    p.sendMessage("§7Örnek: /stratocraft build battery 5 support_heal_l5");
+                    p.sendMessage("§7Örnek: /stratocraft build battery attack 5 yildirim_firtinasi");
+                    p.sendMessage("§7Eski format: /stratocraft build battery <seviye> <isim> (hala çalışıyor)");
                     return true;
                 }
-                // Format: build battery <seviye> <isim>
+                // Format: build battery <kategori> <seviye> <isim>
+                String batteryCategory = args[2].toLowerCase();
                 try {
-                    level = Integer.parseInt(args[2]);
+                    level = Integer.parseInt(args[3]);
                     if (level < 1 || level > 5) {
                         p.sendMessage("§cSeviye 1-5 arası olmalı!");
                         return true;
                     }
                     // Tüm argümanları birleştir (isim boşluk içerebilir)
-                    buildType = String.join("_", java.util.Arrays.copyOfRange(args, 3, args.length)).toLowerCase();
-                    return buildBatteryByLevelAndName(p, level, buildType);
+                    buildType = String.join("_", java.util.Arrays.copyOfRange(args, 4, args.length)).toLowerCase();
+                    return buildBatteryByCategoryLevelAndName(p, batteryCategory, level, buildType);
                 } catch (NumberFormatException e) {
+                    // Eski format kontrolü: build battery <seviye> <isim>
+                    try {
+                        level = Integer.parseInt(args[2]);
+                        if (level >= 1 && level <= 5) {
+                            buildType = String.join("_", java.util.Arrays.copyOfRange(args, 3, args.length)).toLowerCase();
+                            return buildBatteryByLevelAndName(p, level, buildType);
+                        }
+                    } catch (NumberFormatException e2) {
+                        // Geçersiz format
+                    }
                     p.sendMessage("§cSeviye bir sayı olmalı! (1-5)");
-                    p.sendMessage("§7Kullanım: /stratocraft build battery <seviye> <isim>");
+                    p.sendMessage("§7Kullanım: /stratocraft build battery <kategori> <seviye> <isim>");
                     return true;
                 }
             }
@@ -7020,9 +7605,126 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
     }
     
     /**
-     * Yeni batarya komut formatı: /stratocraft build battery <seviye> <isim>
+     * Yeni batarya komut formatı: /stratocraft build battery <kategori> <seviye> <isim>
      * Yeni esnek sistem kullanıyor
      */
+    private boolean buildBatteryByCategoryLevelAndName(Player p, String category, int level, String name) {
+        if (level < 1 || level > 5) {
+            p.sendMessage("§cSeviye 1-5 arası olmalı!");
+            return true;
+        }
+        
+        // Kategori kontrolü
+        me.mami.stratocraft.enums.BatteryCategory batteryCategory;
+        try {
+            batteryCategory = me.mami.stratocraft.enums.BatteryCategory.valueOf(category.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz kategori: " + category);
+            p.sendMessage("§7Kategoriler: attack, construction, support");
+            return true;
+        }
+        
+        NewBatteryManager newBatteryManager = plugin.getNewBatteryManager();
+        if (newBatteryManager == null) {
+            p.sendMessage("§cYeni batarya sistemi başlatılmamış!");
+            return true;
+        }
+        
+        // İsmi normalize et
+        String normalizedInput = name.toLowerCase()
+            .replace("_", "").replace("-", "")
+            .replace("ç", "c").replace("ğ", "g").replace("ı", "i")
+            .replace("ö", "o").replace("ş", "s").replace("ü", "u")
+            .replace("(", "").replace(")", "")
+            .replace("efsanevi", "leg")
+            .replace("gelişmiş", "adv");
+        
+        // Seviyeye göre bataryaları al
+        List<String> batteryNames = newBatteryManager.getBatteryNamesByLevel(level);
+        
+        // Kategoriye göre filtrele
+        List<String> filteredBatteryNames = new ArrayList<>();
+        for (String batteryName : batteryNames) {
+            me.mami.stratocraft.enums.BatteryCategory nameCategory = getBatteryCategoryFromName(batteryName);
+            if (nameCategory == batteryCategory) {
+                filteredBatteryNames.add(batteryName);
+            }
+        }
+        
+        // Eşleşen bataryayı bul
+        String foundBatteryName = null;
+        for (String batteryName : filteredBatteryNames) {
+            String normalizedBatteryName = batteryName.toLowerCase()
+                .replace(" ", "").replace("(", "").replace(")", "")
+                .replace("ç", "c").replace("ğ", "g").replace("ı", "i")
+                .replace("ö", "o").replace("ş", "s").replace("ü", "u")
+                .replace("efsanevi", "leg")
+                .replace("gelişmiş", "adv");
+            
+            if (normalizedBatteryName.contains(normalizedInput) || normalizedInput.contains(normalizedBatteryName)) {
+                foundBatteryName = batteryName;
+                break;
+            }
+        }
+        
+        if (foundBatteryName == null) {
+            p.sendMessage("§cKategori '" + category + "', Seviye " + level + " için '" + name + "' bataryası bulunamadı!");
+            p.sendMessage("§7Mevcut bataryalar:");
+            for (String batteryName : filteredBatteryNames) {
+                p.sendMessage("§7  - " + batteryName);
+            }
+            return true;
+        }
+        
+        // RecipeChecker'ı al
+        NewBatteryManager.RecipeChecker checker = newBatteryManager.getRecipeChecker(foundBatteryName);
+        if (checker == null) {
+            p.sendMessage("§cBatarya tarifi bulunamadı: " + foundBatteryName);
+            return true;
+        }
+        
+        // Merkez blok konumunu al
+        org.bukkit.Location loc = p.getLocation();
+        
+        // Alanı temizle (geniş bir alan)
+        me.mami.stratocraft.manager.StructureBuilder.clearArea(loc, 10, 10, 10);
+        
+        // Pattern'i al ve build et
+        NewBatteryManager.BlockPattern pattern = checker.getPattern();
+        if (pattern != null) {
+            NewBatteryManager.buildPattern(loc, pattern);
+        } else {
+            p.sendMessage("§cBatarya tarifi oluşturulamadı!");
+            return true;
+        }
+        
+        // Yakıt ver
+        giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.DIAMOND, 5));
+        giveItemSafely(p, new org.bukkit.inventory.ItemStack(Material.IRON_INGOT, 5));
+        if (ItemManager.RED_DIAMOND != null) {
+            giveItemSafely(p, ItemManager.RED_DIAMOND.clone());
+        }
+        if (ItemManager.DARK_MATTER != null) {
+            giveItemSafely(p, ItemManager.DARK_MATTER.clone());
+        }
+        
+        String categoryDisplay = batteryCategory == me.mami.stratocraft.enums.BatteryCategory.ATTACK ? "§cSaldırı" :
+                                batteryCategory == me.mami.stratocraft.enums.BatteryCategory.CONSTRUCTION ? "§aOluşturma" :
+                                "§eDestek";
+        
+        p.sendMessage("§a§l" + foundBatteryName.toUpperCase() + " OLUŞTURULDU!");
+        p.sendMessage("§7Kategori: " + categoryDisplay);
+        p.sendMessage("§7Seviye: §e" + level);
+        p.sendMessage("§7Shift + Sağ Tık ile yükle, Sol Tık ile ateşle.");
+        return true;
+    }
+
+    /**
+     * Yeni batarya komut formatı: /stratocraft build battery <seviye> <isim>
+     * Yeni esnek sistem kullanıyor
+     * @deprecated Kategori ve seviyeye göre kullanın: buildBatteryByCategoryLevelAndName
+     */
+    @Deprecated
     private boolean buildBatteryByLevelAndName(Player p, int level, String name) {
         if (level < 1 || level > 5) {
             p.sendMessage("§cSeviye 1-5 arası olmalı!");
@@ -8759,6 +9461,313 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return "§bH";
             default:
                 return "?";
+        }
+    }
+    
+    /**
+     * Yapı yönetim komutları (YENİ)
+     * /stratocraft structure <komut> [parametreler]
+     */
+    private boolean handleStructure(Player p, String[] args) {
+        if (args.length < 2) {
+            p.sendMessage("§cKullanım: /stratocraft structure <komut> [parametreler]");
+            p.sendMessage("§7Komutlar:");
+            p.sendMessage("§e  list [clan] §7- Yapı listesi");
+            p.sendMessage("§e  info <structure-id> §7- Yapı bilgisi");
+            p.sendMessage("§e  activate <structure-id> §7- Yapıyı aktifleştir");
+            p.sendMessage("§e  deactivate <structure-id> §7- Yapıyı pasifleştir");
+            p.sendMessage("§e  setlevel <structure-id> <level> §7- Yapı seviyesi ayarla");
+            p.sendMessage("§e  setpower <structure-id> <power> §7- Yapı gücü ayarla");
+            p.sendMessage("§e  teleport <structure-id> §7- Yapıya ışınlan");
+            p.sendMessage("§e  remove <structure-id> §7- Yapıyı kaldır");
+            p.sendMessage("§e  validate <structure-id> §7- Yapı tarifini kontrol et");
+            p.sendMessage("§e  recipe list §7- Tüm tarifleri listele");
+            p.sendMessage("§e  recipe info <type> §7- Tarif bilgisi");
+            return true;
+        }
+        
+        String subCommand = args[1].toLowerCase();
+        
+        switch (subCommand) {
+            case "list":
+                return handleStructureList(p, args);
+            case "info":
+                return handleStructureInfo(p, args);
+            case "activate":
+                return handleStructureActivate(p, args);
+            case "deactivate":
+                return handleStructureDeactivate(p, args);
+            case "setlevel":
+                return handleStructureSetLevel(p, args);
+            case "setpower":
+                return handleStructureSetPower(p, args);
+            case "teleport":
+                return handleStructureTeleport(p, args);
+            case "remove":
+                return handleStructureRemove(p, args);
+            case "validate":
+                return handleStructureValidate(p, args);
+            case "recipe":
+                return handleStructureRecipe(p, args);
+            default:
+                p.sendMessage("§cGeçersiz komut! /stratocraft structure <komut>");
+                return true;
+        }
+    }
+    
+    /**
+     * Yapı listesi göster
+     */
+    private boolean handleStructureList(Player p, String[] args) {
+        me.mami.stratocraft.manager.ClanManager clanManager = plugin.getClanManager();
+        if (clanManager == null) {
+            p.sendMessage("§cClanManager bulunamadı!");
+            return true;
+        }
+        
+        if (args.length >= 3) {
+            // Belirli bir klanın yapıları
+            String clanName = args[2];
+            me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(clanName);
+            if (clan == null) {
+                p.sendMessage("§cKlan bulunamadı: " + clanName);
+                return true;
+            }
+            
+            java.util.List<me.mami.stratocraft.model.Structure> structures = clan.getStructures();
+            if (structures == null || structures.isEmpty()) {
+                p.sendMessage("§eKlan '" + clanName + "' hiç yapıya sahip değil.");
+                return true;
+            }
+            
+            p.sendMessage("§6§l=== " + clanName + " Klanı Yapıları ===");
+            for (int i = 0; i < structures.size(); i++) {
+                me.mami.stratocraft.model.Structure structure = structures.get(i);
+                if (structure == null) continue;
+                
+                org.bukkit.Location loc = structure.getLocation();
+                String locStr = loc != null ? 
+                    "§7(" + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ() + ")" : 
+                    "§cKonum yok";
+                
+                p.sendMessage("§e" + (i + 1) + ". §7" + 
+                    me.mami.stratocraft.util.StructureHelper.getStructureDisplayName(structure.getType()) + 
+                    " §7- Seviye: §e" + structure.getLevel() + " §7- " + locStr);
+            }
+        } else {
+            // Tüm klanların yapıları
+            int totalStructures = 0;
+            p.sendMessage("§6§l=== TÜM KLAN YAPILARI ===");
+            
+            for (me.mami.stratocraft.model.Clan clan : clanManager.getAllClans()) {
+                java.util.List<me.mami.stratocraft.model.Structure> structures = clan.getStructures();
+                if (structures != null && !structures.isEmpty()) {
+                    p.sendMessage("§7--- " + clan.getName() + " (§e" + structures.size() + " yapı§7) ---");
+                    for (me.mami.stratocraft.model.Structure structure : structures) {
+                        if (structure == null) continue;
+                        p.sendMessage("§7  - " + 
+                            me.mami.stratocraft.util.StructureHelper.getStructureDisplayName(structure.getType()) + 
+                            " §7(Lv" + structure.getLevel() + ")");
+                        totalStructures++;
+                    }
+                }
+            }
+            
+            p.sendMessage("§7Toplam: §e" + totalStructures + " yapı");
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Yapı bilgisi göster
+     */
+    private boolean handleStructureInfo(Player p, String[] args) {
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft structure info <structure-id>");
+            p.sendMessage("§7Structure ID: Yapının konumunu kullan (x,y,z) veya klan adı + yapı tipi");
+            return true;
+        }
+        
+        // TODO: Structure ID sistemi eklendiğinde burayı güncelle
+        p.sendMessage("§cStructure ID sistemi henüz implement edilmedi.");
+        p.sendMessage("§7Şimdilik: /stratocraft structure list <clan> kullanın.");
+        return true;
+    }
+    
+    /**
+     * Yapıyı aktifleştir
+     */
+    private boolean handleStructureActivate(Player p, String[] args) {
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft structure activate <structure-id>");
+            return true;
+        }
+        
+        // TODO: Structure ID sistemi eklendiğinde burayı güncelle
+        p.sendMessage("§cStructure ID sistemi henüz implement edilmedi.");
+        return true;
+    }
+    
+    /**
+     * Yapıyı pasifleştir
+     */
+    private boolean handleStructureDeactivate(Player p, String[] args) {
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft structure deactivate <structure-id>");
+            return true;
+        }
+        
+        // TODO: Structure ID sistemi eklendiğinde burayı güncelle
+        p.sendMessage("§cStructure ID sistemi henüz implement edilmedi.");
+        return true;
+    }
+    
+    /**
+     * Yapı seviyesi ayarla
+     */
+    private boolean handleStructureSetLevel(Player p, String[] args) {
+        if (args.length < 4) {
+            p.sendMessage("§cKullanım: /stratocraft structure setlevel <structure-id> <level>");
+            return true;
+        }
+        
+        int level = parseInt(args[3], 1);
+        if (level < 1 || level > 5) {
+            p.sendMessage("§cSeviye 1-5 arası olmalı!");
+            return true;
+        }
+        
+        // TODO: Structure ID sistemi eklendiğinde burayı güncelle
+        p.sendMessage("§cStructure ID sistemi henüz implement edilmedi.");
+        return true;
+    }
+    
+    /**
+     * Yapı gücü ayarla
+     */
+    private boolean handleStructureSetPower(Player p, String[] args) {
+        if (args.length < 4) {
+            p.sendMessage("§cKullanım: /stratocraft structure setpower <structure-id> <power>");
+            return true;
+        }
+        
+        double power = parseDouble(args[3], 0.0);
+        if (power < 0) {
+            p.sendMessage("§cGüç negatif olamaz!");
+            return true;
+        }
+        
+        // TODO: Structure ID sistemi eklendiğinde burayı güncelle
+        p.sendMessage("§cStructure ID sistemi henüz implement edilmedi.");
+        return true;
+    }
+    
+    /**
+     * Yapıya ışınlan
+     */
+    private boolean handleStructureTeleport(Player p, String[] args) {
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft structure teleport <structure-id>");
+            return true;
+        }
+        
+        // TODO: Structure ID sistemi eklendiğinde burayı güncelle
+        p.sendMessage("§cStructure ID sistemi henüz implement edilmedi.");
+        return true;
+    }
+    
+    /**
+     * Yapıyı kaldır
+     */
+    private boolean handleStructureRemove(Player p, String[] args) {
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft structure remove <structure-id>");
+            return true;
+        }
+        
+        // TODO: Structure ID sistemi eklendiğinde burayı güncelle
+        p.sendMessage("§cStructure ID sistemi henüz implement edilmedi.");
+        return true;
+    }
+    
+    /**
+     * Yapı tarifini kontrol et
+     */
+    private boolean handleStructureValidate(Player p, String[] args) {
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft structure validate <structure-id>");
+            return true;
+        }
+        
+        // TODO: Structure ID sistemi eklendiğinde burayı güncelle
+        p.sendMessage("§cStructure ID sistemi henüz implement edilmedi.");
+        return true;
+    }
+    
+    /**
+     * Yapı tarif yönetimi
+     */
+    private boolean handleStructureRecipe(Player p, String[] args) {
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft structure recipe <komut>");
+            p.sendMessage("§7Komutlar: list, info <type>");
+            return true;
+        }
+        
+        String recipeCommand = args[2].toLowerCase();
+        
+        switch (recipeCommand) {
+            case "list":
+                me.mami.stratocraft.manager.StructureRecipeManager recipeManager = plugin.getStructureRecipeManager();
+                if (recipeManager == null) {
+                    p.sendMessage("§cStructureRecipeManager bulunamadı!");
+                    return true;
+                }
+                
+                p.sendMessage("§6§l=== YAPI TARİFLERİ ===");
+                p.sendMessage("§7Kod içi tarifler ve şema tarifleri StructureRecipeManager'da kayıtlı.");
+                p.sendMessage("§7Detaylı liste için kod içine bakın.");
+                return true;
+                
+            case "info":
+                if (args.length < 4) {
+                    p.sendMessage("§cKullanım: /stratocraft structure recipe info <type>");
+                    return true;
+                }
+                
+                String typeStr = args[3].toUpperCase();
+                try {
+                    me.mami.stratocraft.enums.StructureType type = 
+                        me.mami.stratocraft.enums.StructureType.valueOf(typeStr);
+                    
+                    me.mami.stratocraft.manager.StructureRecipeManager recipeMgr = plugin.getStructureRecipeManager();
+                    if (recipeMgr != null) {
+                        String info = recipeMgr.getRecipeInfo(type);
+                        p.sendMessage("§6§l=== " + typeStr + " TARİFİ ===");
+                        p.sendMessage("§7" + info);
+                    } else {
+                        p.sendMessage("§cStructureRecipeManager bulunamadı!");
+                    }
+                } catch (IllegalArgumentException e) {
+                    p.sendMessage("§cGeçersiz yapı tipi: " + typeStr);
+                }
+                return true;
+                
+            default:
+                p.sendMessage("§cGeçersiz komut! /stratocraft structure recipe <list|info>");
+                return true;
+        }
+    }
+    
+    /**
+     * Double parse helper
+     */
+    private double parseDouble(String str, double defaultValue) {
+        try {
+            return Double.parseDouble(str);
+        } catch (NumberFormatException e) {
+            return defaultValue;
         }
     }
 }

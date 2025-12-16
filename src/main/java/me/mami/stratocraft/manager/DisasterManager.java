@@ -15,6 +15,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
 import me.mami.stratocraft.Main;
+import me.mami.stratocraft.enums.CreatureDisasterType;
+import me.mami.stratocraft.enums.DisasterCategory;
+import me.mami.stratocraft.enums.DisasterType;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Disaster;
 import me.mami.stratocraft.model.DisasterPhase;
@@ -402,24 +405,143 @@ public class DisasterManager {
      * Felaket başlat
      */
     /**
-     * Felaket başlat (geriye dönük uyumluluk - kategori seviyesi otomatik, level = iç seviye)
+     * Felaket başlat (YENİ: DisasterType enum kullanır)
      */
+    public void triggerDisaster(DisasterType type, int level) {
+        int categoryLevel = Disaster.getDefaultLevel(convertToOldType(type));
+        triggerDisaster(convertToOldType(type), categoryLevel, level);
+    }
+    
+    /**
+     * Felaket başlat (YENİ: DisasterType enum kullanır, konum belirtilmiş)
+     */
+    public void triggerDisaster(DisasterType type, int level, org.bukkit.Location spawnLoc) {
+        int categoryLevel = Disaster.getDefaultLevel(convertToOldType(type));
+        triggerDisaster(convertToOldType(type), categoryLevel, level, spawnLoc);
+    }
+    
+    /**
+     * Felaket başlat (YENİ: DisasterType enum kullanır, kategori ve iç seviye ayrı)
+     */
+    public void triggerDisaster(DisasterType type, int categoryLevel, int internalLevel) {
+        World world = org.bukkit.Bukkit.getWorlds().get(0);
+        org.bukkit.Location centerLoc = null;
+        if (difficultyManager != null) {
+            centerLoc = difficultyManager.getCenterLocation();
+        }
+        if (centerLoc == null) {
+            centerLoc = world.getSpawnLocation();
+        }
+        triggerDisaster(type, categoryLevel, internalLevel, centerLoc);
+    }
+    
+    /**
+     * Felaket başlat (YENİ: DisasterType enum kullanır, kategori ve iç seviye ayrı, konum belirtilmiş)
+     */
+    public void triggerDisaster(DisasterType type, int categoryLevel, int internalLevel, org.bukkit.Location spawnLoc) {
+        if (activeDisaster != null && !activeDisaster.isDead()) {
+            org.bukkit.Bukkit.broadcastMessage("§cZaten aktif bir felaket var!");
+            return;
+        }
+        
+        // Spawn lokasyonunun chunk'ını force load et
+        World world = spawnLoc.getWorld();
+        int chunkX = spawnLoc.getBlockX() >> 4;
+        int chunkZ = spawnLoc.getBlockZ() >> 4;
+        world.getChunkAt(chunkX, chunkZ).load(true); // Force load
+        
+        // Yeni enum'ları kullan
+        DisasterCategory category = Disaster.getCategory(type);
+        // İç seviye güç hesaplaması için kullanılır
+        DisasterPower power = calculateDisasterPower(internalLevel);
+        long duration = Disaster.getDefaultDuration(convertToOldType(type), categoryLevel);
+        
+        Entity entity = null;
+        
+        // Canlı felaketler için entity oluştur
+        if (category == DisasterCategory.CREATURE) {
+            CreatureDisasterType creatureType = Disaster.getCreatureDisasterType(type);
+            
+            if (creatureType == CreatureDisasterType.MEDIUM_GROUP) {
+                // Grup felaket spawn (30 adet)
+                org.bukkit.entity.EntityType entityType = getEntityTypeForDisaster(convertToOldType(type));
+                if (entityType != null) {
+                    spawnGroupDisaster(entityType, 30, spawnLoc, internalLevel);
+                    return; // spawnGroupDisaster içinde activeDisaster set ediliyor
+                }
+            } else if (creatureType == CreatureDisasterType.MINI_SWARM) {
+                // Mini dalga spawn (100-500 adet)
+                org.bukkit.entity.EntityType entityType = getEntityTypeForDisaster(convertToOldType(type));
+                if (entityType != null) {
+                    int count = 100 + (int)(Math.random() * 400); // 100-500 arası rastgele
+                    spawnSwarmDisaster(entityType, count, spawnLoc, internalLevel);
+                    return; // spawnSwarmDisaster içinde activeDisaster set ediliyor
+                }
+            } else {
+                // Tek boss felaket spawn
+                entity = spawnCreatureDisaster(convertToOldType(type), spawnLoc, power);
+                if (entity == null) {
+                    org.bukkit.Bukkit.broadcastMessage("§c§l⚠ FELAKET SPAWN HATASI! ⚠");
+                    org.bukkit.Bukkit.broadcastMessage("§7Felaket tipi için entity oluşturulamadı: §e" + type.name());
+                    return;
+                }
+            }
+        }
+        
+        // Felaket oluştur
+        org.bukkit.Location targetLoc = null;
+        if (difficultyManager != null) {
+            targetLoc = difficultyManager.getCenterLocation();
+        }
+        if (targetLoc == null) {
+            targetLoc = spawnLoc.getWorld().getSpawnLocation();
+        }
+        // Disaster oluştururken iç seviyeyi kullan (güç seviyesi)
+        activeDisaster = new Disaster(convertToOldType(type), convertToOldCategory(category), internalLevel, entity,
+                                      targetLoc, power.health, power.damage, duration);
+        setDisasterTarget(activeDisaster);
+        
+        // Arena transformasyon başlat
+        if (arenaManager != null && category == DisasterCategory.CREATURE) {
+            arenaManager.startArenaTransformation(spawnLoc, type, internalLevel, activeDisaster.getId());
+        }
+        
+        // BossBar oluştur
+        createBossBar();
+        
+        // Uyarı gönder
+        org.bukkit.Bukkit.broadcastMessage("§c§l⚠ FELAKET BAŞLADI! ⚠");
+        org.bukkit.Bukkit.broadcastMessage("§4§l" + getDisasterDisplayName(type) + " §7spawn oldu!");
+        
+        // Son felaket zamanını güncelle
+        lastDisasterTime = System.currentTimeMillis();
+    }
+    
+    /**
+     * Felaket başlat (GERİYE UYUMLULUK: Disaster.Type enum kullanır)
+     * @deprecated DisasterType kullanın
+     */
+    @Deprecated
     public void triggerDisaster(Disaster.Type type, int level) {
         int categoryLevel = Disaster.getDefaultLevel(type);
         triggerDisaster(type, categoryLevel, level);
     }
     
     /**
-     * Felaket başlat (geriye dönük uyumluluk - kategori seviyesi otomatik, level = iç seviye)
+     * Felaket başlat (GERİYE UYUMLULUK: Disaster.Type enum kullanır)
+     * @deprecated DisasterType kullanın
      */
+    @Deprecated
     public void triggerDisaster(Disaster.Type type, int level, org.bukkit.Location spawnLoc) {
         int categoryLevel = Disaster.getDefaultLevel(type);
         triggerDisaster(type, categoryLevel, level, spawnLoc);
     }
     
     /**
-     * Felaket başlat (yeni format - kategori seviyesi ve iç seviye ayrı)
+     * Felaket başlat (GERİYE UYUMLULUK: Disaster.Type enum kullanır)
+     * @deprecated DisasterType kullanın
      */
+    @Deprecated
     public void triggerDisaster(Disaster.Type type, int categoryLevel, int internalLevel) {
         World world = org.bukkit.Bukkit.getWorlds().get(0);
         org.bukkit.Location centerLoc = null;
@@ -956,9 +1078,10 @@ public class DisasterManager {
     }
     
     /**
-     * Felaket ismi
+     * Felaket ismi (YENİ: DisasterType enum kullanır)
      */
-    public String getDisasterDisplayName(Disaster.Type type) {
+    public String getDisasterDisplayName(DisasterType type) {
+        if (type == null) return "Bilinmeyen Felaket";
         switch (type) {
             case CATASTROPHIC_TITAN: return "Felaket Titanı";
             case CATASTROPHIC_ABYSSAL_WORM: return "Felaket Hiçlik Solucanı";
@@ -980,6 +1103,20 @@ public class DisasterManager {
             case PLAYER_BUFF_WAVE: return "Oyuncu Buff Dalgası";
             default: return "Bilinmeyen Felaket";
         }
+    }
+    
+    /**
+     * Felaket ismi (GERİYE UYUMLULUK: Disaster.Type enum kullanır)
+     * @deprecated DisasterType kullanın
+     */
+    @Deprecated
+    public String getDisasterDisplayName(Disaster.Type type) {
+        if (type == null) return "Bilinmeyen Felaket";
+        DisasterType newType = convertToNewType(type);
+        if (newType != null) {
+            return getDisasterDisplayName(newType);
+        }
+        return "Bilinmeyen Felaket";
     }
     
     /**
@@ -1972,5 +2109,55 @@ public class DisasterManager {
         String disasterName = getDisasterDisplayName(type);
         org.bukkit.Bukkit.broadcastMessage("§c§l⚠ FELAKET UYARISI ⚠");
         org.bukkit.Bukkit.broadcastMessage("§e" + disasterName + " §7yaklaşıyor! Hazırlanın!");
+    }
+    
+    // ========== HELPER METODLAR: Yeni Enum Dönüşümleri ==========
+    
+    /**
+     * DisasterType'ı eski Disaster.Type'a dönüştür (geriye uyumluluk için)
+     */
+    private Disaster.Type convertToOldType(DisasterType type) {
+        if (type == null) return null;
+        try {
+            return Disaster.Type.valueOf(type.name());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+    
+    /**
+     * DisasterCategory'yi eski Disaster.Category'ye dönüştür (geriye uyumluluk için)
+     */
+    private Disaster.Category convertToOldCategory(DisasterCategory category) {
+        if (category == null) return null;
+        try {
+            return Disaster.Category.valueOf(category.name());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+    
+    /**
+     * Eski Disaster.Type'ı yeni DisasterType'a dönüştür
+     */
+    private DisasterType convertToNewType(Disaster.Type type) {
+        if (type == null) return null;
+        try {
+            return DisasterType.valueOf(type.name());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+    
+    /**
+     * Eski Disaster.Category'yi yeni DisasterCategory'ye dönüştür
+     */
+    private DisasterCategory convertToNewCategory(Disaster.Category category) {
+        if (category == null) return null;
+        try {
+            return DisasterCategory.valueOf(category.name());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }

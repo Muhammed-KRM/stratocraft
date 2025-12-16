@@ -141,8 +141,8 @@ public class StructureCoreListener implements Listener {
             return;
         }
         
-        // Hangi yapı tipi için bu item kullanılabilir?
-        Structure.Type targetType = activationItemManager.getStructureTypeForItem(handItem);
+        // Hangi yapı tipi için bu item kullanılabilir? (YENİ: StructureType)
+        me.mami.stratocraft.enums.StructureType targetType = activationItemManager.getStructureTypeForItem(handItem);
         if (targetType == null) {
             player.sendMessage("§cBu item ile yapı aktifleştirilemez!");
             player.sendMessage("§7Farklı bir aktivasyon item'ı deneyin.");
@@ -177,9 +177,9 @@ public class StructureCoreListener implements Listener {
     }
     
     /**
-     * Yapıyı aktifleştir
+     * Yapıyı aktifleştir (YENİ: StructureType)
      */
-    private void activateStructure(Player player, Location coreLoc, Structure.Type type, ItemStack activationItem) {
+    private void activateStructure(Player player, Location coreLoc, me.mami.stratocraft.enums.StructureType type, ItemStack activationItem) {
         // Klan kontrolü (kişisel yapılar hariç)
         Clan clan = null;
         boolean isPersonalStructure = isPersonalStructure(type);
@@ -205,8 +205,16 @@ public class StructureCoreListener implements Listener {
             }
         }
         
-        // Yapı oluştur
-        Structure structure = new Structure(type, coreLoc, 1);
+        // Yapı oluştur (GERİYE UYUMLULUK: Eski Structure kullan)
+        // TODO: İleride BaseStructure/ClanStructure kullanılacak
+        Structure.Type legacyType;
+        try {
+            legacyType = Structure.Type.valueOf(type.name());
+        } catch (IllegalArgumentException e) {
+            player.sendMessage("§cYapı tipi geçersiz!");
+            return;
+        }
+        Structure structure = new Structure(legacyType, coreLoc, 1);
         
         // Klan varsa ekle
         if (clan != null) {
@@ -245,37 +253,25 @@ public class StructureCoreListener implements Listener {
     }
     
     /**
-     * Kişisel yapı mı kontrol et
+     * Kişisel yapı mı kontrol et (YENİ: StructureType)
      */
-    private boolean isPersonalStructure(Structure.Type type) {
+    private boolean isPersonalStructure(me.mami.stratocraft.enums.StructureType type) {
         if (type == null) return false;
         
-        return type == Structure.Type.PERSONAL_MISSION_GUILD ||
-               type == Structure.Type.CONTRACT_OFFICE ||
-               type == Structure.Type.MARKET_PLACE ||
-               type == Structure.Type.RECIPE_LIBRARY;
+        return type == me.mami.stratocraft.enums.StructureType.PERSONAL_MISSION_GUILD ||
+               type == me.mami.stratocraft.enums.StructureType.CONTRACT_OFFICE ||
+               type == me.mami.stratocraft.enums.StructureType.MARKET_PLACE ||
+               type == me.mami.stratocraft.enums.StructureType.RECIPE_LIBRARY;
     }
     
     /**
-     * Yapı görünen adını al
+     * Yapı görünen adını al (YENİ: StructureType - StructureHelper kullan)
      */
-    private String getStructureDisplayName(Structure.Type type) {
+    private String getStructureDisplayName(me.mami.stratocraft.enums.StructureType type) {
         if (type == null) return "Yapı";
         
-        switch (type) {
-            case PERSONAL_MISSION_GUILD: return "Görev Loncası";
-            case CLAN_BANK: return "Klan Bankası";
-            case CONTRACT_OFFICE: return "Kontrat Bürosu";
-            case CLAN_MISSION_GUILD: return "Klan Görev Loncası";
-            case MARKET_PLACE: return "Market";
-            case RECIPE_LIBRARY: return "Tarif Kütüphanesi";
-            case ALCHEMY_TOWER: return "Simya Kulesi";
-            case TECTONIC_STABILIZER: return "Tektonik Sabitleyici";
-            case POISON_REACTOR: return "Zehir Reaktörü";
-            case AUTO_TURRET: return "Otomatik Taret";
-            case GLOBAL_MARKET_GATE: return "Global Pazar";
-            default: return type.name();
-        }
+        // StructureHelper kullan
+        return me.mami.stratocraft.util.StructureHelper.getStructureDisplayName(type);
     }
     
     /**

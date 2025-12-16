@@ -77,11 +77,13 @@ public class StructureMenuListener implements Listener {
             for (Structure structure : clan.getStructures()) {
                 if (structure.getLocation().distance(location) <= 2.0) {
                     // Kişisel yapılar herkese açık, klan yapıları klan kontrolü gerektirir
-                    Structure.Type type = structure.getType();
-                    if (type == Structure.Type.PERSONAL_MISSION_GUILD ||
-                        type == Structure.Type.CONTRACT_OFFICE ||
-                        type == Structure.Type.MARKET_PLACE ||
-                        type == Structure.Type.RECIPE_LIBRARY) {
+                    // YENİ: StructureType kullan
+                    me.mami.stratocraft.enums.StructureType type = 
+                        me.mami.stratocraft.enums.StructureType.valueOf(structure.getType().name());
+                    if (type == me.mami.stratocraft.enums.StructureType.PERSONAL_MISSION_GUILD ||
+                        type == me.mami.stratocraft.enums.StructureType.CONTRACT_OFFICE ||
+                        type == me.mami.stratocraft.enums.StructureType.MARKET_PLACE ||
+                        type == me.mami.stratocraft.enums.StructureType.RECIPE_LIBRARY) {
                         // Kişisel yapılar: Herkese açık
                         return structure;
                     } else {
@@ -109,11 +111,13 @@ public class StructureMenuListener implements Listener {
             if (playerClan != null) {
                 for (Structure structure : playerClan.getStructures()) {
                     if (structure.getLocation().distance(location) <= 2.0) {
-                        Structure.Type type = structure.getType();
-                        if (type == Structure.Type.PERSONAL_MISSION_GUILD ||
-                            type == Structure.Type.CONTRACT_OFFICE ||
-                            type == Structure.Type.MARKET_PLACE ||
-                            type == Structure.Type.RECIPE_LIBRARY) {
+                        // YENİ: StructureType kullan
+                        me.mami.stratocraft.enums.StructureType type = 
+                            me.mami.stratocraft.enums.StructureType.valueOf(structure.getType().name());
+                        if (type == me.mami.stratocraft.enums.StructureType.PERSONAL_MISSION_GUILD ||
+                            type == me.mami.stratocraft.enums.StructureType.CONTRACT_OFFICE ||
+                            type == me.mami.stratocraft.enums.StructureType.MARKET_PLACE ||
+                            type == me.mami.stratocraft.enums.StructureType.RECIPE_LIBRARY) {
                             return structure;
                         }
                     }
@@ -128,7 +132,14 @@ public class StructureMenuListener implements Listener {
      * Yapı tipine göre menü aç
      */
     private void openMenuForStructure(Player player, Structure structure) {
-        Structure.Type type = structure.getType();
+        // YENİ: StructureType kullan (geriye uyumluluk için dönüştür)
+        me.mami.stratocraft.enums.StructureType type;
+        try {
+            type = me.mami.stratocraft.enums.StructureType.valueOf(structure.getType().name());
+        } catch (IllegalArgumentException e) {
+            player.sendMessage("§cYapı tipi geçersiz!");
+            return;
+        }
         
         switch (type) {
             case PERSONAL_MISSION_GUILD:
@@ -151,14 +162,29 @@ public class StructureMenuListener implements Listener {
                     player.sendMessage("§cBir klana üye değilsiniz!");
                     return;
                 }
+                
+                // YENİ: Yetki kontrolü (Lider veya General)
+                Clan.Rank rank = clan.getRank(player.getUniqueId());
+                if (rank != Clan.Rank.LEADER && rank != Clan.Rank.GENERAL) {
+                    player.sendMessage("§cBu menüye erişim yetkiniz yok! (Lider/General)");
+                    return;
+                }
+                
                 // Klan bölgesinde mi kontrol
                 Clan owner = territoryManager.getTerritoryOwner(structure.getLocation());
                 if (owner == null || !owner.equals(clan)) {
                     player.sendMessage("§cBu yapıya erişim yetkiniz yok!");
                     return;
                 }
-                if (plugin.getClanMenu() != null) {
-                    plugin.getClanMenu().openMenu(player);
+                
+                // YENİ: Klan Alanı Yönetim Menüsü
+                if (plugin.getClanTerritoryMenu() != null) {
+                    plugin.getClanTerritoryMenu().openMenu(player);
+                } else {
+                    // Fallback: Eski klan menüsü
+                    if (plugin.getClanMenu() != null) {
+                        plugin.getClanMenu().openMenu(player);
+                    }
                 }
                 break;
                 

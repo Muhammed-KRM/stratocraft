@@ -15,6 +15,7 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
 
+import me.mami.stratocraft.enums.ContractType;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Contract;
 
@@ -336,25 +337,66 @@ public class ContractManager {
     // ========== BOUNTY HUNTING (SUİKAST KONTRATLARI) ==========
     
     /**
-     * Bir oyuncunun başına ödül koy (Bounty Contract)
+     * Bir oyuncunun başına ödül koy (Bounty Contract) (YENİ: ContractType enum kullanır)
      */
     public void createBountyContract(UUID issuer, UUID target, double reward) {
-        // Yeni sistem: ContractType.PLAYER_KILL kullan
-            double rewardMultiplier = getRewardMultiplier();
-            int defaultDays = getDefaultDays();
-            Contract bounty = new Contract(issuer, Contract.ContractType.PLAYER_KILL, 
-            Contract.ContractScope.PLAYER_TO_PLAYER, reward, reward * rewardMultiplier, defaultDays); // Config'den
+        double rewardMultiplier = getRewardMultiplier();
+        int defaultDays = getDefaultDays();
+        me.mami.stratocraft.enums.PenaltyType penaltyType = me.mami.stratocraft.enums.PenaltyType.BANK_PENALTY; // Varsayılan
+        Contract bounty = new Contract(issuer, me.mami.stratocraft.enums.ContractType.COMBAT, 
+            Contract.ContractScope.PLAYER_TO_PLAYER, reward, penaltyType, defaultDays);
         bounty.setTargetPlayer(target); // Hedef oyuncu UUID'si
         activeContracts.add(bounty);
     }
     
     /**
-     * Yeni kontrat oluştur (yeni sistem)
+     * Yeni kontrat oluştur (YENİ: ContractType ve PenaltyType enum kullanır)
      */
+    public void createContract(UUID issuer, me.mami.stratocraft.enums.ContractType type, Contract.ContractScope scope,
+                              double reward, me.mami.stratocraft.enums.PenaltyType penaltyType, long deadlineDays) {
+        Contract contract = new Contract(issuer, type, scope, reward, penaltyType, deadlineDays);
+        activeContracts.add(contract);
+    }
+    
+    /**
+     * Yeni kontrat oluştur (GERİYE UYUMLULUK: eski Contract.ContractType enum kullanır)
+     * @deprecated ContractType ve PenaltyType kullanın
+     */
+    @Deprecated
     public void createContract(UUID issuer, Contract.ContractType type, Contract.ContractScope scope,
                               double reward, double penalty, long deadlineDays) {
         Contract contract = new Contract(issuer, type, scope, reward, penalty, deadlineDays);
         activeContracts.add(contract);
+    }
+    
+    /**
+     * Yeni kontrat oluştur (GERİYE UYUMLULUK: Contract.ContractType enum kullanır)
+     * @deprecated ContractType kullanın
+     */
+    @Deprecated
+    public void createContract(UUID issuer, Contract.ContractType type, Contract.ContractScope scope,
+                              double reward, double penalty, long deadlineDays) {
+        Contract contract = new Contract(issuer, type, scope, reward, penalty, deadlineDays);
+        activeContracts.add(contract);
+    }
+    
+    /**
+     * ContractType'ı eski Contract.ContractType'a dönüştür (geriye uyumluluk için)
+     */
+    private Contract.ContractType convertToOldContractType(ContractType type) {
+        if (type == null) return null;
+        try {
+            return Contract.ContractType.valueOf(type.name());
+        } catch (IllegalArgumentException e) {
+            // Yeni enum değerlerini eski enum'a map et
+            switch (type) {
+                case DELIVERY: return Contract.ContractType.MATERIAL_DELIVERY;
+                case COMBAT: return Contract.ContractType.PLAYER_KILL;
+                case PROTECTION: return Contract.ContractType.BASE_PROTECTION;
+                case CONSTRUCTION: return Contract.ContractType.STRUCTURE_BUILD;
+                default: return Contract.ContractType.MATERIAL_DELIVERY;
+            }
+        }
     }
     
     /**
@@ -368,11 +410,15 @@ public class ContractManager {
     }
     
     /**
-     * Saldırmama anlaşması var mı?
+     * Saldırmama anlaşması var mı? (YENİ: ContractType enum kullanır)
      */
     public Contract getNonAggressionContract(UUID player1, UUID player2) {
         return activeContracts.stream()
-            .filter(c -> c.getType() == Contract.ContractType.NON_AGGRESSION)
+            .filter(c -> {
+                me.mami.stratocraft.enums.ContractType contractType = c.getContractType();
+                // Saldırmama anlaşması COMBAT tipinde olabilir (saldırmama = combat kontratı)
+                return contractType != null && contractType == me.mami.stratocraft.enums.ContractType.COMBAT;
+            })
             .filter(c -> c.getAcceptor() != null && c.getAcceptor().equals(player1))
             .filter(c -> c.getNonAggressionTarget() != null && c.getNonAggressionTarget().equals(player2))
             .filter(c -> !c.isBreached() && !c.isExpired())

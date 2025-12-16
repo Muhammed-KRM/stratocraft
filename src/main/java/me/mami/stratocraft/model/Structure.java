@@ -1,8 +1,20 @@
 package me.mami.stratocraft.model;
 
+import me.mami.stratocraft.enums.StructureType;
 import org.bukkit.Location;
 
+/**
+ * Yapı Modeli (Geriye Uyumluluk İçin)
+ * 
+ * @deprecated Yeni sistem için BaseStructure, ClanStructure veya PersonalStructure kullanın.
+ * Bu sınıf geriye uyumluluk için korunmuştur.
+ */
+@Deprecated
 public class Structure {
+    /**
+     * @deprecated me.mami.stratocraft.enums.StructureType kullanın
+     */
+    @Deprecated
     public enum Type {
         // --- TEMEL ---
         CORE,                 // Ana Kristal

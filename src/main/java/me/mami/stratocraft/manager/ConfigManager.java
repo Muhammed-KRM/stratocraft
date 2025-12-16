@@ -69,6 +69,9 @@ public class ConfigManager {
     
     // ========== OYUN DENGE CONFIG YÖNETİCİSİ ==========
     private GameBalanceConfig gameBalanceConfig;
+    
+    // ========== KLAN ALANI CONFIG YÖNETİCİSİ ==========
+    private me.mami.stratocraft.manager.config.TerritoryConfig territoryConfig;
 
     public ConfigManager(Main plugin) {
         this.plugin = plugin;
@@ -76,6 +79,7 @@ public class ConfigManager {
         this.disasterPowerConfig = new DisasterPowerConfig();
         this.disasterPhaseConfig = new DisasterPhaseConfig();
         this.gameBalanceConfig = new GameBalanceConfig();
+        this.territoryConfig = new me.mami.stratocraft.manager.config.TerritoryConfig();
         loadConfig();
     }
 
@@ -146,6 +150,9 @@ public class ConfigManager {
         
         // Oyun Denge Config Yöneticisi (Tüm hardcoded değerler)
         gameBalanceConfig.loadFromConfig(config);
+        
+        // Klan Alanı Config Yöneticisi (YENİ)
+        territoryConfig.loadFromConfig(config);
     }
 
     public void reloadConfig() {
@@ -197,6 +204,9 @@ public class ConfigManager {
     
     // ========== OYUN DENGE CONFIG GETTER ==========
     public GameBalanceConfig getGameBalanceConfig() { return gameBalanceConfig; }
+    
+    // ========== KLAN ALANI CONFIG GETTER ==========
+    public me.mami.stratocraft.manager.config.TerritoryConfig getTerritoryConfig() { return territoryConfig; }
     
     // Config erişimi için (CaravanManager gibi yerler için)
     public FileConfiguration getConfig() { return config; }

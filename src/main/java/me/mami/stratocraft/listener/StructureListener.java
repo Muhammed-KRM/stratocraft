@@ -11,6 +11,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
+import me.mami.stratocraft.enums.StructureType;
 import me.mami.stratocraft.manager.ClanManager;
 import me.mami.stratocraft.manager.ItemManager;
 import me.mami.stratocraft.manager.ResearchManager;
@@ -64,7 +65,7 @@ public class StructureListener implements Listener {
                 p.sendMessage("§7Yapı kontrol ediliyor...");
                 validator.validateAsync(b.getLocation(), "alchemy_tower", (isValid) -> {
                     if (isValid) {
-                        createStructure(p, clan, b, Structure.Type.ALCHEMY_TOWER, "Simya Kulesi");
+                        createStructure(p, clan, b, StructureType.ALCHEMY_TOWER, "Simya Kulesi");
                     } else {
                         p.sendMessage("§cYapı şemaya uymuyor! (alchemy_tower.schem)");
                     }
@@ -79,7 +80,7 @@ public class StructureListener implements Listener {
                 p.playSound(b.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 0.5f, 1.0f);
                 validator.validateAsync(b.getLocation(), "tectonic_stabilizer", (isValid) -> {
                     if (isValid) {
-                        createStructure(p, clan, b, Structure.Type.TECTONIC_STABILIZER, "Tektonik Sabitleyici");
+                        createStructure(p, clan, b, StructureType.TECTONIC_STABILIZER, "Tektonik Sabitleyici");
                     } else {
                         p.sendMessage("§c§l✗ Yapı şemaya uymuyor!");
                         p.sendMessage("§7Lütfen §etectonic_stabilizer.schem §7şemasına uygun şekilde yapıyı kurun.");
@@ -106,7 +107,7 @@ public class StructureListener implements Listener {
                 p.playSound(b.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 0.5f, 1.0f);
                 validator.validateAsync(b.getLocation(), "market_gate", (isValid) -> {
                     if (isValid) {
-                        createStructure(p, clan, b, Structure.Type.GLOBAL_MARKET_GATE, "Global Pazar");
+                        createStructure(p, clan, b, StructureType.GLOBAL_MARKET_GATE, "Global Pazar");
                     } else {
                         p.sendMessage("§c§l✗ Yapı şemaya uymuyor!");
                         p.sendMessage("§7Lütfen §emarket_gate.schem §7şemasına uygun şekilde yapıyı kurun.");
@@ -125,7 +126,7 @@ public class StructureListener implements Listener {
                 p.playSound(b.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 0.5f, 1.0f);
                 validator.validateAsync(b.getLocation(), "poison_reactor", (isValid) -> {
                     if (isValid) {
-                        createStructure(p, clan, b, Structure.Type.POISON_REACTOR, "Zehir Reaktörü");
+                        createStructure(p, clan, b, StructureType.POISON_REACTOR, "Zehir Reaktörü");
                     } else {
                         p.sendMessage("§c§l✗ Yapı şemaya uymuyor!");
                         p.sendMessage("§7Lütfen §epoison_reactor.schem §7şemasına uygun şekilde yapıyı kurun.");
@@ -155,7 +156,7 @@ public class StructureListener implements Listener {
                     p.playSound(b.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 0.5f, 1.0f);
                     validator.validateAsync(b.getLocation(), "auto_turret", (isValid) -> {
                         if (isValid) {
-                            createStructure(p, clan, b, Structure.Type.AUTO_TURRET, "Otomatik Taret");
+                            createStructure(p, clan, b, StructureType.AUTO_TURRET, "Otomatik Taret");
                             // Malzemeleri tüket
                             if (mainHand != null && mainHand.getType() == Material.IRON_NUGGET) {
                                 mainHand.setAmount(mainHand.getAmount() - 1);
@@ -183,7 +184,7 @@ public class StructureListener implements Listener {
         // 6. XP BANKASI - Tecrübe yatır/çek
         else if (b.getType() == Material.EXPERIENCE_BOTTLE || b.getType() == Material.ENCHANTING_TABLE) {
             Structure xpBank = clan.getStructures().stream()
-                    .filter(s -> s.getType() == Structure.Type.XP_BANK && 
+                    .filter(s -> s.getType().name().equals(StructureType.XP_BANK.name()) && 
                                 s.getLocation().distance(b.getLocation()) <= 5)
                     .findFirst().orElse(null);
             
@@ -218,7 +219,7 @@ public class StructureListener implements Listener {
         // 7. IŞINLANMA PLATFORMU - Şubeler arası ışınlanma
         else if (b.getType() == Material.END_PORTAL_FRAME || b.getType() == Material.END_PORTAL) {
             Structure teleporter = clan.getStructures().stream()
-                    .filter(s -> s.getType() == Structure.Type.TELEPORTER && 
+                    .filter(s -> s.getType().name().equals(StructureType.TELEPORTER.name()) && 
                                 s.getLocation().distance(b.getLocation()) <= 3)
                     .findFirst().orElse(null);
             
@@ -266,7 +267,7 @@ public class StructureListener implements Listener {
         return true;
     }
 
-    private void createStructure(Player p, Clan c, Block b, Structure.Type type, String name) {
+    private void createStructure(Player p, Clan c, Block b, StructureType type, String name) {
         // Yapı inşa maliyetleri kontrolü
         if (!checkStructureCost(p, type)) {
             p.sendMessage("§cYapı inşa etmek için yeterli malzemeniz yok!");
@@ -276,7 +277,9 @@ public class StructureListener implements Listener {
         // Malzemeleri tüket
         consumeStructureCost(p, type);
         
-        c.addStructure(new Structure(type, b.getLocation(), 1));
+        // Geriye uyumluluk için Structure.Type'a çevir (deprecated)
+        Structure.Type legacyType = Structure.Type.valueOf(type.name());
+        c.addStructure(new Structure(legacyType, b.getLocation(), 1));
         
         // ✅ İYİLEŞTİRME: Daha belirgin efektler
         org.bukkit.Location loc = b.getLocation().add(0.5, 1, 0.5);
@@ -303,7 +306,7 @@ public class StructureListener implements Listener {
         p.sendTitle("§a§l✓ BAŞARILI", "§7" + name + " aktif edildi!", 10, 40, 10);
     }
     
-    private boolean checkStructureCost(Player p, Structure.Type type) {
+    private boolean checkStructureCost(Player p, StructureType type) {
         org.bukkit.inventory.Inventory inv = p.getInventory();
         
         switch (type) {
@@ -334,7 +337,7 @@ public class StructureListener implements Listener {
         }
     }
     
-    private void consumeStructureCost(Player p, Structure.Type type) {
+    private void consumeStructureCost(Player p, StructureType type) {
         org.bukkit.inventory.Inventory inv = p.getInventory();
         
         switch (type) {

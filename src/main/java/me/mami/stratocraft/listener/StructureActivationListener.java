@@ -1,6 +1,7 @@
 package me.mami.stratocraft.listener;
 
 import me.mami.stratocraft.Main;
+import me.mami.stratocraft.enums.StructureType;
 import me.mami.stratocraft.manager.ClanManager;
 import me.mami.stratocraft.manager.TerritoryManager;
 import me.mami.stratocraft.model.Clan;
@@ -69,10 +70,12 @@ public class StructureActivationListener implements Listener {
             return;
 
         // Kişisel yapılar (klan zorunlu değil)
-        if (detectedStructure.getType() == Type.PERSONAL_MISSION_GUILD ||
-            detectedStructure.getType() == Type.CONTRACT_OFFICE ||
-            detectedStructure.getType() == Type.MARKET_PLACE ||
-            detectedStructure.getType() == Type.RECIPE_LIBRARY) {
+        // Geriye uyumluluk için Structure.Type'dan StructureType'a çevir
+        StructureType detectedType = StructureType.valueOf(detectedStructure.getType().name());
+        if (detectedType == StructureType.PERSONAL_MISSION_GUILD ||
+            detectedType == StructureType.CONTRACT_OFFICE ||
+            detectedType == StructureType.MARKET_PLACE ||
+            detectedType == StructureType.RECIPE_LIBRARY) {
             
             // Kişisel yapılar için klan kontrolü yok
             // Yapıyı en yakın klana ekle (varsa) veya geçici olarak sakla
@@ -255,7 +258,8 @@ public class StructureActivationListener implements Listener {
             return null;
         }
 
-        return new Structure(Type.ALCHEMY_TOWER, center.getLocation(), level);
+        // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
+        return new Structure(Structure.Type.valueOf(StructureType.ALCHEMY_TOWER.name()), center.getLocation(), level);
     }
 
     /**
@@ -292,7 +296,8 @@ public class StructureActivationListener implements Listener {
             return null;
         }
 
-        return new Structure(Type.POISON_REACTOR, center.getLocation(), level);
+        // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
+        return new Structure(Structure.Type.valueOf(StructureType.POISON_REACTOR.name()), center.getLocation(), level);
     }
 
     /**
@@ -322,7 +327,8 @@ public class StructureActivationListener implements Listener {
         // Seviye: Obsidian sayısına göre
         int level = obsidianCount >= 25 ? 3 : (obsidianCount >= 23 ? 2 : 1);
 
-        return new Structure(Type.TECTONIC_STABILIZER, center.getLocation(), level);
+        // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
+        return new Structure(Structure.Type.valueOf(StructureType.TECTONIC_STABILIZER.name()), center.getLocation(), level);
     }
 
     /**
@@ -358,7 +364,8 @@ public class StructureActivationListener implements Listener {
             return null;
         }
 
-        return new Structure(Type.WATCHTOWER, center.getLocation(), level);
+        // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
+        return new Structure(Structure.Type.valueOf(StructureType.WATCHTOWER.name()), center.getLocation(), level);
     }
 
     /**
@@ -397,7 +404,8 @@ public class StructureActivationListener implements Listener {
 
         int level = Math.min(3, Math.max(1, height - 1));
 
-        return new Structure(Type.AUTO_TURRET, center.getLocation(), level);
+        // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
+        return new Structure(Structure.Type.valueOf(StructureType.AUTO_TURRET.name()), center.getLocation(), level);
     }
 
     // ========== YÖNETİM YAPILARI PATTERN KONTROLLERİ ==========
@@ -426,7 +434,8 @@ public class StructureActivationListener implements Listener {
         if (stoneCount < 3) // En az 3/4 blok
             return null;
 
-        return new Structure(Type.PERSONAL_MISSION_GUILD, center.getLocation(), 1);
+        // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
+        return new Structure(Structure.Type.valueOf(StructureType.PERSONAL_MISSION_GUILD.name()), center.getLocation(), 1);
     }
 
     /**
@@ -457,7 +466,8 @@ public class StructureActivationListener implements Listener {
         if (ironCount >= 6) level = 2;
         if (ironCount >= 8) level = 3;
 
-        return new Structure(Type.CLAN_MANAGEMENT_CENTER, center.getLocation(), level);
+        // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
+        return new Structure(Structure.Type.valueOf(StructureType.CLAN_MANAGEMENT_CENTER.name()), center.getLocation(), level);
     }
 
     /**
@@ -482,7 +492,8 @@ public class StructureActivationListener implements Listener {
             return null;
 
         int level = ironCount >= 4 ? 2 : 1;
-        return new Structure(Type.CLAN_BANK, center.getLocation(), level);
+        // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
+        return new Structure(Structure.Type.valueOf(StructureType.CLAN_BANK.name()), center.getLocation(), level);
     }
 
     /**
@@ -507,7 +518,8 @@ public class StructureActivationListener implements Listener {
             return null;
 
         int level = ironCount >= 4 ? 2 : 1;
-        return new Structure(Type.CLAN_MISSION_GUILD, center.getLocation(), level);
+        // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
+        return new Structure(Structure.Type.valueOf(StructureType.CLAN_MISSION_GUILD.name()), center.getLocation(), level);
     }
 
     /**
@@ -532,7 +544,8 @@ public class StructureActivationListener implements Listener {
             return null;
 
         int level = ironCount >= 4 ? 2 : 1;
-        return new Structure(Type.TRAINING_ARENA, center.getLocation(), level);
+        // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
+        return new Structure(Structure.Type.valueOf(StructureType.TRAINING_ARENA.name()), center.getLocation(), level);
     }
 
     /**
@@ -557,7 +570,8 @@ public class StructureActivationListener implements Listener {
             return null;
 
         int level = ironCount >= 4 ? 2 : 1;
-        return new Structure(Type.CARAVAN_STATION, center.getLocation(), level);
+        // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
+        return new Structure(Structure.Type.valueOf(StructureType.CARAVAN_STATION.name()), center.getLocation(), level);
     }
 
     /**
@@ -585,7 +599,8 @@ public class StructureActivationListener implements Listener {
         if (stoneCount < 3)
             return null;
 
-        return new Structure(Type.CONTRACT_OFFICE, center.getLocation(), 1);
+        // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
+        return new Structure(Structure.Type.valueOf(StructureType.CONTRACT_OFFICE.name()), center.getLocation(), 1);
     }
 
     /**
@@ -624,7 +639,8 @@ public class StructureActivationListener implements Listener {
         if (stoneCount < 3)
             return null;
 
-        return new Structure(Type.MARKET_PLACE, center.getLocation(), 1);
+        // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
+        return new Structure(Structure.Type.valueOf(StructureType.MARKET_PLACE.name()), center.getLocation(), 1);
     }
 
     /**
@@ -648,7 +664,8 @@ public class StructureActivationListener implements Listener {
             return null;
 
         int level = bookshelfCount >= 4 ? 2 : 1;
-        return new Structure(Type.RECIPE_LIBRARY, center.getLocation(), level);
+        // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
+        return new Structure(Structure.Type.valueOf(StructureType.RECIPE_LIBRARY.name()), center.getLocation(), level);
     }
 
     // ========== YARDIMCI METODLAR ==========
