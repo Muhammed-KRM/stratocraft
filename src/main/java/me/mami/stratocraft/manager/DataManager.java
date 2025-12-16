@@ -6,6 +6,8 @@ import com.google.gson.reflect.TypeToken;
 import me.mami.stratocraft.Main;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Contract;
+import me.mami.stratocraft.model.ContractRequest;
+import me.mami.stratocraft.model.ContractTerms;
 import me.mami.stratocraft.model.Shop;
 import me.mami.stratocraft.model.Structure;
 import me.mami.stratocraft.model.Territory;
@@ -152,6 +154,24 @@ public class DataManager {
                        me.mami.stratocraft.manager.clan.ClanActivitySystem clanActivitySystem,
                        me.mami.stratocraft.manager.TrapManager trapManager,
                        boolean forceSync) {
+        saveAll(clanManager, contractManager, shopManager, virtualStorage, allianceManager,
+                disasterManager, clanBankSystem, clanMissionSystem, clanActivitySystem,
+                trapManager, null, null, forceSync);
+    }
+    
+    /**
+     * Tüm verileri kaydet (ContractRequest ve ContractTerms ile)
+     */
+    public void saveAll(ClanManager clanManager, ContractManager contractManager, 
+                       ShopManager shopManager, VirtualStorageListener virtualStorage, 
+                       AllianceManager allianceManager, DisasterManager disasterManager,
+                       me.mami.stratocraft.manager.clan.ClanBankSystem clanBankSystem,
+                       me.mami.stratocraft.manager.clan.ClanMissionSystem clanMissionSystem,
+                       me.mami.stratocraft.manager.clan.ClanActivitySystem clanActivitySystem,
+                       me.mami.stratocraft.manager.TrapManager trapManager,
+                       me.mami.stratocraft.manager.ContractRequestManager contractRequestManager,
+                       me.mami.stratocraft.manager.ContractTermsManager contractTermsManager,
+                       boolean forceSync) {
         try {
             // Önce tüm verileri snapshot al (sync thread'de)
             ClanSnapshot clanSnapshot = createClanSnapshot(clanManager);
@@ -160,6 +180,16 @@ public class DataManager {
             InventorySnapshot inventorySnapshot = createInventorySnapshot(virtualStorage);
             AllianceSnapshot allianceSnapshot = createAllianceSnapshot(allianceManager);
             DisasterSnapshot disasterSnapshot = createDisasterSnapshot(disasterManager);
+            
+            // Çift taraflı kontrat sistemi için snapshot'lar
+            ContractRequestSnapshot requestSnapshot = null;
+            ContractTermsSnapshot termsSnapshot = null;
+            if (contractRequestManager != null) {
+                requestSnapshot = createContractRequestSnapshot(contractRequestManager);
+            }
+            if (contractTermsManager != null) {
+                termsSnapshot = createContractTermsSnapshot(contractTermsManager);
+            }
             
             // Yeni sistemler için snapshot'lar (null kontrolü ile)
             ClanBankSnapshot bankSnapshot = null;
@@ -268,6 +298,25 @@ public class DataManager {
                         }
                     }
                     
+                    // Çift taraflı kontrat sistemi
+                    if (requestSnapshot != null) {
+                        try {
+                            writeContractRequestSnapshot(requestSnapshot);
+                            writtenFiles.add(new File(dataFolder, "data/contract_requests.json"));
+                        } catch (Exception e) {
+                            errors.add(e);
+                        }
+                    }
+                    
+                    if (termsSnapshot != null) {
+                        try {
+                            writeContractTermsSnapshot(termsSnapshot);
+                            writtenFiles.add(new File(dataFolder, "data/contract_terms.json"));
+                        } catch (Exception e) {
+                            errors.add(e);
+                        }
+                    }
+                    
                     // Hata kontrolü ve kritik dosya kontrolü
                     if (!errors.isEmpty()) {
                         plugin.getLogger().severe("§c" + errors.size() + " dosya kaydetme hatası!");
@@ -296,6 +345,19 @@ public class DataManager {
                             plugin.getLogger().warning("§eBazı kritik dosyalar eksik veya boş! Backup kontrolü önerilir.");
                         }
                     }
+                    
+                    // ✅ SQLite'a kaydet (eğer aktifse)
+                    if (useSQLite && sqliteDataManager != null) {
+                        try {
+                            sqliteDataManager.saveAll(clanSnapshot, contractSnapshot, shopSnapshot,
+                                inventorySnapshot, allianceSnapshot, disasterSnapshot,
+                                bankSnapshot, missionSnapshot, trapSnapshot,
+                                requestSnapshot, termsSnapshot);
+                        } catch (Exception e) {
+                            plugin.getLogger().warning("§eSQLite kayıt hatası: " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                    }
                 } finally {
                     saveLock.unlock();
                 }
@@ -305,6 +367,10 @@ public class DataManager {
                 final ClanMissionSnapshot finalMissionSnapshot = missionSnapshot;
                 final ClanActivitySnapshot finalActivitySnapshot = activitySnapshot;
                 final TrapSnapshot finalTrapSnapshot = trapSnapshot;
+                final ContractRequestSnapshot finalRequestSnapshot = requestSnapshot;
+                final ContractTermsSnapshot finalTermsSnapshot = termsSnapshot;
+                final boolean finalUseSQLite = useSQLite;
+                final me.mami.stratocraft.database.SQLiteDataManager finalSqliteDataManager = sqliteDataManager;
                 
                 Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                     // File locking (async thread'de de çalışır)
@@ -396,6 +462,25 @@ public class DataManager {
                             }
                         }
                         
+                        // Çift taraflı kontrat sistemi
+                        if (finalRequestSnapshot != null) {
+                            try {
+                                writeContractRequestSnapshot(finalRequestSnapshot);
+                                writtenFiles.add(new File(dataFolder, "data/contract_requests.json"));
+                            } catch (Exception e) {
+                                errors.add(e);
+                            }
+                        }
+                        
+                        if (finalTermsSnapshot != null) {
+                            try {
+                                writeContractTermsSnapshot(finalTermsSnapshot);
+                                writtenFiles.add(new File(dataFolder, "data/contract_terms.json"));
+                            } catch (Exception e) {
+                                errors.add(e);
+                            }
+                        }
+                        
                         // Hata kontrolü ve kritik dosya kontrolü
                         if (!errors.isEmpty()) {
                             plugin.getLogger().severe("§c" + errors.size() + " dosya kaydetme hatası!");
@@ -419,6 +504,19 @@ public class DataManager {
                                 plugin.getLogger().info("§aTüm veriler kaydedildi! (" + writtenFiles.size() + " dosya)");
                             } else {
                                 plugin.getLogger().warning("§eBazı kritik dosyalar eksik veya boş!");
+                            }
+                        }
+                        
+                        // ✅ SQLite'a kaydet (eğer aktifse)
+                        if (finalUseSQLite && finalSqliteDataManager != null) {
+                            try {
+                                finalSqliteDataManager.saveAll(clanSnapshot, contractSnapshot, shopSnapshot,
+                                    inventorySnapshot, allianceSnapshot, disasterSnapshot,
+                                    finalBankSnapshot, finalMissionSnapshot, finalTrapSnapshot,
+                                    finalRequestSnapshot, finalTermsSnapshot);
+                            } catch (Exception e) {
+                                plugin.getLogger().warning("§eSQLite kayıt hatası: " + e.getMessage());
+                                e.printStackTrace();
                             }
                         }
                     } finally {
@@ -448,6 +546,14 @@ public class DataManager {
     
     public static class ContractSnapshot {
         public List<ContractData> contracts = new ArrayList<>();
+    }
+    
+    public static class ContractRequestSnapshot {
+        public List<ContractRequestData> requests = new ArrayList<>();
+    }
+    
+    public static class ContractTermsSnapshot {
+        public List<ContractTermsData> terms = new ArrayList<>();
     }
     
     public static class ShopSnapshot {
@@ -670,7 +776,106 @@ public class DataManager {
             if (contract.getStructureType() != null) {
                 data.structureType = contract.getStructureType();
             }
+            
+            // Çift taraflı kontrat için
+            if (contract.isBilateralContract()) {
+                data.playerA = contract.getPlayerA() != null ? contract.getPlayerA().toString() : null;
+                data.playerB = contract.getPlayerB() != null ? contract.getPlayerB().toString() : null;
+                data.contractRequestId = contract.getContractRequestId() != null ? 
+                    contract.getContractRequestId().toString() : null;
+                if (contract.getTermsA() != null) {
+                    data.termsAId = contract.getTermsA().getId().toString();
+                }
+                if (contract.getTermsB() != null) {
+                    data.termsBId = contract.getTermsB().getId().toString();
+                }
+                data.contractStatus = contract.getContractStatus() != null ? 
+                    contract.getContractStatus().name() : null;
+                data.startedAt = contract.getStartedAt();
+                data.completedAt = contract.getCompletedAt();
+                data.breachedAt = contract.getBreachedAt();
+                data.breacher = contract.getBreacher() != null ? contract.getBreacher().toString() : null;
+            }
+            
             snapshot.contracts.add(data);
+        }
+        
+        return snapshot;
+    }
+    
+    /**
+     * ContractRequest snapshot oluştur
+     */
+    private ContractRequestSnapshot createContractRequestSnapshot(
+            me.mami.stratocraft.manager.ContractRequestManager requestManager) {
+        ContractRequestSnapshot snapshot = new ContractRequestSnapshot();
+        
+        if (requestManager == null) return snapshot;
+        
+        List<me.mami.stratocraft.model.ContractRequest> requests = requestManager.getAllRequests();
+        if (requests == null) return snapshot;
+        
+        for (me.mami.stratocraft.model.ContractRequest request : requests) {
+            if (request == null) continue;
+            ContractRequestData data = new ContractRequestData();
+            data.id = request.getId().toString();
+            data.sender = request.getSender().toString();
+            data.target = request.getTarget().toString();
+            data.scope = request.getScope() != null ? request.getScope().name() : null;
+            data.status = request.getStatus() != null ? request.getStatus().name() : null;
+            data.createdAt = request.getCreatedAt();
+            data.respondedAt = request.getRespondedAt() > 0 ? request.getRespondedAt() : null;
+            snapshot.requests.add(data);
+        }
+        
+        return snapshot;
+    }
+    
+    /**
+     * ContractTerms snapshot oluştur
+     */
+    private ContractTermsSnapshot createContractTermsSnapshot(
+            me.mami.stratocraft.manager.ContractTermsManager termsManager) {
+        ContractTermsSnapshot snapshot = new ContractTermsSnapshot();
+        
+        if (termsManager == null) return snapshot;
+        
+        List<me.mami.stratocraft.model.ContractTerms> terms = termsManager.getAllTerms();
+        if (terms == null) return snapshot;
+        
+        for (me.mami.stratocraft.model.ContractTerms term : terms) {
+            if (term == null) continue;
+            ContractTermsData data = new ContractTermsData();
+            data.id = term.getId().toString();
+            data.contractRequestId = term.getContractRequestId().toString();
+            data.playerId = term.getPlayerId().toString();
+            data.type = term.getType() != null ? term.getType().name() : null;
+            data.material = term.getMaterial() != null ? term.getMaterial().name() : null;
+            data.amount = term.getAmount();
+            data.delivered = term.getDelivered();
+            data.targetPlayer = term.getTargetPlayer() != null ? term.getTargetPlayer().toString() : null;
+            if (term.getRestrictedAreas() != null && !term.getRestrictedAreas().isEmpty()) {
+                java.util.List<java.util.Map<String, Object>> areasList = new java.util.ArrayList<>();
+                for (org.bukkit.Location loc : term.getRestrictedAreas()) {
+                    java.util.Map<String, Object> areaMap = new java.util.HashMap<>();
+                    areaMap.put("world", loc.getWorld() != null ? loc.getWorld().getName() : "world");
+                    areaMap.put("x", loc.getBlockX());
+                    areaMap.put("y", loc.getBlockY());
+                    areaMap.put("z", loc.getBlockZ());
+                    areasList.add(areaMap);
+                }
+                data.restrictedAreas = gson.toJson(areasList);
+            }
+            data.restrictedRadius = term.getRestrictedRadius();
+            data.structureType = term.getStructureType();
+            data.deadline = term.getDeadline();
+            data.reward = term.getReward();
+            data.penaltyType = term.getPenaltyType() != null ? term.getPenaltyType().name() : null;
+            data.penalty = term.getPenalty();
+            data.approved = term.isApproved();
+            data.completed = term.isCompleted();
+            data.breached = term.isBreached();
+            snapshot.terms.add(data);
         }
         
         return snapshot;
@@ -1315,6 +1520,16 @@ public class DataManager {
         atomicWrite(file, data);
     }
     
+    private void writeContractRequestSnapshot(ContractRequestSnapshot snapshot) throws IOException {
+        File file = new File(dataFolder, "data/contract_requests.json");
+        atomicWrite(file, snapshot.requests);
+    }
+    
+    private void writeContractTermsSnapshot(ContractTermsSnapshot snapshot) throws IOException {
+        File file = new File(dataFolder, "data/contract_terms.json");
+        atomicWrite(file, snapshot.terms);
+    }
+    
     private void writeInventorySnapshot(InventorySnapshot snapshot) throws IOException {
         File file = new File(dataFolder, "data/virtual_inventories.json");
         file.getParentFile().mkdirs(); // Klasör yoksa oluştur
@@ -1367,20 +1582,59 @@ public class DataManager {
     /**
      * Tüm verileri yükle (genişletilmiş versiyon - yeni sistemlerle)
      */
-    public void loadAll(ClanManager clanManager, ContractManager contractManager,
-                       ShopManager shopManager, VirtualStorageListener virtualStorage,
+    public void loadAll(ClanManager clanManager, ContractManager contractManager, 
+                       ShopManager shopManager, VirtualStorageListener virtualStorage, 
                        AllianceManager allianceManager, DisasterManager disasterManager,
                        me.mami.stratocraft.manager.clan.ClanBankSystem clanBankSystem,
                        me.mami.stratocraft.manager.clan.ClanMissionSystem clanMissionSystem,
                        me.mami.stratocraft.manager.clan.ClanActivitySystem clanActivitySystem,
                        me.mami.stratocraft.manager.TrapManager trapManager) {
+        loadAll(clanManager, contractManager, shopManager, virtualStorage, allianceManager,
+                disasterManager, clanBankSystem, clanMissionSystem, clanActivitySystem,
+                trapManager, null, null);
+    }
+    
+    /**
+     * Tüm verileri yükle (ContractRequest ve ContractTerms ile)
+     */
+    public void loadAll(ClanManager clanManager, ContractManager contractManager, 
+                       ShopManager shopManager, VirtualStorageListener virtualStorage, 
+                       AllianceManager allianceManager, DisasterManager disasterManager,
+                       me.mami.stratocraft.manager.clan.ClanBankSystem clanBankSystem,
+                       me.mami.stratocraft.manager.clan.ClanMissionSystem clanMissionSystem,
+                       me.mami.stratocraft.manager.clan.ClanActivitySystem clanActivitySystem,
+                       me.mami.stratocraft.manager.TrapManager trapManager,
+                       me.mami.stratocraft.manager.ContractRequestManager contractRequestManager,
+                       me.mami.stratocraft.manager.ContractTermsManager contractTermsManager) {
         try {
+            // ✅ SQLite'dan yükle (eğer aktifse)
+            if (useSQLite && sqliteDataManager != null) {
+                try {
+                    // SQLite'dan yükleme metodları eklenecek (şimdilik JSON'a fallback)
+                    plugin.getLogger().info("§aSQLite veritabanından yükleme aktif (JSON fallback kullanılıyor)");
+                } catch (Exception e) {
+                    plugin.getLogger().warning("§eSQLite yükleme hatası, JSON'a geçiliyor: " + e.getMessage());
+                }
+            }
+            
             loadClans(clanManager);
             loadContracts(contractManager);
             loadShops(shopManager);
             loadVirtualInventories(virtualStorage);
             loadAlliances(allianceManager);
             loadDisaster(disasterManager);
+            
+            // Çift taraflı kontrat sistemi (önce request ve terms yükle)
+            if (contractRequestManager != null) {
+                loadContractRequests(contractRequestManager);
+            }
+            if (contractTermsManager != null) {
+                loadContractTerms(contractTermsManager);
+            }
+            // Sonra çift taraflı kontratları yükle
+            if (contractRequestManager != null && contractTermsManager != null && contractManager != null) {
+                loadBilateralContracts(contractManager, contractRequestManager, contractTermsManager);
+            }
             
             // Yeni sistemler
             if (clanBankSystem != null) {
@@ -2217,6 +2471,207 @@ public class DataManager {
         }
     }
     
+    /**
+     * ContractRequest yükle
+     */
+    private void loadContractRequests(
+            me.mami.stratocraft.manager.ContractRequestManager requestManager) throws IOException {
+        if (requestManager == null) return;
+        
+        File file = new File(dataFolder, "data/contract_requests.json");
+        if (!file.exists()) return;
+        
+        List<ContractRequestData> requestDataList = safeJsonParse(file, 
+            new TypeToken<List<ContractRequestData>>(){});
+        if (requestDataList == null) return;
+        
+        for (ContractRequestData data : requestDataList) {
+            if (data.id == null || !isValidUUID(data.id)) {
+                plugin.getLogger().warning("Geçersiz request ID atlandı");
+                continue;
+            }
+            
+            if (data.sender == null || !isValidUUID(data.sender) ||
+                data.target == null || !isValidUUID(data.target)) {
+                plugin.getLogger().warning("Geçersiz request sender/target atlandı: " + data.id);
+                continue;
+            }
+            
+            try {
+                UUID id = UUID.fromString(data.id);
+                UUID sender = UUID.fromString(data.sender);
+                UUID target = UUID.fromString(data.target);
+                Contract.ContractScope scope = data.scope != null ? 
+                    Contract.ContractScope.valueOf(data.scope) : Contract.ContractScope.PLAYER_TO_PLAYER;
+                ContractRequest.ContractRequestStatus status = data.status != null ?
+                    ContractRequest.ContractRequestStatus.valueOf(data.status) : 
+                    ContractRequest.ContractRequestStatus.PENDING;
+                
+                me.mami.stratocraft.model.ContractRequest request = 
+                    new me.mami.stratocraft.model.ContractRequest(id, sender, target, scope, 
+                        status, data.createdAt, data.respondedAt);
+                
+                requestManager.addRequest(request);
+            } catch (Exception e) {
+                plugin.getLogger().warning("Request yükleme hatası: " + data.id + " - " + e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * ContractTerms yükle
+     */
+    private void loadContractTerms(
+            me.mami.stratocraft.manager.ContractTermsManager termsManager) throws IOException {
+        if (termsManager == null) return;
+        
+        File file = new File(dataFolder, "data/contract_terms.json");
+        if (!file.exists()) return;
+        
+        List<ContractTermsData> termsDataList = safeJsonParse(file, 
+            new TypeToken<List<ContractTermsData>>(){});
+        if (termsDataList == null) return;
+        
+        for (ContractTermsData data : termsDataList) {
+            if (data.id == null || !isValidUUID(data.id)) {
+                plugin.getLogger().warning("Geçersiz terms ID atlandı");
+                continue;
+            }
+            
+            if (data.contractRequestId == null || !isValidUUID(data.contractRequestId) ||
+                data.playerId == null || !isValidUUID(data.playerId)) {
+                plugin.getLogger().warning("Geçersiz terms request/player ID atlandı: " + data.id);
+                continue;
+            }
+            
+            try {
+                UUID id = UUID.fromString(data.id);
+                UUID requestId = UUID.fromString(data.contractRequestId);
+                UUID playerId = UUID.fromString(data.playerId);
+                me.mami.stratocraft.enums.ContractType type = data.type != null ?
+                    me.mami.stratocraft.enums.ContractType.valueOf(data.type) : null;
+                
+                if (type == null) {
+                    plugin.getLogger().warning("Geçersiz contract type atlandı: " + data.id);
+                    continue;
+                }
+                
+                Material material = data.material != null ? Material.valueOf(data.material) : null;
+                UUID targetPlayer = data.targetPlayer != null && isValidUUID(data.targetPlayer) ?
+                    UUID.fromString(data.targetPlayer) : null;
+                
+                java.util.List<org.bukkit.Location> restrictedAreas = new java.util.ArrayList<>();
+                if (data.restrictedAreas != null && !data.restrictedAreas.isEmpty()) {
+                    try {
+                        java.util.List<java.util.Map<String, Object>> areasList = 
+                            gson.fromJson(data.restrictedAreas, 
+                                new TypeToken<java.util.List<java.util.Map<String, Object>>>(){}.getType());
+                        if (areasList != null) {
+                            for (java.util.Map<String, Object> areaMap : areasList) {
+                                String worldName = (String) areaMap.get("world");
+                                int x = ((Double) areaMap.get("x")).intValue();
+                                int y = ((Double) areaMap.get("y")).intValue();
+                                int z = ((Double) areaMap.get("z")).intValue();
+                                org.bukkit.World world = Bukkit.getWorld(worldName);
+                                if (world != null) {
+                                    restrictedAreas.add(new org.bukkit.Location(world, x, y, z));
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        plugin.getLogger().warning("Restricted areas parse hatası: " + e.getMessage());
+                    }
+                }
+                
+                me.mami.stratocraft.enums.PenaltyType penaltyType = data.penaltyType != null ?
+                    me.mami.stratocraft.enums.PenaltyType.valueOf(data.penaltyType) :
+                    me.mami.stratocraft.enums.PenaltyType.BANK_PENALTY;
+                
+                me.mami.stratocraft.model.ContractTerms terms = 
+                    new me.mami.stratocraft.model.ContractTerms(id, requestId, playerId, type,
+                        material, data.amount, data.delivered, targetPlayer,
+                        data.deadline, data.reward, penaltyType, data.penalty,
+                        data.approved, data.completed, data.breached);
+                
+                if (!restrictedAreas.isEmpty()) {
+                    terms.setRestrictedAreas(restrictedAreas);
+                }
+                terms.setRestrictedRadius(data.restrictedRadius);
+                terms.setStructureType(data.structureType);
+                
+                termsManager.addTerms(terms);
+            } catch (Exception e) {
+                plugin.getLogger().warning("Terms yükleme hatası: " + data.id + " - " + e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Çift taraflı kontratları yükle (ContractRequest ve ContractTerms yüklendikten sonra)
+     */
+    private void loadBilateralContracts(ContractManager contractManager,
+            me.mami.stratocraft.manager.ContractRequestManager requestManager,
+            me.mami.stratocraft.manager.ContractTermsManager termsManager) throws IOException {
+        if (contractManager == null || requestManager == null || termsManager == null) return;
+        
+        File file = new File(dataFolder, "data/contracts.json");
+        if (!file.exists()) return;
+        
+        List<ContractData> contractDataList = safeJsonParse(file, new TypeToken<List<ContractData>>(){});
+        if (contractDataList == null) return;
+        
+        for (ContractData data : contractDataList) {
+            if (data.playerA == null || data.playerB == null || data.contractRequestId == null ||
+                !isValidUUID(data.playerA) || !isValidUUID(data.playerB) || 
+                !isValidUUID(data.contractRequestId)) {
+                continue; // Çift taraflı kontrat değil
+            }
+            
+            try {
+                UUID requestId = UUID.fromString(data.contractRequestId);
+                me.mami.stratocraft.model.ContractRequest request = requestManager.getRequest(requestId);
+                if (request == null) continue;
+                
+                UUID playerA = UUID.fromString(data.playerA);
+                UUID playerB = UUID.fromString(data.playerB);
+                
+                me.mami.stratocraft.model.ContractTerms termsA = null;
+                me.mami.stratocraft.model.ContractTerms termsB = null;
+                
+                if (data.termsAId != null && isValidUUID(data.termsAId)) {
+                    termsA = termsManager.getTerms(UUID.fromString(data.termsAId));
+                }
+                if (data.termsBId != null && isValidUUID(data.termsBId)) {
+                    termsB = termsManager.getTerms(UUID.fromString(data.termsBId));
+                }
+                
+                if (termsA == null || termsB == null) continue;
+                
+                // Çift taraflı kontrat oluştur
+                Contract contract = new Contract(playerA, playerB, requestId, termsA, termsB);
+                contract.setId(UUID.fromString(data.id));
+                
+                if (data.contractStatus != null) {
+                    try {
+                        contract.setContractStatus(Contract.ContractStatus.valueOf(data.contractStatus));
+                    } catch (Exception e) {
+                        contract.setContractStatus(Contract.ContractStatus.ACTIVE);
+                    }
+                }
+                contract.setStartedAt(data.startedAt);
+                contract.setCompletedAt(data.completedAt);
+                contract.setBreachedAt(data.breachedAt);
+                if (data.breacher != null && isValidUUID(data.breacher)) {
+                    contract.setBreacher(UUID.fromString(data.breacher));
+                }
+                
+                contractManager.getContracts().add(contract);
+            } catch (Exception e) {
+                plugin.getLogger().warning("Bilateral contract yükleme hatası: " + data.id + " - " + e.getMessage());
+            }
+        }
+    }
+    
     // ========== YARDIMCI METODLAR ==========
     
     private String serializeLocation(Location loc) {
@@ -2416,6 +2871,48 @@ public class DataManager {
         public String nonAggressionTarget; // COMBAT (NON_AGGRESSION) için
         public String structureType; // CONSTRUCTION için
         public boolean breached; // İhlal durumu
+        // Çift taraflı kontrat için
+        public String playerA;
+        public String playerB;
+        public String contractRequestId;
+        public String termsAId;
+        public String termsBId;
+        public String contractStatus; // ContractStatus enum
+        public long startedAt;
+        public long completedAt;
+        public long breachedAt;
+        public String breacher;
+    }
+    
+    public static class ContractRequestData {
+        public String id;
+        public String sender;
+        public String target;
+        public String scope; // ContractScope enum
+        public String status; // ContractRequestStatus enum
+        public long createdAt;
+        public Long respondedAt;
+    }
+    
+    public static class ContractTermsData {
+        public String id;
+        public String contractRequestId;
+        public String playerId;
+        public String type; // ContractType enum
+        public String material;
+        public int amount;
+        public int delivered;
+        public String targetPlayer;
+        public String restrictedAreas; // JSON string
+        public int restrictedRadius;
+        public String structureType;
+        public long deadline;
+        public double reward;
+        public String penaltyType; // PenaltyType enum
+        public double penalty;
+        public boolean approved;
+        public boolean completed;
+        public boolean breached;
     }
     
     public static class ShopData {

@@ -83,7 +83,16 @@ public class ContractManager {
 
     public void deliverContract(UUID contractId, int amount) {
         Contract contract = getContract(contractId);
-        if (contract != null && !contract.isCompleted()) {
+        if (contract == null) return;
+        
+        // Çift taraflı kontrat kontrolü - playerId gerekli, bu metod tek taraflı kontratlar için
+        if (contract.isBilateralContract()) {
+            // Çift taraflı kontratlar deliverBilateralContract(UUID contractId, UUID playerId, int amount) ile teslim edilmeli
+            return;
+        }
+        
+        // Eski sistem (tek taraflı kontrat)
+        if (!contract.isCompleted()) {
             contract.addDelivered(amount);
             if (contract.isCompleted()) {
                 // KRİTİK: Kontrat tamamlandığında kan imzası canını geri ver (1 kalp = 2 can)
@@ -136,9 +145,169 @@ public class ContractManager {
             }
         }
     }
+    
+    /**
+     * Çift taraflı kontrat teslim etme (YENİ)
+     * @deprecated Bu metod kullanılmıyor, deliverBilateralContract(UUID, UUID, int) kullan
+     */
+    @Deprecated
+    private void deliverBilateralContract(Contract contract, int amount) {
+        // Bu metod artık kullanılmıyor
+    }
+    
+    /**
+     * Çift taraflı kontrat teslim etme (Oyuncu ID ile)
+     */
+    public void deliverBilateralContract(UUID contractId, UUID playerId, int amount) {
+        Contract contract = getContract(contractId);
+        if (contract == null || !contract.isBilateralContract()) return;
+        
+        me.mami.stratocraft.model.ContractTerms termsA = contract.getTermsA();
+        me.mami.stratocraft.model.ContractTerms termsB = contract.getTermsB();
+        
+        if (termsA == null || termsB == null) return;
+        
+        // Hangi oyuncu teslim ediyor?
+        me.mami.stratocraft.model.ContractTerms playerTerms = null;
+        me.mami.stratocraft.model.ContractTerms otherTerms = null;
+        
+        if (termsA.getPlayerId() != null && termsA.getPlayerId().equals(playerId)) {
+            playerTerms = termsA;
+            otherTerms = termsB;
+        } else if (termsB.getPlayerId() != null && termsB.getPlayerId().equals(playerId)) {
+            playerTerms = termsB;
+            otherTerms = termsA;
+        } else {
+            // Bu oyuncu bu kontratın tarafı değil
+            plugin.getLogger().warning("Oyuncu " + playerId + " kontrat " + contractId + " için teslim yapmaya çalıştı ama kontratın tarafı değil!");
+            return;
+        }
+        
+        if (playerTerms == null) {
+            plugin.getLogger().warning("PlayerTerms null! Kontrat ID: " + contractId);
+            return;
+        }
+        
+        // RESOURCE_COLLECTION için malzeme teslimi
+        if (playerTerms.getType() != null && playerTerms.getType() == me.mami.stratocraft.enums.ContractType.RESOURCE_COLLECTION) {
+            playerTerms.addDelivered(amount);
+            
+            // Şart tamamlandı mı?
+            if (playerTerms.isCompleted()) {
+                playerTerms.setCompleted(true);
+                
+                Player player = Bukkit.getPlayer(playerId);
+                if (player != null && player.isOnline()) {
+                    player.sendMessage("§a§lŞARTINIZ TAMAMLANDI!");
+                    player.sendMessage("§7" + amount + "x " + 
+                        (playerTerms.getMaterial() != null ? playerTerms.getMaterial().name() : "Malzeme") + 
+                        " teslim edildi");
+                }
+            }
+        }
+        
+        // Her iki şart da tamamlandı mı?
+        if (termsA != null && termsB != null && termsA.isCompleted() && termsB.isCompleted()) {
+            completeBilateralContract(contract);
+        }
+    }
+    
+    /**
+     * Çift taraflı kontrat tamamlama
+     */
+    private void completeBilateralContract(Contract contract) {
+        if (contract == null || !contract.isBilateralContract()) return;
+        
+        me.mami.stratocraft.model.ContractTerms termsA = contract.getTermsA();
+        me.mami.stratocraft.model.ContractTerms termsB = contract.getTermsB();
+        
+        if (termsA == null || termsB == null) return;
+        
+        contract.setContractStatus(Contract.ContractStatus.COMPLETED);
+        contract.setCompletedAt(System.currentTimeMillis());
+        
+        // Her iki oyuncuya da kan imzası geri ver
+        UUID playerAId = contract.getPlayerA();
+        UUID playerBId = contract.getPlayerB();
+        
+        if (playerAId == null || playerBId == null) {
+            plugin.getLogger().warning("Çift taraflı kontrat tamamlandı ama oyuncu ID'leri null! Kontrat ID: " + contract.getId());
+            return;
+        }
+        
+        Player playerA = Bukkit.getPlayer(playerAId);
+        Player playerB = Bukkit.getPlayer(playerBId);
+        
+        if (playerA != null && playerA.isOnline()) {
+            restorePermanentHealth(playerAId, 1);
+            playerA.sendMessage("§6═══════════════════════════════════");
+            playerA.sendMessage("§a§lKONTRAT TAMAMLANDI!");
+            playerA.sendMessage("§7Kalp geri verildi (+1 kalp)");
+        }
+        
+        if (playerB != null && playerB.isOnline()) {
+            restorePermanentHealth(playerBId, 1);
+            playerB.sendMessage("§6═══════════════════════════════════");
+            playerB.sendMessage("§a§lKONTRAT TAMAMLANDI!");
+            playerB.sendMessage("§7Kalp geri verildi (+1 kalp)");
+        }
+        
+        // Ödül ödemeleri
+        // Oyuncu B'nin ödülü (termsA'dan) → Oyuncu A'nın klan bankasından
+        if (clanManager != null) {
+            Clan clanA = clanManager.getClanByPlayer(playerAId);
+            if (clanA != null && clanA.getBalance() >= termsA.getReward()) {
+                clanA.withdraw(termsA.getReward());
+                if (plugin.getEconomyManager() != null && playerB != null && playerB.isOnline()) {
+                    plugin.getEconomyManager().depositPlayer(playerB, termsA.getReward());
+                    playerB.sendMessage("§7Ödül: §a" + termsA.getReward() + " altın");
+                }
+            }
+            
+            // Oyuncu A'nın ödülü (termsB'den) → Oyuncu B'nin klan bankasından
+            Clan clanB = clanManager.getClanByPlayer(playerBId);
+            if (clanB != null && clanB.getBalance() >= termsB.getReward()) {
+                clanB.withdraw(termsB.getReward());
+                if (plugin.getEconomyManager() != null && playerA != null && playerA.isOnline()) {
+                    plugin.getEconomyManager().depositPlayer(playerA, termsB.getReward());
+                    playerA.sendMessage("§7Ödül: §a" + termsB.getReward() + " altın");
+                }
+            }
+        }
+        
+        // Kontrat geçmişine ekle
+        addToContractHistory(contract);
+    }
 
     public void checkExpiredContracts() {
         for (Contract contract : new ArrayList<>(activeContracts)) {
+            // Çift taraflı kontrat kontrolü
+            if (contract.isBilateralContract()) {
+                me.mami.stratocraft.model.ContractTerms termsA = contract.getTermsA();
+                me.mami.stratocraft.model.ContractTerms termsB = contract.getTermsB();
+                
+                if (termsA != null && termsB != null) {
+                    // Her iki şartı da kontrol et
+                    if (termsA.isBreached() || termsB.isBreached()) {
+                        // İhlal eden oyuncuyu bul
+                        UUID breacher = termsA.isBreached() && termsA.getPlayerId() != null ? 
+                            termsA.getPlayerId() : 
+                            (termsB.getPlayerId() != null ? termsB.getPlayerId() : null);
+                        
+                        if (breacher != null) {
+                            breachBilateralContract(contract, breacher);
+                            activeContracts.remove(contract);
+                        } else {
+                            plugin.getLogger().warning("Çift taraflı kontrat ihlal edildi ama breacher ID bulunamadı! Kontrat ID: " + contract.getId());
+                        }
+                    }
+                } else {
+                    plugin.getLogger().warning("Çift taraflı kontrat kontrol edilirken şartlar null! Kontrat ID: " + contract.getId());
+                }
+                continue;
+            }
+            
+            // Eski sistem (tek taraflı kontrat)
             if (contract.isExpired() && contract.getAcceptor() != null) {
                 // Kontrat geçmişine ekle
                 addToContractHistory(contract);
@@ -146,6 +315,79 @@ public class ContractManager {
                 activeContracts.remove(contract);
             }
         }
+    }
+    
+    /**
+     * Çift taraflı kontrat ihlal etme
+     */
+    private void breachBilateralContract(Contract contract, UUID breacher) {
+        if (contract == null || !contract.isBilateralContract() || breacher == null) return;
+        
+        contract.setContractStatus(Contract.ContractStatus.BREACHED);
+        contract.setBreached(true);
+        contract.setBreachedAt(System.currentTimeMillis());
+        contract.setBreacher(breacher);
+        
+        // Sadece ihlal eden kişi ceza alır
+        me.mami.stratocraft.model.ContractTerms termsA = contract.getTermsA();
+        me.mami.stratocraft.model.ContractTerms termsB = contract.getTermsB();
+        
+        if (termsA == null || termsB == null) {
+            plugin.getLogger().warning("Çift taraflı kontrat ihlal edildi ama şartlar null! Kontrat ID: " + contract.getId());
+            return;
+        }
+        
+        me.mami.stratocraft.model.ContractTerms breacherTerms = null;
+        
+        if (termsA.getPlayerId() != null && termsA.getPlayerId().equals(breacher)) {
+            breacherTerms = termsA;
+        } else if (termsB.getPlayerId() != null && termsB.getPlayerId().equals(breacher)) {
+            breacherTerms = termsB;
+        }
+        
+        if (breacherTerms != null) {
+            // Ceza uygula
+            if (clanManager != null) {
+                Clan breacherClan = clanManager.getClanByPlayer(breacher);
+                if (breacherClan != null && breacherClan.getBalance() >= breacherTerms.getPenalty()) {
+                    breacherClan.withdraw(breacherTerms.getPenalty());
+                }
+            }
+            
+            Player breacherPlayer = Bukkit.getPlayer(breacher);
+            if (breacherPlayer != null && breacherPlayer.isOnline()) {
+                breacherPlayer.sendMessage("§6═══════════════════════════════════");
+                breacherPlayer.sendMessage("§c§lKONTRAT İHLAL EDİLDİ!");
+                breacherPlayer.sendMessage("§7Her iki kontrat da bitti");
+                breacherPlayer.sendMessage("§7Ceza: §c" + breacherTerms.getPenalty() + " altın");
+                breacherPlayer.sendMessage("§6═══════════════════════════════════");
+            }
+            
+            // Diğer oyuncuya bildirim
+            UUID playerA = contract.getPlayerA();
+            UUID playerB = contract.getPlayerB();
+            UUID otherPlayerId = null;
+            
+            if (playerA != null && playerA.equals(breacher)) {
+                otherPlayerId = playerB;
+            } else if (playerB != null && playerB.equals(breacher)) {
+                otherPlayerId = playerA;
+            }
+            
+            if (otherPlayerId != null) {
+                Player otherPlayer = Bukkit.getPlayer(otherPlayerId);
+                if (otherPlayer != null && otherPlayer.isOnline()) {
+                    otherPlayer.sendMessage("§6═══════════════════════════════════");
+                    otherPlayer.sendMessage("§eKontrat İhlal Edildi");
+                    otherPlayer.sendMessage("§7Karşı taraf kontratı ihlal etti");
+                    otherPlayer.sendMessage("§7Kontrat sona erdi");
+                    otherPlayer.sendMessage("§6═══════════════════════════════════");
+                }
+            }
+        }
+        
+        // Kontrat geçmişine ekle
+        addToContractHistory(contract);
     }
 
     @Deprecated

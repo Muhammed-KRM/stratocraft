@@ -852,6 +852,28 @@ game-balance:
     reward-multiplier: 0.5          # Kontrat ödül çarpanı
     default-days: 7                 # Varsayılan kontrat süresi (gün)
     health-restore-per-heart: 2.0   # Her kalp için geri verilen can (2.0 = 1 kalp)
+    
+    # Çift Taraflı Kontrat Sistemi
+    bilateral:
+      enabled: true                  # Çift taraflı kontrat sistemi aktif mi?
+      max-pending-requests: 10      # Oyuncu başına maksimum bekleyen istek sayısı
+      request-expiry-days: 7        # İstek geçerlilik süresi (gün)
+      terms-deadline-min: 1         # Minimum şart süresi (gün)
+      terms-deadline-max: 30         # Maksimum şart süresi (gün)
+      auto-cancel-expired: true      # Süresi dolan istekleri otomatik iptal et
+      blood-signature-enabled: true  # Kan imzası sistemi aktif mi? (1 kalp kaybı)
+      penalty-only-breacher: true    # Sadece ihlal eden oyuncu ceza alır
+      
+      # Bildirimler
+      notifications:
+        request-sent: true           # İstek gönderildiğinde bildirim
+        request-accepted: true       # İstek kabul edildiğinde bildirim
+        request-rejected: true       # İstek reddedildiğinde bildirim
+        terms-defined: true          # Şartlar belirlendiğinde bildirim
+        terms-approved: true          # Şartlar onaylandığında bildirim
+        contract-active: true         # Kontrat aktif olduğunda bildirim
+        contract-completed: true      # Kontrat tamamlandığında bildirim
+        contract-breached: true       # Kontrat ihlal edildiğinde bildirim
   
   # Shop Sistemi (Market)
   shop:

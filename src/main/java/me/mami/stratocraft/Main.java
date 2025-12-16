@@ -52,6 +52,8 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.gui.ClanMemberMenu clanMemberMenu;
     private me.mami.stratocraft.gui.ClanStatsMenu clanStatsMenu;
     private me.mami.stratocraft.gui.ContractMenu contractMenu;
+    private me.mami.stratocraft.manager.ContractRequestManager contractRequestManager;
+    private me.mami.stratocraft.manager.ContractTermsManager contractTermsManager;
     private me.mami.stratocraft.gui.PowerMenu powerMenu;
     private me.mami.stratocraft.gui.ClanBankMenu clanBankMenu;
     private me.mami.stratocraft.gui.ClanStructureMenu clanStructureMenu;
@@ -90,6 +92,7 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.BatteryParticleManager batteryParticleManager;
     private me.mami.stratocraft.manager.DisasterArenaManager disasterArenaManager;
     private me.mami.stratocraft.manager.TaskManager taskManager;
+    private me.mami.stratocraft.listener.TerritoryListener territoryListener;
     
     // Yeni Yapı Sistemi Manager'ları
     private me.mami.stratocraft.manager.StructureCoreManager structureCoreManager;
@@ -156,6 +159,8 @@ public class Main extends JavaPlugin {
         scavengerManager = new ScavengerManager();
         logisticsManager = new LogisticsManager(territoryManager);
         contractManager = new ContractManager(clanManager);
+        contractRequestManager = new me.mami.stratocraft.manager.ContractRequestManager(this);
+        contractTermsManager = new me.mami.stratocraft.manager.ContractTermsManager(this);
         allianceManager = new AllianceManager(clanManager);
         mobManager = new MobManager();
         shopManager = new ShopManager();
@@ -452,7 +457,8 @@ public class Main extends JavaPlugin {
 
         // Veri yükleme (yeni sistemlerle)
         dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener, 
-                allianceManager, disasterManager, clanBankSystem, clanMissionSystem, clanActivitySystem, trapManager);
+                allianceManager, disasterManager, clanBankSystem, clanMissionSystem, 
+                clanActivitySystem, trapManager, contractRequestManager, contractTermsManager);
         
         // Periyodik otomatik kayıt başlat
         if (dataManager != null) {
@@ -460,7 +466,7 @@ public class Main extends JavaPlugin {
                 // Auto-save callback: Tüm verileri kaydet (async)
                 dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener, 
                         allianceManager, disasterManager, clanBankSystem, clanMissionSystem, 
-                        clanActivitySystem, trapManager, false);
+                        clanActivitySystem, trapManager, contractRequestManager, contractTermsManager, false);
                 return null;
             });
         }
@@ -884,6 +890,56 @@ public class Main extends JavaPlugin {
                                 return true;
                             }
 
+                            // Çift taraflı kontrat kontrolü
+                            if (contract.isBilateralContract()) {
+                                // Çift taraflı kontrat için özel işlem
+                                me.mami.stratocraft.model.ContractTerms playerTerms = null;
+                                if (contract.getTermsA() != null && contract.getTermsA().getPlayerId().equals(p.getUniqueId())) {
+                                    playerTerms = contract.getTermsA();
+                                } else if (contract.getTermsB() != null && contract.getTermsB().getPlayerId().equals(p.getUniqueId())) {
+                                    playerTerms = contract.getTermsB();
+                                }
+                                
+                                if (playerTerms == null) {
+                                    p.sendMessage("§cBu kontratın tarafı değilsiniz!");
+                                    return true;
+                                }
+                                
+                                if (playerTerms.getType() != me.mami.stratocraft.enums.ContractType.RESOURCE_COLLECTION) {
+                                    p.sendMessage("§cBu kontrat tipi için teslim komutu kullanılamaz!");
+                                    return true;
+                                }
+                                
+                                // Envanterden malzeme kontrolü
+                                int playerAmount = 0;
+                                for (org.bukkit.inventory.ItemStack item : p.getInventory().getContents()) {
+                                    if (item != null && item.getType() == playerTerms.getMaterial()) {
+                                        playerAmount += item.getAmount();
+                                    }
+                                }
+                                
+                                if (playerAmount < amount) {
+                                    p.sendMessage("§cYeterli malzemeniz yok! (" + playerAmount + "/" + playerTerms.getAmount() + ")");
+                                    return true;
+                                }
+                                
+                                // Malzemeyi kaldır
+                                int remaining = amount;
+                                for (org.bukkit.inventory.ItemStack item : p.getInventory().getContents()) {
+                                    if (item != null && item.getType() == playerTerms.getMaterial() && remaining > 0) {
+                                        int remove = Math.min(item.getAmount(), remaining);
+                                        item.setAmount(item.getAmount() - remove);
+                                        remaining -= remove;
+                                    }
+                                }
+                                
+                                // Çift taraflı kontrat teslim et
+                                contractManager.deliverBilateralContract(contractId, p.getUniqueId(), amount);
+                                p.sendMessage("§a" + amount + " " + playerTerms.getMaterial() + " teslim edildi!");
+                                return true;
+                            }
+                            
+                            // Eski sistem (tek taraflı kontrat)
                             // Güvenlik kontrolü: Kontratı kabul eden kişi kontrolü
                             if (contract.getAcceptor() == null) {
                                 // Henüz kabul edilmemiş, önce kabul et
@@ -970,6 +1026,11 @@ public class Main extends JavaPlugin {
             taskManager.shutdown();
         }
         
+        // TerritoryListener'daki aktif kristal taşıma task'larını iptal et
+        if (territoryListener != null) {
+            territoryListener.cancelAllCrystalMoveTasks();
+        }
+        
         // HUD Manager'ı durdur
         if (hudManager != null) {
             hudManager.stop();
@@ -996,7 +1057,8 @@ public class Main extends JavaPlugin {
             // Kapanış işlemlerinde her zaman senkron kayıt (yeni sistemlerle)
             // Tuzaklar da DataManager üzerinden kaydediliyor
             dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener, 
-                    allianceManager, disasterManager, clanBankSystem, clanMissionSystem, clanActivitySystem, trapManager, true);
+                    allianceManager, disasterManager, clanBankSystem, clanMissionSystem, clanActivitySystem, 
+                    trapManager, contractRequestManager, contractTermsManager, true);
             getLogger().info("Stratocraft: Veriler kaydedildi.");
             
             // ✅ SQLite veritabanını kapat
@@ -1141,6 +1203,14 @@ public class Main extends JavaPlugin {
     
     public me.mami.stratocraft.gui.ContractMenu getContractMenu() {
         return contractMenu;
+    }
+    
+    public me.mami.stratocraft.manager.ContractRequestManager getContractRequestManager() {
+        return contractRequestManager;
+    }
+    
+    public me.mami.stratocraft.manager.ContractTermsManager getContractTermsManager() {
+        return contractTermsManager;
     }
     
     public me.mami.stratocraft.gui.PowerMenu getPowerMenu() {
@@ -1441,6 +1511,10 @@ public class Main extends JavaPlugin {
         if (contractManager != null) {
             contractMenu = new me.mami.stratocraft.gui.ContractMenu(
                 this, contractManager, clanManager);
+            // Manager'ları set et
+            if (contractRequestManager != null && contractTermsManager != null) {
+                contractMenu.setManagers(contractRequestManager, contractTermsManager);
+            }
             Bukkit.getPluginManager().registerEvents(contractMenu, this);
             
             // 10. PowerMenu (Güç sistemi GUI)

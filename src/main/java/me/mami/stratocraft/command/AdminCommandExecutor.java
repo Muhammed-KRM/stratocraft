@@ -17,7 +17,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import me.mami.stratocraft.Main;
-import me.mami.stratocraft.enums.ItemCategory;
 import me.mami.stratocraft.manager.BatteryManager;
 import me.mami.stratocraft.manager.BossManager;
 import me.mami.stratocraft.manager.DisasterManager;
@@ -3620,6 +3619,41 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "recipe_warning_sign":
             case "tarif_uyari_tabelasi":
                 return ItemManager.RECIPE_WARNING_SIGN != null ? ItemManager.RECIPE_WARNING_SIGN.clone() : null;
+            // Şemasız Yönetim Yapıları tarif kitapları
+            case "recipe_personal_mission_guild":
+            case "tarif_kisisel_gorev_loncasi":
+            case "tarif_kişisel_görev_loncası":
+                return ItemManager.RECIPE_PERSONAL_MISSION_GUILD != null ? ItemManager.RECIPE_PERSONAL_MISSION_GUILD.clone() : null;
+            case "recipe_clan_management_center":
+            case "tarif_klan_yonetim_merkezi":
+            case "tarif_klan_yönetim_merkezi":
+                return ItemManager.RECIPE_CLAN_MANAGEMENT_CENTER != null ? ItemManager.RECIPE_CLAN_MANAGEMENT_CENTER.clone() : null;
+            case "recipe_clan_bank":
+            case "tarif_klan_bankasi":
+            case "tarif_klan_bankası":
+                return ItemManager.RECIPE_CLAN_BANK != null ? ItemManager.RECIPE_CLAN_BANK.clone() : null;
+            case "recipe_clan_mission_guild":
+            case "tarif_klan_gorev_loncasi":
+            case "tarif_klan_görev_loncası":
+                return ItemManager.RECIPE_CLAN_MISSION_GUILD != null ? ItemManager.RECIPE_CLAN_MISSION_GUILD.clone() : null;
+            case "recipe_training_arena":
+            case "tarif_egitim_alani":
+            case "tarif_eğitim_alanı":
+                return ItemManager.RECIPE_TRAINING_ARENA != null ? ItemManager.RECIPE_TRAINING_ARENA.clone() : null;
+            case "recipe_caravan_station":
+            case "tarif_kervan_istasyonu":
+                return ItemManager.RECIPE_CARAVAN_STATION != null ? ItemManager.RECIPE_CARAVAN_STATION.clone() : null;
+            case "recipe_contract_office":
+            case "tarif_kontrat_burosu":
+            case "tarif_kontrat_bürosu":
+                return ItemManager.RECIPE_CONTRACT_OFFICE != null ? ItemManager.RECIPE_CONTRACT_OFFICE.clone() : null;
+            case "recipe_market_place":
+            case "tarif_market":
+                return ItemManager.RECIPE_MARKET_PLACE != null ? ItemManager.RECIPE_MARKET_PLACE.clone() : null;
+            case "recipe_recipe_library":
+            case "tarif_tarif_kutuphanesi":
+            case "tarif_tarif_kütüphanesi":
+                return ItemManager.RECIPE_RECIPE_LIBRARY != null ? ItemManager.RECIPE_RECIPE_LIBRARY.clone() : null;
             // Özel eşya tarif kitapları
             case "recipe_lightning_core":
             case "tarif_yildirim_cekirdegi":
@@ -3747,41 +3781,6 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "recipe_tectonic_stabilizer":
             case "tarif_tektonik_sabitleyici":
                 return ItemManager.RECIPE_TECTONIC_STABILIZER != null ? ItemManager.RECIPE_TECTONIC_STABILIZER.clone() : null;
-            // Yeni yönetim yapıları
-            case "recipe_personal_mission_guild":
-            case "tarif_kisisel_gorev_loncasi":
-            case "tarif_kişisel_görev_loncası":
-                return ItemManager.RECIPE_PERSONAL_MISSION_GUILD != null ? ItemManager.RECIPE_PERSONAL_MISSION_GUILD.clone() : null;
-            case "recipe_clan_management_center":
-            case "tarif_klan_yonetim_merkezi":
-            case "tarif_klan_yönetim_merkezi":
-                return ItemManager.RECIPE_CLAN_MANAGEMENT_CENTER != null ? ItemManager.RECIPE_CLAN_MANAGEMENT_CENTER.clone() : null;
-            case "recipe_clan_bank":
-            case "tarif_klan_bankasi":
-            case "tarif_klan_bankası":
-                return ItemManager.RECIPE_CLAN_BANK != null ? ItemManager.RECIPE_CLAN_BANK.clone() : null;
-            case "recipe_clan_mission_guild":
-            case "tarif_klan_gorev_loncasi":
-            case "tarif_klan_görev_loncası":
-                return ItemManager.RECIPE_CLAN_MISSION_GUILD != null ? ItemManager.RECIPE_CLAN_MISSION_GUILD.clone() : null;
-            case "recipe_training_arena":
-            case "tarif_egitim_alani":
-            case "tarif_eğitim_alanı":
-                return ItemManager.RECIPE_TRAINING_ARENA != null ? ItemManager.RECIPE_TRAINING_ARENA.clone() : null;
-            case "recipe_caravan_station":
-            case "tarif_kervan_istasyonu":
-                return ItemManager.RECIPE_CARAVAN_STATION != null ? ItemManager.RECIPE_CARAVAN_STATION.clone() : null;
-            case "recipe_contract_office":
-            case "tarif_kontrat_burosu":
-            case "tarif_kontrat_bürosu":
-                return ItemManager.RECIPE_CONTRACT_OFFICE != null ? ItemManager.RECIPE_CONTRACT_OFFICE.clone() : null;
-            case "recipe_market_place":
-            case "tarif_market":
-                return ItemManager.RECIPE_MARKET_PLACE != null ? ItemManager.RECIPE_MARKET_PLACE.clone() : null;
-            case "recipe_recipe_library":
-            case "tarif_tarif_kutuphanesi":
-            case "tarif_tarif_kütüphanesi":
-                return ItemManager.RECIPE_RECIPE_LIBRARY != null ? ItemManager.RECIPE_RECIPE_LIBRARY.clone() : null;
             default:
                 return null;
         }
@@ -4470,7 +4469,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
                 case "contract":
                     // Contract komutları
-                    List<String> contractCommands = Arrays.asList("clear", "list");
+                    List<String> contractCommands = Arrays.asList("clear", "list", "cancel", "info", 
+                        "breach", "complete", "request-list", "request-cancel", "terms-list");
                     if (input.isEmpty()) {
                         return contractCommands;
                     }
@@ -6704,14 +6704,24 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      * Kontrat yönetimi
      * /stratocraft contract list - Aktif kontratları listele
      * /stratocraft contract clear - Tüm kontratları temizle
+     * /stratocraft contract cancel <id> - Kontratı iptal et
+     * /stratocraft contract info <id> - Kontrat bilgisi göster
+     * /stratocraft contract breach <id> - Kontratı ihlal et (test için)
+     * /stratocraft contract complete <id> - Kontratı tamamla (test için)
+     * /stratocraft contract request-list - Bekleyen istekleri listele
+     * /stratocraft contract request-cancel <id> - İsteği iptal et
+     * /stratocraft contract terms-list - Şartları listele
      */
     private boolean handleContract(Player p, String[] args) {
         if (args.length < 2) {
-            p.sendMessage("§cKullanım: /stratocraft contract <list|clear>");
+            p.sendMessage("§cKullanım: /stratocraft contract <list|clear|cancel|info|breach|complete|request-list|request-cancel|terms-list>");
             return true;
         }
 
         me.mami.stratocraft.manager.ContractManager contractManager = plugin.getContractManager();
+        me.mami.stratocraft.manager.ContractRequestManager requestManager = plugin.getContractRequestManager();
+        me.mami.stratocraft.manager.ContractTermsManager termsManager = plugin.getContractTermsManager();
+        
         if (contractManager == null) {
             p.sendMessage("§cContractManager bulunamadı!");
             return true;
@@ -6725,10 +6735,315 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 int cleared = clearAllContracts(contractManager);
                 p.sendMessage("§a" + cleared + " kontrat temizlendi.");
                 return true;
+            case "cancel":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft contract cancel <id>");
+                    return true;
+                }
+                return handleContractCancel(p, args[2], contractManager);
+            case "info":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft contract info <id>");
+                    return true;
+                }
+                return handleContractInfo(p, args[2], contractManager);
+            case "breach":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft contract breach <id>");
+                    return true;
+                }
+                return handleContractBreach(p, args[2], contractManager);
+            case "complete":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft contract complete <id>");
+                    return true;
+                }
+                return handleContractComplete(p, args[2], contractManager);
+            case "request-list":
+                if (requestManager == null) {
+                    p.sendMessage("§cContractRequestManager bulunamadı!");
+                    return true;
+                }
+                return handleRequestList(p, requestManager);
+            case "request-cancel":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft contract request-cancel <id>");
+                    return true;
+                }
+                if (requestManager == null) {
+                    p.sendMessage("§cContractRequestManager bulunamadı!");
+                    return true;
+                }
+                return handleRequestCancel(p, args[2], requestManager);
+            case "terms-list":
+                if (termsManager == null) {
+                    p.sendMessage("§cContractTermsManager bulunamadı!");
+                    return true;
+                }
+                return handleTermsList(p, termsManager);
             default:
-                p.sendMessage("§cKullanım: /stratocraft contract <list|clear>");
+                p.sendMessage("§cKullanım: /stratocraft contract <list|clear|cancel|info|breach|complete|request-list|request-cancel|terms-list>");
                 return true;
         }
+    }
+    
+    /**
+     * Kontrat iptal etme
+     */
+    private boolean handleContractCancel(Player p, String contractIdStr, 
+            me.mami.stratocraft.manager.ContractManager contractManager) {
+        try {
+            java.util.UUID contractId = java.util.UUID.fromString(contractIdStr);
+            me.mami.stratocraft.model.Contract contract = contractManager.getContract(contractId);
+            
+            if (contract == null) {
+                p.sendMessage("§cKontrat bulunamadı: " + contractIdStr);
+                return true;
+            }
+            
+            // Kontratı kaldır
+            contractManager.getContracts().remove(contract);
+            p.sendMessage("§aKontrat iptal edildi: " + contractIdStr);
+            
+            // Çift taraflı kontrat ise bildirim gönder
+            if (contract.isBilateralContract()) {
+                org.bukkit.entity.Player playerA = org.bukkit.Bukkit.getPlayer(contract.getPlayerA());
+                org.bukkit.entity.Player playerB = org.bukkit.Bukkit.getPlayer(contract.getPlayerB());
+                
+                if (playerA != null && playerA.isOnline()) {
+                    playerA.sendMessage("§cKontratınız admin tarafından iptal edildi.");
+                }
+                if (playerB != null && playerB.isOnline()) {
+                    playerB.sendMessage("§cKontratınız admin tarafından iptal edildi.");
+                }
+            }
+            
+            return true;
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz kontrat ID: " + contractIdStr);
+            return true;
+        }
+    }
+    
+    /**
+     * Kontrat bilgisi gösterme
+     */
+    private boolean handleContractInfo(Player p, String contractIdStr,
+            me.mami.stratocraft.manager.ContractManager contractManager) {
+        try {
+            java.util.UUID contractId = java.util.UUID.fromString(contractIdStr);
+            me.mami.stratocraft.model.Contract contract = contractManager.getContract(contractId);
+            
+            if (contract == null) {
+                p.sendMessage("§cKontrat bulunamadı: " + contractIdStr);
+                return true;
+            }
+            
+            p.sendMessage("§6═══════════════════════════════════");
+            p.sendMessage("§e§lKONTRAT BİLGİSİ");
+            p.sendMessage("§6═══════════════════════════════════");
+            p.sendMessage("§7ID: §f" + contract.getId());
+            p.sendMessage("§7Tip: §f" + (contract.getContractType() != null ? contract.getContractType().name() : "Bilinmiyor"));
+            
+            if (contract.isBilateralContract()) {
+                p.sendMessage("§7Tip: §fÇift Taraflı Kontrat");
+                org.bukkit.entity.Player playerA = org.bukkit.Bukkit.getPlayer(contract.getPlayerA());
+                org.bukkit.entity.Player playerB = org.bukkit.Bukkit.getPlayer(contract.getPlayerB());
+                p.sendMessage("§7Oyuncu A: §f" + (playerA != null ? playerA.getName() : contract.getPlayerA()));
+                p.sendMessage("§7Oyuncu B: §f" + (playerB != null ? playerB.getName() : contract.getPlayerB()));
+                p.sendMessage("§7Durum: §f" + (contract.getContractStatus() != null ? contract.getContractStatus().name() : "Bilinmiyor"));
+                
+                if (contract.getTermsA() != null) {
+                    p.sendMessage("§7Şartlar A: §f" + contract.getTermsA().getType().name() + 
+                        " - " + (contract.getTermsA().isCompleted() ? "§aTamamlandı" : 
+                        (contract.getTermsA().isBreached() ? "§cİhlal Edildi" : "§eAktif")));
+                }
+                if (contract.getTermsB() != null) {
+                    p.sendMessage("§7Şartlar B: §f" + contract.getTermsB().getType().name() + 
+                        " - " + (contract.getTermsB().isCompleted() ? "§aTamamlandı" : 
+                        (contract.getTermsB().isBreached() ? "§cİhlal Edildi" : "§eAktif")));
+                }
+            } else {
+                p.sendMessage("§7Tip: §fTek Taraflı Kontrat");
+                org.bukkit.entity.Player issuer = org.bukkit.Bukkit.getPlayer(contract.getIssuer());
+                org.bukkit.entity.Player acceptor = contract.getAcceptor() != null ? 
+                    org.bukkit.Bukkit.getPlayer(contract.getAcceptor()) : null;
+                p.sendMessage("§7Oluşturan: §f" + (issuer != null ? issuer.getName() : contract.getIssuer()));
+                p.sendMessage("§7Kabul Eden: §f" + (acceptor != null ? acceptor.getName() : 
+                    (contract.getAcceptor() != null ? contract.getAcceptor().toString() : "Henüz kabul edilmedi")));
+            }
+            
+            p.sendMessage("§7Ödül: §f" + contract.getReward() + " altın");
+            p.sendMessage("§7Ceza: §f" + contract.getPenalty() + " altın");
+            p.sendMessage("§7Süre: §f" + new java.text.SimpleDateFormat("dd.MM.yyyy HH:mm")
+                .format(new java.util.Date(contract.getDeadline())));
+            p.sendMessage("§7Durum: §f" + (contract.isCompleted() ? "§aTamamlandı" : 
+                (contract.isBreached() ? "§cİhlal Edildi" : "§eAktif")));
+            p.sendMessage("§6═══════════════════════════════════");
+            
+            return true;
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz kontrat ID: " + contractIdStr);
+            return true;
+        }
+    }
+    
+    /**
+     * Kontrat ihlal etme (test için)
+     */
+    private boolean handleContractBreach(Player p, String contractIdStr,
+            me.mami.stratocraft.manager.ContractManager contractManager) {
+        try {
+            java.util.UUID contractId = java.util.UUID.fromString(contractIdStr);
+            me.mami.stratocraft.model.Contract contract = contractManager.getContract(contractId);
+            
+            if (contract == null) {
+                p.sendMessage("§cKontrat bulunamadı: " + contractIdStr);
+                return true;
+            }
+            
+            if (contract.isBilateralContract()) {
+                // Çift taraflı kontrat - ilk oyuncuyu ihlal eden olarak işaretle
+                contract.setBreached(true);
+                contract.setBreacher(contract.getPlayerA());
+                contract.setContractStatus(me.mami.stratocraft.model.Contract.ContractStatus.BREACHED);
+                contract.setBreachedAt(System.currentTimeMillis());
+                p.sendMessage("§aKontrat ihlal edildi (test): " + contractIdStr);
+            } else {
+                contract.setBreached(true);
+                p.sendMessage("§aKontrat ihlal edildi (test): " + contractIdStr);
+            }
+            
+            return true;
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz kontrat ID: " + contractIdStr);
+            return true;
+        }
+    }
+    
+    /**
+     * Kontrat tamamlama (test için)
+     */
+    private boolean handleContractComplete(Player p, String contractIdStr,
+            me.mami.stratocraft.manager.ContractManager contractManager) {
+        try {
+            java.util.UUID contractId = java.util.UUID.fromString(contractIdStr);
+            me.mami.stratocraft.model.Contract contract = contractManager.getContract(contractId);
+            
+            if (contract == null) {
+                p.sendMessage("§cKontrat bulunamadı: " + contractIdStr);
+                return true;
+            }
+            
+            if (contract.isBilateralContract()) {
+                // Çift taraflı kontrat - her iki şartı da tamamla
+                if (contract.getTermsA() != null) {
+                    contract.getTermsA().setCompleted(true);
+                }
+                if (contract.getTermsB() != null) {
+                    contract.getTermsB().setCompleted(true);
+                }
+                contract.setContractStatus(me.mami.stratocraft.model.Contract.ContractStatus.COMPLETED);
+                contract.setCompletedAt(System.currentTimeMillis());
+                p.sendMessage("§aKontrat tamamlandı (test): " + contractIdStr);
+            } else {
+                // Tek taraflı kontrat
+                contract.setDelivered(contract.getAmount());
+                p.sendMessage("§aKontrat tamamlandı (test): " + contractIdStr);
+            }
+            
+            return true;
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz kontrat ID: " + contractIdStr);
+            return true;
+        }
+    }
+    
+    /**
+     * İstek listesi gösterme
+     */
+    private boolean handleRequestList(Player p, 
+            me.mami.stratocraft.manager.ContractRequestManager requestManager) {
+        java.util.List<me.mami.stratocraft.model.ContractRequest> requests = requestManager.getAllRequests();
+        
+        p.sendMessage("§6═══════════════════════════════════");
+        p.sendMessage("§e§lKONTRAT İSTEKLERİ");
+        p.sendMessage("§6═══════════════════════════════════");
+        
+        if (requests.isEmpty()) {
+            p.sendMessage("§7Henüz istek yok.");
+            return true;
+        }
+        
+        for (me.mami.stratocraft.model.ContractRequest request : requests) {
+            org.bukkit.entity.Player sender = org.bukkit.Bukkit.getPlayer(request.getSender());
+            org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayer(request.getTarget());
+            
+            p.sendMessage("§7ID: §f" + request.getId());
+            p.sendMessage("§7Gönderen: §f" + (sender != null ? sender.getName() : request.getSender()));
+            p.sendMessage("§7Hedef: §f" + (target != null ? target.getName() : request.getTarget()));
+            p.sendMessage("§7Durum: §f" + request.getStatus().name());
+            p.sendMessage("§7Oluşturulma: §f" + new java.text.SimpleDateFormat("dd.MM.yyyy HH:mm")
+                .format(new java.util.Date(request.getCreatedAt())));
+            p.sendMessage("§7---");
+        }
+        
+        return true;
+    }
+    
+    /**
+     * İstek iptal etme
+     */
+    private boolean handleRequestCancel(Player p, String requestIdStr,
+            me.mami.stratocraft.manager.ContractRequestManager requestManager) {
+        try {
+            java.util.UUID requestId = java.util.UUID.fromString(requestIdStr);
+            me.mami.stratocraft.model.ContractRequest request = requestManager.getRequest(requestId);
+            
+            if (request == null) {
+                p.sendMessage("§cİstek bulunamadı: " + requestIdStr);
+                return true;
+            }
+            
+            request.setStatus(me.mami.stratocraft.model.ContractRequest.ContractRequestStatus.CANCELLED);
+            p.sendMessage("§aİstek iptal edildi: " + requestIdStr);
+            
+            return true;
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz istek ID: " + requestIdStr);
+            return true;
+        }
+    }
+    
+    /**
+     * Şart listesi gösterme
+     */
+    private boolean handleTermsList(Player p,
+            me.mami.stratocraft.manager.ContractTermsManager termsManager) {
+        java.util.List<me.mami.stratocraft.model.ContractTerms> terms = termsManager.getAllTerms();
+        
+        p.sendMessage("§6═══════════════════════════════════");
+        p.sendMessage("§e§lKONTRAT ŞARTLARI");
+        p.sendMessage("§6═══════════════════════════════════");
+        
+        if (terms.isEmpty()) {
+            p.sendMessage("§7Henüz şart yok.");
+            return true;
+        }
+        
+        for (me.mami.stratocraft.model.ContractTerms term : terms) {
+            org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(term.getPlayerId());
+            
+            p.sendMessage("§7ID: §f" + term.getId());
+            p.sendMessage("§7Oyuncu: §f" + (player != null ? player.getName() : term.getPlayerId()));
+            p.sendMessage("§7Tip: §f" + term.getType().name());
+            p.sendMessage("§7Onaylandı: §f" + (term.isApproved() ? "§aEvet" : "§cHayır"));
+            p.sendMessage("§7Tamamlandı: §f" + (term.isCompleted() ? "§aEvet" : "§cHayır"));
+            p.sendMessage("§7İhlal Edildi: §f" + (term.isBreached() ? "§cEvet" : "§aHayır"));
+            p.sendMessage("§7---");
+        }
+        
+        return true;
     }
 
     private void showContractsList(Player p, me.mami.stratocraft.manager.ContractManager manager) {
@@ -7823,7 +8138,53 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         // Yerinde blok varsa temizle
         me.mami.stratocraft.manager.StructureBuilder.clearArea(loc, 10, 10, 10);
 
-        // Yeni yönetim yapıları için direkt blok yerleştirme
+        // ÖNCE: StructureRecipeManager'dan kod içi tarif kontrolü (YENİ)
+        me.mami.stratocraft.manager.StructureRecipeManager recipeManager = plugin.getStructureRecipeManager();
+        if (recipeManager != null) {
+            try {
+                me.mami.stratocraft.enums.StructureType structureType = me.mami.stratocraft.enums.StructureType.valueOf(type.toUpperCase());
+                
+                // Kod içi tarif var mı?
+                if (recipeManager.isCodeRecipe(structureType)) {
+                    me.mami.stratocraft.util.BlockRecipe recipe = recipeManager.getCodeRecipe(structureType);
+                    if (recipe != null) {
+                        // Tariften yapıyı oluştur
+                        org.bukkit.Location coreLoc = loc.clone().add(0.5, 0, 0.5);
+                        recipe.build(coreLoc);
+                        
+                        // Başarı mesajı ve aktifleştirme bilgisi
+                        String structureName = getStructureDisplayName(type);
+                        p.sendMessage("§6═══════════════════════════════════");
+                        p.sendMessage("§a§l" + structureName + " OLUŞTURULDU!");
+                        p.sendMessage("§6═══════════════════════════════════");
+                        p.sendMessage("§7Seviye: §e" + level);
+                        p.sendMessage("");
+                        p.sendMessage("§e§lAktifleştirme:");
+                        // Çekirdek bloğu tipine göre mesaj
+                        Material coreMaterial = recipe.getCoreMaterial();
+                        String coreBlockName = coreMaterial == Material.BEACON ? "Beacon" : 
+                                               coreMaterial == Material.ENCHANTING_TABLE ? "Enchanting Table" :
+                                               coreMaterial == Material.CHEST ? "Chest" : "End Crystal";
+                        p.sendMessage("§71. Yapının merkez bloğuna (§e" + coreBlockName + "§7) yaklaş");
+                        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
+                        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+                        p.sendMessage("");
+                        
+                        // Partikül efekti (yapı oluşturulduğunda)
+                        org.bukkit.Location effectLoc = coreLoc.clone().add(0, 1, 0);
+                        p.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, effectLoc, 50, 1.0, 1.0, 1.0, 0.3);
+                        p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, effectLoc, 30, 0.8, 0.8, 0.8, 0.1);
+                        p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.2f);
+                        
+                        return true;
+                    }
+                }
+            } catch (IllegalArgumentException e) {
+                // StructureType enum'da yok, eski sisteme devam et
+            }
+        }
+
+        // Yeni yönetim yapıları için direkt blok yerleştirme (GERİYE UYUMLULUK)
         String typeLower = type.toLowerCase();
         if (typeLower.equals("personal_mission_guild") || typeLower.equals("kisisel_gorev_loncasi")) {
             buildPersonalMissionGuild(p, loc);
@@ -7896,10 +8257,29 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             }
         }
         // Üstüne Lectern
-        loc.clone().add(0.5, 1, 0.5).getBlock().setType(Material.LECTERN);
+        org.bukkit.Location lecternLoc = loc.clone().add(0.5, 1, 0.5);
+        lecternLoc.getBlock().setType(Material.LECTERN);
         
+        // Merkez End Crystal (tarife göre)
+        org.bukkit.Location crystalLoc = loc.clone().add(0.5, 0, 0.5);
+        crystalLoc.getBlock().setType(Material.END_CRYSTAL);
+        
+        // Başarı mesajı ve aktifleştirme bilgisi
+        p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("§a§lKişisel Görev Loncası OLUŞTURULDU!");
-        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+        p.sendMessage("§6═══════════════════════════════════");
+        p.sendMessage("");
+        p.sendMessage("§e§lAktifleştirme:");
+        p.sendMessage("§71. Yapının merkez bloğuna (End Crystal) yaklaş");
+        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("");
+        
+        // Partikül efekti (yapı oluşturulduğunda)
+        org.bukkit.Location effectLoc = crystalLoc.clone().add(0, 1, 0);
+        p.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, effectLoc, 50, 1.0, 1.0, 1.0, 0.3);
+        p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, effectLoc, 30, 0.8, 0.8, 0.8, 0.1);
+        p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.2f);
     }
     
     /**
@@ -7913,47 +8293,96 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             }
         }
         // Üstüne Beacon
-        loc.clone().add(0, 1, 0).getBlock().setType(Material.BEACON);
+        org.bukkit.Location beaconLoc = loc.clone().add(0, 1, 0);
+        beaconLoc.getBlock().setType(Material.BEACON);
         
+        // Başarı mesajı ve aktifleştirme bilgisi
+        p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("§a§lKlan Yönetim Merkezi OLUŞTURULDU!");
+        p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("§7Seviye: §e" + level);
-        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+        p.sendMessage("");
+        p.sendMessage("§e§lAktifleştirme:");
+        p.sendMessage("§71. Yapının merkez bloğuna (Beacon) yaklaş");
+        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("");
+        
+        // Partikül efekti (yapı oluşturulduğunda)
+        org.bukkit.Location effectLoc = beaconLoc.clone().add(0, 1, 0);
+        p.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, effectLoc, 50, 1.0, 1.0, 1.0, 0.3);
+        p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, effectLoc, 30, 0.8, 0.8, 0.8, 0.1);
+        p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.2f);
     }
     
     /**
      * Klan Bankası yapısını oluştur
      */
     private void buildClanBank(Player p, org.bukkit.Location loc, int level) {
-        // 2x2 Demir Bloğu taban
-        for (int x = 0; x <= 1; x++) {
-            for (int z = 0; z <= 1; z++) {
-                loc.clone().add(x, 0, z).getBlock().setType(Material.IRON_BLOCK);
-            }
-        }
-        // Üstüne Ender Chest
-        loc.clone().add(0.5, 1, 0.5).getBlock().setType(Material.ENDER_CHEST);
+        // Merkez End Crystal (tarife göre)
+        org.bukkit.Location crystalLoc = loc.clone().add(0.5, 0, 0.5);
+        crystalLoc.getBlock().setType(Material.END_CRYSTAL);
         
+        // Altında Gold Block (tarife göre)
+        org.bukkit.Location goldLoc = crystalLoc.clone().add(0, -1, 0);
+        goldLoc.getBlock().setType(Material.GOLD_BLOCK);
+        
+        // Üstüne Chest (tarife göre)
+        org.bukkit.Location chestLoc = crystalLoc.clone().add(0, 1, 0);
+        chestLoc.getBlock().setType(Material.CHEST);
+        
+        // Başarı mesajı ve aktifleştirme bilgisi
+        p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("§a§lKlan Bankası OLUŞTURULDU!");
+        p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("§7Seviye: §e" + level);
-        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+        p.sendMessage("");
+        p.sendMessage("§e§lAktifleştirme:");
+        p.sendMessage("§71. Yapının merkez bloğuna (End Crystal) yaklaş");
+        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("");
+        
+        // Partikül efekti (yapı oluşturulduğunda)
+        org.bukkit.Location effectLoc = crystalLoc.clone().add(0, 1, 0);
+        p.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, effectLoc, 50, 1.0, 1.0, 1.0, 0.3);
+        p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, effectLoc, 30, 0.8, 0.8, 0.8, 0.1);
+        p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.2f);
     }
     
     /**
      * Klan Görev Loncası yapısını oluştur
      */
     private void buildClanMissionGuild(Player p, org.bukkit.Location loc, int level) {
-        // 2x2 Demir Bloğu taban
-        for (int x = 0; x <= 1; x++) {
-            for (int z = 0; z <= 1; z++) {
-                loc.clone().add(x, 0, z).getBlock().setType(Material.IRON_BLOCK);
-            }
-        }
-        // Üstüne Lectern
-        loc.clone().add(0.5, 1, 0.5).getBlock().setType(Material.LECTERN);
+        // Merkez End Crystal (tarife göre)
+        org.bukkit.Location crystalLoc = loc.clone().add(0.5, 0, 0.5);
+        crystalLoc.getBlock().setType(Material.END_CRYSTAL);
         
+        // Altında Emerald Block (tarife göre)
+        org.bukkit.Location emeraldLoc = crystalLoc.clone().add(0, -1, 0);
+        emeraldLoc.getBlock().setType(Material.EMERALD_BLOCK);
+        
+        // Üstüne Lectern (tarife göre)
+        org.bukkit.Location lecternLoc = crystalLoc.clone().add(0, 1, 0);
+        lecternLoc.getBlock().setType(Material.LECTERN);
+        
+        // Başarı mesajı ve aktifleştirme bilgisi
+        p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("§a§lKlan Görev Loncası OLUŞTURULDU!");
+        p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("§7Seviye: §e" + level);
-        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+        p.sendMessage("");
+        p.sendMessage("§e§lAktifleştirme:");
+        p.sendMessage("§71. Yapının merkez bloğuna (End Crystal) yaklaş");
+        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("");
+        
+        // Partikül efekti (yapı oluşturulduğunda)
+        org.bukkit.Location effectLoc = crystalLoc.clone().add(0, 1, 0);
+        p.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, effectLoc, 50, 1.0, 1.0, 1.0, 0.3);
+        p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, effectLoc, 30, 0.8, 0.8, 0.8, 0.1);
+        p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.2f);
     }
     
     /**
@@ -7967,11 +8396,26 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             }
         }
         // Üstüne Enchanting Table
-        loc.clone().add(0.5, 1, 0.5).getBlock().setType(Material.ENCHANTING_TABLE);
+        org.bukkit.Location tableLoc = loc.clone().add(0.5, 1, 0.5);
+        tableLoc.getBlock().setType(Material.ENCHANTING_TABLE);
         
+        // Başarı mesajı ve aktifleştirme bilgisi
+        p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("§a§lEğitim Alanı OLUŞTURULDU!");
+        p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("§7Seviye: §e" + level);
-        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+        p.sendMessage("");
+        p.sendMessage("§e§lAktifleştirme:");
+        p.sendMessage("§71. Yapının merkez bloğuna (Enchanting Table) yaklaş");
+        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("");
+        
+        // Partikül efekti (yapı oluşturulduğunda)
+        org.bukkit.Location effectLoc = tableLoc.clone().add(0, 1, 0);
+        p.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, effectLoc, 50, 1.0, 1.0, 1.0, 0.3);
+        p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, effectLoc, 30, 0.8, 0.8, 0.8, 0.1);
+        p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.2f);
     }
     
     /**
@@ -7985,66 +8429,129 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             }
         }
         // Üstüne Chest
-        loc.clone().add(0.5, 1, 0.5).getBlock().setType(Material.CHEST);
+        org.bukkit.Location chestLoc = loc.clone().add(0.5, 1, 0.5);
+        chestLoc.getBlock().setType(Material.CHEST);
         
+        // Başarı mesajı ve aktifleştirme bilgisi
+        p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("§a§lKervan İstasyonu OLUŞTURULDU!");
+        p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("§7Seviye: §e" + level);
-        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+        p.sendMessage("");
+        p.sendMessage("§e§lAktifleştirme:");
+        p.sendMessage("§71. Yapının merkez bloğuna (Chest) yaklaş");
+        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("");
+        
+        // Partikül efekti (yapı oluşturulduğunda)
+        org.bukkit.Location effectLoc = chestLoc.clone().add(0, 1, 0);
+        p.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, effectLoc, 50, 1.0, 1.0, 1.0, 0.3);
+        p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, effectLoc, 30, 0.8, 0.8, 0.8, 0.1);
+        p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.2f);
     }
     
     /**
      * Kontrat Bürosu yapısını oluştur
      */
     private void buildContractOffice(Player p, org.bukkit.Location loc) {
-        // 2x2 Taş taban
-        for (int x = 0; x <= 1; x++) {
-            for (int z = 0; z <= 1; z++) {
-                loc.clone().add(x, 0, z).getBlock().setType(Material.STONE);
-            }
-        }
-        // Üstüne Anvil
-        loc.clone().add(0.5, 1, 0.5).getBlock().setType(Material.ANVIL);
+        // Merkez End Crystal (tarife göre)
+        org.bukkit.Location crystalLoc = loc.clone().add(0.5, 0, 0.5);
+        crystalLoc.getBlock().setType(Material.END_CRYSTAL);
         
+        // Altında Stone (tarife göre)
+        org.bukkit.Location stoneLoc = crystalLoc.clone().add(0, -1, 0);
+        stoneLoc.getBlock().setType(Material.STONE);
+        
+        // Üstüne Crafting Table (tarife göre)
+        org.bukkit.Location tableLoc = crystalLoc.clone().add(0, 1, 0);
+        tableLoc.getBlock().setType(Material.CRAFTING_TABLE);
+        
+        // Başarı mesajı ve aktifleştirme bilgisi
+        p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("§a§lKontrat Bürosu OLUŞTURULDU!");
-        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+        p.sendMessage("§6═══════════════════════════════════");
+        p.sendMessage("");
+        p.sendMessage("§e§lAktifleştirme:");
+        p.sendMessage("§71. Yapının merkez bloğuna (End Crystal) yaklaş");
+        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("");
+        
+        // Partikül efekti (yapı oluşturulduğunda)
+        org.bukkit.Location effectLoc = crystalLoc.clone().add(0, 1, 0);
+        p.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, effectLoc, 50, 1.0, 1.0, 1.0, 0.3);
+        p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, effectLoc, 30, 0.8, 0.8, 0.8, 0.1);
+        p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.2f);
     }
     
     /**
      * Market yapısını oluştur
      */
     private void buildMarketPlace(Player p, org.bukkit.Location loc) {
-        // 2x2 Taş taban
-        for (int x = 0; x <= 1; x++) {
-            for (int z = 0; z <= 1; z++) {
-                loc.clone().add(x, 0, z).getBlock().setType(Material.STONE);
-            }
-        }
-        // Üstüne Chest
-        loc.clone().add(0.5, 1, 0.5).getBlock().setType(Material.CHEST);
-        // Yanına Sign
-        loc.clone().add(1.5, 1, 0.5).getBlock().setType(Material.OAK_SIGN);
+        // Merkez End Crystal (tarife göre)
+        org.bukkit.Location crystalLoc = loc.clone().add(0.5, 0, 0.5);
+        crystalLoc.getBlock().setType(Material.END_CRYSTAL);
         
+        // Altında Coal Block (tarife göre)
+        org.bukkit.Location coalLoc = crystalLoc.clone().add(0, -1, 0);
+        coalLoc.getBlock().setType(Material.COAL_BLOCK);
+        
+        // Üstüne Chest (tarife göre)
+        org.bukkit.Location chestLoc = crystalLoc.clone().add(0, 1, 0);
+        chestLoc.getBlock().setType(Material.CHEST);
+        
+        // Başarı mesajı ve aktifleştirme bilgisi
+        p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("§a§lMarket OLUŞTURULDU!");
-        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+        p.sendMessage("§6═══════════════════════════════════");
+        p.sendMessage("");
+        p.sendMessage("§e§lAktifleştirme:");
+        p.sendMessage("§71. Yapının merkez bloğuna (End Crystal) yaklaş");
+        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("");
+        
+        // Partikül efekti (yapı oluşturulduğunda)
+        org.bukkit.Location effectLoc = crystalLoc.clone().add(0, 1, 0);
+        p.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, effectLoc, 50, 1.0, 1.0, 1.0, 0.3);
+        p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, effectLoc, 30, 0.8, 0.8, 0.8, 0.1);
+        p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.2f);
     }
     
     /**
      * Tarif Kütüphanesi yapısını oluştur
      */
     private void buildRecipeLibrary(Player p, org.bukkit.Location loc, int level) {
-        // Lectern merkez
-        loc.clone().add(0.5, 1, 0.5).getBlock().setType(Material.LECTERN);
-        // Yanına Bookshelf'ler (en az 2)
-        loc.clone().add(1.5, 1, 0.5).getBlock().setType(Material.BOOKSHELF);
-        loc.clone().add(-0.5, 1, 0.5).getBlock().setType(Material.BOOKSHELF);
-        if (level >= 2) {
-            loc.clone().add(0.5, 1, 1.5).getBlock().setType(Material.BOOKSHELF);
-            loc.clone().add(0.5, 1, -0.5).getBlock().setType(Material.BOOKSHELF);
-        }
+        // Merkez End Crystal (tarife göre)
+        org.bukkit.Location crystalLoc = loc.clone().add(0.5, 0, 0.5);
+        crystalLoc.getBlock().setType(Material.END_CRYSTAL);
         
+        // Altında Bookshelf (tarife göre)
+        org.bukkit.Location bookshelfLoc = crystalLoc.clone().add(0, -1, 0);
+        bookshelfLoc.getBlock().setType(Material.BOOKSHELF);
+        
+        // Üstüne Lectern (tarife göre)
+        org.bukkit.Location lecternLoc = crystalLoc.clone().add(0, 1, 0);
+        lecternLoc.getBlock().setType(Material.LECTERN);
+        
+        // Başarı mesajı ve aktifleştirme bilgisi
+        p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("§a§lTarif Kütüphanesi OLUŞTURULDU!");
+        p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("§7Seviye: §e" + level);
-        p.sendMessage("§7Shift + Sağ Tık ile aktifleştir.");
+        p.sendMessage("");
+        p.sendMessage("§e§lAktifleştirme:");
+        p.sendMessage("§71. Yapının merkez bloğuna (End Crystal) yaklaş");
+        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("");
+        
+        // Partikül efekti (yapı oluşturulduğunda)
+        org.bukkit.Location effectLoc = crystalLoc.clone().add(0, 1, 0);
+        p.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, effectLoc, 50, 1.0, 1.0, 1.0, 0.3);
+        p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, effectLoc, 30, 0.8, 0.8, 0.8, 0.1);
+        p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.2f);
     }
 
     /**

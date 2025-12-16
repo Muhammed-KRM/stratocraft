@@ -1,11 +1,11 @@
 package me.mami.stratocraft.model;
 
-import me.mami.stratocraft.enums.ContractType;
-import org.bukkit.Location;
-import org.bukkit.Material;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import org.bukkit.Location;
+import org.bukkit.Material;
 
 public class Contract {
     /**
@@ -65,6 +65,65 @@ public class Contract {
     
     // STRUCTURE_BUILD için
     private String structureType = null; // İnşa edilecek yapı tipi
+    
+    // Çift taraflı kontrat için (YENİ)
+    private UUID playerA = null;            // İlk oyuncu
+    private UUID playerB = null;            // İkinci oyuncu
+    private UUID contractRequestId = null;  // Orijinal istek
+    private ContractTerms termsA = null;    // Oyuncu A'nın şartları
+    private ContractTerms termsB = null;    // Oyuncu B'nin şartları
+    private ContractStatus contractStatus = null; // ACTIVE, COMPLETED, BREACHED
+    private long startedAt = 0;             // Aktif olma zamanı
+    private long completedAt = 0;          // Tamamlanma zamanı
+    private long breachedAt = 0;           // İhlal zamanı
+    private UUID breacher = null;           // İhlal eden oyuncu
+    
+    /**
+     * Kontrat durumu enum'u (çift taraflı kontrat için)
+     */
+    public enum ContractStatus {
+        PENDING_TERMS_A,    // Oyuncu A şartlarını belirliyor
+        PENDING_TERMS_B,    // Oyuncu B şartlarını belirliyor
+        PENDING_APPROVAL,   // Her iki taraf da onay bekleniyor
+        ACTIVE,             // Aktif
+        COMPLETED,          // Tamamlandı
+        BREACHED            // İhlal edildi
+    }
+    
+    // Constructor (Çift taraflı kontrat için - YENİ)
+    public Contract(UUID playerA, UUID playerB, UUID contractRequestId, 
+                   ContractTerms termsA, ContractTerms termsB) {
+        this.id = UUID.randomUUID();
+        this.playerA = playerA;
+        this.playerB = playerB;
+        this.contractRequestId = contractRequestId;
+        this.termsA = termsA;
+        this.termsB = termsB;
+        this.contractStatus = ContractStatus.ACTIVE;
+        this.startedAt = System.currentTimeMillis();
+        
+        // Geriye uyumluluk için issuer/acceptor set et
+        this.issuer = playerA;
+        this.acceptor = playerB;
+        this.scope = ContractScope.PLAYER_TO_PLAYER;
+        
+        // İlk şarttan tip bilgilerini al
+        if (termsA != null) {
+            this.contractType = termsA.getType();
+            this.penaltyType = termsA.getPenaltyType();
+            // Final field'ları initialize et (geriye uyumluluk için)
+            this.type = convertToOldContractType(termsA.getType());
+            this.reward = termsA.getReward(); // Varsayılan olarak termsA'nın ödülü
+            this.penalty = termsA.getPenalty(); // Varsayılan olarak termsA'nın cezası
+            this.deadline = termsA.getDeadline(); // Varsayılan olarak termsA'nın deadline'ı
+        } else {
+            // Fallback değerler
+            this.type = ContractType.MATERIAL_DELIVERY;
+            this.reward = 0;
+            this.penalty = 0;
+            this.deadline = System.currentTimeMillis() + (7 * 24 * 60 * 60 * 1000); // 7 gün
+        }
+    }
     
     // Constructor (Yeni sistem - merkezi enum)
     public Contract(UUID issuer, me.mami.stratocraft.enums.ContractType contractType, ContractScope scope, 
@@ -217,5 +276,50 @@ public class Contract {
     // STRUCTURE_BUILD için
     public String getStructureType() { return structureType; }
     public void setStructureType(String type) { this.structureType = type; }
+    
+    // Çift taraflı kontrat için getter/setter (YENİ)
+    public UUID getPlayerA() { return playerA; }
+    public void setPlayerA(UUID playerA) { this.playerA = playerA; }
+    public UUID getPlayerB() { return playerB; }
+    public void setPlayerB(UUID playerB) { this.playerB = playerB; }
+    public UUID getContractRequestId() { return contractRequestId; }
+    public void setContractRequestId(UUID contractRequestId) { this.contractRequestId = contractRequestId; }
+    public ContractTerms getTermsA() { return termsA; }
+    public void setTermsA(ContractTerms termsA) { this.termsA = termsA; }
+    public ContractTerms getTermsB() { return termsB; }
+    public void setTermsB(ContractTerms termsB) { this.termsB = termsB; }
+    public ContractStatus getContractStatus() { return contractStatus; }
+    public void setContractStatus(ContractStatus status) { this.contractStatus = status; }
+    public long getStartedAt() { return startedAt; }
+    public void setStartedAt(long startedAt) { this.startedAt = startedAt; }
+    public long getCompletedAt() { return completedAt; }
+    public void setCompletedAt(long completedAt) { this.completedAt = completedAt; }
+    public long getBreachedAt() { return breachedAt; }
+    public void setBreachedAt(long breachedAt) { this.breachedAt = breachedAt; }
+    public UUID getBreacher() { return breacher; }
+    public void setBreacher(UUID breacher) { this.breacher = breacher; }
+    
+    /**
+     * Çift taraflı kontrat mı?
+     */
+    public boolean isBilateralContract() {
+        return playerA != null && playerB != null && termsA != null && termsB != null;
+    }
+    
+    /**
+     * Çift taraflı kontrat tamamlandı mı?
+     */
+    public boolean isBilateralCompleted() {
+        if (!isBilateralContract()) return false;
+        return termsA.isCompleted() && termsB.isCompleted();
+    }
+    
+    /**
+     * Çift taraflı kontrat ihlal edildi mi?
+     */
+    public boolean isBilateralBreached() {
+        if (!isBilateralContract()) return false;
+        return termsA.isBreached() || termsB.isBreached();
+    }
 }
 

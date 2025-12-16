@@ -572,6 +572,17 @@ public class ItemManager {
         RECIPE_ARMORY = createRecipeBook("RECIPE_ARMORY", "§6Tarif: Cephanelik");
         RECIPE_LIBRARY = createRecipeBook("RECIPE_LIBRARY", "§eTarif: Kütüphane");
         RECIPE_WARNING_SIGN = createRecipeBook("RECIPE_WARNING_SIGN", "§cTarif: Yasaklı Bölge Tabelası");
+        
+        // ========== TARİF KİTAPLARI - ŞEMASIZ YÖNETİM YAPILARI ==========
+        RECIPE_PERSONAL_MISSION_GUILD = createRecipeBook("RECIPE_PERSONAL_MISSION_GUILD", "§aTarif: Kişisel Görev Loncası");
+        RECIPE_CLAN_MANAGEMENT_CENTER = createRecipeBook("RECIPE_CLAN_MANAGEMENT_CENTER", "§bTarif: Klan Yönetim Merkezi");
+        RECIPE_CLAN_BANK = createRecipeBook("RECIPE_CLAN_BANK", "§6Tarif: Klan Bankası");
+        RECIPE_CLAN_MISSION_GUILD = createRecipeBook("RECIPE_CLAN_MISSION_GUILD", "§eTarif: Klan Görev Loncası");
+        RECIPE_TRAINING_ARENA = createRecipeBook("RECIPE_TRAINING_ARENA", "§dTarif: Eğitim Alanı");
+        RECIPE_CARAVAN_STATION = createRecipeBook("RECIPE_CARAVAN_STATION", "§7Tarif: Kervan İstasyonu");
+        RECIPE_CONTRACT_OFFICE = createRecipeBook("RECIPE_CONTRACT_OFFICE", "§6Tarif: Kontrat Bürosu");
+        RECIPE_MARKET_PLACE = createRecipeBook("RECIPE_MARKET_PLACE", "§aTarif: Market");
+        RECIPE_RECIPE_LIBRARY = createRecipeBook("RECIPE_RECIPE_LIBRARY", "§eTarif: Tarif Kütüphanesi");
 
         // ========== TARİF KİTAPLARI - ÖZEL EŞYALAR ==========
         RECIPE_BLUEPRINT_PAPER = createRecipeBook("RECIPE_BLUEPRINT_PAPER", "§bTarif: Mühendis Şeması");
@@ -1256,6 +1267,35 @@ public class ItemManager {
                 return new RecipeInfo("Kütüphane", "§cSadece klan bölgesi içinde", "Tarif kitabı depolama.");
             case "WARNING_SIGN":
                 return new RecipeInfo("Yasaklı Bölge Tabelası", "§aKlan bölgesi veya dışarıda", "Yasaklı bölge işareti.");
+            
+            // Şemasız Yönetim Yapıları
+            case "PERSONAL_MISSION_GUILD":
+            case "RECIPE_PERSONAL_MISSION_GUILD":
+                return new RecipeInfo("Kişisel Görev Loncası", "§aHer yerde yapılabilir", "Kişisel görevlerinizi yönetin. End Crystal + Cobblestone (altında) + Lectern (üstünde).");
+            case "CLAN_MANAGEMENT_CENTER":
+            case "RECIPE_CLAN_MANAGEMENT_CENTER":
+                return new RecipeInfo("Klan Yönetim Merkezi", "§cSadece klan bölgesi içinde", "Klan menülerini açın. Beacon + Iron Blocks (3x3 taban).");
+            case "CLAN_BANK":
+            case "RECIPE_CLAN_BANK":
+                return new RecipeInfo("Klan Bankası", "§cSadece klan bölgesi içinde", "Klan parasını yönetin. End Crystal + Gold Block (altında) + Chest (üstünde).");
+            case "CLAN_MISSION_GUILD":
+            case "RECIPE_CLAN_MISSION_GUILD":
+                return new RecipeInfo("Klan Görev Loncası", "§cSadece klan bölgesi içinde", "Klan görevlerini yönetin. End Crystal + Emerald Block (altında) + Lectern (üstünde).");
+            case "TRAINING_ARENA":
+            case "RECIPE_TRAINING_ARENA":
+                return new RecipeInfo("Eğitim Alanı", "§cSadece klan bölgesi içinde", "Mob eğitimi ve üreme. Enchanting Table + Iron Blocks (2x2 taban).");
+            case "CARAVAN_STATION":
+            case "RECIPE_CARAVAN_STATION":
+                return new RecipeInfo("Kervan İstasyonu", "§cSadece klan bölgesi içinde", "Kervan sistemi. Chest + Iron Blocks (2x2 taban).");
+            case "CONTRACT_OFFICE":
+            case "RECIPE_CONTRACT_OFFICE":
+                return new RecipeInfo("Kontrat Bürosu", "§aHer yerde yapılabilir", "İki taraflı kontratlar yapın. End Crystal + Stone (altında) + Crafting Table (üstünde).");
+            case "MARKET_PLACE":
+            case "RECIPE_MARKET_PLACE":
+                return new RecipeInfo("Market", "§aHer yerde yapılabilir", "Oyuncular arası ticaret. End Crystal + Coal Block (altında) + Chest (üstünde).");
+            case "RECIPE_LIBRARY":
+            case "RECIPE_RECIPE_LIBRARY":
+                return new RecipeInfo("Tarif Kütüphanesi", "§aHer yerde yapılabilir", "Tarif kitaplarını saklayın. End Crystal + Bookshelf (altında) + Lectern (üstünde).");
             
             // Özel Eşyalar
             case "LIGHTNING_CORE":

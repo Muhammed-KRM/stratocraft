@@ -190,6 +190,33 @@ public class StructureRecipeManager {
     }
     
     /**
+     * Kod içi tarif al (YENİ: StructureType)
+     */
+    public BlockRecipe getCodeRecipe(StructureType type) {
+        if (type == null) return null;
+        return codeRecipes.get(type);
+    }
+    
+    /**
+     * Tariften yapıyı oluştur (blokları yerleştir) (YENİ: StructureType)
+     * 
+     * @param coreLocation Çekirdek bloğunun konumu
+     * @param type Yapı tipi
+     * @return Başarılıysa true
+     */
+    public boolean buildFromRecipe(Location coreLocation, StructureType type) {
+        if (coreLocation == null || type == null) return false;
+        
+        BlockRecipe codeRecipe = codeRecipes.get(type);
+        if (codeRecipe != null) {
+            codeRecipe.build(coreLocation);
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
      * Tarif doğrulama (async - performanslı) (YENİ: StructureType)
      */
     public void validateStructureAsync(Location coreLocation, StructureType type, Consumer<Boolean> callback) {
@@ -330,6 +357,40 @@ public class StructureRecipeManager {
             .addBlockAbove(Material.LECTERN)
             .build();
         registerCodeRecipe(StructureType.RECIPE_LIBRARY, recipeLibraryRecipe);
+        
+        // 7. Klan Yönetim Merkezi (CLAN_MANAGEMENT_CENTER)
+        BlockRecipe clanManagementCenterRecipe = BlockRecipe.builder("Klan Yönetim Merkezi")
+            .setCore(Material.BEACON)
+            .addBlock(-1, -1, -1, Material.IRON_BLOCK)
+            .addBlock(-1, -1, 0, Material.IRON_BLOCK)
+            .addBlock(-1, -1, 1, Material.IRON_BLOCK)
+            .addBlock(0, -1, -1, Material.IRON_BLOCK)
+            .addBlock(0, -1, 1, Material.IRON_BLOCK)
+            .addBlock(1, -1, -1, Material.IRON_BLOCK)
+            .addBlock(1, -1, 0, Material.IRON_BLOCK)
+            .addBlock(1, -1, 1, Material.IRON_BLOCK)
+            .build();
+        registerCodeRecipe(StructureType.CLAN_MANAGEMENT_CENTER, clanManagementCenterRecipe);
+        
+        // 8. Eğitim Alanı (TRAINING_ARENA)
+        BlockRecipe trainingArenaRecipe = BlockRecipe.builder("Eğitim Alanı")
+            .setCore(Material.ENCHANTING_TABLE)
+            .addBlock(0, -1, 0, Material.IRON_BLOCK)
+            .addBlock(0, -1, 1, Material.IRON_BLOCK)
+            .addBlock(1, -1, 0, Material.IRON_BLOCK)
+            .addBlock(1, -1, 1, Material.IRON_BLOCK)
+            .build();
+        registerCodeRecipe(StructureType.TRAINING_ARENA, trainingArenaRecipe);
+        
+        // 9. Kervan İstasyonu (CARAVAN_STATION)
+        BlockRecipe caravanStationRecipe = BlockRecipe.builder("Kervan İstasyonu")
+            .setCore(Material.CHEST)
+            .addBlock(0, -1, 0, Material.IRON_BLOCK)
+            .addBlock(0, -1, 1, Material.IRON_BLOCK)
+            .addBlock(1, -1, 0, Material.IRON_BLOCK)
+            .addBlock(1, -1, 1, Material.IRON_BLOCK)
+            .build();
+        registerCodeRecipe(StructureType.CARAVAN_STATION, caravanStationRecipe);
         
         // Karmaşık yapılar - Şema tarifleri (YENİ: StructureType)
         registerSchematicRecipe(StructureType.ALCHEMY_TOWER, "alchemy_tower");

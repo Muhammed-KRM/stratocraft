@@ -1,14 +1,20 @@
 package me.mami.stratocraft.database;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.manager.DataManager;
-
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.manager.DataManager;
 
 /**
  * SQLite Veri Yönetim Sistemi
@@ -712,6 +718,151 @@ public class SQLiteDataManager {
     }
     
     /**
+     * ContractRequest snapshot'ını SQLite'a kaydet
+     */
+    public void saveContractRequestSnapshot(DataManager.ContractRequestSnapshot snapshot, boolean inTransaction) throws SQLException {
+        if (snapshot == null || snapshot.requests == null) return;
+        
+        if (!inTransaction) {
+            saveLock.lock();
+            try {
+                databaseManager.beginTransaction();
+            } catch (SQLException e) {
+                saveLock.unlock();
+                throw e;
+            }
+        }
+        
+        try {
+            Connection conn = databaseManager.getConnection();
+            
+            // Önce tüm eski istekleri sil
+            try (Statement deleteStmt = conn.createStatement()) {
+                deleteStmt.execute("DELETE FROM contract_requests");
+            }
+            
+            try (PreparedStatement stmt = conn.prepareStatement(
+                "INSERT INTO contract_requests (id, sender_id, target_id, scope, status, created_at, responded_at, data) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
+                
+                for (DataManager.ContractRequestData request : snapshot.requests) {
+                    if (request == null) continue;
+                    
+                    String jsonData = gson.toJson(request);
+                    
+                    stmt.setString(1, request.id);
+                    stmt.setString(2, request.sender);
+                    stmt.setString(3, request.target);
+                    stmt.setString(4, request.scope != null ? request.scope : "PLAYER_TO_PLAYER");
+                    stmt.setString(5, request.status != null ? request.status : "PENDING");
+                    stmt.setTimestamp(6, new Timestamp(request.createdAt));
+                    stmt.setTimestamp(7, request.respondedAt != null ? new Timestamp(request.respondedAt) : null);
+                    stmt.setString(8, jsonData);
+                    stmt.addBatch();
+                }
+                stmt.executeBatch();
+            }
+            
+            if (!inTransaction) {
+                databaseManager.commit();
+            }
+            
+        } catch (SQLException e) {
+            if (!inTransaction) {
+                databaseManager.rollback();
+            }
+            throw e;
+        } finally {
+            if (!inTransaction) {
+                saveLock.unlock();
+            }
+        }
+    }
+    
+    public void saveContractRequestSnapshot(DataManager.ContractRequestSnapshot snapshot) throws SQLException {
+        saveContractRequestSnapshot(snapshot, false);
+    }
+    
+    /**
+     * ContractTerms snapshot'ını SQLite'a kaydet
+     */
+    public void saveContractTermsSnapshot(DataManager.ContractTermsSnapshot snapshot, boolean inTransaction) throws SQLException {
+        if (snapshot == null || snapshot.terms == null) return;
+        
+        if (!inTransaction) {
+            saveLock.lock();
+            try {
+                databaseManager.beginTransaction();
+            } catch (SQLException e) {
+                saveLock.unlock();
+                throw e;
+            }
+        }
+        
+        try {
+            Connection conn = databaseManager.getConnection();
+            
+            // Önce tüm eski şartları sil
+            try (Statement deleteStmt = conn.createStatement()) {
+                deleteStmt.execute("DELETE FROM contract_terms");
+            }
+            
+            try (PreparedStatement stmt = conn.prepareStatement(
+                "INSERT INTO contract_terms (id, contract_request_id, player_id, type, material, amount, delivered, " +
+                "target_player, restricted_areas, restricted_radius, structure_type, deadline, reward, penalty_type, " +
+                "penalty, approved, completed, breached, data) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                
+                for (DataManager.ContractTermsData term : snapshot.terms) {
+                    if (term == null) continue;
+                    
+                    String jsonData = gson.toJson(term);
+                    
+                    stmt.setString(1, term.id);
+                    stmt.setString(2, term.contractRequestId);
+                    stmt.setString(3, term.playerId);
+                    stmt.setString(4, term.type != null ? term.type : "RESOURCE_COLLECTION");
+                    stmt.setString(5, term.material);
+                    stmt.setInt(6, term.amount);
+                    stmt.setInt(7, term.delivered);
+                    stmt.setString(8, term.targetPlayer);
+                    stmt.setString(9, term.restrictedAreas);
+                    stmt.setInt(10, term.restrictedRadius);
+                    stmt.setString(11, term.structureType);
+                    stmt.setTimestamp(12, new Timestamp(term.deadline));
+                    stmt.setDouble(13, term.reward);
+                    stmt.setString(14, term.penaltyType != null ? term.penaltyType : "BANK_PENALTY");
+                    stmt.setDouble(15, term.penalty);
+                    stmt.setBoolean(16, term.approved);
+                    stmt.setBoolean(17, term.completed);
+                    stmt.setBoolean(18, term.breached);
+                    stmt.setString(19, jsonData);
+                    stmt.addBatch();
+                }
+                stmt.executeBatch();
+            }
+            
+            if (!inTransaction) {
+                databaseManager.commit();
+            }
+            
+        } catch (SQLException e) {
+            if (!inTransaction) {
+                databaseManager.rollback();
+            }
+            throw e;
+        } finally {
+            if (!inTransaction) {
+                saveLock.unlock();
+            }
+        }
+    }
+    
+    public void saveContractTermsSnapshot(DataManager.ContractTermsSnapshot snapshot) throws SQLException {
+        saveContractTermsSnapshot(snapshot, false);
+    }
+    
+    /**
      * Tüm verileri SQLite'a kaydet (transaction içinde)
      * 
      * ✅ ACID UYUMLU: Tüm işlemler tek transaction içinde
@@ -725,7 +876,9 @@ public class SQLiteDataManager {
             DataManager.DisasterSnapshot disasterSnapshot,
             DataManager.ClanBankSnapshot bankSnapshot,
             DataManager.ClanMissionSnapshot missionSnapshot,
-            DataManager.TrapSnapshot trapSnapshot) throws SQLException {
+            DataManager.TrapSnapshot trapSnapshot,
+            DataManager.ContractRequestSnapshot requestSnapshot,
+            DataManager.ContractTermsSnapshot termsSnapshot) throws SQLException {
         
         saveLock.lock();
         try {
@@ -743,6 +896,8 @@ public class SQLiteDataManager {
                 if (bankSnapshot != null) saveClanBankSnapshot(bankSnapshot, true);
                 if (missionSnapshot != null) saveClanMissionSnapshot(missionSnapshot, true);
                 if (trapSnapshot != null) saveTrapSnapshot(trapSnapshot, true);
+                if (requestSnapshot != null) saveContractRequestSnapshot(requestSnapshot, true);
+                if (termsSnapshot != null) saveContractTermsSnapshot(termsSnapshot, true);
                 
                 databaseManager.commit();
                 plugin.getLogger().info("§aTüm veriler SQLite'a kaydedildi.");

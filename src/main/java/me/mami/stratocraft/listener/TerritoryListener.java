@@ -43,6 +43,9 @@ public class TerritoryListener implements Listener {
     // Klan kurma için chat input sistemi
     private final Map<UUID, PendingClanCreation> waitingForClanName = new HashMap<>();
     
+    // Klan kristali taşıma için aktif task takibi (lag önleme)
+    private final Map<UUID, org.bukkit.scheduler.BukkitTask> activeCrystalMoveTasks = new java.util.concurrent.ConcurrentHashMap<>();
+    
     // Bekleyen klan oluşturma verisi
     private static class PendingClanCreation {
         final Location crystalLoc;
@@ -252,18 +255,38 @@ public class TerritoryListener implements Listener {
         Block block = event.getBlock();
         Player player = event.getPlayer();
         
-        // Material kontrolü
+        // Admin bypass kontrolü
+        if (me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(player)) {
+            return; // Admin bypass yetkisi varsa korumaları atla
+        }
+        
+        // Material kontrolü - Sadece OAK_FENCE kontrol et (klan çiti OAK_FENCE)
         if (block.getType() != Material.OAK_FENCE) {
             return;
         }
         
+        // KRİTİK: Normal çitlerin yerleştirilmesi engellenmeli
         // YENİ: Klan çiti item kontrolü (config'den)
+        ItemStack item = event.getItemInHand();
+        boolean isClanFence = false;
+        
         if (territoryConfig != null && territoryConfig.isRequireClanFenceItem()) {
-            ItemStack item = event.getItemInHand();
-            if (item == null || !ItemManager.isClanItem(item, "FENCE")) {
-                // Normal çit, klan çiti değil
-                return;
+            if (item != null && ItemManager.isClanItem(item, "FENCE")) {
+                isClanFence = true;
             }
+        } else {
+            // Config kapalıysa eski kontrol
+            if (item != null && ItemManager.isClanItem(item, "FENCE")) {
+                isClanFence = true;
+            }
+        }
+        
+        // Normal çit yerleştirme engelle
+        if (!isClanFence) {
+            event.setCancelled(true);
+            player.sendMessage("§cKlan alanında sadece §6Klan Çiti §cyerleştirilebilir!");
+            player.sendMessage("§7Normal çitler kabul edilmez. Klan Çiti craft edin.");
+            return;
         }
         
         // YENİ: Metadata ekle (klan çiti işaretleme)
@@ -402,6 +425,62 @@ public class TerritoryListener implements Listener {
     
     // Genişletme mesajı cooldown
     private final Map<UUID, Long> lastTerritoryExpandTime = new HashMap<>();
+    
+    // ========== KLAN ALANINDA BLOK YERLEŞTİRME KORUMASI ==========
+    
+    /**
+     * Klan alanında blok yerleştirme kontrolü
+     * Sadece klan üyeleri, misafirler ve kuşatma durumunda saldıran klan yerleştirebilir
+     * NOT: Çit ve End Crystal için özel metodlar var, bu metod onlardan sonra çalışır
+     */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onBlockPlaceInTerritory(BlockPlaceEvent event) {
+        // Admin bypass kontrolü
+        if (me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(event.getPlayer())) {
+            return; // Admin bypass yetkisi varsa korumaları atla
+        }
+        
+        Block block = event.getBlock();
+        Player player = event.getPlayer();
+        Location blockLoc = block.getLocation();
+        
+        // Çit ve End Crystal için özel kontroller var, burada kontrol etme
+        if (block.getType() == Material.OAK_FENCE || block.getType() == Material.END_CRYSTAL) {
+            return; // Özel metodlar zaten kontrol ediyor
+        }
+        
+        // Bölge sahibi kontrolü
+        Clan owner = territoryManager.getTerritoryOwner(blockLoc);
+        if (owner == null) return; // Sahipsiz yerse yerleştirilebilir
+        
+        // Ölümsüz klan önleme: Kristal yoksa bölge koruması yok
+        if (!owner.hasCrystal()) {
+            return; // Kristal yoksa koruma yok
+        }
+        
+        // Kendi yerinse yerleştirilebilir
+        Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
+        if (playerClan != null && playerClan.equals(owner)) {
+            return; // Klan üyesi yerleştirebilir
+        }
+        
+        // Misafir İzni (Guest)
+        if (owner.isGuest(player.getUniqueId())) {
+            return; // Misafir yerleştirebilir
+        }
+        
+        // Savaş kontrolü - Kuşatma durumunda saldıran klan yerleştirebilir
+        if (siegeManager != null && siegeManager.isUnderSiege(owner)) {
+            Clan attacker = siegeManager.getAttacker(owner);
+            if (attacker != null && attacker.equals(playerClan)) {
+                return; // Savaşta saldıran klan yerleştirebilir
+            }
+        }
+        
+        // Engelle - Düşman klan alanında blok yerleştirme yasak
+        event.setCancelled(true);
+        player.sendMessage("§cBu bölge " + owner.getName() + " klanına ait! Önce kuşatma başlatmalısın.");
+    }
 
     @EventHandler(priority = org.bukkit.event.EventPriority.NORMAL)
     public void onFuelAdd(PlayerInteractEvent event) {
@@ -426,6 +505,45 @@ public class TerritoryListener implements Listener {
     }
     
     // ========== KLAN KRISTALİ KURMA ==========
+    
+    /**
+     * Normal End Crystal yerleştirme engelleme
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onNormalEndCrystalPlace(BlockPlaceEvent event) {
+        // Admin bypass kontrolü
+        if (me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(event.getPlayer())) {
+            return; // Admin bypass yetkisi varsa korumaları atla
+        }
+        
+        // Sadece End Crystal kontrol et
+        if (event.getBlockPlaced().getType() != Material.END_CRYSTAL) {
+            return;
+        }
+        
+        // Klan kristali item kontrolü
+        ItemStack item = event.getItemInHand();
+        boolean isClanCrystal = false;
+        
+        if (territoryConfig != null && territoryConfig.isRequireClanCrystalItem()) {
+            if (item != null && ItemManager.isClanItem(item, "CRYSTAL")) {
+                isClanCrystal = true;
+            }
+        } else {
+            // Config kapalıysa eski kontrol
+            if (item != null && ItemManager.isClanItem(item, "CRYSTAL")) {
+                isClanCrystal = true;
+            }
+        }
+        
+        // Normal End Crystal yerleştirme engelle
+        if (!isClanCrystal) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage("§cKlan alanında sadece §bKlan Kristali §cyerleştirilebilir!");
+            event.getPlayer().sendMessage("§7Normal End Crystal kabul edilmez. Klan Kristali craft edin.");
+            return;
+        }
+    }
     
     @EventHandler(priority = EventPriority.HIGH)
     public void onCrystalPlace(PlayerInteractEvent event) {
@@ -766,12 +884,17 @@ public class TerritoryListener implements Listener {
         
         int minArea = 9; // Minimum alan büyüklüğü (3x3 = 9 blok)
         int iterations = 0;
+        int maxIterations = 5000; // Maksimum iterasyon limiti (lag önleme)
         
         while (!queue.isEmpty()) {
             Block current = queue.poll();
             iterations++;
             
-            // Maksimum limit kaldırıldı - istediğin kadar büyük alan olabilir
+            // Maksimum limit kontrolü (lag önleme)
+            if (iterations > maxIterations) {
+                // Çok büyük alan, güvenlik için false döndür
+                return false;
+            }
             
             // 4 Yöne bak (Kuzey, Güney, Doğu, Batı)
             Block[] neighbors = {
@@ -785,11 +908,42 @@ public class TerritoryListener implements Listener {
                 if (visited.contains(neighbor)) continue;
                 
                 // Eğer blok bizim Klan Çiti ise, burası sınırdır
-                // NOT: Blok koyulduğunda NBT verisi kaybolur, bu yüzden Material kontrolü yapıyoruz
-                // İleride BlockPlaceEvent ile koyulan çitlerin lokasyonunu kaydetmemiz gerekebilir
+                // Metadata kontrolü yap (normal çitler kabul edilmez)
                 if (neighbor.getType() == Material.OAK_FENCE) {
-                    // Sınır bulundu, bu yöne devam etme
-                    continue;
+                    // Metadata kontrolü - sadece klan çitleri kabul et
+                    boolean isClanFence = false;
+                    if (territoryConfig != null) {
+                        String metadataKey = territoryConfig.getFenceMetadataKey();
+                        isClanFence = neighbor.hasMetadata(metadataKey);
+                    }
+                    
+                    // Metadata yoksa TerritoryData'dan kontrol et (server restart sonrası)
+                    if (!isClanFence && boundaryManager != null) {
+                        // Bu blok konumuna yakın klanları kontrol et
+                        Clan nearbyClan = territoryManager.getTerritoryOwner(neighbor.getLocation());
+                        if (nearbyClan != null) {
+                            me.mami.stratocraft.model.territory.TerritoryData data = boundaryManager.getTerritoryData(nearbyClan);
+                            if (data != null) {
+                                for (org.bukkit.Location fenceLoc : data.getFenceLocations()) {
+                                    if (fenceLoc.getWorld().equals(neighbor.getWorld()) &&
+                                        fenceLoc.getBlockX() == neighbor.getX() &&
+                                        fenceLoc.getBlockY() == neighbor.getY() &&
+                                        fenceLoc.getBlockZ() == neighbor.getZ()) {
+                                        isClanFence = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (isClanFence) {
+                        // Sınır bulundu (klan çiti), bu yöne devam etme
+                        continue;
+                    } else {
+                        // Normal çit, sınır sayılmaz - engel olarak kabul et
+                        continue;
+                    }
                 }
                 
                 // Eğer hava değilse ve çit de değilse, engel say
@@ -928,10 +1082,10 @@ public class TerritoryListener implements Listener {
         if (event.getClickedBlock() == null) return;
         
         Player player = event.getPlayer();
-        Block clicked = event.getClickedBlock();
+        UUID playerId = player.getUniqueId();
         
         // ÖNCE: Oyuncunun klanı var mı ve kristal var mı kontrol et
-        Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
+        Clan playerClan = territoryManager.getClanManager().getClanByPlayer(playerId);
         if (playerClan == null) return; // Oyuncunun klanı yok
         
         // Kristal var mı?
@@ -945,7 +1099,7 @@ public class TerritoryListener implements Listener {
         // ÖNCE: Oyuncu kristale yakın mı? (5 blok mesafe) - Bu kontrol önce yapılmalı
         double distance = player.getLocation().distance(crystalLoc);
         if (distance > 5) {
-            // Kristale yakın değilse hiçbir şey yapma (mesaj gönderme, sadece return)
+            // Kristale yakın değilse hiçbir şey yapma
             return;
         }
         
@@ -956,81 +1110,129 @@ public class TerritoryListener implements Listener {
         if (handItem != null && handItem.getType() != Material.AIR) return;
         
         // Lider kontrolü
-        if (playerClan.getRank(player.getUniqueId()) != Clan.Rank.LEADER) {
+        if (playerClan.getRank(playerId) != Clan.Rank.LEADER) {
             return; // Lider değil, devam etme
         }
         
-        // Tıklanan bloğun üstünde kristal var mı kontrol et
-        Location checkLoc = clicked.getRelative(BlockFace.UP).getLocation().add(0.5, 0, 0.5);
-        boolean isCrystalAtClicked = (crystalLoc.getBlockX() == checkLoc.getBlockX() && 
-                                     crystalLoc.getBlockY() == checkLoc.getBlockY() && 
-                                     crystalLoc.getBlockZ() == checkLoc.getBlockZ());
-        
-        if (!isCrystalAtClicked) {
-            // Kristal tıklanan bloğun üstünde değil, yeni konum olarak kullan
-            Block newLocation = clicked.getRelative(BlockFace.UP);
-            if (newLocation.getType() != Material.AIR) {
-                player.sendMessage("§cYeni konum boş olmalı!");
+        // Zaten bir taşıma işlemi devam ediyor mu? (spam önleme)
+        if (activeCrystalMoveTasks.containsKey(playerId)) {
+            org.bukkit.scheduler.BukkitTask existingTask = activeCrystalMoveTasks.get(playerId);
+            if (existingTask != null && !existingTask.isCancelled()) {
+                player.sendMessage("§cLütfen bekleyin, önceki taşıma işlemi tamamlanıyor...");
                 event.setCancelled(true);
                 return;
+            } else {
+                // Eski task iptal edilmiş, temizle
+                activeCrystalMoveTasks.remove(playerId);
             }
-            
-            // Aynı konuma taşıma kontrolü
-            Location newLoc = newLocation.getLocation().add(0.5, 0, 0.5);
-            if (crystalLoc.getBlockX() == newLoc.getBlockX() && 
-                crystalLoc.getBlockY() == newLoc.getBlockY() && 
-                crystalLoc.getBlockZ() == newLoc.getBlockZ()) {
-                player.sendMessage("§cKristal zaten bu konumda!");
-                event.setCancelled(true);
-                return;
-            }
-            
-            // Async çit kontrolü (büyük alanlar için lag önleme)
-            event.setCancelled(true);
-            Block finalNewLocation = newLocation;
-            Player finalPlayer = player;
-            EnderCrystal finalCrystal = crystal;
-            Clan finalOwner = playerClan;
-            Location finalNewLoc = newLoc;
-            
-            org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(
-                me.mami.stratocraft.Main.getInstance(),
-                () -> {
-                    boolean isValid = isSurroundedByClanFences(finalNewLocation);
-                    
-                    // Main thread'e geri dön
-                    org.bukkit.Bukkit.getScheduler().runTask(
-                        me.mami.stratocraft.Main.getInstance(),
-                        () -> {
-                            if (!isValid) {
-                                finalPlayer.sendMessage("§cYeni konum Klan Çitleri ile çevrili olmalı!");
-                                return;
-                            }
-                            
-                            // Kristali taşı
-                            finalCrystal.teleport(finalNewLoc);
-                            finalOwner.setCrystalLocation(finalNewLoc);
-                            finalOwner.setCrystalEntity(finalCrystal); // Entity referansını güncelle
-                            // Minimum sınır ile Territory oluştur (50 blok radius)
-                            Territory territory = new Territory(finalOwner.getId(), finalNewLoc);
-                            if (territory.getRadius() < 50) {
-                                territory.expand(50 - territory.getRadius());
-                            }
-                            finalOwner.setTerritory(territory);
-                            territoryManager.setCacheDirty(); // Cache'i güncelle
-                            
-                            // Efektler
-                            finalPlayer.getWorld().spawnParticle(Particle.TOTEM, finalNewLoc, 50, 0.5, 0.5, 0.5, 0.1);
-                            finalPlayer.playSound(finalNewLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1.5f);
-                            
-                            finalPlayer.sendMessage("§a§lKlan Kristali taşındı!");
-                        }
-                    );
-                }
-            );
-            
-            return; // İşlem başladı, çık
         }
+        
+        Block clicked = event.getClickedBlock();
+        Block newLocation = clicked.getRelative(BlockFace.UP);
+        
+        // Yeni konum boş mu?
+        if (newLocation.getType() != Material.AIR) {
+            player.sendMessage("§cYeni konum boş olmalı!");
+            event.setCancelled(true);
+            return;
+        }
+        
+        // Aynı konuma taşıma kontrolü
+        Location newLoc = newLocation.getLocation().add(0.5, 0, 0.5);
+        if (crystalLoc.getBlockX() == newLoc.getBlockX() && 
+            crystalLoc.getBlockY() == newLoc.getBlockY() && 
+            crystalLoc.getBlockZ() == newLoc.getBlockZ()) {
+            player.sendMessage("§cKristal zaten bu konumda!");
+            event.setCancelled(true);
+            return;
+        }
+        
+        // Async çit kontrolü (büyük alanlar için lag önleme)
+        event.setCancelled(true);
+        
+        // Task'ı kaydet ve iptal edilebilir hale getir
+        org.bukkit.scheduler.BukkitTask asyncTask = org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(
+            me.mami.stratocraft.Main.getInstance(),
+            () -> {
+                // Plugin kapanıyor mu kontrol et
+                if (!me.mami.stratocraft.Main.getInstance().isEnabled()) {
+                    return;
+                }
+                
+                boolean isValid = isSurroundedByClanFences(newLocation);
+                
+                // Main thread'e geri dön
+                org.bukkit.scheduler.BukkitTask syncTask = org.bukkit.Bukkit.getScheduler().runTask(
+                    me.mami.stratocraft.Main.getInstance(),
+                    () -> {
+                        // Task'ı temizle
+                        activeCrystalMoveTasks.remove(playerId);
+                        
+                        // Plugin kapanıyor mu kontrol et
+                        if (!me.mami.stratocraft.Main.getInstance().isEnabled()) {
+                            return;
+                        }
+                        
+                        // Oyuncu hala online mı?
+                        Player finalPlayer = org.bukkit.Bukkit.getPlayer(playerId);
+                        if (finalPlayer == null || !finalPlayer.isOnline()) {
+                            return;
+                        }
+                        
+                        // Kristal hala var mı?
+                        if (playerClan.getCrystalEntity() == null || !playerClan.getCrystalEntity().equals(crystal)) {
+                            return;
+                        }
+                        
+                        if (!isValid) {
+                            finalPlayer.sendMessage("§cYeni konum Klan Çitleri ile çevrili olmalı!");
+                            return;
+                        }
+                        
+                        // Kristali taşı
+                        crystal.teleport(newLoc);
+                        playerClan.setCrystalLocation(newLoc);
+                        playerClan.setCrystalEntity(crystal); // Entity referansını güncelle
+                        
+                        // Minimum sınır ile Territory oluştur (50 blok radius)
+                        Territory territory = new Territory(playerClan.getId(), newLoc);
+                        if (territory.getRadius() < 50) {
+                            territory.expand(50 - territory.getRadius());
+                        }
+                        playerClan.setTerritory(territory);
+                        territoryManager.setCacheDirty(); // Cache'i güncelle
+                        
+                        // Efektler
+                        finalPlayer.getWorld().spawnParticle(Particle.TOTEM, newLoc, 50, 0.5, 0.5, 0.5, 0.1);
+                        finalPlayer.playSound(newLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1.5f);
+                        
+                        finalPlayer.sendMessage("§a§lKlan Kristali taşındı!");
+                    }
+                );
+                
+                // Sync task'ı da kaydet (eğer iptal edilmesi gerekirse)
+                if (syncTask != null) {
+                    activeCrystalMoveTasks.put(playerId, syncTask);
+                }
+            }
+        );
+        
+        // Async task'ı kaydet
+        if (asyncTask != null) {
+            activeCrystalMoveTasks.put(playerId, asyncTask);
+        }
+    }
+    
+    /**
+     * Tüm aktif kristal taşıma task'larını iptal et (plugin kapanırken)
+     */
+    public void cancelAllCrystalMoveTasks() {
+        for (org.bukkit.scheduler.BukkitTask task : activeCrystalMoveTasks.values()) {
+            if (task != null && !task.isCancelled()) {
+                task.cancel();
+            }
+        }
+        activeCrystalMoveTasks.clear();
     }
     
     /**
@@ -1077,12 +1279,36 @@ public class TerritoryListener implements Listener {
                 org.bukkit.Location neighborLoc = neighbor.getLocation();
                 if (visited.contains(neighborLoc)) continue;
                 
-                // Çit kontrolü
+                // Çit kontrolü - Metadata ile klan çiti kontrolü
                 if (neighbor.getType() == Material.OAK_FENCE) {
-                    // Çit bulundu, TerritoryData'ya ekle
-                    territoryData.addFenceLocation(neighborLoc);
-                    visited.add(neighborLoc);
-                    continue; // Sınır, devam etme
+                    boolean isClanFence = false;
+                    if (territoryConfig != null) {
+                        String metadataKey = territoryConfig.getFenceMetadataKey();
+                        isClanFence = neighbor.hasMetadata(metadataKey);
+                    }
+                    
+                    // Metadata yoksa TerritoryData'dan kontrol et
+                    if (!isClanFence) {
+                        for (org.bukkit.Location fenceLoc : territoryData.getFenceLocations()) {
+                            if (fenceLoc.getWorld().equals(neighbor.getWorld()) &&
+                                fenceLoc.getBlockX() == neighbor.getX() &&
+                                fenceLoc.getBlockY() == neighbor.getY() &&
+                                fenceLoc.getBlockZ() == neighbor.getZ()) {
+                                isClanFence = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (isClanFence) {
+                        // Klan çiti bulundu, TerritoryData'ya ekle (eğer yoksa)
+                        territoryData.addFenceLocation(neighborLoc);
+                        visited.add(neighborLoc);
+                        continue; // Sınır, devam etme
+                    } else {
+                        // Normal çit, sınır sayılmaz - engel olarak kabul et
+                        continue;
+                    }
                 }
                 
                 // Hava veya geçilebilir blok

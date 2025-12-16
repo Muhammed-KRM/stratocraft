@@ -1,12 +1,15 @@
 package me.mami.stratocraft.database;
 
-import me.mami.stratocraft.Main;
-import org.bukkit.Bukkit;
-
 import java.io.File;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Level;
+
+import me.mami.stratocraft.Main;
 
 /**
  * SQLite Veritabanı Yönetim Sistemi
@@ -333,6 +336,46 @@ public class DatabaseManager {
                 )
             """);
             
+            // Kontrat İstekleri tablosu (Çift taraflı kontrat sistemi)
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS contract_requests (
+                    id TEXT PRIMARY KEY,
+                    sender_id TEXT NOT NULL,
+                    target_id TEXT NOT NULL,
+                    scope TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    created_at TIMESTAMP NOT NULL,
+                    responded_at TIMESTAMP,
+                    data TEXT NOT NULL
+                )
+            """);
+            
+            // Kontrat Şartları tablosu (Çift taraflı kontrat sistemi)
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS contract_terms (
+                    id TEXT PRIMARY KEY,
+                    contract_request_id TEXT NOT NULL,
+                    player_id TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    material TEXT,
+                    amount INTEGER DEFAULT 0,
+                    delivered INTEGER DEFAULT 0,
+                    target_player TEXT,
+                    restricted_areas TEXT,
+                    restricted_radius INTEGER DEFAULT 0,
+                    structure_type TEXT,
+                    deadline TIMESTAMP NOT NULL,
+                    reward REAL NOT NULL,
+                    penalty_type TEXT NOT NULL,
+                    penalty REAL NOT NULL,
+                    approved BOOLEAN DEFAULT FALSE,
+                    completed BOOLEAN DEFAULT FALSE,
+                    breached BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    data TEXT NOT NULL
+                )
+            """);
+            
             // Index'ler (performans için)
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_clans_leader ON clans(leader_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_contracts_issuer ON contracts(issuer_id)");
@@ -343,6 +386,11 @@ public class DatabaseManager {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_disasters_active ON disasters(active)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_traps_clan ON traps(clan_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_traps_location ON traps(world, x, y, z)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_contract_requests_sender ON contract_requests(sender_id)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_contract_requests_target ON contract_requests(target_id)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_contract_requests_status ON contract_requests(status)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_contract_terms_request ON contract_terms(contract_request_id)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_contract_terms_player ON contract_terms(player_id)");
             
             plugin.getLogger().info("§aVeritabanı tabloları oluşturuldu.");
         }

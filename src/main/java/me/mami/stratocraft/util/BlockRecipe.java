@@ -89,6 +89,40 @@ public class BlockRecipe {
     }
     
     /**
+     * Çekirdek bloğu al
+     */
+    public Material getCoreMaterial() {
+        return coreMaterial;
+    }
+    
+    /**
+     * Tariften yapıyı oluştur (blokları yerleştir)
+     * 
+     * @param coreLocation Çekirdek bloğunun konumu
+     */
+    public void build(Location coreLocation) {
+        if (coreLocation == null || coreLocation.getWorld() == null) {
+            return;
+        }
+        
+        // Çekirdek bloğu yerleştir
+        Block coreBlock = coreLocation.getBlock();
+        coreBlock.setType(coreMaterial);
+        
+        // Tüm gereksinimleri yerleştir
+        for (BlockRequirement req : requirements) {
+            Location blockLoc = coreLocation.clone().add(req.relX, req.relY, req.relZ);
+            
+            if (!blockLoc.getWorld().equals(coreLocation.getWorld())) {
+                continue;
+            }
+            
+            Block block = blockLoc.getBlock();
+            block.setType(req.material);
+        }
+    }
+    
+    /**
      * Block Requirement (immutable)
      */
     private static class BlockRequirement {

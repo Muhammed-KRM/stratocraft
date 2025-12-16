@@ -703,11 +703,29 @@ public class StructureActivationListener implements Listener {
         if (world == null)
             return;
 
-        // ✅ GÜÇLENDİRİLDİ: Daha fazla partikül efektleri (görünürlük için)
-        world.spawnParticle(Particle.TOTEM, loc.clone().add(0, 1, 0), 100, 1.5, 1.5, 1.5, 0.5);
-        world.spawnParticle(Particle.END_ROD, loc.clone().add(0, 1, 0), 50, 1.0, 1.0, 1.0, 0.2);
-        world.spawnParticle(Particle.VILLAGER_HAPPY, loc.clone().add(0, 1, 0), 30, 0.8, 0.8, 0.8, 0.1);
-        world.spawnParticle(Particle.ENCHANTMENT_TABLE, loc.clone().add(0, 1, 0), 40, 1.2, 1.2, 1.2, 0.3);
+        // ✅ GÜÇLENDİRİLDİ: Daha fazla partikül efektleri (görünürlük için - balista gibi)
+        Location effectLoc = loc.clone().add(0, 1, 0);
+        
+        // Ana partikül patlaması (balista gibi)
+        world.spawnParticle(Particle.EXPLOSION_LARGE, effectLoc, 3, 0, 0, 0, 0);
+        world.spawnParticle(Particle.SMOKE_LARGE, effectLoc, 30, 1.5, 1.5, 1.5, 0.1);
+        
+        // Renkli partiküller
+        world.spawnParticle(Particle.TOTEM, effectLoc, 100, 1.5, 1.5, 1.5, 0.5);
+        world.spawnParticle(Particle.END_ROD, effectLoc, 50, 1.0, 1.0, 1.0, 0.2);
+        world.spawnParticle(Particle.VILLAGER_HAPPY, effectLoc, 30, 0.8, 0.8, 0.8, 0.1);
+        world.spawnParticle(Particle.ENCHANTMENT_TABLE, effectLoc, 40, 1.2, 1.2, 1.2, 0.3);
+        
+        // Havai fişek efekti (balista gibi)
+        org.bukkit.entity.Firework firework = (org.bukkit.entity.Firework) world.spawnEntity(
+            effectLoc, org.bukkit.entity.EntityType.FIREWORK);
+        org.bukkit.inventory.meta.FireworkMeta fireworkMeta = firework.getFireworkMeta();
+        fireworkMeta.addEffect(org.bukkit.FireworkEffect.builder()
+            .with(org.bukkit.FireworkEffect.Type.BURST)
+            .withColor(org.bukkit.Color.GREEN, org.bukkit.Color.YELLOW, org.bukkit.Color.AQUA)
+            .flicker(true).trail(true).build());
+        fireworkMeta.setPower(0);
+        firework.setFireworkMeta(fireworkMeta);
         
         // ✅ GÜÇLENDİRİLDİ: Daha fazla ses efekti
         world.playSound(loc, Sound.BLOCK_BEACON_POWER_SELECT, 1.5f, 1.5f);
