@@ -4798,6 +4798,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 // Build battery için: build battery <kategori> <seviye> <isim>
                 if (args.length == 2) {
                     // Kategorileri öner
+                    String input = args.length > 2 ? args[2].toLowerCase() : "";
                     List<String> categories = Arrays.asList("attack", "construction", "support");
                     return categories.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
@@ -4805,6 +4806,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 } else if (args.length == 3) {
                     // Kategori seçildi, seviyeleri öner
                     String batteryCategory = args[2].toLowerCase();
+                    String input = args.length > 3 ? args[3].toLowerCase() : "";
                     if (batteryCategory.equals("attack") || batteryCategory.equals("construction") || batteryCategory.equals("support")) {
                         List<String> levels = Arrays.asList("1", "2", "3", "4", "5");
                         return levels.stream()

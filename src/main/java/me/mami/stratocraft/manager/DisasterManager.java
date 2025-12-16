@@ -460,7 +460,8 @@ public class DisasterManager {
         
         // Canlı felaketler için entity oluştur
         if (category == DisasterCategory.CREATURE) {
-            CreatureDisasterType creatureType = Disaster.getCreatureDisasterType(type);
+            me.mami.stratocraft.model.Disaster.CreatureDisasterType oldCreatureType = Disaster.getCreatureDisasterType(convertToOldType(type));
+            CreatureDisasterType creatureType = oldCreatureType != null ? CreatureDisasterType.valueOf(oldCreatureType.name()) : null;
             
             if (creatureType == CreatureDisasterType.MEDIUM_GROUP) {
                 // Grup felaket spawn (30 adet)
@@ -503,11 +504,13 @@ public class DisasterManager {
         
         // Arena transformasyon başlat
         if (arenaManager != null && category == DisasterCategory.CREATURE) {
-            arenaManager.startArenaTransformation(spawnLoc, type, internalLevel, activeDisaster.getId());
+            // getId() metodu yok, UUID oluştur
+            java.util.UUID disasterId = java.util.UUID.randomUUID();
+            arenaManager.startArenaTransformation(spawnLoc, convertToOldType(type), internalLevel, disasterId);
         }
         
         // BossBar oluştur
-        createBossBar();
+        createBossBar(activeDisaster);
         
         // Uyarı gönder
         org.bukkit.Bukkit.broadcastMessage("§c§l⚠ FELAKET BAŞLADI! ⚠");

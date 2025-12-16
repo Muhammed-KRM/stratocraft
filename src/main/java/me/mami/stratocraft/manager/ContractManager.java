@@ -370,17 +370,6 @@ public class ContractManager {
     }
     
     /**
-     * Yeni kontrat oluştur (GERİYE UYUMLULUK: Contract.ContractType enum kullanır)
-     * @deprecated ContractType kullanın
-     */
-    @Deprecated
-    public void createContract(UUID issuer, Contract.ContractType type, Contract.ContractScope scope,
-                              double reward, double penalty, long deadlineDays) {
-        Contract contract = new Contract(issuer, type, scope, reward, penalty, deadlineDays);
-        activeContracts.add(contract);
-    }
-    
-    /**
      * ContractType'ı eski Contract.ContractType'a dönüştür (geriye uyumluluk için)
      */
     private Contract.ContractType convertToOldContractType(ContractType type) {
@@ -390,9 +379,9 @@ public class ContractManager {
         } catch (IllegalArgumentException e) {
             // Yeni enum değerlerini eski enum'a map et
             switch (type) {
-                case DELIVERY: return Contract.ContractType.MATERIAL_DELIVERY;
+                case RESOURCE_COLLECTION: return Contract.ContractType.MATERIAL_DELIVERY;
                 case COMBAT: return Contract.ContractType.PLAYER_KILL;
-                case PROTECTION: return Contract.ContractType.BASE_PROTECTION;
+                case TERRITORY: return Contract.ContractType.BASE_PROTECTION;
                 case CONSTRUCTION: return Contract.ContractType.STRUCTURE_BUILD;
                 default: return Contract.ContractType.MATERIAL_DELIVERY;
             }

@@ -17,7 +17,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.metadata.FixedMetadataValue;
 
 import me.mami.stratocraft.Main;
-import me.mami.stratocraft.enums.TrapType;
 import me.mami.stratocraft.model.block.TrapCoreBlock;
 
 /**
@@ -128,16 +127,31 @@ public class TrapManager {
     public static class TrapData {
         private final UUID ownerId;
         private final UUID ownerClanId;
-        private final TrapType type;
+        private final me.mami.stratocraft.enums.TrapType type;
         private int fuel; // Kalan patlama hakkı
         private final Location coreLocation;
         private final List<Location> frameBlocks; // Magma Block çerçevesi
         private boolean isCovered; // Üstü kapatılmış mı?
 
-        public TrapData(UUID ownerId, UUID ownerClanId, TrapType type, int fuel, Location coreLocation) {
+        public TrapData(UUID ownerId, UUID ownerClanId, me.mami.stratocraft.enums.TrapType type, int fuel, Location coreLocation) {
             this.ownerId = ownerId;
             this.ownerClanId = ownerClanId;
             this.type = type;
+            this.fuel = fuel;
+            this.coreLocation = coreLocation;
+            this.frameBlocks = new ArrayList<>();
+            this.isCovered = false;
+        }
+        
+        /**
+         * @deprecated me.mami.stratocraft.enums.TrapType kullanın
+         */
+        @Deprecated
+        public TrapData(UUID ownerId, UUID ownerClanId, TrapType type, int fuel, Location coreLocation) {
+            this.ownerId = ownerId;
+            this.ownerClanId = ownerClanId;
+            // Deprecated enum'dan yeni enum'a dönüştür
+            this.type = type != null ? me.mami.stratocraft.enums.TrapType.valueOf(type.name()) : me.mami.stratocraft.enums.TrapType.HELL_TRAP;
             this.fuel = fuel;
             this.coreLocation = coreLocation;
             this.frameBlocks = new ArrayList<>();
@@ -152,8 +166,21 @@ public class TrapManager {
             return ownerClanId;
         }
 
-        public TrapType getType() {
+        public me.mami.stratocraft.enums.TrapType getType() {
             return type;
+        }
+        
+        /**
+         * @deprecated me.mami.stratocraft.enums.TrapType kullanın
+         */
+        @Deprecated
+        public TrapType getOldType() {
+            if (type == null) return null;
+            try {
+                return TrapType.valueOf(type.name());
+            } catch (IllegalArgumentException e) {
+                return TrapType.HELL_TRAP;
+            }
         }
 
         public int getFuel() {
@@ -1026,6 +1053,76 @@ public class TrapManager {
             }
         }
     }
+    
+    /**
+     * Üstteki blok -> tuzak çekirdeği mapping'ini güncelle (TrapCoreBlock için)
+     */
+    private void updateCoverBlockMappingForTrapCore(Location coreLoc, TrapCoreBlock trapCore) {
+        if (coreLoc == null || trapCore == null || coreLoc.getWorld() == null) {
+            return; // Null kontrolü
+        }
+        
+        // Tuzağın üstündeki blok
+        Block coreBlock = coreLoc.getBlock();
+        if (coreBlock == null) return;
+        
+        Block coreAbove = coreBlock.getRelative(0, 1, 0);
+        if (coreAbove != null && coreAbove.getType() != Material.AIR && 
+            coreAbove.getType() != Material.CAVE_AIR && 
+            coreAbove.getType() != Material.VOID_AIR) {
+            coverBlockToTrapCore.put(coreAbove.getLocation(), coreLoc);
+        }
+        
+        // Çerçeve bloklarının üstündeki bloklar
+        if (trapCore.getFrameBlocks() != null) {
+            for (Location frameLoc : trapCore.getFrameBlocks()) {
+                if (frameLoc == null || frameLoc.getWorld() == null) continue;
+                
+                Block frameBlock = frameLoc.getBlock();
+                if (frameBlock == null) continue;
+                
+                Block frameAbove = frameBlock.getRelative(0, 1, 0);
+                if (frameAbove != null && frameAbove.getType() != Material.AIR && 
+                    frameAbove.getType() != Material.CAVE_AIR && 
+                    frameAbove.getType() != Material.VOID_AIR) {
+                    coverBlockToTrapCore.put(frameAbove.getLocation(), coreLoc);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Üstteki blok -> tuzak çekirdeği mapping'ini temizle (TrapCoreBlock için)
+     */
+    private void removeCoverBlockMappingForTrapCore(Location coreLoc, TrapCoreBlock trapCore) {
+        if (coreLoc == null || trapCore == null || coreLoc.getWorld() == null) {
+            return; // Null kontrolü
+        }
+        
+        // Tuzağın üstündeki blok
+        Block coreBlock = coreLoc.getBlock();
+        if (coreBlock != null) {
+            Block coreAbove = coreBlock.getRelative(0, 1, 0);
+            if (coreAbove != null) {
+                coverBlockToTrapCore.remove(coreAbove.getLocation());
+            }
+        }
+        
+        // Çerçeve bloklarının üstündeki bloklar
+        if (trapCore.getFrameBlocks() != null) {
+            for (Location frameLoc : trapCore.getFrameBlocks()) {
+                if (frameLoc == null || frameLoc.getWorld() == null) continue;
+                
+                Block frameBlock = frameLoc.getBlock();
+                if (frameBlock != null) {
+                    Block frameAbove = frameBlock.getRelative(0, 1, 0);
+                    if (frameAbove != null) {
+                        coverBlockToTrapCore.remove(frameAbove.getLocation());
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Tuzakları kaydet (public - Main.java'dan çağrılabilir)
@@ -1109,8 +1206,19 @@ public class TrapManager {
                             .fromString(trapsConfig.getString("traps." + worldName + "." + locStr + ".owner"));
                     String clanStr = trapsConfig.getString("traps." + worldName + "." + locStr + ".clan");
                     UUID clanId = clanStr != null ? UUID.fromString(clanStr) : null;
-                    TrapType type = TrapType
-                            .valueOf(trapsConfig.getString("traps." + worldName + "." + locStr + ".type"));
+                    String typeStr = trapsConfig.getString("traps." + worldName + "." + locStr + ".type");
+                    me.mami.stratocraft.enums.TrapType type;
+                    try {
+                        type = me.mami.stratocraft.enums.TrapType.valueOf(typeStr);
+                    } catch (IllegalArgumentException e) {
+                        // Deprecated enum'dan dönüştürmeyi dene
+                        try {
+                            TrapType oldType = TrapType.valueOf(typeStr);
+                            type = me.mami.stratocraft.enums.TrapType.valueOf(oldType.name());
+                        } catch (IllegalArgumentException e2) {
+                            type = me.mami.stratocraft.enums.TrapType.HELL_TRAP;
+                        }
+                    }
                     int fuel = trapsConfig.getInt("traps." + worldName + "." + locStr + ".fuel");
 
                     // YENİ MODEL: TrapCoreBlock oluştur
@@ -1265,7 +1373,7 @@ public class TrapManager {
     /**
      * Tuzak oluştur (yakıt ve tip ile)
      */
-    public boolean createTrap(Player player, Block coreBlock, TrapType type, Material fuelMaterial) {
+    public boolean createTrap(Player player, Block coreBlock, me.mami.stratocraft.enums.TrapType type, Material fuelMaterial) {
         Location coreLoc = coreBlock.getLocation();
 
         // Çerçeve bloklarını tespit et
@@ -1390,11 +1498,17 @@ public class TrapManager {
     public TrapData convertTrapCoreToTrapData(TrapCoreBlock trapCore) {
         if (trapCore == null || trapCore.getLocation() == null) return null;
         
-        TrapType type;
+        me.mami.stratocraft.enums.TrapType type;
         try {
-            type = trapCore.getTrapType() != null ? TrapType.valueOf(trapCore.getTrapType()) : TrapType.HELL_TRAP;
+            type = trapCore.getTrapType() != null ? me.mami.stratocraft.enums.TrapType.valueOf(trapCore.getTrapType()) : me.mami.stratocraft.enums.TrapType.HELL_TRAP;
         } catch (IllegalArgumentException e) {
-            type = TrapType.HELL_TRAP;
+            // Deprecated enum'dan dönüştürmeyi dene
+            try {
+                TrapType oldType = TrapType.valueOf(trapCore.getTrapType());
+                type = me.mami.stratocraft.enums.TrapType.valueOf(oldType.name());
+            } catch (IllegalArgumentException e2) {
+                type = me.mami.stratocraft.enums.TrapType.HELL_TRAP;
+            }
         }
         
         TrapData trap = new TrapData(

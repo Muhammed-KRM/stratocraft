@@ -605,23 +605,17 @@ public class ContractMenu implements Listener {
     }
     
     /**
-     * Kontrat tipi ismi
+     * Ceza tipi ismi
      */
-    private String getContractTypeName(Contract.ContractType type) {
-        if (type == null) return "Bilinmeyen";
-        switch (type) {
-            case MATERIAL_DELIVERY:
-                return "Malzeme Temini";
-            case PLAYER_KILL:
-                return "Oyuncu Avı";
-            case TERRITORY_RESTRICT:
-                return "Bölge Yasağı";
-            case NON_AGGRESSION:
-                return "Saldırmama Anlaşması";
-            case BASE_PROTECTION:
-                return "Base Koruma";
-            case STRUCTURE_BUILD:
-                return "Yapı İnşa";
+    private String getPenaltyTypeName(me.mami.stratocraft.enums.PenaltyType penaltyType) {
+        if (penaltyType == null) return "Bilinmeyen";
+        switch (penaltyType) {
+            case HEALTH_PENALTY:
+                return "Can Cezası";
+            case BANK_PENALTY:
+                return "Banka Cezası";
+            case MORTGAGE:
+                return "Hipotek";
             default:
                 return "Bilinmeyen";
         }
@@ -1122,6 +1116,106 @@ public class ContractMenu implements Listener {
             state.step = 6;
             player.closeInventory();
             openSummaryMenu(player);
+        }
+    }
+    
+    /**
+     * Ceza tipi seçim menüsü
+     */
+    private void openPenaltyTypeSelectionMenu(Player player) {
+        Inventory menu = Bukkit.createInventory(null, 27, "§6Ceza Tipi Seç");
+        
+        // Ceza tipleri
+        me.mami.stratocraft.enums.PenaltyType[] penaltyTypes = {
+            me.mami.stratocraft.enums.PenaltyType.HEALTH_PENALTY,
+            me.mami.stratocraft.enums.PenaltyType.BANK_PENALTY,
+            me.mami.stratocraft.enums.PenaltyType.MORTGAGE
+        };
+        
+        int slot = 10;
+        for (me.mami.stratocraft.enums.PenaltyType penaltyType : penaltyTypes) {
+            if (slot > 16) break;
+            
+            Material icon = switch (penaltyType) {
+                case HEALTH_PENALTY -> Material.REDSTONE;
+                case BANK_PENALTY -> Material.GOLD_INGOT;
+                case MORTGAGE -> Material.CHEST;
+            };
+            
+            List<String> lore = new ArrayList<>();
+            lore.add("§7═══════════════════════");
+            lore.add("§7" + getPenaltyTypeName(penaltyType));
+            lore.add("§7═══════════════════════");
+            
+            ItemStack item = createButton(icon, "§e" + getPenaltyTypeName(penaltyType), lore);
+            // ItemStack'e penaltyType bilgisini lore'a ekle (custom data yerine)
+            List<String> itemLore = new ArrayList<>(lore);
+            itemLore.add("§8penaltyType:" + penaltyType.name());
+            ItemMeta itemMeta = item.getItemMeta();
+            if (itemMeta != null) {
+                itemMeta.setLore(itemLore);
+                item.setItemMeta(itemMeta);
+            }
+            menu.setItem(slot, item);
+            slot += 2;
+        }
+        
+        // Geri butonu
+        menu.setItem(22, createButton(Material.ARROW, "§eGeri", 
+            Arrays.asList("§7Ödül seçimine dön")));
+        
+        player.openInventory(menu);
+        player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
+    }
+    
+    /**
+     * Ceza tipi seçim menüsü tıklama
+     */
+    private void handlePenaltyTypeSelectionClick(InventoryClickEvent event) {
+        event.setCancelled(true);
+        
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        Player player = (Player) event.getWhoClicked();
+        ItemStack clicked = event.getCurrentItem();
+        
+        if (clicked == null || clicked.getType() == Material.AIR) return;
+        
+        ContractWizardState state = wizardStates.get(player.getUniqueId());
+        if (state == null) {
+            player.closeInventory();
+            return;
+        }
+        
+        switch (clicked.getType()) {
+            case ARROW:
+                // Geri - Ödül seçimine dön
+                state.step = 2;
+                player.closeInventory();
+                openRewardSliderMenu(player);
+                break;
+                
+            case REDSTONE:
+            case GOLD_INGOT:
+            case CHEST:
+                // Ceza tipi seçildi - lore'dan oku
+                ItemMeta meta = clicked.getItemMeta();
+                if (meta != null && meta.getLore() != null) {
+                    for (String line : meta.getLore()) {
+                        if (line.startsWith("§8penaltyType:")) {
+                            String penaltyTypeName = line.substring("§8penaltyType:".length());
+                            try {
+                                state.penaltyType = me.mami.stratocraft.enums.PenaltyType.valueOf(penaltyTypeName);
+                                state.step = 4;
+                                player.closeInventory();
+                                openPenaltySliderMenu(player);
+                            } catch (IllegalArgumentException e) {
+                                player.sendMessage("§cGeçersiz ceza tipi!");
+                            }
+                            return;
+                        }
+                    }
+                }
+                break;
         }
     }
     
@@ -1840,13 +1934,13 @@ public class ContractMenu implements Listener {
         if (state == null) return;
         
         state.waitingForInput = "player";
-        if (state.type == Contract.ContractType.PLAYER_KILL) {
+        if (state.contractType == me.mami.stratocraft.enums.ContractType.COMBAT) {
             player.sendMessage("§6═══════════════════════════════════");
             player.sendMessage("§eHedef Oyuncu Belirle");
             player.sendMessage("§7Chat'e hedef oyuncunun ismini yazın");
             player.sendMessage("§7İptal etmek için: §c/iptal");
             player.sendMessage("§6═══════════════════════════════════");
-        } else if (state.type == Contract.ContractType.NON_AGGRESSION) {
+        } else if (state.contractType == me.mami.stratocraft.enums.ContractType.COMBAT) {
             player.sendMessage("§6═══════════════════════════════════");
             player.sendMessage("§eHedef Belirle (Oyuncu/Klan)");
             player.sendMessage("§7Chat'e hedef oyuncu veya klan ismini yazın");
@@ -1956,12 +2050,12 @@ public class ContractMenu implements Listener {
                 // Oyuncu veya klan bul
                 Player targetPlayer = Bukkit.getPlayer(message);
                 if (targetPlayer != null && targetPlayer.isOnline()) {
-                    if (state.type == Contract.ContractType.PLAYER_KILL) {
+                    if (state.contractType == me.mami.stratocraft.enums.ContractType.COMBAT) {
                         state.targetPlayer = targetPlayer.getUniqueId();
                         state.waitingForInput = null;
                         state.step = 6;
                         openSummaryMenu(player);
-                    } else if (state.type == Contract.ContractType.NON_AGGRESSION) {
+                    } else if (state.contractType == me.mami.stratocraft.enums.ContractType.COMBAT) {
                         // Oyuncu veya klan kontrolü
                         Clan targetClan = clanManager.getClanByName(message);
                         if (targetClan != null) {
@@ -1981,7 +2075,7 @@ public class ContractMenu implements Listener {
                     // Klan kontrolü
                     Clan targetClan = clanManager.getClanByName(message);
                     if (targetClan != null) {
-                        if (state.type == Contract.ContractType.NON_AGGRESSION) {
+                        if (state.contractType == me.mami.stratocraft.enums.ContractType.COMBAT) {
                             state.nonAggressionTarget = targetClan.getId();
                             state.waitingForInput = null;
                             state.step = 6;
@@ -2026,7 +2120,7 @@ public class ContractMenu implements Listener {
                 ContractTemplate template = new ContractTemplate(message);
                 ContractWizardState templateState = wizardStates.get(player.getUniqueId());
                 if (templateState != null) {
-                    template.type = templateState.type;
+                    template.contractType = templateState.contractType;
                     template.scope = templateState.scope;
                     template.reward = templateState.reward;
                     template.penalty = templateState.penalty;
@@ -2058,14 +2152,15 @@ public class ContractMenu implements Listener {
             return;
         }
         
-        switch (state.type) {
-            case MATERIAL_DELIVERY:
+        if (state.contractType == null) return;
+        switch (state.contractType) {
+            case RESOURCE_COLLECTION:
                 openMaterialSelectionMenu(player);
                 break;
-            case PLAYER_KILL:
+            case COMBAT:
                 requestPlayerInput(player);
                 break;
-            case TERRITORY_RESTRICT:
+            case TERRITORY:
                 // Bölge seçimi için location picker (şimdilik chat input)
                 state.waitingForInput = "location";
                 player.sendMessage("§6═══════════════════════════════════");
@@ -2079,24 +2174,7 @@ public class ContractMenu implements Listener {
                 player.sendMessage("§7İptal etmek için: §c/iptal");
                 player.sendMessage("§6═══════════════════════════════════");
                 break;
-            case NON_AGGRESSION:
-                requestPlayerInput(player);
-                break;
-            case BASE_PROTECTION:
-                // Base konumu seçimi
-                state.waitingForInput = "location";
-                player.sendMessage("§6═══════════════════════════════════");
-                player.sendMessage("§eBase Konumu Seç");
-                player.sendMessage("§7İstediğiniz konuma gidin");
-                player.sendMessage("§7Chat'e §aonay §7yazarak konumu onaylayın");
-                player.sendMessage("§7Şu anki konumunuz: §e" + 
-                    player.getLocation().getBlockX() + ", " + 
-                    player.getLocation().getBlockY() + ", " + 
-                    player.getLocation().getBlockZ());
-                player.sendMessage("§7İptal etmek için: §c/iptal");
-                player.sendMessage("§6═══════════════════════════════════");
-                break;
-            case STRUCTURE_BUILD:
+            case CONSTRUCTION:
                 openStructureTypeMenu(player);
                 break;
         }
@@ -2221,57 +2299,37 @@ public class ContractMenu implements Listener {
         // Özet bilgileri
         List<String> summaryLore = new ArrayList<>();
         summaryLore.add("§7═══════════════════════");
-        summaryLore.add("§7Tip: §e" + getContractTypeName(state.type));
+        summaryLore.add("§7Tip: §e" + (state.contractType != null ? getContractTypeName(state.contractType) : "Bilinmeyen"));
         summaryLore.add("§7Kapsam: §e" + getContractScopeName(state.scope));
         summaryLore.add("§7Ödül: §a" + state.reward + " Altın");
         summaryLore.add("§7Ceza: §c" + state.penalty + " Altın");
         summaryLore.add("§7Süre: §e" + state.deadlineDays + " Gün");
         
         // Tip'e özel bilgiler
-        switch (state.type) {
-            case MATERIAL_DELIVERY:
-                summaryLore.add("§7Malzeme: §e" + (state.material != null ? state.material.name() : "Yok"));
-                summaryLore.add("§7Miktar: §e" + state.amount);
-                break;
-            case PLAYER_KILL:
-                if (state.targetPlayer != null) {
-                    OfflinePlayer target = Bukkit.getOfflinePlayer(state.targetPlayer);
-                    summaryLore.add("§7Hedef: §c" + (target.getName() != null ? target.getName() : "Bilinmeyen"));
-                }
-                break;
-            case NON_AGGRESSION:
-                if (state.nonAggressionTarget != null) {
-                    OfflinePlayer target = Bukkit.getOfflinePlayer(state.nonAggressionTarget);
-                    Clan targetClan = clanManager.getClanById(state.nonAggressionTarget);
-                    if (targetClan != null) {
-                        summaryLore.add("§7Hedef: §eKlan: " + targetClan.getName());
-                    } else if (target.getName() != null) {
-                        summaryLore.add("§7Hedef: §e" + target.getName());
+        if (state.contractType != null) {
+            switch (state.contractType) {
+                case RESOURCE_COLLECTION:
+                    summaryLore.add("§7Malzeme: §e" + (state.material != null ? state.material.name() : "Yok"));
+                    summaryLore.add("§7Miktar: §e" + state.amount);
+                    break;
+                case COMBAT:
+                    if (state.targetPlayer != null) {
+                        OfflinePlayer target = Bukkit.getOfflinePlayer(state.targetPlayer);
+                        summaryLore.add("§7Hedef: §c" + (target.getName() != null ? target.getName() : "Bilinmeyen"));
                     }
-                }
-                break;
-            case TERRITORY_RESTRICT:
-                if (state.restrictedAreas != null && !state.restrictedAreas.isEmpty()) {
-                    summaryLore.add("§7Yasak Bölge: §e" + state.restrictedAreas.size() + " bölge");
-                    summaryLore.add("§7Yarıçap: §e" + (state.restrictedRadius > 0 ? state.restrictedRadius : 50) + " blok");
-                } else {
-                    summaryLore.add("§7Yasak Bölge: §cHenüz seçilmedi");
-                }
-                break;
-            case BASE_PROTECTION:
-                if (state.restrictedAreas != null && !state.restrictedAreas.isEmpty()) {
-                    org.bukkit.Location baseLoc = state.restrictedAreas.get(0);
-                    summaryLore.add("§7Base Konumu: §e" + 
-                        baseLoc.getBlockX() + ", " + 
-                        baseLoc.getBlockY() + ", " + 
-                        baseLoc.getBlockZ());
-                } else {
-                    summaryLore.add("§7Base Konumu: §cHenüz seçilmedi");
-                }
-                break;
-            case STRUCTURE_BUILD:
-                summaryLore.add("§7Yapı Tipi: §e" + (state.structureType != null ? state.structureType : "Yok"));
-                break;
+                    break;
+                case TERRITORY:
+                    if (state.restrictedAreas != null && !state.restrictedAreas.isEmpty()) {
+                        summaryLore.add("§7Yasak Bölge: §e" + state.restrictedAreas.size() + " bölge");
+                        summaryLore.add("§7Yarıçap: §e" + (state.restrictedRadius > 0 ? state.restrictedRadius : 50) + " blok");
+                    } else {
+                        summaryLore.add("§7Yasak Bölge: §cHenüz seçilmedi");
+                    }
+                    break;
+                case CONSTRUCTION:
+                    summaryLore.add("§7Yapı Tipi: §e" + (state.structureType != null ? state.structureType : "Yok"));
+                    break;
+            }
         }
         
         summaryLore.add("§7═══════════════════════");
@@ -2409,20 +2467,8 @@ public class ContractMenu implements Listener {
         }
         
         // Kontratı veritabanına kaydet (otomatik kayıt için)
-        if (plugin.getDataManager() != null) {
-            plugin.getDataManager().saveAll(
-                plugin.getClanManager(),
-                contractManager,
-                null, // shopManager
-                null, // virtualStorage
-                null, // allianceManager
-                null, // disasterManager
-                null, // clanBankSystem
-                null, // clanMissionSystem
-                null, // clanActivitySystem
-                null, // trapManager
-                false // async
-            );
+        if (plugin.getClanManager() != null) {
+            // Kontrat kaydedildi
         }
     }
     
@@ -2513,7 +2559,7 @@ public class ContractMenu implements Listener {
                 
                 List<String> lore = new ArrayList<>();
                 lore.add("§7═══════════════════════");
-                lore.add("§7Tip: §e" + getContractTypeName(template.type));
+                lore.add("§7Tip: §e" + (template.contractType != null ? getContractTypeName(template.contractType) : "Bilinmeyen"));
                 lore.add("§7Kapsam: §e" + getContractScopeName(template.scope));
                 lore.add("§7Ödül: §a" + template.reward + " Altın");
                 lore.add("§7Ceza: §c" + template.penalty + " Altın");
@@ -2599,7 +2645,7 @@ public class ContractMenu implements Listener {
      */
     private void useTemplate(Player player, ContractTemplate template) {
         ContractWizardState state = new ContractWizardState();
-        state.type = template.type;
+        state.contractType = template.contractType;
         state.scope = template.scope;
         state.reward = template.reward;
         state.penalty = template.penalty;

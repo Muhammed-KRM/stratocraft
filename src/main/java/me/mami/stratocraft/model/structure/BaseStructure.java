@@ -1,12 +1,13 @@
 package me.mami.stratocraft.model.structure;
 
+import java.util.UUID;
+
+import org.bukkit.Location;
+
 import me.mami.stratocraft.enums.StructureCategory;
 import me.mami.stratocraft.enums.StructureEffectType;
 import me.mami.stratocraft.enums.StructureType;
 import me.mami.stratocraft.model.base.BaseModel;
-import org.bukkit.Location;
-
-import java.util.UUID;
 
 /**
  * Temel Yapı Modeli
@@ -227,7 +228,7 @@ public class BaseStructure extends BaseModel {
      * Geriye uyumluluk: Eski Structure.Type'dan dönüştür
      */
     @Deprecated
-    public static StructureType fromOldType(Structure.Type oldType) {
+    public static StructureType fromOldType(me.mami.stratocraft.model.Structure.Type oldType) {
         if (oldType == null) return null;
         try {
             return StructureType.valueOf(oldType.name());
@@ -240,9 +241,9 @@ public class BaseStructure extends BaseModel {
      * Geriye uyumluluk: Eski Structure'a dönüştür
      */
     @Deprecated
-    public Structure toLegacyStructure() {
-        Structure.Type legacyType = Structure.Type.valueOf(this.type.name());
-        Structure legacy = new Structure(legacyType, this.location, this.level);
+    public me.mami.stratocraft.model.Structure toLegacyStructure() {
+        me.mami.stratocraft.model.Structure.Type legacyType = me.mami.stratocraft.model.Structure.Type.valueOf(this.type.name());
+        me.mami.stratocraft.model.Structure legacy = new me.mami.stratocraft.model.Structure(legacyType, this.location, this.level);
         legacy.setLevel(this.level);
         legacy.addFuel(this.shieldFuel);
         return legacy;

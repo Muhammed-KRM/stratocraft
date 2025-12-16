@@ -285,9 +285,6 @@ public class MissionManager {
                 // Rastgele bir online oyuncu seç (kendisi hariç)
                 mission.setTargetPlayer(getRandomOnlinePlayer(player));
                 break;
-            case EXPLORE_AREA:
-                mission.setTargetDistance(getTargetDistanceByDifficulty(difficulty));
-                break;
             case CRAFT_ITEMS:
                 mission.setTargetMaterial(getRandomCraftableMaterialByDifficulty(difficulty));
                 break;

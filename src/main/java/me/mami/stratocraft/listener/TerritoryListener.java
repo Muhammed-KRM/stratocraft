@@ -647,7 +647,7 @@ public class TerritoryListener implements Listener {
                     org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(
                         me.mami.stratocraft.Main.getInstance(),
                         () -> {
-                            findAndAddFenceLocations(pending.placeLocation, territoryData);
+                            findAndAddFenceLocations(pending.placeLocation.getLocation(), territoryData);
                             
                             // Main thread'e geri dön ve TerritoryData'yı kaydet
                             org.bukkit.Bukkit.getScheduler().runTask(
@@ -1030,6 +1030,67 @@ public class TerritoryListener implements Listener {
             );
             
             return; // İşlem başladı, çık
+        }
+    }
+    
+    /**
+     * Çit lokasyonlarını bul ve TerritoryData'ya ekle
+     * Flood fill algoritması ile çitleri tespit eder
+     */
+    private void findAndAddFenceLocations(Location centerLocation, me.mami.stratocraft.model.territory.TerritoryData territoryData) {
+        if (centerLocation == null || centerLocation.getWorld() == null || territoryData == null) {
+            return;
+        }
+        
+        org.bukkit.World world = centerLocation.getWorld();
+        int centerX = centerLocation.getBlockX();
+        int centerY = centerLocation.getBlockY();
+        int centerZ = centerLocation.getBlockZ();
+        
+        // Flood fill ile çitleri bul
+        java.util.Set<org.bukkit.Location> visited = new java.util.HashSet<>();
+        java.util.Queue<org.bukkit.block.Block> queue = new java.util.LinkedList<>();
+        
+        // Başlangıç noktası
+        org.bukkit.block.Block startBlock = world.getBlockAt(centerX, centerY, centerZ);
+        queue.add(startBlock);
+        visited.add(startBlock.getLocation());
+        
+        int maxIterations = 50000; // Büyük alanlar için limit
+        int iterations = 0;
+        
+        while (!queue.isEmpty() && iterations < maxIterations) {
+            org.bukkit.block.Block current = queue.poll();
+            iterations++;
+            
+            // 4 yöne bak
+            org.bukkit.block.Block[] neighbors = {
+                current.getRelative(org.bukkit.block.BlockFace.NORTH),
+                current.getRelative(org.bukkit.block.BlockFace.SOUTH),
+                current.getRelative(org.bukkit.block.BlockFace.EAST),
+                current.getRelative(org.bukkit.block.BlockFace.WEST)
+            };
+            
+            for (org.bukkit.block.Block neighbor : neighbors) {
+                if (neighbor == null || neighbor.getWorld() == null) continue;
+                
+                org.bukkit.Location neighborLoc = neighbor.getLocation();
+                if (visited.contains(neighborLoc)) continue;
+                
+                // Çit kontrolü
+                if (neighbor.getType() == Material.OAK_FENCE) {
+                    // Çit bulundu, TerritoryData'ya ekle
+                    territoryData.addFenceLocation(neighborLoc);
+                    visited.add(neighborLoc);
+                    continue; // Sınır, devam etme
+                }
+                
+                // Hava veya geçilebilir blok
+                if (neighbor.getType().isAir() || !neighbor.getType().isSolid()) {
+                    visited.add(neighborLoc);
+                    queue.add(neighbor);
+                }
+            }
         }
     }
 }

@@ -105,6 +105,11 @@ public class Main extends JavaPlugin {
     // Merkezi Tarif Yönetim Sistemi
     private me.mami.stratocraft.manager.RecipeManager recipeManager;
     
+    // Territory sistemi
+    private me.mami.stratocraft.manager.TerritoryBoundaryManager territoryBoundaryManager;
+    private me.mami.stratocraft.manager.config.TerritoryConfig territoryConfig;
+    private me.mami.stratocraft.gui.ClanTerritoryMenu clanTerritoryMenu;
+    
     public me.mami.stratocraft.listener.SpecialWeaponListener getSpecialWeaponListener() {
         return specialWeaponListener;
     }

@@ -1,14 +1,16 @@
 package me.mami.stratocraft.gui;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.manager.ClanManager;
-import me.mami.stratocraft.manager.TerritoryBoundaryManager;
-import me.mami.stratocraft.manager.TerritoryManager;
-import me.mami.stratocraft.manager.config.TerritoryConfig;
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.model.territory.TerritoryData;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -18,8 +20,13 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.manager.ClanManager;
+import me.mami.stratocraft.manager.TerritoryBoundaryManager;
+import me.mami.stratocraft.manager.TerritoryManager;
+import me.mami.stratocraft.manager.config.TerritoryConfig;
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.territory.TerritoryData;
 
 /**
  * Klan Alanı Yönetim Menüsü
@@ -141,7 +148,7 @@ public class ClanTerritoryMenu implements Listener {
         Player player = (Player) event.getWhoClicked();
         
         Inventory inventory = event.getInventory();
-        String title = inventory.getTitle();
+        String title = event.getView().getTitle();
         
         if (!title.equals("§6Klan Alanı Yönetimi")) return;
         
