@@ -58,6 +58,8 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.gui.ClanBankMenu clanBankMenu;
     private me.mami.stratocraft.gui.ClanStructureMenu clanStructureMenu;
     private me.mami.stratocraft.gui.AllianceMenu allianceMenu;
+    private me.mami.stratocraft.gui.PeaceRequestMenu peaceRequestMenu;
+    private me.mami.stratocraft.manager.PeaceRequestManager peaceRequestManager;
     private me.mami.stratocraft.gui.CaravanMenu caravanMenu;
     private me.mami.stratocraft.gui.TamingMenu tamingMenu;
     private me.mami.stratocraft.gui.BreedingMenu breedingMenu;
@@ -151,6 +153,10 @@ public class Main extends JavaPlugin {
         batteryManager = new BatteryManager(this);
         newBatteryManager = new NewBatteryManager(this); // Yeni batarya sistemi
         siegeManager = new SiegeManager();
+        
+        // ✅ YENİ: PeaceRequestManager başlat
+        peaceRequestManager = new me.mami.stratocraft.manager.PeaceRequestManager(clanManager, siegeManager);
+        
         disasterManager = new DisasterManager(this);
         batteryManager.setDisasterManager(disasterManager);
         batteryManager.setTerritoryManager(territoryManager);
@@ -1235,6 +1241,14 @@ public class Main extends JavaPlugin {
         return allianceMenu;
     }
     
+    public me.mami.stratocraft.gui.PeaceRequestMenu getPeaceRequestMenu() {
+        return peaceRequestMenu;
+    }
+    
+    public me.mami.stratocraft.manager.PeaceRequestManager getPeaceRequestManager() {
+        return peaceRequestManager;
+    }
+    
     public me.mami.stratocraft.gui.CaravanMenu getCaravanMenu() {
         return caravanMenu;
     }
@@ -1558,6 +1572,13 @@ public class Main extends JavaPlugin {
         if (allianceManager != null) {
             allianceMenu = new me.mami.stratocraft.gui.AllianceMenu(this, clanManager, allianceManager);
             Bukkit.getPluginManager().registerEvents(allianceMenu, this);
+        }
+        
+        // ✅ YENİ: 13.5. PeaceRequestMenu (Barış Anlaşması GUI)
+        if (peaceRequestManager != null && siegeManager != null) {
+            peaceRequestMenu = new me.mami.stratocraft.gui.PeaceRequestMenu(
+                this, clanManager, peaceRequestManager, siegeManager);
+            Bukkit.getPluginManager().registerEvents(peaceRequestMenu, this);
         }
         
         // 14. CaravanMenu (Kervan GUI)

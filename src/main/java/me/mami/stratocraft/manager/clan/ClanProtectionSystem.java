@@ -287,7 +287,7 @@ public class ClanProtectionSystem {
     }
     
     /**
-     * İki klan savaşta mı?
+     * ✅ YENİ: İki klan savaşta mı? (Çoklu savaş desteği)
      */
     private boolean isClanAtWar(Player attacker, Player target) {
         if (siegeManager == null) return false;
@@ -299,15 +299,10 @@ public class ClanProtectionSystem {
             return false;
         }
         
-        // İki klan birbirine savaş açmış mı? (null check)
+        // ✅ YENİ: İki klan birbirleriyle savaşta mı? (iki taraflı kontrol)
         try {
-            Clan attackerOfAttacker = siegeManager.isUnderSiege(attackerClan) ? 
-                siegeManager.getAttacker(attackerClan) : null;
-            Clan attackerOfTarget = siegeManager.isUnderSiege(targetClan) ? 
-                siegeManager.getAttacker(targetClan) : null;
-            
-            return (attackerOfAttacker != null && attackerOfAttacker.equals(targetClan)) ||
-                   (attackerOfTarget != null && attackerOfTarget.equals(attackerClan));
+            return attackerClan.isAtWarWith(targetClan.getId()) && 
+                   targetClan.isAtWarWith(attackerClan.getId());
         } catch (Exception e) {
             plugin.getLogger().warning("Klan savaşı kontrolü hatası: " + e.getMessage());
             return false;

@@ -32,6 +32,12 @@ public class Clan {
     private EnderCrystal crystalEntity; // Kristal entity referansı
     private long createdAt; // Klan kurulma zamanı (grace period için)
     private boolean hasCrystal = false; // Kristal yerleştirildi mi? (Ölümsüz klan önleme)
+    
+    // ✅ YENİ: Çoklu savaş desteği - Bu klanın savaşta olduğu klanlar
+    private final Set<UUID> warringClans = Collections.synchronizedSet(new HashSet<>());
+    
+    // ✅ YENİ: İttifaklar - Bu klanın ittifak olduğu klanlar (referans için)
+    private final Set<UUID> allianceClans = Collections.synchronizedSet(new HashSet<>());
 
     public Clan(String name, UUID leader) {
         this.name = name;
@@ -147,6 +153,84 @@ public class Clan {
         long gracePeriodDuration = 24 * 60 * 60 * 1000L; // 24 saat
         long remaining = gracePeriodDuration - (System.currentTimeMillis() - createdAt);
         return Math.max(0, remaining / 1000); // Saniye cinsinden
+    }
+    
+    // ✅ YENİ: Savaşta olunan klanlar yönetimi
+    
+    /**
+     * Bu klanın savaşta olduğu klanlar
+     */
+    public Set<UUID> getWarringClans() {
+        return new HashSet<>(warringClans); // Defensive copy
+    }
+    
+    /**
+     * Savaşta olunan klan ekle
+     */
+    public void addWarringClan(UUID clanId) {
+        if (clanId != null && !clanId.equals(this.id)) {
+            warringClans.add(clanId);
+        }
+    }
+    
+    /**
+     * Savaşta olunan klan kaldır
+     */
+    public void removeWarringClan(UUID clanId) {
+        warringClans.remove(clanId);
+    }
+    
+    /**
+     * Bu klan belirli bir klanla savaşta mı?
+     */
+    public boolean isAtWarWith(UUID clanId) {
+        return warringClans.contains(clanId);
+    }
+    
+    /**
+     * Savaşta olunan klan sayısı
+     */
+    public int getWarringClanCount() {
+        return warringClans.size();
+    }
+    
+    /**
+     * Tüm savaşları temizle
+     */
+    public void clearAllWars() {
+        warringClans.clear();
+    }
+    
+    // ✅ YENİ: İttifaklar yönetimi (referans için)
+    
+    /**
+     * Bu klanın ittifak olduğu klanlar (referans için)
+     */
+    public Set<UUID> getAllianceClans() {
+        return new HashSet<>(allianceClans); // Defensive copy
+    }
+    
+    /**
+     * İttifak klan ekle
+     */
+    public void addAllianceClan(UUID clanId) {
+        if (clanId != null && !clanId.equals(this.id)) {
+            allianceClans.add(clanId);
+        }
+    }
+    
+    /**
+     * İttifak klan kaldır
+     */
+    public void removeAllianceClan(UUID clanId) {
+        allianceClans.remove(clanId);
+    }
+    
+    /**
+     * Bu klan belirli bir klanla ittifak mı?
+     */
+    public boolean isAlliedWith(UUID clanId) {
+        return allianceClans.contains(clanId);
     }
 }
 

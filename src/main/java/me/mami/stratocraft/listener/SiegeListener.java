@@ -71,8 +71,11 @@ public class SiegeListener implements Listener {
             return;
         }
 
+        // ✅ YENİ: Totem yerleştirilen blok
+        Block totemBlock = event.getBlock();
+        
         // Düşman bölgesine yakın mı? (50 blok)
-        Clan defender = territoryManager.getTerritoryOwner(event.getBlock().getLocation());
+        Clan defender = territoryManager.getTerritoryOwner(totemBlock.getLocation());
         
         if (defender != null && !defender.equals(attacker)) {
             // Grace Period kontrolü: Yeni kurulan klanlar 24 saat korunur
@@ -88,9 +91,9 @@ public class SiegeListener implements Listener {
             
             // Mesafe kontrolü (50 blok)
             if (defender.getTerritory() != null && defender.getTerritory().getCenter() != null) {
-                double distance = event.getBlock().getLocation().distance(defender.getTerritory().getCenter());
+                double distance = totemBlock.getLocation().distance(defender.getTerritory().getCenter());
                 if (distance > 50) {
-                    player.sendMessage("§cKuşatma Anıtı düşman bölgesinin 50 blok yakınında olmalı!");
+                    player.sendMessage("§cSavaş Totemi düşman bölgesinin 50 blok yakınında olmalı!");
                     event.setCancelled(true);
                     return;
                 }
@@ -126,25 +129,75 @@ public class SiegeListener implements Listener {
                     }
                 }
                 
+                // ✅ YENİ: Zaten savaşta mılar kontrolü
+                if (attacker.isAtWarWith(defender.getId())) {
+                    player.sendMessage("§eBu klanla zaten savaş halindesiniz!");
+                    event.setCancelled(true);
+                    return;
+                }
+                
                 siegeManager.startSiege(attacker, defender, player);
                 lastSiegeMonumentTime.put(attackerId, System.currentTimeMillis());
                 
                 new SiegeTimer(defender, me.mami.stratocraft.Main.getInstance())
                     .runTaskTimer(me.mami.stratocraft.Main.getInstance(), 20L, 20L); // 1 saniye = 20 tick
-                player.sendMessage("§6Kuşatma İlan Edildi! Hazırlık süresi başladı.");
+                player.sendMessage("§6Savaş İlan Edildi! Hazırlık süresi başladı.");
             } else {
-                player.sendMessage("§eBu klan zaten kuşatma altında.");
+                player.sendMessage("§eBu klan zaten savaş halinde.");
                 event.setCancelled(true);
             }
         } else {
-            player.sendMessage("§cKuşatma Anıtı düşman bölgesinin yakınında olmalı!");
+            player.sendMessage("§cSavaş Totemi düşman bölgesinin yakınında olmalı!");
             event.setCancelled(true);
         }
     }
+    
+    /**
+     * ✅ YENİ: Savaş Totemi yapısı kontrolü
+     * Yapı: 2 Altın Blok (alt) + 2 Demir Blok (üst)
+     * 
+     * Yapı:
+     *   [IRON_BLOCK] [IRON_BLOCK]  (Y: +1)
+     *   [GOLD_BLOCK] [GOLD_BLOCK]  (Y: 0)
+     */
+    private boolean checkWarTotemStructure(Block center) {
+        Material centerType = center.getType();
+        
+        // Merkez blok Altın veya Demir olmalı
+        if (centerType != Material.GOLD_BLOCK && centerType != Material.IRON_BLOCK) {
+            return false;
+        }
+        
+        // İki senaryo: Altın blok yerleştirildi (alt) veya Demir blok yerleştirildi (üst)
+        Block gold1, gold2, iron1, iron2;
+        
+        if (centerType == Material.GOLD_BLOCK) {
+            // Altın blok yerleştirildi (alt katman)
+            gold1 = center;
+            gold2 = center.getRelative(org.bukkit.block.BlockFace.EAST);
+            iron1 = center.getRelative(org.bukkit.block.BlockFace.UP);
+            iron2 = center.getRelative(org.bukkit.block.BlockFace.UP).getRelative(org.bukkit.block.BlockFace.EAST);
+        } else {
+            // Demir blok yerleştirildi (üst katman)
+            iron1 = center;
+            iron2 = center.getRelative(org.bukkit.block.BlockFace.EAST);
+            gold1 = center.getRelative(org.bukkit.block.BlockFace.DOWN);
+            gold2 = center.getRelative(org.bukkit.block.BlockFace.DOWN).getRelative(org.bukkit.block.BlockFace.EAST);
+        }
+        
+        // Kontrol: 2 Altın + 2 Demir
+        boolean hasGold1 = gold1 != null && gold1.getType() == Material.GOLD_BLOCK;
+        boolean hasGold2 = gold2 != null && gold2.getType() == Material.GOLD_BLOCK;
+        boolean hasIron1 = iron1 != null && iron1.getType() == Material.IRON_BLOCK;
+        boolean hasIron2 = iron2 != null && iron2.getType() == Material.IRON_BLOCK;
+        
+        return hasGold1 && hasGold2 && hasIron1 && hasIron2;
+    }
 
     /**
-     * Beyaz Bayrak - Pes Etme Sistemi
+     * ✅ YENİ: Beyaz Bayrak - Pes Etme Sistemi (Çoklu savaş desteği)
      * Beyaz Bayrak = White Banner (Banner)
+     * Shift + Sağ tık ile belirli bir klana karşı pes etme
      */
     @EventHandler(priority = EventPriority.HIGH)
     public void onWhiteFlagSurrender(PlayerInteractEvent event) {
@@ -157,7 +210,7 @@ public class SiegeListener implements Listener {
         Clan clan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
         if (clan == null) return;
 
-        // Savaşta mı?
+        // ✅ YENİ: Savaşta mı? (herhangi bir klanla)
         if (!siegeManager.isUnderSiege(clan)) {
             player.sendMessage("§cKlanınız savaşta değil!");
             return;
@@ -176,8 +229,17 @@ public class SiegeListener implements Listener {
             return;
         }
 
-        // Pes et
-        siegeManager.surrender(clan, territoryManager.getClanManager());
+        // ✅ YENİ: Çoklu savaş - İlk savaşta olunan klana pes et
+        // (GUI menüsünden belirli bir klana karşı pes etme eklenecek)
+        Set<UUID> warringClans = siegeManager.getWarringClans(clan.getId());
+        if (warringClans.isEmpty()) {
+            player.sendMessage("§cKlanınız savaşta değil!");
+            return;
+        }
+        
+        // İlk savaşta olunan klana pes et (GUI'den seçim eklenecek)
+        UUID firstWar = warringClans.iterator().next();
+        siegeManager.surrender(clan, firstWar, territoryManager.getClanManager());
         player.sendMessage("§f§lBEYAZ BAYRAK ÇEKİLDİ! §eKlanınız pes etti.");
         Bukkit.broadcastMessage("§f§l" + clan.getName() + " klanı pes etti! Sandıkların yarısı kazanan klana gitti.");
     }

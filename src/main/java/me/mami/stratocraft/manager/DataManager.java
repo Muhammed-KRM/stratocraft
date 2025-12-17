@@ -682,9 +682,9 @@ public class DataManager {
             data.bankBalance = clan.getBalance();
             data.storedXP = clan.getStoredXP();
             data.createdAt = clan.getCreatedAt(); // Grace period için
-            data.guests = clan.getGuests().stream()
+            data.guests = clan.getGuests() != null ? clan.getGuests().stream()
                     .map(UUID::toString)
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toList()) : new ArrayList<>();
             
             // Territory
             if (clan.getTerritory() != null) {
@@ -713,6 +713,16 @@ public class DataManager {
                         sd.shieldFuel = s.getShieldFuel();
                         return sd;
                     })
+                    .collect(Collectors.toList());
+            
+            // ✅ YENİ: Savaşta olunan klanlar
+            data.warringClans = clan.getWarringClans().stream()
+                    .map(UUID::toString)
+                    .collect(Collectors.toList());
+            
+            // ✅ YENİ: İttifaklar (referans için)
+            data.allianceClans = clan.getAllianceClans().stream()
+                    .map(UUID::toString)
                     .collect(Collectors.toList());
             
             snapshot.clans.add(data);
@@ -1748,6 +1758,30 @@ public class DataManager {
                 // Guests
                 for (String guestId : data.guests) {
                     clan.addGuest(UUID.fromString(guestId));
+                }
+                
+                // ✅ YENİ: Savaşta olunan klanlar
+                if (data.warringClans != null) {
+                    for (String warringClanId : data.warringClans) {
+                        try {
+                            UUID warringClanUUID = UUID.fromString(warringClanId);
+                            clan.addWarringClan(warringClanUUID);
+                        } catch (IllegalArgumentException e) {
+                            plugin.getLogger().warning("Geçersiz warring clan ID atlandı: " + warringClanId);
+                        }
+                    }
+                }
+                
+                // ✅ YENİ: İttifaklar (referans için)
+                if (data.allianceClans != null) {
+                    for (String allianceClanId : data.allianceClans) {
+                        try {
+                            UUID allianceClanUUID = UUID.fromString(allianceClanId);
+                            clan.addAllianceClan(allianceClanUUID);
+                        } catch (IllegalArgumentException e) {
+                            plugin.getLogger().warning("Geçersiz alliance clan ID atlandı: " + allianceClanId);
+                        }
+                    }
                 }
                 
                 // ClanManager'a ekle
@@ -2834,6 +2868,10 @@ public class DataManager {
         public List<String> guests;
         public TerritoryData territory;
         public List<StructureData> structures;
+        // ✅ YENİ: Çoklu savaş desteği
+        public List<String> warringClans; // Savaşta olunan klan ID'leri
+        // ✅ YENİ: İttifaklar (referans için)
+        public List<String> allianceClans; // İttifak olduğu klan ID'leri (referans)
     }
     
     public static class TerritoryData {

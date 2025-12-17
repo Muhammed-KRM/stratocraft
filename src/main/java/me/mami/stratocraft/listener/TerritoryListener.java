@@ -145,23 +145,13 @@ public class TerritoryListener implements Listener {
 
         // --- TAMAMLANMIŞ KUŞATMA KONTROLLERİ ---
         
-        // Düşman bölgesi ise: SADECE KUŞATMA VARSA KIRILABİLİR
-        if (siegeManager.isUnderSiege(owner)) {
-            // Eğer Ana Kristali (Beacon) kırarsa oyunu bitir
-            if (event.getBlock().getType() == Material.BEACON) {
-                // Kalkan (Shield) Kontrolü
-                if (core != null && core.isShieldActive()) {
-                    event.setCancelled(true);
-                    event.getPlayer().sendMessage("§bKristal Enerji Kalkanı ile korunuyor! Kalkan Gücü: " + core.getShieldFuel());
-                    return;
-                }
-                
-                // Kalkan yoksa zafer!
-                siegeManager.endSiege(playerClan, owner); // Kazanan: playerClan
-                event.setDropItems(false);
-                event.getBlock().setType(Material.AIR); // Kristali sil
-                event.getPlayer().sendMessage("§6§lZAFER! Düşman kristalini parçaladın.");
-            }
+        // ✅ YENİ: Düşman bölgesi ise: SADECE BU OYUNCUNUN KLANIYLA SAVAŞTAYSA KIRILABİLİR
+        if (playerClan != null && owner.isAtWarWith(playerClan.getId())) {
+            // Eğer Ana Kristali (EnderCrystal entity) kırarsa oyunu bitir
+            // Not: BEACON değil, EnderCrystal entity kontrolü yapılmalı (onCrystalBreak'te)
+            // Burada sadece blok kırma izni ver
+            
+            // Stratejik yıkım: Diğer blokları kırmaya izin ver
             return; // Kuşatma altındayken diğer blokları kırmaya izin ver (Stratejik yıkım)
         }
 
@@ -232,12 +222,9 @@ public class TerritoryListener implements Listener {
             return; // Misafir açabilir
         }
         
-        // Savaş kontrolü
-        if (siegeManager.isUnderSiege(owner)) {
-            Clan attacker = siegeManager.getAttacker(owner);
-            if (attacker != null && attacker.equals(playerClan)) {
-                return; // Savaşta saldıran klan açabilir
-            }
+        // ✅ YENİ: Savaş kontrolü - Sadece bu oyuncunun klanıyla savaşta ise açılabilir
+        if (playerClan != null && owner.isAtWarWith(playerClan.getId())) {
+            return; // Bu klanla savaşta ise açılabilir
         }
         
         // Klan bankası kontrolü (RitualInteractionListener'daki özel kontrol)
@@ -492,12 +479,9 @@ public class TerritoryListener implements Listener {
             return; // Misafir yerleştirebilir
         }
         
-        // Savaş kontrolü - Kuşatma durumunda saldıran klan yerleştirebilir
-        if (siegeManager != null && siegeManager.isUnderSiege(owner)) {
-            Clan attacker = siegeManager.getAttacker(owner);
-            if (attacker != null && attacker.equals(playerClan)) {
-                return; // Savaşta saldıran klan yerleştirebilir
-            }
+        // ✅ YENİ: Savaş kontrolü - Sadece bu oyuncunun klanıyla savaşta ise yerleştirebilir
+        if (playerClan != null && owner.isAtWarWith(playerClan.getId())) {
+            return; // Bu klanla savaşta ise yerleştirebilir
         }
         
         // Engelle - Düşman klan alanında blok yerleştirme yasak
@@ -1054,16 +1038,13 @@ public class TerritoryListener implements Listener {
                 return;
             }
             
-            // Kuşatma var mı?
-            if (siegeManager.isUnderSiege(owner)) {
-                // Savaşta kristal kırıldı - klan bozuldu
-                Clan attacker = territoryManager.getClanManager().getClanByPlayer(breaker != null ? breaker.getUniqueId() : null);
-                if (attacker != null && !attacker.equals(owner)) {
+            // ✅ YENİ: Kuşatma var mı? - Sadece bu oyuncunun klanıyla savaşta ise
+            if (breaker != null) {
+                Clan attacker = territoryManager.getClanManager().getClanByPlayer(breaker.getUniqueId());
+                if (attacker != null && !attacker.equals(owner) && owner.isAtWarWith(attacker.getId())) {
+                    // Savaşta kristal kırıldı - klan bozuldu
                     siegeManager.endSiege(attacker, owner);
-                    if (breaker != null) {
-                        breaker.sendMessage("§6§lZAFER! Düşman kristalini parçaladın.");
-                    }
-                }
+                    breaker.sendMessage("§6§lZAFER! Düşman kristalini parçaladın.");
                 // YENİ: Klan alanı korumasını kaldır ve sınırları temizle
                 owner.setCrystalLocation(null);
                 if (boundaryManager != null) {

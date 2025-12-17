@@ -73,6 +73,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "alliance":
             case "ittifak":
                 return handleAlliance(p, args);
+            case "peace":
+            case "barış":
+                return handlePeace(p, args);
             case "build":
                 return handleBuild(p, args);
             case "structure":
@@ -1730,6 +1733,198 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 p.sendMessage("  §7Süre: §aSüresiz");
             }
         }
+        return true;
+    }
+
+    /**
+     * ✅ YENİ: Barış anlaşması yönetimi
+     * /stratocraft peace list - Tüm aktif barış isteklerini listele
+     * /stratocraft peace accept <klan1> <klan2> - Barış anlaşmasını onayla (admin)
+     * /stratocraft peace reject <klan1> <klan2> - Barış anlaşmasını reddet (admin)
+     * /stratocraft peace clear - Tüm barış isteklerini temizle
+     */
+    private boolean handlePeace(Player p, String[] args) {
+        if (args.length < 2) {
+            p.sendMessage("§cKullanım: /stratocraft peace <list|accept|reject|clear>");
+            p.sendMessage("§7Komutlar:");
+            p.sendMessage("§7  list - Tüm aktif barış isteklerini listele");
+            p.sendMessage("§7  accept <klan1> <klan2> - Barış anlaşmasını onayla (admin)");
+            p.sendMessage("§7  reject <klan1> <klan2> - Barış anlaşmasını reddet (admin)");
+            p.sendMessage("§7  clear - Tüm barış isteklerini temizle");
+            return true;
+        }
+
+        me.mami.stratocraft.manager.PeaceRequestManager peaceRequestManager = plugin.getPeaceRequestManager();
+        if (peaceRequestManager == null) {
+            p.sendMessage("§cPeaceRequestManager bulunamadı!");
+            return true;
+        }
+
+        me.mami.stratocraft.manager.ClanManager clanManager = plugin.getClanManager();
+        if (clanManager == null) {
+            p.sendMessage("§cClanManager bulunamadı!");
+            return true;
+        }
+
+        switch (args[1].toLowerCase()) {
+            case "list":
+            case "liste":
+                return handlePeaceList(p, peaceRequestManager, clanManager);
+            case "accept":
+            case "onayla":
+                if (args.length < 4) {
+                    p.sendMessage("§cKullanım: /stratocraft peace accept <klan1> <klan2>");
+                    return true;
+                }
+                return handlePeaceAccept(p, args[2], args[3], peaceRequestManager, clanManager);
+            case "reject":
+            case "reddet":
+                if (args.length < 4) {
+                    p.sendMessage("§cKullanım: /stratocraft peace reject <klan1> <klan2>");
+                    return true;
+                }
+                return handlePeaceReject(p, args[2], args[3], peaceRequestManager, clanManager);
+            case "clear":
+            case "temizle":
+                return handlePeaceClear(p, peaceRequestManager);
+            default:
+                p.sendMessage("§cGeçersiz komut! /stratocraft peace <list|accept|reject|clear>");
+                return true;
+        }
+    }
+
+    private boolean handlePeaceList(Player p, me.mami.stratocraft.manager.PeaceRequestManager peaceRequestManager,
+                                    me.mami.stratocraft.manager.ClanManager clanManager) {
+        java.util.List<me.mami.stratocraft.model.PeaceRequest> requests = 
+            new java.util.ArrayList<>(peaceRequestManager.getAllActiveRequests().values());
+        
+        requests = requests.stream()
+            .filter(r -> r.getStatus() == me.mami.stratocraft.model.PeaceRequest.Status.PENDING)
+            .collect(java.util.stream.Collectors.toList());
+        
+        if (requests.isEmpty()) {
+            p.sendMessage("§eAktif barış anlaşması isteği yok.");
+            return true;
+        }
+
+        p.sendMessage("§6§l═══════════════════════════════════");
+        p.sendMessage("§e§lAKTİF BARIŞ ANLAŞMASI İSTEKLERİ");
+        p.sendMessage("§6§l═══════════════════════════════════");
+        
+        for (me.mami.stratocraft.model.PeaceRequest request : requests) {
+            me.mami.stratocraft.model.Clan sender = clanManager.getClanById(request.getSenderClanId());
+            me.mami.stratocraft.model.Clan target = clanManager.getClanById(request.getTargetClanId());
+            
+            String senderName = sender != null ? sender.getName() : "Bilinmeyen";
+            String targetName = target != null ? target.getName() : "Bilinmeyen";
+            
+            long timeAgo = (System.currentTimeMillis() - request.getSentAt()) / 1000;
+            String timeStr = timeAgo < 60 ? timeAgo + " saniye önce" : 
+                            (timeAgo / 60) + " dakika önce";
+            
+            p.sendMessage("§7- §e" + senderName + " §7→ §e" + targetName);
+            p.sendMessage("  §7Durum: §aBeklemede §7| §7Gönderilme: §e" + timeStr);
+            p.sendMessage("  §7ID: §f" + request.getId().toString().substring(0, 8));
+        }
+        
+        p.sendMessage("§6§l═══════════════════════════════════");
+        p.sendMessage("§7Toplam: §e" + requests.size() + " §7istek");
+        
+        return true;
+    }
+
+    private boolean handlePeaceAccept(Player p, String clan1Name, String clan2Name,
+                                     me.mami.stratocraft.manager.PeaceRequestManager peaceRequestManager,
+                                     me.mami.stratocraft.manager.ClanManager clanManager) {
+        me.mami.stratocraft.model.Clan clan1 = clanManager.getClanByName(clan1Name);
+        me.mami.stratocraft.model.Clan clan2 = clanManager.getClanByName(clan2Name);
+        
+        if (clan1 == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clan1Name);
+            return true;
+        }
+        if (clan2 == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clan2Name);
+            return true;
+        }
+        
+        // İsteği bul
+        java.util.List<me.mami.stratocraft.model.PeaceRequest> requests = 
+            new java.util.ArrayList<>(peaceRequestManager.getAllActiveRequests().values());
+        
+        me.mami.stratocraft.model.PeaceRequest request = requests.stream()
+            .filter(r -> r.getStatus() == me.mami.stratocraft.model.PeaceRequest.Status.PENDING &&
+                ((r.getSenderClanId().equals(clan1.getId()) && r.getTargetClanId().equals(clan2.getId())) ||
+                 (r.getSenderClanId().equals(clan2.getId()) && r.getTargetClanId().equals(clan1.getId()))))
+            .findFirst()
+            .orElse(null);
+        
+        if (request == null) {
+            p.sendMessage("§cBu iki klan arasında bekleyen barış anlaşması isteği yok!");
+            return true;
+        }
+        
+        // Onayla (hedef klan olarak)
+            java.util.UUID acceptingClanId = request.getTargetClanId();
+        if (peaceRequestManager.acceptRequest(request.getId(), acceptingClanId)) {
+            p.sendMessage("§aBarış anlaşması onaylandı: " + clan1.getName() + " ↔ " + clan2.getName());
+        } else {
+            p.sendMessage("§cBarış anlaşması onaylanamadı!");
+        }
+        
+        return true;
+    }
+
+    private boolean handlePeaceReject(Player p, String clan1Name, String clan2Name,
+                                     me.mami.stratocraft.manager.PeaceRequestManager peaceRequestManager,
+                                     me.mami.stratocraft.manager.ClanManager clanManager) {
+        me.mami.stratocraft.model.Clan clan1 = clanManager.getClanByName(clan1Name);
+        me.mami.stratocraft.model.Clan clan2 = clanManager.getClanByName(clan2Name);
+        
+        if (clan1 == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clan1Name);
+            return true;
+        }
+        if (clan2 == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clan2Name);
+            return true;
+        }
+        
+        // İsteği bul
+        java.util.List<me.mami.stratocraft.model.PeaceRequest> requests = 
+            new java.util.ArrayList<>(peaceRequestManager.getAllActiveRequests().values());
+        
+        me.mami.stratocraft.model.PeaceRequest request = requests.stream()
+            .filter(r -> r.getStatus() == me.mami.stratocraft.model.PeaceRequest.Status.PENDING &&
+                ((r.getSenderClanId().equals(clan1.getId()) && r.getTargetClanId().equals(clan2.getId())) ||
+                 (r.getSenderClanId().equals(clan2.getId()) && r.getTargetClanId().equals(clan1.getId()))))
+            .findFirst()
+            .orElse(null);
+        
+        if (request == null) {
+            p.sendMessage("§cBu iki klan arasında bekleyen barış anlaşması isteği yok!");
+            return true;
+        }
+        
+        // Reddet (hedef klan olarak)
+            java.util.UUID rejectingClanId = request.getTargetClanId();
+        if (peaceRequestManager.rejectRequest(request.getId(), rejectingClanId)) {
+            p.sendMessage("§aBarış anlaşması reddedildi: " + clan1.getName() + " ↔ " + clan2.getName());
+        } else {
+            p.sendMessage("§cBarış anlaşması reddedilemedi!");
+        }
+        
+        return true;
+    }
+
+    private boolean handlePeaceClear(Player p, me.mami.stratocraft.manager.PeaceRequestManager peaceRequestManager) {
+        java.util.Map<java.util.UUID, me.mami.stratocraft.model.PeaceRequest> allRequests = 
+            peaceRequestManager.getAllActiveRequests();
+        
+        int count = allRequests.size();
+        allRequests.clear();
+        
+        p.sendMessage("§a" + count + " barış anlaşması isteği temizlendi.");
         return true;
     }
 
@@ -5550,11 +5745,20 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      * /stratocraft siege clear - Tüm savaş yapılarını temizle
      * /stratocraft siege list - Aktif yapıları listele
      * /stratocraft siege start <saldıran_klan> <savunan_klan> - Savaş başlat
-     * /stratocraft siege surrender <klan> - Klanı pes ettir
+     * /stratocraft siege end <klan1> <klan2> - İki klan arasındaki savaşı bitir
+     * /stratocraft siege status - Tüm aktif savaşları listele
+     * /stratocraft siege surrender <klan1> [klan2] - Klanı pes ettir (klan2 belirtilirse sadece o klana karşı)
      */
     private boolean handleSiege(Player p, String[] args) {
         if (args.length < 2) {
-            p.sendMessage("§cKullanım: /stratocraft siege <clear|list|start|surrender>");
+            p.sendMessage("§cKullanım: /stratocraft siege <clear|list|start|end|status|surrender>");
+            p.sendMessage("§7Komutlar:");
+            p.sendMessage("§7  clear - Tüm savaş yapılarını temizle");
+            p.sendMessage("§7  list - Aktif savaş yapılarını listele");
+            p.sendMessage("§7  start <klan1> <klan2> - Savaş başlat");
+            p.sendMessage("§7  end <klan1> <klan2> - İki klan arasındaki savaşı bitir");
+            p.sendMessage("§7  status - Tüm aktif savaşları listele");
+            p.sendMessage("§7  surrender <klan1> [klan2] - Klanı pes ettir");
             return true;
         }
 
@@ -5592,9 +5796,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 return handleSiegeStart(p, args[2], args[3], siegeManager, territoryManager);
-            case "surrender":
-                if (args.length < 3) {
-                    p.sendMessage("§cKullanım: /stratocraft siege surrender <klan>");
+            case "end":
+                if (args.length < 4) {
+                    p.sendMessage("§cKullanım: /stratocraft siege end <klan1> <klan2>");
                     return true;
                 }
                 if (siegeManager == null) {
@@ -5605,15 +5809,43 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     p.sendMessage("§cTerritoryManager bulunamadı!");
                     return true;
                 }
-                return handleSiegeSurrender(p, args[2], siegeManager, territoryManager);
+                return handleSiegeEnd(p, args[2], args[3], siegeManager, territoryManager);
+            case "status":
+            case "wars":
+                if (siegeManager == null) {
+                    p.sendMessage("§cSiegeManager bulunamadı!");
+                    return true;
+                }
+                if (territoryManager == null) {
+                    p.sendMessage("§cTerritoryManager bulunamadı!");
+                    return true;
+                }
+                return handleSiegeStatus(p, siegeManager, territoryManager);
+            case "surrender":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /stratocraft siege surrender <klan1> [klan2]");
+                    p.sendMessage("§7klan2 belirtilirse sadece o klana karşı pes eder");
+                    return true;
+                }
+                if (siegeManager == null) {
+                    p.sendMessage("§cSiegeManager bulunamadı!");
+                    return true;
+                }
+                if (territoryManager == null) {
+                    p.sendMessage("§cTerritoryManager bulunamadı!");
+                    return true;
+                }
+                String targetClan = args.length > 3 ? args[3] : null;
+                return handleSiegeSurrender(p, args[2], targetClan, siegeManager, territoryManager);
             default:
-                p.sendMessage("§cKullanım: /stratocraft siege <clear|list|start|surrender>");
+                p.sendMessage("§cKullanım: /stratocraft siege <clear|list|start|end|status|surrender>");
                 return true;
         }
     }
 
     /**
      * Admin komutu: Savaş başlat
+     * ✅ YENİ: Çoklu savaş desteği - Aynı klan birden fazla klanla savaşta olabilir
      */
     private boolean handleSiegeStart(Player p, String attackerName, String defenderName, 
                                      me.mami.stratocraft.manager.SiegeManager siegeManager,
@@ -5647,8 +5879,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             return true;
         }
         
-        if (siegeManager.isUnderSiege(defender)) {
-            p.sendMessage("§c" + defender.getName() + " klanı zaten savaşta!");
+        // ✅ YENİ: Zaten savaşta mı kontrolü (çoklu savaş desteği)
+        if (attacker.isAtWarWith(defender.getId())) {
+            p.sendMessage("§c" + attacker.getName() + " ve " + defender.getName() + " klanları zaten savaşta!");
             return true;
         }
         
@@ -5656,15 +5889,116 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         new me.mami.stratocraft.task.SiegeTimer(defender, plugin)
             .runTaskTimer(plugin, 20L, 20L);
         
-        p.sendMessage("§aSavaş başlatıldı: " + attacker.getName() + " → " + defender.getName());
-        org.bukkit.Bukkit.broadcastMessage("§4§l[ADMIN] SAVAŞ BAŞLATILDI! §e" + attacker.getName() + " → " + defender.getName());
+        p.sendMessage("§aSavaş başlatıldı: " + attacker.getName() + " ↔ " + defender.getName());
+        org.bukkit.Bukkit.broadcastMessage("§4§l[ADMIN] SAVAŞ BAŞLATILDI! §e" + attacker.getName() + " ↔ " + defender.getName());
+        return true;
+    }
+
+    /**
+     * ✅ YENİ: Admin komutu: İki klan arasındaki savaşı bitir
+     */
+    private boolean handleSiegeEnd(Player p, String clan1Name, String clan2Name,
+                                    me.mami.stratocraft.manager.SiegeManager siegeManager,
+                                    me.mami.stratocraft.manager.TerritoryManager territoryManager) {
+        me.mami.stratocraft.manager.ClanManager clanManager = territoryManager.getClanManager();
+        if (clanManager == null) {
+            p.sendMessage("§cClanManager bulunamadı!");
+            return true;
+        }
+        
+        // Klanları bul
+        me.mami.stratocraft.model.Clan clan1 = null;
+        me.mami.stratocraft.model.Clan clan2 = null;
+        
+        for (me.mami.stratocraft.model.Clan clan : clanManager.getAllClans()) {
+            if (clan.getName().equalsIgnoreCase(clan1Name)) {
+                clan1 = clan;
+            }
+            if (clan.getName().equalsIgnoreCase(clan2Name)) {
+                clan2 = clan;
+            }
+        }
+        
+        if (clan1 == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clan1Name);
+            return true;
+        }
+        
+        if (clan2 == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clan2Name);
+            return true;
+        }
+        
+        // Savaşta mılar?
+        if (!clan1.isAtWarWith(clan2.getId())) {
+            p.sendMessage("§c" + clan1.getName() + " ve " + clan2.getName() + " klanları savaşta değil!");
+            return true;
+        }
+        
+        siegeManager.endWar(clan1, clan2);
+        p.sendMessage("§aSavaş bitirildi: " + clan1.getName() + " ↔ " + clan2.getName());
+        org.bukkit.Bukkit.broadcastMessage("§a§l[ADMIN] SAVAŞ BİTİRİLDİ! §e" + clan1.getName() + " ↔ " + clan2.getName());
+        return true;
+    }
+
+    /**
+     * ✅ YENİ: Admin komutu: Tüm aktif savaşları listele
+     */
+    private boolean handleSiegeStatus(Player p,
+                                     me.mami.stratocraft.manager.SiegeManager siegeManager,
+                                     me.mami.stratocraft.manager.TerritoryManager territoryManager) {
+        me.mami.stratocraft.manager.ClanManager clanManager = territoryManager.getClanManager();
+        if (clanManager == null) {
+            p.sendMessage("§cClanManager bulunamadı!");
+            return true;
+        }
+        
+        p.sendMessage("§6§l═══════════════════════════════════");
+        p.sendMessage("§e§lAKTİF SAVAŞLAR");
+        p.sendMessage("§6§l═══════════════════════════════════");
+        
+        int warCount = 0;
+        java.util.Set<java.util.UUID> processedPairs = new java.util.HashSet<>();
+        
+        for (me.mami.stratocraft.model.Clan clan : clanManager.getAllClans()) {
+            java.util.Set<java.util.UUID> warringClans = siegeManager.getWarringClans(clan.getId());
+            
+            if (!warringClans.isEmpty()) {
+                for (java.util.UUID warringClanId : warringClans) {
+                    // Çift sayımı önle (A-B ve B-A aynı savaş)
+                    java.util.UUID pairId = clan.getId().compareTo(warringClanId) < 0 
+                        ? java.util.UUID.nameUUIDFromBytes((clan.getId().toString() + warringClanId.toString()).getBytes())
+                        : java.util.UUID.nameUUIDFromBytes((warringClanId.toString() + clan.getId().toString()).getBytes());
+                    
+                    if (processedPairs.contains(pairId)) {
+                        continue;
+                    }
+                    processedPairs.add(pairId);
+                    
+                    me.mami.stratocraft.model.Clan warringClan = clanManager.getClanById(warringClanId);
+                    if (warringClan != null) {
+                        p.sendMessage("§7- §e" + clan.getName() + " §7↔ §e" + warringClan.getName());
+                        warCount++;
+                    }
+                }
+            }
+        }
+        
+        if (warCount == 0) {
+            p.sendMessage("§7Aktif savaş yok.");
+        } else {
+            p.sendMessage("§6§l═══════════════════════════════════");
+            p.sendMessage("§7Toplam: §e" + warCount + " §7savaş");
+        }
+        
         return true;
     }
 
     /**
      * Admin komutu: Klanı pes ettir
+     * ✅ YENİ: Çoklu savaş desteği - Belirli bir klana karşı pes etme
      */
-    private boolean handleSiegeSurrender(Player p, String clanName,
+    private boolean handleSiegeSurrender(Player p, String clanName, String targetClanName,
                                          me.mami.stratocraft.manager.SiegeManager siegeManager,
                                          me.mami.stratocraft.manager.TerritoryManager territoryManager) {
         me.mami.stratocraft.manager.ClanManager clanManager = territoryManager.getClanManager();
@@ -5673,26 +6007,61 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             return true;
         }
         
-        me.mami.stratocraft.model.Clan clan = null;
+        // Pes eden klanı bul
+        me.mami.stratocraft.model.Clan surrenderingClan = null;
         for (me.mami.stratocraft.model.Clan c : clanManager.getAllClans()) {
             if (c.getName().equalsIgnoreCase(clanName)) {
-                clan = c;
+                surrenderingClan = c;
                 break;
             }
         }
         
-        if (clan == null) {
+        if (surrenderingClan == null) {
             p.sendMessage("§cKlan bulunamadı: " + clanName);
             return true;
         }
         
-        if (!siegeManager.isUnderSiege(clan)) {
-            p.sendMessage("§c" + clan.getName() + " klanı savaşta değil!");
+        // ✅ YENİ: Belirli bir klana karşı pes etme
+        if (targetClanName != null && !targetClanName.isEmpty()) {
+            me.mami.stratocraft.model.Clan targetClan = null;
+            for (me.mami.stratocraft.model.Clan c : clanManager.getAllClans()) {
+                if (c.getName().equalsIgnoreCase(targetClanName)) {
+                    targetClan = c;
+                    break;
+                }
+            }
+            
+            if (targetClan == null) {
+                p.sendMessage("§cHedef klan bulunamadı: " + targetClanName);
+                return true;
+            }
+            
+            if (!surrenderingClan.isAtWarWith(targetClan.getId())) {
+                p.sendMessage("§c" + surrenderingClan.getName() + " klanı " + targetClan.getName() + " ile savaşta değil!");
+                return true;
+            }
+            
+            siegeManager.surrender(surrenderingClan, targetClan.getId(), clanManager);
+            p.sendMessage("§a" + surrenderingClan.getName() + " klanı " + targetClan.getName() + " klanına karşı pes etti!");
             return true;
         }
         
-        siegeManager.surrender(clan, clanManager);
-        p.sendMessage("§a" + clan.getName() + " klanı pes etti!");
+        // Eski sistem: İlk savaşta olunan klana pes et
+        if (!siegeManager.isUnderSiege(surrenderingClan)) {
+            p.sendMessage("§c" + surrenderingClan.getName() + " klanı savaşta değil!");
+            return true;
+        }
+        
+        java.util.Set<java.util.UUID> warringClans = siegeManager.getWarringClans(surrenderingClan.getId());
+        if (warringClans.isEmpty()) {
+            p.sendMessage("§c" + surrenderingClan.getName() + " klanı savaşta değil!");
+            return true;
+        }
+        
+        // İlk savaşta olunan klana pes et
+        java.util.UUID firstWar = warringClans.iterator().next();
+        siegeManager.surrender(surrenderingClan, firstWar, clanManager);
+        p.sendMessage("§a" + surrenderingClan.getName() + " klanı pes etti!");
         return true;
     }
 

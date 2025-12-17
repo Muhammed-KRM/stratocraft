@@ -14,10 +14,17 @@ import org.bukkit.inventory.ItemStack;
 import me.mami.stratocraft.model.Clan;
 
 public class SiegeManager {
-    // Savunan Klan ID -> Saldıran Klan ID
+    // ✅ YENİ: Çoklu savaş desteği - Her klan için savaşta olduğu klanlar listesi
+    // Klan ID -> Savaşta olduğu klan ID'leri (Set)
+    private final Map<UUID, Set<UUID>> activeWars = new HashMap<>();
+    
+    // Eski sistem (geriye dönük uyumluluk için tutuluyor, kaldırılabilir)
+    @Deprecated
     private final Map<Clan, Clan> activeSieges = new HashMap<>();
+    
     private BuffManager buffManager;
     private me.mami.stratocraft.manager.GameBalanceConfig balanceConfig;
+    private AllianceManager allianceManager;
 
     public void setBuffManager(BuffManager bm) {
         this.buffManager = bm;
@@ -25,6 +32,10 @@ public class SiegeManager {
     
     public void setBalanceConfig(me.mami.stratocraft.manager.GameBalanceConfig config) {
         this.balanceConfig = config;
+    }
+    
+    public void setAllianceManager(AllianceManager am) {
+        this.allianceManager = am;
     }
     
     private double getLootPercentage() {
@@ -35,13 +46,35 @@ public class SiegeManager {
         return balanceConfig != null ? balanceConfig.getSiegeChestLootPercentage() : 0.5;
     }
 
+    /**
+     * ✅ YENİ: İki taraflı savaş başlatma
+     * Her iki klan da birbirine saldırabilir
+     */
     public void startSiege(Clan attacker, Clan defender, Player attackerPlayer) {
-        // Offline baskın önleme: Savunan klandan en az 1 kişi online olmalı
+        // Null check
+        if (attacker == null || defender == null || attacker.getId().equals(defender.getId())) {
+            return;
+        }
+        
+        // Offline baskın önleme: Her iki klandan da en az 1 kişi online olmalı
+        boolean isAttackerOnline = attacker.getMembers().keySet().stream()
+            .anyMatch(uuid -> {
+                Player p = Bukkit.getPlayer(uuid);
+                return p != null && p.isOnline();
+            });
+        
         boolean isDefenderOnline = defender.getMembers().keySet().stream()
             .anyMatch(uuid -> {
                 Player p = Bukkit.getPlayer(uuid);
                 return p != null && p.isOnline();
             });
+        
+        if (!isAttackerOnline) {
+            if (attackerPlayer != null) {
+                attackerPlayer.sendMessage("§cKuşatma başlatmak için klandan en az 1 kişi online olmalı!");
+            }
+            return;
+        }
         
         if (!isDefenderOnline) {
             if (attackerPlayer != null) {
@@ -50,44 +83,157 @@ public class SiegeManager {
             return;
         }
         
+        // ✅ YENİ: İki taraflı savaş kaydı
+        UUID attackerId = attacker.getId();
+        UUID defenderId = defender.getId();
+        
+        // Saldıran klanın savaş listesine ekle
+        activeWars.computeIfAbsent(attackerId, k -> new HashSet<>()).add(defenderId);
+        attacker.addWarringClan(defenderId);
+        
+        // Savunan klanın savaş listesine ekle
+        activeWars.computeIfAbsent(defenderId, k -> new HashSet<>()).add(attackerId);
+        defender.addWarringClan(attackerId);
+        
+        // Eski sistem (geriye dönük uyumluluk)
         activeSieges.put(defender, attacker);
-        Bukkit.broadcastMessage("§4§lSAVAŞ İLANI! §e" + attacker.getName() + " klani, " + defender.getName() + " klanına savaş açtı!");
-        // SiegeTimer burada başlatılmalı
+        
+        Bukkit.broadcastMessage("§4§lSAVAŞ İLANI! §e" + attacker.getName() + " ve " + defender.getName() + " klanları savaşa girdi!");
     }
 
+    /**
+     * ✅ YENİ: İki taraflı savaş bitirme
+     * Sadece bu iki klan arasındaki savaşı bitirir
+     */
+    public void endWar(Clan clan1, Clan clan2) {
+        if (clan1 == null || clan2 == null) return;
+        
+        UUID clan1Id = clan1.getId();
+        UUID clan2Id = clan2.getId();
+        
+        // Her iki klanın savaş listesinden kaldır
+        Set<UUID> clan1Wars = activeWars.get(clan1Id);
+        if (clan1Wars != null) {
+            clan1Wars.remove(clan2Id);
+            if (clan1Wars.isEmpty()) {
+                activeWars.remove(clan1Id);
+            }
+        }
+        clan1.removeWarringClan(clan2Id);
+        
+        Set<UUID> clan2Wars = activeWars.get(clan2Id);
+        if (clan2Wars != null) {
+            clan2Wars.remove(clan1Id);
+            if (clan2Wars.isEmpty()) {
+                activeWars.remove(clan2Id);
+            }
+        }
+        clan2.removeWarringClan(clan1Id);
+        
+        // Eski sistem (geriye dönük uyumluluk)
+        activeSieges.remove(clan2);
+        activeSieges.remove(clan1);
+    }
+    
+    /**
+     * ✅ YENİ: Savaş kazanma (kristal kırma durumunda)
+     * Ganimet paylaşımı: İttifak varsa paylaşılır
+     */
     public void endSiege(Clan winner, Clan loser) {
-        activeSieges.remove(loser);
+        if (winner == null || loser == null) return;
+        
+        // Savaşı bitir
+        endWar(winner, loser);
+        
         Bukkit.broadcastMessage("§2§lZAFER! §a" + winner.getName() + " klanı, " + loser.getName() + " klanını fethetti!");
         
-        // Ödül mantığı (config'den)
+        // ✅ YENİ: Ganimet paylaşımı - İttifak kontrolü
         double lootPercentage = getLootPercentage();
-        double loot = loser.getBalance() * lootPercentage;
-        winner.deposit(loot);
-        loser.withdraw(loot);
+        double totalLoot = loser.getBalance() * lootPercentage;
+        
+        // İttifak var mı kontrol et
+        if (allianceManager != null) {
+            List<me.mami.stratocraft.model.Alliance> winnerAlliances = allianceManager.getAlliances(winner.getId());
+            
+            // Savaş ittifakı veya tam ittifak var mı?
+            List<Clan> alliedClans = new ArrayList<>();
+            for (me.mami.stratocraft.model.Alliance alliance : winnerAlliances) {
+                if (alliance.getType() == me.mami.stratocraft.model.Alliance.Type.OFFENSIVE || 
+                    alliance.getType() == me.mami.stratocraft.model.Alliance.Type.FULL) {
+                    UUID otherClanId = alliance.getOtherClan(winner.getId());
+                    Clan otherClan = getClanById(otherClanId);
+                    if (otherClan != null && otherClan.isAtWarWith(loser.getId())) {
+                        // Bu ittifak klanı da aynı klanla savaşta
+                        alliedClans.add(otherClan);
+                    }
+                }
+            }
+            
+            // İttifak varsa ganimet paylaş
+            if (!alliedClans.isEmpty()) {
+                int totalRecipients = 1 + alliedClans.size(); // Kazanan + ittifak klanları
+                double lootPerClan = totalLoot / totalRecipients;
+                
+                // Kazanan klana payını ver
+                winner.deposit(lootPerClan);
+                
+                // İttifak klanlarına paylarını ver
+                for (Clan alliedClan : alliedClans) {
+                    alliedClan.deposit(lootPerClan);
+                    Bukkit.broadcastMessage("§e" + alliedClan.getName() + " klanı ittifak payı aldı: " + lootPerClan + " altın");
+                }
+                
+                Bukkit.broadcastMessage("§6Ganimet " + totalRecipients + " klan arasında paylaşıldı!");
+            } else {
+                // İttifak yoksa tüm ganimet kazanan klana
+                winner.deposit(totalLoot);
+            }
+        } else {
+            // AllianceManager yoksa normal ödül
+            winner.deposit(totalLoot);
+        }
+        
+        loser.withdraw(totalLoot);
         
         // FATİH BUFF'I UYGULA
         if (buffManager != null) {
             buffManager.applyConquerorBuff(winner);
         }
     }
+    
+    /**
+     * Yardımcı metod: UUID ile klan bul
+     */
+    private Clan getClanById(UUID clanId) {
+        // ClanManager'dan al (Main.getInstance() üzerinden)
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        if (plugin != null && plugin.getClanManager() != null) {
+            return plugin.getClanManager().getClanById(clanId);
+        }
+        return null;
+    }
 
     /**
-     * Beyaz Bayrak - Pes Etme Sistemi
-     * Klan savaşta pes eder, klan yok olmaz ama sandıkların yarısı gider
+     * ✅ YENİ: Beyaz Bayrak - Pes Etme Sistemi (Çoklu savaş desteği)
+     * Belirli bir klana karşı pes etme
      */
-    public void surrender(Clan surrenderingClan, ClanManager clanManager) {
-        if (!isUnderSiege(surrenderingClan)) {
-            return; // Savaşta değil
+    public void surrender(Clan surrenderingClan, UUID targetClanId, ClanManager clanManager) {
+        if (surrenderingClan == null || targetClanId == null) return;
+        
+        // Savaşta mılar?
+        if (!surrenderingClan.isAtWarWith(targetClanId)) {
+            return; // Bu klanla savaşta değil
         }
         
-        Clan attacker = activeSieges.get(surrenderingClan);
+        Clan attacker = getClanById(targetClanId);
         if (attacker == null) return;
         
-        // Savaşı bitir
-        activeSieges.remove(surrenderingClan);
+        // Sadece bu klanla savaşı bitir
+        endWar(surrenderingClan, attacker);
         
         // Mesaj
-        Bukkit.broadcastMessage("§f§lBEYAZ BAYRAK! §e" + surrenderingClan.getName() + " klanı pes etti!");
+        Bukkit.broadcastMessage("§f§lBEYAZ BAYRAK! §e" + surrenderingClan.getName() + 
+            " klanı " + attacker.getName() + " klanına karşı pes etti!");
         
         // Klan yok olmaz, sadece sandıkların yarısı gider
         // Sandık itemlerinin yarısını al
@@ -96,13 +242,61 @@ public class SiegeManager {
         // Kazanan klan ödülü (para) (config'den)
         double lootPercentage = getLootPercentage();
         double loot = surrenderingClan.getBalance() * lootPercentage;
-        attacker.deposit(loot);
+        
+        // ✅ YENİ: İttifak kontrolü - Ganimet paylaşımı
+        if (allianceManager != null) {
+            List<me.mami.stratocraft.model.Alliance> attackerAlliances = allianceManager.getAlliances(attacker.getId());
+            
+            List<Clan> alliedClans = new ArrayList<>();
+            for (me.mami.stratocraft.model.Alliance alliance : attackerAlliances) {
+                if (alliance.getType() == me.mami.stratocraft.model.Alliance.Type.OFFENSIVE || 
+                    alliance.getType() == me.mami.stratocraft.model.Alliance.Type.FULL) {
+                    UUID otherClanId = alliance.getOtherClan(attacker.getId());
+                    Clan otherClan = getClanById(otherClanId);
+                    if (otherClan != null && otherClan.isAtWarWith(surrenderingClan.getId())) {
+                        alliedClans.add(otherClan);
+                    }
+                }
+            }
+            
+            if (!alliedClans.isEmpty()) {
+                int totalRecipients = 1 + alliedClans.size();
+                double lootPerClan = loot / totalRecipients;
+                
+                attacker.deposit(lootPerClan);
+                for (Clan alliedClan : alliedClans) {
+                    alliedClan.deposit(lootPerClan);
+                }
+            } else {
+                attacker.deposit(loot);
+            }
+        } else {
+            attacker.deposit(loot);
+        }
+        
         surrenderingClan.withdraw(loot);
         
         // Fatih buff'ı uygula
         if (buffManager != null) {
             buffManager.applyConquerorBuff(attacker);
         }
+    }
+    
+    /**
+     * Eski metod (geriye dönük uyumluluk) - İlk savaşta olunan klana pes etme
+     */
+    @Deprecated
+    public void surrender(Clan surrenderingClan, ClanManager clanManager) {
+        if (surrenderingClan == null) return;
+        
+        // İlk savaşta olunan klanı bul
+        Set<UUID> wars = activeWars.get(surrenderingClan.getId());
+        if (wars == null || wars.isEmpty()) {
+            return;
+        }
+        
+        UUID firstWar = wars.iterator().next();
+        surrender(surrenderingClan, firstWar, clanManager);
     }
 
     /**
@@ -255,12 +449,44 @@ public class SiegeManager {
         }
     }
 
+    /**
+     * ✅ YENİ: Klan savaşta mı? (herhangi bir klanla)
+     */
     public boolean isUnderSiege(Clan clan) {
-        return activeSieges.containsKey(clan);
+        if (clan == null) return false;
+        Set<UUID> wars = activeWars.get(clan.getId());
+        return wars != null && !wars.isEmpty();
     }
     
+    /**
+     * ✅ YENİ: İki klan birbirleriyle savaşta mı?
+     */
+    public boolean areAtWar(Clan clan1, Clan clan2) {
+        if (clan1 == null || clan2 == null) return false;
+        return clan1.isAtWarWith(clan2.getId()) && clan2.isAtWarWith(clan1.getId());
+    }
+    
+    /**
+     * ✅ YENİ: Klanın savaşta olduğu tüm klanlar
+     */
+    public Set<UUID> getWarringClans(UUID clanId) {
+        Set<UUID> wars = activeWars.get(clanId);
+        return wars != null ? new HashSet<>(wars) : new HashSet<>();
+    }
+    
+    /**
+     * Eski metod (geriye dönük uyumluluk)
+     */
+    @Deprecated
     public Clan getAttacker(Clan defender) {
-        return activeSieges.get(defender);
+        if (defender == null) return null;
+        Set<UUID> wars = activeWars.get(defender.getId());
+        if (wars == null || wars.isEmpty()) {
+            return null;
+        }
+        // İlk savaşta olunan klanı döndür
+        UUID firstWar = wars.iterator().next();
+        return getClanById(firstWar);
     }
 }
 

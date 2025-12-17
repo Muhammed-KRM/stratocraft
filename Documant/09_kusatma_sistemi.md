@@ -1,39 +1,50 @@
-# STRATOCRAFT - KUŞATMA SİSTEMİ
+# STRATOCRAFT - KUŞATMA SİSTEMİ (YENİ VERSİYON)
 
 ## ⚔️ Kuşatma Nedir?
 
-Kuşatma, düşman klanını yok etmenin resmi yoludur. **Beacon anıtı** dikip **5 dakika** hazırlık sonrası savaş başlar!
+Kuşatma, **iki taraflı bir savaş sistemidir**. Bir klan diğerine savaş ilan ettiğinde, **her iki klan da birbirine saldırabilir** ve **korumalar karşılıklı olarak kalkar**. Savaş, bir taraf pes edene veya kristal kırılana kadar **sınırsız süre** devam eder.
 
 ---
 
 ## 📋 İÇİNDEKİLER
 
-1. [Kuşatma Başlatma](#kuşatma-başlatma)
-2. [Hazırlık Süreci](#hazirlik-süreci)
-3. [Savaş Kuralları](#savaş-kurallari)
-4. [Zafer ve Ödüller](#zafer-ve-ödüller)
+1. [Savaş İlanı (Savaş Totemi)](#savaş-ilanı-savaş-totemi)
+2. [İki Taraflı Savaş Sistemi](#iki-taraflı-savaş-sistemi)
+3. [Çoklu Savaş Desteği](#çoklu-savaş-desteği)
+4. [Savaş Kuralları](#savaş-kurallari)
+5. [Barış Anlaşması](#barış-anlaşması)
+6. [Beyaz Bayrak - Pes Etme](#beyaz-bayrak---pes-etme)
+7. [Zafer ve Ödüller](#zafer-ve-ödüller)
+8. [İttifak Sistemi](#ittifak-sistemi)
 
 ---
 
-## 🏰 KUŞATMA BAŞLATMA
+## 🏰 SAVAŞ İLANI (SAVAŞ TOTEMİ)
 
-### Gereksinimler
+### ✅ YENİ: Özel Totem Yapısı
 
+Savaş ilanı için **özel bir totem yapısı** gerekir. Bu yapı **çok daha kolay** yapılabilir:
+
+**Totem Yapısı**:
+```
+[IRON_BLOCK] [IRON_BLOCK]  (Y: +1 - Üst katman)
+[GOLD_BLOCK] [GOLD_BLOCK]  (Y: 0 - Alt katman)
+```
+
+**Gereksinimler**:
 ```
 Malzemeler:
-- 1 Beacon (kuşatma anıtı)
-- 9 Obsidian (piramit tabanı)
+- 2 Altın Blok (GOLD_BLOCK)
+- 2 Demir Blok (IRON_BLOCK)
 - Yetki: General veya Lider (sadece)
 
 Koşullar:
 - Düşman klanın 50 blok yakınında olmalı
-- Klan seviyeleri 3'ten fazla fark OLMAMALI
-- Daha önce aktif kuşatma olmamalı
 - Klanın %35'i aktif olmalı (online)
 - En az bir General aktif olmalı
+- Grace Period kontrolü (yeni klanlar 24 saat korunur)
+- Spam önleme: 5 dakika cooldown
 ```
-
----
 
 ### Adım 1: Konum Seç
 
@@ -42,123 +53,129 @@ Düşman klan sınırının 50 blok yakını:
 
 [Düşman Bölgesi]
         ↓ 50 blok içinde
-     [Beacon]  ← Buraya koy
+     [Totem]  ← Buraya koy
 ```
 
-**Kural**: Çok yakın koyma (saldırı alan a düşersin), çok uzak koyma (geçersiz)
+**Kural**: Çok yakın koyma (saldırı alanına düşersin), çok uzak koyma (geçersiz)
 
 ---
 
-### Adım 2: Piramit Yap
+### Adım 2: Totem Yapısını Oluştur
 
-**3x3 Obsidian Tabanı**:
+**2x2 Yapı**:
 ```
-Zemine 3x3 Obsidian diz:
+Y: +1 (Üst):
+[IRON_BLOCK] [IRON_BLOCK]
 
-[O][O][O]
-[O][O][O]    O = Obsidian
-[O][O][O]
-
-Üstüne Beacon koy
+Y: 0 (Alt):
+[GOLD_BLOCK] [GOLD_BLOCK]
 ```
+
+**Önemli**: 
+- Altın blokları alt katmana (Y: 0)
+- Demir blokları üst katmana (Y: +1) yerleştir
+- Yapı tamamlandığında otomatik olarak savaş ilanı başlar
 
 ---
 
-### Adım 3: Aktifleştir
+### Adım 3: Savaş Başlar
 
 ```
-1. Eline TNT al (veya elmas)
-2. Beacon'a SHIFT + SAĞ TIK
-3. Sonuç:
-   - Kuşatma başlar
-   - 5 dakika sayaç
-   - İki klana bildirim gider
+Totem yapısı tamamlandığında:
+→ İki taraflı savaş başlar
+→ Hazırlık süresi (config'den, varsayılan 5 dakika)
+→ İki klana bildirim gider
+→ Her iki klanın korumaları karşılıklı kalkar
 ```
 
 **Görsel Efektler**:
-- Şimşek çakar (Beacon'da)
+- Şimşek çakar (Totem'de)
 - EXPLOSION partikülleri
-- Kırmızı ışın gökyüzüne (Beacon beam)
-
-
----
-
-## 🏹 KUŞATMA SİLAHLARI
-
-Savaş alanında üstünlük kurmak için devasa silahlar inşa et!
-
-### 1. Balista (Hızlı Atış)
-
-**Gereksinimler**:
-- 1 Fırlatıcı (Dispenser)
-- 1 Taş Tuğla Basamağı (Stone Brick Slab) veya Taş Basamak
-- 4 Demir Parmaklık (Iron Bars)
-
-**Kurulum**:
-```
-1. Yere Taş Tuğla Basamağı koy
-2. Üstüne Fırlatıcı koy
-3. Fırlatıcının 4 yanına (Kuzey, Güney, Doğu, Batı) Demir Parmaklık koy
-```
-
-**Kullanım**:
-- **Binme**: Fırlatıcıya SAĞ TIKLA
-- **Ateş Etme**: SOL TIKLA (Mermi: Ok)
-- **Şarjör**: 30 Mermi. Bitince 15sn bekleme süresi.
+- Broadcast mesajı: "SAVAŞ İLANI! [Klan A] ve [Klan B] klanları savaşa girdi!"
 
 ---
 
-### 2. Mancınık (Alan Hasarı)
+## ⚔️ İKİ TARAFLI SAVAŞ SİSTEMİ
 
-**Gereksinimler**:
-- 9 Taş Tuğla Merdiven (Stone Brick Stairs) veya Kırık Taş Merdiven
+### ✅ YENİ: Karşılıklı Saldırı
 
-**Kurulum**:
+**Önceki Sistem**: Sadece saldıran klan korumaları kaldırıyordu.
+
+**Yeni Sistem**: 
+- **Her iki klan da birbirine saldırabilir**
+- **Korumalar karşılıklı olarak kalkar**
+- Savaşta olunan klan için korumalar kalkar, diğer klanlar hala dokunamaz
+
+**Örnek Senaryo**:
 ```
-3x3 alana Merdivenleri diz:
-[M][M][M]
-[M][M][M]   M = Merdiven
-[M][M][M]
+Klan A → Klan B'ye savaş ilan eder
+→ Klan A, Klan B'ye saldırabilir (korumalar kalktı)
+→ Klan B, Klan A'ya saldırabilir (korumalar kalktı)
+→ Klan C, Klan A'ya dokunamaz (savaşta değil)
+→ Klan C, Klan B'ye dokunamaz (savaşta değil)
 ```
-
-**Kullanım**:
-- **Binme**: Yapıya SAĞ TIKLA
-- **Ateş Etme**: SOL TIKLA (Mermi: Magma Bloğu)
-- **Etki**: Düştüğü yerde patlama yaratır ve alan hasarı verir.
-- **Cooldown**: 10 saniye
 
 ---
 
+## 🔄 ÇOKLU SAVAŞ DESTEĞİ
+
+### ✅ YENİ: Aynı Anda Birden Fazla Savaş
+
+**Önceki Sistem**: Bir klan sadece bir klanla savaşta olabilirdi.
+
+**Yeni Sistem**:
+- **Bir klan aynı anda birden fazla klanla savaşta olabilir**
+- Her savaş bağımsız olarak yönetilir
+- Barış anlaşması veya pes etme belirli bir klanla savaşı bitirir
+
+**Örnek Senaryo**:
+```
+Klan A:
+→ Klan B ile savaşta
+→ Klan C ile savaşta
+→ Klan D ile savaşta
+
+Her savaş bağımsız:
+→ Klan A, Klan B'ye karşı korumaları kaldırdı
+→ Klan A, Klan C'ye karşı korumaları kaldırdı
+→ Klan A, Klan D'ye karşı korumaları kaldırdı
+→ Diğer klanlar (Klan E, F, G...) hala dokunamaz
+```
+
+---
 
 ## ⏱️ HAZIRLIK SÜRECİ
 
-### 5 Dakika Sayaç
+### Config'den Belirlenen Süre
+
+**Varsayılan**: 5 dakika (config'den değiştirilebilir)
 
 **Ne Olur?**:
 ```
-T-0: Beacon dikilir
-     → "KUŞATMA BAŞLADI!" mesajı
+T-0: Totem dikilir
+     → "SAVAŞ İLANI!" mesajı
+     → Hazırlık süresi başlar
 
 T-1dk: Savunan hazırlık yapar
        → Tuzaklar kur
        → Bataryalar yükle
        → Takım topla
 
-T-3dk: Saldıran konumlan ır
+T-3dk: Saldıran konumlanır
        → Bataryalar yarat
        → Mancınık kur
        → Strateji belirle
 
 T-5dk: SAVAŞ BAŞLAR!
        → Yapılar hasarlı hale gelir
-       → Bölge koruması kalkar (kısmen)
+       → Bölge koruması kalkar (sadece savaşta olunan klan için)
 ```
 
 ---
 
 ### Hazırlık Boyunca
 
-**Savunan Yapabillr**:
+**Savunan Yapabilir**:
 - Tuzak kurmak
 - Batarya hazırlamak
 - Zırh giymek
@@ -166,10 +183,10 @@ T-5dk: SAVAŞ BAŞLAR!
 - Enerji kalkanı aktif etmek
 
 **Saldıran Yapabilir**:
-- Batarya kurmak (Beacon dışın da)
+- Batarya kurmak (Totem dışında)
 - Mancınık yerleştirmek
 - Takımla koordine olmak
-- Dalırma planlamak
+- Dalışma planlamak
 
 **Her İki Taraf YAPAMAZ**:
 - Birbirine saldırmak (henüz)
@@ -178,58 +195,44 @@ T-5dk: SAVAŞ BAŞLAR!
 
 ---
 
-## 🏳️ BEYAZ BAYRAK - PES ETME SİSTEMİ
-
-### Nasıl Pes Edilir?
-
-Savaşta kaybetmek üzereyseniz, **Beyaz Bayrak** çekerek pes edebilirsiniz.
-
-**Gereksinimler**:
-```
-- Klanınız savaşta olmalı
-- Yetki: General veya Lider (sadece)
-- Beyaz Bayrak (White Banner) klan bölgenizde olmalı
-```
-
-**Adımlar**:
-```
-1. Klan bölgenize White Banner (Beyaz Bayrak) koy
-2. Eline hiçbir şey alma (boş el)
-3. Shift + Sağ Tık (Beyaz Bayrağa)
-4. SONUÇ: Klanınız pes eder
-```
-
-**Pes Etme Sonuçları**:
-```
-✓ Klan YOK OLMAZ (dağılmaz)
-✓ Savaş biter
-✓ Klandaki TÜM sandıkların itemlerinin YARISI gider
-✓ Klan kasasının %50'si kazanan klana gider
-✓ Kazanan klan Fatih Buff'ı alır
-```
-
-**Önemli**: Pes etmek, kristal kırılmasından daha iyi bir seçenektir çünkü klanınız dağılmaz!
-
----
-
 ## ⚔️ SAVAŞ KURALLARI
 
-### Savaş Başladığında (5 dk sonra)
+### ✅ YENİ: Korumalar Sadece Savaşta Olunan Klan İçin Kalkar
 
-**İzin Verilenler**:
+**Önceki Sistem**: Savaş başladığında tüm korumalar herkes için kalkıyordu.
+
+**Yeni Sistem**:
+- **Korumalar sadece savaşta olunan klan için kalkar**
+- Diğer klanlar ve oyuncular hala dokunamaz
+- Bir klan aynı anda birden fazla klanla savaşta olabilir
+
+**Örnek**:
+```
+Klan A, Klan B ile savaşta:
+→ Klan A üyeleri, Klan B bölgesinde blok kırabilir
+→ Klan B üyeleri, Klan A bölgesinde blok kırabilir
+→ Klan C üyeleri, Klan A'ya dokunamaz (savaşta değil)
+→ Klan C üyeleri, Klan B'ye dokunamaz (savaşta değil)
+```
+
+### Savaş Başladığında (Hazırlık süresi sonrası)
+
+**İzin Verilenler** (Sadece savaşta olunan klan için):
 ```
 ✓ Düşman bölgesine girme
 ✓ Düşman yapılarına hasar verme
 ✓ PvP (oyuncu öldürme)
 ✓ Kristale saldırma
 ✓ Çitleri kırma
+✓ Sandıkları açma (savaşta olunan klan için)
+✓ Blok yerleştirme (savaşta olunan klan için)
 ```
 
 **Yasak Olanlar**:
 ```
-❌ Normal blokları kırma (sadece yapılara hasar)
-❌ Sandıkları açma (savaş bitene kadar)
-❌ Enerji kalkanını bypass etme
+❌ Savaşta olunmayan klanlara dokunma
+❌ Enerji kalkanını bypass etme (kristal koruması)
+❌ Yapı çekirdeklerini kırma (korunmalı)
 ```
 
 ---
@@ -243,12 +246,10 @@ Savaşta kaybetmek üzereyseniz, **Beyaz Bayrak** çekerek pes edebilirsiniz.
    - Zehir Kulesi
    - Tuzaklar
    - Taretler
-3. Kristale ulaş
+3. Kristale ulaş (EnderCrystal entity)
 4. NORMAL SİLAHLA vur
 5. Kristal kırılır
-6. SAVAŞ BİT
-
-ER - ZAFER!
+6. SAVAŞ BİTER - ZAFER!
 ```
 
 **Önemli**: Özel ritüel YOK, normal vurarak kırılır
@@ -271,6 +272,115 @@ Saldıran Strateji:
 
 ---
 
+## 🕊️ BARIŞ ANLAŞMASI
+
+### ✅ YENİ: Karşılıklı Onay ile Savaş Bitirme
+
+Barış anlaşması, savaşı **karşılıklı onay** ile bitirmenin yoludur. **Hiçbir taraf kayıp yaşamaz**.
+
+### Nasıl Kullanılır?
+
+**1. Klan Yönetim Menüsüne Git**:
+```
+1. /klan menü komutunu kullan
+2. "Barış Anlaşması" butonuna tıkla (Slot 23)
+3. Menü açılır
+```
+
+**2. Savaşta Olunan Klanları Gör**:
+```
+Menüde savaşta olunan tüm klanlar listelenir:
+- Klan B (Savaş Halinde)
+- Klan C (Savaş Halinde)
+- Klan D (Savaş Halinde)
+```
+
+**3. İstek Gönder**:
+```
+1. Barış yapmak istediğin klana SOL TIK
+2. İstek otomatik gönderilir
+3. Diğer klan bildirim alır
+```
+
+**4. İstek Onaylama**:
+```
+Diğer klan:
+1. Klan Yönetim Menüsü → Barış Anlaşması
+2. "Gelen İstekler" butonuna tıkla
+3. İsteği görüntüle
+4. SOL TIK: Onayla
+5. SAĞ TIK: Reddet
+```
+
+**5. Sonuç**:
+```
+İstek onaylandığında:
+→ Savaş biter (sadece bu iki klan arasında)
+→ Hiçbir taraf kayıp yaşamaz
+→ Ganimet transferi olmaz
+→ Broadcast: "BARIŞ ANLAŞMASI! [Klan A] ve [Klan B] klanları barış imzaladı!"
+```
+
+### Barış Anlaşması Özellikleri
+
+**Gereksinimler**:
+```
+- Klanınız savaşta olmalı
+- Yetki: General veya Lider (sadece)
+- İstek 24 saat geçerlidir
+```
+
+**Menü Özellikleri**:
+```
+- Ana Menü: Savaşta olunan klanlar listesi
+- Gelen İstekler: Size gönderilen barış anlaşması istekleri
+- Gönderilen İstekler: Gönderdiğiniz isteklerin durumu
+```
+
+**Önemli**:
+- İstek süresi: 24 saat
+- Süresi dolan istekler otomatik temizlenir
+- Aynı anda birden fazla klana istek gönderebilirsiniz
+- Her istek bağımsız olarak yönetilir
+
+---
+
+## 🏳️ BEYAZ BAYRAK - PES ETME SİSTEMİ
+
+### Nasıl Pes Edilir?
+
+Savaşta kaybetmek üzereyseniz, **Beyaz Bayrak** çekerek pes edebilirsiniz.
+
+**Gereksinimler**:
+```
+- Klanınız savaşta olmalı
+- Yetki: General veya Lider (sadece)
+- Beyaz Bayrak (White Banner) klan bölgenizde olmalı
+```
+
+**Adımlar**:
+```
+1. Klan bölgenize White Banner (Beyaz Bayrak) koy
+2. Eline hiçbir şey alma (boş el)
+3. Shift + Sağ Tık (Beyaz Bayrağa)
+4. SONUÇ: Klanınız pes eder (belirli bir klana karşı)
+```
+
+**Not**: Çoklu savaş durumunda, GUI menüsünden belirli bir klana karşı pes etme seçeneği eklenecek.
+
+**Pes Etme Sonuçları**:
+```
+✓ Klan YOK OLMAZ (dağılmaz)
+✓ Savaş biter (sadece bu klanla)
+✓ Klandaki TÜM sandıkların itemlerinin YARISI gider
+✓ Klan kasasının %50'si kazanan klana gider
+✓ Kazanan klan Fatih Buff'ı alır
+```
+
+**Önemli**: Pes etmek, kristal kırılmasından daha iyi bir seçenektir çünkü klanınız dağılmaz!
+
+---
+
 ## 🏆 ZAFER VE ÖDÜLLER
 
 ### Kristal Kırıldığında
@@ -280,7 +390,7 @@ Saldıran Strateji:
 1. Düşman klan dağılır
 2. Kristal patlıyor (explosion)
 3. Bölge koruması kalkar
-4. Savaş biter
+4. Savaş biter (sadece bu iki klan arasında)
 ```
 
 ---
@@ -288,6 +398,8 @@ Saldıran Strateji:
 ### Kazanan Klan Ödülleri
 
 #### **1. Ganimet (Loot)**
+
+**Temel Ganimet**:
 ```
 Kaybeden klanın kasasındaki paranın %50'si:
 
@@ -297,7 +409,31 @@ Kaybeden kasa: 10,000 Altın
 → Kaybeden kalır: 5,000 Altın
 ```
 
+#### **✅ YENİ: İttifak Ganimet Paylaşımı**
+
+**Özel Senaryo**:
+```
+Klan A, Klan B ve Klan C ile savaşta
+Klan A'nın kristali Klan B kırarsa:
+
+Durum 1: İttifak YOK
+→ Tüm ganimet sadece Klan B'ye gider
+
+Durum 2: İttifak VAR (OFFENSIVE veya FULL)
+→ Klan B ve Klan C ittifak ise:
+  → Ganimet eşit paylaşılır
+  → Klan B: %50
+  → Klan C: %50
+```
+
+**İttifak Tipleri**:
+- **OFFENSIVE**: Saldırı ittifakı - Ganimet paylaşılır
+- **FULL**: Tam ittifak - Ganimet paylaşılır
+- **DEFENSIVE**: Savunma ittifakı - Ganimet paylaşılmaz
+- **TRADE**: Ticaret ittifakı - Ganimet paylaşılmaz
+
 #### **2. Fatih Buff'ı (Conqueror Buff)** - 24 Saat
+
 ```
 Etkiler:
 - +%20 Hasar (tüm saldırılar)
@@ -309,6 +445,7 @@ Süre: 24 saat
 ```
 
 #### **3. Yapı Malzemeleri**
+
 ```
 Düşman yapılarının ana blokları düşer:
 
@@ -339,7 +476,7 @@ Bu malzemeler ile kendi yapılarını güçlendir!
 - Kasanın %50'si gider
 - Bölge koruması KALIR
 - Yapılar KALIR
-- Savaş biter
+- Savaş biter (sadece bu klanla)
 ```
 
 **Kurtarma**:
@@ -357,13 +494,71 @@ Pes ettiyse:
 
 ---
 
+## 🤝 İTTİFAK SİSTEMİ
+
+### ✅ YENİ: İttifak İsteği Gönderme
+
+**Klan Yönetim Menüsü**:
+```
+1. /klan menü komutunu kullan
+2. "İttifaklar" butonuna tıkla (Slot 18)
+3. İttifak menüsü açılır
+```
+
+**İttifak İsteği Gönderme**:
+```
+Şu anda sadece fiziksel ritüel destekleniyor:
+1. Diğer klanın liderini bulun
+2. Shift tuşuna basılı tutun
+3. Elmas ile liderin üzerine sağ tık yapın
+4. Ritüel otomatik başlayacak
+```
+
+**İttifak Tipleri**:
+```
+- DEFENSIVE: Savunma İttifakı
+- OFFENSIVE: Saldırı İttifakı (ganimet paylaşımı)
+- TRADE: Ticaret İttifakı
+- FULL: Tam İttifak (ganimet paylaşımı)
+```
+
+**Ganimet Paylaşımı**:
+```
+Sadece OFFENSIVE ve FULL ittifaklar ganimet paylaşır:
+→ Savaş kazanıldığında
+→ İttifak klanları ganimeti eşit paylaşır
+```
+
+---
+
+## ⏰ SAVAŞ SÜRESİ
+
+### ✅ YENİ: Sınırsız Savaş
+
+**Önceki Sistem**: Max savaş süresi vardı.
+
+**Yeni Sistem**:
+- **Savaş sınırsız süre devam eder**
+- Sadece şu yollarla biter:
+  1. **Kristal kırılması** (zafer)
+  2. **Beyaz Bayrak** (pes etme)
+  3. **Barış Anlaşması** (karşılıklı onay)
+  4. **Admin komutu**
+
+**Önemli**: 
+- İki taraf hiçbir şey yapmazsa klanlar **hep savaş halinde kalır**
+- Bu, özgürlük felsefesine uygundur
+- Klanlar kendi kararlarını verir
+
+---
+
 ## 🎯 KUŞATMA STRATEJİLERİ
 
 ### Saldıran İçin
 
 **Hızlı Dalış**:
 ```
-1. 5 dakikada bataryalar hazırla
+1. Hazırlık süresinde bataryalar hazırla
 2. Savaş başlar başlamaz hızlı gir
 3. Direkt kristale koş
 4. Savunma hazırlanamadan vur
@@ -394,7 +589,7 @@ Kristal: Enerji kalkanı + son savunma
 1. Saldırana sürekli vur (pvp)
 2. Bataryalarını yok et (engelle)
 3. Mancınıkları kır
-4. Zamanı kazancak savun
+4. Zamanı kazanacak savun
 ```
 
 ---
@@ -403,48 +598,51 @@ Kristal: Enerji kalkanı + son savunma
 
 ### Kuşatma Kuralları
 
-1. **Seviye Korumas**: 3'ten fazla fark varsa kuşatma YASAK
-2. **Tek Kuşatma**: Aynı anda 1 klana 1 kuşatma
-3. **Beacon Kırılırsa**: Kuşatma iptal, savaş bitmez
-4. **Offline Koruma**: Kalanı varsa kristal korunur, ama yapılar hasarlı
-5. **Savaş Açma Yetkisi**: Sadece General ve Lider savaş açabilir
-6. **Aktif Üye Gereksinimi**: Klanın %35'i aktif olmalı
-7. **General Gereksinimi**: En az bir General aktif olmalı
-8. **Pes Etme Yetkisi**: Sadece General ve Lider pes edebilir
+1. **Savaş İlanı Yetkisi**: Sadece General ve Lider savaş açabilir
+2. **Aktif Üye Gereksinimi**: Klanın %35'i aktif olmalı
+3. **General Gereksinimi**: En az bir General aktif olmalı
+4. **Pes Etme Yetkisi**: Sadece General ve Lider pes edebilir
+5. **Barış Anlaşması Yetkisi**: Sadece General ve Lider istek gönderebilir/onaylayabilir
+6. **İttifak Yetkisi**: Sadece General ve Lider ittifak kurabilir
+7. **Grace Period**: Yeni kurulan klanlar 24 saat korunur
+8. **Spam Önleme**: 5 dakika cooldown (aynı klan tekrar savaş açamaz)
+9. **Offline Koruma**: Offline klan koruması aktifse yakıt tüketir
+10. **Çoklu Savaş**: Bir klan aynı anda birden fazla klanla savaşta olabilir
+11. **İki Taraflı Savaş**: Her iki klan da birbirine saldırabilir
+12. **Korumalar**: Sadece savaşta olunan klan için kalkar
 
 ---
 
-### Hazırlık İpuçları
+### Veritabanı ve Model
 
-**Saldıran**:
+**Yeni Alanlar**:
 ```
-- 100+ Ateş Topu bataryası
-- 10+ Yıldırım bataryası
-- Mancınık (yapı yıkımı için)
-- Full zırh + potion
+Clan Model:
+- warringClans: Set<UUID> (savaşta olunan klanlar)
+- allianceClans: Set<UUID> (ittifak olduğu klanlar - referans)
+
+Veritabanı:
+- warringClans: List<String> (UUID listesi)
+- allianceClans: List<String> (UUID listesi)
 ```
 
-**Savunan**:
-```
-- 20+ Tuzak (katmanlı)
-- Enerji kalkanı max yakıt
-- Zehir Kuesi aktif
-- Takım hazır (Discord çağrı)
-```
+**Önemli**: 
+- Server restart sonrası savaşlar ve ittifaklar korunur
+- Geriye dönük uyumluluk: Eski verilerde bu alanlar null olabilir
 
 ---
 
 ## 🎯 HIZLI KUŞATMA REHBERİ
 
-### Kuşatma Başlatma (5 Adım)
+### Savaş İlanı (3 Adım)
 
 ```
-1. Beacon craft + 9 Obsidian topla
+1. 2 Altın + 2 Demir blok topla
 2. Düşman klan 50 blok yakınına git
-3. Zemine 3x3 Obsidian + üste Beacon
-4. Eline TNT al
-5. Shift + Sağ tık (Beacon'a)
-→ KUŞATMA BAŞLADI!
+3. Totem yapısını oluştur:
+   [IRON_BLOCK] [IRON_BLOCK]  (Y: +1)
+   [GOLD_BLOCK] [GOLD_BLOCK]  (Y: 0)
+→ SAVAŞ BAŞLADI!
 ```
 
 ### Hızlı Zafer (Saldıran)
@@ -461,6 +659,51 @@ Savaş (5. dk):
 → ZAFER!
 ```
 
+### Barış Anlaşması (Hızlı)
+
+```
+1. /klan menü → Barış Anlaşması
+2. Savaşta olunan klana SOL TIK
+3. İstek gönderildi
+4. Diğer klan onaylar
+→ SAVAŞ BİTTİ (kayıpsız)
+```
+
+---
+
+## 📊 SAVAŞ DURUMU YÖNETİMİ
+
+### Çoklu Savaş Senaryosu
+
+**Örnek**:
+```
+Klan A:
+→ Klan B ile savaşta
+→ Klan C ile savaşta
+
+Klan A'nın Kristali Klan B kırarsa:
+→ Sadece Klan B ile savaş biter
+→ Klan A hala Klan C ile savaşta
+→ Ganimet sadece Klan B'ye gider (ittifak yoksa)
+```
+
+**İttifak Senaryosu**:
+```
+Klan A:
+→ Klan B ile savaşta
+→ Klan C ile savaşta
+
+Klan B ve Klan C ittifak (OFFENSIVE veya FULL):
+→ Klan A'nın kristali Klan B kırarsa
+→ Ganimet eşit paylaşılır:
+  → Klan B: %50
+  → Klan C: %50
+```
+
 ---
 
 **🎮 Kuşatma ile düşmanı yok et, ganimetleri topla, Fatih ol!**
+
+**🕊️ Barış anlaşması ile savaşı kayıpsız bitir!**
+
+**🤝 İttifak kur, ganimetleri paylaş!**

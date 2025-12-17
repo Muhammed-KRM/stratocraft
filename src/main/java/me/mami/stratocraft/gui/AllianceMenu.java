@@ -117,12 +117,13 @@ public class AllianceMenu implements Listener {
             menu.setItem(slot++, item);
         }
         
-        // İttifak kurma butonu (sadece Lider)
-        if (clan.getRank(player.getUniqueId()) == Clan.Rank.LEADER) {
-            menu.setItem(49, createButton(Material.DIAMOND, "§a§lYENİ İTTİFAK KUR", 
-                Arrays.asList("§7Fiziksel ritüel ile ittifak kur",
-                    "§7Shift + Elmas ile diğer klan liderine",
-                    "§7sağ tık yapın")));
+        // ✅ YENİ: İttifak isteği gönderme butonu (sadece Lider/General)
+        Clan.Rank playerRank = clan.getRank(player.getUniqueId());
+        if (playerRank == Clan.Rank.LEADER || playerRank == Clan.Rank.GENERAL) {
+            menu.setItem(49, createButton(Material.DIAMOND, "§a§lİTTİFAK İSTEĞİ GÖNDER", 
+                Arrays.asList("§7Diğer klanlara ittifak isteği gönder",
+                    "§7Sol tık: İstek gönderme menüsü",
+                    "§7Sağ tık: Fiziksel ritüel (Shift + Elmas)")));
         }
         
         // Bilgi butonu

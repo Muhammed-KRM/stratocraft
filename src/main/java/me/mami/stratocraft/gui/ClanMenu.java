@@ -269,6 +269,23 @@ public class ClanMenu implements Listener {
             stats.setItemMeta(statsMeta);
         }
         menu.setItem(21, stats);
+        
+        // ✅ YENİ: Barış Anlaşması Butonu (Slot 23) - Sadece Lider/General
+        if (playerRank == Clan.Rank.LEADER || playerRank == Clan.Rank.GENERAL) {
+            int warringCount = clan.getWarringClanCount();
+            ItemStack peace = new ItemStack(Material.WHITE_BANNER);
+            ItemMeta peaceMeta = peace.getItemMeta();
+            if (peaceMeta != null) {
+                peaceMeta.setDisplayName("§fBarış Anlaşması");
+                peaceMeta.setLore(Arrays.asList(
+                    "§7Savaşta Olunan Klan: §e" + warringCount,
+                    "§7Barış anlaşması isteği gönder",
+                    "§7ve gelen istekleri yönet"
+                ));
+                peace.setItemMeta(peaceMeta);
+            }
+            menu.setItem(23, peace);
+        }
 
         // Bakiye Butonu (Slot 22)
         ItemStack balance = new ItemStack(Material.GOLD_INGOT);
@@ -431,6 +448,31 @@ public class ClanMenu implements Listener {
                 player.sendMessage("§7Para çekmek için: §e/klan para cek <miktar>");
                 player.sendMessage("§a§l═══════════════════════════");
                 player.closeInventory();
+                break;
+                
+            case WHITE_BANNER:
+                // ✅ YENİ: Barış Anlaşması - Sadece Lider/General
+                if (playerRank == Clan.Rank.LEADER || playerRank == Clan.Rank.GENERAL) {
+                    if (plugin != null && plugin.getPeaceRequestMenu() != null) {
+                        plugin.getPeaceRequestMenu().openMainMenu(player);
+                    } else {
+                        player.sendMessage("§cBarış anlaşması sistemi aktif değil!");
+                        player.closeInventory();
+                    }
+                } else {
+                    player.sendMessage("§cBu işlem için yetkiniz yok! (Sadece Lider ve General)");
+                    player.closeInventory();
+                }
+                break;
+                
+            case DIAMOND:
+                // İttifaklar menüsü
+                if (plugin != null && plugin.getAllianceMenu() != null) {
+                    plugin.getAllianceMenu().openMainMenu(player);
+                } else {
+                    player.sendMessage("§cİttifak sistemi aktif değil!");
+                    player.closeInventory();
+                }
                 break;
             default:
                 // Diğer tüm Material'lar için hiçbir şey yapma
