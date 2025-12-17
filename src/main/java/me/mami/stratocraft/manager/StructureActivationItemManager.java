@@ -1,12 +1,13 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.enums.StructureType;
-import me.mami.stratocraft.model.Structure;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import me.mami.stratocraft.enums.StructureType;
+import me.mami.stratocraft.model.Structure;
 
 /**
  * Yapı Aktivasyon Item Yönetimi
@@ -52,6 +53,11 @@ public class StructureActivationItemManager {
         registerActivationItem(StructureType.CLAN_MISSION_GUILD, Material.EMERALD);
         registerActivationItem(StructureType.MARKET_PLACE, Material.COAL);
         registerActivationItem(StructureType.RECIPE_LIBRARY, Material.BOOK);
+        
+        // Yeni yapılar için aktivasyon item'ları
+        registerActivationItem(StructureType.TRAINING_ARENA, Material.IRON_SWORD);
+        registerActivationItem(StructureType.CARAVAN_STATION, Material.CHEST);
+        registerActivationItem(StructureType.CLAN_MANAGEMENT_CENTER, Material.NETHER_STAR);
         
         // Karmaşık yapılar - Özel item'lar (YENİ: StructureType)
         registerCustomActivationItem(StructureType.ALCHEMY_TOWER, "TITANIUM_INGOT");

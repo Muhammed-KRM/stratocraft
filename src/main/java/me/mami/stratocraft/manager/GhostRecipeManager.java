@@ -36,11 +36,13 @@ public class GhostRecipeManager {
     
     /**
      * GhostRecipe - Aktif hayalet tarif (oyuncuya gösterilen)
+     * DÜZELTME: Location yerine String key kullanılıyor (x:y:z formatı)
+     * çünkü Location.equals() yaw/pitch değerlerini de karşılaştırıyor
      */
     public static class GhostRecipe {
         private final String recipeId;
         private final Location baseLocation;
-        private final Map<Location, ArmorStand> ghostBlocks = new HashMap<>();
+        private final Map<String, ArmorStand> ghostBlocks = new HashMap<>(); // String key: "x:y:z"
         private final GhostRecipeData data;
         
         public GhostRecipe(String recipeId, Location baseLocation, GhostRecipeData data) {
@@ -51,8 +53,13 @@ public class GhostRecipeManager {
         
         public String getRecipeId() { return recipeId; }
         public Location getBaseLocation() { return baseLocation; }
-        public Map<Location, ArmorStand> getGhostBlocks() { return ghostBlocks; }
+        public Map<String, ArmorStand> getGhostBlocks() { return ghostBlocks; }
         public GhostRecipeData getData() { return data; }
+        
+        // Lokasyonu String key'e çevir
+        public static String locationToKey(Location loc) {
+            return loc.getBlockX() + ":" + loc.getBlockY() + ":" + loc.getBlockZ();
+        }
     }
     // Oyuncu UUID -> Aktif hayalet tarif verisi
     private final Map<UUID, GhostRecipe> activeGhostRecipes = new HashMap<>();
@@ -542,9 +549,9 @@ public class GhostRecipeManager {
             org.bukkit.inventory.ItemStack blockItem = new org.bukkit.inventory.ItemStack(material);
             stand.getEquipment().setHelmet(blockItem);
             
-            // BUG DÜZELTME: Blok konumunu kaydet (hayalet blok kontrolü için - blockCenter kullan)
-            // checkAndRemoveBlockFromRecipe'de de blockCenter kullanılıyor, bu yüzden aynı olmalı
-            recipe.getGhostBlocks().put(blockCenter, stand);
+            // DÜZELTME: String key kullan (Location.equals() problemi için)
+            String blockKey = GhostRecipe.locationToKey(blockCenter);
+            recipe.getGhostBlocks().put(blockKey, stand);
         }
         
         // Aktif tarif olarak kaydet
@@ -644,12 +651,13 @@ public class GhostRecipeManager {
         
         // Doğru blok mu?
         if (requiredMaterial != placedMaterial) return;
-        
-        // Hayalet bloku kaldır (blockCenter kullan)
-        ArmorStand stand = recipe.getGhostBlocks().get(blockCenter);
+
+        // DÜZELTME: String key kullan (Location.equals() problemi için)
+        String blockKey = GhostRecipe.locationToKey(blockCenter);
+        ArmorStand stand = recipe.getGhostBlocks().get(blockKey);
         if (stand != null) {
             stand.remove();
-            recipe.getGhostBlocks().remove(blockCenter);
+            recipe.getGhostBlocks().remove(blockKey);
         }
         
         // Tüm bloklar tamamlandı mı?

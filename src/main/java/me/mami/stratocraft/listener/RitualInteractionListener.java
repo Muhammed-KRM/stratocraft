@@ -1,12 +1,19 @@
 package me.mami.stratocraft.listener;
 
-import me.mami.stratocraft.manager.ClanManager;
-import me.mami.stratocraft.manager.TerritoryManager;
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.model.Structure;
-import org.bukkit.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -14,21 +21,15 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.CompassMeta;
-import org.bukkit.entity.Entity;
 
-import org.bukkit.Bukkit;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import me.mami.stratocraft.manager.ClanManager;
+import me.mami.stratocraft.manager.TerritoryManager;
+import me.mami.stratocraft.model.Clan;
 
 /**
  * RitualInteractionListener - Komutsuz Ritüel Sistemi
@@ -773,88 +774,6 @@ public class RitualInteractionListener implements Listener {
                 member.sendMessage("§6§l" + leaderName + " liderliği " + targetName + " devretti!");
             }
         }
-        
-        setCooldown(leader.getUniqueId());
-    }
-
-    // ========== KLAN İSMİ DEĞİŞTİRME: "Yeniden Adlandırma" (ORTA) ==========
-    // Lider elinde yeni isimli kağıt ile Klan Kristali yakınında shift+sağ tık yapar
-    
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onClanRename(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        if (event.getHand() != EquipmentSlot.HAND) return;
-        if (!event.getPlayer().isSneaking()) return;
-        
-        Player leader = event.getPlayer();
-        Block clicked = event.getClickedBlock();
-        
-        // Klan Kristali yakınında mı? (Kristal entity'sine tıklama veya yakınında)
-        if (clicked == null) return;
-        
-        Clan clan = clanManager.getClanByPlayer(leader.getUniqueId());
-        if (clan == null) return;
-        
-        if (clan.getRank(leader.getUniqueId()) != Clan.Rank.LEADER) {
-            return; // Sadece lider
-        }
-        
-        // Klan Kristali yakınında mı? (5 blok mesafe)
-        if (clan.getCrystalLocation() == null) return;
-        if (leader.getLocation().distance(clan.getCrystalLocation()) > 5) {
-            leader.sendMessage("§cKlan ismini değiştirmek için Klan Kristali yakınında olmalısın!");
-            return;
-        }
-        
-        // Elinde isimlendirilmiş kağıt var mı?
-        ItemStack handItem = leader.getInventory().getItemInMainHand();
-        if (handItem == null || handItem.getType() != Material.PAPER) return;
-        
-        ItemMeta meta = handItem.getItemMeta();
-        if (meta == null || !meta.hasDisplayName()) {
-            leader.sendMessage("§cRitüel için isimlendirilmiş bir kağıt gerekli! (Örs'te yeni isim yaz)");
-            return;
-        }
-        
-        String newName = meta.getDisplayName().replace("§r", "").trim();
-        if (newName.isEmpty() || newName.equals(clan.getName())) {
-            leader.sendMessage("§cYeni isim eski isimden farklı olmalı!");
-            return;
-        }
-        
-        // Cooldown kontrolü
-        if (isOnCooldown(leader.getUniqueId())) {
-            leader.sendMessage("§cRitüel henüz hazır değil! Lütfen bekleyin.");
-            return;
-        }
-        
-        event.setCancelled(true); // Blok etkileşimini engelle
-        
-        // Klan ismini değiştir
-        String oldName = clan.getName();
-        clan.setName(newName);
-        
-        // Klan üyelerine bildir
-        for (UUID memberId : clan.getMembers().keySet()) {
-            Player member = Bukkit.getPlayer(memberId);
-            if (member != null && member.isOnline()) {
-                member.sendMessage("§eKlan ismi değiştirildi: §7" + oldName + " §e→ §a" + newName);
-            }
-        }
-        
-        leader.sendMessage("§aKlan ismi başarıyla değiştirildi: §7" + oldName + " §a→ §e" + newName);
-        
-        // Kağıdı tüket
-        if (handItem.getAmount() > 1) {
-            handItem.setAmount(handItem.getAmount() - 1);
-        } else {
-            leader.getInventory().setItemInMainHand(null);
-        }
-        
-        // Efektler
-        Location crystalLoc = clan.getCrystalLocation();
-        crystalLoc.getWorld().spawnParticle(Particle.ENCHANTMENT_TABLE, crystalLoc, 50, 1, 1, 1, 0.3);
-        leader.playSound(crystalLoc, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1f, 1f);
         
         setCooldown(leader.getUniqueId());
     }

@@ -1,5 +1,14 @@
 package me.mami.stratocraft.manager;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.WorldEditException;
@@ -12,15 +21,8 @@ import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.session.ClipboardHolder;
-import me.mami.stratocraft.Main;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.block.Block;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import me.mami.stratocraft.Main;
 
 /**
  * Yapı oluşturma yardımcı sınıfı
@@ -31,17 +33,24 @@ public class StructureBuilder {
     /**
      * Şema dosyasını yükle ve dünyaya yerleştir
      * Önce FAWE dener, yoksa normal WorldEdit kullanır
-     * 
+     *
      * @param location      Yerleştirilecek konum
      * @param schematicName Şema dosya adı (uzantı olmadan veya tam yol)
      * @return Başarılı olursa true
      */
     public static boolean pasteSchematic(Location location, String schematicName) {
+        // WorldEdit yüklü mü kontrol et
+        if (!Main.isWorldEditAvailable()) {
+            Main.getInstance().getLogger().warning("WorldEdit yüklü değil! Schematic paste edilemedi: " + schematicName);
+            createPlaceholderStructure(location); // Yer tutucu yapı oluştur
+            return false;
+        }
+        
         // FAWE varsa onu kullan (daha hızlı)
         if (hasFAWE()) {
             return pasteSchematicFAWE(location, schematicName);
         }
-        
+
         // Normal WorldEdit kullan
         return pasteSchematicWorldEdit(location, schematicName);
     }

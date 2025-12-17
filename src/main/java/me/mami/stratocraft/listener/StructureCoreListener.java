@@ -1,14 +1,8 @@
 package me.mami.stratocraft.listener;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.manager.ClanManager;
-import me.mami.stratocraft.manager.ItemManager;
-import me.mami.stratocraft.manager.StructureActivationItemManager;
-import me.mami.stratocraft.manager.StructureCoreManager;
-import me.mami.stratocraft.manager.StructureRecipeManager;
-import me.mami.stratocraft.manager.TerritoryManager;
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.model.Structure;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -25,8 +19,15 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.manager.ClanManager;
+import me.mami.stratocraft.manager.ItemManager;
+import me.mami.stratocraft.manager.StructureActivationItemManager;
+import me.mami.stratocraft.manager.StructureCoreManager;
+import me.mami.stratocraft.manager.StructureRecipeManager;
+import me.mami.stratocraft.manager.TerritoryManager;
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.Structure;
 
 /**
  * Yapı Çekirdeği Listener
@@ -137,7 +138,17 @@ public class StructureCoreListener implements Listener {
         ItemStack handItem = player.getInventory().getItemInMainHand();
         if (handItem == null || handItem.getType() == Material.AIR) {
             player.sendMessage("§cAktivasyon item'ı elinde olmalı!");
-            player.sendMessage("§7Yapı tipine göre farklı item'lar gerekiyor.");
+            player.sendMessage("§7Yapı tipine göre aktivasyon item'ları:");
+            player.sendMessage("§e• §7Kişisel Görev Loncası: §fDemir Külçe (IRON_INGOT)");
+            player.sendMessage("§e• §7Klan Görev Loncası: §fZümrüt (EMERALD)");
+            player.sendMessage("§e• §7Klan Bankası: §fAltın Külçe (GOLD_INGOT)");
+            player.sendMessage("§e• §7Klan Yönetim Merkezi: §fNether Yıldızı (NETHER_STAR)");
+            player.sendMessage("§e• §7Sözleşme Ofisi: §fElmas (DIAMOND)");
+            player.sendMessage("§e• §7Pazar Yeri: §fKömür (COAL)");
+            player.sendMessage("§e• §7Tarif Kütüphanesi: §fKitap (BOOK)");
+            player.sendMessage("§e• §7Eğitim Alanı: §fDemir Kılıç (IRON_SWORD)");
+            player.sendMessage("§e• §7Kervan İstasyonu: §fSandık (CHEST)");
+            player.sendMessage("§e• §7Simya Kulesi: §fTitanyum Külçe (özel item)");
             return;
         }
         
@@ -145,7 +156,17 @@ public class StructureCoreListener implements Listener {
         me.mami.stratocraft.enums.StructureType targetType = activationItemManager.getStructureTypeForItem(handItem);
         if (targetType == null) {
             player.sendMessage("§cBu item ile yapı aktifleştirilemez!");
-            player.sendMessage("§7Farklı bir aktivasyon item'ı deneyin.");
+            player.sendMessage("§7Elindeki item: §e" + handItem.getType().name());
+            player.sendMessage("§7Geçerli aktivasyon item'ları:");
+            player.sendMessage("§e• §fDemir Külçe §7→ Kişisel Görev Loncası");
+            player.sendMessage("§e• §fZümrüt §7→ Klan Görev Loncası");
+            player.sendMessage("§e• §fAltın Külçe §7→ Klan Bankası");
+            player.sendMessage("§e• §fNether Yıldızı §7→ Klan Yönetim Merkezi");
+            player.sendMessage("§e• §fElmas §7→ Sözleşme Ofisi");
+            player.sendMessage("§e• §fKömür §7→ Pazar Yeri");
+            player.sendMessage("§e• §fKitap §7→ Tarif Kütüphanesi");
+            player.sendMessage("§e• §fDemir Kılıç §7→ Eğitim Alanı");
+            player.sendMessage("§e• §fSandık §7→ Kervan İstasyonu");
             return;
         }
         

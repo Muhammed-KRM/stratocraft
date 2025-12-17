@@ -98,7 +98,11 @@ public class SQLiteDataManager {
             databaseManager.rollback();
             throw e;
         } finally {
-            saveLock.unlock();
+            // DÜZELTME: inTransaction=true olduğunda lock bu metod tarafından alınmadı
+            // Bu yüzden unlock yapmaya çalışmak IllegalMonitorStateException'a neden olur
+            if (!inTransaction) {
+                saveLock.unlock();
+            }
         }
     }
     

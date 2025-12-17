@@ -5327,8 +5327,15 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return filterList(ores, input);
             case "tool":
                 List<String> tools = Arrays.asList("rusty_hook", "golden_hook", "titan_grapple", "trap_core",
-                        "spyglass", "taming_core", "summon_core", "breeding_core", "gender_scanner");
+                        "spyglass", "taming_core", "summon_core", "breeding_core", "gender_scanner",
+                        "structure_core", "yapi_cekirdegi");
                 return filterList(tools, input);
+            case "construction":
+                // Yapı çekirdekleri ve inşaat malzemeleri
+                List<String> construction = Arrays.asList(
+                        "structure_core", "yapi_cekirdegi", "clan_crystal", "clan_fence", "klan_citi",
+                        "blueprint", "lightning_core", "dark_matter", "star_core", "flame_amplifier");
+                return filterList(construction, input);
             default:
                 return new ArrayList<>();
         }
@@ -8665,9 +8672,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
-        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
-        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("§71. Eline §fDemir Külçe (IRON_INGOT) §7al");
+        p.sendMessage("§72. Yapı çekirdeğine (Oak Log) yaklaş");
+        p.sendMessage("§73. §eSağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§74. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
         
         // Partikül efekti (yapı oluşturulduğunda)
@@ -8710,9 +8718,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§7Seviye: §e" + level);
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
-        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
-        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("§71. Eline §fNether Yıldızı (NETHER_STAR) §7al");
+        p.sendMessage("§72. Yapı çekirdeğine (Oak Log) yaklaş");
+        p.sendMessage("§73. §eSağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§74. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
         
         // Partikül efekti (yapı oluşturulduğunda)
@@ -8751,9 +8760,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§7Seviye: §e" + level);
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
-        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
-        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("§71. Eline §fAltın Külçe (GOLD_INGOT) §7al");
+        p.sendMessage("§72. Yapı çekirdeğine (Oak Log) yaklaş");
+        p.sendMessage("§73. §eSağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§74. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
         
         // Partikül efekti (yapı oluşturulduğunda)
@@ -8796,9 +8806,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§7Seviye: §e" + level);
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
-        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
-        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("§71. Eline §fZümrüt (EMERALD) §7al");
+        p.sendMessage("§72. Yapı çekirdeğine (Oak Log) yaklaş");
+        p.sendMessage("§73. §eSağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§74. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
         
         // Partikül efekti (yapı oluşturulduğunda)
@@ -8840,9 +8851,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§7Seviye: §e" + level);
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
-        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
-        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("§71. Eline §fDemir Kılıç (IRON_SWORD) §7al");
+        p.sendMessage("§72. Yapı çekirdeğine (Oak Log) yaklaş");
+        p.sendMessage("§73. §eSağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§74. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
         
         // Partikül efekti (yapı oluşturulduğunda)
@@ -8884,9 +8896,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§7Seviye: §e" + level);
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
-        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
-        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("§71. Eline §fSandık (CHEST) §7al");
+        p.sendMessage("§72. Yapı çekirdeğine (Oak Log) yaklaş");
+        p.sendMessage("§73. §eSağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§74. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
         
         // Partikül efekti (yapı oluşturulduğunda)
@@ -8928,9 +8941,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
-        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
-        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("§71. Eline §fElmas (DIAMOND) §7al");
+        p.sendMessage("§72. Yapı çekirdeğine (Oak Log) yaklaş");
+        p.sendMessage("§73. §eSağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§74. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
         
         // Partikül efekti (yapı oluşturulduğunda)
@@ -8976,9 +8990,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
-        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
-        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("§71. Eline §fKömür (COAL) §7al");
+        p.sendMessage("§72. Yapı çekirdeğine (Oak Log) yaklaş");
+        p.sendMessage("§73. §eSağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§74. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
         
         // Partikül efekti (yapı oluşturulduğunda)
@@ -9017,9 +9032,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§7Seviye: §e" + level);
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
-        p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
-        p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
+        p.sendMessage("§71. Eline §fKitap (BOOK) §7al");
+        p.sendMessage("§72. Yapı çekirdeğine (Oak Log) yaklaş");
+        p.sendMessage("§73. §eSağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§74. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
         
         // Partikül efekti (yapı oluşturulduğunda)

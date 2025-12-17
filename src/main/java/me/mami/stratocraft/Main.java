@@ -123,18 +123,38 @@ public class Main extends JavaPlugin {
     public void onEnable() {
         instance = this;
 
-        // Klasör Hazırlığı
-        File schemDir = new File(getDataFolder(), "schematics");
-        if (!schemDir.exists())
-            schemDir.mkdirs();
-        
-        // Şema klasörlerini otomatik oluştur
-        // Schematic klasörlerini oluştur (hata durumunda plugin yine de açılsın)
+        // Klasör Hazırlığı - WorldEdit'e bağımlı olmadan klasörleri oluştur
         try {
-            me.mami.stratocraft.manager.StructureBuilder.createSchematicDirectories();
+            File schemDir = new File(getDataFolder(), "schematics");
+            if (!schemDir.exists()) schemDir.mkdirs();
+            
+            // Zindan klasörleri
+            File dungeonsDir = new File(schemDir, "dungeons");
+            if (!dungeonsDir.exists()) dungeonsDir.mkdirs();
+            for (int level = 1; level <= 5; level++) {
+                File levelDir = new File(dungeonsDir, "level" + level);
+                if (!levelDir.exists()) levelDir.mkdirs();
+            }
+            
+            // Biyom klasörleri
+            File biomesDir = new File(schemDir, "biomes");
+            if (!biomesDir.exists()) biomesDir.mkdirs();
+            File biomesStructuresDir = new File(biomesDir, "structures");
+            if (!biomesStructuresDir.exists()) biomesStructuresDir.mkdirs();
+            File biomesCustomDir = new File(biomesDir, "custom");
+            if (!biomesCustomDir.exists()) biomesCustomDir.mkdirs();
+            
+            getLogger().info("Şema klasörleri hazırlandı.");
         } catch (Exception e) {
             getLogger().warning("§cSchematic klasörleri oluşturulurken hata: " + e.getMessage());
-            e.printStackTrace();
+        }
+        
+        // WorldEdit kontrolü - varsa bilgilendir, yoksa uyar
+        boolean worldEditAvailable = isWorldEditAvailable();
+        if (worldEditAvailable) {
+            getLogger().info("§aWorldEdit bulundu - Schematic özellikleri aktif.");
+        } else {
+            getLogger().warning("§eWorldEdit bulunamadı - Schematic özellikleri devre dışı.");
         }
 
         // 1. Yöneticileri Başlat
@@ -518,9 +538,10 @@ public class Main extends JavaPlugin {
         }
         
         // 3. Zamanlayıcıları Başlat
-        new BuffTask(territoryManager, siegeWeaponManager).runTaskTimer(this, 20L, 20L);
-        // ✅ PERFORMANS OPTİMİZASYONU: DisasterTask interval'i artırıldı (20L -> 40L = 2 saniye)
-        new DisasterTask(disasterManager, territoryManager).runTaskTimer(this, 20L, 40L);
+        // OPTİMİZE: BuffTask interval'i 20L'den 10L'ye düşürüldü ama iç optimizasyonlar ile daha verimli
+        new BuffTask(territoryManager, siegeWeaponManager).runTaskTimer(this, 20L, 10L);
+        // ✅ PERFORMANS OPTİMİZASYONU: DisasterTask interval'i artırıldı (20L -> 60L = 3 saniye)
+        new DisasterTask(disasterManager, territoryManager).runTaskTimer(this, 20L, 60L);
         
         // Otomatik felaket spawn kontrolü (her 10 dakikada bir)
         new org.bukkit.scheduler.BukkitRunnable() {
@@ -581,7 +602,8 @@ public class Main extends JavaPlugin {
         }, this);
         
         // StructureEffectTask'ı yeni manager ile başlat
-        new me.mami.stratocraft.task.StructureEffectTask(structureEffectManager).runTaskTimer(this, 20L, 20L); // YAPI EFEKTLERİ
+        // OPTİMİZE: 20L'den 40L'ye çıkarıldı (saniyede 1'den 0.5'e)
+        new me.mami.stratocraft.task.StructureEffectTask(structureEffectManager).runTaskTimer(this, 20L, 40L); // YAPI EFEKTLERİ
 
         // Casusluk Dürbünü için Scheduler - PERFORMANS OPTİMİZASYONU
         // RayTrace ağır bir işlem olduğu için sıklığı azaltıldı (5 tick -> 20 tick = 1 saniye)
@@ -1773,5 +1795,18 @@ public class Main extends JavaPlugin {
     @Deprecated
     public me.mami.stratocraft.manager.ClanPowerSystem getClanPowerSystem() {
         return null; // Eski sistem kaldırıldı
+    }
+    
+    /**
+     * WorldEdit yüklü mü kontrol et
+     * Bu metod sınıfı yüklemeden kontrol yapar (NoClassDefFoundError önleme)
+     */
+    public static boolean isWorldEditAvailable() {
+        try {
+            Class.forName("com.sk89q.worldedit.WorldEdit");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 }

@@ -1,15 +1,16 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.model.Structure;
-import me.mami.stratocraft.model.block.StructureCoreBlock;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.metadata.FixedMetadataValue;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.model.Structure;
+import me.mami.stratocraft.model.block.StructureCoreBlock;
 
 /**
  * Yapı Çekirdeği Yönetim Sistemi
@@ -50,17 +51,20 @@ public class StructureCoreManager {
     public void addInactiveCore(Location loc, UUID owner) {
         if (loc == null || owner == null) return;
         
+        // Location'ı blok konumuna normalize et (0.5 offset'leri düzelt)
+        Location blockLoc = loc.getBlock().getLocation();
+        
         // YENİ MODEL: StructureCoreBlock oluştur
-        StructureCoreBlock coreBlock = new StructureCoreBlock(loc);
+        StructureCoreBlock coreBlock = new StructureCoreBlock(blockLoc);
         coreBlock.setOwnerId(owner);
         coreBlock.setActive(false);
-        inactiveCoreBlocks.put(loc, coreBlock);
+        inactiveCoreBlocks.put(blockLoc, coreBlock);
         
         // GERİYE UYUMLULUK: Eski sistem
-        inactiveCores.put(loc, owner);
+        inactiveCores.put(blockLoc, owner);
         
         // Metadata ekle
-        Block block = loc.getBlock();
+        Block block = blockLoc.getBlock();
         if (block != null) {
             block.setMetadata(METADATA_KEY_CORE, new FixedMetadataValue(plugin, true));
             block.setMetadata(METADATA_KEY_OWNER, new FixedMetadataValue(plugin, owner.toString()));
@@ -72,10 +76,12 @@ public class StructureCoreManager {
      */
     public boolean isInactiveCore(Location loc) {
         if (loc == null) return false;
+        // Location'ı blok konumuna normalize et
+        Location blockLoc = loc.getBlock().getLocation();
         // YENİ MODEL: Önce StructureCoreBlock kontrol et
-        if (inactiveCoreBlocks.containsKey(loc)) return true;
+        if (inactiveCoreBlocks.containsKey(blockLoc)) return true;
         // GERİYE UYUMLULUK: Eski sistem
-        return inactiveCores.containsKey(loc);
+        return inactiveCores.containsKey(blockLoc);
     }
     
     /**
@@ -83,13 +89,15 @@ public class StructureCoreManager {
      */
     public UUID getCoreOwner(Location loc) {
         if (loc == null) return null;
+        // Location'ı blok konumuna normalize et
+        Location blockLoc = loc.getBlock().getLocation();
         // YENİ MODEL: Önce StructureCoreBlock kontrol et
-        StructureCoreBlock coreBlock = inactiveCoreBlocks.get(loc);
+        StructureCoreBlock coreBlock = inactiveCoreBlocks.get(blockLoc);
         if (coreBlock != null) {
             return coreBlock.getOwnerId();
         }
         // GERİYE UYUMLULUK: Eski sistem
-        return inactiveCores.get(loc);
+        return inactiveCores.get(blockLoc);
     }
     
     /**
@@ -97,7 +105,9 @@ public class StructureCoreManager {
      */
     public StructureCoreBlock getInactiveCoreBlock(Location loc) {
         if (loc == null) return null;
-        return inactiveCoreBlocks.get(loc);
+        // Location'ı blok konumuna normalize et
+        Location blockLoc = loc.getBlock().getLocation();
+        return inactiveCoreBlocks.get(blockLoc);
     }
     
     /**
@@ -106,12 +116,15 @@ public class StructureCoreManager {
     public void activateCore(Location coreLoc, Structure structure) {
         if (coreLoc == null || structure == null) return;
         
+        // Location'ı blok konumuna normalize et
+        Location blockLoc = coreLoc.getBlock().getLocation();
+        
         // YENİ MODEL: StructureCoreBlock güncelle
-        StructureCoreBlock coreBlock = inactiveCoreBlocks.remove(coreLoc);
+        StructureCoreBlock coreBlock = inactiveCoreBlocks.remove(blockLoc);
         if (coreBlock == null) {
             // Eğer yeni modelde yoksa, oluştur
-            coreBlock = new StructureCoreBlock(coreLoc);
-            UUID owner = inactiveCores.get(coreLoc);
+            coreBlock = new StructureCoreBlock(blockLoc);
+            UUID owner = inactiveCores.get(blockLoc);
             if (owner != null) {
                 coreBlock.setOwnerId(owner);
             }
@@ -133,14 +146,14 @@ public class StructureCoreManager {
         // Not: Structure'da klan bilgisi yok, bu yüzden TerritoryManager'dan alınmalı
         // Şimdilik null bırakıyoruz, gerekirse eklenebilir
         
-        activeCoreBlocks.put(coreLoc, coreBlock);
+        activeCoreBlocks.put(blockLoc, coreBlock);
         
         // GERİYE UYUMLULUK: Eski sistem
-        inactiveCores.remove(coreLoc);
-        activeStructures.put(coreLoc, structure);
+        inactiveCores.remove(blockLoc);
+        activeStructures.put(blockLoc, structure);
         
         // Metadata güncelle
-        Block block = coreLoc.getBlock();
+        Block block = blockLoc.getBlock();
         if (block != null) {
             block.removeMetadata(METADATA_KEY_CORE, plugin);
             block.removeMetadata(METADATA_KEY_OWNER, plugin);
@@ -153,10 +166,12 @@ public class StructureCoreManager {
      */
     public boolean isActiveStructure(Location loc) {
         if (loc == null) return false;
+        // Location'ı blok konumuna normalize et
+        Location blockLoc = loc.getBlock().getLocation();
         // YENİ MODEL: Önce StructureCoreBlock kontrol et
-        if (activeCoreBlocks.containsKey(loc)) return true;
+        if (activeCoreBlocks.containsKey(blockLoc)) return true;
         // GERİYE UYUMLULUK: Eski sistem
-        return activeStructures.containsKey(loc);
+        return activeStructures.containsKey(blockLoc);
     }
     
     /**
@@ -164,8 +179,10 @@ public class StructureCoreManager {
      */
     public Structure getActiveStructure(Location loc) {
         if (loc == null) return null;
+        // Location'ı blok konumuna normalize et
+        Location blockLoc = loc.getBlock().getLocation();
         // GERİYE UYUMLULUK: Eski sistem
-        return activeStructures.get(loc);
+        return activeStructures.get(blockLoc);
     }
     
     /**

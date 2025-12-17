@@ -1,11 +1,9 @@
 package me.mami.stratocraft.task;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.manager.ClanManager;
-import me.mami.stratocraft.manager.SiegeWeaponManager;
-import me.mami.stratocraft.manager.TerritoryManager;
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.model.Structure;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -13,9 +11,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+
+import me.mami.stratocraft.manager.ClanManager;
+import me.mami.stratocraft.manager.SiegeWeaponManager;
+import me.mami.stratocraft.manager.TerritoryManager;
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.Structure;
 
 public class BuffTask extends BukkitRunnable {
     private final TerritoryManager territoryManager;
@@ -37,129 +38,154 @@ public class BuffTask extends BukkitRunnable {
         lastRadarWarnings.put(playerId, time);
     }
 
+    // OPTİMİZASYON: Tick sayacı (her şeyi her tick'te çalıştırma)
+    private int tickCounter = 0;
+    
     @Override
     public void run() {
-        // ========== KATEGORİ 2: KLAN ÖZEL YAPILAR (Klan alanı dışında da çalışır) ==========
-        if (siegeWeaponManager != null) {
-            // 1. CAN TAPINAĞI - İyileştirme
-            // PERFORMANS OPTİMİZASYONU: Oyuncu bazlı iterasyon (O(n) yerine O(n*m))
-            java.util.Map<Location, UUID> healingShrines = siegeWeaponManager.getAllHealingShrines();
-            if (!healingShrines.isEmpty()) {
-                for (Player p : Bukkit.getOnlinePlayers()) {
-                    if (p == null || !p.isOnline()) continue;
-                    
-                    Location playerLoc = p.getLocation();
-                    Clan playerClan = clanManager.getClanByPlayer(p.getUniqueId());
-                    if (playerClan == null) continue;
-                    
-                    // Oyuncunun yakınındaki şifa tapınaklarını kontrol et
-                    for (Map.Entry<Location, UUID> entry : healingShrines.entrySet()) {
-                        Location shrineLoc = entry.getKey();
-                        UUID ownerClanId = entry.getValue();
-                        
-                        // Mesafe kontrolü (10 blok yarıçap)
-                        if (playerLoc.distance(shrineLoc) > 10) continue;
-                        
-                        // Şifa tapınağı hala aktif mi kontrol et (blok var mı ve metadata var mı)
-                        org.bukkit.block.Block shrineBlock = shrineLoc.getBlock();
-                        if (shrineBlock.getType() != org.bukkit.Material.BEACON || !shrineBlock.hasMetadata("HealingShrine")) {
-                            continue; // Blok yok veya metadata yok
-                        }
-                        
-                        // Klan kontrolü
-                        if (playerClan.getId().equals(ownerClanId)) {
-                            double maxHealth = p.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue();
-                            if (p.getHealth() < maxHealth) {
-                                p.setHealth(Math.min(maxHealth, p.getHealth() + 2.0));
-                                p.spawnParticle(org.bukkit.Particle.HEART, p.getLocation().add(0, 2, 0), 1);
-                            }
-                            break; // Bir tapınak bulundu, diğerlerini kontrol etme
-                        }
-                    }
-                }
-            }
-            
-            // 2. GÜÇ TOTEMİ - Güç buff
-            for (Map.Entry<Location, UUID> entry : siegeWeaponManager.getAllPowerTotems().entrySet()) {
-                Location totemLoc = entry.getKey();
-                UUID ownerClanId = entry.getValue();
-                
-                for (Player p : Bukkit.getOnlinePlayers()) {
-                    if (p.getLocation().distance(totemLoc) <= 15) {
-                        Clan playerClan = clanManager.getClanByPlayer(p.getUniqueId());
-                        if (playerClan != null && playerClan.getId().equals(ownerClanId)) {
-                            p.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 40, 0, false, false));
-                            p.spawnParticle(org.bukkit.Particle.VILLAGER_ANGRY, totemLoc.clone().add(0, 1, 0), 1);
-                        }
-                    }
-                }
-            }
-            
-            // 3. HIZ ÇEMBERİ - Hız buff
-            for (Map.Entry<Location, UUID> entry : siegeWeaponManager.getAllSpeedCircles().entrySet()) {
-                Location circleLoc = entry.getKey();
-                UUID ownerClanId = entry.getValue();
-                
-                for (Player p : Bukkit.getOnlinePlayers()) {
-                    if (p.getLocation().distance(circleLoc) <= 12) {
-                        Clan playerClan = clanManager.getClanByPlayer(p.getUniqueId());
-                        if (playerClan != null && playerClan.getId().equals(ownerClanId)) {
-                            p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 40, 1, false, false));
-                            p.spawnParticle(org.bukkit.Particle.CLOUD, circleLoc.clone().add(0, 0.5, 0), 1);
-                        }
-                    }
-                }
-            }
-            
-            // 4. SAVUNMA DUVARI - Direnç buff
-            for (Map.Entry<Location, UUID> entry : siegeWeaponManager.getAllDefenseWalls().entrySet()) {
-                Location wallLoc = entry.getKey();
-                UUID ownerClanId = entry.getValue();
-                
-                for (Player p : Bukkit.getOnlinePlayers()) {
-                    if (p.getLocation().distance(wallLoc) <= 12) {
-                        Clan playerClan = clanManager.getClanByPlayer(p.getUniqueId());
-                        if (playerClan != null && playerClan.getId().equals(ownerClanId)) {
-                            p.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 40, 0, false, false));
-                            p.spawnParticle(org.bukkit.Particle.BLOCK_CRACK, wallLoc.clone().add(0, 0.5, 0), 1, 0.1, 0.1, 0.1, 0.1, org.bukkit.Material.BARRIER.createBlockData());
-                        }
-                    }
-                }
-            }
+        tickCounter++;
+        
+        // Online oyuncu yoksa hiçbir şey yapma
+        if (Bukkit.getOnlinePlayers().isEmpty()) return;
+        
+        // ========== KATEGORİ 2: KLAN ÖZEL YAPILAR ==========
+        // OPTİMİZE: Her 2 tick'te bir çalış (saniyede 10 kez yerine 5 kez)
+        if (tickCounter % 2 == 0 && siegeWeaponManager != null) {
+            processSpecialStructures();
         }
         
         // ========== KLAN ALANI İÇİNDEKİ YAPILAR ==========
+        // OPTİMİZE: Her tick çalışır ama daha verimli
+        processTerritoryStructures();
+    }
+    
+    /**
+     * OPTİMİZE: Özel yapıları işle (şifa tapınağı, güç totemi vb.)
+     */
+    private void processSpecialStructures() {
+        // Oyuncu listesini bir kez al
+        var players = Bukkit.getOnlinePlayers();
+        if (players.isEmpty()) return;
+        
+        // Oyuncu -> Klan cache'i (aynı oyuncu için tekrar sorgu yapma)
+        Map<UUID, Clan> playerClanCache = new HashMap<>();
+        
+        for (Player p : players) {
+            if (p == null || !p.isOnline()) continue;
+            
+            UUID playerId = p.getUniqueId();
+            Clan playerClan = playerClanCache.computeIfAbsent(playerId, 
+                id -> clanManager.getClanByPlayer(id));
+            if (playerClan == null) continue;
+            
+            Location playerLoc = p.getLocation();
+            UUID clanId = playerClan.getId();
+            
+            // 1. CAN TAPINAĞI
+            checkHealingShrine(p, playerLoc, clanId);
+            
+            // 2. GÜÇ TOTEMİ
+            checkPowerTotem(p, playerLoc, clanId);
+            
+            // 3. HIZ ÇEMBERİ
+            checkSpeedCircle(p, playerLoc, clanId);
+            
+            // 4. SAVUNMA DUVARI
+            checkDefenseWall(p, playerLoc, clanId);
+        }
+    }
+    
+    // OPTİMİZE: distanceSquared kullan (Math.sqrt pahalı)
+    private void checkHealingShrine(Player p, Location playerLoc, UUID clanId) {
+        for (Map.Entry<Location, UUID> entry : siegeWeaponManager.getAllHealingShrines().entrySet()) {
+            if (!entry.getValue().equals(clanId)) continue;
+            Location shrineLoc = entry.getKey();
+            if (!shrineLoc.getWorld().equals(playerLoc.getWorld())) continue;
+            if (playerLoc.distanceSquared(shrineLoc) > 100) continue; // 10^2 = 100
+            
+            double maxHealth = p.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue();
+            if (p.getHealth() < maxHealth) {
+                p.setHealth(Math.min(maxHealth, p.getHealth() + 2.0));
+                p.spawnParticle(org.bukkit.Particle.HEART, p.getLocation().add(0, 2, 0), 1);
+            }
+            break;
+        }
+    }
+    
+    private void checkPowerTotem(Player p, Location playerLoc, UUID clanId) {
+        for (Map.Entry<Location, UUID> entry : siegeWeaponManager.getAllPowerTotems().entrySet()) {
+            if (!entry.getValue().equals(clanId)) continue;
+            Location totemLoc = entry.getKey();
+            if (!totemLoc.getWorld().equals(playerLoc.getWorld())) continue;
+            if (playerLoc.distanceSquared(totemLoc) > 225) continue; // 15^2
+            
+            p.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 40, 0, false, false));
+            break;
+        }
+    }
+    
+    private void checkSpeedCircle(Player p, Location playerLoc, UUID clanId) {
+        for (Map.Entry<Location, UUID> entry : siegeWeaponManager.getAllSpeedCircles().entrySet()) {
+            if (!entry.getValue().equals(clanId)) continue;
+            Location circleLoc = entry.getKey();
+            if (!circleLoc.getWorld().equals(playerLoc.getWorld())) continue;
+            if (playerLoc.distanceSquared(circleLoc) > 144) continue; // 12^2
+            
+            p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 40, 1, false, false));
+            break;
+        }
+    }
+    
+    private void checkDefenseWall(Player p, Location playerLoc, UUID clanId) {
+        for (Map.Entry<Location, UUID> entry : siegeWeaponManager.getAllDefenseWalls().entrySet()) {
+            if (!entry.getValue().equals(clanId)) continue;
+            Location wallLoc = entry.getKey();
+            if (!wallLoc.getWorld().equals(playerLoc.getWorld())) continue;
+            if (playerLoc.distanceSquared(wallLoc) > 144) continue; // 12^2
+            
+            p.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 40, 0, false, false));
+            break;
+        }
+    }
+    
+    /**
+     * OPTİMİZE: Klan alanı yapılarını işle
+     */
+    private void processTerritoryStructures() {
         for (Player p : Bukkit.getOnlinePlayers()) {
             Clan territoryClan = territoryManager.getTerritoryOwner(p.getLocation());
             if (territoryClan == null) continue;
 
             boolean isFriendly = territoryClan.getMembers().containsKey(p.getUniqueId());
+            Location playerLoc = p.getLocation();
 
             for (Structure s : territoryClan.getStructures()) {
-                // HEALING_BEACON (Klan alanı içindeki eski sistem - geriye dönük uyumluluk)
-                if (s.getType() == Structure.Type.HEALING_BEACON && isFriendly) {
-                    // 10 blok yarıçapında kontrol
-                    if (p.getLocation().distance(s.getLocation()) <= 10) {
+                Location structLoc = s.getLocation();
+                if (structLoc == null || structLoc.getWorld() == null) continue;
+                if (!structLoc.getWorld().equals(playerLoc.getWorld())) continue;
+                
+                Structure.Type type = s.getType();
+                
+                // HEALING_BEACON
+                if (type == Structure.Type.HEALING_BEACON && isFriendly) {
+                    if (playerLoc.distanceSquared(structLoc) <= 100) { // 10^2
                         double maxHealth = p.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue();
                         if (p.getHealth() < maxHealth) {
-                            // Saniyede 1 kalp (2 HP) iyileştir
                             p.setHealth(Math.min(maxHealth, p.getHealth() + 2.0));
-                            // Partikül efekti
-                            p.spawnParticle(org.bukkit.Particle.HEART, p.getLocation().add(0, 2, 0), 1);
                         }
                     }
                 }
 
-                if (s.getType() == Structure.Type.GRAVITY_WELL && !isFriendly && p.getGameMode() != GameMode.CREATIVE) {
+                // GRAVITY_WELL
+                else if (type == Structure.Type.GRAVITY_WELL && !isFriendly && p.getGameMode() != GameMode.CREATIVE) {
                     p.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, 40, 200));
                     p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 40, 1));
                 }
 
-                // ZEHİR REAKTÖRÜ - Düşmanlara zehir ver (Seviye bazlı hasar)
-                if (s.getType() == Structure.Type.POISON_REACTOR && !isFriendly && p.getGameMode() != GameMode.CREATIVE) {
+                // POISON_REACTOR
+                else if (type == Structure.Type.POISON_REACTOR && !isFriendly && p.getGameMode() != GameMode.CREATIVE) {
                     int level = s.getLevel();
-                    int damage = level; // Seviye 1 = 1 hasar, Seviye 5 = 5 hasar
-                    p.damage(damage);
+                    p.damage(level);
                     p.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 40, 0));
                     if (level >= 3) {
                         p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 40, 0));
@@ -167,76 +193,55 @@ public class BuffTask extends BukkitRunnable {
                     }
                 }
 
-                // ERKEN UYARI RADARI - Düşman yaklaşımı uyarısı (Geliştirilmiş: Koordinat bilgisi + Chat Spam Önleme)
-                if (s.getType() == Structure.Type.WATCHTOWER && isFriendly) {
-                    // 200 blok yarıçapında düşman kontrolü
-                    // Chat spam önleme: Her oyuncu için son uyarı zamanını tut
-                    UUID playerId = p.getUniqueId();
-                    Long lastRadarWarning = getLastRadarWarning(playerId);
-                    long currentTime = System.currentTimeMillis();
-                    
-                    // 10 saniyede bir uyarı gönder (chat spam önleme)
-                    if (lastRadarWarning == null || (currentTime - lastRadarWarning) >= 10000) {
-                        for (Player nearby : Bukkit.getOnlinePlayers()) {
-                            if (nearby.getLocation().distance(s.getLocation()) <= 200 && 
-                                !territoryClan.getMembers().containsKey(nearby.getUniqueId())) {
-                                org.bukkit.Location enemyLoc = nearby.getLocation();
-                                int distance = (int) enemyLoc.distance(s.getLocation());
-                                
-                                // ActionBar kullan (chat spam önleme)
-                                try {
-                                    p.spigot().sendMessage(
-                                        net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
-                                        new net.md_5.bungee.api.chat.TextComponent(
-                                            "§c§l[RADAR] §7" + nearby.getName() + " - " + distance + " blok"
-                                        )
-                                    );
-                                } catch (Exception e) {
-                                    // Spigot API yoksa normal mesaj gönder
-                                    p.sendMessage("§c§l[RADAR] §7" + nearby.getName() + " - " + distance + " blok");
-                                }
-                                
-                                // Chat'e sadece önemli bilgileri yaz (10 saniyede bir)
-                                p.sendMessage("§c§l[RADAR] §7Düşman: §c" + nearby.getName() + 
-                                    " §7(" + distance + " blok) - X:" + (int)enemyLoc.getX() + 
-                                    " Y:" + (int)enemyLoc.getY() + " Z:" + (int)enemyLoc.getZ());
-                                
-                                setLastRadarWarning(playerId, currentTime);
-                                break; // Bir düşman bulundu, döngüyü kır
-                            }
-                        }
-                    }
+                // WATCHTOWER - OPTİMİZE: Her 10 tick'te bir çalış
+                else if (type == Structure.Type.WATCHTOWER && isFriendly && tickCounter % 10 == 0) {
+                    processWatchtower(p, territoryClan, s);
                 }
                 
-                // MOB ÖĞÜTÜCÜ - Etraftaki moblara hasar ver
-                if (s.getType() == Structure.Type.MOB_GRINDER && isFriendly) {
-                    int radius = 10;
-                    for (org.bukkit.entity.Entity entity : s.getLocation().getWorld()
-                            .getNearbyEntities(s.getLocation(), radius, radius, radius)) {
-                        if (entity instanceof org.bukkit.entity.LivingEntity && 
-                            !(entity instanceof Player) && 
-                            !(entity instanceof org.bukkit.entity.Villager)) {
-                            org.bukkit.entity.LivingEntity mob = (org.bukkit.entity.LivingEntity) entity;
-                            mob.damage(2.0); // Her saniye 2 hasar
-                            s.getLocation().getWorld().spawnParticle(
-                                org.bukkit.Particle.DAMAGE_INDICATOR, 
-                                mob.getLocation().add(0, 1, 0), 
-                                3
-                            );
-                        }
-                    }
+                // MOB_GRINDER - OPTİMİZE: Her 5 tick'te bir çalış
+                else if (type == Structure.Type.MOB_GRINDER && isFriendly && tickCounter % 5 == 0) {
+                    processMobGrinder(s);
                 }
 
-                if (s.getType() == Structure.Type.CORE) {
-                    boolean anyOnline = clanManager.getAllClans().stream()
-                            .filter(clan -> clan.equals(territoryClan))
-                            .flatMap(clan -> clan.getMembers().keySet().stream())
+                // CORE - OPTİMİZE: Her 20 tick'te bir çalış (sadece offline kontrol)
+                else if (type == Structure.Type.CORE && tickCounter % 20 == 0) {
+                    boolean anyOnline = territoryClan.getMembers().keySet().stream()
                             .anyMatch(uuid -> Bukkit.getPlayer(uuid) != null);
-
                     if (!anyOnline) {
                         s.consumeFuel();
                     }
                 }
+            }
+        }
+    }
+    
+    private void processWatchtower(Player p, Clan territoryClan, Structure s) {
+        UUID playerId = p.getUniqueId();
+        Long lastWarning = getLastRadarWarning(playerId);
+        long currentTime = System.currentTimeMillis();
+        
+        if (lastWarning != null && (currentTime - lastWarning) < 10000) return;
+        
+        Location structLoc = s.getLocation();
+        for (Player nearby : Bukkit.getOnlinePlayers()) {
+            if (territoryClan.getMembers().containsKey(nearby.getUniqueId())) continue;
+            if (!nearby.getWorld().equals(structLoc.getWorld())) continue;
+            if (nearby.getLocation().distanceSquared(structLoc) > 40000) continue; // 200^2
+            
+            int distance = (int) nearby.getLocation().distance(structLoc);
+            p.sendMessage("§c§l[RADAR] §7Düşman: §c" + nearby.getName() + " §7(" + distance + " blok)");
+            setLastRadarWarning(playerId, currentTime);
+            break;
+        }
+    }
+    
+    private void processMobGrinder(Structure s) {
+        Location loc = s.getLocation();
+        for (org.bukkit.entity.Entity entity : loc.getWorld().getNearbyEntities(loc, 10, 10, 10)) {
+            if (entity instanceof org.bukkit.entity.LivingEntity && 
+                !(entity instanceof Player) && 
+                !(entity instanceof org.bukkit.entity.Villager)) {
+                ((org.bukkit.entity.LivingEntity) entity).damage(2.0);
             }
         }
     }

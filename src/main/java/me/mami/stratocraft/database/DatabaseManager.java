@@ -445,12 +445,14 @@ public class DatabaseManager {
      * Transaction rollback
      * 
      * ⚠️ THREAD-SAFE: Nested transaction desteği
+     * ✅ GÜVENLİ: Transaction yoksa sessizce atlar (hata fırlatmaz)
      */
     public void rollback() throws SQLException {
         transactionLock.lock();
         try {
             if (transactionDepth <= 0) {
-                throw new SQLException("Rollback çağrıldı ama transaction başlatılmamış!");
+                // Transaction yoksa sessizce atla - bu normal bir durum olabilir
+                return;
             }
             
             Connection conn = getConnection();

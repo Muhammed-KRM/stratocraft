@@ -1,13 +1,7 @@
 package me.mami.stratocraft.listener;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.enums.StructureOwnershipType;
-import me.mami.stratocraft.enums.StructureType;
-import me.mami.stratocraft.manager.ClanManager;
-import me.mami.stratocraft.manager.TerritoryManager;
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.model.Structure;
-import me.mami.stratocraft.util.StructureOwnershipHelper;
+import java.util.UUID;
+
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -17,7 +11,14 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
-import java.util.UUID;
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.enums.StructureOwnershipType;
+import me.mami.stratocraft.enums.StructureType;
+import me.mami.stratocraft.manager.ClanManager;
+import me.mami.stratocraft.manager.TerritoryManager;
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.Structure;
+import me.mami.stratocraft.util.StructureOwnershipHelper;
 
 /**
  * Yapı Menü Listener
@@ -78,8 +79,18 @@ public class StructureMenuListener implements Listener {
     /**
      * Konumdaki yapıyı bul
      * ✅ DÜZELTME: Kişisel yapılar klansız bölgede de olabilir, bu yüzden tüm klanları kontrol et
+     * ✅ DÜZELTME: StructureCoreManager'daki aktif yapıları da kontrol et
      */
     private Structure findStructureAt(org.bukkit.Location location) {
+        // YENİ: Önce StructureCoreManager'daki aktif yapıları kontrol et
+        me.mami.stratocraft.manager.StructureCoreManager coreManager = plugin.getStructureCoreManager();
+        if (coreManager != null) {
+            Structure activeStructure = coreManager.getActiveStructure(location);
+            if (activeStructure != null) {
+                return activeStructure;
+            }
+        }
+        
         // Tüm klanları kontrol et
         for (Clan clan : clanManager.getAllClans()) {
             for (Structure structure : clan.getStructures()) {
