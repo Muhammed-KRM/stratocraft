@@ -2,8 +2,10 @@ package me.mami.stratocraft.manager;
 
 import me.mami.stratocraft.Main;
 import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.Structure;
 import me.mami.stratocraft.model.player.PlayerData;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

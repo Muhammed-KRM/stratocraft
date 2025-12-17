@@ -1,12 +1,13 @@
 package me.mami.stratocraft.listener;
 
-import me.mami.stratocraft.manager.SiegeManager;
-import me.mami.stratocraft.manager.TerritoryManager;
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.model.Structure;
-import me.mami.stratocraft.task.SiegeTimer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -14,9 +15,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+
+import me.mami.stratocraft.manager.SiegeManager;
+import me.mami.stratocraft.manager.TerritoryManager;
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.Structure;
+import me.mami.stratocraft.task.SiegeTimer;
 
 public class SiegeListener implements Listener {
     private final SiegeManager siegeManager;

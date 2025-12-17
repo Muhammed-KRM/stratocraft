@@ -1349,6 +1349,10 @@ public class Main extends JavaPlugin {
         return breedingManager;
     }
     
+    public me.mami.stratocraft.manager.HUDManager getHUDManager() {
+        return hudManager;
+    }
+    
     /**
      * Dinamik Zorluk Sistemi Başlatma
      * Tüm manager'lar hazır olduktan sonra çağrılmalı

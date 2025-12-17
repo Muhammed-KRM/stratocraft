@@ -1602,9 +1602,11 @@ public class SpecialWeaponListener implements Listener {
         // Mızrak (Zehirli Mızrak veya Titan Katili)
         if (event.getEntity() instanceof Trident) {
             Trident trident = (Trident) event.getEntity();
-            Player shooter = null;
+            final Player shooter;
             if (trident.getShooter() instanceof Player) {
                 shooter = (Player) trident.getShooter();
+            } else {
+                shooter = null;
             }
             
             // ✅ DÜZELTME: l5_3_titan_slayer Mod 2 - Mızrak fırlatıldığında havada çoğalmalı

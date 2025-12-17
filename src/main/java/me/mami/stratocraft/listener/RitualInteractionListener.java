@@ -1126,11 +1126,11 @@ public class RitualInteractionListener implements Listener {
                         
                         leader.sendMessage("§c" + target.getName() + " " + newRank.name() + " rütbesine düşürüldü!");
                         target.sendTitle("§c§lRÜTBE DÜŞÜRÜLDÜ", "§7" + newRank.name(), 10, 70, 20);
-                        // YENİ: Null kontrolü
-                        ItemStack handItem = leader.getInventory().getItemInMainHand();
-                        if (handItem != null && handItem.getAmount() > 1) {
-                            handItem.setAmount(handItem.getAmount() - 1);
-                        } else if (handItem != null) {
+                        // YENİ: Null kontrolü - lambda içinde farklı isim kullan
+                        ItemStack leaderHandItem = leader.getInventory().getItemInMainHand();
+                        if (leaderHandItem != null && leaderHandItem.getAmount() > 1) {
+                            leaderHandItem.setAmount(leaderHandItem.getAmount() - 1);
+                        } else if (leaderHandItem != null) {
                             leader.getInventory().setItemInMainHand(null);
                         }
                         
@@ -1243,8 +1243,8 @@ public class RitualInteractionListener implements Listener {
             org.bukkit.inventory.meta.ItemMeta meta = handItem.getItemMeta();
             if (meta != null && meta instanceof org.bukkit.inventory.meta.CompassMeta) {
                 org.bukkit.inventory.meta.CompassMeta compassMeta = (org.bukkit.inventory.meta.CompassMeta) meta;
-                if (compassMeta.hasLodestoneLocation()) {
-                    compassMeta.setLodestoneLocation(null);
+                if (compassMeta.getLodestone() != null) {
+                    compassMeta.setLodestone(null);
                     handItem.setItemMeta(compassMeta);
                     p.getInventory().setItemInMainHand(handItem);
                 }

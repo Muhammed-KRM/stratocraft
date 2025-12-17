@@ -1437,13 +1437,6 @@ public class ContractMenu implements Listener {
                 }
                 break;
                 
-            case PAPER:
-                // Kontrat geçmişi
-                if (event.getSlot() == 51) {
-                    openContractHistoryMenu(player, 1);
-                }
-                break;
-                
             case ENCHANTED_BOOK:
                 // Gelen İstekler
                 if (event.getSlot() == 43) {

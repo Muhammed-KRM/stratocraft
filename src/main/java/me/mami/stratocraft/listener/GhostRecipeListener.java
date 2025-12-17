@@ -29,6 +29,8 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.util.RayTraceResult;
 
+import java.util.UUID;
+
 /**
  * GhostRecipeListener - Hayalet tarif sistemi listener'ı
  * Oyuncu tarif kitabına sağ tıkladığında hayalet yapı gösterir

@@ -8,6 +8,17 @@ import java.util.UUID;
  * İki klan arasında barış anlaşması isteği için
  */
 public class PeaceRequest {
+    
+    /**
+     * Barış isteği durumu
+     */
+    public enum Status {
+        PENDING,    // Beklemede
+        ACCEPTED,   // Onaylandı
+        REJECTED,   // Reddedildi
+        EXPIRED     // Süresi doldu
+    }
+    
     private UUID id = UUID.randomUUID();
     private UUID senderClanId; // İstek gönderen klan
     private UUID targetClanId; // İstek alan klan
@@ -28,9 +39,20 @@ public class PeaceRequest {
     public UUID getSenderClanId() { return senderClanId; }
     public UUID getTargetClanId() { return targetClanId; }
     public long getCreatedAt() { return createdAt; }
+    public long getSentAt() { return createdAt; } // Alias for getCreatedAt
     public long getExpiresAt() { return expiresAt; }
     public boolean isAccepted() { return accepted; }
     public boolean isRejected() { return rejected; }
+    
+    /**
+     * İstek durumunu döndür
+     */
+    public Status getStatus() {
+        if (accepted) return Status.ACCEPTED;
+        if (rejected) return Status.REJECTED;
+        if (isExpired()) return Status.EXPIRED;
+        return Status.PENDING;
+    }
     
     public void accept() {
         this.accepted = true;

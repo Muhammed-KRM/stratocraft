@@ -97,8 +97,9 @@ public class TerritoryListener implements Listener {
         
         // YENİ: Klan yapıları kırılmamalı (korunmalı)
         Block block = event.getBlock();
-        if (plugin != null && plugin.getStructureCoreManager() != null) {
-            if (plugin.getStructureCoreManager().isStructureCore(block)) {
+        Main mainPlugin = Main.getInstance();
+        if (mainPlugin != null && mainPlugin.getStructureCoreManager() != null) {
+            if (mainPlugin.getStructureCoreManager().isStructureCore(block)) {
                 // Bu bir yapı çekirdeği, kırılamaz
                 event.setCancelled(true);
                 event.getPlayer().sendMessage("§cKlan yapıları kırılamaz! Yapıyı kaldırmak için klan menüsünü kullanın.");
@@ -1045,16 +1046,17 @@ public class TerritoryListener implements Listener {
                     // Savaşta kristal kırıldı - klan bozuldu
                     siegeManager.endSiege(attacker, owner);
                     breaker.sendMessage("§6§lZAFER! Düşman kristalini parçaladın.");
-                // YENİ: Klan alanı korumasını kaldır ve sınırları temizle
-                owner.setCrystalLocation(null);
-                if (boundaryManager != null) {
-                    boundaryManager.removeTerritoryData(owner);
+                    // YENİ: Klan alanı korumasını kaldır ve sınırları temizle
+                    owner.setCrystalLocation(null);
+                    if (boundaryManager != null) {
+                        boundaryManager.removeTerritoryData(owner);
+                    }
+                    
+                    territoryManager.getClanManager().disbandClan(owner);
+                    territoryManager.setCacheDirty(); // Cache'i güncelle
+                    crystal.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, crystal.getLocation(), 1);
+                    return;
                 }
-                
-                territoryManager.getClanManager().disbandClan(owner);
-                territoryManager.setCacheDirty(); // Cache'i güncelle
-                crystal.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, crystal.getLocation(), 1);
-                return;
             }
             
             // Normal durumda sadece lider kırabilir

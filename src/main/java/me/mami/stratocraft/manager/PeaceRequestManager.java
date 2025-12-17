@@ -1,12 +1,16 @@
 package me.mami.stratocraft.manager;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.bukkit.Bukkit;
+
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.PeaceRequest;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Barış Anlaşması İstek Yönetim Sistemi
@@ -185,6 +189,20 @@ public class PeaceRequestManager {
      */
     public List<PeaceRequest> getAllRequests() {
         return new ArrayList<>(activeRequests);
+    }
+    
+    /**
+     * Tüm aktif istekleri Map olarak getir (ID -> Request)
+     * AdminCommandExecutor uyumluluğu için
+     */
+    public Map<UUID, PeaceRequest> getAllActiveRequests() {
+        Map<UUID, PeaceRequest> result = new HashMap<>();
+        for (PeaceRequest request : activeRequests) {
+            if (request.isValid()) {
+                result.put(request.getId(), request);
+            }
+        }
+        return result;
     }
 }
 

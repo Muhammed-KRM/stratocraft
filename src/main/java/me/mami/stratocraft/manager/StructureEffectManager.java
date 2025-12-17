@@ -410,9 +410,9 @@ public class StructureEffectManager {
     }
     
     /**
-     * Yapı efektlerini kaldır (oyuncu çıkışında)
+     * Yapı efektlerini kaldır (oyuncu çıkışında veya klan ayrılışında)
      */
-    private void removeStructureEffects(Player player) {
+    public void removeStructureEffects(Player player) {
         if (player == null) return;
         
         // Sadece belirli efektleri kaldır (yapı efektleri)

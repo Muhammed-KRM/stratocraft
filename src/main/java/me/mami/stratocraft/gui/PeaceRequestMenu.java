@@ -105,7 +105,7 @@ public class PeaceRequestMenu implements Listener {
         // Gelen İstekler Butonu (Slot 45)
         List<PeaceRequest> receivedRequests = peaceRequestManager.getReceivedRequests(clan.getId());
         int requestCount = receivedRequests != null ? receivedRequests.size() : 0;
-        menu.setItem(45, createButton(Material.ENVELOPE, "§aGelen İstekler §7(" + requestCount + ")", 
+        menu.setItem(45, createButton(Material.WRITABLE_BOOK, "§aGelen İstekler §7(" + requestCount + ")", 
             Arrays.asList("§7Size gönderilen barış anlaşması",
                 "§7isteklerini görüntüleyin",
                 "§7Toplam: §e" + requestCount + " istek")));
