@@ -56,7 +56,8 @@ public class PersonalTerminalListener implements Listener {
                 event.getAction() == Action.RIGHT_CLICK_BLOCK) {
                 event.setCancelled(true);
                 if (plugin.getContractMenu() != null) {
-                    plugin.getContractMenu().openMainMenu(player, 0);
+                    // Personal Terminal'den açıldı - sadece oyuncu-oyuncu kontratları
+                    plugin.getContractMenu().openMainMenu(player, 0, true);
                 } else {
                     player.sendMessage("§cKontrat sistemi aktif değil!");
                 }
@@ -176,8 +177,8 @@ public class PersonalTerminalListener implements Listener {
                 
             case 20: // Kişisel Kontratlar
                 if (plugin.getContractMenu() != null) {
-                    // Sadece oyuncunun kontratlarını göster (sayfa 0)
-                    plugin.getContractMenu().openMainMenu(player, 0);
+                    // Personal Terminal'den açıldı - sadece oyuncu-oyuncu kontratları
+                    plugin.getContractMenu().openMainMenu(player, 0, true);
                 } else {
                     player.sendMessage("§cKontrat sistemi aktif değil!");
                 }

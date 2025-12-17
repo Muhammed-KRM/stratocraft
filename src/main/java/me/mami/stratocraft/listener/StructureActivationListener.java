@@ -4,6 +4,7 @@ import me.mami.stratocraft.Main;
 import me.mami.stratocraft.enums.StructureType;
 import me.mami.stratocraft.manager.ClanManager;
 import me.mami.stratocraft.manager.TerritoryManager;
+import me.mami.stratocraft.manager.clan.ClanRankSystem;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Structure;
 import me.mami.stratocraft.model.Structure.Type;
@@ -34,14 +35,16 @@ public class StructureActivationListener implements Listener {
 
     private final ClanManager clanManager;
     private final TerritoryManager territoryManager;
+    private final ClanRankSystem rankSystem;
 
     // Cooldown: Oyuncu UUID -> Son aktivasyon zamanı
     private final Map<UUID, Long> activationCooldowns = new HashMap<>();
     private static final long ACTIVATION_COOLDOWN = 5000L; // 5 saniye
 
-    public StructureActivationListener(ClanManager cm, TerritoryManager tm) {
+    public StructureActivationListener(ClanManager cm, TerritoryManager tm, ClanRankSystem rankSystem) {
         this.clanManager = cm;
         this.territoryManager = tm;
+        this.rankSystem = rankSystem;
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -114,10 +117,19 @@ public class StructureActivationListener implements Listener {
             return;
         }
 
-        // Yetki kontrolü: Recruit yapı aktive edemez
-        if (clan.getRank(player.getUniqueId()) == Clan.Rank.RECRUIT) {
-            player.sendMessage("§cAcemilerin yapı kurma yetkisi yok!");
-            return;
+        // YENİ: Yetki kontrolü (ClanRankSystem kullan)
+        if (rankSystem != null) {
+            if (!rankSystem.hasPermission(clan, player.getUniqueId(), 
+                    ClanRankSystem.Permission.BUILD_STRUCTURE)) {
+                player.sendMessage("§cYapı kurma yetkiniz yok!");
+                return;
+            }
+        } else {
+            // RankSystem yoksa eski kontrol
+            if (clan.getRank(player.getUniqueId()) == Clan.Rank.RECRUIT) {
+                player.sendMessage("§cAcemilerin yapı kurma yetkisi yok!");
+                return;
+            }
         }
 
         // Yapıyı klana ekle

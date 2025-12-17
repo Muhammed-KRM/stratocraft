@@ -248,6 +248,17 @@ public class ClanManager {
         if (clan == null || memberId == null) return;
         
         try {
+            // YENİ: Oyuncu online ise yapı efektlerini kaldır
+            Player player = Bukkit.getPlayer(memberId);
+            if (player != null && player.isOnline() && plugin != null) {
+                me.mami.stratocraft.manager.StructureEffectManager effectManager = 
+                    plugin.getStructureEffectManager();
+                if (effectManager != null) {
+                    effectManager.removeStructureEffects(player);
+                    effectManager.onPlayerQuit(player); // Aktif efektleri temizle
+                }
+            }
+            
             // Thread-safe: Synchronized
             synchronized (clan.getMembers()) {
                 clan.getMembers().remove(memberId);
@@ -301,6 +312,19 @@ public class ClanManager {
                     boundaryManager.removeTerritoryData(clan);
                 }
             }
+            
+            // YENİ: Klan yapılarının aktifliklerini kaldır
+            if (plugin != null && plugin.getStructureCoreManager() != null) {
+                for (Structure structure : clan.getStructures()) {
+                    if (structure != null && structure.getLocation() != null) {
+                        // Yapıyı pasifleştir (aktiflik kaldır)
+                        plugin.getStructureCoreManager().removeStructure(structure.getLocation());
+                    }
+                }
+            }
+            
+            // YENİ: Klan kristalini temizle
+            clan.setCrystalLocation(null);
             
             // Klanı listeden çıkar
             clans.remove(clan.getId());

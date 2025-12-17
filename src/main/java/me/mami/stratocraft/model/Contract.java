@@ -85,9 +85,11 @@ public class Contract {
         PENDING_TERMS_A,    // Oyuncu A şartlarını belirliyor
         PENDING_TERMS_B,    // Oyuncu B şartlarını belirliyor
         PENDING_APPROVAL,   // Her iki taraf da onay bekleniyor
+        PENDING_FINAL_APPROVAL, // İlk gönderen oyuncunun son onayı bekleniyor
         ACTIVE,             // Aktif
         COMPLETED,          // Tamamlandı
-        BREACHED            // İhlal edildi
+        BREACHED,           // İhlal edildi
+        CANCELLED           // İptal edildi
     }
     
     // Constructor (Çift taraflı kontrat için - YENİ)

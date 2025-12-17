@@ -523,13 +523,20 @@ public class RitualInteractionListener implements Listener {
             event.setCancelled(true);
             
             // Altın Külçe ile General terfisi
-            if (leader.getInventory().getItemInMainHand().getType() == Material.GOLD_INGOT) {
+            ItemStack handItem = leader.getInventory().getItemInMainHand();
+            if (handItem != null && handItem.getType() == Material.GOLD_INGOT) {
                 
                 leader.getNearbyEntities(2, 2, 2).stream()
                     .filter(e -> e instanceof Player && e != leader)
                     .map(e -> (Player)e)
                     .findFirst()
                     .ifPresent(target -> {
+                        // YENİ: Klan üyeliği kontrolü
+                        if (!clan.getMembers().containsKey(target.getUniqueId())) {
+                            leader.sendMessage("§cBu oyuncu klanınızın üyesi değil!");
+                            return;
+                        }
+                        
                         if (clan.getRank(target.getUniqueId()) == Clan.Rank.MEMBER) {
                             clanManager.addMember(clan, target.getUniqueId(), Clan.Rank.GENERAL);
                             
@@ -540,20 +547,30 @@ public class RitualInteractionListener implements Listener {
                             
                             leader.sendMessage("§a" + target.getName() + " General rütbesine yükseltildi!");
                             target.sendTitle("§6§lTERFİ EDİLDİN", "§eGeneral rütbesine yükseltildin!", 10, 70, 20);
-                            leader.getInventory().getItemInMainHand().setAmount(leader.getInventory().getItemInMainHand().getAmount() - 1);
+                            if (handItem.getAmount() > 1) {
+                                handItem.setAmount(handItem.getAmount() - 1);
+                            } else {
+                                leader.getInventory().setItemInMainHand(null);
+                            }
                             
                             setCooldown(leader.getUniqueId());
                         } else {
                             leader.sendMessage("§eBu kişi zaten General veya daha üst rütbede.");
                         }
                     });
-            } else if (leader.getInventory().getItemInMainHand().getType() == Material.IRON_INGOT) {
+            } else if (handItem != null && handItem.getType() == Material.IRON_INGOT) {
                 // Üye terfisi: Recruit -> Member
                 leader.getNearbyEntities(2, 2, 2).stream()
                     .filter(e -> e instanceof Player && e != leader)
                     .map(e -> (Player)e)
                     .findFirst()
                     .ifPresent(target -> {
+                        // YENİ: Klan üyeliği kontrolü
+                        if (!clan.getMembers().containsKey(target.getUniqueId())) {
+                            leader.sendMessage("§cBu oyuncu klanınızın üyesi değil!");
+                            return;
+                        }
+                        
                         if (clan.getRank(target.getUniqueId()) == Clan.Rank.RECRUIT) {
                             clanManager.addMember(clan, target.getUniqueId(), Clan.Rank.MEMBER);
                             
@@ -564,7 +581,11 @@ public class RitualInteractionListener implements Listener {
                             
                             leader.sendMessage("§a" + target.getName() + " Üye rütbesine yükseltildi!");
                             target.sendTitle("§a§lTERFİ EDİLDİN", "§eÜye rütbesine yükseltildin!", 10, 70, 20);
-                            leader.getInventory().getItemInMainHand().setAmount(leader.getInventory().getItemInMainHand().getAmount() - 1);
+                            if (handItem.getAmount() > 1) {
+                                handItem.setAmount(handItem.getAmount() - 1);
+                            } else {
+                                leader.getInventory().setItemInMainHand(null);
+                            }
                             
                             setCooldown(leader.getUniqueId());
                         } else {
@@ -1069,8 +1090,9 @@ public class RitualInteractionListener implements Listener {
             }
             
             // Elinde Kömür var mı?
-            if (leader.getInventory().getItemInMainHand().getType() == Material.COAL || 
-                leader.getInventory().getItemInMainHand().getType() == Material.CHARCOAL) {
+            ItemStack handItem = leader.getInventory().getItemInMainHand();
+            if (handItem != null && (handItem.getType() == Material.COAL || 
+                handItem.getType() == Material.CHARCOAL)) {
                 
                 leader.getNearbyEntities(2, 2, 2).stream()
                     .filter(e -> e instanceof Player && e != leader)
@@ -1103,7 +1125,13 @@ public class RitualInteractionListener implements Listener {
                         
                         leader.sendMessage("§c" + target.getName() + " " + newRank.name() + " rütbesine düşürüldü!");
                         target.sendTitle("§c§lRÜTBE DÜŞÜRÜLDÜ", "§7" + newRank.name(), 10, 70, 20);
-                        leader.getInventory().getItemInMainHand().setAmount(leader.getInventory().getItemInMainHand().getAmount() - 1);
+                        // YENİ: Null kontrolü
+                        ItemStack handItem = leader.getInventory().getItemInMainHand();
+                        if (handItem != null && handItem.getAmount() > 1) {
+                            handItem.setAmount(handItem.getAmount() - 1);
+                        } else if (handItem != null) {
+                            leader.getInventory().setItemInMainHand(null);
+                        }
                         
                         setCooldown(leader.getUniqueId());
                     });

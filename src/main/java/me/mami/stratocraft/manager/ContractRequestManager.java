@@ -3,6 +3,7 @@ package me.mami.stratocraft.manager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
@@ -14,9 +15,10 @@ import me.mami.stratocraft.model.ContractRequest;
 /**
  * Kontrat İsteği Yöneticisi
  * Çift taraflı kontrat sistemi için istek yönetimi
+ * ✅ THREAD-SAFETY: CopyOnWriteArrayList kullanılıyor
  */
 public class ContractRequestManager {
-    private final List<ContractRequest> requests = new ArrayList<>();
+    private final List<ContractRequest> requests = new CopyOnWriteArrayList<>();
     private final me.mami.stratocraft.Main plugin;
     
     public ContractRequestManager(me.mami.stratocraft.Main plugin) {
@@ -52,6 +54,13 @@ public class ContractRequestManager {
             targetPlayer.sendMessage("§7" + senderName + " size kontrat isteği gönderdi");
             targetPlayer.sendMessage("§7Pusuladan kontrol edebilirsiniz");
             targetPlayer.sendMessage("§6═══════════════════════════════════");
+            
+            // HUD'a bildirim gönder
+            if (plugin != null && plugin.getHUDManager() != null) {
+                plugin.getHUDManager().addContractNotification(targetPlayer.getUniqueId(), 
+                    "Yeni kontrat isteği: " + senderName, 
+                    me.mami.stratocraft.manager.HUDManager.ContractNotificationType.INFO);
+            }
         }
         
         return request;
@@ -82,6 +91,13 @@ public class ContractRequestManager {
             senderPlayer.sendMessage("§7" + targetName + " isteğinizi kabul etti");
             senderPlayer.sendMessage("§7Şimdi şartlarınızı belirleyebilirsiniz");
             senderPlayer.sendMessage("§6═══════════════════════════════════");
+            
+            // HUD'a bildirim gönder
+            if (plugin != null && plugin.getHUDManager() != null) {
+                plugin.getHUDManager().addContractNotification(senderPlayer.getUniqueId(), 
+                    "İstek kabul edildi: " + targetName, 
+                    me.mami.stratocraft.manager.HUDManager.ContractNotificationType.SUCCESS);
+            }
         }
         
         return true;
@@ -108,6 +124,13 @@ public class ContractRequestManager {
             Player targetPlayer = Bukkit.getPlayer(request.getTarget());
             String targetName = targetPlayer != null ? targetPlayer.getName() : "Bilinmeyen";
             senderPlayer.sendMessage("§c" + targetName + " kontrat isteğinizi reddetti.");
+            
+            // HUD'a bildirim gönder
+            if (plugin != null && plugin.getHUDManager() != null) {
+                plugin.getHUDManager().addContractNotification(senderPlayer.getUniqueId(), 
+                    "İstek reddedildi: " + targetName, 
+                    me.mami.stratocraft.manager.HUDManager.ContractNotificationType.ERROR);
+            }
         }
         
         return true;

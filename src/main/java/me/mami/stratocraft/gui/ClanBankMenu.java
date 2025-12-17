@@ -3,6 +3,7 @@ package me.mami.stratocraft.gui;
 import me.mami.stratocraft.Main;
 import me.mami.stratocraft.manager.ClanManager;
 import me.mami.stratocraft.manager.clan.ClanBankSystem;
+import me.mami.stratocraft.manager.clan.ClanRankSystem;
 import me.mami.stratocraft.model.Clan;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -34,14 +35,16 @@ public class ClanBankMenu implements Listener {
     private final Main plugin;
     private final ClanManager clanManager;
     private final ClanBankSystem bankSystem;
+    private final ClanRankSystem rankSystem;
     
     // Açık banka menüleri (player -> inventory)
     private final java.util.Map<UUID, Inventory> openMenus = new java.util.concurrent.ConcurrentHashMap<>();
     
-    public ClanBankMenu(Main plugin, ClanManager clanManager, ClanBankSystem bankSystem) {
+    public ClanBankMenu(Main plugin, ClanManager clanManager, ClanBankSystem bankSystem, ClanRankSystem rankSystem) {
         this.plugin = plugin;
         this.clanManager = clanManager;
         this.bankSystem = bankSystem;
+        this.rankSystem = rankSystem;
     }
     
     /**
@@ -237,6 +240,21 @@ public class ClanBankMenu implements Listener {
         ItemStack clicked = event.getCurrentItem();
         
         if (clicked == null || clicked.getType() == Material.AIR) return;
+        
+        Clan clan = clanManager.getClanByPlayer(player.getUniqueId());
+        if (clan == null) {
+            player.sendMessage("§cBir klana üye değilsiniz!");
+            player.closeInventory();
+            return;
+        }
+        
+        // YENİ: Yetki kontrolü
+        if (rankSystem != null && !rankSystem.hasPermission(clan, player.getUniqueId(), 
+                ClanRankSystem.Permission.MANAGE_BANK)) {
+            player.sendMessage("§cBanka işlemleri için yetkiniz yok!");
+            player.closeInventory();
+            return;
+        }
         
         switch (clicked.getType()) {
             case ENDER_CHEST:

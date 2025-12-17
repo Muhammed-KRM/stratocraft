@@ -2,8 +2,12 @@ package me.mami.stratocraft.gui;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -11,6 +15,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -307,7 +314,7 @@ public class ClanTerritoryMenu implements Listener {
     }
     
     /**
-     * Sınırları yeniden hesapla
+     * Sınırları yeniden hesapla (YENİ: Çit kontrolü ile)
      */
     private void recalculateBoundaries(Player player, Clan clan) {
         TerritoryData territoryData = boundaryManager != null ? 
@@ -318,20 +325,167 @@ public class ClanTerritoryMenu implements Listener {
             return;
         }
         
-        player.sendMessage("§7Sınır koordinatları yeniden hesaplanıyor...");
-        
-        if (config.isAsyncBoundaryCalculation()) {
-            boundaryManager.calculateBoundariesAsync(clan, territoryData, (data) -> {
-                player.sendMessage("§a§l✓ Sınır koordinatları yeniden hesaplandı!");
-                player.sendMessage("§7Çit Sayısı: §e" + data.getFenceCount());
-                player.sendMessage("§7Sınır Koordinat Sayısı: §e" + data.getBoundaryCoordinates().size());
-            });
-        } else {
-            boundaryManager.calculateBoundaries(clan, territoryData);
-            player.sendMessage("§a§l✓ Sınır koordinatları yeniden hesaplandı!");
-            player.sendMessage("§7Çit Sayısı: §e" + territoryData.getFenceCount());
-            player.sendMessage("§7Sınır Koordinat Sayısı: §e" + territoryData.getBoundaryCoordinates().size());
+        Location crystalLoc = clan.getCrystalLocation();
+        if (crystalLoc == null) {
+            player.sendMessage("§cKlan kristali bulunamadı!");
+            return;
         }
+        
+        player.sendMessage("§7Çit kontrolü yapılıyor...");
+        
+        // Async çit kontrolü ve sınır hesaplama
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            // YENİ: Klan kristalini çevreleyen çitler tam şekilde kapanıyor mu kontrol et
+            Block crystalBlock = crystalLoc.getBlock();
+            boolean isSurrounded = isSurroundedByClanFences(crystalBlock, clan);
+            
+            if (!isSurrounded) {
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    player.sendMessage("§cKlan kristalini çevreleyen çitler tam şekilde kapanmamış!");
+                    player.sendMessage("§7Boşluk var. Lütfen tüm çitleri kontrol edin.");
+                });
+                return;
+            }
+            
+            // Çitler tam şekilde kapanmış, sınırları yeniden hesapla
+            // Eski sınırları temizle
+            territoryData.clearBoundaries();
+            
+            // Yeni çit lokasyonlarını topla (dünyadan)
+            List<Location> newFenceLocations = collectFenceLocations(crystalLoc, clan);
+            
+            // TerritoryData'yı güncelle
+            territoryData.clearFenceLocations();
+            for (Location fenceLoc : newFenceLocations) {
+                territoryData.addFenceLocation(fenceLoc);
+            }
+            
+            // Sınırları hesapla
+            territoryData.calculateBoundaries();
+            
+            // Main thread'e geri dön
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                player.sendMessage("§a§l✓ Klan alanı güncellendi!");
+                player.sendMessage("§7Çit Sayısı: §e" + territoryData.getFenceCount());
+                player.sendMessage("§7Sınır Koordinat Sayısı: §e" + territoryData.getBoundaryCoordinates().size());
+                
+                // Cache'i güncelle
+                if (territoryManager != null) {
+                    territoryManager.setCacheDirty();
+                }
+            });
+        });
+    }
+    
+    /**
+     * Klan kristalini çevreleyen çitler tam şekilde kapanıyor mu kontrol et
+     */
+    private boolean isSurroundedByClanFences(Block center, Clan clan) {
+        // TerritoryListener'daki isSurroundedByClanFences metoduna benzer
+        // Ama burada sadece klan çitlerini kontrol et
+        Set<Block> visited = new HashSet<>();
+        Queue<Block> queue = new LinkedList<>();
+        queue.add(center);
+        visited.add(center);
+        
+        int iterations = 0;
+        int maxIterations = 5000;
+        
+        while (!queue.isEmpty()) {
+            Block current = queue.poll();
+            iterations++;
+            
+            if (iterations > maxIterations) {
+                return false; // Çok büyük alan
+            }
+            
+            Block[] neighbors = {
+                current.getRelative(BlockFace.NORTH),
+                current.getRelative(BlockFace.SOUTH),
+                current.getRelative(BlockFace.EAST),
+                current.getRelative(BlockFace.WEST)
+            };
+            
+            for (Block neighbor : neighbors) {
+                if (visited.contains(neighbor)) continue;
+                
+                if (neighbor.getType() == Material.OAK_FENCE) {
+                    // Klan çiti mi kontrol et
+                    boolean isClanFence = false;
+                    if (config != null) {
+                        String metadataKey = config.getFenceMetadataKey();
+                        isClanFence = neighbor.hasMetadata(metadataKey);
+                    }
+                    
+                    // TerritoryData'dan kontrol et
+                    if (!isClanFence && boundaryManager != null) {
+                        TerritoryData data = boundaryManager.getTerritoryData(clan);
+                        if (data != null) {
+                            for (Location fenceLoc : data.getFenceLocations()) {
+                                if (fenceLoc.getWorld().equals(neighbor.getWorld()) &&
+                                    fenceLoc.getBlockX() == neighbor.getX() &&
+                                    fenceLoc.getBlockY() == neighbor.getY() &&
+                                    fenceLoc.getBlockZ() == neighbor.getZ()) {
+                                    isClanFence = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (isClanFence) {
+                        continue; // Sınır bulundu
+                    }
+                }
+                
+                if (neighbor.getType() != Material.AIR) {
+                    continue; // Engel
+                }
+                
+                visited.add(neighbor);
+                queue.add(neighbor);
+            }
+        }
+        
+        // Eğer döngü limit aşılmadan bittiyse, kapalı bir alandır
+        return true;
+    }
+    
+    /**
+     * Klan kristali etrafındaki çit lokasyonlarını topla
+     */
+    private List<Location> collectFenceLocations(Location crystalLoc, Clan clan) {
+        List<Location> fenceLocations = new ArrayList<>();
+        
+        // Kristal etrafında 100 blok yarıçapta çitleri ara
+        int searchRadius = 100;
+        World world = crystalLoc.getWorld();
+        if (world == null) return fenceLocations;
+        
+        for (int x = -searchRadius; x <= searchRadius; x++) {
+            for (int z = -searchRadius; z <= searchRadius; z++) {
+                Block block = world.getBlockAt(
+                    crystalLoc.getBlockX() + x,
+                    crystalLoc.getBlockY(),
+                    crystalLoc.getBlockZ() + z
+                );
+                
+                if (block.getType() == Material.OAK_FENCE) {
+                    // Klan çiti mi kontrol et
+                    boolean isClanFence = false;
+                    if (config != null) {
+                        String metadataKey = config.getFenceMetadataKey();
+                        isClanFence = block.hasMetadata(metadataKey);
+                    }
+                    
+                    if (isClanFence) {
+                        fenceLocations.add(block.getLocation());
+                    }
+                }
+            }
+        }
+        
+        return fenceLocations;
     }
     
     /**

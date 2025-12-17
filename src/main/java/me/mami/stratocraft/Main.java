@@ -323,8 +323,10 @@ public class Main extends JavaPlugin {
         this.clanTerritoryMenu = clanTerritoryMenu;
         this.territoryBoundaryManager = territoryBoundaryManager;
         this.territoryConfig = territoryConfig;
-        Bukkit.getPluginManager().registerEvents(new StructureActivationListener(clanManager, territoryManager), this); // YAPI
-                                                                                                                        // AKTİVASYONU
+        // YENİ: StructureActivationListener'a ClanRankSystem ekle
+        Bukkit.getPluginManager().registerEvents(
+            new StructureActivationListener(clanManager, territoryManager, 
+                clanRankSystem != null ? clanRankSystem : null), this); // YAPI AKTİVASYONU
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.StructureMenuListener(this, clanManager, territoryManager), this); // YAPI MENÜLERİ
         // Yeni Yapı Sistemi Listener'ı
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.StructureCoreListener(
@@ -1503,6 +1505,12 @@ public class Main extends JavaPlugin {
             this, clanManager, clanMissionSystem);
         Bukkit.getPluginManager().registerEvents(clanMissionMenu, this);
         
+        // YENİ: StructureActivationListener - ClanRankSystem artık hazır, tekrar kaydet
+        // Not: onEnable() içinde zaten null ile kaydedilmiş, burada clanRankSystem ile tekrar kaydediyoruz
+        Bukkit.getPluginManager().registerEvents(
+            new me.mami.stratocraft.listener.StructureActivationListener(
+                clanManager, territoryManager, clanRankSystem), this);
+        
         // 8. ClanStatsMenu (GUI menüsü)
         clanStatsMenu = new me.mami.stratocraft.gui.ClanStatsMenu(this, clanManager);
         Bukkit.getPluginManager().registerEvents(clanStatsMenu, this);
@@ -1514,6 +1522,11 @@ public class Main extends JavaPlugin {
             // Manager'ları set et
             if (contractRequestManager != null && contractTermsManager != null) {
                 contractMenu.setManagers(contractRequestManager, contractTermsManager);
+                
+                // HUDManager'a kontrat manager referanslarını ekle
+                if (hudManager != null) {
+                    hudManager.setContractManagers(contractRequestManager, contractTermsManager);
+                }
             }
             Bukkit.getPluginManager().registerEvents(contractMenu, this);
             
@@ -1525,7 +1538,7 @@ public class Main extends JavaPlugin {
             
             // 11. ClanBankMenu (Klan bankası GUI)
             if (clanBankSystem != null) {
-                clanBankMenu = new me.mami.stratocraft.gui.ClanBankMenu(this, clanManager, clanBankSystem);
+                clanBankMenu = new me.mami.stratocraft.gui.ClanBankMenu(this, clanManager, clanBankSystem, clanRankSystem);
                 Bukkit.getPluginManager().registerEvents(clanBankMenu, this);
             }
             

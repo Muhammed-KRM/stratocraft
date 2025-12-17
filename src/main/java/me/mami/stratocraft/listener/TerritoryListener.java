@@ -95,6 +95,17 @@ public class TerritoryListener implements Listener {
             return; // Kristal yoksa koruma yok
         }
         
+        // YENİ: Klan yapıları kırılmamalı (korunmalı)
+        Block block = event.getBlock();
+        if (plugin != null && plugin.getStructureCoreManager() != null) {
+            if (plugin.getStructureCoreManager().isStructureCore(block)) {
+                // Bu bir yapı çekirdeği, kırılamaz
+                event.setCancelled(true);
+                event.getPlayer().sendMessage("§cKlan yapıları kırılamaz! Yapıyı kaldırmak için klan menüsünü kullanın.");
+                return;
+            }
+        }
+        
         // Kendi yerinse kırılabilir (Rütbe kontrolü dahil)
         Clan playerClan = territoryManager.getClanManager().getClanByPlayer(event.getPlayer().getUniqueId());
         
@@ -204,10 +215,16 @@ public class TerritoryListener implements Listener {
         if (!(event.getPlayer() instanceof Player)) return;
         Player player = (Player) event.getPlayer();
         
-        // Kendi yerinse açılabilir
+        // Kendi yerinse açılabilir (Rütbe kontrolü dahil)
         Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
         if (playerClan != null && playerClan.equals(owner)) {
-            return; // Klan üyesi açabilir
+            // YENİ: Recruit chest açamaz
+            if (playerClan.getRank(player.getUniqueId()) == Clan.Rank.RECRUIT) {
+                event.setCancelled(true);
+                player.sendMessage("§cAcemilerin chest açma yetkisi yok!");
+                return;
+            }
+            return; // Yetkisi varsa açabilir
         }
         
         // Misafir izni
@@ -458,10 +475,16 @@ public class TerritoryListener implements Listener {
             return; // Kristal yoksa koruma yok
         }
         
-        // Kendi yerinse yerleştirilebilir
+        // Kendi yerinse yerleştirilebilir (Rütbe kontrolü dahil)
         Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
         if (playerClan != null && playerClan.equals(owner)) {
-            return; // Klan üyesi yerleştirebilir
+            // YENİ: Recruit blok yerleştiremez
+            if (playerClan.getRank(player.getUniqueId()) == Clan.Rank.RECRUIT) {
+                event.setCancelled(true);
+                player.sendMessage("§cAcemilerin blok yerleştirme yetkisi yok!");
+                return;
+            }
+            return; // Yetkisi varsa yerleştirebilir
         }
         
         // Misafir İzni (Guest)
@@ -1017,6 +1040,12 @@ public class TerritoryListener implements Listener {
             
             // Lider kendi kristalini kırıyor mu?
             if (breaker != null && owner.getRank(breaker.getUniqueId()) == Clan.Rank.LEADER) {
+                // YENİ: Klan alanı korumasını kaldır ve sınırları temizle
+                owner.setCrystalLocation(null);
+                if (boundaryManager != null) {
+                    boundaryManager.removeTerritoryData(owner);
+                }
+                
                 // Lider klanı bozdu
                 territoryManager.getClanManager().disbandClan(owner);
                 territoryManager.setCacheDirty(); // Cache'i güncelle
@@ -1035,6 +1064,12 @@ public class TerritoryListener implements Listener {
                         breaker.sendMessage("§6§lZAFER! Düşman kristalini parçaladın.");
                     }
                 }
+                // YENİ: Klan alanı korumasını kaldır ve sınırları temizle
+                owner.setCrystalLocation(null);
+                if (boundaryManager != null) {
+                    boundaryManager.removeTerritoryData(owner);
+                }
+                
                 territoryManager.getClanManager().disbandClan(owner);
                 territoryManager.setCacheDirty(); // Cache'i güncelle
                 crystal.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, crystal.getLocation(), 1);

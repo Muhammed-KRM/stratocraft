@@ -15,6 +15,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -60,6 +61,9 @@ public class ContractMenu implements Listener {
     
     // Kontrat geçmişi (oyuncu başına)
     private final Map<UUID, List<Contract>> contractHistory = new ConcurrentHashMap<>();
+    
+    // Personal Terminal'den mi açıldı? (oyuncu -> isPersonalTerminal)
+    private final Map<UUID, Boolean> isPersonalTerminal = new ConcurrentHashMap<>();
     
     /**
      * Kontrat oluşturma wizard durumu
@@ -119,6 +123,19 @@ public class ContractMenu implements Listener {
     }
     
     /**
+     * HUD'a bildirim gönder
+     */
+    private void sendContractNotification(Player player, String message, 
+                                        me.mami.stratocraft.manager.HUDManager.ContractNotificationType type) {
+        if (player == null || message == null || message.isEmpty()) return;
+        
+        me.mami.stratocraft.manager.HUDManager hudManager = plugin != null ? plugin.getHUDManager() : null;
+        if (hudManager != null) {
+            hudManager.addContractNotification(player.getUniqueId(), message, type);
+        }
+    }
+    
+    /**
      * Manager'ları set et (Main.java'dan çağrılır)
      */
     public void setManagers(me.mami.stratocraft.manager.ContractRequestManager requestManager,
@@ -157,6 +174,22 @@ public class ContractMenu implements Listener {
      * Ana kontrat listesi menüsünü aç
      */
     public void openMainMenu(Player player, int page) {
+        openMainMenu(player, page, false);
+    }
+    
+    /**
+     * Ana kontrat menüsünü aç
+     * @param player Oyuncu
+     * @param page Sayfa numarası
+     * @param fromPersonalTerminal Personal Terminal'den mi açıldı?
+     */
+    public void openMainMenu(Player player, int page, boolean fromPersonalTerminal) {
+        // Personal Terminal flag'ini kaydet
+        if (fromPersonalTerminal) {
+            isPersonalTerminal.put(player.getUniqueId(), true);
+        } else {
+            isPersonalTerminal.put(player.getUniqueId(), false);
+        }
         if (player == null) return;
         
         // Manager null kontrolleri
@@ -238,6 +271,19 @@ public class ContractMenu implements Listener {
         menu.setItem(48, createButton(Material.BARRIER, "§cKapat", null));
         
         // ÇİFT TARAFLI KONTRAT SİSTEMİ - YENİ BUTONLAR
+        // Atılan İstekler (Slot 40) - YENİ
+        if (contractRequestManager != null) {
+            List<me.mami.stratocraft.model.ContractRequest> sentRequests = 
+                contractRequestManager.getSentPendingRequests(player.getUniqueId());
+            if (!sentRequests.isEmpty()) {
+                menu.setItem(40, createButton(Material.BOOK, "§6§lAtılan İstekler", 
+                    Arrays.asList("§7Gönderdiğiniz kontrat istekleri",
+                        "§7Bekleyen: §e" + sentRequests.size(),
+                        "§7",
+                        "§aSol tıkla aç")));
+            }
+        }
+        
         // Gelen İstekler (Slot 43)
         if (contractRequestManager != null) {
             List<me.mami.stratocraft.model.ContractRequest> pendingRequests = 
@@ -263,6 +309,89 @@ public class ContractMenu implements Listener {
                         "§7",
                         "§aSol tıkla aç")));
             }
+        }
+        
+        // Aktif Kontratlar (Slot 41) - YENİ
+        List<Contract> activeContracts = new ArrayList<>();
+        for (Contract contract : contracts) {
+            if (contract == null) continue;
+            
+            // Tek taraflı aktif kontratlar
+            if (!contract.isBilateralContract() && 
+                (contract.getIssuer().equals(player.getUniqueId()) || 
+                 (contract.getAcceptor() != null && contract.getAcceptor().equals(player.getUniqueId()))) &&
+                !contract.isExpired() && !contract.isBreached() && !contract.isCompleted()) {
+                activeContracts.add(contract);
+            }
+            // Çift taraflı aktif kontratlar
+            else if (contract.isBilateralContract() && 
+                (contract.getPlayerA().equals(player.getUniqueId()) || 
+                 contract.getPlayerB().equals(player.getUniqueId())) &&
+                contract.getContractStatus() == Contract.ContractStatus.ACTIVE) {
+                activeContracts.add(contract);
+            }
+        }
+        
+        if (!activeContracts.isEmpty()) {
+            menu.setItem(41, createButton(Material.DIAMOND, "§b§lAktif Kontratlar", 
+                Arrays.asList("§7Aktif kontratlarınızı görüntüle",
+                    "§7Aktif: §b" + activeContracts.size(),
+                    "§7",
+                    "§aSol tıkla aç")));
+        }
+        
+        // Eski Kontratlar (Slot 42) - YENİ (İptal edilenler ve tamamlananlar)
+        List<Contract> oldContracts = new ArrayList<>();
+        for (Contract contract : contracts) {
+            if (contract == null) continue;
+            
+            boolean isMyContract = false;
+            if (!contract.isBilateralContract()) {
+                isMyContract = contract.getIssuer().equals(player.getUniqueId()) || 
+                    (contract.getAcceptor() != null && contract.getAcceptor().equals(player.getUniqueId()));
+            } else {
+                isMyContract = contract.getPlayerA().equals(player.getUniqueId()) || 
+                    contract.getPlayerB().equals(player.getUniqueId());
+            }
+            
+            if (isMyContract) {
+                // İptal edilenler
+                if (contract.isBilateralContract() && 
+                    contract.getContractStatus() == Contract.ContractStatus.CANCELLED) {
+                    oldContracts.add(contract);
+                }
+                // Tamamlananlar
+                else if (contract.isCompleted() || 
+                    (contract.isBilateralContract() && 
+                     contract.getContractStatus() == Contract.ContractStatus.COMPLETED)) {
+                    oldContracts.add(contract);
+                }
+                // İhlal edilenler
+                else if (contract.isBreached() || 
+                    (contract.isBilateralContract() && 
+                     contract.getContractStatus() == Contract.ContractStatus.BREACHED)) {
+                    oldContracts.add(contract);
+                }
+            }
+        }
+        
+        if (!oldContracts.isEmpty()) {
+            long cancelledCount = oldContracts.stream().filter(c -> 
+                c.isBilateralContract() && c.getContractStatus() == Contract.ContractStatus.CANCELLED).count();
+            long completedCount = oldContracts.stream().filter(c -> 
+                c.isCompleted() || (c.isBilateralContract() && c.getContractStatus() == Contract.ContractStatus.COMPLETED)).count();
+            long breachedCount = oldContracts.stream().filter(c -> 
+                c.isBreached() || (c.isBilateralContract() && c.getContractStatus() == Contract.ContractStatus.BREACHED)).count();
+            
+            menu.setItem(42, createButton(Material.PAPER, "§7§lEski Kontratlar", 
+                Arrays.asList("§7Eski kontratlarınızı görüntüle",
+                    "§7",
+                    "§7İptal Edilen: §c" + cancelledCount,
+                    "§7Tamamlanan: §a" + completedCount,
+                    "§7İhlal Edilen: §c" + breachedCount,
+                    "§7Toplam: §e" + oldContracts.size(),
+                    "§7",
+                    "§aSol tıkla aç")));
         }
         
         // Benim Kontratlarım (Slot 46) - Oluşturduğu kontratlar + çift taraflı kontratlar
@@ -660,18 +789,38 @@ public class ContractMenu implements Listener {
      * Kontrat oluşturma wizard'ını başlat
      */
     public void startCreationWizard(Player player) {
+        startCreationWizard(player, false);
+    }
+    
+    /**
+     * Kontrat oluşturma wizard'ını başlat
+     * @param player Oyuncu
+     * @param fromPersonalTerminal Personal Terminal'den mi açıldı?
+     */
+    public void startCreationWizard(Player player, boolean fromPersonalTerminal) {
         if (player == null) return;
         
-        // Klan kontrolü
-        Clan clan = clanManager != null ? clanManager.getClanByPlayer(player.getUniqueId()) : null;
-        if (clan == null) {
-            player.sendMessage("§cKontrat oluşturmak için bir klana üye olmalısınız!");
-            return;
+        // Personal Terminal kontrolü
+        if (fromPersonalTerminal) {
+            // Personal Terminal'den sadece oyuncu-oyuncu kontratları yapılabilir
+            // Klan kontrolü gerekmez
+        } else {
+            // CONTRACT_OFFICE'den tüm kontrat tipleri yapılabilir
+            // Klan kontrolü gerekli (klan kontratları için)
+            Clan clan = clanManager != null ? clanManager.getClanByPlayer(player.getUniqueId()) : null;
+            if (clan == null) {
+                player.sendMessage("§cKlan kontratları oluşturmak için bir klana üye olmalısınız!");
+                player.sendMessage("§7Oyuncu-oyuncu kontratları için Personal Terminal kullanın.");
+                return;
+            }
         }
         
         // Wizard durumu oluştur
         ContractWizardState state = new ContractWizardState();
         wizardStates.put(player.getUniqueId(), state);
+        
+        // Personal Terminal flag'ini kaydet
+        isPersonalTerminal.put(player.getUniqueId(), fromPersonalTerminal);
         
         // Önce kapsam seçim menüsünü aç (çift taraflı kontrat için)
         openScopeSelectionMenu(player);
@@ -1183,9 +1332,29 @@ public class ContractMenu implements Listener {
         else if (title.startsWith("§aKabul Edilen İstekler")) {
             handleAcceptedRequestsClick(event);
         }
+        // Atılan İstekler (YENİ)
+        else if (title.startsWith("§6Atılan İstekler")) {
+            handleSentRequestsClick(event);
+        }
+        // Aktif Kontratlar (YENİ)
+        else if (title.startsWith("§bAktif Kontratlar")) {
+            handleActiveContractsClick(event);
+        }
+        // Eski Kontratlar (YENİ)
+        else if (title.startsWith("§7Eski Kontratlar")) {
+            handleOldContractsClick(event);
+        }
         // Kontrat Şartları (ÇİFT TARAFLI KONTRAT)
         else if (title.equals("§6Kontrat Şartları")) {
             handleTermsViewClick(event);
+        }
+        // Kontrat Karar Menüsü (Şart Ekle veya Kontratı Bitir)
+        else if (title.equals("§6Kontrat Kararı")) {
+            handleContractDecisionClick(event);
+        }
+        // Son Onay Menüsü (İlk gönderen oyuncu için - YENİ)
+        else if (title.equals("§6Son Onay")) {
+            handleFinalApprovalClick(event);
         }
         // Oyuncu seçim menüsü
         else if (title.equals("§6Hedef Oyuncu Seç") || title.equals("§6Hedef Oyuncu Seç (İstek Gönder)")) {
@@ -1220,13 +1389,37 @@ public class ContractMenu implements Listener {
                 
             case WRITABLE_BOOK:
                 // Yeni kontrat oluştur
-                startCreationWizard(player);
+                // Personal Terminal kontrolü
+                boolean fromPersonalTerminal = isPersonalTerminal.getOrDefault(player.getUniqueId(), false);
+                startCreationWizard(player, fromPersonalTerminal);
                 break;
                 
             case BOOK:
+                // Atılan İstekler (YENİ)
+                if (event.getSlot() == 40) {
+                    openSentRequestsMenu(player, 1);
+                }
                 // Şablonlardan oluştur
-                if (event.getSlot() == 47) {
+                else if (event.getSlot() == 47) {
                     openTemplateMenu(player);
+                }
+                break;
+                
+            case DIAMOND:
+                // Aktif Kontratlar (YENİ)
+                if (event.getSlot() == 41) {
+                    openActiveContractsMenu(player, 1);
+                }
+                break;
+                
+            case PAPER:
+                // Eski Kontratlar (YENİ)
+                if (event.getSlot() == 42) {
+                    openOldContractsMenu(player, 1);
+                }
+                // Kontrat geçmişi
+                else if (event.getSlot() == 51) {
+                    openContractHistoryMenu(player, 1);
                 }
                 break;
                 
@@ -1635,31 +1828,45 @@ public class ContractMenu implements Listener {
             return;
         }
         
+        // Personal Terminal kontrolü
+        boolean fromPersonalTerminal = isPersonalTerminal.getOrDefault(player.getUniqueId(), false);
+        
         Inventory menu = Bukkit.createInventory(null, 27, "§6Kontrat Kapsamı Seç");
         
-        // Kapsam seçenekleri
-        Contract.ContractScope[] scopes = {
-            Contract.ContractScope.PLAYER_TO_PLAYER,
-            Contract.ContractScope.CLAN_TO_CLAN,
-            Contract.ContractScope.PLAYER_TO_CLAN,
-            Contract.ContractScope.CLAN_TO_PLAYER
-        };
-        
-        Material[] icons = {
-            Material.PLAYER_HEAD,
-            Material.WHITE_BANNER,
-            Material.EMERALD,
-            Material.GOLD_INGOT
-        };
-        
-        int[] slots = {10, 11, 12, 13};
-        
-        for (int i = 0; i < scopes.length; i++) {
-            List<String> lore = new ArrayList<>();
-            lore.add("§7═══════════════════════");
-            lore.add("§7" + getContractScopeDescription(scopes[i]));
-            lore.add("§7═══════════════════════");
-            menu.setItem(slots[i], createButton(icons[i], "§e" + getContractScopeName(scopes[i]), lore));
+        if (fromPersonalTerminal) {
+            // Personal Terminal'den sadece PLAYER_TO_PLAYER göster
+            menu.setItem(13, createButton(Material.PLAYER_HEAD, "§eOyuncu → Oyuncu", 
+                Arrays.asList("§7═══════════════════════",
+                    "§7Oyuncudan oyuncuya kontrat",
+                    "§7═══════════════════════",
+                    "§c§lNot: Personal Terminal'den",
+                    "§c§lsadece oyuncu-oyuncu kontratları",
+                    "§c§lyapılabilir.")));
+        } else {
+            // CONTRACT_OFFICE'den tüm kapsamlar göster
+            Contract.ContractScope[] scopes = {
+                Contract.ContractScope.PLAYER_TO_PLAYER,
+                Contract.ContractScope.CLAN_TO_CLAN,
+                Contract.ContractScope.PLAYER_TO_CLAN,
+                Contract.ContractScope.CLAN_TO_PLAYER
+            };
+            
+            Material[] icons = {
+                Material.PLAYER_HEAD,
+                Material.WHITE_BANNER,
+                Material.EMERALD,
+                Material.GOLD_INGOT
+            };
+            
+            int[] slots = {10, 11, 12, 13};
+            
+            for (int i = 0; i < scopes.length; i++) {
+                List<String> lore = new ArrayList<>();
+                lore.add("§7═══════════════════════");
+                lore.add("§7" + getContractScopeDescription(scopes[i]));
+                lore.add("§7═══════════════════════");
+                menu.setItem(slots[i], createButton(icons[i], "§e" + getContractScopeName(scopes[i]), lore));
+            }
         }
         
         // Geri butonu
@@ -1897,6 +2104,9 @@ public class ContractMenu implements Listener {
             return;
         }
         
+        // Personal Terminal kontrolü
+        boolean fromPersonalTerminal = isPersonalTerminal.getOrDefault(player.getUniqueId(), false);
+        
         switch (clicked.getType()) {
             case ARROW:
                 // Geri - Tip seçimine dön
@@ -1935,6 +2145,12 @@ public class ContractMenu implements Listener {
                 break;
                 
             case WHITE_BANNER:
+                // CLAN_TO_CLAN - Personal Terminal'den yapılamaz
+                if (fromPersonalTerminal) {
+                    player.sendMessage("§cPersonal Terminal'den klan kontratları yapılamaz!");
+                    player.sendMessage("§7Klan kontratları için CONTRACT_OFFICE yapısını kullanın.");
+                    return;
+                }
                 state.scope = Contract.ContractScope.CLAN_TO_CLAN;
                 state.step = 2;
                 player.closeInventory();
@@ -1942,6 +2158,12 @@ public class ContractMenu implements Listener {
                 break;
                 
             case EMERALD:
+                // PLAYER_TO_CLAN - Personal Terminal'den yapılamaz
+                if (fromPersonalTerminal) {
+                    player.sendMessage("§cPersonal Terminal'den klan kontratları yapılamaz!");
+                    player.sendMessage("§7Klan kontratları için CONTRACT_OFFICE yapısını kullanın.");
+                    return;
+                }
                 state.scope = Contract.ContractScope.PLAYER_TO_CLAN;
                 state.step = 2;
                 player.closeInventory();
@@ -1949,6 +2171,12 @@ public class ContractMenu implements Listener {
                 break;
                 
             case GOLD_INGOT:
+                // CLAN_TO_PLAYER - Personal Terminal'den yapılamaz
+                if (fromPersonalTerminal) {
+                    player.sendMessage("§cPersonal Terminal'den klan kontratları yapılamaz!");
+                    player.sendMessage("§7Klan kontratları için CONTRACT_OFFICE yapısını kullanın.");
+                    return;
+                }
                 state.scope = Contract.ContractScope.CLAN_TO_PLAYER;
                 state.step = 2;
                 player.closeInventory();
@@ -2797,11 +3025,30 @@ public class ContractMenu implements Listener {
                                             contractRequestManager.sendRequest(player.getUniqueId(), targetUUID, state.scope);
                                         
                                         if (request != null) {
+                                            // İlk gönderenin şartlarını kaydet (tek taraflı kontrat için)
+                                            // Wizard state'deki şartları ContractTerms olarak kaydet
+                                            if (contractTermsManager != null && state.contractType != null) {
+                                                // Request ID'yi state'e ekle
+                                                state.contractRequestId = request.getId();
+                                                // Şartları kaydet
+                                                me.mami.stratocraft.model.ContractTerms senderTerms = 
+                                                    contractTermsManager.createTerms(request.getId(), player.getUniqueId(), state);
+                                                if (senderTerms != null) {
+                                                    // Şartları onayla (ilk gönderen kendi şartlarını onaylamış sayılır)
+                                                    contractTermsManager.approveTerms(senderTerms.getId(), player.getUniqueId());
+                                                }
+                                            }
+                                            
                                             player.sendMessage("§6═══════════════════════════════════");
                                             player.sendMessage("§a§lKONTRAT İSTEĞİ GÖNDERİLDİ!");
                                             player.sendMessage("§7" + Bukkit.getOfflinePlayer(targetUUID).getName() + " size kontrat isteği gönderdi");
                                             player.sendMessage("§7İstek kabul edildiğinde bildirim alacaksınız");
                                             player.sendMessage("§6═══════════════════════════════════");
+                                            
+                                            // HUD'a bildirim gönder
+                                            sendContractNotification(player, "İstek gönderildi: " + 
+                                                Bukkit.getOfflinePlayer(targetUUID).getName(), 
+                                                me.mami.stratocraft.manager.HUDManager.ContractNotificationType.SUCCESS);
                                             
                                             wizardStates.remove(player.getUniqueId());
                                             player.closeInventory();
@@ -2881,6 +3128,30 @@ public class ContractMenu implements Listener {
         org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
             processChatInput(player, state, message);
         });
+    }
+    
+    /**
+     * Oyuncu oyundan çıktığında wizard state'lerini temizle
+     */
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
+        
+        // Wizard state temizle
+        wizardStates.remove(playerId);
+        
+        // Görüntülenen kontrat temizle
+        viewingContract.remove(playerId);
+        
+        // Sayfa numarası temizle
+        currentPages.remove(playerId);
+        
+        // Personal Terminal flag'ini temizle
+        isPersonalTerminal.remove(playerId);
+        
+        // İptal isteklerini temizle (bu oyuncunun gönderdiği istekler)
+        cancelRequests.entrySet().removeIf(entry -> entry.getValue().equals(playerId));
     }
     
     /**
@@ -3400,6 +3671,10 @@ public class ContractMenu implements Listener {
                 player.sendMessage("§7onaylayabileceksiniz.");
                 player.sendMessage("§6═══════════════════════════════════");
                 
+                // HUD'a bildirim gönder
+                sendContractNotification(player, "Şartlarınız kaydedildi", 
+                    me.mami.stratocraft.manager.HUDManager.ContractNotificationType.SUCCESS);
+                
                 // Şartları onayla
                 contractTermsManager.approveTerms(terms.getId(), player.getUniqueId());
                 
@@ -3412,18 +3687,36 @@ public class ContractMenu implements Listener {
                     me.mami.stratocraft.model.ContractTerms otherTerms = 
                         contractTermsManager.getTermsByRequest(state.contractRequestId, otherPlayerId);
                     
-                    if (otherTerms != null && otherTerms.isApproved()) {
-                        // Her iki taraf da şartları onayladı, kontratı oluştur
-                        createBilateralContract(request, terms, otherTerms);
+                    // YENİ: Her durumda ilk gönderen oyuncuya son onay bildirimi gönder
+                    // Eğer şartları belirleyen kişi ilk gönderen değilse (yani target ise)
+                    if (request.getTarget().equals(player.getUniqueId())) {
+                        // Target şartlarını belirledi, sender'a son onay bildirimi gönder
+                        org.bukkit.entity.Player senderPlayer = Bukkit.getPlayer(request.getSender());
+                        if (senderPlayer != null && senderPlayer.isOnline()) {
+                            senderPlayer.sendMessage("§6═══════════════════════════════════");
+                            senderPlayer.sendMessage("§e§lSON ONAY GEREKİYOR!");
+                            senderPlayer.sendMessage("§7" + player.getName() + " şartlarını belirledi");
+                            senderPlayer.sendMessage("§7Şimdi kontratı son kez onaylamanız gerekiyor");
+                            senderPlayer.sendMessage("§7Kabul ederseniz kontrat aktif olacak");
+                            senderPlayer.sendMessage("§7Reddederseniz kontrat iptal olacak");
+                            senderPlayer.sendMessage("§6═══════════════════════════════════");
+                            
+                            // HUD'a bildirim gönder
+                            sendContractNotification(senderPlayer, "Son onay gerekiyor: " + player.getName(), 
+                                me.mami.stratocraft.manager.HUDManager.ContractNotificationType.WARNING);
+                            
+                            // İlk gönderen oyuncuya son onay menüsü aç
+                            openFinalApprovalMenu(senderPlayer, request.getId());
+                        }
                     } else {
-                        // Karşı tarafa bildirim gönder
-                        org.bukkit.entity.Player otherPlayer = Bukkit.getPlayer(otherPlayerId);
-                        if (otherPlayer != null && otherPlayer.isOnline()) {
-                            otherPlayer.sendMessage("§6═══════════════════════════════════");
-                            otherPlayer.sendMessage("§e§lŞARTLAR HAZIR!");
-                            otherPlayer.sendMessage("§7" + player.getName() + " şartlarını belirledi");
-                            otherPlayer.sendMessage("§7Pusuladan kontrol edebilirsiniz");
-                            otherPlayer.sendMessage("§6═══════════════════════════════════");
+                        // Sender şartlarını belirledi, target'a bildirim gönder
+                        org.bukkit.entity.Player targetPlayer = Bukkit.getPlayer(request.getTarget());
+                        if (targetPlayer != null && targetPlayer.isOnline()) {
+                            targetPlayer.sendMessage("§6═══════════════════════════════════");
+                            targetPlayer.sendMessage("§e§lŞARTLAR HAZIR!");
+                            targetPlayer.sendMessage("§7" + player.getName() + " şartlarını belirledi");
+                            targetPlayer.sendMessage("§7İlk gönderen oyuncu onayladığında kontrat aktif olacak");
+                            targetPlayer.sendMessage("§6═══════════════════════════════════");
                         }
                     }
                 }
@@ -3540,6 +3833,10 @@ public class ContractMenu implements Listener {
             playerA.sendMessage("§c1 kalp kaybettiniz (kan imzası)");
             playerA.sendMessage("§7Kontrat tamamlandığında kalp geri verilecek");
             playerA.sendMessage("§6═══════════════════════════════════");
+            
+            // HUD'a bildirim gönder
+            sendContractNotification(playerA, "Kontrat aktif oldu", 
+                me.mami.stratocraft.manager.HUDManager.ContractNotificationType.SUCCESS);
         }
         
         if (playerB != null && playerB.isOnline()) {
@@ -3550,6 +3847,10 @@ public class ContractMenu implements Listener {
             playerB.sendMessage("§c1 kalp kaybettiniz (kan imzası)");
             playerB.sendMessage("§7Kontrat tamamlandığında kalp geri verilecek");
             playerB.sendMessage("§6═══════════════════════════════════");
+            
+            // HUD'a bildirim gönder
+            sendContractNotification(playerB, "Kontrat aktif oldu", 
+                me.mami.stratocraft.manager.HUDManager.ContractNotificationType.SUCCESS);
         }
     }
     
@@ -4230,8 +4531,14 @@ public class ContractMenu implements Listener {
             // Kabul et
             if (contractRequestManager.acceptRequest(requestId, player.getUniqueId())) {
                 player.sendMessage("§aKontrat isteği kabul edildi!");
+                
+                // HUD'a bildirim gönder
+                sendContractNotification(player, "İstek kabul edildi", 
+                    me.mami.stratocraft.manager.HUDManager.ContractNotificationType.SUCCESS);
+                
                 player.closeInventory();
-                openAcceptedRequestsMenu(player, 1);
+                // YENİ: Şart ekle veya kontratı bitir seçim menüsü
+                openContractDecisionMenu(player, requestId);
             } else {
                 player.sendMessage("§cİstek kabul edilemedi!");
             }
@@ -4239,6 +4546,11 @@ public class ContractMenu implements Listener {
             // Reddet
             if (contractRequestManager.rejectRequest(requestId, player.getUniqueId())) {
                 player.sendMessage("§cKontrat isteği reddedildi.");
+                
+                // HUD'a bildirim gönder
+                sendContractNotification(player, "İstek reddedildi", 
+                    me.mami.stratocraft.manager.HUDManager.ContractNotificationType.WARNING);
+                
                 openIncomingRequestsMenu(player, 1);
             } else {
                 player.sendMessage("§cİstek reddedilemedi!");
@@ -4474,6 +4786,140 @@ public class ContractMenu implements Listener {
     }
     
     /**
+     * Şart Onaylama Menüsü (İlk gönderen oyuncu için)
+     * Karşı tarafın şartlarını görüp onaylamak için
+     */
+    private void openTermsApprovalMenu(Player player, UUID requestId) {
+        if (player == null || requestId == null || contractRequestManager == null || 
+            contractTermsManager == null) return;
+        
+        me.mami.stratocraft.model.ContractRequest request = contractRequestManager.getRequest(requestId);
+        if (request == null) return;
+        
+        UUID otherPlayerId = request.getSender().equals(player.getUniqueId()) ? 
+            request.getTarget() : request.getSender();
+        org.bukkit.OfflinePlayer otherPlayer = Bukkit.getOfflinePlayer(otherPlayerId);
+        String otherName = otherPlayer.getName() != null ? otherPlayer.getName() : "Bilinmeyen";
+        
+        me.mami.stratocraft.model.ContractTerms myTerms = 
+            contractTermsManager.getTermsByRequest(requestId, player.getUniqueId());
+        me.mami.stratocraft.model.ContractTerms otherTerms = 
+            contractTermsManager.getTermsByRequest(requestId, otherPlayerId);
+        
+        if (myTerms == null || otherTerms == null) {
+            player.sendMessage("§cŞartlar henüz hazır değil!");
+            return;
+        }
+        
+        Inventory menu = Bukkit.createInventory(null, 27, "§6Şartları Onayla");
+        
+        // Senin şartların (Slot 11)
+        List<String> myLore = createTermsLore(myTerms, otherName, true);
+        myLore.add("§7");
+        myLore.add("§7§lSENİN ŞARTLARIN");
+        menu.setItem(11, createButton(Material.BOOK, "§e§lSENİN ŞARTLARIN", myLore));
+        
+        // Karşı tarafın şartları (Slot 15)
+        List<String> otherLore = createTermsLore(otherTerms, otherName, false);
+        otherLore.add("§7");
+        otherLore.add("§7§l" + otherName.toUpperCase() + "'NİN ŞARTLARI");
+        otherLore.add("§7");
+        otherLore.add("§7Bu şartları onaylamanız gerekiyor");
+        menu.setItem(15, createButton(Material.WRITABLE_BOOK, "§7§l" + otherName.toUpperCase() + "'NİN ŞARTLARI", otherLore));
+        
+        // Onay butonu (Slot 13)
+        if (!myTerms.isApproved()) {
+            menu.setItem(13, createButton(Material.GREEN_CONCRETE, "§a§lKONTRA TI ONAYLA", 
+                Arrays.asList("§7Her iki tarafın şartlarını onayla",
+                    "§7Kontrat aktif hale gelecek")));
+        } else {
+            menu.setItem(13, createButton(Material.EMERALD, "§aOnaylandı", 
+                Arrays.asList("§7Kontratı onayladınız",
+                    "§7Karşı taraf onayladığında aktif olacak")));
+        }
+        
+        // Request ID'yi NBT'ye ekle
+        ItemStack approveItem = menu.getItem(13);
+        if (approveItem != null) {
+            ItemMeta meta = approveItem.getItemMeta();
+            if (meta != null) {
+                org.bukkit.NamespacedKey requestKey = new org.bukkit.NamespacedKey(plugin, "request_id");
+                meta.getPersistentDataContainer().set(requestKey, 
+                    org.bukkit.persistence.PersistentDataType.STRING, requestId.toString());
+                approveItem.setItemMeta(meta);
+                menu.setItem(13, approveItem);
+            }
+        }
+        
+        // Geri butonu (Slot 18)
+        menu.setItem(18, createButton(Material.ARROW, "§7Geri", 
+            Arrays.asList("§7Önceki menüye dön")));
+        
+        player.openInventory(menu);
+        player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_CHEST_OPEN, 1.0f, 1.0f);
+    }
+    
+    /**
+     * Şartları Onayla menüsü tıklama (İlk gönderen oyuncu için)
+     */
+    private void handleTermsApprovalClick(InventoryClickEvent event) {
+        event.setCancelled(true);
+        
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        Player player = (Player) event.getWhoClicked();
+        ItemStack clicked = event.getCurrentItem();
+        
+        if (clicked == null || clicked.getType() == Material.AIR) return;
+        
+        // Request ID'yi NBT'den al
+        UUID requestId = getRequestIdFromItem(clicked);
+        if (requestId == null || contractRequestManager == null || contractTermsManager == null) return;
+        
+        me.mami.stratocraft.model.ContractRequest request = contractRequestManager.getRequest(requestId);
+        if (request == null) return;
+        
+        UUID otherPlayerId = request.getSender().equals(player.getUniqueId()) ? 
+            request.getTarget() : request.getSender();
+        
+        me.mami.stratocraft.model.ContractTerms myTerms = 
+            contractTermsManager.getTermsByRequest(requestId, player.getUniqueId());
+        me.mami.stratocraft.model.ContractTerms otherTerms = 
+            contractTermsManager.getTermsByRequest(requestId, otherPlayerId);
+        
+        if (clicked.getType() == Material.GREEN_CONCRETE) {
+            // Onayla
+            if (myTerms != null && !myTerms.isApproved()) {
+                contractTermsManager.approveTerms(myTerms.getId(), player.getUniqueId());
+                
+                // Karşı tarafın şartları da onaylandı mı kontrol et
+                if (otherTerms != null && otherTerms.isApproved()) {
+                    // Her iki taraf da onayladı, kontratı oluştur
+                    createBilateralContract(request, 
+                        request.getSender().equals(player.getUniqueId()) ? myTerms : otherTerms,
+                        request.getSender().equals(player.getUniqueId()) ? otherTerms : myTerms);
+                    
+                    player.sendMessage("§6═══════════════════════════════════");
+                    player.sendMessage("§a§lKONTRAT AKTİF!");
+                    player.sendMessage("§7Her iki taraf da onayladı");
+                    player.sendMessage("§7Kontrat aktif hale geldi");
+                    player.closeInventory();
+                } else {
+                    player.sendMessage("§aŞartlarınız onaylandı!");
+                    player.sendMessage("§7Karşı taraf onayladığında kontrat aktif olacak");
+                    openTermsApprovalMenu(player, requestId);
+                }
+            } else {
+                player.sendMessage("§cŞartlar zaten onaylanmış!");
+            }
+        } else if (clicked.getType() == Material.ARROW) {
+            // Geri
+            openAcceptedRequestsMenu(player, 1);
+        }
+        
+        player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
+    }
+    
+    /**
      * Şart görüntüleme menüsü
      */
     private void openTermsViewMenu(Player player, UUID requestId) {
@@ -4649,6 +5095,740 @@ public class ContractMenu implements Listener {
         } else if (clicked.getType() == Material.ARROW) {
             // Geri
             openAcceptedRequestsMenu(player, 1);
+        }
+        
+        player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
+    }
+    
+    /**
+     * Kontrat Karar Menüsü (Şart Ekle veya Kontratı Bitir)
+     * İstek kabul edildikten sonra açılır
+     */
+    private void openContractDecisionMenu(Player player, UUID requestId) {
+        if (player == null || requestId == null || contractRequestManager == null) return;
+        
+        me.mami.stratocraft.model.ContractRequest request = contractRequestManager.getRequest(requestId);
+        if (request == null) {
+            player.sendMessage("§cİstek bulunamadı!");
+            return;
+        }
+        
+        UUID otherPlayerId = request.getSender().equals(player.getUniqueId()) ? 
+            request.getTarget() : request.getSender();
+        org.bukkit.OfflinePlayer otherPlayer = Bukkit.getOfflinePlayer(otherPlayerId);
+        String otherName = otherPlayer.getName() != null ? otherPlayer.getName() : "Bilinmeyen";
+        
+        Inventory menu = Bukkit.createInventory(null, 27, "§6Kontrat Kararı");
+        
+        // Bilgi
+        List<String> infoLore = new ArrayList<>();
+        infoLore.add("§7═══════════════════════");
+        infoLore.add("§7Kontrat İsteği Kabul Edildi");
+        infoLore.add("§7");
+        infoLore.add("§7Karşı Taraf: §e" + otherName);
+        infoLore.add("§7");
+        infoLore.add("§7Şimdi ne yapmak istersiniz?");
+        infoLore.add("§7═══════════════════════");
+        menu.setItem(13, createButton(Material.BOOK, "§eKontrat Kararı", infoLore));
+        
+        // Şart Ekle butonu (Slot 11)
+        List<String> addTermsLore = new ArrayList<>();
+        addTermsLore.add("§7═══════════════════════");
+        addTermsLore.add("§7Çift Taraflı Kontrat");
+        addTermsLore.add("§7");
+        addTermsLore.add("§7Kendi şartlarınızı belirleyin");
+        addTermsLore.add("§7Karşı taraf da şartlarını belirleyecek");
+        addTermsLore.add("§7Her iki taraf onayladığında");
+        addTermsLore.add("§7kontrat aktif olacak");
+        addTermsLore.add("§7═══════════════════════");
+        menu.setItem(11, createButton(Material.WRITABLE_BOOK, "§a§lŞart Ekle", addTermsLore));
+        
+        // Kontratı Bitir butonu (Slot 15)
+        List<String> finishLore = new ArrayList<>();
+        finishLore.add("§7═══════════════════════");
+        finishLore.add("§7Tek Taraflı Kontrat");
+        finishLore.add("§7");
+        finishLore.add("§7Sadece ilk gönderenin şartları");
+        finishLore.add("§7geçerli olacak");
+        finishLore.add("§7Kontrat direkt aktif olacak");
+        finishLore.add("§7═══════════════════════");
+        menu.setItem(15, createButton(Material.GREEN_CONCRETE, "§a§lKontratı Bitir", finishLore));
+        
+        // Request ID'yi NBT'ye ekle (her iki butona da)
+        ItemStack addTermsItem = menu.getItem(11);
+        ItemStack finishItem = menu.getItem(15);
+        if (addTermsItem != null) {
+            ItemMeta meta = addTermsItem.getItemMeta();
+            if (meta != null) {
+                org.bukkit.NamespacedKey requestKey = new org.bukkit.NamespacedKey(plugin, "request_id");
+                meta.getPersistentDataContainer().set(requestKey, 
+                    org.bukkit.persistence.PersistentDataType.STRING, requestId.toString());
+                addTermsItem.setItemMeta(meta);
+                menu.setItem(11, addTermsItem);
+            }
+        }
+        if (finishItem != null) {
+            ItemMeta meta = finishItem.getItemMeta();
+            if (meta != null) {
+                org.bukkit.NamespacedKey requestKey = new org.bukkit.NamespacedKey(plugin, "request_id");
+                meta.getPersistentDataContainer().set(requestKey, 
+                    org.bukkit.persistence.PersistentDataType.STRING, requestId.toString());
+                finishItem.setItemMeta(meta);
+                menu.setItem(15, finishItem);
+            }
+        }
+        
+        player.openInventory(menu);
+        player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
+    }
+    
+    /**
+     * Kontrat Karar Menüsü tıklama
+     */
+    private void handleContractDecisionClick(InventoryClickEvent event) {
+        event.setCancelled(true);
+        
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        Player player = (Player) event.getWhoClicked();
+        ItemStack clicked = event.getCurrentItem();
+        
+        if (clicked == null || clicked.getType() == Material.AIR) return;
+        
+        // Request ID'yi NBT'den al
+        UUID requestId = getRequestIdFromItem(clicked);
+        if (requestId == null || contractRequestManager == null) return;
+        
+        me.mami.stratocraft.model.ContractRequest request = contractRequestManager.getRequest(requestId);
+        if (request == null) return;
+        
+        switch (clicked.getType()) {
+            case WRITABLE_BOOK:
+                // Şart Ekle - Şart belirleme wizard'ı başlat
+                player.closeInventory();
+                startTermsWizard(player, requestId);
+                break;
+                
+            case GREEN_CONCRETE:
+                // Kontratı Bitir - Tek taraflı kontrat oluştur
+                player.closeInventory();
+                createUnilateralContract(player, request);
+                break;
+        }
+        
+        player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
+    }
+    
+    /**
+     * Tek taraflı kontrat oluştur (sadece ilk gönderenin şartlarıyla)
+     * İkinci oyuncu şart eklemediği için direkt kontrat oluşturulur
+     */
+    private void createUnilateralContract(Player player, me.mami.stratocraft.model.ContractRequest request) {
+        if (contractManager == null || request == null) return;
+        
+        UUID senderId = request.getSender();
+        UUID targetId = request.getTarget();
+        
+        // İlk gönderen oyuncunun şartlarını kontrol et
+        me.mami.stratocraft.model.ContractTerms senderTerms = null;
+        if (contractTermsManager != null) {
+            senderTerms = contractTermsManager.getTermsByRequest(request.getId(), senderId);
+        }
+        
+        // Eğer ilk gönderenin şartları yoksa, hata ver
+        if (senderTerms == null) {
+            player.sendMessage("§cİlk gönderen oyuncunun şartları bulunamadı!");
+            player.sendMessage("§7Tek taraflı kontrat için ilk gönderenin şartları gerekli.");
+            player.sendMessage("§7İlk gönderen oyuncu önce şartlarını belirlemeli.");
+            return;
+        }
+        
+        // YENİ: Tek taraflı kontrat için de ilk gönderen oyuncuya son onay bildirimi gönder
+        org.bukkit.entity.Player senderPlayer = Bukkit.getPlayer(senderId);
+        org.bukkit.entity.Player targetPlayer = Bukkit.getPlayer(targetId);
+        
+        if (senderPlayer != null && senderPlayer.isOnline()) {
+            senderPlayer.sendMessage("§6═══════════════════════════════════");
+            senderPlayer.sendMessage("§e§lSON ONAY GEREKİYOR!");
+            senderPlayer.sendMessage("§7" + (targetPlayer != null ? targetPlayer.getName() : "Bilinmeyen") + 
+                " kontratı kabul etti");
+            senderPlayer.sendMessage("§7Şimdi kontratı son kez onaylamanız gerekiyor");
+            senderPlayer.sendMessage("§7Kabul ederseniz kontrat aktif olacak");
+            senderPlayer.sendMessage("§7Reddederseniz kontrat iptal olacak");
+            senderPlayer.sendMessage("§6═══════════════════════════════════");
+            
+            // HUD'a bildirim gönder
+            sendContractNotification(senderPlayer, "Son onay gerekiyor", 
+                me.mami.stratocraft.manager.HUDManager.ContractNotificationType.WARNING);
+            
+            // İlk gönderen oyuncuya son onay menüsü aç
+            openFinalApprovalMenu(senderPlayer, request.getId());
+        }
+        
+        if (targetPlayer != null && targetPlayer.isOnline()) {
+            targetPlayer.sendMessage("§6═══════════════════════════════════");
+            targetPlayer.sendMessage("§e§lKONTRA T KABUL EDİLDİ!");
+            targetPlayer.sendMessage("§7İlk gönderen oyuncu onayladığında kontrat aktif olacak");
+            targetPlayer.sendMessage("§6═══════════════════════════════════");
+        }
+    }
+    
+    /**
+     * Son Onay Menüsü (İlk gönderen oyuncu için)
+     * İkinci oyuncu şartlarını yazdıktan sonra açılır
+     * İlk gönderen oyuncu kabul ederse kontrat aktif, reddederse iptal olur
+     */
+    private void openFinalApprovalMenu(Player player, UUID requestId) {
+        if (player == null || requestId == null || contractRequestManager == null || 
+            contractTermsManager == null) return;
+        
+        me.mami.stratocraft.model.ContractRequest request = contractRequestManager.getRequest(requestId);
+        if (request == null) return;
+        
+        UUID otherPlayerId = request.getSender().equals(player.getUniqueId()) ? 
+            request.getTarget() : request.getSender();
+        org.bukkit.OfflinePlayer otherPlayer = Bukkit.getOfflinePlayer(otherPlayerId);
+        String otherName = otherPlayer.getName() != null ? otherPlayer.getName() : "Bilinmeyen";
+        
+        me.mami.stratocraft.model.ContractTerms myTerms = 
+            contractTermsManager.getTermsByRequest(requestId, player.getUniqueId());
+        me.mami.stratocraft.model.ContractTerms otherTerms = 
+            contractTermsManager.getTermsByRequest(requestId, otherPlayerId);
+        
+        if (myTerms == null) {
+            player.sendMessage("§cŞartlar henüz hazır değil!");
+            return;
+        }
+        
+        Inventory menu = Bukkit.createInventory(null, 27, "§6Son Onay");
+        
+        // Bilgi (Slot 13)
+        List<String> infoLore = new ArrayList<>();
+        infoLore.add("§7═══════════════════════");
+        infoLore.add("§7Kontrat Son Onayı");
+        infoLore.add("§7");
+        infoLore.add("§7Karşı Taraf: §e" + otherName);
+        infoLore.add("§7");
+        if (otherTerms != null) {
+            infoLore.add("§7Karşı taraf şartlarını belirledi");
+            infoLore.add("§7Şimdi kontratı son kez onaylamanız gerekiyor");
+        } else {
+            infoLore.add("§7Karşı taraf kontratı kabul etti");
+            infoLore.add("§7Şimdi kontratı son kez onaylamanız gerekiyor");
+        }
+        infoLore.add("§7");
+        infoLore.add("§7Kabul ederseniz kontrat aktif olacak");
+        infoLore.add("§7Reddederseniz kontrat iptal olacak");
+        infoLore.add("§7═══════════════════════");
+        menu.setItem(13, createButton(Material.BOOK, "§eSon Onay", infoLore));
+        
+        // Şartları Görüntüle butonu (Slot 11) - Eğer çift taraflı ise
+        if (otherTerms != null) {
+            List<String> termsLore = createTermsLore(otherTerms, otherName, false);
+            termsLore.add("§7");
+            termsLore.add("§7§lKARŞI TARAFIN ŞARTLARI");
+            menu.setItem(11, createButton(Material.WRITABLE_BOOK, "§7§lŞartları Görüntüle", termsLore));
+        }
+        
+        // Kabul Et butonu (Slot 12)
+        menu.setItem(12, createButton(Material.GREEN_CONCRETE, "§a§lKABUL ET", 
+            Arrays.asList("§7Kontratı kabul et",
+                "§7Kontrat aktif hale gelecek")));
+        
+        // Reddet butonu (Slot 14)
+        menu.setItem(14, createButton(Material.RED_CONCRETE, "§c§lREDDET", 
+            Arrays.asList("§7Kontratı reddet",
+                "§7Kontrat iptal olacak")));
+        
+        // Request ID'yi NBT'ye ekle (her iki butona da)
+        ItemStack acceptItem = menu.getItem(12);
+        ItemStack rejectItem = menu.getItem(14);
+        if (acceptItem != null) {
+            ItemMeta meta = acceptItem.getItemMeta();
+            if (meta != null) {
+                org.bukkit.NamespacedKey requestKey = new org.bukkit.NamespacedKey(plugin, "request_id");
+                meta.getPersistentDataContainer().set(requestKey, 
+                    org.bukkit.persistence.PersistentDataType.STRING, requestId.toString());
+                acceptItem.setItemMeta(meta);
+                menu.setItem(12, acceptItem);
+            }
+        }
+        if (rejectItem != null) {
+            ItemMeta meta = rejectItem.getItemMeta();
+            if (meta != null) {
+                org.bukkit.NamespacedKey requestKey = new org.bukkit.NamespacedKey(plugin, "request_id");
+                meta.getPersistentDataContainer().set(requestKey, 
+                    org.bukkit.persistence.PersistentDataType.STRING, requestId.toString());
+                rejectItem.setItemMeta(meta);
+                menu.setItem(14, rejectItem);
+            }
+        }
+        
+        // Geri butonu (Slot 18)
+        menu.setItem(18, createButton(Material.ARROW, "§7Geri", 
+            Arrays.asList("§7Önceki menüye dön")));
+        
+        player.openInventory(menu);
+        player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_CHEST_OPEN, 1.0f, 1.0f);
+    }
+    
+    /**
+     * Son Onay Menüsü tıklama (İlk gönderen oyuncu için)
+     */
+    private void handleFinalApprovalClick(InventoryClickEvent event) {
+        event.setCancelled(true);
+        
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        Player player = (Player) event.getWhoClicked();
+        ItemStack clicked = event.getCurrentItem();
+        
+        if (clicked == null || clicked.getType() == Material.AIR) return;
+        
+        // Request ID'yi NBT'den al
+        UUID requestId = getRequestIdFromItem(clicked);
+        if (requestId == null || contractRequestManager == null || contractTermsManager == null) return;
+        
+        me.mami.stratocraft.model.ContractRequest request = contractRequestManager.getRequest(requestId);
+        if (request == null) return;
+        
+        UUID otherPlayerId = request.getSender().equals(player.getUniqueId()) ? 
+            request.getTarget() : request.getSender();
+        
+        me.mami.stratocraft.model.ContractTerms myTerms = 
+            contractTermsManager.getTermsByRequest(requestId, player.getUniqueId());
+        me.mami.stratocraft.model.ContractTerms otherTerms = 
+            contractTermsManager.getTermsByRequest(requestId, otherPlayerId);
+        
+        if (clicked.getType() == Material.GREEN_CONCRETE) {
+            // Kabul Et
+            if (otherTerms != null) {
+                // Çift taraflı kontrat
+                createBilateralContract(request, myTerms, otherTerms);
+                
+                player.sendMessage("§6═══════════════════════════════════");
+                player.sendMessage("§a§lKONTRAT AKTİF!");
+                player.sendMessage("§7Kontratı kabul ettiniz");
+                player.sendMessage("§7Kontrat aktif hale geldi");
+                player.closeInventory();
+            } else {
+                // Tek taraflı kontrat
+                if (myTerms != null) {
+                    Contract contract = new Contract(request.getSender(), request.getTarget(), 
+                        request.getId(), myTerms, null);
+                    contractManager.getContracts().add(contract);
+                    
+                    player.sendMessage("§6═══════════════════════════════════");
+                    player.sendMessage("§a§lKONTRAT AKTİF!");
+                    player.sendMessage("§7Kontratı kabul ettiniz");
+                    player.sendMessage("§7Kontrat aktif hale geldi");
+                    
+                    // HUD'a bildirim gönder
+                    sendContractNotification(player, "Kontrat aktif oldu", 
+                        me.mami.stratocraft.manager.HUDManager.ContractNotificationType.SUCCESS);
+                    
+                    player.closeInventory();
+                    
+                    // Karşı tarafa bildirim
+                    org.bukkit.entity.Player otherPlayer = Bukkit.getPlayer(otherPlayerId);
+                    if (otherPlayer != null && otherPlayer.isOnline()) {
+                        otherPlayer.sendMessage("§6═══════════════════════════════════");
+                        otherPlayer.sendMessage("§a§lKONTRAT AKTİF!");
+                        otherPlayer.sendMessage("§7İlk gönderen oyuncu kontratı onayladı");
+                        otherPlayer.sendMessage("§7Kontrat aktif hale geldi");
+                        otherPlayer.sendMessage("§6═══════════════════════════════════");
+                        
+                        // HUD'a bildirim gönder
+                        sendContractNotification(otherPlayer, "Kontrat aktif oldu", 
+                            me.mami.stratocraft.manager.HUDManager.ContractNotificationType.SUCCESS);
+                    }
+                }
+            }
+        } else if (clicked.getType() == Material.RED_CONCRETE) {
+            // Reddet
+            request.setStatus(me.mami.stratocraft.model.ContractRequest.ContractRequestStatus.CANCELLED);
+            
+            player.sendMessage("§6═══════════════════════════════════");
+            player.sendMessage("§c§lKONTRAT İPTAL EDİLDİ!");
+            player.sendMessage("§7Kontratı reddettiniz");
+            player.sendMessage("§7Kontrat iptal edildi");
+            
+            // HUD'a bildirim gönder
+            sendContractNotification(player, "Kontrat iptal edildi", 
+                me.mami.stratocraft.manager.HUDManager.ContractNotificationType.ERROR);
+            
+            player.closeInventory();
+            
+            // Karşı tarafa bildirim
+            org.bukkit.entity.Player otherPlayer = Bukkit.getPlayer(otherPlayerId);
+            if (otherPlayer != null && otherPlayer.isOnline()) {
+                otherPlayer.sendMessage("§6═══════════════════════════════════");
+                otherPlayer.sendMessage("§c§lKONTRAT İPTAL EDİLDİ!");
+                otherPlayer.sendMessage("§7İlk gönderen oyuncu kontratı reddetti");
+                otherPlayer.sendMessage("§7Kontrat iptal edildi");
+                otherPlayer.sendMessage("§6═══════════════════════════════════");
+                
+                // HUD'a bildirim gönder
+                sendContractNotification(otherPlayer, "Kontrat iptal edildi", 
+                    me.mami.stratocraft.manager.HUDManager.ContractNotificationType.ERROR);
+            }
+        } else if (clicked.getType() == Material.ARROW) {
+            // Geri
+            openAcceptedRequestsMenu(player, 1);
+        }
+        
+        player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
+    }
+    
+    /**
+     * Atılan İstekler menüsü (YENİ)
+     */
+    private void openSentRequestsMenu(Player player, int page) {
+        if (player == null || contractRequestManager == null) return;
+        
+        List<me.mami.stratocraft.model.ContractRequest> requests = 
+            contractRequestManager.getSentPendingRequests(player.getUniqueId());
+        
+        // Sayfa kontrolü
+        int totalPages = Math.max(1, (int) Math.ceil(requests.size() / 45.0));
+        if (page < 1) page = 1;
+        if (page > totalPages) page = totalPages;
+        
+        currentPages.put(player.getUniqueId(), page);
+        
+        Inventory menu = Bukkit.createInventory(null, 54, "§6Atılan İstekler - Sayfa " + page);
+        
+        // İstekleri göster (Slot 0-44)
+        int startIndex = (page - 1) * 45;
+        int endIndex = Math.min(startIndex + 45, requests.size());
+        
+        int slot = 0;
+        for (int i = startIndex; i < endIndex; i++) {
+            me.mami.stratocraft.model.ContractRequest request = requests.get(i);
+            if (request != null) {
+                UUID targetId = request.getTarget();
+                org.bukkit.OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(targetId);
+                String targetName = targetPlayer.getName() != null ? targetPlayer.getName() : "Bilinmeyen";
+                
+                List<String> lore = new ArrayList<>();
+                lore.add("§7═══════════════════════");
+                lore.add("§7Hedef: §e" + targetName);
+                lore.add("§7Durum: §eBeklemede");
+                lore.add("§7═══════════════════════");
+                lore.add("§7Sağ tıkla iptal et");
+                
+                ItemStack item = new ItemStack(Material.PAPER);
+                ItemMeta meta = item.getItemMeta();
+                if (meta != null) {
+                    meta.setDisplayName("§e" + targetName + " ile Kontrat İsteği");
+                    meta.setLore(lore);
+                    org.bukkit.NamespacedKey requestKey = new org.bukkit.NamespacedKey(plugin, "request_id");
+                    meta.getPersistentDataContainer().set(requestKey, 
+                        org.bukkit.persistence.PersistentDataType.STRING, request.getId().toString());
+                    item.setItemMeta(meta);
+                }
+                menu.setItem(slot++, item);
+            }
+        }
+        
+        // Sayfalama butonları
+        if (page > 1) {
+            menu.setItem(45, createButton(Material.ARROW, "§eÖnceki Sayfa", 
+                Arrays.asList("§7Sayfa " + (page - 1))));
+        }
+        if (endIndex < requests.size()) {
+            menu.setItem(53, createButton(Material.ARROW, "§eSonraki Sayfa", 
+                Arrays.asList("§7Sayfa " + (page + 1))));
+        }
+        
+        // Geri butonu (Slot 49)
+        menu.setItem(49, createButton(Material.ARROW, "§eGeri", 
+            Arrays.asList("§7Ana menüye dön")));
+        
+        player.openInventory(menu);
+        player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_CHEST_OPEN, 1.0f, 1.0f);
+    }
+    
+    /**
+     * Atılan İstekler menüsü tıklama (YENİ)
+     */
+    private void handleSentRequestsClick(InventoryClickEvent event) {
+        event.setCancelled(true);
+        
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        Player player = (Player) event.getWhoClicked();
+        ItemStack clicked = event.getCurrentItem();
+        
+        if (clicked == null || clicked.getType() == Material.AIR) return;
+        
+        if (clicked.getType() == Material.ARROW) {
+            int slot = event.getSlot();
+            String title = event.getView().getTitle();
+            int currentPage = Integer.parseInt(title.split(" - Sayfa ")[1]);
+            
+            if (slot == 45) {
+                openSentRequestsMenu(player, currentPage - 1);
+            } else if (slot == 53) {
+                openSentRequestsMenu(player, currentPage + 1);
+            } else if (slot == 49) {
+                openMainMenu(player, 1);
+            }
+            return;
+        }
+        
+        // Request ID'yi NBT'den al
+        UUID requestId = getRequestIdFromItem(clicked);
+        if (requestId == null || contractRequestManager == null) return;
+        
+        me.mami.stratocraft.model.ContractRequest request = contractRequestManager.getRequest(requestId);
+        if (request == null) return;
+        
+        // Sağ tık = İptal et
+        if (event.getClick() == org.bukkit.event.inventory.ClickType.RIGHT) {
+            if (contractRequestManager.cancelRequest(requestId, player.getUniqueId())) {
+                player.sendMessage("§cKontrat isteği iptal edildi.");
+                openSentRequestsMenu(player, 1);
+            } else {
+                player.sendMessage("§cİstek iptal edilemedi!");
+            }
+        }
+        
+        player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
+    }
+    
+    /**
+     * Aktif Kontratlar menüsü (YENİ)
+     */
+    private void openActiveContractsMenu(Player player, int page) {
+        if (player == null || contractManager == null) return;
+        
+        List<Contract> contracts = contractManager.getContracts();
+        if (contracts == null) contracts = new ArrayList<>();
+        
+        // Aktif kontratları filtrele
+        List<Contract> activeContracts = new ArrayList<>();
+        for (Contract contract : contracts) {
+            if (contract == null) continue;
+            
+            // Tek taraflı aktif kontratlar
+            if (!contract.isBilateralContract() && 
+                (contract.getIssuer().equals(player.getUniqueId()) || 
+                 (contract.getAcceptor() != null && contract.getAcceptor().equals(player.getUniqueId()))) &&
+                !contract.isExpired() && !contract.isBreached() && !contract.isCompleted()) {
+                activeContracts.add(contract);
+            }
+            // Çift taraflı aktif kontratlar
+            else if (contract.isBilateralContract() && 
+                (contract.getPlayerA().equals(player.getUniqueId()) || 
+                 contract.getPlayerB().equals(player.getUniqueId())) &&
+                contract.getContractStatus() == Contract.ContractStatus.ACTIVE) {
+                activeContracts.add(contract);
+            }
+        }
+        
+        // Sayfa kontrolü
+        int totalPages = Math.max(1, (int) Math.ceil(activeContracts.size() / 45.0));
+        if (page < 1) page = 1;
+        if (page > totalPages) page = totalPages;
+        
+        currentPages.put(player.getUniqueId(), page);
+        
+        Inventory menu = Bukkit.createInventory(null, 54, "§bAktif Kontratlar - Sayfa " + page);
+        
+        // Kontratları göster (Slot 0-44)
+        int startIndex = (page - 1) * 45;
+        int endIndex = Math.min(startIndex + 45, activeContracts.size());
+        
+        int slot = 0;
+        for (int i = startIndex; i < endIndex; i++) {
+            Contract contract = activeContracts.get(i);
+            if (contract != null) {
+                ItemStack contractItem = createContractItem(contract);
+                ItemMeta meta = contractItem.getItemMeta();
+                if (meta != null) {
+                    org.bukkit.NamespacedKey uuidKey = new org.bukkit.NamespacedKey(plugin, "contract_id");
+                    meta.getPersistentDataContainer().set(uuidKey, 
+                        org.bukkit.persistence.PersistentDataType.STRING, contract.getId().toString());
+                    contractItem.setItemMeta(meta);
+                }
+                menu.setItem(slot++, contractItem);
+            }
+        }
+        
+        // Sayfalama butonları
+        if (page > 1) {
+            menu.setItem(45, createButton(Material.ARROW, "§eÖnceki Sayfa", 
+                Arrays.asList("§7Sayfa " + (page - 1))));
+        }
+        if (endIndex < activeContracts.size()) {
+            menu.setItem(53, createButton(Material.ARROW, "§eSonraki Sayfa", 
+                Arrays.asList("§7Sayfa " + (page + 1))));
+        }
+        
+        // Geri butonu (Slot 49)
+        menu.setItem(49, createButton(Material.ARROW, "§eGeri", 
+            Arrays.asList("§7Ana menüye dön")));
+        
+        player.openInventory(menu);
+        player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_CHEST_OPEN, 1.0f, 1.0f);
+    }
+    
+    /**
+     * Aktif Kontratlar menüsü tıklama (YENİ)
+     */
+    private void handleActiveContractsClick(InventoryClickEvent event) {
+        event.setCancelled(true);
+        
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        Player player = (Player) event.getWhoClicked();
+        ItemStack clicked = event.getCurrentItem();
+        
+        if (clicked == null || clicked.getType() == Material.AIR) return;
+        
+        if (clicked.getType() == Material.ARROW) {
+            int slot = event.getSlot();
+            String title = event.getView().getTitle();
+            int currentPage = Integer.parseInt(title.split(" - Sayfa ")[1]);
+            
+            if (slot == 45) {
+                openActiveContractsMenu(player, currentPage - 1);
+            } else if (slot == 53) {
+                openActiveContractsMenu(player, currentPage + 1);
+            } else if (slot == 49) {
+                openMainMenu(player, 1);
+            }
+            return;
+        }
+        
+        // Contract ID'yi NBT'den al
+        UUID contractId = getContractIdFromItem(clicked);
+        if (contractId != null) {
+            openDetailMenu(player, contractId);
+        }
+        
+        player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
+    }
+    
+    /**
+     * Eski Kontratlar menüsü (YENİ) - İptal edilenler ve tamamlananlar
+     */
+    private void openOldContractsMenu(Player player, int page) {
+        if (player == null || contractManager == null) return;
+        
+        List<Contract> contracts = contractManager.getContracts();
+        if (contracts == null) contracts = new ArrayList<>();
+        
+        // Eski kontratları filtrele
+        List<Contract> oldContracts = new ArrayList<>();
+        for (Contract contract : contracts) {
+            if (contract == null) continue;
+            
+            boolean isMyContract = false;
+            if (!contract.isBilateralContract()) {
+                isMyContract = contract.getIssuer().equals(player.getUniqueId()) || 
+                    (contract.getAcceptor() != null && contract.getAcceptor().equals(player.getUniqueId()));
+            } else {
+                isMyContract = contract.getPlayerA().equals(player.getUniqueId()) || 
+                    contract.getPlayerB().equals(player.getUniqueId());
+            }
+            
+            if (isMyContract) {
+                // İptal edilenler
+                if (contract.isBilateralContract() && 
+                    contract.getContractStatus() == Contract.ContractStatus.CANCELLED) {
+                    oldContracts.add(contract);
+                }
+                // Tamamlananlar
+                else if (contract.isCompleted() || 
+                    (contract.isBilateralContract() && 
+                     contract.getContractStatus() == Contract.ContractStatus.COMPLETED)) {
+                    oldContracts.add(contract);
+                }
+                // İhlal edilenler
+                else if (contract.isBreached() || 
+                    (contract.isBilateralContract() && 
+                     contract.getContractStatus() == Contract.ContractStatus.BREACHED)) {
+                    oldContracts.add(contract);
+                }
+            }
+        }
+        
+        // Sayfa kontrolü
+        int totalPages = Math.max(1, (int) Math.ceil(oldContracts.size() / 45.0));
+        if (page < 1) page = 1;
+        if (page > totalPages) page = totalPages;
+        
+        currentPages.put(player.getUniqueId(), page);
+        
+        Inventory menu = Bukkit.createInventory(null, 54, "§7Eski Kontratlar - Sayfa " + page);
+        
+        // Kontratları göster (Slot 0-44)
+        int startIndex = (page - 1) * 45;
+        int endIndex = Math.min(startIndex + 45, oldContracts.size());
+        
+        int slot = 0;
+        for (int i = startIndex; i < endIndex; i++) {
+            Contract contract = oldContracts.get(i);
+            if (contract != null) {
+                ItemStack contractItem = createContractItem(contract);
+                ItemMeta meta = contractItem.getItemMeta();
+                if (meta != null) {
+                    org.bukkit.NamespacedKey uuidKey = new org.bukkit.NamespacedKey(plugin, "contract_id");
+                    meta.getPersistentDataContainer().set(uuidKey, 
+                        org.bukkit.persistence.PersistentDataType.STRING, contract.getId().toString());
+                    contractItem.setItemMeta(meta);
+                }
+                menu.setItem(slot++, contractItem);
+            }
+        }
+        
+        // Sayfalama butonları
+        if (page > 1) {
+            menu.setItem(45, createButton(Material.ARROW, "§eÖnceki Sayfa", 
+                Arrays.asList("§7Sayfa " + (page - 1))));
+        }
+        if (endIndex < oldContracts.size()) {
+            menu.setItem(53, createButton(Material.ARROW, "§eSonraki Sayfa", 
+                Arrays.asList("§7Sayfa " + (page + 1))));
+        }
+        
+        // Geri butonu (Slot 49)
+        menu.setItem(49, createButton(Material.ARROW, "§eGeri", 
+            Arrays.asList("§7Ana menüye dön")));
+        
+        player.openInventory(menu);
+        player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_CHEST_OPEN, 1.0f, 1.0f);
+    }
+    
+    /**
+     * Eski Kontratlar menüsü tıklama (YENİ)
+     */
+    private void handleOldContractsClick(InventoryClickEvent event) {
+        event.setCancelled(true);
+        
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        Player player = (Player) event.getWhoClicked();
+        ItemStack clicked = event.getCurrentItem();
+        
+        if (clicked == null || clicked.getType() == Material.AIR) return;
+        
+        if (clicked.getType() == Material.ARROW) {
+            int slot = event.getSlot();
+            String title = event.getView().getTitle();
+            int currentPage = Integer.parseInt(title.split(" - Sayfa ")[1]);
+            
+            if (slot == 45) {
+                openOldContractsMenu(player, currentPage - 1);
+            } else if (slot == 53) {
+                openOldContractsMenu(player, currentPage + 1);
+            } else if (slot == 49) {
+                openMainMenu(player, 1);
+            }
+            return;
+        }
+        
+        // Contract ID'yi NBT'den al
+        UUID contractId = getContractIdFromItem(clicked);
+        if (contractId != null) {
+            openDetailMenu(player, contractId);
         }
         
         player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);

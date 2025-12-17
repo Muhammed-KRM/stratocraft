@@ -169,6 +169,15 @@ public class TerritoryData extends BaseModel {
     }
     
     /**
+     * Sınır koordinatlarını temizle (YENİ)
+     */
+    public void clearBoundaries() {
+        boundaryCoordinates.clear();
+        boundariesDirty = true;
+        updateTimestamp();
+    }
+    
+    /**
      * Y yüksekliğini güncelle (MinY, MaxY)
      * DÜZELTME: Null check ve dünya kontrolü
      */

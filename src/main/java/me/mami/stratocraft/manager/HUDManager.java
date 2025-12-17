@@ -39,6 +39,8 @@ public class HUDManager {
     private BuffManager buffManager;
     private ClanManager clanManager;
     private TerritoryManager territoryManager;
+    private me.mami.stratocraft.manager.ContractRequestManager contractRequestManager;
+    private me.mami.stratocraft.manager.ContractTermsManager contractTermsManager;
     
     // Scoreboard sistemi
     private final Map<UUID, Scoreboard> playerScoreboards = new HashMap<>();
@@ -47,6 +49,9 @@ public class HUDManager {
     
     // Teklif bildirimi takibi (son 30 saniye içinde yeni teklif var mı?)
     private final Map<UUID, Long> lastShopOfferTime = new HashMap<>();
+    
+    // Kontrat bildirimi takibi (son 60 saniye içindeki bildirimler)
+    private final Map<UUID, List<ContractNotification>> contractNotifications = new HashMap<>();
     
     public HUDManager(Main plugin) {
         this.plugin = plugin;
@@ -66,6 +71,35 @@ public class HUDManager {
         this.buffManager = bfm;
         this.clanManager = cm2;
         this.territoryManager = tm;
+    }
+    
+    /**
+     * Kontrat manager referanslarını ayarla
+     */
+    public void setContractManagers(me.mami.stratocraft.manager.ContractRequestManager crm,
+                                   me.mami.stratocraft.manager.ContractTermsManager ctm) {
+        this.contractRequestManager = crm;
+        this.contractTermsManager = ctm;
+    }
+    
+    /**
+     * Kontrat bildirimi ekle (HUD'da gösterilmek üzere)
+     * ✅ PERFORMANS: Filtreleme getContractNotifications() içinde yapılıyor (her saniye değil)
+     */
+    public void addContractNotification(UUID playerId, String message, ContractNotificationType type) {
+        if (playerId == null || message == null || message.isEmpty()) return;
+        
+        contractNotifications.putIfAbsent(playerId, new ArrayList<>());
+        List<ContractNotification> notifications = contractNotifications.get(playerId);
+        
+        // Yeni bildirimi ekle
+        long currentTime = System.currentTimeMillis();
+        notifications.add(new ContractNotification(message, type, currentTime));
+        
+        // Maksimum 5 bildirim tut (filtreleme getContractNotifications'da yapılacak)
+        if (notifications.size() > 5) {
+            notifications.remove(0); // En eski bildirimi kaldır
+        }
     }
     
     /**
@@ -201,27 +235,34 @@ public class HUDManager {
             lines.add(new HUDLine("§7")); // Boş satır
         }
         
-        // 5. Kontratlar (varsa)
+        // 5. Kontrat Bildirimleri (varsa - öncelikli)
+        List<HUDLine> contractNotifications = getContractNotifications(player);
+        if (contractNotifications != null && !contractNotifications.isEmpty()) {
+            lines.addAll(contractNotifications);
+            lines.add(new HUDLine("§7")); // Boş satır
+        }
+        
+        // 6. Kontratlar (varsa)
         HUDLine contract = getContractInfo(player);
         if (contract != null) {
             lines.add(contract);
             lines.add(new HUDLine("§7")); // Boş satır
         }
         
-        // 6. Buff'lar (varsa)
+        // 7. Buff'lar (varsa)
         HUDLine buff = getBuffInfo(player);
         if (buff != null) {
             lines.add(buff);
         }
         
-        // 7. ✅ GÜÇ BİLGİSİ (her zaman göster)
+        // 8. ✅ GÜÇ BİLGİSİ (her zaman göster)
         HUDLine power = getPowerInfo(player);
         if (power != null) {
             lines.add(new HUDLine("§7")); // Boş satır
             lines.add(power);
         }
         
-        // 8. ✅ KİŞİSEL TERMİNAL KONTROLÜ (item yoksa bilgilendirme)
+        // 9. ✅ KİŞİSEL TERMİNAL KONTROLÜ (item yoksa bilgilendirme)
         HUDLine terminalHint = getPersonalTerminalHint(player);
         if (terminalHint != null) {
             lines.add(new HUDLine("§7")); // Boş satır
@@ -523,15 +564,61 @@ public class HUDManager {
     }
     
     /**
+     * Kontrat bildirimleri (HUD için)
+     */
+    private List<HUDLine> getContractNotifications(Player player) {
+        if (player == null) return null;
+        
+        List<ContractNotification> notifications = contractNotifications.get(player.getUniqueId());
+        if (notifications == null || notifications.isEmpty()) {
+            return null;
+        }
+        
+        // Son 60 saniye içindeki bildirimleri filtrele (sadece burada, addContractNotification'da değil)
+        long currentTime = System.currentTimeMillis();
+        notifications.removeIf(n -> currentTime - n.getTimestamp() > 60000); // 60 saniye
+        
+        if (notifications.isEmpty()) {
+            return null;
+        }
+        
+        List<HUDLine> lines = new ArrayList<>();
+        lines.add(new HUDLine("§6§l📬 KONTRAT BİLDİRİMLERİ"));
+        
+        // En son bildirimden başlayarak göster (maksimum 3)
+        int count = 0;
+        for (int i = notifications.size() - 1; i >= 0 && count < 3; i--) {
+            ContractNotification notification = notifications.get(i);
+            String color = notification.getType() == ContractNotificationType.INFO ? "§e" :
+                          notification.getType() == ContractNotificationType.SUCCESS ? "§a" :
+                          notification.getType() == ContractNotificationType.WARNING ? "§6" :
+                          notification.getType() == ContractNotificationType.ERROR ? "§c" : "§7";
+            
+            // Mesajı kısalt (Minecraft scoreboard limiti)
+            String message = notification.getMessage();
+            if (message.length() > 30) {
+                message = message.substring(0, 27) + "...";
+            }
+            
+            lines.add(new HUDLine(color + "• " + message));
+            count++;
+        }
+        
+        return lines;
+    }
+    
+    /**
      * Kontrat bilgisi
+     * ✅ DRY: Bounty kontrolü tek yerde yapılıyor
      */
     private HUDLine getContractInfo(Player player) {
         if (contractManager == null) return null;
         
         List<Contract> contracts = contractManager.getPlayerContracts(player.getUniqueId());
+        Contract bounty = contractManager.getBountyContract(player.getUniqueId());
+        
         if (contracts.isEmpty()) {
             // Bounty kontratı var mı? (başında ödül)
-            Contract bounty = contractManager.getBountyContract(player.getUniqueId());
             if (bounty != null) {
                 return new HUDLine("§c⚠ Bounty: §6" + (int)bounty.getReward() + " altın");
             }
@@ -539,7 +626,6 @@ public class HUDManager {
         }
         
         // Bounty kontratı var mı?
-        Contract bounty = contractManager.getBountyContract(player.getUniqueId());
         if (bounty != null) {
             return new HUDLine("§e📜 Kontrat: §6" + contracts.size() + " §7| §cBounty: §6" + (int)bounty.getReward());
         }
@@ -682,6 +768,7 @@ public class HUDManager {
     
     /**
      * Oyuncu çıkış yaptığında HUD'u temizle
+     * ✅ MEMORY LEAK ÖNLEME: Tüm cache'ler temizleniyor
      */
     public void onPlayerQuit(Player player) {
         clearHUD(player);
@@ -692,6 +779,7 @@ public class HUDManager {
             java.util.UUID playerId = player.getUniqueId();
             powerCache.remove(playerId);
             powerCacheTime.remove(playerId);
+            contractNotifications.remove(playerId); // ✅ Memory leak önleme
         }
     }
     
@@ -708,6 +796,35 @@ public class HUDManager {
         public String getText() {
             return text;
         }
+    }
+    
+    /**
+     * Kontrat bildirimi sınıfı
+     */
+    private static class ContractNotification {
+        private final String message;
+        private final ContractNotificationType type;
+        private final long timestamp;
+        
+        public ContractNotification(String message, ContractNotificationType type, long timestamp) {
+            this.message = message;
+            this.type = type;
+            this.timestamp = timestamp;
+        }
+        
+        public String getMessage() { return message; }
+        public ContractNotificationType getType() { return type; }
+        public long getTimestamp() { return timestamp; }
+    }
+    
+    /**
+     * Kontrat bildirim tipi
+     */
+    public enum ContractNotificationType {
+        INFO,       // Bilgi (sarı)
+        SUCCESS,    // Başarı (yeşil)
+        WARNING,    // Uyarı (turuncu)
+        ERROR       // Hata (kırmızı)
     }
 }
 
