@@ -4802,7 +4802,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             switch (commandName) {
                 case "give":
                     // Seviyeli kategoriler için seviye öner
-                    if (category.equals("weapon") || category.equals("armor")) {
+                    if (category.equals("weapon") || category.equals("armor") || 
+                        category.equals("attack") || category.equals("defense")) {
                         List<String> levels = Arrays.asList("1", "2", "3", "4", "5");
                         if (input.isEmpty()) {
                             return levels;
@@ -4973,9 +4974,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     int level = Integer.parseInt(levelStr);
                     if (level >= 1 && level <= 5) {
                         if (category.equals("armor") || category.equals("defense")) {
-                            // Item isimleri (armor_l1_1, armor_l1_2, vb.)
+                            // Item isimleri (armor_l1_1, armor_l1_2, vb.) - Armor için 4 variant var (helmet, chestplate, leggings, boots)
                             List<String> armorNames = new ArrayList<>();
-                            for (int variant = 1; variant <= 5; variant++) {
+                            // Eski format: helmet, chestplate, leggings, boots
+                            armorNames.addAll(Arrays.asList("helmet", "chestplate", "leggings", "boots",
+                                "kask", "baslik", "gogusluk", "zirh", "zırh", "pantolon", "dizlik", "bot", "cizme", "çizme"));
+                            // Yeni format: armor_l<level>_<variant>
+                            for (int variant = 1; variant <= 4; variant++) {
                                 armorNames.add("armor_l" + level + "_" + variant);
                             }
                             if (input.isEmpty()) {
@@ -5217,10 +5222,14 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 }
                 return filterList(weapons, input);
             case "armor":
+            case "defense":
                 List<String> armors = new ArrayList<>();
-                // Özel zırhlar
+                // Eski format: helmet, chestplate, leggings, boots
+                armors.addAll(Arrays.asList("helmet", "chestplate", "leggings", "boots",
+                    "kask", "baslik", "gogusluk", "zirh", "zırh", "pantolon", "dizlik", "bot", "cizme", "çizme"));
+                // Özel zırhlar (armor için 4 variant var: helmet=1, chestplate=2, leggings=3, boots=4)
                 for (int level = 1; level <= 5; level++) {
-                    for (int variant = 1; variant <= 5; variant++) {
+                    for (int variant = 1; variant <= 4; variant++) {
                         armors.add("armor_l" + level + "_" + variant);
                     }
                 }
