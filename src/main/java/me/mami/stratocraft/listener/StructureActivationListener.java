@@ -36,15 +36,18 @@ public class StructureActivationListener implements Listener {
     private final ClanManager clanManager;
     private final TerritoryManager territoryManager;
     private final ClanRankSystem rankSystem;
+    private final me.mami.stratocraft.manager.StructureCoreManager coreManager; // YENİ: Yapı çekirdeği yöneticisi
 
     // Cooldown: Oyuncu UUID -> Son aktivasyon zamanı
     private final Map<UUID, Long> activationCooldowns = new HashMap<>();
     private static final long ACTIVATION_COOLDOWN = 5000L; // 5 saniye
 
-    public StructureActivationListener(ClanManager cm, TerritoryManager tm, ClanRankSystem rankSystem) {
+    public StructureActivationListener(ClanManager cm, TerritoryManager tm, ClanRankSystem rankSystem, 
+                                      me.mami.stratocraft.manager.StructureCoreManager coreManager) {
         this.clanManager = cm;
         this.territoryManager = tm;
         this.rankSystem = rankSystem;
+        this.coreManager = coreManager; // YENİ: Yapı çekirdeği yöneticisi
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -61,6 +64,20 @@ public class StructureActivationListener implements Listener {
         if (clicked == null)
             return;
 
+        // YENİ: Yapı çekirdeği kontrolü - önce yapı çekirdeği var mı kontrol et
+        Location clickedLoc = clicked.getLocation();
+        if (!coreManager.isInactiveCore(clickedLoc)) {
+            // Yapı çekirdeği yok, mesaj gönderme (spam önleme)
+            return;
+        }
+        
+        // Yapı çekirdeği sahibi kontrolü
+        UUID coreOwner = coreManager.getCoreOwner(clickedLoc);
+        if (coreOwner != null && !coreOwner.equals(player.getUniqueId())) {
+            player.sendMessage("§cBu yapı çekirdeği size ait değil!");
+            return;
+        }
+
         // Cooldown kontrolü
         if (isOnCooldown(player.getUniqueId())) {
             player.sendMessage("§cYapı aktivasyonu için beklemen gerekiyor!");
@@ -69,8 +86,10 @@ public class StructureActivationListener implements Listener {
 
         // Pattern kontrolü - önce pattern'i kontrol et
         Structure detectedStructure = detectStructurePattern(clicked, player);
-        if (detectedStructure == null)
+        if (detectedStructure == null) {
+            player.sendMessage("§cYapı tarifi doğru değil! Yapı çekirdeği etrafına doğru blokları yerleştirin.");
             return;
+        }
 
         // Kişisel yapılar (klan zorunlu değil)
         // Geriye uyumluluk için Structure.Type'dan StructureType'a çevir
@@ -93,6 +112,9 @@ public class StructureActivationListener implements Listener {
                     playerClan.addStructure(detectedStructure);
                 }
             }
+            
+            // YENİ: Yapı çekirdeğini aktif yapıya dönüştür
+            coreManager.activateCore(clickedLoc, detectedStructure);
             
             event.setCancelled(true);
             setCooldown(player.getUniqueId());
@@ -132,8 +154,15 @@ public class StructureActivationListener implements Listener {
             }
         }
 
+        // YENİ: OwnerId set et (CLAN_OWNED yapılar için)
+        // Şimdilik tüm yapılar için oyuncu UUID'si ownerId olarak kaydedilir
+        detectedStructure.setOwnerId(player.getUniqueId());
+        
         // Yapıyı klana ekle
         clan.addStructure(detectedStructure);
+        
+        // YENİ: Yapı çekirdeğini aktif yapıya dönüştür
+        coreManager.activateCore(clickedLoc, detectedStructure);
 
         // Cooldown ekle
         setCooldown(player.getUniqueId());
@@ -229,10 +258,24 @@ public class StructureActivationListener implements Listener {
     // ========== YAPI PATTERN KONTROLLERİ ==========
 
     /**
-     * Simya Kulesi: 3x3 Kitaplık taban + 5 blok yüksek + Beacon üstte
+     * Simya Kulesi: Oak Log (Yapı Çekirdeği) + 3x3 Kitaplık taban + 5 blok yüksek + Beacon üstte
      */
     private Structure checkAlchemyTower(Block center) {
-        if (center.getType() != Material.BEACON)
+        // YENİ: Yapı çekirdeği kontrolü - Oak Log olmalı ve metadata ile işaretli olmalı
+        if (center.getType() != Material.OAK_LOG)
+            return null;
+        
+        // YENİ: Yapı çekirdeği kontrolü (metadata ile)
+        if (!coreManager.isStructureCore(center))
+            return null;
+        
+        // YENİ: Yapı çekirdeği aktif mi kontrol et
+        if (!coreManager.isInactiveCore(center.getLocation()))
+            return null;
+
+        // Üstünde Beacon kontrolü
+        Block above = center.getRelative(BlockFace.UP);
+        if (above.getType() != Material.BEACON)
             return null;
 
         Block below = center.getRelative(BlockFace.DOWN);
@@ -241,9 +284,9 @@ public class StructureActivationListener implements Listener {
         int height = 0;
         int maxHeight = 0;
 
-        // Yüksekliği say
+        // Yüksekliği say (center'dan değil, below'dan)
         for (int y = 1; y <= 5; y++) {
-            Block checkBlock = center.getRelative(0, -y, 0);
+            Block checkBlock = below.getRelative(0, -y, 0);
             if (checkBlock.getType() == Material.BOOKSHELF ||
                     checkBlock.getType() == Material.CHISELED_BOOKSHELF) {
                 height++;
@@ -265,26 +308,43 @@ public class StructureActivationListener implements Listener {
             return null; // Çok kısa
 
         // 3x3 platform kontrolü (taban)
-        Block base = center.getRelative(0, -maxHeight - 1, 0);
+        Block base = below.getRelative(0, -maxHeight - 1, 0);
         if (!check3x3Platform(base, Material.BOOKSHELF, Material.CHISELED_BOOKSHELF)) {
             return null;
         }
 
         // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
-        return new Structure(Structure.Type.valueOf(StructureType.ALCHEMY_TOWER.name()), center.getLocation(), level);
+        // YENİ: OwnerId null (klan yapısı, ownerId gerekmez)
+        return new Structure(Structure.Type.valueOf(StructureType.ALCHEMY_TOWER.name()), center.getLocation(), level, null);
     }
 
     /**
-     * Zehir Reaktörü: 3x3 Prismarine + 4 blok yüksek + Beacon üstte
+     * Zehir Reaktörü: End Crystal (Yapı Çekirdeği) + 3x3 Prismarine + 4 blok yüksek + Beacon üstte
      */
     private Structure checkPoisonReactor(Block center) {
-        if (center.getType() != Material.BEACON)
+        // YENİ: Yapı çekirdeği kontrolü - End Crystal olmalı
+        // YENİ: Yapı çekirdeği kontrolü - Oak Log olmalı ve metadata ile işaretli olmalı
+        if (center.getType() != Material.OAK_LOG)
+            return null;
+        
+        // YENİ: Yapı çekirdeği kontrolü (metadata ile)
+        if (!coreManager.isStructureCore(center))
+            return null;
+        
+        // YENİ: Yapı çekirdeği aktif mi kontrol et
+        if (!coreManager.isInactiveCore(center.getLocation()))
             return null;
 
+        // Üstünde Beacon kontrolü
+        Block above = center.getRelative(BlockFace.UP);
+        if (above.getType() != Material.BEACON)
+            return null;
+
+        Block below = center.getRelative(BlockFace.DOWN);
         // Altında 3-5 blok Prismarine kontrolü
         int height = 0;
         for (int y = 1; y <= 5; y++) {
-            Block checkBlock = center.getRelative(0, -y, 0);
+            Block checkBlock = below.getRelative(0, -y, 0);
             if (checkBlock.getType() == Material.PRISMARINE ||
                     checkBlock.getType() == Material.DARK_PRISMARINE) {
                 height++;
@@ -303,20 +363,36 @@ public class StructureActivationListener implements Listener {
         else
             return null;
 
-        Block base = center.getRelative(0, -height - 1, 0);
+        Block base = below.getRelative(0, -height - 1, 0);
         if (!check3x3Platform(base, Material.PRISMARINE, Material.DARK_PRISMARINE)) {
             return null;
         }
 
         // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
-        return new Structure(Structure.Type.valueOf(StructureType.POISON_REACTOR.name()), center.getLocation(), level);
+        // YENİ: OwnerId null (klan yapısı, ownerId gerekmez)
+        return new Structure(Structure.Type.valueOf(StructureType.POISON_REACTOR.name()), center.getLocation(), level, null);
     }
 
     /**
-     * Tektonik Sabitleyici: 5x5 Obsidian platform + End Rod ortada
+     * Tektonik Sabitleyici: End Crystal (Yapı Çekirdeği) + 5x5 Obsidian platform + End Rod üstte
      */
     private Structure checkTectonicStabilizer(Block center) {
-        if (center.getType() != Material.END_ROD)
+        // YENİ: Yapı çekirdeği kontrolü - End Crystal olmalı
+        // YENİ: Yapı çekirdeği kontrolü - Oak Log olmalı ve metadata ile işaretli olmalı
+        if (center.getType() != Material.OAK_LOG)
+            return null;
+        
+        // YENİ: Yapı çekirdeği kontrolü (metadata ile)
+        if (!coreManager.isStructureCore(center))
+            return null;
+        
+        // YENİ: Yapı çekirdeği aktif mi kontrol et
+        if (!coreManager.isInactiveCore(center.getLocation()))
+            return null;
+
+        // Üstünde End Rod kontrolü
+        Block above = center.getRelative(BlockFace.UP);
+        if (above.getType() != Material.END_ROD)
             return null;
 
         Block below = center.getRelative(BlockFace.DOWN);
@@ -340,20 +416,37 @@ public class StructureActivationListener implements Listener {
         int level = obsidianCount >= 25 ? 3 : (obsidianCount >= 23 ? 2 : 1);
 
         // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
-        return new Structure(Structure.Type.valueOf(StructureType.TECTONIC_STABILIZER.name()), center.getLocation(), level);
+        // YENİ: OwnerId null (klan yapısı, ownerId gerekmez)
+        return new Structure(Structure.Type.valueOf(StructureType.TECTONIC_STABILIZER.name()), center.getLocation(), level, null);
     }
 
     /**
-     * Gözetleme Kulesi: 3x3 taban + 8-12 blok yüksek kule + Beacon üstte
+     * Gözetleme Kulesi: End Crystal (Yapı Çekirdeği) + 3x3 taban + 8-12 blok yüksek kule + Beacon üstte
      */
     private Structure checkWatchtower(Block center) {
-        if (center.getType() != Material.BEACON)
+        // YENİ: Yapı çekirdeği kontrolü - End Crystal olmalı
+        // YENİ: Yapı çekirdeği kontrolü - Oak Log olmalı ve metadata ile işaretli olmalı
+        if (center.getType() != Material.OAK_LOG)
+            return null;
+        
+        // YENİ: Yapı çekirdeği kontrolü (metadata ile)
+        if (!coreManager.isStructureCore(center))
+            return null;
+        
+        // YENİ: Yapı çekirdeği aktif mi kontrol et
+        if (!coreManager.isInactiveCore(center.getLocation()))
             return null;
 
+        // Üstünde Beacon kontrolü
+        Block above = center.getRelative(BlockFace.UP);
+        if (above.getType() != Material.BEACON)
+            return null;
+
+        Block below = center.getRelative(BlockFace.DOWN);
         // Yüksekliği kontrol et (Stone Brick)
         int height = 0;
         for (int y = 1; y <= 15; y++) {
-            Block checkBlock = center.getRelative(0, -y, 0);
+            Block checkBlock = below.getRelative(0, -y, 0);
             if (checkBlock.getType() == Material.STONE_BRICKS) {
                 height++;
             } else {
@@ -371,20 +464,36 @@ public class StructureActivationListener implements Listener {
         else if (height >= 10)
             level = 2;
 
-        Block base = center.getRelative(0, -height - 1, 0);
+        Block base = below.getRelative(0, -height - 1, 0);
         if (!check3x3Platform(base, Material.STONE_BRICKS)) {
             return null;
         }
 
         // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
-        return new Structure(Structure.Type.valueOf(StructureType.WATCHTOWER.name()), center.getLocation(), level);
+        // YENİ: OwnerId null (klan yapısı, ownerId gerekmez)
+        return new Structure(Structure.Type.valueOf(StructureType.WATCHTOWER.name()), center.getLocation(), level, null);
     }
 
     /**
-     * Otomatik Taret: 2x2 Iron Block + Dispenser üstte
+     * Otomatik Taret: End Crystal (Yapı Çekirdeği) + 2x2 Iron Block + Dispenser üstte
      */
     private Structure checkAutoTurret(Block center) {
-        if (center.getType() != Material.DISPENSER)
+        // YENİ: Yapı çekirdeği kontrolü - End Crystal olmalı
+        // YENİ: Yapı çekirdeği kontrolü - Oak Log olmalı ve metadata ile işaretli olmalı
+        if (center.getType() != Material.OAK_LOG)
+            return null;
+        
+        // YENİ: Yapı çekirdeği kontrolü (metadata ile)
+        if (!coreManager.isStructureCore(center))
+            return null;
+        
+        // YENİ: Yapı çekirdeği aktif mi kontrol et
+        if (!coreManager.isInactiveCore(center.getLocation()))
+            return null;
+
+        // Üstünde Dispenser kontrolü
+        Block above = center.getRelative(BlockFace.UP);
+        if (above.getType() != Material.DISPENSER)
             return null;
 
         Block below = center.getRelative(BlockFace.DOWN);
@@ -406,7 +515,7 @@ public class StructureActivationListener implements Listener {
         // Yükseklik kontrolü (3-5 blok)
         int height = 0;
         for (int y = 1; y <= 5; y++) {
-            Block checkBlock = center.getRelative(0, -y, 0);
+            Block checkBlock = below.getRelative(0, -y, 0);
             if (checkBlock.getType() == Material.IRON_BLOCK) {
                 height++;
             } else {
@@ -417,16 +526,32 @@ public class StructureActivationListener implements Listener {
         int level = Math.min(3, Math.max(1, height - 1));
 
         // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
-        return new Structure(Structure.Type.valueOf(StructureType.AUTO_TURRET.name()), center.getLocation(), level);
+        // YENİ: OwnerId null (klan yapısı, ownerId gerekmez)
+        return new Structure(Structure.Type.valueOf(StructureType.AUTO_TURRET.name()), center.getLocation(), level, null);
     }
 
     // ========== YÖNETİM YAPILARI PATTERN KONTROLLERİ ==========
 
     /**
-     * Kişisel Görev Loncası: Lectern + 2x2 Taş taban (her yere yapılabilir)
+     * Kişisel Görev Loncası: End Crystal (Yapı Çekirdeği) + Lectern üstte + 2x2 Taş taban (her yere yapılabilir)
      */
     private Structure checkPersonalMissionGuild(Block center) {
-        if (center.getType() != Material.LECTERN)
+        // YENİ: Yapı çekirdeği kontrolü - End Crystal olmalı
+        // YENİ: Yapı çekirdeği kontrolü - Oak Log olmalı ve metadata ile işaretli olmalı
+        if (center.getType() != Material.OAK_LOG)
+            return null;
+        
+        // YENİ: Yapı çekirdeği kontrolü (metadata ile)
+        if (!coreManager.isStructureCore(center))
+            return null;
+        
+        // YENİ: Yapı çekirdeği aktif mi kontrol et
+        if (!coreManager.isInactiveCore(center.getLocation()))
+            return null;
+
+        // Üstünde Lectern kontrolü
+        Block above = center.getRelative(BlockFace.UP);
+        if (above.getType() != Material.LECTERN)
             return null;
 
         // 2x2 Taş taban kontrolü
@@ -447,14 +572,30 @@ public class StructureActivationListener implements Listener {
             return null;
 
         // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
-        return new Structure(Structure.Type.valueOf(StructureType.PERSONAL_MISSION_GUILD.name()), center.getLocation(), 1);
+        // YENİ: OwnerId null (PUBLIC yapı, ownerId gerekmez - ama ileride CLAN_OWNED olursa set edilebilir)
+        return new Structure(Structure.Type.valueOf(StructureType.PERSONAL_MISSION_GUILD.name()), center.getLocation(), 1, null);
     }
 
     /**
-     * Klan Yönetim Merkezi: Beacon + 3x3 Demir Bloğu taban
+     * Klan Yönetim Merkezi: End Crystal (Yapı Çekirdeği) + Beacon üstte + 3x3 Demir Bloğu taban
      */
     private Structure checkClanManagementCenter(Block center) {
-        if (center.getType() != Material.BEACON)
+        // YENİ: Yapı çekirdeği kontrolü - End Crystal olmalı
+        // YENİ: Yapı çekirdeği kontrolü - Oak Log olmalı ve metadata ile işaretli olmalı
+        if (center.getType() != Material.OAK_LOG)
+            return null;
+        
+        // YENİ: Yapı çekirdeği kontrolü (metadata ile)
+        if (!coreManager.isStructureCore(center))
+            return null;
+        
+        // YENİ: Yapı çekirdeği aktif mi kontrol et
+        if (!coreManager.isInactiveCore(center.getLocation()))
+            return null;
+
+        // Üstünde Beacon kontrolü
+        Block above = center.getRelative(BlockFace.UP);
+        if (above.getType() != Material.BEACON)
             return null;
 
         Block below = center.getRelative(BlockFace.DOWN);
@@ -479,40 +620,63 @@ public class StructureActivationListener implements Listener {
         if (ironCount >= 8) level = 3;
 
         // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
-        return new Structure(Structure.Type.valueOf(StructureType.CLAN_MANAGEMENT_CENTER.name()), center.getLocation(), level);
+        // YENİ: OwnerId null (klan yapısı, ownerId gerekmez)
+        return new Structure(Structure.Type.valueOf(StructureType.CLAN_MANAGEMENT_CENTER.name()), center.getLocation(), level, null);
     }
 
     /**
-     * Klan Bankası: Ender Chest + 2x2 Demir Bloğu taban
+     * Klan Bankası: End Crystal (Yapı Çekirdeği) + Ender Chest üstte + 2x2 Demir Bloğu taban
      */
     private Structure checkClanBank(Block center) {
-        if (center.getType() != Material.ENDER_CHEST)
+        // YENİ: Yapı çekirdeği kontrolü - End Crystal olmalı
+        // YENİ: Yapı çekirdeği kontrolü - Oak Log olmalı ve metadata ile işaretli olmalı
+        if (center.getType() != Material.OAK_LOG)
+            return null;
+        
+        // YENİ: Yapı çekirdeği kontrolü (metadata ile)
+        if (!coreManager.isStructureCore(center))
+            return null;
+        
+        // YENİ: Yapı çekirdeği aktif mi kontrol et
+        if (!coreManager.isInactiveCore(center.getLocation()))
             return null;
 
+        // Üstünde Chest kontrolü (tarife göre)
+        Block above = center.getRelative(BlockFace.UP);
+        if (above.getType() != Material.CHEST)
+            return null;
+
+        // Altında Gold Block kontrolü (tarife göre)
         Block below = center.getRelative(BlockFace.DOWN);
-        int ironCount = 0;
-        for (int x = 0; x <= 1; x++) {
-            for (int z = 0; z <= 1; z++) {
-                Block checkBlock = below.getRelative(x, 0, z);
-                if (checkBlock.getType() == Material.IRON_BLOCK) {
-                    ironCount++;
-                }
-            }
-        }
-
-        if (ironCount < 3)
+        if (below.getType() != Material.GOLD_BLOCK)
             return null;
 
-        int level = ironCount >= 4 ? 2 : 1;
+        int level = 1; // Varsayılan seviye
         // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
-        return new Structure(Structure.Type.valueOf(StructureType.CLAN_BANK.name()), center.getLocation(), level);
+        // YENİ: OwnerId null (klan yapısı, ownerId gerekmez)
+        return new Structure(Structure.Type.valueOf(StructureType.CLAN_BANK.name()), center.getLocation(), level, null);
     }
 
     /**
-     * Klan Görev Loncası: Lectern + 2x2 Demir Bloğu taban
+     * Klan Görev Loncası: End Crystal (Yapı Çekirdeği) + Lectern üstte + 2x2 Demir Bloğu taban
      */
     private Structure checkClanMissionGuild(Block center) {
-        if (center.getType() != Material.LECTERN)
+        // YENİ: Yapı çekirdeği kontrolü - End Crystal olmalı
+        // YENİ: Yapı çekirdeği kontrolü - Oak Log olmalı ve metadata ile işaretli olmalı
+        if (center.getType() != Material.OAK_LOG)
+            return null;
+        
+        // YENİ: Yapı çekirdeği kontrolü (metadata ile)
+        if (!coreManager.isStructureCore(center))
+            return null;
+        
+        // YENİ: Yapı çekirdeği aktif mi kontrol et
+        if (!coreManager.isInactiveCore(center.getLocation()))
+            return null;
+
+        // Üstünde Lectern kontrolü
+        Block above = center.getRelative(BlockFace.UP);
+        if (above.getType() != Material.LECTERN)
             return null;
 
         Block below = center.getRelative(BlockFace.DOWN);
@@ -531,14 +695,30 @@ public class StructureActivationListener implements Listener {
 
         int level = ironCount >= 4 ? 2 : 1;
         // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
-        return new Structure(Structure.Type.valueOf(StructureType.CLAN_MISSION_GUILD.name()), center.getLocation(), level);
+        // YENİ: OwnerId null (klan yapısı, ownerId gerekmez)
+        return new Structure(Structure.Type.valueOf(StructureType.CLAN_MISSION_GUILD.name()), center.getLocation(), level, null);
     }
 
     /**
-     * Eğitim Alanı: Enchanting Table + 2x2 Demir Bloğu taban
+     * Eğitim Alanı: End Crystal (Yapı Çekirdeği) + Enchanting Table üstte + 2x2 Demir Bloğu taban
      */
     private Structure checkTrainingArena(Block center) {
-        if (center.getType() != Material.ENCHANTING_TABLE)
+        // YENİ: Yapı çekirdeği kontrolü - End Crystal olmalı
+        // YENİ: Yapı çekirdeği kontrolü - Oak Log olmalı ve metadata ile işaretli olmalı
+        if (center.getType() != Material.OAK_LOG)
+            return null;
+        
+        // YENİ: Yapı çekirdeği kontrolü (metadata ile)
+        if (!coreManager.isStructureCore(center))
+            return null;
+        
+        // YENİ: Yapı çekirdeği aktif mi kontrol et
+        if (!coreManager.isInactiveCore(center.getLocation()))
+            return null;
+
+        // Üstünde Enchanting Table kontrolü
+        Block above = center.getRelative(BlockFace.UP);
+        if (above.getType() != Material.ENCHANTING_TABLE)
             return null;
 
         Block below = center.getRelative(BlockFace.DOWN);
@@ -557,14 +737,30 @@ public class StructureActivationListener implements Listener {
 
         int level = ironCount >= 4 ? 2 : 1;
         // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
-        return new Structure(Structure.Type.valueOf(StructureType.TRAINING_ARENA.name()), center.getLocation(), level);
+        // YENİ: OwnerId null (klan yapısı, ownerId gerekmez)
+        return new Structure(Structure.Type.valueOf(StructureType.TRAINING_ARENA.name()), center.getLocation(), level, null);
     }
 
     /**
-     * Kervan İstasyonu: Chest + 2x2 Demir Bloğu taban
+     * Kervan İstasyonu: End Crystal (Yapı Çekirdeği) + Chest üstte + 2x2 Demir Bloğu taban
      */
     private Structure checkCaravanStation(Block center) {
-        if (center.getType() != Material.CHEST)
+        // YENİ: Yapı çekirdeği kontrolü - End Crystal olmalı
+        // YENİ: Yapı çekirdeği kontrolü - Oak Log olmalı ve metadata ile işaretli olmalı
+        if (center.getType() != Material.OAK_LOG)
+            return null;
+        
+        // YENİ: Yapı çekirdeği kontrolü (metadata ile)
+        if (!coreManager.isStructureCore(center))
+            return null;
+        
+        // YENİ: Yapı çekirdeği aktif mi kontrol et
+        if (!coreManager.isInactiveCore(center.getLocation()))
+            return null;
+
+        // Üstünde Chest kontrolü
+        Block above = center.getRelative(BlockFace.UP);
+        if (above.getType() != Material.CHEST)
             return null;
 
         Block below = center.getRelative(BlockFace.DOWN);
@@ -583,49 +779,68 @@ public class StructureActivationListener implements Listener {
 
         int level = ironCount >= 4 ? 2 : 1;
         // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
-        return new Structure(Structure.Type.valueOf(StructureType.CARAVAN_STATION.name()), center.getLocation(), level);
+        // YENİ: OwnerId null (klan yapısı, ownerId gerekmez)
+        return new Structure(Structure.Type.valueOf(StructureType.CARAVAN_STATION.name()), center.getLocation(), level, null);
     }
 
     /**
-     * Kontrat Bürosu: Anvil + 2x2 Taş taban (her yere yapılabilir)
+     * Kontrat Bürosu: End Crystal (Yapı Çekirdeği) + Anvil üstte + 2x2 Taş taban (her yere yapılabilir)
      */
     private Structure checkContractOffice(Block center) {
-        if (center.getType() != Material.ANVIL && 
-            center.getType() != Material.CHIPPED_ANVIL &&
-            center.getType() != Material.DAMAGED_ANVIL)
+        // YENİ: Yapı çekirdeği kontrolü - End Crystal olmalı
+        // YENİ: Yapı çekirdeği kontrolü - Oak Log olmalı ve metadata ile işaretli olmalı
+        if (center.getType() != Material.OAK_LOG)
+            return null;
+        
+        // YENİ: Yapı çekirdeği kontrolü (metadata ile)
+        if (!coreManager.isStructureCore(center))
+            return null;
+        
+        // YENİ: Yapı çekirdeği aktif mi kontrol et
+        if (!coreManager.isInactiveCore(center.getLocation()))
             return null;
 
-        Block below = center.getRelative(BlockFace.DOWN);
-        int stoneCount = 0;
-        for (int x = 0; x <= 1; x++) {
-            for (int z = 0; z <= 1; z++) {
-                Block checkBlock = below.getRelative(x, 0, z);
-                if (checkBlock.getType() == Material.STONE || 
-                    checkBlock.getType() == Material.COBBLESTONE ||
-                    checkBlock.getType() == Material.STONE_BRICKS) {
-                    stoneCount++;
-                }
-            }
-        }
+        // Üstünde Crafting Table kontrolü (tarife göre)
+        Block above = center.getRelative(BlockFace.UP);
+        if (above.getType() != Material.CRAFTING_TABLE)
+            return null;
 
-        if (stoneCount < 3)
+        // Altında Stone kontrolü (tarife göre)
+        Block below = center.getRelative(BlockFace.DOWN);
+        if (below.getType() != Material.STONE)
             return null;
 
         // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
-        return new Structure(Structure.Type.valueOf(StructureType.CONTRACT_OFFICE.name()), center.getLocation(), 1);
+        // YENİ: OwnerId null (PUBLIC yapı, ownerId gerekmez)
+        return new Structure(Structure.Type.valueOf(StructureType.CONTRACT_OFFICE.name()), center.getLocation(), 1, null);
     }
 
     /**
-     * Market: Chest + Sign + 2x2 Taş taban (her yere yapılabilir)
+     * Market: End Crystal (Yapı Çekirdeği) + Chest üstte + Sign + 2x2 Taş taban (her yere yapılabilir)
      */
     private Structure checkMarketPlace(Block center) {
-        if (center.getType() != Material.CHEST)
+        // YENİ: Yapı çekirdeği kontrolü - End Crystal olmalı
+        // YENİ: Yapı çekirdeği kontrolü - Oak Log olmalı ve metadata ile işaretli olmalı
+        if (center.getType() != Material.OAK_LOG)
+            return null;
+        
+        // YENİ: Yapı çekirdeği kontrolü (metadata ile)
+        if (!coreManager.isStructureCore(center))
+            return null;
+        
+        // YENİ: Yapı çekirdeği aktif mi kontrol et
+        if (!coreManager.isInactiveCore(center.getLocation()))
+            return null;
+
+        // Üstünde Chest kontrolü
+        Block above = center.getRelative(BlockFace.UP);
+        if (above.getType() != Material.CHEST)
             return null;
 
         // Sign kontrolü (yanında veya üstünde)
         boolean hasSign = false;
         for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP}) {
-            Block checkBlock = center.getRelative(face);
+            Block checkBlock = above.getRelative(face);
             if (checkBlock.getType().name().contains("SIGN")) {
                 hasSign = true;
                 break;
@@ -652,32 +867,41 @@ public class StructureActivationListener implements Listener {
             return null;
 
         // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
-        return new Structure(Structure.Type.valueOf(StructureType.MARKET_PLACE.name()), center.getLocation(), 1);
+        // YENİ: OwnerId null (PUBLIC yapı, ownerId gerekmez)
+        return new Structure(Structure.Type.valueOf(StructureType.MARKET_PLACE.name()), center.getLocation(), 1, null);
     }
 
     /**
-     * Tarif Kütüphanesi: Lectern + Bookshelf yanında (her yere yapılabilir)
+     * Tarif Kütüphanesi: End Crystal (Yapı Çekirdeği) + Lectern üstte + Bookshelf yanında (her yere yapılabilir)
      */
     private Structure checkRecipeLibrary(Block center) {
-        if (center.getType() != Material.LECTERN)
+        // YENİ: Yapı çekirdeği kontrolü - End Crystal olmalı
+        // YENİ: Yapı çekirdeği kontrolü - Oak Log olmalı ve metadata ile işaretli olmalı
+        if (center.getType() != Material.OAK_LOG)
+            return null;
+        
+        // YENİ: Yapı çekirdeği kontrolü (metadata ile)
+        if (!coreManager.isStructureCore(center))
+            return null;
+        
+        // YENİ: Yapı çekirdeği aktif mi kontrol et
+        if (!coreManager.isInactiveCore(center.getLocation()))
             return null;
 
-        // Bookshelf kontrolü (yanında en az 2 tane)
-        int bookshelfCount = 0;
-        for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST}) {
-            Block checkBlock = center.getRelative(face);
-            if (checkBlock.getType() == Material.BOOKSHELF || 
-                checkBlock.getType() == Material.CHISELED_BOOKSHELF) {
-                bookshelfCount++;
-            }
-        }
-
-        if (bookshelfCount < 2)
+        // Üstünde Lectern kontrolü (tarife göre)
+        Block above = center.getRelative(BlockFace.UP);
+        if (above.getType() != Material.LECTERN)
             return null;
 
-        int level = bookshelfCount >= 4 ? 2 : 1;
+        // Altında Bookshelf kontrolü (tarife göre)
+        Block below = center.getRelative(BlockFace.DOWN);
+        if (below.getType() != Material.BOOKSHELF)
+            return null;
+
+        int level = 1; // Varsayılan seviye
         // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
-        return new Structure(Structure.Type.valueOf(StructureType.RECIPE_LIBRARY.name()), center.getLocation(), level);
+        // YENİ: OwnerId null (PUBLIC yapı, ownerId gerekmez)
+        return new Structure(Structure.Type.valueOf(StructureType.RECIPE_LIBRARY.name()), center.getLocation(), level, null);
     }
 
     // ========== YARDIMCI METODLAR ==========

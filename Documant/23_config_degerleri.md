@@ -12,6 +12,7 @@ Bu döküman, `config.yml` dosyasındaki tüm oyun dengesi ve ayarlanabilir değ
 4. [Main System (Ana Sistem)](#main-system-ana-sistem)
 5. [Ritüel Sistemi](#ritüel-sistemi)
 6. [Task Intervals (Görev Aralıkları)](#task-intervals-görev-aralıkları)
+7. [Yapı Sistemi](#yapı-sistemi) ⭐ YENİ
 
 ---
 
@@ -775,6 +776,29 @@ game-balance:
 - Boyut değerleri: 10 - 30
 
 **Denge Notu:** Mobların güçleri oyun dengesine göre ayarlanmalı. Çok güçlü moblar oyuncuları zorlar, çok zayıf moblar oyunu kolaylaştırır.
+
+---
+
+---
+
+## 🏗️ Yapı Sistemi ⭐ YENİ
+
+### Otomatik Doğrulama Yarıçapı
+
+```yaml
+structure-system:
+  auto-validate-radius: 5  # Hayalet tarif tamamlandığında otomatik doğrulama yarıçapı (blok)
+```
+
+**Açıklama:** Yapı çekirdeği yakınında (5 blok yarıçap) bir blok yerleştirildiğinde, sistem otomatik olarak yapı tarifini doğrular. Eğer tarif tamamlandıysa, partikül ve ses efektleri gösterilir.
+
+**Etkisi:**
+- **Artırılırsa:** Daha geniş alanda otomatik doğrulama yapılır, ancak performans etkilenebilir
+- **Azaltılırsa:** Daha dar alanda doğrulama yapılır, performans iyileşir ama oyuncu daha yakın olmalı
+
+**Önerilen Aralık:** 3 - 10 blok
+
+**Performans Notu:** Çok yüksek değerler (15+) performans sorunlarına yol açabilir, özellikle çok sayıda yapı çekirdeği varsa.
 
 ---
 

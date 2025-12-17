@@ -4527,7 +4527,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 case "structure":
                     // YENİ: Yapı yönetim komutları
                     List<String> structureCommands = Arrays.asList("list", "info", "activate", "deactivate", 
-                        "setlevel", "setpower", "teleport", "remove", "validate", "recipe");
+                        "setlevel", "setpower", "teleport", "remove", "validate", "recipe", "test", "setowner");
                     if (input.isEmpty()) {
                         return structureCommands;
                     }
@@ -8152,6 +8152,20 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         org.bukkit.Location coreLoc = loc.clone().add(0.5, 0, 0.5);
                         recipe.build(coreLoc);
                         
+                        // YENİ: Yapı çekirdeğini StructureCoreManager'a ekle
+                        me.mami.stratocraft.manager.StructureCoreManager coreManager = plugin.getStructureCoreManager();
+                        if (coreManager != null) {
+                            // Tarifteki core material Oak Log olmalı, ama kontrol edelim
+                            Material coreMaterial = recipe.getCoreMaterial();
+                            if (coreMaterial == Material.OAK_LOG) {
+                                coreManager.addInactiveCore(coreLoc, p.getUniqueId());
+                            } else {
+                                // Eğer tarifte Oak Log yoksa, Oak Log ekle
+                                coreLoc.getBlock().setType(Material.OAK_LOG);
+                                coreManager.addInactiveCore(coreLoc, p.getUniqueId());
+                            }
+                        }
+                        
                         // Başarı mesajı ve aktifleştirme bilgisi
                         String structureName = getStructureDisplayName(type);
                         p.sendMessage("§6═══════════════════════════════════");
@@ -8160,12 +8174,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         p.sendMessage("§7Seviye: §e" + level);
                         p.sendMessage("");
                         p.sendMessage("§e§lAktifleştirme:");
-                        // Çekirdek bloğu tipine göre mesaj
-                        Material coreMaterial = recipe.getCoreMaterial();
-                        String coreBlockName = coreMaterial == Material.BEACON ? "Beacon" : 
-                                               coreMaterial == Material.ENCHANTING_TABLE ? "Enchanting Table" :
-                                               coreMaterial == Material.CHEST ? "Chest" : "End Crystal";
-                        p.sendMessage("§71. Yapının merkez bloğuna (§e" + coreBlockName + "§7) yaklaş");
+                        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
                         p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
                         p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
                         p.sendMessage("");
@@ -8250,19 +8259,27 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      * Kişisel Görev Loncası yapısını oluştur
      */
     private void buildPersonalMissionGuild(Player p, org.bukkit.Location loc) {
-        // 2x2 Taş taban
+        // Merkez Oak Log (Yapı Çekirdeği)
+        org.bukkit.Location crystalLoc = loc.clone().add(0.5, 0, 0.5);
+        crystalLoc.getBlock().setType(Material.OAK_LOG);
+        
+        // YENİ: Yapı çekirdeğini StructureCoreManager'a ekle
+        me.mami.stratocraft.manager.StructureCoreManager coreManager = plugin.getStructureCoreManager();
+        if (coreManager != null) {
+            coreManager.addInactiveCore(crystalLoc, p.getUniqueId());
+        }
+        
+        // 2x2 Taş taban (Oak Log altında - tarife göre COBBLESTONE)
         for (int x = 0; x <= 1; x++) {
             for (int z = 0; z <= 1; z++) {
-                loc.clone().add(x, 0, z).getBlock().setType(Material.STONE);
+                org.bukkit.Location stoneLoc = crystalLoc.clone().add(x - 0.5, -1, z - 0.5);
+                stoneLoc.getBlock().setType(Material.COBBLESTONE);
             }
         }
-        // Üstüne Lectern
-        org.bukkit.Location lecternLoc = loc.clone().add(0.5, 1, 0.5);
-        lecternLoc.getBlock().setType(Material.LECTERN);
         
-        // Merkez End Crystal (tarife göre)
-        org.bukkit.Location crystalLoc = loc.clone().add(0.5, 0, 0.5);
-        crystalLoc.getBlock().setType(Material.END_CRYSTAL);
+        // Üstüne Lectern (Oak Log üstünde)
+        org.bukkit.Location lecternLoc = crystalLoc.clone().add(0, 1, 0);
+        lecternLoc.getBlock().setType(Material.LECTERN);
         
         // Başarı mesajı ve aktifleştirme bilgisi
         p.sendMessage("§6═══════════════════════════════════");
@@ -8270,7 +8287,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapının merkez bloğuna (End Crystal) yaklaş");
+        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
         p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
         p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
@@ -8286,14 +8303,26 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      * Klan Yönetim Merkezi yapısını oluştur
      */
     private void buildClanManagementCenter(Player p, org.bukkit.Location loc, int level) {
-        // 3x3 Demir Bloğu taban
+        // Merkez Oak Log (Yapı Çekirdeği)
+        org.bukkit.Location crystalLoc = loc.clone().add(0.5, 0, 0.5);
+        crystalLoc.getBlock().setType(Material.OAK_LOG);
+        
+        // YENİ: Yapı çekirdeğini StructureCoreManager'a ekle
+        me.mami.stratocraft.manager.StructureCoreManager coreManager = plugin.getStructureCoreManager();
+        if (coreManager != null) {
+            coreManager.addInactiveCore(crystalLoc, p.getUniqueId());
+        }
+        
+        // 3x3 Demir Bloğu taban (Oak Log altında)
         for (int x = -1; x <= 1; x++) {
             for (int z = -1; z <= 1; z++) {
-                loc.clone().add(x, 0, z).getBlock().setType(Material.IRON_BLOCK);
+                org.bukkit.Location ironLoc = crystalLoc.clone().add(x - 0.5, -1, z - 0.5);
+                ironLoc.getBlock().setType(Material.IRON_BLOCK);
             }
         }
-        // Üstüne Beacon
-        org.bukkit.Location beaconLoc = loc.clone().add(0, 1, 0);
+        
+        // Üstüne Beacon (Oak Log üstünde)
+        org.bukkit.Location beaconLoc = crystalLoc.clone().add(0, 1, 0);
         beaconLoc.getBlock().setType(Material.BEACON);
         
         // Başarı mesajı ve aktifleştirme bilgisi
@@ -8303,7 +8332,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§7Seviye: §e" + level);
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapının merkez bloğuna (Beacon) yaklaş");
+        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
         p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
         p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
@@ -8319,9 +8348,15 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      * Klan Bankası yapısını oluştur
      */
     private void buildClanBank(Player p, org.bukkit.Location loc, int level) {
-        // Merkez End Crystal (tarife göre)
+        // Merkez Oak Log (Yapı Çekirdeği)
         org.bukkit.Location crystalLoc = loc.clone().add(0.5, 0, 0.5);
-        crystalLoc.getBlock().setType(Material.END_CRYSTAL);
+        crystalLoc.getBlock().setType(Material.OAK_LOG);
+        
+        // YENİ: Yapı çekirdeğini StructureCoreManager'a ekle
+        me.mami.stratocraft.manager.StructureCoreManager coreManager = plugin.getStructureCoreManager();
+        if (coreManager != null) {
+            coreManager.addInactiveCore(crystalLoc, p.getUniqueId());
+        }
         
         // Altında Gold Block (tarife göre)
         org.bukkit.Location goldLoc = crystalLoc.clone().add(0, -1, 0);
@@ -8338,7 +8373,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§7Seviye: §e" + level);
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapının merkez bloğuna (End Crystal) yaklaş");
+        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
         p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
         p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
@@ -8354,13 +8389,23 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      * Klan Görev Loncası yapısını oluştur
      */
     private void buildClanMissionGuild(Player p, org.bukkit.Location loc, int level) {
-        // Merkez End Crystal (tarife göre)
+        // Merkez Oak Log (Yapı Çekirdeği)
         org.bukkit.Location crystalLoc = loc.clone().add(0.5, 0, 0.5);
-        crystalLoc.getBlock().setType(Material.END_CRYSTAL);
+        crystalLoc.getBlock().setType(Material.OAK_LOG);
         
-        // Altında Emerald Block (tarife göre)
-        org.bukkit.Location emeraldLoc = crystalLoc.clone().add(0, -1, 0);
-        emeraldLoc.getBlock().setType(Material.EMERALD_BLOCK);
+        // YENİ: Yapı çekirdeğini StructureCoreManager'a ekle
+        me.mami.stratocraft.manager.StructureCoreManager coreManager = plugin.getStructureCoreManager();
+        if (coreManager != null) {
+            coreManager.addInactiveCore(crystalLoc, p.getUniqueId());
+        }
+        
+        // Altında 2x2 Demir Bloğu taban (tarife göre - checkClanMissionGuild metoduna göre)
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                org.bukkit.Location ironLoc = crystalLoc.clone().add(x - 0.5, -1, z - 0.5);
+                ironLoc.getBlock().setType(Material.IRON_BLOCK);
+            }
+        }
         
         // Üstüne Lectern (tarife göre)
         org.bukkit.Location lecternLoc = crystalLoc.clone().add(0, 1, 0);
@@ -8373,7 +8418,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§7Seviye: §e" + level);
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapının merkez bloğuna (End Crystal) yaklaş");
+        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
         p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
         p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
@@ -8389,14 +8434,25 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      * Eğitim Alanı yapısını oluştur
      */
     private void buildTrainingArena(Player p, org.bukkit.Location loc, int level) {
+        // Merkez Oak Log (Yapı Çekirdeği)
+        org.bukkit.Location crystalLoc = loc.clone().add(0.5, 0, 0.5);
+        crystalLoc.getBlock().setType(Material.OAK_LOG);
+        
+        // YENİ: Yapı çekirdeğini StructureCoreManager'a ekle
+        me.mami.stratocraft.manager.StructureCoreManager coreManager = plugin.getStructureCoreManager();
+        if (coreManager != null) {
+            coreManager.addInactiveCore(crystalLoc, p.getUniqueId());
+        }
+        
         // 2x2 Demir Bloğu taban
         for (int x = 0; x <= 1; x++) {
             for (int z = 0; z <= 1; z++) {
-                loc.clone().add(x, 0, z).getBlock().setType(Material.IRON_BLOCK);
+                org.bukkit.Location ironLoc = crystalLoc.clone().add(x - 0.5, -1, z - 0.5);
+                ironLoc.getBlock().setType(Material.IRON_BLOCK);
             }
         }
         // Üstüne Enchanting Table
-        org.bukkit.Location tableLoc = loc.clone().add(0.5, 1, 0.5);
+        org.bukkit.Location tableLoc = crystalLoc.clone().add(0, 1, 0);
         tableLoc.getBlock().setType(Material.ENCHANTING_TABLE);
         
         // Başarı mesajı ve aktifleştirme bilgisi
@@ -8406,13 +8462,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§7Seviye: §e" + level);
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapının merkez bloğuna (Enchanting Table) yaklaş");
+        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
         p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
         p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
         
         // Partikül efekti (yapı oluşturulduğunda)
-        org.bukkit.Location effectLoc = tableLoc.clone().add(0, 1, 0);
+        org.bukkit.Location effectLoc = crystalLoc.clone().add(0, 1, 0);
         p.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, effectLoc, 50, 1.0, 1.0, 1.0, 0.3);
         p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, effectLoc, 30, 0.8, 0.8, 0.8, 0.1);
         p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.2f);
@@ -8422,14 +8478,25 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      * Kervan İstasyonu yapısını oluştur
      */
     private void buildCaravanStation(Player p, org.bukkit.Location loc, int level) {
+        // Merkez Oak Log (Yapı Çekirdeği)
+        org.bukkit.Location crystalLoc = loc.clone().add(0.5, 0, 0.5);
+        crystalLoc.getBlock().setType(Material.OAK_LOG);
+        
+        // YENİ: Yapı çekirdeğini StructureCoreManager'a ekle
+        me.mami.stratocraft.manager.StructureCoreManager coreManager = plugin.getStructureCoreManager();
+        if (coreManager != null) {
+            coreManager.addInactiveCore(crystalLoc, p.getUniqueId());
+        }
+        
         // 2x2 Demir Bloğu taban
         for (int x = 0; x <= 1; x++) {
             for (int z = 0; z <= 1; z++) {
-                loc.clone().add(x, 0, z).getBlock().setType(Material.IRON_BLOCK);
+                org.bukkit.Location ironLoc = crystalLoc.clone().add(x - 0.5, -1, z - 0.5);
+                ironLoc.getBlock().setType(Material.IRON_BLOCK);
             }
         }
         // Üstüne Chest
-        org.bukkit.Location chestLoc = loc.clone().add(0.5, 1, 0.5);
+        org.bukkit.Location chestLoc = crystalLoc.clone().add(0, 1, 0);
         chestLoc.getBlock().setType(Material.CHEST);
         
         // Başarı mesajı ve aktifleştirme bilgisi
@@ -8439,13 +8506,13 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§7Seviye: §e" + level);
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapının merkez bloğuna (Chest) yaklaş");
+        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
         p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
         p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
         
         // Partikül efekti (yapı oluşturulduğunda)
-        org.bukkit.Location effectLoc = chestLoc.clone().add(0, 1, 0);
+        org.bukkit.Location effectLoc = crystalLoc.clone().add(0, 1, 0);
         p.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, effectLoc, 50, 1.0, 1.0, 1.0, 0.3);
         p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, effectLoc, 30, 0.8, 0.8, 0.8, 0.1);
         p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.2f);
@@ -8455,17 +8522,27 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      * Kontrat Bürosu yapısını oluştur
      */
     private void buildContractOffice(Player p, org.bukkit.Location loc) {
-        // Merkez End Crystal (tarife göre)
+        // Merkez Oak Log (Yapı Çekirdeği)
         org.bukkit.Location crystalLoc = loc.clone().add(0.5, 0, 0.5);
-        crystalLoc.getBlock().setType(Material.END_CRYSTAL);
+        crystalLoc.getBlock().setType(Material.OAK_LOG);
         
-        // Altında Stone (tarife göre)
-        org.bukkit.Location stoneLoc = crystalLoc.clone().add(0, -1, 0);
-        stoneLoc.getBlock().setType(Material.STONE);
+        // YENİ: Yapı çekirdeğini StructureCoreManager'a ekle
+        me.mami.stratocraft.manager.StructureCoreManager coreManager = plugin.getStructureCoreManager();
+        if (coreManager != null) {
+            coreManager.addInactiveCore(crystalLoc, p.getUniqueId());
+        }
+        
+        // Altında 2x2 Taş taban (tarife göre - checkContractOffice metoduna göre)
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                org.bukkit.Location stoneLoc = crystalLoc.clone().add(x - 0.5, -1, z - 0.5);
+                stoneLoc.getBlock().setType(Material.STONE);
+            }
+        }
         
         // Üstüne Crafting Table (tarife göre)
-        org.bukkit.Location tableLoc = crystalLoc.clone().add(0, 1, 0);
-        tableLoc.getBlock().setType(Material.CRAFTING_TABLE);
+        org.bukkit.Location craftingTableLoc = crystalLoc.clone().add(0, 1, 0);
+        craftingTableLoc.getBlock().setType(Material.CRAFTING_TABLE);
         
         // Başarı mesajı ve aktifleştirme bilgisi
         p.sendMessage("§6═══════════════════════════════════");
@@ -8473,7 +8550,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapının merkez bloğuna (End Crystal) yaklaş");
+        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
         p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
         p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
@@ -8489,17 +8566,31 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      * Market yapısını oluştur
      */
     private void buildMarketPlace(Player p, org.bukkit.Location loc) {
-        // Merkez End Crystal (tarife göre)
+        // Merkez Oak Log (Yapı Çekirdeği)
         org.bukkit.Location crystalLoc = loc.clone().add(0.5, 0, 0.5);
-        crystalLoc.getBlock().setType(Material.END_CRYSTAL);
+        crystalLoc.getBlock().setType(Material.OAK_LOG);
         
-        // Altında Coal Block (tarife göre)
-        org.bukkit.Location coalLoc = crystalLoc.clone().add(0, -1, 0);
-        coalLoc.getBlock().setType(Material.COAL_BLOCK);
+        // YENİ: Yapı çekirdeğini StructureCoreManager'a ekle
+        me.mami.stratocraft.manager.StructureCoreManager coreManager = plugin.getStructureCoreManager();
+        if (coreManager != null) {
+            coreManager.addInactiveCore(crystalLoc, p.getUniqueId());
+        }
+        
+        // Altında 2x2 Taş taban (tarife göre - checkMarketPlace metoduna göre)
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                org.bukkit.Location stoneLoc = crystalLoc.clone().add(x - 0.5, -1, z - 0.5);
+                stoneLoc.getBlock().setType(Material.STONE);
+            }
+        }
         
         // Üstüne Chest (tarife göre)
         org.bukkit.Location chestLoc = crystalLoc.clone().add(0, 1, 0);
         chestLoc.getBlock().setType(Material.CHEST);
+        
+        // Sign ekle (yanında - checkMarketPlace metoduna göre)
+        org.bukkit.Location signLoc = chestLoc.clone().add(1, 0, 0);
+        signLoc.getBlock().setType(Material.OAK_SIGN);
         
         // Başarı mesajı ve aktifleştirme bilgisi
         p.sendMessage("§6═══════════════════════════════════");
@@ -8507,7 +8598,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§6═══════════════════════════════════");
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapının merkez bloğuna (End Crystal) yaklaş");
+        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
         p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
         p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
@@ -8523,9 +8614,15 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      * Tarif Kütüphanesi yapısını oluştur
      */
     private void buildRecipeLibrary(Player p, org.bukkit.Location loc, int level) {
-        // Merkez End Crystal (tarife göre)
+        // Merkez Oak Log (Yapı Çekirdeği)
         org.bukkit.Location crystalLoc = loc.clone().add(0.5, 0, 0.5);
-        crystalLoc.getBlock().setType(Material.END_CRYSTAL);
+        crystalLoc.getBlock().setType(Material.OAK_LOG);
+        
+        // YENİ: Yapı çekirdeğini StructureCoreManager'a ekle
+        me.mami.stratocraft.manager.StructureCoreManager coreManager = plugin.getStructureCoreManager();
+        if (coreManager != null) {
+            coreManager.addInactiveCore(crystalLoc, p.getUniqueId());
+        }
         
         // Altında Bookshelf (tarife göre)
         org.bukkit.Location bookshelfLoc = crystalLoc.clone().add(0, -1, 0);
@@ -8542,7 +8639,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         p.sendMessage("§7Seviye: §e" + level);
         p.sendMessage("");
         p.sendMessage("§e§lAktifleştirme:");
-        p.sendMessage("§71. Yapının merkez bloğuna (End Crystal) yaklaş");
+        p.sendMessage("§71. Yapı çekirdeğine (Oak Log) yaklaş");
         p.sendMessage("§72. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
         p.sendMessage("§73. Yapı aktif olduğunda partikül efektleri görünecek");
         p.sendMessage("");
@@ -10018,9 +10115,286 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return handleStructureValidate(p, args);
             case "recipe":
                 return handleStructureRecipe(p, args);
+            case "test":
+                return handleStructureTest(p, args); // YENİ: Test komutları
+            case "setowner":
+                return handleStructureSetOwner(p, args); // YENİ: OwnerId ayarla
             default:
                 p.sendMessage("§cGeçersiz komut! /stratocraft structure <komut>");
                 return true;
+        }
+    }
+    
+    /**
+     * YENİ: Yapı test komutları
+     */
+    private boolean handleStructureTest(Player p, String[] args) {
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft structure test <komut>");
+            p.sendMessage("§7Test komutları:");
+            p.sendMessage("§e  ownership <type> §7- Sahiplik tipi test et");
+            p.sendMessage("§e  validate <x> <y> <z> <type> §7- Yapı doğrulama test et");
+            p.sendMessage("§e  ghostrecipe <recipe-id> §7- Hayalet tarif test et");
+            p.sendMessage("§e  core <x> <y> <z> §7- Yapı çekirdeği test et");
+            return true;
+        }
+        
+        String testCommand = args[2].toLowerCase();
+        
+        switch (testCommand) {
+            case "ownership":
+                return handleTestOwnership(p, args);
+            case "validate":
+                return handleTestValidate(p, args);
+            case "ghostrecipe":
+                return handleTestGhostRecipe(p, args);
+            case "core":
+                return handleTestCore(p, args);
+            default:
+                p.sendMessage("§cGeçersiz test komutu!");
+                return true;
+        }
+    }
+    
+    /**
+     * YENİ: Sahiplik tipi test
+     */
+    private boolean handleTestOwnership(Player p, String[] args) {
+        if (args.length < 4) {
+            p.sendMessage("§cKullanım: /stratocraft structure test ownership <structure-type>");
+            p.sendMessage("§7Örnek: /stratocraft structure test ownership PERSONAL_MISSION_GUILD");
+            return true;
+        }
+        
+        try {
+            me.mami.stratocraft.enums.StructureType type = 
+                me.mami.stratocraft.enums.StructureType.valueOf(args[3].toUpperCase());
+            me.mami.stratocraft.enums.StructureOwnershipType ownershipType = 
+                me.mami.stratocraft.util.StructureOwnershipHelper.getOwnershipType(type);
+            
+            p.sendMessage("§6§l=== Sahiplik Tipi Test ===");
+            p.sendMessage("§7Yapı Tipi: §e" + type.name());
+            p.sendMessage("§7Sahiplik Tipi: §e" + ownershipType.name());
+            p.sendMessage("§7Sahiplik Kontrolü Gerekli: §e" + 
+                me.mami.stratocraft.util.StructureOwnershipHelper.requiresOwnershipCheck(type));
+            
+            switch (ownershipType) {
+                case CLAN_ONLY:
+                    p.sendMessage("§7Açıklama: §cSadece klan alanına yapılabilir");
+                    break;
+                case CLAN_OWNED:
+                    p.sendMessage("§7Açıklama: §eKlan dışına yapılabilir, sadece yapan oyuncu ve klanı kullanabilir");
+                    break;
+                case PUBLIC:
+                    p.sendMessage("§7Açıklama: §aHer yere yapılabilir, herkes kullanabilir");
+                    break;
+            }
+            
+            return true;
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz yapı tipi: " + args[3]);
+            return true;
+        }
+    }
+    
+    /**
+     * YENİ: Yapı doğrulama test
+     */
+    private boolean handleTestValidate(Player p, String[] args) {
+        if (args.length < 7) {
+            p.sendMessage("§cKullanım: /stratocraft structure test validate <x> <y> <z> <structure-type>");
+            p.sendMessage("§7Örnek: /stratocraft structure test validate 100 64 200 PERSONAL_MISSION_GUILD");
+            return true;
+        }
+        
+        try {
+            int x = Integer.parseInt(args[3]);
+            int y = Integer.parseInt(args[4]);
+            int z = Integer.parseInt(args[5]);
+            me.mami.stratocraft.enums.StructureType type = 
+                me.mami.stratocraft.enums.StructureType.valueOf(args[6].toUpperCase());
+            
+            org.bukkit.Location loc = new org.bukkit.Location(p.getWorld(), x, y, z);
+            
+            p.sendMessage("§6§l=== Yapı Doğrulama Test ===");
+            p.sendMessage("§7Konum: §e" + x + ", " + y + ", " + z);
+            p.sendMessage("§7Yapı Tipi: §e" + type.name());
+            p.sendMessage("§7Kontrol ediliyor...");
+            
+            me.mami.stratocraft.manager.StructureRecipeManager recipeManager = 
+                plugin.getStructureRecipeManager();
+            if (recipeManager == null) {
+                p.sendMessage("§cStructureRecipeManager bulunamadı!");
+                return true;
+            }
+            
+            recipeManager.validateStructureAsync(loc, type, (isValid) -> {
+                org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (isValid) {
+                        p.sendMessage("§a§l✓ Yapı tarife uyuyor!");
+                    } else {
+                        p.sendMessage("§c§l✗ Yapı tarife uymuyor!");
+                    }
+                });
+            });
+            
+            return true;
+        } catch (NumberFormatException e) {
+            p.sendMessage("§cGeçersiz koordinat!");
+            return true;
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz yapı tipi: " + args[6]);
+            return true;
+        }
+    }
+    
+    /**
+     * YENİ: Hayalet tarif test
+     */
+    private boolean handleTestGhostRecipe(Player p, String[] args) {
+        if (args.length < 4) {
+            p.sendMessage("§cKullanım: /stratocraft structure test ghostrecipe <recipe-id>");
+            p.sendMessage("§7Örnek: /stratocraft structure test ghostrecipe PERSONAL_MISSION_GUILD");
+            return true;
+        }
+        
+        String recipeId = args[3].toUpperCase();
+        
+        me.mami.stratocraft.manager.GhostRecipeManager ghostRecipeManager = 
+            plugin.getGhostRecipeManager();
+        if (ghostRecipeManager == null) {
+            p.sendMessage("§cGhostRecipeManager bulunamadı!");
+            return true;
+        }
+        
+        org.bukkit.Location targetLoc = p.getLocation().add(p.getLocation().getDirection().multiply(5));
+        targetLoc.setY(Math.floor(targetLoc.getY()) + 1);
+        
+        p.sendMessage("§6§l=== Hayalet Tarif Test ===");
+        p.sendMessage("§7Tarif ID: §e" + recipeId);
+        p.sendMessage("§7Konum: §e" + targetLoc.getBlockX() + ", " + targetLoc.getBlockY() + ", " + targetLoc.getBlockZ());
+        
+        ghostRecipeManager.showGhostRecipe(p, recipeId, targetLoc);
+        p.sendMessage("§aHayalet tarif gösterildi!");
+        
+        return true;
+    }
+    
+    /**
+     * YENİ: Yapı çekirdeği test
+     */
+    private boolean handleTestCore(Player p, String[] args) {
+        if (args.length < 6) {
+            p.sendMessage("§cKullanım: /stratocraft structure test core <x> <y> <z>");
+            p.sendMessage("§7Örnek: /stratocraft structure test core 100 64 200");
+            return true;
+        }
+        
+        try {
+            int x = Integer.parseInt(args[3]);
+            int y = Integer.parseInt(args[4]);
+            int z = Integer.parseInt(args[5]);
+            
+            org.bukkit.Location loc = new org.bukkit.Location(p.getWorld(), x, y, z);
+            org.bukkit.block.Block block = loc.getBlock();
+            
+            p.sendMessage("§6§l=== Yapı Çekirdeği Test ===");
+            p.sendMessage("§7Konum: §e" + x + ", " + y + ", " + z);
+            
+            me.mami.stratocraft.manager.StructureCoreManager coreManager = 
+                plugin.getStructureCoreManager();
+            if (coreManager == null) {
+                p.sendMessage("§cStructureCoreManager bulunamadı!");
+                return true;
+            }
+            
+            boolean isCore = coreManager.isStructureCore(block);
+            boolean isInactive = coreManager.isInactiveCore(loc);
+            boolean isActive = coreManager.isActiveStructure(loc);
+            java.util.UUID ownerId = coreManager.getCoreOwner(loc);
+            
+            p.sendMessage("§7Çekirdek mi: §e" + isCore);
+            p.sendMessage("§7Inaktif mi: §e" + isInactive);
+            p.sendMessage("§7Aktif mi: §e" + isActive);
+            p.sendMessage("§7Sahip: §e" + (ownerId != null ? ownerId.toString() : "Yok"));
+            
+            if (isActive) {
+                me.mami.stratocraft.model.Structure structure = coreManager.getActiveStructure(loc);
+                if (structure != null) {
+                    p.sendMessage("§7Yapı Tipi: §e" + structure.getType().name());
+                    p.sendMessage("§7Seviye: §e" + structure.getLevel());
+                    p.sendMessage("§7OwnerId: §e" + (structure.getOwnerId() != null ? structure.getOwnerId().toString() : "Yok"));
+                }
+            }
+            
+            return true;
+        } catch (NumberFormatException e) {
+            p.sendMessage("§cGeçersiz koordinat!");
+            return true;
+        }
+    }
+    
+    /**
+     * YENİ: Yapı sahibi ayarla
+     */
+    private boolean handleStructureSetOwner(Player p, String[] args) {
+        if (args.length < 4) {
+            p.sendMessage("§cKullanım: /stratocraft structure setowner <x> <y> <z> [player-name]");
+            p.sendMessage("§7Örnek: /stratocraft structure setowner 100 64 200 PlayerName");
+            p.sendMessage("§7Oyuncu adı belirtilmezse sahip temizlenir");
+            return true;
+        }
+        
+        try {
+            int x = Integer.parseInt(args[2]);
+            int y = Integer.parseInt(args[3]);
+            int z = Integer.parseInt(args[4]);
+            
+            org.bukkit.Location loc = new org.bukkit.Location(p.getWorld(), x, y, z);
+            
+            me.mami.stratocraft.manager.ClanManager clanManager = plugin.getClanManager();
+            if (clanManager == null) {
+                p.sendMessage("§cClanManager bulunamadı!");
+                return true;
+            }
+            
+            // Yapıyı bul
+            me.mami.stratocraft.model.Structure structure = null;
+            for (me.mami.stratocraft.model.Clan clan : clanManager.getAllClans()) {
+                for (me.mami.stratocraft.model.Structure s : clan.getStructures()) {
+                    if (s.getLocation().distance(loc) <= 2.0) {
+                        structure = s;
+                        break;
+                    }
+                }
+                if (structure != null) break;
+            }
+            
+            if (structure == null) {
+                p.sendMessage("§cBu konumda yapı bulunamadı!");
+                return true;
+            }
+            
+            if (args.length >= 6) {
+                // Oyuncu adı belirtilmiş, ownerId set et
+                org.bukkit.entity.Player targetPlayer = org.bukkit.Bukkit.getPlayer(args[5]);
+                if (targetPlayer == null) {
+                    p.sendMessage("§cOyuncu bulunamadı: " + args[5]);
+                    return true;
+                }
+                
+                structure.setOwnerId(targetPlayer.getUniqueId());
+                p.sendMessage("§aYapı sahibi ayarlandı: §e" + targetPlayer.getName());
+            } else {
+                // OwnerId temizle
+                structure.setOwnerId(null);
+                p.sendMessage("§aYapı sahibi temizlendi");
+            }
+            
+            return true;
+        } catch (NumberFormatException e) {
+            p.sendMessage("§cGeçersiz koordinat!");
+            return true;
         }
     }
     

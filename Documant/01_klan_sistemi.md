@@ -166,6 +166,23 @@ dan çıkarılır.
 
 ## 👑 RÜTBE SİSTEMİ
 
+### Gelişmiş Yetki Sistemi (ClanRankSystem) ⭐ YENİ
+
+**Yeni Özellik**: Klan sistemi artık **ClanRankSystem** ile çalışıyor. Detaylı yetki kontrolü yapılıyor.
+
+**Yetki Tipleri**:
+- `BUILD_STRUCTURE` - Yapı inşa etme
+- `DESTROY_STRUCTURE` - Yapı yıkma
+- `ADD_MEMBER` - Üye ekleme
+- `REMOVE_MEMBER` - Üye çıkarma
+- `START_WAR` - Savaş başlatma
+- `MANAGE_BANK` - Banka yönetimi
+- `WITHDRAW_BANK` - Bankadan para çekme (limitli)
+- `MANAGE_ALLIANCE` - İttifak yönetimi
+- `USE_RITUAL` - Ritüel kullanma
+- `START_MISSION` - Görev başlatma
+- `TRANSFER_LEADERSHIP` - Liderlik devretme
+
 ### Rütbeler ve Yetkiler
 
 ```
@@ -177,13 +194,21 @@ dan çıkarılır.
 │             │ - Üye çıkarabilir           │
 │             │ - Rütbe verebilir           │
 │             │ - Kristali taşıyabilir      │
+│             │ - Liderlik devredebilir     │
 ├─────────────┼──────────────────────────────┤
 │ GENERAL     │ - Üye davet edebilir        │
-│ (Komutan)   │ - Yapı kullanabilir         │
+│ (Komutan)   │ - Yapı kur/yıkabilir        │
 │             │ - Savaş ilan edebilir       │
+│             │ - Banka yönetebilir         │
+│             │ - İttifak yönetebilir       │
 │             │ - Bölge yönetimi            │
 ├─────────────┼──────────────────────────────┤
-│ MEMBER      │ - İnşaat yapabilir          │
+│ ELITE       │ - Yapı kurabilir            │
+│ (Seçkin)    │ - Ritüel kullanabilir       │
+│             │ - Bankadan çekebilir (limitli)│
+│             │ - Görev başlatabilir        │
+├─────────────┼──────────────────────────────┤
+│ MEMBER      │ - Yapı kullanabilir         │
 │ (Üye)       │ - Sandık kullanabilir       │
 │             │ - Yapılardan faydalanır     │
 │             │ - Savaşabilir               │
@@ -191,8 +216,11 @@ dan çıkarılır.
 │ RECRUIT     │ - Sadece gezinebilir        │
 │ (Acemi)     │ - Yapı KURAMAZ              │
 │             │ - Yapı YIKAMAZ              │
+│             │ - Hiçbir yetki yok          │
 └─────────────┴──────────────────────────────┘
 ```
+
+**Önemli**: Yapı kurma işlemlerinde **ClanRankSystem** kontrolü yapılıyor. RECRUIT rütbesindeki oyuncular yapı kuramaz!
 
 ### Terfi Ritüeli
 
@@ -221,9 +249,14 @@ Ortada ateş yak
 
 **Görsel Efektler**:
 - Altın partiküller (General için)
-- Gri partikülermember için)
+- Gri partiküller (Member için)
 - Şimşek efekti
 - Başarı sesi
+
+**Güvenlik Kontrolleri** ⭐ YENİ:
+- ✅ **Klan Üyeliği Kontrolü**: Terfi edilecek oyuncu mutlaka klan üyesi olmalı
+- ✅ **Null Check**: Elindeki item null kontrolü yapılıyor (güvenlik)
+- ✅ **Cooldown Sistemi**: Ritüel spam önleme için cooldown var
 
 ---
 

@@ -161,7 +161,7 @@ public class GhostRecipeManager {
         
         // Kişisel Görev Loncası (PERSONAL_MISSION_GUILD) - StructureRecipeManager ile uyumlu
         GhostRecipeData personalMissionGuild = new GhostRecipeData();
-        personalMissionGuild.addBlock(new Vector(0, 0, 0), Material.END_CRYSTAL); // Merkez (core)
+        personalMissionGuild.addBlock(new Vector(0, 0, 0), Material.OAK_LOG); // Merkez (core - LOG)
         personalMissionGuild.addBlock(new Vector(0, -1, 0), Material.COBBLESTONE); // Altında
         personalMissionGuild.addBlock(new Vector(0, 1, 0), Material.LECTERN); // Üstünde
         recipeData.put("PERSONAL_MISSION_GUILD", personalMissionGuild);
@@ -181,7 +181,7 @@ public class GhostRecipeManager {
         
         // Klan Bankası (CLAN_BANK) - StructureRecipeManager ile uyumlu
         GhostRecipeData clanBank = new GhostRecipeData();
-        clanBank.addBlock(new Vector(0, 0, 0), Material.END_CRYSTAL); // Merkez (core)
+        clanBank.addBlock(new Vector(0, 0, 0), Material.OAK_LOG); // Merkez (core - LOG)
         clanBank.addBlock(new Vector(0, -1, 0), Material.GOLD_BLOCK); // Altında
         clanBank.addBlock(new Vector(0, 1, 0), Material.CHEST); // Üstünde
         recipeData.put("CLAN_BANK", clanBank);
@@ -189,7 +189,7 @@ public class GhostRecipeManager {
         
         // Klan Görev Loncası (CLAN_MISSION_GUILD) - StructureRecipeManager ile uyumlu
         GhostRecipeData clanMissionGuild = new GhostRecipeData();
-        clanMissionGuild.addBlock(new Vector(0, 0, 0), Material.END_CRYSTAL); // Merkez (core)
+        clanMissionGuild.addBlock(new Vector(0, 0, 0), Material.OAK_LOG); // Merkez (core - LOG)
         clanMissionGuild.addBlock(new Vector(0, -1, 0), Material.EMERALD_BLOCK); // Altında
         clanMissionGuild.addBlock(new Vector(0, 1, 0), Material.LECTERN); // Üstünde
         recipeData.put("CLAN_MISSION_GUILD", clanMissionGuild);
@@ -219,7 +219,7 @@ public class GhostRecipeManager {
         
         // Kontrat Bürosu (CONTRACT_OFFICE) - StructureRecipeManager ile uyumlu
         GhostRecipeData contractOffice = new GhostRecipeData();
-        contractOffice.addBlock(new Vector(0, 0, 0), Material.END_CRYSTAL); // Merkez (core)
+        contractOffice.addBlock(new Vector(0, 0, 0), Material.OAK_LOG); // Merkez (core - LOG)
         contractOffice.addBlock(new Vector(0, -1, 0), Material.STONE); // Altında
         contractOffice.addBlock(new Vector(0, 1, 0), Material.CRAFTING_TABLE); // Üstünde
         recipeData.put("CONTRACT_OFFICE", contractOffice);
@@ -227,7 +227,7 @@ public class GhostRecipeManager {
         
         // Market (MARKET_PLACE) - StructureRecipeManager ile uyumlu
         GhostRecipeData marketPlace = new GhostRecipeData();
-        marketPlace.addBlock(new Vector(0, 0, 0), Material.END_CRYSTAL); // Merkez (core)
+        marketPlace.addBlock(new Vector(0, 0, 0), Material.OAK_LOG); // Merkez (core - LOG)
         marketPlace.addBlock(new Vector(0, -1, 0), Material.COAL_BLOCK); // Altında
         marketPlace.addBlock(new Vector(0, 1, 0), Material.CHEST); // Üstünde
         recipeData.put("MARKET_PLACE", marketPlace);
@@ -235,7 +235,7 @@ public class GhostRecipeManager {
         
         // Tarif Kütüphanesi (RECIPE_LIBRARY) - StructureRecipeManager ile uyumlu
         GhostRecipeData recipeLibrary = new GhostRecipeData();
-        recipeLibrary.addBlock(new Vector(0, 0, 0), Material.END_CRYSTAL); // Merkez (core)
+        recipeLibrary.addBlock(new Vector(0, 0, 0), Material.OAK_LOG); // Merkez (core - LOG)
         recipeLibrary.addBlock(new Vector(0, -1, 0), Material.BOOKSHELF); // Altında
         recipeLibrary.addBlock(new Vector(0, 1, 0), Material.LECTERN); // Üstünde
         recipeData.put("RECIPE_LIBRARY", recipeLibrary);
@@ -655,7 +655,15 @@ public class GhostRecipeManager {
         if (recipe.getGhostBlocks().isEmpty()) {
             if (isActive) {
                 removeActiveGhostRecipe(player.getUniqueId());
-                player.sendMessage("§aTarif tamamlandı!");
+                player.sendMessage("§a§l✓ Tarif tamamlandı!");
+                
+                // YENİ: Tarif tamamlanınca partikül ve ses efekti
+                Location centerLoc = baseLoc.clone().add(0.5, 0.5, 0.5);
+                baseLoc.getWorld().spawnParticle(Particle.TOTEM, centerLoc, 50, 0.5, 1, 0.5, 0.3);
+                baseLoc.getWorld().spawnParticle(Particle.END_ROD, centerLoc, 30, 0.5, 1, 0.5, 0.1);
+                baseLoc.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, centerLoc, 20, 0.5, 1, 0.5, 0.1);
+                player.playSound(baseLoc, org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+                player.playSound(baseLoc, org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
             } else {
                 removeFixedGhostRecipe(baseLoc);
             }

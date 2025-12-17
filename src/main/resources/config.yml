@@ -1030,3 +1030,44 @@ game-balance:
   research:
     table-distance: 10               # Araştırma masası mesafesi (blok)
 
+# Yapı Sistemi Ayarları (YENİ)
+structure:
+  # Sahiplik Kontrolü
+  ownership:
+    # CLAN_ONLY yapılar için sahiplik kontrolü
+    clan-only-requires-ownership: false  # Klan yapıları için ownerId gerekli mi? (varsayılan: false - klan üyeliği yeterli)
+    
+    # CLAN_OWNED yapılar için sahiplik kontrolü
+    clan-owned-requires-ownership: true  # Klan dışı yapılar için ownerId gerekli mi? (varsayılan: true)
+    
+    # PUBLIC yapılar için sahiplik kontrolü
+    public-requires-ownership: false     # Herkese açık yapılar için ownerId gerekli mi? (varsayılan: false)
+  
+  # Hayalet Tarif Sistemi
+  ghost-recipe:
+    # Yapı tamamlanınca efektler
+    completion-effects:
+      enabled: true                     # Yapı tamamlanınca partikül ve ses efekti göster
+      particle-count: 50                # Partikül sayısı
+      sound-volume: 1.0                 # Ses efekti ses seviyesi
+      sound-pitch: 1.0                  # Ses efekti pitch
+    
+    # Yapı çekirdeği yakınında otomatik kontrol
+    auto-check:
+      enabled: true                     # Otomatik kontrol aktif mi?
+      check-radius: 5                   # Kontrol yarıçapı (blok)
+      check-interval: 20                # Kontrol aralığı (tick) - 20 = 1 saniye
+  
+  # Yapı aktif edilince efektler
+  activation-effects:
+    enabled: true                       # Yapı aktif edilince efekt göster
+    particle-count: 100                # Partikül sayısı
+    sound-volume: 1.0                  # Ses efekti ses seviyesi
+    sound-pitch: 1.0                   # Ses efekti pitch
+  
+  # İstek Zaman Aşımı
+  request-timeout:
+    enabled: true                       # İstek zaman aşımı kontrolü aktif mi?
+    timeout-duration: 86400000          # Zaman aşımı süresi (ms) - 24 saat
+    cleanup-interval: 3600000          # Temizleme aralığı (ms) - 1 saat
+

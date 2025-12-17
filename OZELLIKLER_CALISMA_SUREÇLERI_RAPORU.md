@@ -1025,10 +1025,49 @@ Bugün eklenen özellikler genel olarak **%90-95 tamamlanmış** durumda. Temel 
 6. ✅ StructureActivationListener - ClanRankSystem entegrasyonu eklendi
 
 **Kalan Kritik Sorunlar:**
-1. ⚠️ Hayalet Tarif Temizleme - Kod var ama test edilmeli
-2. ⚠️ Yapı Doğrulama - Menü açmadan önce kontrol eksik
-3. ⚠️ Kişisel Yapı Sahiplik Kontrolü - Eksik
-4. ⚠️ İstek Zaman Aşımı - Scheduled task eksik
+1. ✅ Hayalet Tarif Temizleme - Kod var ve çalışıyor (onPlayerQuit mevcut)
+2. ⚠️ Yapı Doğrulama - Menü açmadan önce kontrol eksik (ileride eklenebilir)
+3. ✅ Kişisel Yapı Sahiplik Kontrolü - TAMAMLANDI (ownerId sistemi eklendi)
+4. ✅ İstek Zaman Aşımı - TAMAMLANDI (scheduled task eklendi)
+
+### 📝 Son Güncelleme Notları (Versiyon 3.2)
+
+**Tarih:** 16 Aralık 2024
+
+**Yapılan Düzeltmeler:**
+1. ✅ **Yapı Sahiplik Kontrolü Sistemi:**
+   - StructureOwnershipType enum'u oluşturuldu (CLAN_ONLY, CLAN_OWNED, PUBLIC)
+   - StructureOwnershipHelper utility sınıfı eklendi
+   - Structure modeline ownerId eklendi
+   - DataManager'da ownerId kaydetme/yükleme eklendi
+   - StructureMenuListener'da sahiplik kontrolü eklendi
+   - StructureCoreListener ve StructureActivationListener'da ownerId set ediliyor
+   - Tüm yapı oluşturma metodları güncellendi
+
+2. ✅ **Hayalet Tarif Sistemi Düzeltmeleri:**
+   - Yapı tamamlanınca partikül ve ses efekti eklendi
+   - Yapı çekirdeği yakınında otomatik kontrol eklendi (5 blok yarıçap)
+   - GhostRecipeListener'a StructureCoreManager ve StructureRecipeManager entegrasyonu eklendi
+
+3. ✅ **İstek Zaman Aşımı Sistemi:**
+   - Main.java'ya scheduled task eklendi (her 1 saatte bir)
+   - ContractRequestManager.cleanupExpiredRequests() çağrılıyor
+
+4. ✅ **Hata Yönetimi ve Loglama:**
+   - ClanBankSystem metodlarına try-catch eklendi
+   - GhostRecipeListener metodlarına try-catch eklendi
+   - Hata durumunda loglama yapılıyor
+
+5. ✅ **Admin Komutları ve Tab Completion:**
+   - Yapı test komutları eklendi (ownership, validate, ghostrecipe, core)
+   - Yapı sahibi ayarlama komutu eklendi (setowner)
+   - Tab completion eklendi
+
+6. ✅ **Config Ayarları:**
+   - Yapı sistemi ayarları config'e eklendi
+   - Sahiplik kontrolü, hayalet tarif, efektler, zaman aşımı ayarları
+
+**Detaylı Rapor:** `YAPILAN_DEGISIKLIKLER_RAPORU.md` dosyasına bakın.
 
 ---
 

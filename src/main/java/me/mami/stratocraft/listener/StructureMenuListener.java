@@ -1,10 +1,13 @@
 package me.mami.stratocraft.listener;
 
 import me.mami.stratocraft.Main;
+import me.mami.stratocraft.enums.StructureOwnershipType;
+import me.mami.stratocraft.enums.StructureType;
 import me.mami.stratocraft.manager.ClanManager;
 import me.mami.stratocraft.manager.TerritoryManager;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Structure;
+import me.mami.stratocraft.util.StructureOwnershipHelper;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -59,6 +62,11 @@ public class StructureMenuListener implements Listener {
         Structure structure = findStructureAt(clicked.getLocation());
         if (structure == null)
             return;
+        
+        // YENİ: Yapı sahiplik kontrolü
+        if (!checkStructureOwnership(player, structure)) {
+            return; // Yetki yok, mesaj zaten gönderildi
+        }
         
         event.setCancelled(true);
         setCooldown(player.getUniqueId());
@@ -126,6 +134,87 @@ public class StructureMenuListener implements Listener {
         }
         
         return null;
+    }
+    
+    /**
+     * Yapı sahiplik kontrolü
+     * 
+     * @param player Oyuncu
+     * @param structure Yapı
+     * @return Yetki var mı?
+     */
+    private boolean checkStructureOwnership(Player player, Structure structure) {
+        // StructureType'a çevir
+        StructureType type;
+        try {
+            type = StructureType.valueOf(structure.getType().name());
+        } catch (IllegalArgumentException e) {
+            player.sendMessage("§cYapı tipi geçersiz!");
+            return false;
+        }
+        
+        // Sahiplik tipini al
+        StructureOwnershipType ownershipType = StructureOwnershipHelper.getOwnershipType(type);
+        
+        // PUBLIC yapılar için kontrol yok
+        if (ownershipType == StructureOwnershipType.PUBLIC) {
+            return true;
+        }
+        
+        // CLAN_ONLY yapılar için klan kontrolü
+        if (ownershipType == StructureOwnershipType.CLAN_ONLY) {
+            Clan playerClan = clanManager.getClanByPlayer(player.getUniqueId());
+            if (playerClan == null) {
+                player.sendMessage("§cBu yapıya erişim için bir klana üye olmalısınız!");
+                return false;
+            }
+            
+            // Yapının bulunduğu bölgenin sahibi kontrolü
+            Clan owner = territoryManager.getTerritoryOwner(structure.getLocation());
+            if (owner == null || !owner.equals(playerClan)) {
+                player.sendMessage("§cBu yapıya erişim yetkiniz yok! (Klan bölgesi dışında)");
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // CLAN_OWNED yapılar için yapan oyuncu veya klan kontrolü
+        if (ownershipType == StructureOwnershipType.CLAN_OWNED) {
+            // Yapı sahibi kontrolü (ileride yapı modeline ownerId eklenecek)
+            // Şimdilik klan kontrolü yapıyoruz
+            Clan playerClan = clanManager.getClanByPlayer(player.getUniqueId());
+            if (playerClan == null) {
+                player.sendMessage("§cBu yapıya erişim için bir klana üye olmalısınız!");
+                return false;
+            }
+            
+            // Yapının bulunduğu bölgenin sahibi kontrolü
+            Clan owner = territoryManager.getTerritoryOwner(structure.getLocation());
+            if (owner != null && owner.equals(playerClan)) {
+                return true; // Klan bölgesinde, erişim var
+            }
+            
+            // YENİ: OwnerId kontrolü (CLAN_OWNED yapılar için)
+            UUID structureOwnerId = structure.getOwnerId();
+            if (structureOwnerId != null) {
+                // Yapı sahibi kontrolü
+                if (structureOwnerId.equals(player.getUniqueId())) {
+                    return true; // Yapı sahibi, erişim var
+                }
+                // Yapı sahibinin klanı kontrolü
+                Clan structureOwnerClan = clanManager.getClanByPlayer(structureOwnerId);
+                if (structureOwnerClan != null && structureOwnerClan.equals(playerClan)) {
+                    return true; // Yapı sahibinin klanı, erişim var
+                }
+                return false; // Yapı sahibi veya klanı değil, erişim yok
+            }
+            
+            // OwnerId yoksa klan kontrolü yeterli (geriye uyumluluk)
+            return true;
+        }
+        
+        return false;
     }
     
     /**

@@ -204,6 +204,12 @@ public class StructureCoreManager {
      */
     public boolean isStructureCore(Block block) {
         if (block == null) return false;
+        
+        // YENİ: Material kontrolü - Oak Log olmalı
+        if (block.getType() != org.bukkit.Material.OAK_LOG) {
+            return false;
+        }
+        
         Location loc = block.getLocation();
         
         // YENİ MODEL: StructureCoreBlock kontrol et
@@ -211,7 +217,7 @@ public class StructureCoreManager {
             return true;
         }
         
-        // GERİYE UYUMLULUK: Eski sistem
+        // GERİYE UYUMLULUK: Eski sistem (metadata kontrolü)
         return block.hasMetadata(METADATA_KEY_CORE) || 
                block.hasMetadata("ActiveStructure") ||
                inactiveCores.containsKey(loc) ||

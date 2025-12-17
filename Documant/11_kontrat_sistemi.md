@@ -513,6 +513,23 @@ Bir klan bir oyuncuyla kontrat yapar
 - **Blok değişimi kontrolü**: Sadece blok değiştiğinde kontrol yapılır
 - **Cache kullanımı**: Kontrat listesi cache'den okunur
 
+### Otomatik Temizleme Sistemi ⭐ YENİ
+
+**Süresi Dolmuş İstekler**:
+- **Otomatik temizleme**: Her 1 saatte bir süresi dolmuş kontrat istekleri otomatik temizlenir
+- **Sistem**: `Main.java` içinde scheduled task olarak çalışır
+- **Aralık**: 72000 tick (1 saat = 72000 tick)
+- **Sonuç**: Süresi dolmuş istekler listeden kaldırılır, performans iyileşir
+
+**Nasıl Çalışır?**:
+```
+1. Sistem her 1 saatte bir kontrol eder
+2. Kontrat isteklerinin süresini kontrol eder
+3. Süresi dolmuş istekleri bulur
+4. Otomatik olarak iptal eder ve listeden kaldırır
+5. Log'a kaydeder: "X adet süresi dolmuş kontrat isteği temizlendi"
+```
+
 ### Can Kaybı Sistemi
 
 **Kan İmzası Mekaniği**:

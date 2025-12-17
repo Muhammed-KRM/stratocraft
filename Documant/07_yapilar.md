@@ -2,17 +2,50 @@
 
 ## 🏗️ Yapılar Nedir?
 
-Yapılar, oyunda **pasif güç veren** veya **özel işlevler sağlayan** fiziksel inşaatlardır. **2 ana kategori** var!
+Yapılar, oyunda **pasif güç veren** veya **özel işlevler sağlayan** fiziksel inşaatlardır. Tüm yapılar **Yapı Çekirdeği** sistemi ile çalışır.
 
 ---
 
 ## 📋 İÇİNDEKİLER
 
-1. [Yapı Kategorileri](#yapi-kategorileri)
-2. [Klan Yapıları](#klan-yapilari)
-3. [Dışarı Yapılan Yapılar - A](#dişari-yapilar-a-klan-özel)
-4. [Dışarı Yapılan Yapılar - B](#dişari-yapilar-b-herkes)
-5. [Yapı Güç Sistemi](#yapı-güç-sistemi) ⭐ YENİ
+1. [Yapı Çekirdeği Sistemi](#yapı-çekirdeği-sistemi) ⭐ YENİ
+2. [Yapı Kategorileri](#yapi-kategorileri)
+3. [Yapı Sahiplik Sistemi](#yapı-sahiplik-sistemi) ⭐ YENİ
+4. [Klan Yapıları](#klan-yapilari)
+5. [Yönetim Yapıları](#yönetim-yapilari) ⭐ YENİ
+6. [Yapı Tarifleri](#yapı-tarifleri) ⭐ GÜNCELLENDİ
+7. [Yapı Aktivasyonu](#yapı-aktivasyonu)
+8. [Yapı Güç Sistemi](#yapı-güç-sistemi)
+
+---
+
+## 🔧 YAPI ÇEKİRDEĞİ SİSTEMİ ⭐ YENİ
+
+### Yapı Çekirdeği Nedir?
+
+**Yapı Çekirdeği**, tüm yapıların temel taşıdır. Özel bir blok olarak çalışır ve metadata ile işaretlenir.
+
+**Özellikler**:
+- ✅ **Özel Blok**: `OAK_LOG` materialı kullanır ama özel bir item ile yerleştirilir
+- ✅ **Metadata Kontrolü**: Normal OAK_LOG blokları yapı çekirdeği olarak algılanmaz
+- ✅ **Yapı Çekirdeği Item'ı**: `STRUCTURE_CORE` item'ı ile yerleştirilir
+- ✅ **Aktivasyon**: Yapı çekirdeği yerleştirildikten sonra yapı kurulur ve aktivasyon item'ı ile aktifleştirilir
+
+### Yapı Çekirdeği Yerleştirme
+
+**Adımlar**:
+```
+1. Elinde "Yapı Çekirdeği" (STRUCTURE_CORE) item'ı olmalı
+2. Yerleştirmek istediğin yere sağ tık yap
+3. OAK_LOG bloğu yerleştirilir ve metadata ile işaretlenir
+4. "✓ Yapı çekirdeği yerleştirildi!" mesajı gelir
+5. Etrafına yapıyı kur ve aktivasyon item'ı ile aktifleştir
+```
+
+**Önemli**:
+- Normal OAK_LOG blokları yapı çekirdeği olarak algılanmaz
+- Sadece STRUCTURE_CORE item'ı ile yerleştirilen bloklar yapı çekirdeği olur
+- Metadata kontrolü sayesinde güvenlik sağlanır
 
 ---
 
@@ -22,32 +55,57 @@ Yapılar, oyunda **pasif güç veren** veya **özel işlevler sağlayan** fiziks
 
 ```
 YAPILAR
-├── 1. KLAN YAPILARI
+├── 1. KLAN YAPILARI (CLAN_ONLY)
 │   └── Sadece klan bölgesinde
 │       Büyük, pahalı, güçlü
 │
-└── 2. DIŞARI YAPILAN YAPILAR
-    ├── A) Klan Özel Yapılar
-    │   └── Yapan + klanı faydalanır
-    │       Orta boyut, savaş odaklı
+└── 2. YÖNETİM YAPILARI
+    ├── A) PUBLIC (Herkes İçin)
+    │   └── Herkes kullanabilir
+    │       Her yere yapılabilir
     │
-    └── B) Herkes İçin Yapılar
-        └── Herkes kullanabilir
-            Küçük, ucuz, sosyal
+    └── B) CLAN_ONLY (Klan İçin)
+        └── Sadece klan bölgesinde
+            Klan üyeleri kullanabilir
 ```
+
+---
+
+## 🔐 YAPI SAHİPLİK SİSTEMİ ⭐ YENİ
+
+### Sahiplik Tipleri
+
+**1. CLAN_ONLY (Klan Yapıları)**:
+- ✅ Sadece klan bölgesine yapılabilir
+- ✅ Sadece klan üyeleri kullanabilir
+- ✅ Sahiplik kontrolü: Klan üyeliği gerekli
+- **Örnekler**: Simya Kulesi, Zehir Reaktörü, Klan Bankası, vb.
+
+**2. CLAN_OWNED (Klan Sahipli Yapılar)**:
+- ✅ Klan dışına yapılabilir
+- ✅ Sadece yapan oyuncu ve klanı kullanabilir
+- ✅ Sahiplik kontrolü: Yapan oyuncu veya klan üyeliği gerekli
+- **Örnekler**: Şu an için özel bir yapı yok (ileride eklenebilir)
+
+**3. PUBLIC (Herkese Açık Yapılar)**:
+- ✅ Her yere yapılabilir
+- ✅ Herkes kullanabilir
+- ✅ Sahiplik kontrolü: YOK (herkese açık)
+- **Örnekler**: Kişisel Görev Loncası, Kontrat Bürosu, Market, Tarif Kütüphanesi
 
 ---
 
 ## 📍 YAPI YERLEŞİM KURALLARI
 
-**1. Klan Yapıları**:
+**1. CLAN_ONLY Yapılar**:
 ```
 Nereye yapılır: SADECE klan bölgesi içinde
 Kısıtlama: Çit sınırları içinde olmalı
 Özellik: Büyük, karmaşık, pahalı
+Kullanım: Sadece klan üyeleri
 ```
 
-**2. Dışarı Yapılar (A ve B)**:
+**2. PUBLIC Yapılar**:
 ```
 Nereye yapılır: Blok koyma izni olan her yere
 YASAK yerler:
@@ -58,62 +116,45 @@ YASAK yerler:
   ✅ Vahşi alanlar
   ✅ Kendi klan bölgen dışı
   ✅ Tarafsız topraklar
+
+Kullanım: Herkes kullanabilir
 ```
 
 ---
 
 ## ⚙️ YAPI AKTİVASYON SİSTEMİ
 
-### 🔧 Aktivasyon Yöntemi
+### 🔧 Yeni Aktivasyon Yöntemi ⭐ GÜNCELLENDİ
 
-**ÖNEMLİ**: Tüm yapı aktivasyonları için **Shift + Sağ Tık** gereklidir!
-
-**Neden?**
-- Normal Minecraft bloklarının kullanımını engellemez
-- Örs (Anvil), Büyü Masası (Enchanting Table), Ender Sandığı gibi bloklar normal kullanımda çalışır
-- Sadece yapı aktivasyonu için shift+sağ tık yapılmalıdır
+**ÖNEMLİ**: Tüm yapı aktivasyonları için **Yapı Çekirdeği** sistemi kullanılır!
 
 **Aktivasyon Adımları**:
 ```
-1. Elinde "Blueprint" (Plan) item'ı olmalı
-2. Yapı desenini manuel olarak kur
-3. Merkez bloğa Shift + Sağ Tık yap
-4. Sistem deseni kontrol eder
-5. Doğruysa → Yapı aktif olur!
+1. Elinde "Yapı Çekirdeği" (STRUCTURE_CORE) item'ı al
+2. Yapıyı kurmak istediğin yere çekirdeği yerleştir
+3. Etrafına yapı tarifine göre blokları kur
+4. Elinde aktivasyon item'ı olmalı (yapı tipine göre değişir)
+5. Yapı çekirdeğine (OAK_LOG) sağ tık yap
+6. Sistem tarifi kontrol eder (async)
+7. Doğruysa → Yapı aktif olur!
 ```
 
-### 🚫 Kaldırılan Özellikler
-
-**1. Fener (LANTERN) ile Şifa Kulesi**:
-- ❌ **KALDIRILDI**: Fener ile sağ tıklama bug'a neden oluyordu
-- Artık fener normal Minecraft bloğu olarak çalışır
-- Şifa Kulesi için farklı bir aktivasyon yöntemi kullanılmalı
-
-**2. Enerji Kalkanı (Shield/Force Field) Sistemi**:
-- ❌ **KALDIRILDI**: Shield sistemi sorunlu ve bug'a neden oluyordu
-- Artık shield oluşturulamaz
-- Mevcut shield'lar kırıldığında düzgün temizlenir
-
-### 📋 Yapı Aktivasyonu İçin Gereksinimler
-
-**Gerekli Malzemeler**:
-- **Blueprint** (Plan) item'ı elinde olmalı
-- Yapı için gerekli tarif kitabı öğrenilmiş olmalı
-- Yapı deseni doğru kurulmuş olmalı
-- Klan üyesi olmalı (Recruit hariç)
-- Kendi klan bölgesinde olmalı
+**Aktivasyon Item'ları**:
+- Her yapı tipi için farklı aktivasyon item'ı gerekir
+- Örnek: Simya Kulesi için Gold Ingot + Diamond
+- Örnek: Zehir Reaktörü için Prismarine + Spider Eye
 
 **Aktivasyon Kontrolleri**:
-- ✅ Shift + Sağ Tık yapıldı mı?
-- ✅ Elinde Blueprint var mı?
-- ✅ Tarif kitabı öğrenilmiş mi?
-- ✅ Yapı deseni doğru mu?
-- ✅ Klan üyesi mi? (Recruit değil)
-- ✅ Kendi bölgesinde mi?
+- ✅ Yapı çekirdeği var mı? (OAK_LOG + metadata)
+- ✅ Yapı çekirdeği aktif mi? (inactive core)
+- ✅ Elinde aktivasyon item'ı var mı?
+- ✅ Yapı tarifi doğru mu? (async kontrol)
+- ✅ Klan kontrolü (kişisel yapılar hariç)
+- ✅ Bölge kontrolü (CLAN_ONLY yapılar için)
 
 ---
 
-# 🏰 1. KLAN YAPILARI
+# 🏰 KLAN YAPILARI (CLAN_ONLY)
 
 **Özellikler**:
 - ⭐ Sadece **klan bölgesi içinde** yapılabilir
@@ -146,7 +187,16 @@ YASAK yerler:
 
 ---
 
-### 2. Simya Kulesi (Alchemy Tower)
+### 2. Simya Kulesi (ALCHEMY_TOWER)
+
+**Yapı Çekirdeği**: OAK_LOG (merkez)
+
+**Tarif**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: 3x3 Bookshelf platformu (4-5 blok yüksek)
+Üstünde: Beacon
+```
 
 **Boyut**: 5x5x10 blok
 
@@ -154,16 +204,25 @@ YASAK yerler:
 
 **Seviyeler**:
 ```
-Lv1 (Taş): Bataryalar +%10 güç
-Lv2 (Demir): Bataryalar +%20 güç
-Lv3 (Titanyum): Bataryalar +%35 güç
-Lv4 (Adamantite): +%50 güç + alan artışı
-Lv5 (Karanlık Madde): +%75 güç + çift atış
+Lv1 (3 blok): Bataryalar +%10 güç
+Lv2 (4 blok): Bataryalar +%20 güç
+Lv3 (5 blok): Bataryalar +%35 güç
 ```
+
+**Aktivasyon**: 32 Gold Ingot + 16 Diamond
 
 ---
 
-### 3. Zehir Reaktörü (Poison Reactor)
+### 3. Zehir Reaktörü (POISON_REACTOR)
+
+**Yapı Çekirdeği**: OAK_LOG (merkez)
+
+**Tarif**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Etrafında: 3x3 Prismarine (4 blok yüksek)
+Üstünde: Beacon
+```
 
 **Boyut**: 7x7x8 blok
 
@@ -174,15 +233,19 @@ Lv5 (Karanlık Madde): +%75 güç + çift atış
 Lv1: Poison I (sürekli)
 Lv2: Poison II (sürekli)
 Lv3: Poison III + Slowness I
-Lv4: Poison III + Slowness II + Nausea
-Lv5: Poison IV + Slowness III + Blindness
 ```
 
 **Menzil**: 30 blok yarıçap
 
+**Aktivasyon**: 16 Prismarine + 8 Spider Eye
+
 ---
 
-### 4. Tektonik Sabitleyici (Tectonic Stabilizer)
+### 4. Tektonik Sabitleyici (TECTONIC_STABILIZER)
+
+**Yapı Çekirdeği**: OAK_LOG (merkez)
+
+**Tarif**: Şema dosyası (`tectonic_stabilizer.schem`)
 
 **Boyut**: 9x9x12 blok (ÇOK BÜYÜK!)
 
@@ -193,15 +256,23 @@ Lv5: Poison IV + Slowness III + Blindness
 Lv1: %50 felaket hasar azaltma
 Lv2: %70 felaket hasar azaltma
 Lv3: %90 felaket hasar azaltma
-Lv4: %95 + Golem'i yavaşlatır
-Lv5: %99 + Tüm felaketlere karşı
 ```
 
 **Gereksinim**: **Tarif Kitabı** (Boss dropu)
 
+**Aktivasyon**: 16 Titanium Ingot + 8 Piston
+
 ---
 
-### 5. Gözetleme Kulesi (Watchtower)
+### 5. Gözetleme Kulesi (WATCHTOWER)
+
+**Yapı Çekirdeği**: OAK_LOG (merkez)
+
+**Tarif**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Etrafında: 3x3 Stone Brick kule (10 blok yüksek)
+```
 
 **Boyut**: 3x3x15 blok (yüksek kule)
 
@@ -223,159 +294,53 @@ Lv5: 300 blok menzil → Tam analiz
 
 ---
 
-### 6. Kuşatma Fabrikası (Siege Factory)
+### 6. Otomatik Taret (AUTO_TURRET)
 
-**Boyut**: 10x10x6 blok
+**Yapı Çekirdeği**: OAK_LOG (merkez)
 
-**İşlev**: Mancınık ve Balista üretir
-
+**Tarif**:
 ```
-Lv1: 1 saat = 1 Mancınık
-Lv3: 30 dk = 1 Mancınık + 1 Balista
-Lv5: 15 dk = 2 Mancınık + 2 Balista
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: 2x2 Iron Block
+Üstünde: Dispenser
+Altında (yükseklik): 3-5 blok Iron Block (seviye belirler)
 ```
-
----
-
-### 7. Otomatik Taret (Auto Turret)
 
 **Boyut**: 3x3x4 blok
 
 **İşlev**: Otonom ok savunması
 
+**Seviyeler**:
 ```
 Lv1: 1 ok/sn (2 kalp)
-Lv3: 2 ok/sn (3 kalp) + ateşli ok
-Lv5: 3 ok/sn (5 kalp) + patlayıcı ok
+Lv2: 2 ok/sn (3 kalp) + ateşli ok
+Lv3: 3 ok/sn (5 kalp) + patlayıcı ok
 ```
 
 **Menzil**: 20 blok
 
-**Gereksinim**: Hurda Teknolojisi (Felaket enkzı)
+**Gereksinim**: Hurda Teknolojisi (Felaket enkazı)
+
+**Aktivasyon**: Antik Dişli + Piston
 
 ---
 
-# 🏕️ 2A. DIŞARI YAPILAR - KLAN ÖZEL
+# 🏢 YÖNETİM YAPILARI ⭐ YENİ
 
-**Özellikler**:
-- ⭐ **Dışarıda** yapılabilir (spawn/düşman bölgesi hariç)
-- ⭐ Sadece **yapan oyuncu + klanı** faydalanır
-- ⭐ **Orta boyutlu**, savaşlarda kullanılır
-- ⭐ **Geçici** veya sınırlı süre
+## 📋 Yönetim Yapıları Listesi
 
----
+### 1. Kişisel Görev Loncası (PERSONAL_MISSION_GUILD) - PUBLIC
 
-## 🏕️ Klan Özel Yapı Listesi
+**Yapı Çekirdeği**: OAK_LOG (merkez)
 
-### 1. Şifa Tapınağı (Healing Shrine)
-
-**Boyut**: 5x5x3 blok (küçük tapınak)
-
-**Malzeme**:
-- 20 Ametist Bloğu
-- 4 Beacon
-- 1 Enchanting Table (orta)
-
-**İşlev**:
-- İçine girenlere **sürekli regen**
-- Regeneration II efekti
-- Sadece **yapan oyuncu + klanı** etkilenir
-
-**Kullanım**: Savaş alanına kur, yaralılar burada iyileşsin
-
-**Süre**: Yakıt bitene kadar (Coal ile beslenir)
-
----
-
-### 2. Geçici Kale (Temporary Fort)
-
-**Boyut**: 7x7x5 blok
-
-**Malzeme**:
-- 50 Cobblestone
-- 10 Iron Block
-- 4 Torch
-
-**İşlev**:
-- Hızlı savunma yapısı
-- İçindekiler +Resistance I
-- 30 dakika sonra kaybolur (otomatik yıkılır)
-
-**Kullanım**: Savaşta acil sığınak
-
----
-
-### 3. Cephane Deposu (Ammo Cache)
-
-**Boyut**: 3x3x2 blok
-
-**Malzeme**:
-- 1 Double Chest
-- 8 Iron Block
-- 4 Redstone Torch
-
-**İşlev**:
-- Savaş malzemesi deposu
-- Sadece klan üyeleri açabilir
-- 1 saat sonra patlar (trap olmasın diye)
-
-**Kullanım**: Savaş alanına yakın, hızlı silah/ok yenileme
-
----
-
-### 4. Sismik Radar (Seismic Sensor)
-
-**Boyut**: 3x3x3 blok
-
-**Malzeme**:
-- 9 Note Block
-- 1 Observer
-- 4 Redstone
-
-**İşlev**:
-- 50 blok yarıçapta hareket algılar
-- Sadece yapan klan için uyarı
-- "⚠️ 20 blok uzakta hareket!" mesajı
-
-**Kullanım**: Gizli üs çevresine kur
-
----
-
-# 🌍 2B. DIŞARI YAPILAR - HERKES İÇİN
-
-**Özellikler**:
-- ⭐ **Dışarıda** yapılabilir
-- ⭐ **Herkes kullanabilir** (rakipler bile!)
-- ⭐ **Küçük ve ucuz**
-- ⭐ **Sosyal/ekonomik** amaçlı
-- ⭐ **Kalıcı** (kırılmaz)
-
----
-
-## 🌍 Herkes İçin Yapı Listesi
-
-### 1. Görev Loncası (Quest Guild)
-
-**Boyut**: 5x5x4 blok (küçük ev)
-
-**Malzeme**:
+**Tarif**:
 ```
-Lv1 (Taş Totem):
-- 20 Stone
-- 4 Oak Planks
-- 1 Sign
-
-Lv2 (Demir Totem):
-- 30 Stone
-- 10 Iron
-- 1 Lectern
-
-Lv3 (Elmas Totem):
-- 50 Stone
-- 20 Iron
-- 5 Diamond
-- 1 Enchanting Table
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: Cobblestone
+Üstünde: Lectern
 ```
+
+**Sahiplik**: PUBLIC (Herkes kullanabilir)
 
 **İşlev**:
 - **Herkes görev alabilir**
@@ -391,92 +356,247 @@ Lv3: "1 Boss öldür" → 2000 Altın + Tarif
 
 ---
 
-### 2. Ticaret Platformu (Trade Platform)
+### 2. Klan Yönetim Merkezi (CLAN_MANAGEMENT_CENTER) - CLAN_ONLY
 
-**Boyut**: 3x3x2 blok
+**Yapı Çekirdeği**: OAK_LOG (merkez)
 
-**Malzeme**:
-- 9 Oak Planks
-- 4 Chest
-- 1 Lectern
-
-**İşlev**:
-- **Herkes eşya satabilir/alabilir**
-- Basit pazar yeri
-- %5 vergi (yapana gider)
-
-**Kullanım**: Oyuncular arası ticaret noktası
-
----
-
-### 3. Harita Taşı (Waypoint Stone)
-
-**Boyut**: 1x1x2 blok (çok küçük!)
-
-**Malzeme**:
-- 1 Stone
-- 1 Sign
-
-**İşlev**:
-- Koordinat işaretleyici
-- Herkes görebilir
-- Harita'da görünür
-
-**Kullanım**: Önemli yerleri işaretle (örn: "Kuzey Madeni")
-
----
-
-### 4. Dinlenme Kampı (Rest Camp)
-
-**Boyut**: 4x4x3 blok
-
-**Malzeme**:
-- 1 Campfire
-- 4 Bed
-- 8 Oak Planks
-
-**İşlev**:
-- **Herkes kullanabilir**
-- Spawn noktası set edebilir (geçici)
-- Yemek pişirme (Campfire)
-
-**Kullanım**: Uzak bölgelerde güvenli nokta
-
----
-
-### 5. Bilgi Panosu (Notice Board)
-
-**Boyut**: 1x2x1 blok
-
-**Malzeme**:
-- 6 Oak Planks
-- 1 Sign
-
-**İşlev**:
-- **Herkes mesaj yazabilir**
-- 10 mesaj sınırı
-- Herkese açık duyuru
-
-**Kullanım**: Sunucu duyuruları, ticaret ilanları
-
----
-
-## 📊 YAPI KARŞILAŞTIRMA TABLOSU
-
+**Tarif**:
 ```
-┌─────────────────┬─────────┬──────────┬─────────┬──────────┐
-│ Kategori        │ Boyut   │ Maliyet  │ Fayda   │ Konum    │
-├─────────────────┼─────────┼──────────┼─────────┼──────────┤
-│ Klan Yapıları   │ Büyük   │ Çok Yük. │ Klan    │ İçeride  │
-│                 │ 5x5+    │ Boss Mat.│ Pasif   │ Sadece   │
-├─────────────────┼─────────┼──────────┼─────────┼──────────┤
-│ Dışarı-A (Klan) │ Orta    │ Orta     │ Klan    │ Dışarıda │
-│                 │ 3-7 blok│ Normal   │ Geçici  │ İzinli   │
-├─────────────────┼─────────┼──────────┼─────────┼──────────┤
-│ Dışarı-B (Pub.) │ Küçük   │ Ucuz     │ Herkes  │ Dışarıda │
-│                 │ 1-5 blok│ Taş/Odun │ Sosyal  │ İzinli   │
-└─────────────────┴─────────┴──────────┴─────────┴──────────┘
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: 3x3 Iron Block
+Üstünde: Beacon
 ```
+
+**Sahiplik**: CLAN_ONLY (Sadece klan bölgesinde)
+
+**İşlev**:
+- Klan menüleri
+- Klan yönetimi
+- Üye yönetimi
+
+---
+
+### 3. Klan Bankası (CLAN_BANK) - CLAN_ONLY
+
+**Yapı Çekirdeği**: OAK_LOG (merkez)
+
+**Tarif**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: Gold Block
+Üstünde: Chest
+```
+
+**Sahiplik**: CLAN_ONLY (Sadece klan bölgesinde)
+
+**İşlev**:
+- Klan bankası
+- Ortak depolama
+- Para yönetimi
+
+---
+
+### 4. Klan Görev Loncası (CLAN_MISSION_GUILD) - CLAN_ONLY
+
+**Yapı Çekirdeği**: OAK_LOG (merkez)
+
+**Tarif**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: Emerald Block
+Üstünde: Lectern
+```
+
+**Sahiplik**: CLAN_ONLY (Sadece klan bölgesinde)
+
+**İşlev**:
+- Klan görevleri
+- Klan içine yapılır
+- Klan üyeleri görev alabilir
+
+---
+
+### 5. Eğitim Alanı (TRAINING_ARENA) - CLAN_ONLY
+
+**Yapı Çekirdeği**: OAK_LOG (merkez)
+
+**Tarif**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: 2x2 Iron Block
+Üstünde: Enchanting Table
+```
+
+**Sahiplik**: CLAN_ONLY (Sadece klan bölgesinde)
+
+**İşlev**:
+- Eğitim alanı
+- Canlı eğitimi
+- Üreme sistemi
+
+---
+
+### 6. Kervan İstasyonu (CARAVAN_STATION) - CLAN_ONLY
+
+**Yapı Çekirdeği**: OAK_LOG (merkez)
+
+**Tarif**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: 2x2 Iron Block
+Üstünde: Chest
+```
+
+**Sahiplik**: CLAN_ONLY (Sadece klan bölgesinde)
+
+**İşlev**:
+- Kervan istasyonu
+- Şubeler arası transfer
+- Lojistik sistemi
+
+---
+
+### 7. Kontrat Bürosu (CONTRACT_OFFICE) - PUBLIC
+
+**Yapı Çekirdeği**: OAK_LOG (merkez)
+
+**Tarif**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: Stone
+Üstünde: Crafting Table
+```
+
+**Sahiplik**: PUBLIC (Herkes kullanabilir)
+
+**İşlev**:
+- Kontrat bürosu
+- Genel kullanım
+- Oyuncular arası kontratlar
+
+---
+
+### 8. Market (MARKET_PLACE) - PUBLIC
+
+**Yapı Çekirdeği**: OAK_LOG (merkez)
+
+**Tarif**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: Coal Block
+Üstünde: Chest
+Yanında: Sign
+```
+
+**Sahiplik**: PUBLIC (Herkes kullanabilir)
+
+**İşlev**:
+- Market
+- Ticaret merkezi
+- Oyuncular arası ticaret
+
+---
+
+### 9. Tarif Kütüphanesi (RECIPE_LIBRARY) - PUBLIC
+
+**Yapı Çekirdeği**: OAK_LOG (merkez)
+
+**Tarif**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: Bookshelf
+Üstünde: Lectern
+```
+
+**Sahiplik**: PUBLIC (Herkes kullanabilir)
+
+**İşlev**:
+- Tarif kütüphanesi
+- Tarif depolama
+- Araştırma bonusu
+
+---
+
+## 📊 YAPI TARİFLERİ ⭐ GÜNCELLENDİ
+
+### Kod Tabanlı Tarifler
+
+Tüm kod tabanlı tarifler **OAK_LOG** yapı çekirdeği kullanır:
+
+**1. Kişisel Görev Loncası (PERSONAL_MISSION_GUILD)**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: Cobblestone
+Üstünde: Lectern
+```
+
+**2. Klan Bankası (CLAN_BANK)**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: Gold Block
+Üstünde: Chest
+```
+
+**3. Kontrat Bürosu (CONTRACT_OFFICE)**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: Stone
+Üstünde: Crafting Table
+```
+
+**4. Klan Görev Loncası (CLAN_MISSION_GUILD)**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: Emerald Block
+Üstünde: Lectern
+```
+
+**5. Market (MARKET_PLACE)**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: Coal Block
+Üstünde: Chest
+```
+
+**6. Tarif Kütüphanesi (RECIPE_LIBRARY)**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: Bookshelf
+Üstünde: Lectern
+```
+
+**7. Klan Yönetim Merkezi (CLAN_MANAGEMENT_CENTER)**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: 3x3 Iron Block
+Üstünde: Beacon
+```
+
+**8. Eğitim Alanı (TRAINING_ARENA)**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: 2x2 Iron Block
+Üstünde: Enchanting Table
+```
+
+**9. Kervan İstasyonu (CARAVAN_STATION)**:
+```
+Merkez: OAK_LOG (Yapı Çekirdeği)
+Altında: 2x2 Iron Block
+Üstünde: Chest
+```
+
+### Şema Tabanlı Tarifler
+
+Karmaşık yapılar için şema dosyaları kullanılır:
+
+- **Simya Kulesi** (`alchemy_tower.schem`)
+- **Tektonik Sabitleyici** (`tectonic_stabilizer.schem`)
+- **Zehir Reaktörü** (`poison_reactor.schem`)
+- **Otomatik Taret** (`auto_turret.schem`)
+- **Global Pazar Kapısı** (`market_gate.schem`)
+
+**Not**: Şema tabanlı yapılar da **OAK_LOG** yapı çekirdeği kullanır!
 
 ---
 
@@ -491,19 +611,8 @@ Klan Bölgesi İçinde:
 - Zehir Reaktörü (savunma)
 - Gözetleme Kulesi (alarm)
 - Simya Kulesi (batarya buff)
-```
-
----
-
-### Savaş İçin (Dışarıda)
-
-**Saldırı Kampı**:
-```
-Düşman base yakınına (Dışarı-A):
-- Şifa Tapınağı (iyileşme)
-- Geçici Kale (sığınak)
-- Cephane Deposu (silah)
-→ Saldırı üssü hazır!
+- Klan Bankası (depolama)
+- Klan Görev Loncası (görevler)
 ```
 
 ---
@@ -512,11 +621,11 @@ Düşman base yakınına (Dışarı-A):
 
 **Ticaret Bölgesi**:
 ```
-Spawn yakınına (Dışarı-B):
-- Görev Loncası (görevler)
-- Ticaret Platformu (pazar)
-- Harita Taşı (işaretler)
-- Dinlenme Kampı (spawn point)
+Spawn yakınına (PUBLIC yapılar):
+- Kişisel Görev Loncası (görevler)
+- Kontrat Bürosu (kontratlar)
+- Market (ticaret)
+- Tarif Kütüphanesi (tarifler)
 → Sosyal merkez!
 ```
 
@@ -526,18 +635,12 @@ Spawn yakınına (Dışarı-B):
 
 ### Yerleşim Kuralları
 
-**Klan Yapıları**:
+**CLAN_ONLY Yapılar**:
 - ✅ Sadece klan bölgesi içinde
 - ❌ Dışarıda YAPILAMAZ
 - Büyük alan gerektirir
 
-**Dışarı Yapı (A - Klan)**:
-- ✅ Vahşi alanlarda
-- ❌ Spawn'da yapılamaz
-- ❌ Düşman bölgesinde yapılamaz
-- Sadece klanın kullanır
-
-**Dışarı Yapı (B - Herkes)**:
+**PUBLIC Yapılar**:
 - ✅ Vahşi alanlarda
 - ❌ Spawn'da yapılamaz
 - ❌ Düşman bölgesinde yapılamaz
@@ -547,26 +650,19 @@ Spawn yakınına (Dışarı-B):
 
 ### Yapı Maliyetleri
 
-**Klan Yapıları**:
+**CLAN_ONLY Yapılar**:
 - Çok pahalı (Boss malzemeleri)
 - Tarif kitabı gerekebilir
 - Takım halinde toplanmalı
 
-**Dışarı-A (Klan)**:
-- Orta maliyet
-- Normal oyunda bulunur
-- Bireysel yapılabilir
-
-**Dışarı-B (Herkes)**:
+**PUBLIC Yapılar**:
 - Çok ucuz (Taş, Odun)
 - Yeni oyuncular bile yapabilir
 - Sosyal yardım amaçlı
 
 ---
 
----
-
-## 🏗️ YAPI GÜÇ SİSTEMİ (YENİ)
+## 🏗️ YAPI GÜÇ SİSTEMİ
 
 ### ✅ Yapı Seviyesi Güç Kazanma
 
@@ -576,7 +672,7 @@ Her yapı, seviyesine göre **Güç Puanı (Power Score)** verir ve klanın topl
 
 ### Yapı Gücü Hesaplama
 
-**Yapı Seviyesi → Güç:**
+**Yapı Seviyesi → Güç**:
 ```
 - Seviye 1: 100 puan
 - Seviye 2: 250 puan
@@ -585,7 +681,7 @@ Her yapı, seviyesine göre **Güç Puanı (Power Score)** verir ve klanın topl
 - Seviye 5: 2000 puan
 ```
 
-**Klan Kristali:**
+**Klan Kristali**:
 ```
 Klan Kristali: +500 puan (sabit bonus)
 - Sadece kristal varsa ve ölü değilse
@@ -593,7 +689,7 @@ Klan Kristali: +500 puan (sabit bonus)
 
 ### Örnek Hesaplama
 
-**Örnek Klan:**
+**Örnek Klan**:
 ```
 - Klan Kristali: +500 puan
 - Simya Kulesi (Seviye 3): +500 puan
@@ -603,19 +699,19 @@ Klan Kristali: +500 puan (sabit bonus)
 
 ### Klan Gücüne Etkisi
 
-**Yapı Gücü:**
+**Yapı Gücü**:
 - Klanın toplam gücüne eklenir
 - Klan seviyesi hesaplamasında kullanılır
 - Felaket zorluğunu etkiler
 
 ### Komutlar
 
-**Yapı gücünü görmek için:**
+**Yapı gücünü görmek için**:
 ```
 /sgp clan
 ```
 
-**Klan güç bileşenlerini görmek için:**
+**Klan güç bileşenlerini görmek için**:
 ```
 /sgp components
 ```

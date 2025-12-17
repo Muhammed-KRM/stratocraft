@@ -29,10 +29,20 @@ Bunlar sadece dekoratif binalar değildir. Klan bölgenize kurduğunuz, size **p
 
 **Örnek**: Bölgenize bir "Simya Kulesi" dikerseniz, o bölgedeki klan üyelerinin bataryaları %20 güçlenir. Yapı yoksa, güç de yok.
 
+**Yapı Çekirdeği Sistemi (YENİ)** ⭐:
+- Tüm yapılar **Yapı Çekirdeği** (OAK_LOG + metadata) ile çalışır
+- Sadece **STRUCTURE_CORE** item'ı ile yerleştirilen bloklar yapı çekirdeği olur
+- Normal OAK_LOG blokları yapı çekirdeği olarak algılanmaz (güvenlik)
+- Yapı çekirdeği yerleştirildikten sonra yapı kurulur ve aktivasyon item'ı ile aktifleştirilir
+
 **Yapı Kategorileri**:
-- **Klan Yapıları**: Sadece klan bölgesinde, büyük ve güçlü (Simya Kulesi, Zehir Reaktörü, Tektonik Sabitleyici)
-- **Dışarı Yapıları**: Savaşta kullanılan geçici yapılar (Şifa Tapınağı, Geçici Kale)
-- **Sosyal Yapılar**: Herkesin kullanabileceği yapılar (Görev Loncası, Ticaret Platformu)
+- **CLAN_ONLY (Klan Yapıları)**: Sadece klan bölgesinde, büyük ve güçlü (Simya Kulesi, Zehir Reaktörü, Tektonik Sabitleyici, Klan Bankası, Klan Görev Loncası)
+- **PUBLIC (Herkese Açık Yapılar)**: Her yere yapılabilen ve herkesin kullanabildiği yapılar (Kişisel Görev Loncası, Kontrat Bürosu, Market, Tarif Kütüphanesi)
+
+**Yapı Sahiplik Sistemi (YENİ)** ⭐:
+- **CLAN_ONLY**: Sadece klan bölgesine yapılabilir, sadece klan üyeleri kullanabilir
+- **CLAN_OWNED**: Klan dışına yapılabilir ama sadece yapan oyuncu ve klanı kullanabilir (şu an için özel yapı yok)
+- **PUBLIC**: Her yere yapılabilir, herkes kullanabilir (sahiplik kontrolü yok)
 
 **Yapı Seviyeleri**: Her yapı 1-5 seviye arası geliştirilebilir. Seviye arttıkça güç artar.
 
@@ -546,7 +556,7 @@ Bu döküman, Stratocraft'ın temel felsefesini ve amacını anlatır. Detaylı 
 - **04_batarya_sistemi.md**: Büyü sistemi, batarya türleri, stratejiler
 - **05_ozel_esyalar.md**: Yeni madenler, **25 özel silah** (detaylı açıklamalar, crafting tarifleri, mod sistemi), eşyalar
 - **06_ozel_moblar.md**: Özel moblar, eğitme, binme
-- **07_yapilar.md**: Yapı kategorileri, seviyeler, stratejiler
+- **07_yapilar.md**: Yapı çekirdeği sistemi, sahiplik sistemi, kategoriler, seviyeler, stratejiler (YENİ: OAK_LOG + metadata sistemi, StructureOwnershipType)
 - **08_tuzak_sistemi.md**: Tuzak kurulumu, türleri, mayınlar (YENİ: Performans optimizasyonları)
 - **09_kusatma_sistemi.md**: Kuşatma başlatma, savaş kuralları, ödüller
 - **10_felaketler.md**: Felaket mekaniği, türleri, mücadele stratejileri

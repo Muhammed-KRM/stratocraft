@@ -3,6 +3,8 @@ package me.mami.stratocraft.model;
 import me.mami.stratocraft.enums.StructureType;
 import org.bukkit.Location;
 
+import java.util.UUID;
+
 /**
  * Yapı Modeli (Geriye Uyumluluk İçin)
  * 
@@ -66,6 +68,7 @@ public class Structure {
     private final Location location;
     private int level;
     private int shieldFuel = 0;
+    private UUID ownerId; // YENİ: Yapı sahibi (oyuncu UUID) - CLAN_OWNED yapılar için
     
     // MAX_FUEL artık ConfigManager'dan gelecek, burada sadece varsayılan değer
     public static int getDefaultMaxFuel() {
@@ -76,12 +79,23 @@ public class Structure {
         this.type = type;
         this.location = location;
         this.level = level;
+        this.ownerId = null;
+    }
+    
+    // YENİ: OwnerId ile constructor
+    public Structure(Type type, Location location, int level, UUID ownerId) {
+        this.type = type;
+        this.location = location;
+        this.level = level;
+        this.ownerId = ownerId;
     }
 
     public Type getType() { return type; }
     public Location getLocation() { return location; }
     public int getLevel() { return level; }
     public void setLevel(int level) { this.level = level; }
+    public UUID getOwnerId() { return ownerId; }
+    public void setOwnerId(UUID ownerId) { this.ownerId = ownerId; }
 
     public void addFuel(int amount, int maxFuel) { 
         this.shieldFuel = Math.min(this.shieldFuel + amount, maxFuel); 

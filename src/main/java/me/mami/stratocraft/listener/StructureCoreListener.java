@@ -214,7 +214,17 @@ public class StructureCoreListener implements Listener {
             player.sendMessage("§cYapı tipi geçersiz!");
             return;
         }
-        Structure structure = new Structure(legacyType, coreLoc, 1);
+        // YENİ: OwnerId belirle (CLAN_OWNED yapılar için)
+        UUID ownerId = null;
+        if (isPersonalStructure(type)) {
+            // Kişisel yapılar için oyuncu UUID'si ownerId olarak kaydedilir
+            ownerId = player.getUniqueId();
+        } else {
+            // Klan yapıları için ownerId null (klan sahipliği yeterli)
+            // İleride CLAN_OWNED tipi yapılar eklenirse burada set edilebilir
+        }
+        
+        Structure structure = new Structure(legacyType, coreLoc, 1, ownerId);
         
         // Klan varsa ekle
         if (clan != null) {

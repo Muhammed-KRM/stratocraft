@@ -709,6 +709,7 @@ public class DataManager {
                         sd.type = s.getType().name();
                         sd.location = serializeLocation(s.getLocation());
                         sd.level = s.getLevel();
+                        sd.ownerId = s.getOwnerId() != null ? s.getOwnerId().toString() : null; // YENİ: OwnerId kaydet
                         sd.shieldFuel = s.getShieldFuel();
                         return sd;
                     })
@@ -1727,10 +1728,12 @@ public class DataManager {
                 
                 // Structures
                 for (StructureData sd : data.structures) {
+                    UUID ownerId = sd.ownerId != null ? UUID.fromString(sd.ownerId) : null; // YENİ: OwnerId yükle
                     Structure structure = new Structure(
                             Structure.Type.valueOf(sd.type),
                             deserializeLocation(sd.location),
-                            sd.level
+                            sd.level,
+                            ownerId // YENİ: OwnerId ile oluştur
                     );
                     for (int i = 0; i < sd.shieldFuel; i++) {
                         structure.addFuel(1);
@@ -2844,6 +2847,7 @@ public class DataManager {
         public String location;
         public int level;
         public int shieldFuel;
+        public String ownerId; // YENİ: Yapı sahibi UUID (CLAN_OWNED yapılar için)
     }
     
     public static class ContractData {

@@ -356,8 +356,13 @@ public class ClanBankSystem {
     /**
      * Otomatik maaş dağıtımı (scheduled task - optimize edilmiş)
      */
+    /**
+     * Otomatik maaş dağıtımı
+     * ✅ HATA YÖNETİMİ: Try-catch ile hata yakalama ve loglama
+     */
     public void distributeSalaries() {
-        if (config == null || clanManager == null) return;
+        try {
+            if (config == null || clanManager == null) return;
         
         long currentTime = System.currentTimeMillis();
         long salaryInterval = config.getSalaryInterval();
@@ -404,6 +409,10 @@ public class ClanBankSystem {
             }
             
             processedClans++;
+        }
+        } catch (Exception e) {
+            plugin.getLogger().severe("Maaş dağıtımı kritik hatası: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
@@ -516,9 +525,11 @@ public class ClanBankSystem {
     
     /**
      * Otomatik transfer kontratlarını işle (scheduled task - optimize edilmiş)
+     * ✅ HATA YÖNETİMİ: Try-catch ile hata yakalama ve loglama
      */
     public void processTransferContracts() {
-        if (clanManager == null) return;
+        try {
+            if (clanManager == null) return;
         
         long currentTime = System.currentTimeMillis();
         
@@ -579,44 +590,54 @@ public class ClanBankSystem {
                 }
             }
         }
+        } catch (Exception e) {
+            plugin.getLogger().severe("Transfer kontratları işleme kritik hatası: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
     
     /**
      * Transfer kontratını işle
+     * ✅ HATA YÖNETİMİ: Try-catch ile hata yakalama ve loglama
      */
     private void processTransferContract(TransferContract contract, Inventory bankChest) {
-        if (contract == null || bankChest == null) return;
-        
-        // Bankada yeterli item var mı?
-        ItemStack checkItem = new ItemStack(contract.getMaterial(), contract.getAmount());
-        if (!bankChest.containsAtLeast(checkItem, contract.getAmount())) {
-            return; // Yeterli item yok, atla
-        }
-        
-        // Hedef oyuncu online mı?
-        Player targetPlayer = Bukkit.getPlayer(contract.getTargetPlayerId());
-        if (targetPlayer == null || !targetPlayer.isOnline()) {
-            return; // Offline, atla
-        }
-        
-        // Item oluştur
-        ItemStack transferItem = new ItemStack(contract.getMaterial(), contract.getAmount());
-        
-        // Envanter dolu mu kontrol et
-        HashMap<Integer, ItemStack> overflow = targetPlayer.getInventory().addItem(transferItem);
-        
-        if (!overflow.isEmpty()) {
-            // Envanter dolu, geri bankaya koy
-            for (ItemStack remaining : overflow.values()) {
-                bankChest.addItem(remaining);
+        try {
+            if (contract == null || bankChest == null) return;
+            
+            // Bankada yeterli item var mı?
+            ItemStack checkItem = new ItemStack(contract.getMaterial(), contract.getAmount());
+            if (!bankChest.containsAtLeast(checkItem, contract.getAmount())) {
+                return; // Yeterli item yok, atla
             }
-            return;
+            
+            // Hedef oyuncu online mı?
+            Player targetPlayer = Bukkit.getPlayer(contract.getTargetPlayerId());
+            if (targetPlayer == null || !targetPlayer.isOnline()) {
+                return; // Offline, atla
+            }
+            
+            // Item oluştur
+            ItemStack transferItem = new ItemStack(contract.getMaterial(), contract.getAmount());
+            
+            // Envanter dolu mu kontrol et
+            HashMap<Integer, ItemStack> overflow = targetPlayer.getInventory().addItem(transferItem);
+            
+            if (!overflow.isEmpty()) {
+                // Envanter dolu, geri bankaya koy
+                for (ItemStack remaining : overflow.values()) {
+                    bankChest.addItem(remaining);
+                }
+                return;
+            }
+            
+            // Transfer başarılı, bankadan çıkar
+            bankChest.removeItem(transferItem);
+            targetPlayer.sendMessage("§aOtomatik transfer: " + contract.getAmount() + "x " + 
+                getMaterialDisplayName(contract.getMaterial()) + " alındı!");
+        } catch (Exception e) {
+            plugin.getLogger().warning("Transfer kontratı işleme hatası: " + e.getMessage());
+            e.printStackTrace();
         }
-        
-        // Transfer başarılı, bankadan çıkar
-        bankChest.removeItem(transferItem);
-        targetPlayer.sendMessage("§aOtomatik transfer: " + contract.getAmount() + "x " + 
-            getMaterialDisplayName(contract.getMaterial()) + " alındı!");
     }
     
     /**

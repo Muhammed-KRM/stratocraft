@@ -36,6 +36,48 @@ Admin komutları, **sadece yöneticilerin** kullanabileceği özel komutlardır.
 
 ---
 
+## 🏗️ YAPI KOMUTLARI ⭐ GÜNCELLENDİ
+
+### `/scadmin build structure <type> [level]`
+
+**Açıklama**: Yapı build et (test için)
+
+**YENİ ÖZELLİKLER** ⭐:
+- **Yapı Çekirdeği Sistemi**: Tüm yapılar OAK_LOG + metadata ile çalışır
+- **Otomatik Çekirdek Yerleştirme**: Build komutu yapı çekirdeğini otomatik yerleştirir
+- **StructureCoreManager Entegrasyonu**: Çekirdek otomatik olarak kayıt edilir
+
+**Kullanım**:
+```
+/scadmin build structure alchemy_tower 1
+/scadmin build structure clan_bank 1
+/scadmin build structure contract_office 1
+```
+
+**Desteklenen Yapılar**:
+- `personal_mission_guild` - Kişisel Görev Loncası
+- `clan_management_center` - Klan Yönetim Merkezi
+- `clan_bank` - Klan Bankası
+- `clan_mission_guild` - Klan Görev Loncası
+- `training_arena` - Antrenman Arenası
+- `caravan_station` - Kervan İstasyonu
+- `contract_office` - Kontrat Bürosu
+- `market_place` - Market
+- `recipe_library` - Tarif Kütüphanesi
+- `alchemy_tower` - Simya Kulesi (şema tabanlı)
+- `tectonic_stabilizer` - Tektonik Sabitleyici (şema tabanlı)
+- ... (diğer yapılar)
+
+**Yapı Çekirdeği Detayları**:
+- **Material**: OAK_LOG (normal OAK_LOG'dan farklı, metadata ile işaretli)
+- **Metadata**: `METADATA_KEY_CORE`, `METADATA_KEY_OWNER`
+- **Yerleştirme**: Build komutu otomatik olarak çekirdeği yerleştirir ve kayıt eder
+- **Aktivasyon**: Yapı çekirdeği yerleştirildikten sonra yapı kurulur ve aktivasyon item'ı ile aktifleştirilir
+
+**Not**: Build komutu yapıyı tam olarak build eder, ancak aktivasyon için doğru item gerekir.
+
+---
+
 ## 🎁 EŞYA KOMUTLARI
 
 ### `/scadmin give <kategori> <item> [miktar]`

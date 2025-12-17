@@ -312,7 +312,7 @@ public class StructureRecipeManager {
         
         // 1. Görev Loncası (PERSONAL_MISSION_GUILD)
         BlockRecipe missionGuildRecipe = BlockRecipe.builder("Görev Loncası")
-            .setCore(Material.END_CRYSTAL)
+            .setCore(Material.OAK_LOG) // YENİ: Yapı çekirdeği LOG kullanıyor
             .addBlockBelow(Material.COBBLESTONE)
             .addBlockAbove(Material.LECTERN)
             .build();
@@ -320,7 +320,7 @@ public class StructureRecipeManager {
         
         // 2. Klan Bankası (CLAN_BANK)
         BlockRecipe bankRecipe = BlockRecipe.builder("Klan Bankası")
-            .setCore(Material.END_CRYSTAL)
+            .setCore(Material.OAK_LOG) // YENİ: Yapı çekirdeği LOG kullanıyor
             .addBlockBelow(Material.GOLD_BLOCK)
             .addBlockAbove(Material.CHEST)
             .build();
@@ -328,7 +328,7 @@ public class StructureRecipeManager {
         
         // 3. Kontrat Bürosu (CONTRACT_OFFICE)
         BlockRecipe contractOfficeRecipe = BlockRecipe.builder("Kontrat Bürosu")
-            .setCore(Material.END_CRYSTAL)
+            .setCore(Material.OAK_LOG) // YENİ: Yapı çekirdeği LOG kullanıyor
             .addBlockBelow(Material.STONE)
             .addBlockAbove(Material.CRAFTING_TABLE)
             .build();
@@ -336,7 +336,7 @@ public class StructureRecipeManager {
         
         // 4. Klan Görev Loncası (CLAN_MISSION_GUILD)
         BlockRecipe clanMissionGuildRecipe = BlockRecipe.builder("Klan Görev Loncası")
-            .setCore(Material.END_CRYSTAL)
+            .setCore(Material.OAK_LOG) // YENİ: Yapı çekirdeği LOG kullanıyor
             .addBlockBelow(Material.EMERALD_BLOCK)
             .addBlockAbove(Material.LECTERN)
             .build();
@@ -344,7 +344,7 @@ public class StructureRecipeManager {
         
         // 5. Market (MARKET_PLACE)
         BlockRecipe marketRecipe = BlockRecipe.builder("Market")
-            .setCore(Material.END_CRYSTAL)
+            .setCore(Material.OAK_LOG) // YENİ: Yapı çekirdeği LOG kullanıyor
             .addBlockBelow(Material.COAL_BLOCK)
             .addBlockAbove(Material.CHEST)
             .build();
@@ -352,15 +352,16 @@ public class StructureRecipeManager {
         
         // 6. Tarif Kütüphanesi (RECIPE_LIBRARY)
         BlockRecipe recipeLibraryRecipe = BlockRecipe.builder("Tarif Kütüphanesi")
-            .setCore(Material.END_CRYSTAL)
+            .setCore(Material.OAK_LOG) // YENİ: Yapı çekirdeği LOG kullanıyor
             .addBlockBelow(Material.BOOKSHELF)
             .addBlockAbove(Material.LECTERN)
             .build();
         registerCodeRecipe(StructureType.RECIPE_LIBRARY, recipeLibraryRecipe);
         
-        // 7. Klan Yönetim Merkezi (CLAN_MANAGEMENT_CENTER)
+        // 7. Klan Yönetim Merkezi (CLAN_MANAGEMENT_CENTER) - YENİ: Oak Log core
         BlockRecipe clanManagementCenterRecipe = BlockRecipe.builder("Klan Yönetim Merkezi")
-            .setCore(Material.BEACON)
+            .setCore(Material.OAK_LOG) // YENİ: Yapı çekirdeği LOG kullanıyor // YENİ: Yapı çekirdeği
+            .addBlockAbove(Material.BEACON) // Üstünde Beacon
             .addBlock(-1, -1, -1, Material.IRON_BLOCK)
             .addBlock(-1, -1, 0, Material.IRON_BLOCK)
             .addBlock(-1, -1, 1, Material.IRON_BLOCK)
@@ -372,9 +373,10 @@ public class StructureRecipeManager {
             .build();
         registerCodeRecipe(StructureType.CLAN_MANAGEMENT_CENTER, clanManagementCenterRecipe);
         
-        // 8. Eğitim Alanı (TRAINING_ARENA)
+        // 8. Eğitim Alanı (TRAINING_ARENA) - YENİ: Oak Log core
         BlockRecipe trainingArenaRecipe = BlockRecipe.builder("Eğitim Alanı")
-            .setCore(Material.ENCHANTING_TABLE)
+            .setCore(Material.OAK_LOG) // YENİ: Yapı çekirdeği LOG kullanıyor // YENİ: Yapı çekirdeği
+            .addBlockAbove(Material.ENCHANTING_TABLE) // Üstünde Enchanting Table
             .addBlock(0, -1, 0, Material.IRON_BLOCK)
             .addBlock(0, -1, 1, Material.IRON_BLOCK)
             .addBlock(1, -1, 0, Material.IRON_BLOCK)
@@ -382,9 +384,10 @@ public class StructureRecipeManager {
             .build();
         registerCodeRecipe(StructureType.TRAINING_ARENA, trainingArenaRecipe);
         
-        // 9. Kervan İstasyonu (CARAVAN_STATION)
+        // 9. Kervan İstasyonu (CARAVAN_STATION) - YENİ: Oak Log core
         BlockRecipe caravanStationRecipe = BlockRecipe.builder("Kervan İstasyonu")
-            .setCore(Material.CHEST)
+            .setCore(Material.OAK_LOG) // YENİ: Yapı çekirdeği LOG kullanıyor // YENİ: Yapı çekirdeği
+            .addBlockAbove(Material.CHEST) // Üstünde Chest
             .addBlock(0, -1, 0, Material.IRON_BLOCK)
             .addBlock(0, -1, 1, Material.IRON_BLOCK)
             .addBlock(1, -1, 0, Material.IRON_BLOCK)

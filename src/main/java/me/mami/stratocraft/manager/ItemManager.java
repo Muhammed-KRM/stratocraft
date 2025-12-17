@@ -649,7 +649,7 @@ public class ItemManager {
         TAMING_CORE = create(Material.HEART_OF_THE_SEA, "TAMING_CORE", "§a§lEğitim Çekirdeği");
         SUMMON_CORE = create(Material.END_CRYSTAL, "SUMMON_CORE", "§5§lÇağırma Çekirdeği");
         BREEDING_CORE = create(Material.BEACON, "BREEDING_CORE", "§d§lÜreme Çekirdeği");
-        STRUCTURE_CORE = create(Material.END_CRYSTAL, "STRUCTURE_CORE", "§e§lYapı Çekirdeği",
+        STRUCTURE_CORE = create(Material.OAK_LOG, "STRUCTURE_CORE", "§e§lYapı Çekirdeği",
             java.util.Arrays.asList(
                 "§7Yapıların temel taşı",
                 "§7Yerleştir ve etrafına yapıyı kur",

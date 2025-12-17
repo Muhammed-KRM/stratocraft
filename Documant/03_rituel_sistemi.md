@@ -4,6 +4,12 @@
 
 Ritüeller, Stratocraft'ta **fiziksel blok düzenekleriyle** yapılan özel etkileşimlerdir. **Hiçbir komut kullanılmaz**, her şey bloklarla yapılır!
 
+**YENİ Özellikler** ⭐:
+- ✅ **Güvenlik İyileştirmeleri**: Tüm ritüellerde null check'ler eklendi
+- ✅ **Config Entegrasyonu**: Cooldown süreleri config'den alınıyor
+- ✅ **Klan Üyeliği Kontrolleri**: Terfi ritüelinde klan üyeliği kontrolü eklendi
+- ✅ **Hata Yönetimi**: Kritik bölgelerde try-catch blokları eklendi
+
 ---
 
 ## 📋 İÇİNDEKİLER
@@ -60,7 +66,12 @@ Tüm bloklar Stripped Log olmalı!
 - BEACON_ACTIVATE sesi
 - Her üyede ENDER_DRAGON_FLAP sesi
 
-**Cooldown**: 10 saniye
+**Cooldown**: 10 saniye (config'den ayarlanabilir)
+
+**Güvenlik Kontrolleri** ⭐ YENİ:
+- ✅ **Null Check**: Elindeki item null kontrolü yapılıyor (güvenlik)
+- ✅ **Yetki Kontrolü**: Sadece Lider veya General yapabilir
+- ✅ **Config Entegrasyonu**: Cooldown süresi config'den alınıyor
 
 ---
 
@@ -101,6 +112,12 @@ Ortada ateş yak!
 **Partiküller**:
 - General: VILLAGER_HAPPY (altın)
 - Member: SMOKE_NORMAL (gri)
+
+**Güvenlik Kontrolleri** ⭐ YENİ:
+- ✅ **Klan Üyeliği Kontrolü**: Terfi edilecek oyuncu mutlaka klan üyesi olmalı
+- ✅ **Null Check**: Elindeki item (Altın/Demir Külçe) null kontrolü yapılıyor
+- ✅ **Rütbe Kontrolü**: Zaten üst rütbede olan oyunculara terfi verilemez
+- ✅ **Cooldown Sistemi**: Ritüel spam önleme için cooldown var
 
 ---
 

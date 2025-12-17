@@ -23,14 +23,14 @@ public class StructureCoreBlock extends BaseBlock {
     private UUID ownerClanId; // Nullable - personal yapılar için null
     
     public StructureCoreBlock(Location location) {
-        super(location, Material.END_CRYSTAL);
+        super(location, Material.OAK_LOG); // YENİ: LOG kullanıyoruz (tuzak çekirdeği gibi)
         this.structureType = null;
         this.structureLevel = 1;
         this.isActivated = false;
     }
     
     public StructureCoreBlock(UUID id, Location location) {
-        super(id, location, Material.END_CRYSTAL);
+        super(id, location, Material.OAK_LOG); // YENİ: LOG kullanıyoruz (tuzak çekirdeği gibi)
         this.structureType = null;
         this.structureLevel = 1;
         this.isActivated = false;

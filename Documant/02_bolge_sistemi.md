@@ -176,10 +176,24 @@ Başkasının Klan Bölgesine:
 ├──────────┼─────────┼─────────┼─────────┤
 │ LEADER   │ ✓       │ ✓       │ ✓       │
 │ GENERAL  │ ✓       │ ✓       │ ✓       │
-│ MEMBER   │ ✓       │ ✓       │ ✓       │
+│ ELITE    │ ✓       │ ❌      │ ✓       │
+│ MEMBER   │ ✓       │ ❌      │ ✓       │
 │ RECRUIT  │ ❌      │ ❌      │ ✓       │
 └──────────┴─────────┴─────────┴─────────┘
 ```
+
+**YENİ Özellikler** ⭐:
+- ✅ **ClanRankSystem Entegrasyonu**: Yapı kurma/yıkma işlemlerinde detaylı yetki kontrolü
+- ✅ **Metadata Sistemi**: Klan çitleri metadata ile işaretleniyor
+- ✅ **TerritoryData Yönetimi**: Çitler otomatik olarak TerritoryData'ya ekleniyor/kaldırılıyor
+- ✅ **Async Hesaplama**: Büyük alanlar için async flood-fill algoritması (lag önleme)
+```
+
+**YENİ Özellikler** ⭐:
+- ✅ **ClanRankSystem Entegrasyonu**: Yapı kurma/yıkma işlemlerinde detaylı yetki kontrolü
+- ✅ **Metadata Sistemi**: Klan çitleri metadata ile işaretleniyor
+- ✅ **TerritoryData Yönetimi**: Çitler otomatik olarak TerritoryData'ya ekleniyor/kaldırılıyor
+- ✅ **Async Hesaplama**: Büyük alanlar için async flood-fill algoritması (lag önleme)
 
 ---
 

@@ -1,13 +1,18 @@
 package me.mami.stratocraft.listener;
 
+import me.mami.stratocraft.Main;
 import me.mami.stratocraft.gui.RecipeMenu;
 import me.mami.stratocraft.manager.GhostRecipeManager;
 import me.mami.stratocraft.manager.ItemManager;
 import me.mami.stratocraft.manager.ResearchManager;
+import me.mami.stratocraft.manager.StructureCoreManager;
+import me.mami.stratocraft.manager.StructureRecipeManager;
 import me.mami.stratocraft.manager.TerritoryManager;
 import me.mami.stratocraft.model.Clan;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -32,6 +37,9 @@ public class GhostRecipeListener implements Listener {
     private final GhostRecipeManager ghostRecipeManager;
     private final ResearchManager researchManager;
     private TerritoryManager territoryManager;
+    private StructureCoreManager structureCoreManager;
+    private StructureRecipeManager structureRecipeManager;
+    private Main plugin;
     
     public GhostRecipeListener(GhostRecipeManager grm, ResearchManager rm) {
         this.ghostRecipeManager = grm;
@@ -40,6 +48,18 @@ public class GhostRecipeListener implements Listener {
     
     public void setTerritoryManager(TerritoryManager tm) {
         this.territoryManager = tm;
+    }
+    
+    public void setStructureCoreManager(StructureCoreManager scm) {
+        this.structureCoreManager = scm;
+    }
+    
+    public void setStructureRecipeManager(StructureRecipeManager srm) {
+        this.structureRecipeManager = srm;
+    }
+    
+    public void setPlugin(Main plugin) {
+        this.plugin = plugin;
     }
     
     /**
@@ -272,7 +292,68 @@ public class GhostRecipeListener implements Listener {
         Location blockLocation = event.getBlockPlaced().getLocation();
         Material placedMaterial = event.getBlockPlaced().getType();
         
+        // YENİ: Tarif tamamlanma kontrolü (hayalet tarif varsa)
+        boolean wasRecipeActive = ghostRecipeManager.hasActiveRecipe(player.getUniqueId());
+        
         ghostRecipeManager.checkAndRemoveBlock(player, blockLocation, placedMaterial);
+        
+        // YENİ: Tarif tamamlandıysa efekt göster (GhostRecipeManager içinde zaten yapılıyor)
+        // Ayrıca yapı çekirdeği yakınında yapı tamamlanma kontrolü
+        checkStructureCompletionNearCore(player, blockLocation);
+    }
+    
+    /**
+     * YENİ: Yapı çekirdeği yakınında yapı tamamlanma kontrolü
+     * Oyuncu bir yapı çekirdeği koyduysa ve 5 blok yakınındaysa kontrol yap
+     */
+    private void checkStructureCompletionNearCore(Player player, Location blockLocation) {
+        if (structureCoreManager == null || structureRecipeManager == null || plugin == null) {
+            return;
+        }
+        
+        // Oyuncunun 5 blok yakınındaki inaktif çekirdekleri kontrol et
+        for (Location coreLoc : structureCoreManager.getAllInactiveCoreBlocks().keySet()) {
+            if (coreLoc == null || coreLoc.getWorld() == null) continue;
+            if (!coreLoc.getWorld().equals(blockLocation.getWorld())) continue;
+            
+            double distance = coreLoc.distance(blockLocation);
+            if (distance > 5.0) continue; // 5 bloktan uzaksa atla
+            
+            // Çekirdek sahibi kontrolü
+            UUID coreOwner = structureCoreManager.getCoreOwner(coreLoc);
+            if (coreOwner == null || !coreOwner.equals(player.getUniqueId())) {
+                continue; // Bu oyuncunun çekirdeği değil
+            }
+            
+            // Yapı tipini tespit et (StructureCoreBlock'tan al)
+            me.mami.stratocraft.model.block.StructureCoreBlock coreBlock = 
+                structureCoreManager.getInactiveCoreBlock(coreLoc);
+            if (coreBlock == null) continue;
+            
+            me.mami.stratocraft.enums.StructureType structureType = coreBlock.getStructureType();
+            if (structureType == null) {
+                // Yapı tipi belirlenmemiş, pattern'den tespit et
+                // StructureActivationListener'daki pattern detection kullanılabilir
+                // Şimdilik atla, aktivasyon sırasında tespit edilecek
+                continue;
+            }
+            
+            // Yapı doğrulama (async - performanslı)
+            structureRecipeManager.validateStructureAsync(coreLoc, structureType, (isValid) -> {
+                if (isValid) {
+                    // Yapı tamamlandı! Efekt göster
+                    org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+                        Location centerLoc = coreLoc.clone().add(0.5, 0.5, 0.5);
+                        coreLoc.getWorld().spawnParticle(Particle.TOTEM, centerLoc, 50, 0.5, 1, 0.5, 0.3);
+                        coreLoc.getWorld().spawnParticle(Particle.END_ROD, centerLoc, 30, 0.5, 1, 0.5, 0.1);
+                        coreLoc.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, centerLoc, 20, 0.5, 1, 0.5, 0.1);
+                        player.playSound(coreLoc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+                        player.playSound(coreLoc, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                        player.sendMessage("§a§l✓ Yapı tamamlandı! Aktivasyon item'ı ile aktifleştirebilirsiniz.");
+                    });
+                }
+            });
+        }
     }
     
     /**

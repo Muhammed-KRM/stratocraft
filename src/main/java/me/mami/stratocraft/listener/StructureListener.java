@@ -279,7 +279,8 @@ public class StructureListener implements Listener {
         
         // Geriye uyumluluk için Structure.Type'a çevir (deprecated)
         Structure.Type legacyType = Structure.Type.valueOf(type.name());
-        c.addStructure(new Structure(legacyType, b.getLocation(), 1));
+        // YENİ: OwnerId null (klan yapısı, ownerId gerekmez)
+        c.addStructure(new Structure(legacyType, b.getLocation(), 1, null));
         
         // ✅ İYİLEŞTİRME: Daha belirgin efektler
         org.bukkit.Location loc = b.getLocation().add(0.5, 1, 0.5);

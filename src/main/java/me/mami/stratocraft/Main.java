@@ -323,10 +323,11 @@ public class Main extends JavaPlugin {
         this.clanTerritoryMenu = clanTerritoryMenu;
         this.territoryBoundaryManager = territoryBoundaryManager;
         this.territoryConfig = territoryConfig;
-        // YENİ: StructureActivationListener'a ClanRankSystem ekle
+        // YENİ: StructureActivationListener'a ClanRankSystem ve StructureCoreManager ekle
         Bukkit.getPluginManager().registerEvents(
             new StructureActivationListener(clanManager, territoryManager, 
-                clanRankSystem != null ? clanRankSystem : null), this); // YAPI AKTİVASYONU
+                clanRankSystem != null ? clanRankSystem : null,
+                structureCoreManager), this); // YAPI AKTİVASYONU
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.StructureMenuListener(this, clanManager, territoryManager), this); // YAPI MENÜLERİ
         // Yeni Yapı Sistemi Listener'ı
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.StructureCoreListener(
@@ -347,6 +348,9 @@ public class Main extends JavaPlugin {
         me.mami.stratocraft.listener.GhostRecipeListener ghostRecipeListener = 
             new me.mami.stratocraft.listener.GhostRecipeListener(ghostRecipeManager, researchManager);
         ghostRecipeListener.setTerritoryManager(territoryManager);
+        ghostRecipeListener.setStructureCoreManager(structureCoreManager);
+        ghostRecipeListener.setStructureRecipeManager(structureRecipeManager);
+        ghostRecipeListener.setPlugin(this);
         Bukkit.getPluginManager().registerEvents(ghostRecipeListener, this);
         Bukkit.getPluginManager().registerEvents(new ConsumableListener(this), this);
         Bukkit.getPluginManager().registerEvents(new VillagerListener(), this);
@@ -1509,7 +1513,7 @@ public class Main extends JavaPlugin {
         // Not: onEnable() içinde zaten null ile kaydedilmiş, burada clanRankSystem ile tekrar kaydediyoruz
         Bukkit.getPluginManager().registerEvents(
             new me.mami.stratocraft.listener.StructureActivationListener(
-                clanManager, territoryManager, clanRankSystem), this);
+                clanManager, territoryManager, clanRankSystem, structureCoreManager), this);
         
         // 8. ClanStatsMenu (GUI menüsü)
         clanStatsMenu = new me.mami.stratocraft.gui.ClanStatsMenu(this, clanManager);
@@ -1668,6 +1672,49 @@ public class Main extends JavaPlugin {
                 e.printStackTrace();
             }
         }, 72000L, 72000L); // 1 saat = 72000 tick
+        
+        // YENİ: Süresi dolmuş kontrat isteklerini temizle (her 1 saat)
+        Bukkit.getScheduler().runTaskTimer(this, () -> {
+            try {
+                if (contractRequestManager != null) {
+                    cleanupExpiredContractRequests();
+                }
+            } catch (Exception e) {
+                getLogger().warning("Kontrat isteği temizleme hatası: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }, 72000L, 72000L); // 1 saat = 72000 tick
+    }
+    
+    /**
+     * YENİ: Süresi dolmuş kontrat isteklerini temizle
+     * İstekler 24 saat sonra otomatik olarak iptal edilir
+     */
+    private void cleanupExpiredContractRequests() {
+        if (contractRequestManager == null) return;
+        
+        long expireTime = 24 * 60 * 60 * 1000L; // 24 saat (milisaniye)
+        long currentTime = System.currentTimeMillis();
+        
+        java.util.List<me.mami.stratocraft.model.ContractRequest> allRequests = 
+            contractRequestManager.getAllRequests();
+        
+        int cleanedCount = 0;
+        for (me.mami.stratocraft.model.ContractRequest request : allRequests) {
+            if (request.getStatus() == me.mami.stratocraft.model.ContractRequest.ContractRequestStatus.PENDING) {
+                long age = currentTime - request.getCreatedAt();
+                if (age > expireTime) {
+                    // Süresi dolmuş, iptal et
+                    request.setStatus(me.mami.stratocraft.model.ContractRequest.ContractRequestStatus.CANCELLED);
+                    contractRequestManager.removeRequest(request.getId());
+                    cleanedCount++;
+                }
+            }
+        }
+        
+        if (cleanedCount > 0) {
+            getLogger().info("§a" + cleanedCount + " adet süresi dolmuş kontrat isteği temizlendi.");
+        }
     }
     
     // Getters
