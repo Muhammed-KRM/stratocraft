@@ -1,14 +1,7 @@
 package me.mami.stratocraft.listener;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.gui.RecipeMenu;
-import me.mami.stratocraft.manager.GhostRecipeManager;
-import me.mami.stratocraft.manager.ItemManager;
-import me.mami.stratocraft.manager.ResearchManager;
-import me.mami.stratocraft.manager.StructureCoreManager;
-import me.mami.stratocraft.manager.StructureRecipeManager;
-import me.mami.stratocraft.manager.TerritoryManager;
-import me.mami.stratocraft.model.Clan;
+import java.util.UUID;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -18,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -26,10 +20,17 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.util.RayTraceResult;
 
-import java.util.UUID;
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.gui.RecipeMenu;
+import me.mami.stratocraft.manager.GhostRecipeManager;
+import me.mami.stratocraft.manager.ItemManager;
+import me.mami.stratocraft.manager.ResearchManager;
+import me.mami.stratocraft.manager.StructureCoreManager;
+import me.mami.stratocraft.manager.StructureRecipeManager;
+import me.mami.stratocraft.manager.TerritoryManager;
+import me.mami.stratocraft.model.Clan;
 
 /**
  * GhostRecipeListener - Hayalet tarif sistemi listener'ı
