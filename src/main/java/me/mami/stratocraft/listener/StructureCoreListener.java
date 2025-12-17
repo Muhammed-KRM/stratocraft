@@ -212,10 +212,22 @@ public class StructureCoreListener implements Listener {
                 return;
             }
             
-            // Klan bölgesinde mi?
+            // ✅ DÜZELTME: Klan bölgesinde mi? (kristal kontrolü)
             Clan owner = territoryManager.getTerritoryOwner(coreLoc);
-            if (owner == null || !owner.equals(clan)) {
+            if (owner == null) {
+                player.sendMessage("§cBu yapıyı sadece klan alanında kurabilirsiniz!");
+                player.sendMessage("§7Klan alanı olmayan yere yapı kurulamaz!");
+                return;
+            }
+            if (!owner.equals(clan)) {
                 player.sendMessage("§cBu yapıyı sadece kendi klan bölgenizde kurabilirsiniz!");
+                return;
+            }
+            
+            // ✅ DÜZELTME: Klan kristali var mı kontrol et (Territory center kontrolü)
+            if (clan.getTerritory() == null || clan.getTerritory().getCenter() == null) {
+                player.sendMessage("§cKlan kristali bulunamadı! Yapı aktif olamaz.");
+                player.sendMessage("§7Klan alanı olmayan yere yapı kurulamaz!");
                 return;
             }
         } else {

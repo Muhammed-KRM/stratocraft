@@ -590,6 +590,13 @@ public class SQLiteDataManager {
                 for (DataManager.TrapData trap : snapshot.activeTraps) {
                     if (trap == null) continue;
                     
+                    // ✅ DÜZELTME: clan_id NOT NULL constraint hatası - null kontrolü
+                    if (trap.clanId == null || trap.clanId.isEmpty()) {
+                        plugin.getLogger().warning("Tuzak kaydedilemedi: clan_id null veya boş (trap.id: " + 
+                            (trap.id != null ? trap.id : "null") + ")");
+                        continue; // clan_id olmayan tuzakları atla
+                    }
+                    
                     // Location kontrolü (LocationData veya String formatında olabilir)
                     String world = null;
                     int x = 0, y = 0, z = 0;
@@ -616,7 +623,7 @@ public class SQLiteDataManager {
                     String jsonData = gson.toJson(trap);
                     
                     stmt.setString(1, trap.id != null ? trap.id : UUID.randomUUID().toString());
-                    stmt.setString(2, trap.clanId);
+                    stmt.setString(2, trap.clanId); // ✅ Artık null değil (yukarıda kontrol edildi)
                     stmt.setString(3, world);
                     stmt.setInt(4, x);
                     stmt.setInt(5, y);

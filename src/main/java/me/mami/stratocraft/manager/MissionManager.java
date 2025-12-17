@@ -726,5 +726,12 @@ public class MissionManager {
     public void removeMission(UUID playerId) {
         activeMissions.remove(playerId);
     }
+    
+    /**
+     * Aktif görevleri al (getter - StructureMenuListener için)
+     */
+    public Map<UUID, Mission> getActiveMissions() {
+        return activeMissions;
+    }
 }
 

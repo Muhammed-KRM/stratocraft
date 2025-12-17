@@ -1,14 +1,17 @@
 package me.mami.stratocraft.listener;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.enums.StructureType;
-import me.mami.stratocraft.manager.ClanManager;
-import me.mami.stratocraft.manager.TerritoryManager;
-import me.mami.stratocraft.manager.clan.ClanRankSystem;
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.model.Structure;
-import me.mami.stratocraft.model.Structure.Type;
-import org.bukkit.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
@@ -18,9 +21,15 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.ItemStack;
 
-import java.util.*;
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.enums.StructureType;
+import me.mami.stratocraft.manager.ClanManager;
+import me.mami.stratocraft.manager.TerritoryManager;
+import me.mami.stratocraft.manager.clan.ClanRankSystem;
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.Structure;
+import me.mami.stratocraft.model.Structure.Type;
 
 /**
  * StructureActivationListener - Yapı aktivasyon sistemi
@@ -132,10 +141,22 @@ public class StructureActivationListener implements Listener {
             return;
         }
 
-        // Klan bölgesinde mi?
+        // ✅ DÜZELTME: Klan bölgesinde mi? (kristal kontrolü)
         Clan owner = territoryManager.getTerritoryOwner(clicked.getLocation());
-        if (owner == null || !owner.equals(clan)) {
+        if (owner == null) {
+            player.sendMessage("§cBu yapıyı sadece klan alanında kurabilirsiniz!");
+            player.sendMessage("§7Klan alanı olmayan yere yapı kurulamaz!");
+            return;
+        }
+        if (!owner.equals(clan)) {
             player.sendMessage("§cKlan yapıları sadece kendi bölgenizde kurulabilir!");
+            return;
+        }
+        
+        // ✅ DÜZELTME: Klan kristali var mı kontrol et
+        if (clan.getTerritory() == null || clan.getTerritory().getCenter() == null) {
+            player.sendMessage("§cKlan kristali bulunamadı! Yapı aktif olamaz.");
+            player.sendMessage("§7Klan alanı olmayan yere yapı kurulamaz!");
             return;
         }
 

@@ -1,13 +1,13 @@
 package me.mami.stratocraft.model.territory;
 
-import me.mami.stratocraft.model.base.BaseModel;
-import org.bukkit.Location;
-import org.bukkit.World;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import org.bukkit.Location;
+
+import me.mami.stratocraft.model.base.BaseModel;
 
 /**
  * Klan Alanı Veri Modeli (Genişletilmiş)
@@ -222,6 +222,7 @@ public class TerritoryData extends BaseModel {
     
     /**
      * Sınır koordinatlarını hesapla (basit versiyon - çitler arası çizgi)
+     * ✅ DÜZELTME: Sadece kenarlara (sınırlara) partikül göster
      * Not: Gerçek sınır hesaplama TerritoryBoundaryManager'da yapılacak
      * DÜZELTME: Null check ve dünya kontrolü
      */
@@ -233,17 +234,31 @@ public class TerritoryData extends BaseModel {
             return;
         }
         
-        // Basit sınır hesaplama: Çitler arası çizgi
+        // ✅ DÜZELTME: Sadece kenarlara (sınırlara) partikül göster
+        // Radius bazlı sınır hesaplama (basit versiyon)
         // Gerçek hesaplama TerritoryBoundaryManager'da yapılacak
-        for (Location fenceLoc : fenceLocations) {
-            if (fenceLoc == null || fenceLoc.getWorld() == null) continue;
-            
-            // Dünya kontrolü
-            if (!center.getWorld().equals(fenceLoc.getWorld())) {
-                continue; // Farklı dünya, atla
+        int radius = getRadius();
+        if (radius <= 0) {
+            // Radius yoksa çitlerden hesapla
+            for (Location fenceLoc : fenceLocations) {
+                if (fenceLoc == null || fenceLoc.getWorld() == null) continue;
+                if (!center.getWorld().equals(fenceLoc.getWorld())) continue;
+                boundaryCoordinates.add(fenceLoc.clone());
             }
-            
-            boundaryCoordinates.add(fenceLoc.clone());
+        } else {
+            // ✅ DÜZELTME: Radius varsa, sadece kenarlara (sınırlara) partikül göster
+            // Daire çevresi boyunca partikül noktaları oluştur
+            // Her 2 blokta bir partikül (daha yoğun görünüm için)
+            int particleCount = (int) (radius * 2 * Math.PI / 2.0); // Her 2 blokta bir partikül
+            for (int i = 0; i < particleCount; i++) {
+                double angle = (2 * Math.PI * i) / particleCount;
+                double x = center.getX() + radius * Math.cos(angle);
+                double z = center.getZ() + radius * Math.sin(angle);
+                // ✅ DÜZELTME: Y koordinatını center'dan al (sınır çizgisi için)
+                // TerritoryBoundaryParticleTask'ta oyuncunun Y seviyesine göre ayarlanacak
+                Location boundaryLoc = new Location(center.getWorld(), x, center.getY(), z);
+                boundaryCoordinates.add(boundaryLoc);
+            }
         }
         
         lastBoundaryUpdate = System.currentTimeMillis();

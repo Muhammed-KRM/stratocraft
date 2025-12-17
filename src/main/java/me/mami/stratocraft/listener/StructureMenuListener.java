@@ -80,12 +80,18 @@ public class StructureMenuListener implements Listener {
      * Konumdaki yapıyı bul
      * ✅ DÜZELTME: Kişisel yapılar klansız bölgede de olabilir, bu yüzden tüm klanları kontrol et
      * ✅ DÜZELTME: StructureCoreManager'daki aktif yapıları da kontrol et
+     * ✅ DÜZELTME: Location normalizasyonu eklendi
      */
     private Structure findStructureAt(org.bukkit.Location location) {
+        if (location == null) return null;
+        
+        // ✅ DÜZELTME: Location'ı normalize et (blok konumuna)
+        org.bukkit.Location blockLoc = location.getBlock().getLocation();
+        
         // YENİ: Önce StructureCoreManager'daki aktif yapıları kontrol et
         me.mami.stratocraft.manager.StructureCoreManager coreManager = plugin.getStructureCoreManager();
         if (coreManager != null) {
-            Structure activeStructure = coreManager.getActiveStructure(location);
+            Structure activeStructure = coreManager.getActiveStructure(blockLoc);
             if (activeStructure != null) {
                 return activeStructure;
             }
@@ -94,7 +100,11 @@ public class StructureMenuListener implements Listener {
         // Tüm klanları kontrol et
         for (Clan clan : clanManager.getAllClans()) {
             for (Structure structure : clan.getStructures()) {
-                if (structure.getLocation().distance(location) <= 2.0) {
+                if (structure == null || structure.getLocation() == null) continue;
+                
+                // ✅ DÜZELTME: Her iki location'ı da normalize et
+                org.bukkit.Location structureBlockLoc = structure.getLocation().getBlock().getLocation();
+                if (structureBlockLoc.distance(blockLoc) <= 2.0) {
                     // Kişisel yapılar herkese açık, klan yapıları klan kontrolü gerektirir
                     // YENİ: StructureType kullan
                     me.mami.stratocraft.enums.StructureType type = 
@@ -129,7 +139,11 @@ public class StructureMenuListener implements Listener {
             Clan playerClan = clanManager.getClanByPlayer(nearbyPlayer.getUniqueId());
             if (playerClan != null) {
                 for (Structure structure : playerClan.getStructures()) {
-                    if (structure.getLocation().distance(location) <= 2.0) {
+                    if (structure == null || structure.getLocation() == null) continue;
+                    
+                    // ✅ DÜZELTME: Her iki location'ı da normalize et
+                    org.bukkit.Location structureBlockLoc = structure.getLocation().getBlock().getLocation();
+                    if (structureBlockLoc.distance(blockLoc) <= 2.0) {
                         // YENİ: StructureType kullan
                         me.mami.stratocraft.enums.StructureType type = 
                             me.mami.stratocraft.enums.StructureType.valueOf(structure.getType().name());
@@ -249,8 +263,16 @@ public class StructureMenuListener implements Listener {
                     if (mission != null) {
                         me.mami.stratocraft.gui.MissionMenu.openMenu(player, mission, plugin.getMissionManager());
                     } else {
-                        player.sendMessage("§eAktif göreviniz yok!");
-                        player.sendMessage("§7Yeni görev almak için Totem'e sağ tıklayın.");
+                        // ✅ DÜZELTME: Görev yoksa yeni görev üret ve menüyü aç
+                        me.mami.stratocraft.model.Mission newMission = plugin.getMissionManager().generateRandomMission(player);
+                        if (newMission != null) {
+                            // Görevi aktif görevlere ekle ve menüyü aç
+                            plugin.getMissionManager().getActiveMissions().put(player.getUniqueId(), newMission);
+                            plugin.getMissionManager().openMissionMenu(player, newMission);
+                        } else {
+                            // Fallback: Eski sistem (totem seviyesine göre)
+                            plugin.getMissionManager().interactWithTotem(player, org.bukkit.Material.STONE);
+                        }
                     }
                 }
                 break;

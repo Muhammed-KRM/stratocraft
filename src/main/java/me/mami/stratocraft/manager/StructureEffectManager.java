@@ -70,8 +70,13 @@ public class StructureEffectManager {
             StructureType type = convertToStructureType(structure.getType());
             if (type == null) continue;
             
-            // Yapı aktif mi kontrol et (StructureCoreManager'dan)
-            if (structureCoreManager != null && !structureCoreManager.isActiveStructure(structure.getLocation())) {
+            // ✅ DÜZELTME: Location'ı normalize et (blok konumuna)
+            Location structureLoc = structure.getLocation();
+            if (structureLoc == null) continue;
+            Location blockLoc = structureLoc.getBlock().getLocation();
+            
+            // Yapı aktif mi kontrol et (StructureCoreManager'dan - normalize edilmiş location ile)
+            if (structureCoreManager != null && !structureCoreManager.isActiveStructure(blockLoc)) {
                 continue; // Pasif yapılar efekt vermez
             }
             
@@ -101,6 +106,7 @@ public class StructureEffectManager {
     
     /**
      * Periyodik efekt güncelleme (StructureEffectTask'tan çağrılacak)
+     * ✅ DÜZELTME: Location normalizasyonu eklendi - yapı aktif etme sorunu çözüldü
      */
     public void updateEffects() {
         tickCounter++;
@@ -110,8 +116,13 @@ public class StructureEffectManager {
             for (Structure structure : clan.getStructures()) {
                 if (structure == null) continue;
                 
-                // Yapı aktif mi kontrol et (StructureCoreManager'dan)
-                if (structureCoreManager != null && !structureCoreManager.isActiveStructure(structure.getLocation())) {
+                // ✅ DÜZELTME: Location'ı normalize et (blok konumuna)
+                Location structureLoc = structure.getLocation();
+                if (structureLoc == null) continue;
+                Location blockLoc = structureLoc.getBlock().getLocation();
+                
+                // Yapı aktif mi kontrol et (StructureCoreManager'dan - normalize edilmiş location ile)
+                if (structureCoreManager != null && !structureCoreManager.isActiveStructure(blockLoc)) {
                     continue; // Pasif yapılar efekt vermez
                 }
                 
