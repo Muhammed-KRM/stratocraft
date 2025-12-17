@@ -19,6 +19,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.CompassMeta;
 import org.bukkit.entity.Entity;
 
 import org.bukkit.Bukkit;
@@ -1226,62 +1227,37 @@ public class RitualInteractionListener implements Listener {
     
     // ========== KLAN İSTATİSTİKLERİ: "Bilgi Taşı" (KOLAY) ==========
     /**
-     * ✅ DÜZELTME: Pusula ile sol tık ışınlanmayı engelle
-     * Sadece özel item'larda (PERSONAL_TERMINAL gibi) özel özellikler çalışmalı
-     * Normal pusulalarda Minecraft'ın lodestone sistemi çalışmamalı
+     * ✅ TÜM PUSULALARDA IŞINLAMA ENGELLENDİ
+     * Lodestone bağlantısını kaldır ve ışınlamayı engelle
      */
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onCompassTeleportPrevent(PlayerInteractEvent event) {
-        // Sol tık kontrolü
-        if (event.getAction() != Action.LEFT_CLICK_AIR && event.getAction() != Action.LEFT_CLICK_BLOCK) return;
+    public void onCompassInteract(PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND) return;
         
         Player p = event.getPlayer();
         ItemStack handItem = p.getInventory().getItemInMainHand();
         if (handItem == null || handItem.getType() != Material.COMPASS) return;
         
-        // ✅ Özel item kontrolü - sadece özel item'larda özel özellikler çalışmalı
-        // Personal Terminal → Menü açma (başka listener'da işlenecek)
-        if (me.mami.stratocraft.manager.ItemManager.isCustomItem(handItem, "PERSONAL_TERMINAL")) {
-            return; // Personal Terminal başka listener'da işlenecek
+        // ✅ Lodestone bağlantısını kaldır (metadata'dan)
+        if (handItem.hasItemMeta()) {
+            org.bukkit.inventory.meta.ItemMeta meta = handItem.getItemMeta();
+            if (meta != null && meta instanceof org.bukkit.inventory.meta.CompassMeta) {
+                org.bukkit.inventory.meta.CompassMeta compassMeta = (org.bukkit.inventory.meta.CompassMeta) meta;
+                if (compassMeta.hasLodestoneLocation()) {
+                    compassMeta.setLodestoneLocation(null);
+                    handItem.setItemMeta(compassMeta);
+                    p.getInventory().setItemInMainHand(handItem);
+                }
+            }
         }
         
-        // ✅ Normal pusula → Işınlanmayı engelle (Minecraft'ın lodestone sistemi)
-        // Eğer başka özel bir item varsa (örneğin TELEPORT_COMPASS), burada kontrol edilebilir
-        // Şimdilik sadece PERSONAL_TERMINAL özel item olarak kabul ediliyor
-        event.setCancelled(true);
-    }
-    
-    /**
-     * ✅ DÜZELTME: Pusula ile sağ tık ışınlanmayı engelle
-     * Sadece özel item'larda (PERSONAL_TERMINAL gibi) özel özellikler çalışmalı
-     * Normal pusulalarda Minecraft'ın lodestone sistemi çalışmamalı
-     */
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onCompassRightClickPrevent(PlayerInteractEvent event) {
-        // Sağ tık kontrolü
-        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        if (event.getHand() != EquipmentSlot.HAND) return;
-        
-        Player p = event.getPlayer();
-        ItemStack handItem = p.getInventory().getItemInMainHand();
-        if (handItem == null || handItem.getType() != Material.COMPASS) return;
-        
-        // ✅ Özel item kontrolü - sadece özel item'larda özel özellikler çalışmalı
-        // Personal Terminal → Menü açma (başka listener'da işlenecek)
-        if (me.mami.stratocraft.manager.ItemManager.isCustomItem(handItem, "PERSONAL_TERMINAL")) {
-            return; // Personal Terminal başka listener'da işlenecek
+        // ✅ Tüm pusula tıklamalarında ışınlamayı engelle
+        if (event.getAction() == Action.LEFT_CLICK_AIR || 
+            event.getAction() == Action.LEFT_CLICK_BLOCK ||
+            event.getAction() == Action.RIGHT_CLICK_AIR ||
+            event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            event.setCancelled(true);
         }
-        
-        // Shift + Sağ tık ise klan bilgisi göster (onClanStatsView'da işlenecek)
-        if (p.isSneaking()) {
-            return; // onClanStatsView'da işlenecek
-        }
-        
-        // ✅ Normal pusula → Işınlanmayı engelle (Minecraft'ın lodestone sistemi)
-        // Eğer başka özel bir item varsa (örneğin TELEPORT_COMPASS), burada kontrol edilebilir
-        // Şimdilik sadece PERSONAL_TERMINAL özel item olarak kabul ediliyor
-        event.setCancelled(true);
     }
     
     // Oyuncu elinde Kompas ile herhangi bir yerde shift+sağ tık yapar (Kristal yakınında olmasına gerek yok)
@@ -1304,17 +1280,7 @@ public class RitualInteractionListener implements Listener {
             return; // Personal Terminal başka listener'da işlenecek
         }
         
-        // ✅ DÜZELTME: Normal pusula ile ışınlanmayı engelle (sadece özel item'lere güç ver)
-        // Eğer özel bir item değilse, sadece bilgi göster (ışınlanma yok)
-        // Minecraft'ın lodestone pusula sistemi otomatik çalışıyor, bunu engellemek için event'i iptal et
-        
-        // ✅ Özel item kontrolü - sadece özel item'larda özel özellikler çalışmalı
-        // Personal Terminal → Menü açma (başka listener'da işlenecek)
-        if (me.mami.stratocraft.manager.ItemManager.isCustomItem(handItem, "PERSONAL_TERMINAL")) {
-            return; // Personal Terminal başka listener'da işlenecek
-        }
-        
-        // Normal pusula → Işınlanmayı engelle
+        // ✅ TÜM PUSULALARDA IŞINLAMA ENGELLENDİ - Sadece klan bilgisi göster
         event.setCancelled(true);
         
         // Oyuncunun klanını bul (kendi klanı veya yakındaki bir klan)

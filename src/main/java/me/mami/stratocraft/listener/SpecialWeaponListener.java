@@ -59,10 +59,55 @@ public class SpecialWeaponListener implements Listener {
     private final Map<UUID, java.util.List<EntityType>> killedMobs = new HashMap<>(); // L5_4 için öldürülen moblar
     private final Map<UUID, Location> lastLocation = new HashMap<>(); // L5_5 Geri Sar için konum
     private final Map<UUID, Double> lastHealth = new HashMap<>(); // L5_5 Geri Sar için can
+    private final Map<UUID, Long> lastSaveTime = new HashMap<>(); // L5_5 için son kayıt zamanı
     
     public SpecialWeaponListener(Main plugin) {
         this.plugin = plugin;
         this.itemKey = new NamespacedKey(plugin, "special_item_id");
+        
+        // ✅ L5_5 Time Keeper için sürekli kayıt sistemi (her 5 saniyede bir)
+        startTimeKeeperRecordingTask();
+    }
+    
+    /**
+     * L5_5 Time Keeper için sürekli kayıt sistemi başlat
+     * Envanterde olduğu sürece her 5 saniyede bir konum ve can kaydeder
+     */
+    private void startTimeKeeperRecordingTask() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                // Tüm online oyuncuları kontrol et
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    if (player == null || !player.isOnline()) continue;
+                    
+                    // Envanterde time_keeper var mı kontrol et
+                    boolean hasTimeKeeper = false;
+                    for (ItemStack item : player.getInventory().getContents()) {
+                        if (item != null && item.getType() != Material.AIR) {
+                            String itemId = getSpecialItemId(item);
+                            if (itemId != null && itemId.equals("l5_5_time_keeper")) {
+                                hasTimeKeeper = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Envanterde time_keeper varsa kayıt yap
+                    if (hasTimeKeeper) {
+                        UUID playerId = player.getUniqueId();
+                        Long lastSave = lastSaveTime.get(playerId);
+                        
+                        // İlk kayıt veya 5 saniye geçtiyse kayıt yap
+                        if (lastSave == null || System.currentTimeMillis() - lastSave >= 5000) {
+                            lastLocation.put(playerId, player.getLocation().clone());
+                            lastHealth.put(playerId, player.getHealth());
+                            lastSaveTime.put(playerId, System.currentTimeMillis());
+                        }
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 20L); // Her saniye kontrol et (20 tick = 1 saniye)
     }
     
     /**
@@ -616,22 +661,30 @@ public class SpecialWeaponListener implements Listener {
                         }
                     }.runTaskTimer(plugin, 0L, 10L); // 10 tick'te bir çalış (0.5 saniye)
                     
-                } else { // Mod 2: Geri Sar
+                } else { // Mod 2: Geri Sar (5 saniye önceki yere ve cana ışınla)
                     if (checkCooldown(player, 15000)) return; // 15 saniye cooldown
                     
-                    Location savedLoc = lastLocation.get(player.getUniqueId());
-                    Double savedHealth = lastHealth.get(player.getUniqueId());
+                    UUID playerId = player.getUniqueId();
+                    Location savedLoc = lastLocation.get(playerId);
+                    Double savedHealth = lastHealth.get(playerId);
                     
                     if (savedLoc == null || savedHealth == null) {
                         player.sendMessage("§cGeri sarılacak veri yok! (5 saniye önceki konum/can kaydedilmedi)");
                         return;
                     }
                     
+                    // ✅ DÜZELTME: 5 saniye önceki konuma ışınla
+                    if (savedLoc.getWorld() == null || !savedLoc.getWorld().equals(player.getWorld())) {
+                        player.sendMessage("§c5 saniye önceki konum farklı bir dünyada!");
+                        return;
+                    }
+                    
                     // Konumu geri sar
                     player.teleport(savedLoc);
-                    // Canı geri sar
+                    
+                    // ✅ DÜZELTME: 5 saniye önceki canı geri ver
                     double maxHealth = player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
-                    player.setHealth(Math.min(maxHealth, savedHealth));
+                    player.setHealth(Math.min(maxHealth, Math.max(0.0, savedHealth)));
                     
                     player.sendMessage("§e5 saniye önceki konumuna ve canına döndün!");
                     player.getWorld().playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1f, 1.5f);
@@ -1559,26 +1612,7 @@ public class SpecialWeaponListener implements Listener {
         }
     }
     
-    /**
-     * L5_5 için konum ve can kaydetme (her 5 saniyede bir)
-     */
-    @EventHandler
-    public void onPlayerMove(org.bukkit.event.player.PlayerMoveEvent event) {
-        Player player = event.getPlayer();
-        ItemStack item = player.getInventory().getItemInMainHand();
-        if (item == null) return;
-        
-        String itemId = getSpecialItemId(item);
-        if (itemId != null && itemId.equals("l5_5_time_keeper")) {
-            // Her 5 saniyede bir konum ve can kaydet (100 tick = 5 saniye)
-            Long lastSave = lastLocation.containsKey(player.getUniqueId()) ? 
-                System.currentTimeMillis() : 0L;
-            
-            if (System.currentTimeMillis() - lastSave > 5000) { // 5 saniye
-                lastLocation.put(player.getUniqueId(), player.getLocation().clone());
-                lastHealth.put(player.getUniqueId(), player.getHealth());
-            }
-        }
-    }
+    // ✅ DÜZELTME: PlayerMoveEvent kaldırıldı, yerine scheduled task kullanılıyor
+    // Kayıt sistemi startTimeKeeperRecordingTask() metodunda sürekli çalışıyor
 }
 
