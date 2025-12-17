@@ -57,6 +57,7 @@ public class SpecialWeaponListener implements Listener {
     // private final Map<UUID, Boolean> modeSelectionActive = new HashMap<>(); // Mod seçim ekranı aktif mi - Kullanılmıyor
     private final Map<UUID, Long> cooldowns = new HashMap<>(); // Cooldown sistemi
     private final Map<UUID, java.util.List<EntityType>> killedMobs = new HashMap<>(); // L5_4 için öldürülen moblar
+    private final Map<UUID, java.util.List<LivingEntity>> summonedGhouls = new HashMap<>(); // L5_4 için çağırılan hortlaklar
     private final Map<UUID, Location> lastLocation = new HashMap<>(); // L5_5 Geri Sar için konum
     private final Map<UUID, Double> lastHealth = new HashMap<>(); // L5_5 Geri Sar için can
     private final Map<UUID, Long> lastSaveTime = new HashMap<>(); // L5_5 için son kayıt zamanı
@@ -551,8 +552,14 @@ public class SpecialWeaponListener implements Listener {
                         Location loc = target.getLocation().add(0, 1, 0);
                         loc.setDirection(player.getLocation().getDirection());
                         player.teleport(loc);
-                        player.getWorld().createExplosion(loc, 4F, false, false); // Blok kırmayan patlama
+                        // ✅ DÜZELTME: Muazzam patlama (Wither patlaması gibi)
+                        player.getWorld().createExplosion(loc, 8F, false, false); // 4F'den 8F'ye çıkarıldı
+                        // Wither patlaması efekti
+                        player.getWorld().spawnParticle(Particle.SMOKE_LARGE, loc, 50, 2, 2, 2, 0.1);
+                        player.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, loc, 10, 1, 1, 1, 0);
                         player.playSound(loc, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1f);
+                        player.playSound(loc, Sound.ENTITY_WITHER_AMBIENT, 1f, 0.5f);
+                        player.sendMessage("§5§lMUAZZAM PATLAMA!");
                     }
                 } else { // Kara Delik Kalkanı - 3 saniyeliğine okları ve büyüleri emer
                     if (checkCooldown(player, 10000)) return; // 10 saniye cooldown
@@ -585,15 +592,23 @@ public class SpecialWeaponListener implements Listener {
             else if (itemId.equals("l5_2_meteor_caller")) {
                 if (checkCooldown(player, 5000)) return; // 5 Saniye cooldown
 
-                if (mode == 1) { // Meteor
+                if (mode == 1) { // Meteor - 3 tane meteor düşürmeli
                     Block target = player.getTargetBlockExact(50);
                     if (target != null) {
-                        Location skyLoc = target.getLocation().add(0, 30, 0);
-                        Fireball fireball = player.getWorld().spawn(skyLoc, Fireball.class);
-                        fireball.setDirection(new Vector(0, -1, 0)); // Aşağı doğru
-                        fireball.setShooter(player);
-                        fireball.setYield(3F); // Patlama gücü
-                        player.sendMessage("§6Meteor çağırıldı!");
+                        Location baseLoc = target.getLocation();
+                        // ✅ DÜZELTME: 3 meteor düşür (küçük açısal farklarla)
+                        for (int i = 0; i < 3; i++) {
+                            double angle = (i - 1) * 0.3; // -0.3, 0, 0.3 radyan açı
+                            Location skyLoc = baseLoc.clone().add(
+                                Math.sin(angle) * 2, 30, Math.cos(angle) * 2
+                            );
+                            Fireball fireball = player.getWorld().spawn(skyLoc, Fireball.class);
+                            fireball.setDirection(new Vector(0, -1, 0)); // Aşağı doğru
+                            fireball.setShooter(player);
+                            fireball.setYield(3F); // Patlama gücü
+                        }
+                        player.sendMessage("§6§l3 METEOR ÇAĞIRILDI!");
+                        player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SHOOT, 1f, 0.8f);
                     }
                 } else { // Yer Yaran - Shift+Sağ Tık ile yarık açılır
                     // Shift kontrolü
@@ -809,21 +824,15 @@ public class SpecialWeaponListener implements Listener {
             
             // L5_3: Titan Katili
             else if (itemId.equals("l5_3_titan_slayer")) {
-                if (mode == 2) { // MIZRAK YAĞMURU (10 mızrak düşmeli)
+                if (mode == 2) { // MIZRAK YAĞMURU - Fırlatıldığında havada çoğalır
+                    // ✅ DÜZELTME: Mızrak fırlatıldığında havada çoğalmalı (ProjectileHitEvent'te işlenecek)
+                    // Burada sadece mızrağı fırlat ve tag ekle
                     if (checkCooldown(player, 5000)) return;
-                    Block targetBlock = player.getTargetBlockExact(30);
-                    if (targetBlock != null) {
-                        Location sky = targetBlock.getLocation().add(0, 15, 0);
-                        for(int i=0; i<10; i++) { // 5'ten 10'a çıkarıldı
-                            final int index = i;
-                            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                                Trident tr = player.getWorld().spawn(sky.clone().add(Math.random()*4-2, 0, Math.random()*4-2), Trident.class);
-                                tr.setShooter(player);
-                                tr.setVelocity(new Vector(0, -1, 0).multiply(2)); // Aşağı doğru hızlı düş
-                            }, index*3L); // 3 tick arayla (daha hızlı)
-                        }
-                        player.sendMessage("§cMızrak yağmuru başladı!");
-                    }
+                    Trident trident = player.launchProjectile(Trident.class);
+                    trident.addScoreboardTag("titan_slayer_throw"); // Tag ekle, ProjectileHitEvent'te çoğalacak
+                    trident.setVelocity(player.getLocation().getDirection().multiply(2.0));
+                    player.sendMessage("§cMızrak fırlatıldı! Havada çoğalacak...");
+                    player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_THROW, 1f, 1f);
                 }
                 // Mod 1 (Yüzde hasar) onDamage eventinde işlenir
             }
@@ -838,6 +847,15 @@ public class SpecialWeaponListener implements Listener {
                         return;
                     }
                     
+                    // ✅ DÜZELTME: Önceki hortlakları temizle
+                    java.util.List<LivingEntity> previousGhouls = summonedGhouls.getOrDefault(player.getUniqueId(), new java.util.ArrayList<>());
+                    for (LivingEntity ghoul : previousGhouls) {
+                        if (ghoul.isValid()) {
+                            ghoul.remove();
+                        }
+                    }
+                    previousGhouls.clear();
+                    
                     int count = Math.min(3, mobs.size());
                     for (int i = 0; i < count; i++) {
                         EntityType mobType = mobs.get(mobs.size() - 1 - i); // Son 3'ü al
@@ -845,29 +863,52 @@ public class SpecialWeaponListener implements Listener {
                             Entity summoned = player.getWorld().spawn(player.getLocation().add(Math.random()*3-1.5, 0, Math.random()*3-1.5), 
                                 (Class<? extends LivingEntity>) mobType.getEntityClass());
                             if (summoned instanceof LivingEntity) {
-                                ((LivingEntity) summoned).setCustomName("§2Hortlak");
-                                ((LivingEntity) summoned).setCustomNameVisible(true);
-                                // Hedef belirleme AI'sı kaldırılabilir
+                                LivingEntity ghoul = (LivingEntity) summoned;
+                                ghoul.setCustomName("§2Hortlak");
+                                ghoul.setCustomNameVisible(true);
+                                // Oyuncunun safında savaşması için AI ayarla
+                                ghoul.setAI(true);
+                                // Hedef belirleme - oyuncunun düşmanlarını hedefle
+                                previousGhouls.add(ghoul);
                             }
                         } catch (Exception e) {
                             // Entity type spawn edilemezse atla
                         }
                     }
+                    summonedGhouls.put(player.getUniqueId(), previousGhouls);
                     player.sendMessage("§5" + count + " hortlak yükseldi!");
-                } else { // PATLAT - Yakındaki tüm hortlakları patlat
+                } else { // PATLAT - Çağırdığın hortlakları patlat (büyük alan hasarı)
+                    java.util.List<LivingEntity> ghouls = summonedGhouls.getOrDefault(player.getUniqueId(), new java.util.ArrayList<>());
+                    if (ghouls.isEmpty()) {
+                        player.sendMessage("§cÇağırdığın hortlak yok!");
+                        return;
+                    }
+                    
                     int count = 0;
-                    for (Entity e : player.getNearbyEntities(10, 10, 10)) {
-                        if (e instanceof LivingEntity && e.getCustomName() != null && 
-                            e.getCustomName().contains("Hortlak")) {
-                            e.getWorld().createExplosion(e.getLocation(), 2f, false, false);
-                            e.remove();
+                    double totalDamage = 0;
+                    for (LivingEntity ghoul : new java.util.ArrayList<>(ghouls)) {
+                        if (ghoul.isValid()) {
+                            // ✅ DÜZELTME: Büyük alan hasarı (2f'den 5f'ye çıkarıldı)
+                            ghoul.getWorld().createExplosion(ghoul.getLocation(), 5f, false, false);
+                            // Etrafındaki entitylere hasar ver
+                            for (Entity nearby : ghoul.getNearbyEntities(5, 5, 5)) {
+                                if (nearby instanceof LivingEntity && nearby != player && nearby != ghoul) {
+                                    ((LivingEntity) nearby).damage(10, player); // 10 hasar
+                                    totalDamage += 10;
+                                }
+                            }
+                            ghoul.remove();
                             count++;
                         }
                     }
+                    ghouls.clear();
+                    summonedGhouls.put(player.getUniqueId(), ghouls);
+                    
                     if (count > 0) {
-                        player.sendMessage("§c" + count + " hortlak patlatıldı!");
-                    } else {
-                        player.sendMessage("§cYakında hortlak yok!");
+                        player.sendMessage("§c§lRUH PATLAMASI! §e" + count + " hortlak patlatıldı! §c" + 
+                            String.format("%.0f", totalDamage) + " hasar verildi!");
+                        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_WITHER_DEATH, 1f, 0.8f);
+                        player.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, player.getLocation(), count * 3, 5, 5, 5, 0.1);
                     }
                 }
             }
@@ -1558,9 +1599,39 @@ public class SpecialWeaponListener implements Listener {
             event.getEntity().getWorld().createExplosion(event.getEntity().getLocation(), 2F, false, false);
         }
         
-        // Mızrak (Zehirli Mızrak)
+        // Mızrak (Zehirli Mızrak veya Titan Katili)
         if (event.getEntity() instanceof Trident) {
-            // Trident yere düştüyse veya birine çarptıysa zehir bulutu
+            Trident trident = (Trident) event.getEntity();
+            Player shooter = null;
+            if (trident.getShooter() instanceof Player) {
+                shooter = (Player) trident.getShooter();
+            }
+            
+            // ✅ DÜZELTME: l5_3_titan_slayer Mod 2 - Mızrak fırlatıldığında havada çoğalmalı
+            if (shooter != null && trident.getScoreboardTags().contains("titan_slayer_throw")) {
+                // Mızrak yağmuru - 10 mızrak düşer
+                Location hitLoc = event.getHitBlock() != null ? 
+                    event.getHitBlock().getLocation() : 
+                    (event.getHitEntity() != null ? event.getHitEntity().getLocation() : trident.getLocation());
+                
+                Location sky = hitLoc.clone().add(0, 15, 0);
+                for (int i = 0; i < 10; i++) {
+                    final int index = i;
+                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                        Trident newTrident = shooter.getWorld().spawn(
+                            sky.clone().add(Math.random() * 4 - 2, 0, Math.random() * 4 - 2), 
+                            Trident.class
+                        );
+                        newTrident.setShooter(shooter);
+                        newTrident.setVelocity(new Vector(0, -1, 0).multiply(2)); // Aşağı doğru hızlı düş
+                    }, index * 3L); // 3 tick arayla
+                }
+                shooter.sendMessage("§c§lMIZRAK YAĞMURU!");
+                trident.remove(); // Orijinal mızrağı kaldır
+                return;
+            }
+            
+            // Zehirli Mızrak - Trident yere düştüyse veya birine çarptıysa zehir bulutu
             if (event.getHitBlock() != null || event.getHitEntity() != null) {
                 AreaEffectCloud cloud = (AreaEffectCloud) event.getEntity().getWorld().spawnEntity(
                     event.getEntity().getLocation(), EntityType.AREA_EFFECT_CLOUD);

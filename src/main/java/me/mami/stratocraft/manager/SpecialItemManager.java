@@ -200,11 +200,22 @@ public class SpecialItemManager {
         long elapsed = System.currentTimeMillis() - startTime;
 
         if (elapsed >= spyDuration) {
-            // GUI menüsü aç
+            // ✅ DÜZELTME: GUI menüsü aç (sadece bir kez açılmalı)
+            // Eğer menü zaten açıksa tekrar açma
+            try {
+                String currentTitle = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                    .serialize(player.getOpenInventory().title());
+                if (currentTitle.contains("Casusluk:")) {
+                    return; // Menü zaten açık
+                }
+            } catch (Exception e) {
+                // Hata olursa devam et
+            }
             openSpyMenu(player, target);
             spyStartTimes.remove(player);
             spyTargets.remove(player);
         }
+        // Progress gösterimi kaldırıldı (performans için)
     }
     
     /**
