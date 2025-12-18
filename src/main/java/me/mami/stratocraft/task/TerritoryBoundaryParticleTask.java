@@ -80,6 +80,7 @@ public class TerritoryBoundaryParticleTask {
             return;
         }
         
+        // ✅ OPTİMİZE: Sadece aynı dünyadaki oyuncuları kontrol et (performans)
         // Tüm online oyuncuları kontrol et
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player == null || !player.isOnline()) continue;
@@ -184,8 +185,15 @@ public class TerritoryBoundaryParticleTask {
         // Sınır boyunca partikül göster
         int particleCount = 0;
         
+        // ✅ OPTİMİZE: boundaryLine boyutunu kontrol et (çok büyükse sadece bir kısmını işle)
+        int boundarySize = boundaryLine.size();
+        int maxBoundaryPoints = config.getMaxParticlesPerPlayer() * 2; // Partikül limitinin 2 katı kadar nokta kontrol et
+        
         // ✅ OPTİMİZE: Her X-Z koordinatında, sadece oyuncunun Y seviyesinde partikül göster
-        for (Location boundaryLoc : boundaryLine) {
+        // Sadece ilk maxBoundaryPoints kadar noktayı kontrol et (performans için)
+        int pointsToCheck = Math.min(boundarySize, maxBoundaryPoints);
+        for (int i = 0; i < pointsToCheck; i++) {
+            Location boundaryLoc = boundaryLine.get(i);
             // ✅ YENİ: Config'den mesafe limitini al
             int maxParticleDistance = config.getMaxParticleDistance();
             
@@ -206,7 +214,8 @@ public class TerritoryBoundaryParticleTask {
             }
             
             // ✅ OPTİMİZE: Daha seyrek partiküller (her 15+ blokta bir)
-            if (particleCount % (int) spacing != 0) {
+            // Spacing kontrolü: Her N partikülden birini göster
+            if (particleCount > 0 && particleCount % (int) spacing != 0) {
                 particleCount++;
                 continue;
             }

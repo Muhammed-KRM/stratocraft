@@ -23,79 +23,82 @@ public class DrillTask extends BukkitRunnable {
 
     @Override
     public void run() {
-        // Her klan için Otomatik Madenci kontrolü
+        // ✅ OPTİMİZE: Sadece chunk'ı yüklü olan klanlar için çalış
         for (Clan clan : territoryManager.getClanManager().getAllClans()) {
+            if (clan == null) continue;
+            
             for (Structure s : clan.getStructures()) {
-                if (s.getType() == Structure.Type.AUTO_DRILL) {
-                    // Otomatik maden üretimi (her 30 saniyede bir)
-                    Location drillLoc = s.getLocation();
-                    
-                    // CHUNK YÜKLEME KONTROLÜ - Sadece chunk yüklüyse çalış
-                    if (!drillLoc.getChunk().isLoaded()) {
-                        continue; // Chunk yüklü değilse atla
-                    }
-                    
-                    // YAKIT KONTROLÜ - Matkabın altında veya yanında kömür olmalı
-                    boolean hasFuel = checkFuel(drillLoc);
-                    if (!hasFuel) {
-                        // Yakıt yok - üretimi durdur ve uyarı gönder
-                        for (org.bukkit.entity.Player member : Bukkit.getOnlinePlayers()) {
-                            if (clan.getMembers().containsKey(member.getUniqueId()) &&
-                                member.getLocation().distance(drillLoc) <= 50) {
-                                member.sendMessage("§c§l[MATKAP] Yakıt yok! Kömür ekleyin.");
-                            }
+                if (s.getType() != Structure.Type.AUTO_DRILL) continue;
+                
+                // Otomatik maden üretimi (her 30 saniyede bir)
+                Location drillLoc = s.getLocation();
+                if (drillLoc == null || drillLoc.getWorld() == null) continue;
+                
+                // ✅ OPTİMİZE: CHUNK YÜKLEME KONTROLÜ - Sadece chunk yüklüyse çalış
+                if (!drillLoc.getChunk().isLoaded()) {
+                    continue; // Chunk yüklü değilse atla
+                }
+                
+                // YAKIT KONTROLÜ - Matkabın altında veya yanında kömür olmalı
+                boolean hasFuel = checkFuel(drillLoc);
+                if (!hasFuel) {
+                    // Yakıt yok - üretimi durdur ve uyarı gönder
+                    for (org.bukkit.entity.Player member : Bukkit.getOnlinePlayers()) {
+                        if (clan.getMembers().containsKey(member.getUniqueId()) &&
+                            member.getLocation().distance(drillLoc) <= 50) {
+                            member.sendMessage("§c§l[MATKAP] Yakıt yok! Kömür ekleyin.");
                         }
-                        continue; // Bu matkap için üretimi durdur
                     }
-                    
-                    // Yakıt tüket (her üretimde 1 kömür)
-                    consumeFuel(drillLoc);
-                    
-                    // Madenci bloğunun altına maden düşür
-                    Block outputBlock = drillLoc.clone().add(0, -1, 0).getBlock();
-                    
-                    // Eğer çıktı bloğu hava ise, rastgele maden düşür
-                    if (outputBlock.getType() == Material.AIR || outputBlock.getType() == Material.CHEST) {
-                        Material ore = getRandomOre(s.getLevel());
-                        if (ore != null) {
-                            if (outputBlock.getType() == Material.CHEST) {
-                                // Sandığa ekle
-                                org.bukkit.block.Chest chest = (org.bukkit.block.Chest) outputBlock.getState();
-                                ItemStack oreItem = new ItemStack(ore, random.nextInt(3) + 1);
-                                
-                                // Sandık dolu mu kontrol et
-                                if (chest.getInventory().firstEmpty() == -1) {
-                                    // Sandık dolu - üretimi durdur
-                                    // Oyunculara uyarı göndermek için klan üyelerini bul
-                                    for (org.bukkit.entity.Player member : Bukkit.getOnlinePlayers()) {
-                                        if (clan.getMembers().containsKey(member.getUniqueId()) &&
-                                            member.getLocation().distance(drillLoc) <= 50) {
-                                            member.sendMessage("§c§l[MATKAP] Sandık dolu! Üretim durdu.");
-                                        }
+                    continue; // Bu matkap için üretimi durdur
+                }
+                
+                // Yakıt tüket (her üretimde 1 kömür)
+                consumeFuel(drillLoc);
+                
+                // Madenci bloğunun altına maden düşür
+                Block outputBlock = drillLoc.clone().add(0, -1, 0).getBlock();
+                
+                // Eğer çıktı bloğu hava ise, rastgele maden düşür
+                if (outputBlock.getType() == Material.AIR || outputBlock.getType() == Material.CHEST) {
+                    Material ore = getRandomOre(s.getLevel());
+                    if (ore != null) {
+                        if (outputBlock.getType() == Material.CHEST) {
+                            // Sandığa ekle
+                            org.bukkit.block.Chest chest = (org.bukkit.block.Chest) outputBlock.getState();
+                            ItemStack oreItem = new ItemStack(ore, random.nextInt(3) + 1);
+                            
+                            // Sandık dolu mu kontrol et
+                            if (chest.getInventory().firstEmpty() == -1) {
+                                // Sandık dolu - üretimi durdur
+                                // Oyunculara uyarı göndermek için klan üyelerini bul
+                                for (org.bukkit.entity.Player member : Bukkit.getOnlinePlayers()) {
+                                    if (clan.getMembers().containsKey(member.getUniqueId()) &&
+                                        member.getLocation().distance(drillLoc) <= 50) {
+                                        member.sendMessage("§c§l[MATKAP] Sandık dolu! Üretim durdu.");
                                     }
-                                    continue; // Bu matkap için üretimi durdur
                                 }
-                                
-                                // Sandığa ekle
-                                Map<Integer, ItemStack> remaining = chest.getInventory().addItem(oreItem);
-                                if (!remaining.isEmpty()) {
-                                    // Eğer eklenemeyen eşya varsa (nadir durum), üretimi durdur
-                                    continue;
-                                }
-                            } else {
-                                // Sadece sandık yoksa yere düşür (lag önleme: despawn süresini kısalt)
-                                org.bukkit.entity.Item item = drillLoc.getWorld().dropItemNaturally(
-                                    drillLoc.clone().add(0, -1, 0),
-                                    new ItemStack(ore, random.nextInt(3) + 1)
-                                );
-                                // Despawn süresini 2 dakikaya düşür (normal 5 dakika)
-                                item.setPickupDelay(20);
-                                org.bukkit.Bukkit.getScheduler().runTaskLater(
-                                    org.bukkit.Bukkit.getPluginManager().getPlugin("Stratocraft"),
-                                    () -> { if (item.isValid() && !item.isDead()) item.remove(); },
-                                    2400L // 2 dakika
-                                );
+                                continue; // Bu matkap için üretimi durdur
                             }
+                            
+                            // Sandığa ekle
+                            Map<Integer, ItemStack> remaining = chest.getInventory().addItem(oreItem);
+                            if (!remaining.isEmpty()) {
+                                // Eğer eklenemeyen eşya varsa (nadir durum), üretimi durdur
+                                continue;
+                            }
+                        } else {
+                            // Sadece sandık yoksa yere düşür (lag önleme: despawn süresini kısalt)
+                            org.bukkit.entity.Item item = drillLoc.getWorld().dropItemNaturally(
+                                drillLoc.clone().add(0, -1, 0),
+                                new ItemStack(ore, random.nextInt(3) + 1)
+                            );
+                            // Despawn süresini 2 dakikaya düşür (normal 5 dakika)
+                            item.setPickupDelay(20);
+                            org.bukkit.Bukkit.getScheduler().runTaskLater(
+                                org.bukkit.Bukkit.getPluginManager().getPlugin("Stratocraft"),
+                                () -> { if (item.isValid() && !item.isDead()) item.remove(); },
+                                2400L // 2 dakika
+                            );
                         }
                     }
                 }

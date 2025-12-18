@@ -19,7 +19,7 @@ public class TerritoryConfig {
     private Particle boundaryParticleType = Particle.REDSTONE;
     private Color boundaryParticleColor = Color.GREEN;
     private double boundaryParticleDensity = 0.5;
-    private int boundaryParticleUpdateInterval = 20;
+    private int boundaryParticleUpdateInterval = 40; // ✅ OPTİMİZE: 20 -> 40 tick (2 saniye) - performans için
     private int boundaryParticleVisibleDistance = 100;
     private double boundaryParticleSpacing = 2.0;
     
@@ -74,7 +74,7 @@ public class TerritoryConfig {
         String colorStr = config.getString("clan.territory.boundary-particle.color", "GREEN");
         boundaryParticleColor = parseColor(colorStr);
         boundaryParticleDensity = config.getDouble("clan.territory.boundary-particle.density", 0.5);
-        boundaryParticleUpdateInterval = config.getInt("clan.territory.boundary-particle.update-interval", 20);
+        boundaryParticleUpdateInterval = config.getInt("clan.territory.boundary-particle.update-interval", 40); // ✅ OPTİMİZE: Default 40 tick (2 saniye)
         boundaryParticleVisibleDistance = config.getInt("clan.territory.boundary-particle.visible-distance", 100);
         boundaryParticleSpacing = config.getDouble("clan.territory.boundary-particle.particle-spacing", 2.0);
         

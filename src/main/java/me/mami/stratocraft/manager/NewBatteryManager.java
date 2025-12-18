@@ -1,19 +1,22 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
-import java.util.*;
+import me.mami.stratocraft.Main;
 
 /**
  * Yeni Esnek Batarya Sistemi
- * Her bataryanın kendine özel tarif kontrol fonksiyonu var
+ * Her bataryanin kendine ozel tarif kontrol fonksiyonu var
  */
 public class NewBatteryManager {
     
@@ -1248,7 +1251,7 @@ public class NewBatteryManager {
                     currentLoc.add(0, -1, 0);
                     player.getWorld().spawnParticle(org.bukkit.Particle.FLAME, currentLoc, 5, 0.3, 0.3, 0.3, 0.05);
                 }
-            }.runTaskTimer(plugin, i * 10L, 2L);
+            }.runTaskTimer(plugin, i * 10L, 10L); // ✅ OPTİMİZE: Her 10 tick'te bir (0.5 saniye) - performans için
         }
         
         player.sendMessage("§c☄ Meteor Yağmuru başladı! (Meteor sayısı: " + meteorCount + ")");
@@ -1816,7 +1819,7 @@ public class NewBatteryManager {
                     }
                 }
             }
-        }.runTaskTimer(plugin, 0L, 1L); // Her tick çalış
+        }.runTaskTimer(plugin, 0L, 5L); // ✅ OPTİMİZE: Her 5 tick'te bir (0.25 saniye) - performans için
         
         player.sendMessage("§4§l💥 ALAN YOK EDİCİ AKTİF! 💥");
         player.sendMessage("§eBloklar yok ediliyor...");
@@ -1897,7 +1900,7 @@ public class NewBatteryManager {
                     }
                 }
             }
-        }.runTaskTimer(plugin, 0L, 1L); // Her tick çalış
+        }.runTaskTimer(plugin, 0L, 5L); // ✅ OPTİMİZE: Her 5 tick'te bir (0.25 saniye) - performans için
         
         player.sendMessage("§4§l⛰ DAĞ YOK EDİCİ AKTİF! ⛰");
         player.sendMessage("§eBloklar yok ediliyor...");

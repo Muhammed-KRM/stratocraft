@@ -361,6 +361,9 @@ public class Main extends JavaPlugin {
         this.territoryConfig = territoryConfig;
         
         // ✅ YENİ: PlayerFeatureMonitor başlat (oyuncu özellik kontrol sistemi)
+        // ⚠️ OPTİMİZE: BuffTask zaten bu işi yapıyor, gereksiz tekrarı önlemek için devre dışı
+        // Eğer gerekirse interval'i artırarak açılabilir (şu an 100 tick = 5 saniye)
+        /*
         if (clanManager != null && buffManager != null) {
             try {
                 playerFeatureMonitor = new me.mami.stratocraft.task.PlayerFeatureMonitor(
@@ -372,6 +375,7 @@ public class Main extends JavaPlugin {
                 e.printStackTrace();
             }
         }
+        */
         // YENİ: StructureActivationListener'a ClanRankSystem ve StructureCoreManager ekle
         Bukkit.getPluginManager().registerEvents(
             new StructureActivationListener(clanManager, territoryManager, 
@@ -560,7 +564,7 @@ public class Main extends JavaPlugin {
         // Güç değiştiğinde seviye değişebilir, oyuncu adını güncelle
         if (stratocraftPowerSystem != null && configManager != null) {
             long updateInterval = configManager.getGameBalanceConfig() != null ? 
-                configManager.getGameBalanceConfig().getPowerSystemPlayerNameUpdateInterval() : 600L;
+                configManager.getGameBalanceConfig().getPowerSystemPlayerNameUpdateInterval() : 1200L; // ✅ OPTİMİZE: Default 1200L (30 saniye) - performans için
             new org.bukkit.scheduler.BukkitRunnable() {
                 @Override
                 public void run() {
@@ -641,19 +645,23 @@ public class Main extends JavaPlugin {
         // OPTİMİZE: 20L'den 40L'ye çıkarıldı (saniyede 1'den 0.5'e)
         new me.mami.stratocraft.task.StructureEffectTask(structureEffectManager).runTaskTimer(this, 20L, 40L); // YAPI EFEKTLERİ
 
-        // Casusluk Dürbünü için Scheduler - PERFORMANS OPTİMİZASYONU
-        // RayTrace ağır bir işlem olduğu için sıklığı azaltıldı (5 tick -> 20 tick = 1 saniye)
+        // ✅ OPTİMİZE: Casusluk Dürbünü için Scheduler - PERFORMANS OPTİMİZASYONU
+        // RayTrace ağır bir işlem olduğu için sıklığı azaltıldı ve sadece dürbün kullanan oyuncular için çalışır
         // Event bazlı kontrol için SpecialItemListener'da PlayerInteractEvent kullanılabilir
         new org.bukkit.scheduler.BukkitRunnable() {
             @Override
             public void run() {
+                // ✅ OPTİMİZE: Sadece dürbün kullanan oyuncuları kontrol et
                 for (Player player : Bukkit.getOnlinePlayers()) {
+                    if (player == null || !player.isOnline()) continue;
+                    
                     ItemStack item = player.getInventory().getItemInMainHand();
                     // Özel Casusluk Dürbünü kontrolü
                     if (item != null && item.getType() == org.bukkit.Material.SPYGLASS && 
                         me.mami.stratocraft.manager.ItemManager.isCustomItem(item, "CASUSLUK_DURBUN")) {
                         int maxDistance = configManager != null && configManager.getGameBalanceConfig() != null 
                             ? configManager.getGameBalanceConfig().getMainRayTraceMaxDistance() : 50;
+                        // ✅ OPTİMİZE: RayTrace async thread'de yapılabilir ama şimdilik sync'te kalıyor
                         org.bukkit.util.RayTraceResult result = player.rayTraceEntities(maxDistance);
                         // Null kontrolü: Oyuncu boşluğa bakıyorsa result null olabilir
                         if (result != null) {
@@ -663,13 +671,15 @@ public class Main extends JavaPlugin {
                             specialItemManager.clearSpyData(player);
                         }
                     } else {
+                        // Dürbün kullanmıyorsa veriyi temizle (sadece bir kez)
+                        // ✅ OPTİMİZE: hasSpyData kontrolü yerine direkt temizle (performans için)
                         specialItemManager.clearSpyData(player);
                     }
                 }
             }
         }.runTaskTimer(this, 0L, 
             configManager != null && configManager.getGameBalanceConfig() != null 
-                ? configManager.getGameBalanceConfig().getMainRayTraceInterval() : 20L);
+                ? Math.max(40L, configManager.getGameBalanceConfig().getMainRayTraceInterval()) : 40L); // ✅ OPTİMİZE: En az 2 saniye (40 tick)
         long mobRideInterval = configManager != null && configManager.getGameBalanceConfig() != null 
             ? configManager.getGameBalanceConfig().getMobRideTaskInterval() : 5L;
         new MobRideTask(mobManager).runTaskTimer(this, mobRideInterval, mobRideInterval);
@@ -1092,10 +1102,13 @@ public class Main extends JavaPlugin {
         org.bukkit.Bukkit.getScheduler().cancelTasks(this);
         
         // ✅ YENİ: PlayerFeatureMonitor durdur
+        // ⚠️ OPTİMİZE: Devre dışı bırakıldı (BuffTask zaten yapıyor)
+        /*
         if (playerFeatureMonitor != null) {
             playerFeatureMonitor.stop();
             getLogger().info("PlayerFeatureMonitor durduruldu.");
         }
+        */
         
         // ✅ YENİ: TerritoryBoundaryParticleTask durdur
         if (boundaryParticleTask != null) {

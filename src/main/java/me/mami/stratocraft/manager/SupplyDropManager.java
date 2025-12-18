@@ -148,7 +148,7 @@ public class SupplyDropManager {
                     cancel();
                 }
             }
-        }.runTaskTimer(plugin, 0L, 1L);
+        }.runTaskTimer(plugin, 0L, 5L); // ✅ OPTİMİZE: Her 5 tick'te bir (0.25 saniye) - performans için
 
         // Global mesaj (düşmeden önce)
         plugin.getServer().broadcastMessage("§6§l════════════════════════════");
@@ -249,7 +249,7 @@ public class SupplyDropManager {
 
                         ticks++;
                     }
-                }.runTaskTimer(plugin, 0L, 1L);
+                }.runTaskTimer(plugin, 0L, 5L); // ✅ OPTİMİZE: Her 5 tick'te bir (0.25 saniye) - performans için
 
                 // Global mesaj
                 plugin.getServer().broadcastMessage("§6§l════════════════════════════");

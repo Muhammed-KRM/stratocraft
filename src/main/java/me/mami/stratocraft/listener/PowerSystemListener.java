@@ -5,6 +5,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import java.util.Collection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -330,10 +331,17 @@ public class PowerSystemListener implements Listener {
     
     /**
      * Tüm online oyuncuların adlarını güncelle (güç değiştiğinde çağrılabilir)
+     * ✅ OPTİMİZE: Sadece online ve geçerli oyuncuları güncelle
      */
     public void updateAllPlayerNames() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            updatePlayerName(player);
+        // ✅ OPTİMİZE: Online oyuncu yoksa hiçbir şey yapma
+        Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+        if (onlinePlayers.isEmpty()) return;
+        
+        for (Player player : onlinePlayers) {
+            if (player != null && player.isOnline()) {
+                updatePlayerName(player);
+            }
         }
     }
 }

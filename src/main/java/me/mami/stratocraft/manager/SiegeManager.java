@@ -334,7 +334,7 @@ public class SiegeManager {
         }
         
         // Sandık bulma ve işleme işini zamana yay (lag önleme)
-        new ChestScannerAndLootTask(chunksToScan, attacker, center, searchRadius).runTaskTimer(plugin, 1L, 1L);
+        new ChestScannerAndLootTask(chunksToScan, attacker, center, searchRadius).runTaskTimer(plugin, 1L, 5L); // ✅ OPTİMİZE: Her 5 tick'te bir (0.25 saniye) - performans için (1L -> 5L)
     }
     
     /**
@@ -385,7 +385,7 @@ public class SiegeManager {
             if (currentChunkIndex >= chunksToScan.size()) {
                 if (!foundChests.isEmpty()) {
                     new ChestLootTask(foundChests, attacker, 0).runTaskTimer(
-                        me.mami.stratocraft.Main.getInstance(), 1L, 1L);
+                        me.mami.stratocraft.Main.getInstance(), 1L, 5L); // ✅ OPTİMİZE: Her 5 tick'te bir (0.25 saniye) - performans için (1L -> 5L)
                 }
                 this.cancel();
             }

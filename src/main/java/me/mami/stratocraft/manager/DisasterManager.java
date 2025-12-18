@@ -829,9 +829,12 @@ public class DisasterManager {
             );
             disasterBossBar.setProgress(healthPercent);
             
-            // Tüm oyunculara ekle
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                disasterBossBar.addPlayer(player);
+            // ✅ OPTİMİZE: Tüm oyunculara ekle (sadece bir kez, sonraki güncellemelerde ekleme yapılmaz)
+            Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+            for (Player player : onlinePlayers) {
+                if (player != null && player.isOnline()) {
+                    disasterBossBar.addPlayer(player);
+                }
             }
             
             plugin.getLogger().info("BossBar oluşturuldu: " + disasterName + " (Can: " + health + "/" + maxHealth + ")");
@@ -2034,7 +2037,7 @@ public class DisasterManager {
                     }
                 }
             }
-        }.runTaskTimer(plugin, 0L, 5L);
+        }.runTaskTimer(plugin, 0L, 20L); // ✅ OPTİMİZE: Her saniye (20 tick) - performans için
     }
     
     /**

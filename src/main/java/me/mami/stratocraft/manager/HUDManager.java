@@ -106,12 +106,15 @@ public class HUDManager {
      * HUD sistemini başlat
      */
     public void start() {
-        // Her saniye güncelle
+        // ✅ OPTİMİZE: Her 2 saniyede bir güncelle (performans için)
         updateTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            // Sadece online ve aktif oyuncular için güncelle
             for (Player player : Bukkit.getOnlinePlayers()) {
-                updateHUD(player);
+                if (player != null && player.isOnline()) {
+                    updateHUD(player);
+                }
             }
-        }, 0L, 20L); // Her saniye (20 tick)
+        }, 0L, 40L); // ✅ OPTİMİZE: Her 2 saniye (40 tick) - performans için
     }
     
     /**

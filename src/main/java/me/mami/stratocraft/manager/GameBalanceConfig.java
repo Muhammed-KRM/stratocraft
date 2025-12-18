@@ -94,7 +94,7 @@ public class GameBalanceConfig {
     
     // PowerSystemListener ayarları
     private long powerSystemSlotUpdateCooldown = 500L;  // Slot değişikliği cooldown (ms)
-    private long powerSystemPlayerNameUpdateInterval = 600L; // Oyuncu adı güncelleme aralığı (tick)
+    private long powerSystemPlayerNameUpdateInterval = 1200L; // ✅ OPTİMİZE: Oyuncu adı güncelleme aralığı (tick) - 600L -> 1200L (30 saniye) - performans için
     
     // ========== MAIN SYSTEM ==========
     
@@ -380,7 +380,7 @@ public class GameBalanceConfig {
         // Power System
         path = "game-balance.power-system.";
         powerSystemSlotUpdateCooldown = config.getLong(path + "slot-update-cooldown", 500L);
-        powerSystemPlayerNameUpdateInterval = config.getLong(path + "player-name-update-interval", 600L);
+        powerSystemPlayerNameUpdateInterval = config.getLong(path + "player-name-update-interval", 1200L); // ✅ OPTİMİZE: Default 1200L (30 saniye)
         
         // Main System
         path = "game-balance.main.";

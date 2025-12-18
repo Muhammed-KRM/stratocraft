@@ -43,11 +43,13 @@ public class DataManager {
     private static final int DATA_VERSION = 1;
     
     // Backup ayarları
-    private static final int MAX_BACKUPS = 5; // Son 5 backup saklanır
+    private static final int MAX_BACKUPS = 2; // ✅ OPTİMİZE: Son 2 backup saklanır (performans için azaltıldı: 5 -> 2)
     private static final String BACKUP_FOLDER = "backups";
+    private static final long BACKUP_INTERVAL = 3600000L; // ✅ OPTİMİZE: 1 saat (ms) - backup oluşturma sıklığı (performans için)
+    private long lastBackupTime = 0; // Son backup zamanı
     
     // Auto-save ayarları (config'den yüklenecek)
-    private long autoSaveInterval = 600000L; // 10 dakika (ms) - default (optimize edildi)
+    private long autoSaveInterval = 1800000L; // ✅ OPTİMİZE: 30 dakika (ms) - performans için artırıldı (10 dakikadan 30 dakikaya)
     private boolean autoSaveEnabled = true;
     private org.bukkit.scheduler.BukkitTask autoSaveTask;
     
@@ -100,7 +102,7 @@ public class DataManager {
     private void loadConfig() {
         org.bukkit.configuration.file.FileConfiguration config = plugin.getConfig();
         if (config != null) {
-            autoSaveInterval = config.getLong("data-manager.auto-save-interval", 600000L); // 10 dakika default (optimize edildi)
+            autoSaveInterval = config.getLong("data-manager.auto-save-interval", 1800000L); // ✅ OPTİMİZE: 30 dakika default (performans için artırıldı)
             autoSaveEnabled = config.getBoolean("data-manager.auto-save-enabled", true);
             useSQLite = config.getBoolean("data-manager.use-sqlite", true); // SQLite varsayılan olarak aktif
         }
@@ -113,15 +115,15 @@ public class DataManager {
         // Eğer zaten task'lar varsa önce durdur
         stopCleanupTasks();
         
-        // Geçici dosya temizleme (her 1 saatte bir)
+        // ✅ OPTİMİZE: Geçici dosya temizleme (her 3 saatte bir - performans için)
         tempFileCleanupTask = org.bukkit.Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
             cleanupTempFiles();
-        }, 72000L, 72000L); // 1 saat = 72000 tick
+        }, 216000L, 216000L); // ✅ OPTİMİZE: 3 saat = 216000 tick (1 saatten 3 saate çıkarıldı)
         
-        // Backup temizleme (her 6 saatte bir)
+        // ✅ OPTİMİZE: Backup temizleme (her 12 saatte bir - performans için)
         backupCleanupTask = org.bukkit.Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
             cleanupOldBackupsPeriodic();
-        }, 432000L, 432000L); // 6 saat = 432000 tick
+        }, 864000L, 864000L); // ✅ OPTİMİZE: 12 saat = 864000 tick (6 saatten 12 saate çıkarıldı)
         
         plugin.getLogger().info("§aPeriyodik temizleme task'ları başlatıldı.");
     }
@@ -1498,9 +1500,11 @@ public class DataManager {
                 gson.toJson(data, writer);
             }
             
-            // Backup oluştur (eğer hedef dosya varsa)
-            if (targetFile.exists()) {
+            // ✅ OPTİMİZE: Backup oluştur (sadece belirli aralıklarla - performans için)
+            long now = System.currentTimeMillis();
+            if (targetFile.exists() && (now - lastBackupTime) >= BACKUP_INTERVAL) {
                 createBackup(targetFile);
+                lastBackupTime = now; // Son backup zamanını güncelle
             }
             
             // Geçici dosyayı hedef dosyaya taşı (atomic operation)

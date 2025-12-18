@@ -260,8 +260,14 @@ public class ClanTerritoryMenu implements Listener {
                 ? Math.max(minY, Math.min(maxY, playerY)) 
                 : playerY;
             
+            // ✅ OPTİMİZE: Maksimum partikül sayısı sınırı (performans için)
+            int maxParticles = 50; // Her seferinde maksimum 50 partikül
             int count = 0;
+            int particlesSpawned = 0;
+            
             for (Location boundaryLoc : boundaryLine) {
+                if (particlesSpawned >= maxParticles) break; // ✅ Maksimum partikül sayısına ulaşıldı
+                
                 if (count % (int) spacing != 0) {
                     count++;
                     continue;
@@ -279,9 +285,10 @@ public class ClanTerritoryMenu implements Listener {
                     player.spawnParticle(particleType, particleLoc, 1, 0, 0, 0, 0);
                 }
                 
+                particlesSpawned++;
                 count++;
             }
-        }, 0L, 10L); // Her 0.5 saniyede bir
+        }, 0L, 20L); // ✅ OPTİMİZE: Her 1 saniyede bir (20 tick) - performans için
         
         // 10 saniye sonra durdur
         Bukkit.getScheduler().runTaskLater(plugin, () -> {

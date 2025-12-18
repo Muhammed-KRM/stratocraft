@@ -108,7 +108,7 @@ public class SpecialWeaponListener implements Listener {
                     }
                 }
             }
-        }.runTaskTimer(plugin, 0L, 20L); // Her saniye kontrol et (20 tick = 1 saniye)
+        }.runTaskTimer(plugin, 0L, 40L); // ✅ OPTİMİZE: Her 2 saniyede bir kontrol (40 tick) - performans için (20L -> 40L)
     }
     
     /**
@@ -319,7 +319,7 @@ public class SpecialWeaponListener implements Listener {
                 distance += 0.5;
                 currentLoc.add(direction.clone().multiply(0.5));
             }
-        }.runTaskTimer(plugin, 0L, 1L);
+        }.runTaskTimer(plugin, 0L, 3L); // ✅ OPTİMİZE: Her 3 tick'te bir (0.15 saniye) - performans için
         
         player.sendMessage("§6Lazer atıldı!");
     }
@@ -471,7 +471,7 @@ public class SpecialWeaponListener implements Listener {
                 
                 count++;
             }
-        }.runTaskTimer(plugin, 0L, 1L);
+        }.runTaskTimer(plugin, 0L, 5L); // ✅ OPTİMİZE: Her 5 tick'te bir kontrol - performans için
     }
     
     /**
@@ -1036,7 +1036,7 @@ public class SpecialWeaponListener implements Listener {
                     player.playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 1f, 2f);
                     count++;
                 }
-            }.runTaskTimer(plugin, 0L, 4L); // Her 0.2 saniyede bir atış (saniyede 5 ok için 2L'den 4L'ye çıkarıldı)
+            }.runTaskTimer(plugin, 0L, 5L); // ✅ OPTİMİZE: Her 5 tick'te bir (0.25 saniye) - performans için
         }
         
         // Tier 3: Büyücü Küresi (Güdümlü Mermiler)
@@ -1083,7 +1083,7 @@ public class SpecialWeaponListener implements Listener {
                             cancel();
                         }
                     }
-                }.runTaskTimer(plugin, 0L, 2L);
+                }.runTaskTimer(plugin, 0L, 5L); // ✅ OPTİMİZE: Her 5 tick'te bir (0.25 saniye) - performans için
             }
             player.sendMessage("§5Güdümlü mermiler fırlatıldı!");
         }

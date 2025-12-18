@@ -246,7 +246,7 @@ public class BatteryManager {
                     }
                 }
             }
-        }.runTaskTimer(plugin, 0L, 20L); // Her saniye (20 tick) çalışır
+        }.runTaskTimer(plugin, 0L, 40L); // ✅ OPTİMİZE: Her 2 saniyede bir (40 tick) - performans için
     }
 
     /**
@@ -309,14 +309,18 @@ public class BatteryManager {
 
                         Location particleLoc = playerLoc.clone().add(x, y, z);
 
-                        // Tüm oyunculara partikül göster
-                        for (Player viewer : Bukkit.getOnlinePlayers()) {
+                        // ✅ OPTİMİZE: Sadece yakındaki oyunculara partikül göster (performans için)
+                        double maxViewDistance = 32.0; // Maksimum görüş mesafesi
+                        for (Player viewer : player.getWorld().getPlayers()) {
                             if (viewer == null || !viewer.isOnline())
                                 continue;
                             if (viewer.getWorld() == null || viewer.getWorld() != player.getWorld())
                                 continue;
-
+                            
+                            // ✅ OPTİMİZE: Mesafe kontrolü - çok uzaktaki oyunculara partikül gösterme
                             Location viewerLoc = viewer.getLocation();
+                            if (viewerLoc.distanceSquared(particleLoc) > maxViewDistance * maxViewDistance)
+                                continue;
                             if (viewerLoc == null)
                                 continue;
                             if (viewerLoc.distance(playerLoc) > 32)
@@ -339,7 +343,7 @@ public class BatteryManager {
                     }
                 }
             }
-        }.runTaskTimer(plugin, 0L, 2L); // Her 2 tick'te bir (çok hızlı dönüş için)
+        }.runTaskTimer(plugin, 0L, 10L); // ✅ OPTİMİZE: Her 10 tick'te bir (0.5 saniye) - performans için
     }
 
     /**
@@ -603,7 +607,7 @@ public class BatteryManager {
 
                 fired++;
             }
-        }.runTaskTimer(plugin, 0L, 2L); // Her 2 tick'te bir ateş topu (0.1 saniye aralık)
+        }.runTaskTimer(plugin, 0L, 5L); // ✅ OPTİMİZE: Her 5 tick'te bir (0.25 saniye) - performans için
 
         // Mastery mesajı (antrenman modu veya mastery bonus)
         String masteryMsg = "";
@@ -728,7 +732,7 @@ public class BatteryManager {
                     cancel();
                 }
             }
-        }.runTaskTimer(plugin, 0L, 2L); // Her 2 tick'te bir çalış (daha optimize)
+        }.runTaskTimer(plugin, 0L, 10L); // ✅ OPTİMİZE: Her 10 tick'te bir (0.5 saniye) - performans için
     }
     
     /**
@@ -2036,7 +2040,7 @@ public class BatteryManager {
                     meteorLoc.add(0, -1, 0);
                     player.getWorld().spawnParticle(org.bukkit.Particle.FLAME, meteorLoc, 5, 0.3, 0.3, 0.3, 0.05);
                 }
-            }.runTaskTimer(plugin, 0L, 2L);
+            }.runTaskTimer(plugin, 0L, 5L); // ✅ OPTİMİZE: Her 5 tick'te bir (0.25 saniye) - performans için
         }
         
         player.sendMessage("§cMeteor yağmuru başladı!");
@@ -2833,7 +2837,7 @@ public class BatteryManager {
                 }
                 currentTicks++;
             }
-        }.runTaskTimer(plugin, 0L, 1L);
+        }.runTaskTimer(plugin, 0L, 5L); // ✅ OPTİMİZE: Her 5 tick'te bir kontrol - performans için
         
         player.sendMessage("§eTesla Kulesi aktif! (30 saniye)");
     }
@@ -2875,7 +2879,7 @@ public class BatteryManager {
                 }
                 currentTicks++;
             }
-        }.runTaskTimer(plugin, 0L, 1L);
+        }.runTaskTimer(plugin, 0L, 5L); // ✅ OPTİMİZE: Her 5 tick'te bir kontrol - performans için
         
         player.sendMessage("§eElektrik Kalkanı aktif! (5 saniye)");
     }

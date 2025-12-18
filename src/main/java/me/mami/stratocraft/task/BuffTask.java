@@ -1,5 +1,6 @@
 package me.mami.stratocraft.task;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -55,8 +56,10 @@ public class BuffTask extends BukkitRunnable {
         }
         
         // ========== KLAN ALANI İÇİNDEKİ YAPILAR ==========
-        // OPTİMİZE: Her tick çalışır ama daha verimli
-        processTerritoryStructures();
+        // ✅ OPTİMİZE: Her 5 tick'te bir çalış (performans için)
+        if (tickCounter % 5 == 0) {
+            processTerritoryStructures();
+        }
     }
     
     /**
@@ -149,26 +152,39 @@ public class BuffTask extends BukkitRunnable {
     }
     
     /**
-     * OPTİMİZE: Klan alanı yapılarını işle
+     * ✅ OPTİMİZE: Klan alanı yapılarını işle (performans için optimize edildi)
      */
     private void processTerritoryStructures() {
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            Clan territoryClan = territoryManager.getTerritoryOwner(p.getLocation());
+        // ✅ OPTİMİZE: Oyuncu listesini bir kez al
+        Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+        if (onlinePlayers.isEmpty()) return;
+        
+        for (Player p : onlinePlayers) {
+            if (p == null || !p.isOnline()) continue;
+            
+            Location playerLoc = p.getLocation();
+            if (playerLoc == null || playerLoc.getWorld() == null) continue;
+            
+            Clan territoryClan = territoryManager.getTerritoryOwner(playerLoc);
             if (territoryClan == null) continue;
 
             boolean isFriendly = territoryClan.getMembers().containsKey(p.getUniqueId());
-            Location playerLoc = p.getLocation();
-
+            
+            // ✅ OPTİMİZE: Sadece yakındaki yapıları kontrol et (mesafe kontrolü önce)
             for (Structure s : territoryClan.getStructures()) {
                 Location structLoc = s.getLocation();
                 if (structLoc == null || structLoc.getWorld() == null) continue;
                 if (!structLoc.getWorld().equals(playerLoc.getWorld())) continue;
                 
+                // ✅ OPTİMİZE: Mesafe kontrolü önce (uzaktaki yapıları atla)
+                double distanceSquared = playerLoc.distanceSquared(structLoc);
+                if (distanceSquared > 400) continue; // 20 bloktan uzaktaki yapıları atla
+                
                 Structure.Type type = s.getType();
                 
                 // HEALING_BEACON
                 if (type == Structure.Type.HEALING_BEACON && isFriendly) {
-                    if (playerLoc.distanceSquared(structLoc) <= 100) { // 10^2
+                    if (distanceSquared <= 100) { // 10^2
                         double maxHealth = p.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue();
                         if (p.getHealth() < maxHealth) {
                             p.setHealth(Math.min(maxHealth, p.getHealth() + 2.0));
@@ -178,33 +194,37 @@ public class BuffTask extends BukkitRunnable {
 
                 // GRAVITY_WELL
                 else if (type == Structure.Type.GRAVITY_WELL && !isFriendly && p.getGameMode() != GameMode.CREATIVE) {
-                    p.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, 40, 200));
-                    p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 40, 1));
-                }
-
-                // POISON_REACTOR
-                else if (type == Structure.Type.POISON_REACTOR && !isFriendly && p.getGameMode() != GameMode.CREATIVE) {
-                    int level = s.getLevel();
-                    p.damage(level);
-                    p.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 40, 0));
-                    if (level >= 3) {
-                        p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 40, 0));
+                    if (distanceSquared <= 100) { // Sadece yakındayken etkili
+                        p.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, 40, 200));
                         p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 40, 1));
                     }
                 }
 
-                // WATCHTOWER - OPTİMİZE: Her 10 tick'te bir çalış
-                else if (type == Structure.Type.WATCHTOWER && isFriendly && tickCounter % 10 == 0) {
+                // POISON_REACTOR
+                else if (type == Structure.Type.POISON_REACTOR && !isFriendly && p.getGameMode() != GameMode.CREATIVE) {
+                    if (distanceSquared <= 100) { // Sadece yakındayken etkili
+                        int level = s.getLevel();
+                        p.damage(level);
+                        p.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 40, 0));
+                        if (level >= 3) {
+                            p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 40, 0));
+                            p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 40, 1));
+                        }
+                    }
+                }
+
+                // WATCHTOWER - ✅ OPTİMİZE: Her 20 tick'te bir çalış (performans için)
+                else if (type == Structure.Type.WATCHTOWER && isFriendly && tickCounter % 20 == 0) {
                     processWatchtower(p, territoryClan, s);
                 }
                 
-                // MOB_GRINDER - OPTİMİZE: Her 5 tick'te bir çalış
-                else if (type == Structure.Type.MOB_GRINDER && isFriendly && tickCounter % 5 == 0) {
+                // MOB_GRINDER - ✅ OPTİMİZE: Her 10 tick'te bir çalış (performans için)
+                else if (type == Structure.Type.MOB_GRINDER && isFriendly && tickCounter % 10 == 0) {
                     processMobGrinder(s);
                 }
 
-                // CORE - OPTİMİZE: Her 20 tick'te bir çalış (sadece offline kontrol)
-                else if (type == Structure.Type.CORE && tickCounter % 20 == 0) {
+                // CORE - ✅ OPTİMİZE: Her 40 tick'te bir çalış (performans için)
+                else if (type == Structure.Type.CORE && tickCounter % 40 == 0) {
                     boolean anyOnline = territoryClan.getMembers().keySet().stream()
                             .anyMatch(uuid -> Bukkit.getPlayer(uuid) != null);
                     if (!anyOnline) {
@@ -223,9 +243,11 @@ public class BuffTask extends BukkitRunnable {
         if (lastWarning != null && (currentTime - lastWarning) < 10000) return;
         
         Location structLoc = s.getLocation();
-        for (Player nearby : Bukkit.getOnlinePlayers()) {
+        // ✅ OPTİMİZE: Sadece aynı dünyadaki ve yakındaki oyuncuları kontrol et
+        Collection<? extends Player> nearbyPlayers = structLoc.getWorld().getPlayers();
+        for (Player nearby : nearbyPlayers) {
+            if (nearby == null || !nearby.isOnline()) continue;
             if (territoryClan.getMembers().containsKey(nearby.getUniqueId())) continue;
-            if (!nearby.getWorld().equals(structLoc.getWorld())) continue;
             if (nearby.getLocation().distanceSquared(structLoc) > 40000) continue; // 200^2
             
             int distance = (int) nearby.getLocation().distance(structLoc);

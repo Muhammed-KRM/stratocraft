@@ -506,7 +506,7 @@ public class SiegeWeaponManager {
                 }
                 ticks++;
             }
-        }.runTaskTimer(plugin, 1L, 1L);
+        }.runTaskTimer(plugin, 1L, 2L); // ✅ OPTİMİZE: Her 2 tick'te bir (0.1 saniye) - performans için (1L -> 2L)
 
         player.getWorld().playSound(spawnLoc, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.5f);
         player.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION_LARGE, spawnLoc, 1);
@@ -593,7 +593,7 @@ public class SiegeWeaponManager {
                         0.5, 0.05);
                 count += 2;
             }
-        }.runTaskTimer(plugin, 0L, 2L);
+        }.runTaskTimer(plugin, 0L, 10L); // ✅ OPTİMİZE: Her 10 tick'te bir (0.5 saniye) - performans için
     }
 
     // ========== OTHER WEAPONS ==========
