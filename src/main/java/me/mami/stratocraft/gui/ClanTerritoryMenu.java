@@ -247,13 +247,13 @@ public class ClanTerritoryMenu implements Listener {
             double spacing = config.getBoundaryParticleSpacing();
             
             // ✅ YENİ: Y ekseni sınırlarını al
-            TerritoryData territoryData = boundaryManager != null ? 
+            TerritoryData currentTerritoryData = boundaryManager != null ? 
                 boundaryManager.getTerritoryData(clan) : null;
             int minY = Integer.MIN_VALUE;
             int maxY = Integer.MAX_VALUE;
-            if (territoryData != null) {
-                minY = territoryData.getMinY() - territoryData.getGroundDepth();
-                maxY = territoryData.getMaxY() + territoryData.getSkyHeight();
+            if (currentTerritoryData != null) {
+                minY = currentTerritoryData.getMinY() - currentTerritoryData.getGroundDepth();
+                maxY = currentTerritoryData.getMaxY() + currentTerritoryData.getSkyHeight();
             }
             int playerY = player.getLocation().getBlockY();
             int effectiveY = (minY != Integer.MIN_VALUE && maxY != Integer.MAX_VALUE) 

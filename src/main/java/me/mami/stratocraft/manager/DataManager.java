@@ -282,18 +282,30 @@ public class DataManager {
                        me.mami.stratocraft.manager.ContractRequestManager contractRequestManager,
                        me.mami.stratocraft.manager.ContractTermsManager contractTermsManager,
                        boolean forceSync) {
+        // Snapshot değişkenlerini try dışında tanımla (finally'de erişilebilmesi için)
+        ClanSnapshot clanSnapshot = null;
+        ContractSnapshot contractSnapshot = null;
+        ShopSnapshot shopSnapshot = null;
+        InventorySnapshot inventorySnapshot = null;
+        AllianceSnapshot allianceSnapshot = null;
+        DisasterSnapshot disasterSnapshot = null;
+        ContractRequestSnapshot requestSnapshot = null;
+        ContractTermsSnapshot termsSnapshot = null;
+        ClanBankSnapshot bankSnapshot = null;
+        ClanMissionSnapshot missionSnapshot = null;
+        ClanActivitySnapshot activitySnapshot = null;
+        TrapSnapshot trapSnapshot = null;
+        
         try {
             // Önce tüm verileri snapshot al (sync thread'de)
-            ClanSnapshot clanSnapshot = createClanSnapshot(clanManager);
-            ContractSnapshot contractSnapshot = createContractSnapshot(contractManager);
-            ShopSnapshot shopSnapshot = createShopSnapshot(shopManager);
-            InventorySnapshot inventorySnapshot = createInventorySnapshot(virtualStorage);
-            AllianceSnapshot allianceSnapshot = createAllianceSnapshot(allianceManager);
-            DisasterSnapshot disasterSnapshot = createDisasterSnapshot(disasterManager);
+            clanSnapshot = createClanSnapshot(clanManager);
+            contractSnapshot = createContractSnapshot(contractManager);
+            shopSnapshot = createShopSnapshot(shopManager);
+            inventorySnapshot = createInventorySnapshot(virtualStorage);
+            allianceSnapshot = createAllianceSnapshot(allianceManager);
+            disasterSnapshot = createDisasterSnapshot(disasterManager);
             
             // Çift taraflı kontrat sistemi için snapshot'lar
-            ContractRequestSnapshot requestSnapshot = null;
-            ContractTermsSnapshot termsSnapshot = null;
             if (contractRequestManager != null) {
                 requestSnapshot = createContractRequestSnapshot(contractRequestManager);
             }
@@ -302,10 +314,6 @@ public class DataManager {
             }
             
             // Yeni sistemler için snapshot'lar (null kontrolü ile)
-            ClanBankSnapshot bankSnapshot = null;
-            ClanMissionSnapshot missionSnapshot = null;
-            ClanActivitySnapshot activitySnapshot = null;
-            TrapSnapshot trapSnapshot = null;
             
             if (clanBankSystem != null) {
                 bankSnapshot = createClanBankSnapshot(clanBankSystem, clanManager);
@@ -473,6 +481,13 @@ public class DataManager {
                 }
             } else {
                 // Normal kayıt - async (file locking ile)
+                // Lambda içinde kullanılacak snapshot'ları final değişkenlere kopyala
+                final ClanSnapshot finalClanSnapshot = clanSnapshot;
+                final ContractSnapshot finalContractSnapshot = contractSnapshot;
+                final ShopSnapshot finalShopSnapshot = shopSnapshot;
+                final InventorySnapshot finalInventorySnapshot = inventorySnapshot;
+                final AllianceSnapshot finalAllianceSnapshot = allianceSnapshot;
+                final DisasterSnapshot finalDisasterSnapshot = disasterSnapshot;
                 final ClanBankSnapshot finalBankSnapshot = bankSnapshot;
                 final ClanMissionSnapshot finalMissionSnapshot = missionSnapshot;
                 final ClanActivitySnapshot finalActivitySnapshot = activitySnapshot;
@@ -494,42 +509,42 @@ public class DataManager {
                         List<Exception> errors = new ArrayList<>();
                         
                         try {
-                            writeClanSnapshot(clanSnapshot);
+                            writeClanSnapshot(finalClanSnapshot);
                             writtenFiles.add(new File(dataFolder, "data/clans.json"));
                         } catch (Exception e) {
                             errors.add(e);
                         }
                         
                         try {
-                            writeContractSnapshot(contractSnapshot);
+                            writeContractSnapshot(finalContractSnapshot);
                             writtenFiles.add(new File(dataFolder, "data/contracts.json"));
                         } catch (Exception e) {
                             errors.add(e);
                         }
                         
                         try {
-                            writeShopSnapshot(shopSnapshot);
+                            writeShopSnapshot(finalShopSnapshot);
                             writtenFiles.add(new File(dataFolder, "data/shops.json"));
                         } catch (Exception e) {
                             errors.add(e);
                         }
                         
                         try {
-                            writeInventorySnapshot(inventorySnapshot);
+                            writeInventorySnapshot(finalInventorySnapshot);
                             writtenFiles.add(new File(dataFolder, "data/virtual_inventories.json"));
                         } catch (Exception e) {
                             errors.add(e);
                         }
                         
                         try {
-                            writeAllianceSnapshot(allianceSnapshot);
+                            writeAllianceSnapshot(finalAllianceSnapshot);
                             writtenFiles.add(new File(dataFolder, "data/alliances.json"));
                         } catch (Exception e) {
                             errors.add(e);
                         }
                         
                         try {
-                            writeDisasterSnapshot(disasterSnapshot);
+                            writeDisasterSnapshot(finalDisasterSnapshot);
                             writtenFiles.add(new File(dataFolder, "data/disaster.json"));
                         } catch (Exception e) {
                             errors.add(e);
@@ -620,8 +635,8 @@ public class DataManager {
                         // ✅ SQLite'a kaydet (eğer aktifse)
                         if (finalUseSQLite && finalSqliteDataManager != null) {
                             try {
-                                finalSqliteDataManager.saveAll(clanSnapshot, contractSnapshot, shopSnapshot,
-                                    inventorySnapshot, allianceSnapshot, disasterSnapshot,
+                                finalSqliteDataManager.saveAll(finalClanSnapshot, finalContractSnapshot, finalShopSnapshot,
+                                    finalInventorySnapshot, finalAllianceSnapshot, finalDisasterSnapshot,
                                     finalBankSnapshot, finalMissionSnapshot, finalTrapSnapshot,
                                     finalRequestSnapshot, finalTermsSnapshot);
                             } catch (Exception e) {
@@ -2957,6 +2972,13 @@ public class DataManager {
      */
     public me.mami.stratocraft.database.DatabaseManager getDatabaseManager() {
         return databaseManager;
+    }
+    
+    /**
+     * SQLiteDataManager getter (SQLite için)
+     */
+    public me.mami.stratocraft.database.SQLiteDataManager getSQLiteDataManager() {
+        return sqliteDataManager;
     }
     
     /**

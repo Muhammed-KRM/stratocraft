@@ -207,6 +207,8 @@ public class TerritoryBoundaryManager {
                 if (visited.contains(neighbor)) continue;
                 
                 // ✅ YENİ: Yükseklik toleransı kontrolü
+                int centerY = center.getBlockY();
+                int heightTolerance = config != null ? config.getFenceHeightTolerance() : 5;
                 int heightDiff = Math.abs(neighbor.getY() - centerY);
                 if (heightDiff > heightTolerance) {
                     visited.add(neighbor); // Ziyaret edildi olarak işaretle

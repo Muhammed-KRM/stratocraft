@@ -23,6 +23,8 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.UUID;
+
 /**
  * Klan Sistemleri Event Listener
  * 
@@ -184,8 +186,6 @@ public class ClanSystemListener implements Listener {
             
             // ❌ ESKİ: Metadata kontrolü kaldırıldı
             // if (clicked.hasMetadata("ClanBank")) {
-                }
-            }
         }
         
         // Görev tahtası entegrasyonu - GUI aç

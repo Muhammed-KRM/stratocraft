@@ -6656,10 +6656,10 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             }
             
             // Rütbe seviyesi kontrolü (sadece yukarı doğru terfi)
-            if (targetRank.level <= currentRank.level) {
+            if (targetRank.getLevel() <= currentRank.getLevel()) {
                 p.sendMessage("§cHedef rütbe mevcut rütbeden düşük veya eşit olamaz!");
-                p.sendMessage("§7Mevcut rütbe: §e" + currentRank.name() + " §7(Seviye: " + currentRank.level + ")");
-                p.sendMessage("§7Hedef rütbe: §e" + targetRank.name() + " §7(Seviye: " + targetRank.level + ")");
+                p.sendMessage("§7Mevcut rütbe: §e" + currentRank.name() + " §7(Seviye: " + currentRank.getLevel() + ")");
+                p.sendMessage("§7Hedef rütbe: §e" + targetRank.name() + " §7(Seviye: " + targetRank.getLevel() + ")");
                 return;
             }
             

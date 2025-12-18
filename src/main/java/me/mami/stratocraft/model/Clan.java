@@ -14,6 +14,10 @@ public class Clan {
             this.level = level;
         }
 
+        public int getLevel() {
+            return level;
+        }
+
         public boolean isAtLeast(Rank other) {
             return this.level >= other.level;
         }
