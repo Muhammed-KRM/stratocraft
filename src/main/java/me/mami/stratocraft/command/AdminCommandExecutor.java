@@ -4564,7 +4564,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     // args[0] = "clan", args[1] = subCommand (salary, territory, vb.)
                     if (args.length == 2) {
                         List<String> clanSubCommands = Arrays.asList("list", "info", "create", "disband", "addmember", 
-                            "removemember", "setrank", "salary", "territory", "bank", "mission", "contract", 
+                            "removemember", "setrank", "promote", "terfi", "testpromote", "salary", "territory", "bank", "mission", "contract", 
                             "activity", "caravan");
                         if (input.isEmpty()) {
                             return clanSubCommands;
@@ -4637,6 +4637,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                             case "aktivite":
                                 return Arrays.asList("reset", "info");
                             case "setrank":
+                            case "promote":
+                            case "terfi":
+                            case "testpromote":
                                 return Arrays.asList("LEADER", "GENERAL", "ELITE", "MEMBER", "RECRUIT");
                         }
                     }
@@ -6145,6 +6148,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§7  addmember <klan> <oyuncu> - Üye ekle");
             p.sendMessage("§7  removemember <klan> <oyuncu> - Üye çıkar");
             p.sendMessage("§7  setrank <klan> <oyuncu> <rank> - Rütbe değiştir");
+            p.sendMessage("§7  promote <klan> <oyuncu> <rank> - Rütbe yükselt (ritüel simülasyonu)");
             p.sendMessage("§7Yönetim Komutları:");
             p.sendMessage("§7  salary <klan> <cancel|reset|info> [oyuncu] - Maaş yönetimi");
             p.sendMessage("§7  territory <klan> <expand|reset|info> [miktar] - Alan yönetimi");
@@ -6247,6 +6251,17 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 return handleClanActivity(p, args, clanManager);
+            case "promote":
+            case "terfi":
+            case "testpromote":
+                // ✅ YENİ: Rütbe yükseltme test komutu (ritüel simülasyonu)
+                if (args.length < 5) {
+                    p.sendMessage("§cKullanım: /stratocraft clan promote <klan> <oyuncu> <RECRUIT|MEMBER|ELITE|GENERAL>");
+                    p.sendMessage("§7Not: Bu komut ritüel simülasyonu yapar (ritüel yapısı gerekmez)");
+                    return true;
+                }
+                testPromoteRank(p, args[2], args[3], args[4], clanManager);
+                return true;
             case "caravan":
                 return handleCaravan(p, args);
             default:
@@ -6611,6 +6626,68 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§a" + playerName + " rütbesi değiştirildi: §e" + rank.name());
         } catch (IllegalArgumentException e) {
             p.sendMessage("§cGeçersiz rütbe! Geçerli rütbeler: LEADER, GENERAL, ELITE, MEMBER, RECRUIT");
+        }
+    }
+    
+    /**
+     * ✅ YENİ: Rütbe yükseltme test komutu (ritüel simülasyonu)
+     */
+    private void testPromoteRank(Player p, String clanName, String playerName, String targetRankStr,
+                                 me.mami.stratocraft.manager.ClanManager clanManager) {
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(clanName);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clanName);
+            return;
+        }
+        
+        org.bukkit.OfflinePlayer target = org.bukkit.Bukkit.getOfflinePlayer(playerName);
+        if (target == null || !clan.getMembers().containsKey(target.getUniqueId())) {
+            p.sendMessage("§cOyuncu bulunamadı veya klan üyesi değil: " + playerName);
+            return;
+        }
+        
+        try {
+            me.mami.stratocraft.model.Clan.Rank targetRank = me.mami.stratocraft.model.Clan.Rank.valueOf(targetRankStr.toUpperCase());
+            me.mami.stratocraft.model.Clan.Rank currentRank = clan.getRank(target.getUniqueId());
+            
+            if (currentRank == null) {
+                p.sendMessage("§cOyuncunun mevcut rütbesi bulunamadı!");
+                return;
+            }
+            
+            // Rütbe seviyesi kontrolü (sadece yukarı doğru terfi)
+            if (targetRank.level <= currentRank.level) {
+                p.sendMessage("§cHedef rütbe mevcut rütbeden düşük veya eşit olamaz!");
+                p.sendMessage("§7Mevcut rütbe: §e" + currentRank.name() + " §7(Seviye: " + currentRank.level + ")");
+                p.sendMessage("§7Hedef rütbe: §e" + targetRank.name() + " §7(Seviye: " + targetRank.level + ")");
+                return;
+            }
+            
+            // Rütbe değiştir
+            clan.setRank(target.getUniqueId(), targetRank);
+            
+            // Efektler (ritüel simülasyonu)
+            if (target.isOnline() && target.getPlayer() != null) {
+                org.bukkit.Location loc = target.getPlayer().getLocation();
+                if (loc != null && loc.getWorld() != null) {
+                    // Partikül efektleri
+                    if (targetRank == me.mami.stratocraft.model.Clan.Rank.GENERAL) {
+                        loc.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, loc, 30, 0.5, 1, 0.5, 0.3);
+                        target.getPlayer().playSound(loc, org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
+                        target.getPlayer().sendTitle("§6§lTERFİ EDİLDİN", "§e" + targetRank.name() + " rütbesine yükseltildin!", 10, 70, 20);
+                    } else {
+                        loc.getWorld().spawnParticle(org.bukkit.Particle.VILLAGER_HAPPY, loc, 30, 0.5, 1, 0.5, 0.3);
+                        target.getPlayer().playSound(loc, org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+                        target.getPlayer().sendTitle("§a§lTERFİ EDİLDİN", "§e" + targetRank.name() + " rütbesine yükseltildin!", 10, 70, 20);
+                    }
+                }
+            }
+            
+            p.sendMessage("§a" + playerName + " rütbesi yükseltildi: §e" + currentRank.name() + " §7→ §e" + targetRank.name());
+            p.sendMessage("§7(Ritüel simülasyonu - ritüel yapısı gerekmez)");
+            
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz rütbe! Geçerli rütbeler: RECRUIT, MEMBER, ELITE, GENERAL, LEADER");
         }
     }
     

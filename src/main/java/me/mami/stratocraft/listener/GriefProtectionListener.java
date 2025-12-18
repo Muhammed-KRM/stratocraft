@@ -129,14 +129,70 @@ public class GriefProtectionListener implements Listener {
             }
         }
         
-        // Patlamadan etkilenen bloklar listesini kontrol et
+        // ✅ YENİ: Patlamanın kaynağını kontrol et
+        org.bukkit.Location explosionLoc = event.getLocation();
+        if (explosionLoc == null) return;
+        
+        Clan explosionOwner = territoryManager.getTerritoryOwner(explosionLoc);
+        
+        // ✅ YENİ: Patlama korumalı bölgede ise ve kristal varsa, patlamayı tamamen iptal et
+        if (explosionOwner != null && explosionOwner.hasCrystal()) {
+            // Patlamayı yapan oyuncu kontrolü
+            if (event.getEntity() instanceof org.bukkit.entity.Player) {
+                org.bukkit.entity.Player player = (org.bukkit.entity.Player) event.getEntity();
+                org.bukkit.entity.Player exploder = player;
+                Clan playerClan = territoryManager.getClanManager().getClanByPlayer(exploder.getUniqueId());
+                
+                // Kendi klanında patlatabilir
+                if (playerClan != null && playerClan.equals(explosionOwner)) {
+                    // Kendi klanında patlatabilir, sadece blokları koru
+                    java.util.List<Block> blocksToRemove = new java.util.ArrayList<>();
+                    for (Block block : event.blockList()) {
+                        Clan blockOwner = territoryManager.getTerritoryOwner(block.getLocation());
+                        // Klan yapıları ve özel bloklar korunmalı
+                        if (blockOwner != null && blockOwner.equals(explosionOwner)) {
+                            // Kendi klanının özel blokları korunmalı
+                            blocksToRemove.add(block);
+                        }
+                    }
+                    event.blockList().removeAll(blocksToRemove);
+                    return;
+                }
+                
+                // Savaş durumunda düşman klanında patlatabilir
+                if (playerClan != null && explosionOwner.isAtWarWith(playerClan.getId())) {
+                    // Savaş durumunda patlatabilir, sadece özel blokları koru
+                    java.util.List<Block> blocksToRemove = new java.util.ArrayList<>();
+                    for (Block block : event.blockList()) {
+                        // Özel bloklar korunmalı (yapı çekirdekleri, klan bankaları vb.)
+                        me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
+                        if (mainPlugin != null && mainPlugin.getStructureCoreManager() != null) {
+                            if (mainPlugin.getStructureCoreManager().isStructureCore(block)) {
+                                blocksToRemove.add(block);
+                            }
+                        }
+                        if (me.mami.stratocraft.util.CustomBlockData.isClanBank(block)) {
+                            blocksToRemove.add(block);
+                        }
+                    }
+                    event.blockList().removeAll(blocksToRemove);
+                    return;
+                }
+            }
+            
+            // ✅ YENİ: Patlama korumalı bölgede ve izin yoksa, patlamayı tamamen iptal et
+            event.setCancelled(true);
+            return;
+        }
+        
+        // ✅ YENİ: Patlamadan etkilenen bloklar listesini kontrol et (korumalı bölgelerdeki blokları koru)
         java.util.List<Block> blocksToRemove = new java.util.ArrayList<>();
         
         for (Block block : event.blockList()) {
             Clan owner = territoryManager.getTerritoryOwner(block.getLocation());
             
-            // Eğer blok korumalı bir bölgedeyse patlamadan etkilenmesin
-            if (owner != null) {
+            // Eğer blok korumalı bir bölgedeyse ve kristal varsa patlamadan etkilenmesin
+            if (owner != null && owner.hasCrystal()) {
                 blocksToRemove.add(block);
             }
         }

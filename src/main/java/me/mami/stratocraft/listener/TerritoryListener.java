@@ -138,12 +138,19 @@ public class TerritoryListener implements Listener {
         Clan playerClan = territoryManager.getClanManager().getClanByPlayer(event.getPlayer().getUniqueId());
         
         if (playerClan != null && playerClan.equals(owner)) {
-            // Rütbe Kontrolü: Recruit (Acemi) yapı kıramaz
-            if (playerClan.getRank(event.getPlayer().getUniqueId()) == Clan.Rank.RECRUIT) {
+            // ✅ YENİ: Rütbe Kontrolü - RECRUIT ve MEMBER blok kıramaz
+            Clan.Rank rank = playerClan.getRank(event.getPlayer().getUniqueId());
+            if (rank == Clan.Rank.RECRUIT) {
                 event.setCancelled(true);
-                event.getPlayer().sendMessage("§cAcemilerin yapı yıkma yetkisi yok!");
+                event.getPlayer().sendMessage("§cAcemilerin blok kırma yetkisi yok!");
                 return;
             }
+            if (rank == Clan.Rank.MEMBER) {
+                event.setCancelled(true);
+                event.getPlayer().sendMessage("§cÜyelerin blok kırma yetkisi yok!");
+                return;
+            }
+            // ELITE, GENERAL, LEADER blok kırabilir
             return; // Yetkisi varsa kırabilir
         }
         
@@ -769,6 +776,32 @@ public class TerritoryListener implements Listener {
             return; // Özel metodlar zaten kontrol ediyor
         }
         
+        // ✅ YENİ: TNT yerleştirme kontrolü (grief protection)
+        if (block.getType() == Material.TNT) {
+            Clan owner = territoryManager.getTerritoryOwner(blockLoc);
+            if (owner != null && owner.hasCrystal()) {
+                Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
+                // Kendi klanında TNT yerleştirebilir (savaş durumunda)
+                if (playerClan != null && playerClan.equals(owner)) {
+                    return; // Kendi klanında TNT yerleştirebilir
+                }
+                // Misafir TNT yerleştiremez
+                if (owner.isGuest(player.getUniqueId())) {
+                    event.setCancelled(true);
+                    player.sendMessage("§cTNT yerleştirmek için misafir izni yeterli değil!");
+                    return;
+                }
+                // Savaş durumunda düşman klanında TNT yerleştirebilir
+                if (playerClan != null && owner.isAtWarWith(playerClan.getId())) {
+                    return; // Savaş durumunda TNT yerleştirebilir
+                }
+                // Engelle - Düşman klan alanında TNT yerleştirme yasak
+                event.setCancelled(true);
+                player.sendMessage("§cTNT yerleştirmek için önce kuşatma başlatmalısın!");
+                return;
+            }
+        }
+        
         // Bölge sahibi kontrolü
         Clan owner = territoryManager.getTerritoryOwner(blockLoc);
         if (owner == null) return; // Sahipsiz yerse yerleştirilebilir
@@ -781,12 +814,19 @@ public class TerritoryListener implements Listener {
         // Kendi yerinse yerleştirilebilir (Rütbe kontrolü dahil)
         Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
         if (playerClan != null && playerClan.equals(owner)) {
-            // YENİ: Recruit blok yerleştiremez
-            if (playerClan.getRank(player.getUniqueId()) == Clan.Rank.RECRUIT) {
+            // ✅ YENİ: Rütbe Kontrolü - RECRUIT ve MEMBER blok yerleştiremez
+            Clan.Rank rank = playerClan.getRank(player.getUniqueId());
+            if (rank == Clan.Rank.RECRUIT) {
                 event.setCancelled(true);
                 player.sendMessage("§cAcemilerin blok yerleştirme yetkisi yok!");
                 return;
             }
+            if (rank == Clan.Rank.MEMBER) {
+                event.setCancelled(true);
+                player.sendMessage("§cÜyelerin blok yerleştirme yetkisi yok!");
+                return;
+            }
+            // ELITE, GENERAL, LEADER blok yerleştirebilir
             return; // Yetkisi varsa yerleştirebilir
         }
         
