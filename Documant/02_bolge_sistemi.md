@@ -176,11 +176,16 @@ Başkasının Klan Bölgesine:
 ├──────────┼─────────┼─────────┼─────────┤
 │ LEADER   │ ✓       │ ✓       │ ✓       │
 │ GENERAL  │ ✓       │ ✓       │ ✓       │
-│ ELITE    │ ✓       │ ❌      │ ✓       │
-│ MEMBER   │ ✓       │ ❌      │ ✓       │
-│ RECRUIT  │ ❌      │ ❌      │ ✓       │
+│ ELITE    │ ✓       │ ✓       │ ✓       │
+│ MEMBER   │ ❌      │ ❌      │ ✓       │ ⚠️ YENİ
+│ RECRUIT  │ ❌      │ ❌      │ ❌      │
 └──────────┴─────────┴─────────┴─────────┘
 ```
+
+**YENİ Değişiklikler** ⭐:
+- ✅ **MEMBER Rütbesi**: Artık blok kırma ve yerleştirme yetkisi YOK (sadece yapı kullanabilir)
+- ✅ **RECRUIT Rütbesi**: Sandık açma yetkisi de kaldırıldı
+- ✅ **ELITE Rütbesi**: Artık blok yıkma yetkisi VAR
 
 **YENİ Özellikler** ⭐:
 - ✅ **ClanRankSystem Entegrasyonu**: Yapı kurma/yıkma işlemlerinde detaylı yetki kontrolü

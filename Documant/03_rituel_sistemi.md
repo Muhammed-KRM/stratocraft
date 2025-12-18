@@ -119,6 +119,26 @@ Ortada ateş yak!
 - ✅ **Rütbe Kontrolü**: Zaten üst rütbede olan oyunculara terfi verilemez
 - ✅ **Cooldown Sistemi**: Ritüel spam önleme için cooldown var
 
+**Admin Komutu** ⭐ YENİ:
+```
+/stratocraft clan promote <klan> <oyuncu> <RECRUIT|MEMBER|ELITE|GENERAL>
+```
+
+**Açıklama**: Ritüel simülasyonu yapar (ritüel yapısı gerekmez). Test için kullanılabilir.
+
+**Özellikler**:
+- ✅ Ritüel yapısı gerekmez
+- ✅ Sadece yukarı doğru terfi (rütbe seviyesi kontrolü)
+- ✅ Partikül efektleri (GENERAL için TOTEM, diğerleri için VILLAGER_HAPPY)
+- ✅ Ses efektleri ve title mesajları
+
+**Kullanım Örnekleri**:
+```
+/stratocraft clan promote TestKlan PlayerName MEMBER
+/stratocraft clan promote TestKlan PlayerName GENERAL
+/stratocraft clan terfi TestKlan PlayerName ELITE
+```
+
 ---
 
 ## 🏗️ YAPI RİTÜELLERİ

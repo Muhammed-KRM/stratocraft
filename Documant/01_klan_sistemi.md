@@ -212,6 +212,8 @@ dan çıkarılır.
 │ (Üye)       │ - Sandık kullanabilir       │
 │             │ - Yapılardan faydalanır     │
 │             │ - Savaşabilir               │
+│             │ - Blok KIRAMAZ ⚠️ YENİ      │
+│             │ - Blok KOYAMAZ ⚠️ YENİ      │
 ├─────────────┼──────────────────────────────┤
 │ RECRUIT     │ - Sadece gezinebilir        │
 │ (Acemi)     │ - Yapı KURAMAZ              │

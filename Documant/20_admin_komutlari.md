@@ -16,7 +16,8 @@ Admin komutları, **sadece yöneticilerin** kullanabileceği özel komutlardır.
 2. [Eşya Komutları](#eşya-komutlari)
 3. [Mob Komutları](#mob-komutlari)
 4. [Sistem Komutları](#sistem-komutlari)
-5. [Güç Sistemi Komutları](#güç-sistemi-komutlari) ⭐ YENİ
+5. [Klan Komutları](#klan-komutlari) ⭐ YENİ
+6. [Güç Sistemi Komutları](#güç-sistemi-komutlari) ⭐ YENİ
 
 ---
 
@@ -968,6 +969,249 @@ if (!overflow.isEmpty()) {
 ```
 
 **Açıklama**: Shift + Sağ Tık ile mayınları görünmez yapabilirsin
+
+---
+
+## 🏰 KLAN KOMUTLARI ⭐ YENİ
+
+### `/stratocraft clan <komut>`
+
+**Açıklama**: Klan yönetimi için admin komutları
+
+**YETKİ**: `stratocraft.admin` permission gerekli
+
+---
+
+### Temel Klan Komutları
+
+#### `/stratocraft clan list`
+
+**Açıklama**: Tüm klanları listeler
+
+**Kullanım**:
+```
+/stratocraft clan list
+```
+
+**Çıktı**: Tüm klanların listesi
+
+---
+
+#### `/stratocraft clan info <klan>`
+
+**Açıklama**: Klan bilgilerini gösterir
+
+**Kullanım**:
+```
+/stratocraft clan info TestKlan
+```
+
+**Çıktı**: Klan üyeleri, rütbeler, bölge bilgisi, banka bakiyesi
+
+---
+
+#### `/stratocraft clan create`
+
+**Açıklama**: Admin komutu ile klan oluşturur (otomatik çit ve kristal)
+
+**Kullanım**:
+```
+/stratocraft clan create
+```
+
+**Özellikler**:
+- Otomatik çit oluşturur
+- Otomatik kristal yerleştirir
+- Klan ismi sorar
+
+---
+
+#### `/stratocraft clan disband <klan>`
+
+**Açıklama**: Klanı dağıtır (tüm veriler silinir)
+
+**Kullanım**:
+```
+/stratocraft clan disband TestKlan
+```
+
+**Uyarı**: Geri alınamaz!
+
+---
+
+### Üye Yönetimi
+
+#### `/stratocraft clan addmember <klan> <oyuncu>`
+
+**Açıklama**: Klan üyesi ekler
+
+**Kullanım**:
+```
+/stratocraft clan addmember TestKlan PlayerName
+```
+
+**Varsayılan Rütbe**: RECRUIT
+
+---
+
+#### `/stratocraft clan removemember <klan> <oyuncu>`
+
+**Açıklama**: Klan üyesi çıkarır
+
+**Kullanım**:
+```
+/stratocraft clan removemember TestKlan PlayerName
+```
+
+---
+
+### Rütbe Yönetimi
+
+#### `/stratocraft clan setrank <klan> <oyuncu> <LEADER|GENERAL|ELITE|MEMBER|RECRUIT>`
+
+**Açıklama**: Oyuncunun rütbesini değiştirir
+
+**Kullanım**:
+```
+/stratocraft clan setrank TestKlan PlayerName MEMBER
+/stratocraft clan setrank TestKlan PlayerName GENERAL
+```
+
+**Rütbeler**:
+- `LEADER` - Lider (tüm yetkiler)
+- `GENERAL` - Komutan (üye yönetimi, savaş ilanı)
+- `ELITE` - Seçkin (yapı kurma, ritüel kullanma)
+- `MEMBER` - Üye (yapı kullanma, blok kırma/koyma YOK) ⚠️ YENİ
+- `RECRUIT` - Acemi (sadece gezinebilir)
+
+---
+
+#### `/stratocraft clan promote <klan> <oyuncu> <RECRUIT|MEMBER|ELITE|GENERAL>` ⭐ YENİ
+
+**Açıklama**: Rütbe yükseltme test komutu (ritüel simülasyonu)
+
+**Kullanım**:
+```
+/stratocraft clan promote TestKlan PlayerName MEMBER
+/stratocraft clan promote TestKlan PlayerName GENERAL
+/stratocraft clan terfi TestKlan PlayerName ELITE
+```
+
+**Özellikler**:
+- ✅ Ritüel yapısı gerekmez
+- ✅ Sadece yukarı doğru terfi (rütbe seviyesi kontrolü)
+- ✅ Partikül efektleri (GENERAL için TOTEM, diğerleri için VILLAGER_HAPPY)
+- ✅ Ses efektleri ve title mesajları
+- ✅ Test için kullanılabilir
+
+**Not**: Bu komut ritüel simülasyonu yapar. Normal oyunda terfi ritüeli ile yapılır.
+
+---
+
+### Bölge Yönetimi
+
+#### `/stratocraft clan territory <klan> <expand|reset|info> [miktar]`
+
+**Açıklama**: Klan bölgesi yönetimi
+
+**Kullanım**:
+```
+/stratocraft clan territory TestKlan expand 25
+/stratocraft clan territory TestKlan reset
+/stratocraft clan territory TestKlan info
+```
+
+**Komutlar**:
+- `expand <miktar>` - Bölgeyi genişletir (radius artırır)
+- `reset` - Bölgeyi sıfırlar
+- `info` - Bölge bilgilerini gösterir
+
+---
+
+### Banka Yönetimi
+
+#### `/stratocraft clan bank <klan> <clear|info>`
+
+**Açıklama**: Klan bankası yönetimi
+
+**Kullanım**:
+```
+/stratocraft clan bank TestKlan info
+/stratocraft clan bank TestKlan clear
+```
+
+**Komutlar**:
+- `info` - Banka bilgilerini gösterir
+- `clear` - Banka bakiyesini sıfırlar
+
+---
+
+### Görev Yönetimi
+
+#### `/stratocraft clan mission <klan> <list|clear|complete> [id]`
+
+**Açıklama**: Klan görevleri yönetimi
+
+**Kullanım**:
+```
+/stratocraft clan mission TestKlan list
+/stratocraft clan mission TestKlan clear
+/stratocraft clan mission TestKlan complete 1
+```
+
+---
+
+### Kontrat Yönetimi
+
+#### `/stratocraft clan contract <klan> <list|cancel> [id]`
+
+**Açıklama**: Transfer kontratları yönetimi
+
+**Kullanım**:
+```
+/stratocraft clan contract TestKlan list
+/stratocraft clan contract TestKlan cancel 1
+```
+
+---
+
+### Aktivite Yönetimi
+
+#### `/stratocraft clan activity <klan> <reset|info> [oyuncu]`
+
+**Açıklama**: Klan aktivite yönetimi
+
+**Kullanım**:
+```
+/stratocraft clan activity TestKlan info
+/stratocraft clan activity TestKlan reset PlayerName
+```
+
+---
+
+### Maaş Yönetimi
+
+#### `/stratocraft clan salary <klan> <cancel|reset|info> [oyuncu]`
+
+**Açıklama**: Klan maaş yönetimi
+
+**Kullanım**:
+```
+/stratocraft clan salary TestKlan info
+/stratocraft clan salary TestKlan cancel PlayerName
+/stratocraft clan salary TestKlan reset
+```
+
+---
+
+### Tab Completion
+
+**Otomatik Tamamlama**:
+```
+/stratocraft clan [TAB] → list, info, create, disband, addmember, removemember, setrank, promote, terfi, testpromote, salary, territory, bank, mission, contract, activity, caravan
+/stratocraft clan setrank TestKlan PlayerName [TAB] → LEADER, GENERAL, ELITE, MEMBER, RECRUIT
+/stratocraft clan promote TestKlan PlayerName [TAB] → RECRUIT, MEMBER, ELITE, GENERAL
+```
 
 ---
 
