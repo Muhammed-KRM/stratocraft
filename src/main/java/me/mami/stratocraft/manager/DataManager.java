@@ -284,6 +284,8 @@ public class DataManager {
                        me.mami.stratocraft.manager.ContractRequestManager contractRequestManager,
                        me.mami.stratocraft.manager.ContractTermsManager contractTermsManager,
                        boolean forceSync) {
+        long startTime = System.currentTimeMillis();
+        
         // Snapshot değişkenlerini try dışında tanımla (finally'de erişilebilmesi için)
         ClanSnapshot clanSnapshot = null;
         ContractSnapshot contractSnapshot = null;
@@ -656,6 +658,7 @@ public class DataManager {
             e.printStackTrace();
         } finally {
             // ✅ YENİ: Snapshot'ları temizle (memory leak önleme)
+            
             clanSnapshot = null;
             contractSnapshot = null;
             shopSnapshot = null;

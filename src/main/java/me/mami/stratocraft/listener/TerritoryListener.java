@@ -642,20 +642,28 @@ public class TerritoryListener implements Listener {
     /**
      * ✅ YENİ: Chunk yüklendiğinde özel blokları kontrol et
      * PersistentDataContainer otomatik yüklenir ama backup sistemler için kontrol edilmeli
-     * OPTİMİZE: Async olarak çalışır (performans için)
+     * ✅ DÜZELTME: Main thread'de çalışmalı (async thread'de chunk/blok işlemleri yapılamaz - sonsuz döngüye neden olur)
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onChunkLoad(ChunkLoadEvent event) {
-        // ✅ Async olarak çalıştır (performans için)
-        org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(
+        // ✅ DÜZELTME: Main thread'de çalıştır (async thread'de chunk yükleme sonsuz döngüye neden olur)
+        org.bukkit.Bukkit.getScheduler().runTask(
             me.mami.stratocraft.Main.getInstance(),
             () -> {
                 org.bukkit.Chunk chunk = event.getChunk();
+                if (chunk == null || !chunk.isLoaded()) {
+                    return; // Chunk yüklü değilse atla
+                }
                 
                 // ✅ Sadece özel blok tiplerini kontrol et (performans için)
                 // OAK_FENCE, OAK_LOG, LODESTONE, ENDER_CHEST
                 for (int x = 0; x < 16; x++) {
                     for (int z = 0; z < 16; z++) {
+                        // ✅ DÜZELTME: getHighestBlockYAt chunk yükleme tetikleyebilir, chunk yüklü mü kontrol et
+                        if (!chunk.isLoaded()) {
+                            continue; // Chunk yüklü değilse atla
+                        }
+                        
                         // Y eksenini optimize et: Sadece yüzeyden ±50 blok kontrol et
                         int centerY = chunk.getWorld().getHighestBlockYAt(
                             chunk.getX() * 16 + x, chunk.getZ() * 16 + z);
@@ -663,6 +671,11 @@ public class TerritoryListener implements Listener {
                         int maxY = Math.min(chunk.getWorld().getMaxHeight(), centerY + 50);
                         
                         for (int y = minY; y <= maxY; y++) {
+                            // ✅ DÜZELTME: Chunk yüklü mü kontrol et (sonsuz döngü önleme)
+                            if (!chunk.isLoaded()) {
+                                break; // Chunk yüklü değilse döngüden çık
+                            }
+                            
                             Block block = chunk.getBlock(x, y, z);
                             Material type = block.getType();
                             
@@ -670,15 +683,11 @@ public class TerritoryListener implements Listener {
                             if (type == Material.OAK_FENCE) {
                                 UUID clanId = me.mami.stratocraft.util.CustomBlockData.getClanFenceData(block);
                                 if (clanId != null && boundaryManager != null) {
-                                    // Main thread'e geri dön
-                                    org.bukkit.Bukkit.getScheduler().runTask(
-                                        me.mami.stratocraft.Main.getInstance(),
-                                        () -> {
-                                            Clan clan = territoryManager.getClanManager().getClan(clanId);
-                                            if (clan != null) {
-                                                boundaryManager.addFenceLocation(clan, block.getLocation());
-                                            }
-                                        });
+                                    // ✅ DÜZELTME: Artık main thread'deyiz, direkt çağır
+                                    Clan clan = territoryManager.getClanManager().getClan(clanId);
+                                    if (clan != null) {
+                                        boundaryManager.addFenceLocation(clan, block.getLocation());
+                                    }
                                 }
                             }
                             
@@ -686,17 +695,13 @@ public class TerritoryListener implements Listener {
                             if (type == Material.OAK_LOG) {
                                 UUID ownerId = me.mami.stratocraft.util.CustomBlockData.getStructureCoreOwner(block);
                                 if (ownerId != null) {
-                                    // Main thread'e geri dön
-                                    org.bukkit.Bukkit.getScheduler().runTask(
-                                        me.mami.stratocraft.Main.getInstance(),
-                                        () -> {
-                                            me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
-                                            if (mainPlugin != null && mainPlugin.getStructureCoreManager() != null) {
-                                                if (!mainPlugin.getStructureCoreManager().isInactiveCore(block.getLocation())) {
-                                                    mainPlugin.getStructureCoreManager().addInactiveCore(block.getLocation(), ownerId);
-                                                }
-                                            }
-                                        });
+                                    // ✅ DÜZELTME: Artık main thread'deyiz, direkt çağır
+                                    me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
+                                    if (mainPlugin != null && mainPlugin.getStructureCoreManager() != null) {
+                                        if (!mainPlugin.getStructureCoreManager().isInactiveCore(block.getLocation())) {
+                                            mainPlugin.getStructureCoreManager().addInactiveCore(block.getLocation(), ownerId);
+                                        }
+                                    }
                                 }
                             }
                             
@@ -704,15 +709,11 @@ public class TerritoryListener implements Listener {
                             if (type == Material.LODESTONE) {
                                 UUID ownerId = me.mami.stratocraft.util.CustomBlockData.getTrapCoreOwner(block);
                                 if (ownerId != null) {
-                                    // Main thread'e geri dön
-                                    org.bukkit.Bukkit.getScheduler().runTask(
-                                        me.mami.stratocraft.Main.getInstance(),
-                                        () -> {
-                                            me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
-                                            if (mainPlugin != null && mainPlugin.getTrapManager() != null) {
-                                                mainPlugin.getTrapManager().registerInactiveTrapCore(block.getLocation(), ownerId);
-                                            }
-                                        });
+                                    // ✅ DÜZELTME: Artık main thread'deyiz, direkt çağır
+                                    me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
+                                    if (mainPlugin != null && mainPlugin.getTrapManager() != null) {
+                                        mainPlugin.getTrapManager().registerInactiveTrapCore(block.getLocation(), ownerId);
+                                    }
                                 }
                             }
                             
@@ -720,28 +721,24 @@ public class TerritoryListener implements Listener {
                             if (type == Material.ENDER_CHEST) {
                                 UUID clanId = me.mami.stratocraft.util.CustomBlockData.getClanBankData(block);
                                 if (clanId != null) {
-                                    // Main thread'e geri dön
-                                    org.bukkit.Bukkit.getScheduler().runTask(
-                                        me.mami.stratocraft.Main.getInstance(),
-                                        () -> {
-                                            me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
-                                            if (mainPlugin != null && mainPlugin.getClanBankSystem() != null) {
-                                                // bankChestLocations'a ekle (reflection ile)
-                                                try {
-                                                    java.lang.reflect.Field field = mainPlugin.getClanBankSystem().getClass()
-                                                        .getDeclaredField("bankChestLocations");
-                                                    field.setAccessible(true);
-                                                    @SuppressWarnings("unchecked")
-                                                    java.util.Map<UUID, org.bukkit.Location> locations = 
-                                                        (java.util.Map<UUID, org.bukkit.Location>) field.get(mainPlugin.getClanBankSystem());
-                                                    if (locations != null && !locations.containsKey(clanId)) {
-                                                        locations.put(clanId, block.getLocation());
-                                                    }
-                                                } catch (Exception e) {
-                                                    // Reflection hatası - önemli değil
-                                                }
+                                    // ✅ DÜZELTME: Artık main thread'deyiz, direkt çağır
+                                    me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
+                                    if (mainPlugin != null && mainPlugin.getClanBankSystem() != null) {
+                                        // bankChestLocations'a ekle (reflection ile)
+                                        try {
+                                            java.lang.reflect.Field field = mainPlugin.getClanBankSystem().getClass()
+                                                .getDeclaredField("bankChestLocations");
+                                            field.setAccessible(true);
+                                            @SuppressWarnings("unchecked")
+                                            java.util.Map<UUID, org.bukkit.Location> locations = 
+                                                (java.util.Map<UUID, org.bukkit.Location>) field.get(mainPlugin.getClanBankSystem());
+                                            if (locations != null && !locations.containsKey(clanId)) {
+                                                locations.put(clanId, block.getLocation());
                                             }
-                                        });
+                                        } catch (Exception e) {
+                                            // Reflection hatası - önemli değil
+                                        }
+                                    }
                                 }
                             }
                         }

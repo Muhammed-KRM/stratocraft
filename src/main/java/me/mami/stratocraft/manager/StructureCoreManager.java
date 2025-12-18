@@ -64,9 +64,14 @@ public class StructureCoreManager {
         inactiveCores.put(blockLoc, owner);
         
         // ✅ YENİ: PersistentDataContainer kullan (metadata yerine)
+        // ✅ OPTİMİZE: Chunk yüklü mü kontrol et (chunk yükleme tetikleme önleme)
         Block block = blockLoc.getBlock();
-        if (block != null) {
-            me.mami.stratocraft.util.CustomBlockData.setStructureCoreData(block, owner);
+        if (block != null && blockLoc.getWorld() != null) {
+            org.bukkit.Chunk chunk = blockLoc.getChunk();
+            if (chunk.isLoaded()) {
+                // Sadece chunk yüklüyse veri kaydet (TileState kontrolü CustomBlockData içinde)
+                me.mami.stratocraft.util.CustomBlockData.setStructureCoreData(block, owner);
+            }
         }
         
         // ❌ ESKİ: Metadata kaldırıldı

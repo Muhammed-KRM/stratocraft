@@ -794,7 +794,7 @@ game-balance:
   
   # Task Intervals (Görev Aralıkları)
   tasks:
-    mob-ride-interval: 5     # MobRideTask çalışma aralığı (tick) - 0.25 saniye
+    mob-ride-interval: 40    # MobRideTask çalışma aralığı (tick) - 2 saniye (✅ OPTİMİZE: 5'ten 40'a çıkarıldı)
   
   # Training (Antrenman) Sistemi
   training:

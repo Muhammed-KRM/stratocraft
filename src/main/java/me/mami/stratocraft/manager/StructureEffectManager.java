@@ -1,12 +1,12 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.enums.StructureType;
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.model.Structure;
-import me.mami.stratocraft.model.player.PlayerData;
-import me.mami.stratocraft.model.structure.BaseStructure;
-import me.mami.stratocraft.model.structure.ClanStructure;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -17,8 +17,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.enums.StructureType;
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.Structure;
 
 /**
  * Yapı Efekt Yönetim Sistemi
@@ -55,27 +57,63 @@ public class StructureEffectManager {
      * Oyuncu giriş yaptığında yapı efektlerini uygula
      */
     public void onPlayerJoin(Player player) {
-        if (player == null || !player.isOnline()) return;
+        if (player == null || !player.isOnline()) {
+            return;
+        }
         
         UUID playerId = player.getUniqueId();
         Clan clan = clanManager.getClanByPlayer(playerId);
         
-        if (clan == null) return;
+        if (clan == null) {
+            return;
+        }
         
-        // Klan yapılarını kontrol et (OPTİMİZASYON: Tek döngüde hem efekt uygula hem de kaydet)
+        // ✅ OPTİMİZE: Klan yapılarını kontrol et (sadece aktif olanları işle - performans için)
         Set<StructureType> activeEffects = new HashSet<>();
-        for (Structure structure : clan.getStructures()) {
+        java.util.List<Structure> structures = clan.getStructures();
+        
+        // ✅ OPTİMİZE: Eğer yapı yoksa veya çok fazlaysa limit koy (performans)
+        if (structures == null || structures.isEmpty()) {
+            playerActiveEffects.put(playerId, activeEffects);
+            return;
+        }
+        
+        // ✅ OPTİMİZE: Maksimum 30 yapı kontrol et (oyuncu giriş performansı için daha az)
+        int maxStructures = Math.min(structures.size(), 30);
+        int processedCount = 0;
+        
+        for (Structure structure : structures) {
             if (structure == null) continue;
+            if (processedCount >= maxStructures) break; // ✅ OPTİMİZE: Limit aşıldı
             
             StructureType type = convertToStructureType(structure.getType());
             if (type == null) continue;
             
-            // ✅ DÜZELTME: Location'ı normalize et (blok konumuna)
+            // ✅ OPTİMİZE: getBlock() çağrısını kaldır (chunk yükleme tetikler - sonsuz döngüye neden olabilir)
             Location structureLoc = structure.getLocation();
-            if (structureLoc == null) continue;
-            Location blockLoc = structureLoc.getBlock().getLocation();
+            if (structureLoc == null || structureLoc.getWorld() == null) continue;
             
-            // Yapı aktif mi kontrol et (StructureCoreManager'dan - normalize edilmiş location ile)
+            // ✅ OPTİMİZE: Location'ı blok konumuna normalize et (getBlock() kullanmadan)
+            Location blockLoc = new Location(
+                structureLoc.getWorld(),
+                structureLoc.getBlockX(),
+                structureLoc.getBlockY(),
+                structureLoc.getBlockZ()
+            );
+            
+            // ✅ OPTİMİZE: Chunk yüklü mü kontrol et (yüklü değilse atla - chunk yükleme tetikleme)
+            // ✅ KRİTİK: Chunk kontrolünü en başta yap (performans için)
+            try {
+                org.bukkit.Chunk chunk = blockLoc.getChunk();
+                if (!chunk.isLoaded()) {
+                    continue; // Chunk yüklü değilse atla (chunk yükleme tetikleme - sonsuz döngü önleme)
+                }
+            } catch (Exception e) {
+                // Chunk yüklenemiyorsa atla
+                continue;
+            }
+            
+            // ✅ OPTİMİZE: Yapı aktif mi kontrol et (önce aktif yapılar map'inde kontrol - daha hızlı)
             if (structureCoreManager != null && !structureCoreManager.isActiveStructure(blockLoc)) {
                 continue; // Pasif yapılar efekt vermez
             }
@@ -85,8 +123,10 @@ public class StructureEffectManager {
             
             // Aktif efektleri kaydet
             activeEffects.add(type);
+            processedCount++;
         }
         playerActiveEffects.put(playerId, activeEffects);
+        
     }
     
     /**
@@ -107,19 +147,55 @@ public class StructureEffectManager {
     /**
      * Periyodik efekt güncelleme (StructureEffectTask'tan çağrılacak)
      * ✅ DÜZELTME: Location normalizasyonu eklendi - yapı aktif etme sorunu çözüldü
+     * ✅ OPTİMİZE: Sadece online oyuncular için çalışır (performans için)
      */
     public void updateEffects() {
         tickCounter++;
         
-        // Her klan için yapı efektlerini uygula
-        for (Clan clan : clanManager.getAllClans()) {
-            for (Structure structure : clan.getStructures()) {
+        // ✅ OPTİMİZE: Sadece online oyuncular için çalış (tüm klanları döngüye almak yerine)
+        Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+        if (onlinePlayers.isEmpty()) {
+            return; // Online oyuncu yoksa hiçbir şey yapma
+        }
+        
+        
+        // ✅ OPTİMİZE: Her online oyuncu için klanını kontrol et (daha verimli)
+        for (Player player : onlinePlayers) {
+            if (player == null || !player.isOnline()) continue;
+            
+            UUID playerId = player.getUniqueId();
+            Clan clan = clanManager.getClanByPlayer(playerId);
+            if (clan == null) continue;
+            
+            // ✅ OPTİMİZE: Maksimum 50 yapı kontrol et (çok fazla yapı varsa performans sorunu olabilir)
+            java.util.List<Structure> structures = clan.getStructures();
+            if (structures == null || structures.isEmpty()) continue;
+            
+            int maxStructures = Math.min(structures.size(), 50);
+            int processedCount = 0;
+            
+            for (Structure structure : structures) {
                 if (structure == null) continue;
+                if (processedCount >= maxStructures) break; // ✅ OPTİMİZE: Limit aşıldı
                 
                 // ✅ DÜZELTME: Location'ı normalize et (blok konumuna)
                 Location structureLoc = structure.getLocation();
                 if (structureLoc == null) continue;
-                Location blockLoc = structureLoc.getBlock().getLocation();
+                // ✅ OPTİMİZE: getBlock() çağrısını kaldır (chunk yükleme tetikler)
+                Location blockLoc = new Location(
+                    structureLoc.getWorld(),
+                    structureLoc.getBlockX(),
+                    structureLoc.getBlockY(),
+                    structureLoc.getBlockZ()
+                );
+                
+                // ✅ OPTİMİZE: Chunk yüklü mü kontrol et
+                if (blockLoc.getWorld() != null) {
+                    org.bukkit.Chunk chunk = blockLoc.getChunk();
+                    if (!chunk.isLoaded()) {
+                        continue; // Chunk yüklü değilse atla
+                    }
+                }
                 
                 // Yapı aktif mi kontrol et (StructureCoreManager'dan - normalize edilmiş location ile)
                 if (structureCoreManager != null && !structureCoreManager.isActiveStructure(blockLoc)) {
@@ -129,9 +205,20 @@ public class StructureEffectManager {
                 StructureType type = convertToStructureType(structure.getType());
                 if (type == null) continue;
                 
+                // ✅ OPTİMİZE: Sadece oyuncunun yakınındaki yapılar için efekt uygula (mesafe kontrolü)
+                double distanceSquared = player.getLocation().distanceSquared(blockLoc);
+                double maxEffectDistance = 100.0; // 100 blok mesafe limiti
+                double maxEffectDistanceSquared = maxEffectDistance * maxEffectDistance;
+                
+                if (distanceSquared > maxEffectDistanceSquared) {
+                    continue; // Çok uzak, efekt uygulama
+                }
+                
                 applyPeriodicEffect(clan, structure, type);
+                processedCount++;
             }
         }
+        
     }
     
     /**

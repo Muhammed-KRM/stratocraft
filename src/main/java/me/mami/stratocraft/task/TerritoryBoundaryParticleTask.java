@@ -1,20 +1,21 @@
 package me.mami.stratocraft.task;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.entity.Player;
+
 import me.mami.stratocraft.Main;
 import me.mami.stratocraft.manager.TerritoryBoundaryManager;
 import me.mami.stratocraft.manager.TerritoryManager;
 import me.mami.stratocraft.manager.config.TerritoryConfig;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.territory.TerritoryData;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Particle;
-import org.bukkit.entity.Player;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Klan Alanı Sınır Partikül Görev Sistemi
@@ -80,9 +81,11 @@ public class TerritoryBoundaryParticleTask {
             return;
         }
         
+        int playerCount = 0;
         // ✅ OPTİMİZE: Sadece aynı dünyadaki oyuncuları kontrol et (performans)
         // Tüm online oyuncuları kontrol et
         for (Player player : Bukkit.getOnlinePlayers()) {
+            playerCount++;
             if (player == null || !player.isOnline()) continue;
             
             // Oyuncunun klanı var mı?
@@ -98,30 +101,35 @@ public class TerritoryBoundaryParticleTask {
                 continue; // Farklı dünya veya center yok
             }
             
-            // ✅ OPTİMİZE: Oyuncu klan alanına yakın mı? (mesafe kontrolü)
-            double distanceToCenter = player.getLocation().distance(center);
+            // ✅ OPTİMİZE: Oyuncu klan alanına yakın mı? (mesafe kontrolü - distanceSquared kullan)
+            Location playerLoc = player.getLocation();
+            if (playerLoc == null || playerLoc.getWorld() == null) continue; // Null kontrolü
+            
+            double distanceSquared = playerLoc.distanceSquared(center);
             double radius = territoryData.getRadius();
             
             // ✅ YENİ: Config'den mesafe limitini al
             int maxTotalDistance = config.getMaxTotalDistance();
             
             // ✅ YENİ: maxTotalDistance bloktan uzaktaysa hiç partikül gösterme (performans)
-            // Oyuncunun sınır çizgisine olan minimum mesafesini hesapla
+            // Oyuncunun sınır çizgisine olan minimum mesafesini hesapla (squared kullan)
+            double distanceToCenter = Math.sqrt(distanceSquared);
             double distanceToBoundary = Math.abs(distanceToCenter - radius);
             if (distanceToBoundary > maxTotalDistance) {
                 continue; // Çok uzak, hiç partikül gösterme
             }
             
-            // ✅ YENİ: Center'a olan mesafe kontrolü (eski mantık - geriye uyumluluk)
-            // Not: distanceToBoundary kontrolü zaten yapıldı, bu ek bir güvenlik kontrolü
+            // ✅ YENİ: Center'a olan mesafe kontrolü (squared - performans)
             double maxDistance = maxTotalDistance + radius;
-            if (distanceToCenter > maxDistance) {
+            double maxDistanceSquared = maxDistance * maxDistance;
+            if (distanceSquared > maxDistanceSquared) {
                 continue; // Çok uzak, partikül gösterme
             }
             
             // Sınır partikülleri göster
             showBoundaryParticles(player, territoryData);
         }
+        
     }
     
     /**
@@ -129,7 +137,9 @@ public class TerritoryBoundaryParticleTask {
      * ✅ OPTİMİZE: Görüşü kapatmayan, performans dostu partiküller
      */
     private void showBoundaryParticles(Player player, TerritoryData territoryData) {
-        if (player == null || territoryData == null) return;
+        if (player == null || territoryData == null) {
+            return;
+        }
         
         // ✅ YENİ: Cooldown kontrolü (performans)
         UUID playerId = player.getUniqueId();
@@ -143,15 +153,19 @@ public class TerritoryBoundaryParticleTask {
         Location playerLoc = player.getLocation();
         Location center = territoryData.getCenter();
         
-        if (center == null || !center.getWorld().equals(playerLoc.getWorld())) {
+        // ✅ Null kontrolü
+        if (playerLoc == null || center == null || center.getWorld() == null || 
+            playerLoc.getWorld() == null || !center.getWorld().equals(playerLoc.getWorld())) {
             return;
         }
         
-        // Mesafe kontrolü (performans)
-        double distanceToCenter = playerLoc.distance(center);
+        // ✅ OPTİMİZE: Mesafe kontrolü (squared kullan - performans)
+        double distanceSquared = playerLoc.distanceSquared(center);
         int visibleDistance = config.getBoundaryParticleVisibleDistance();
+        double maxVisibleDistance = visibleDistance + territoryData.getRadius();
+        double maxVisibleDistanceSquared = maxVisibleDistance * maxVisibleDistance;
         
-        if (distanceToCenter > visibleDistance + territoryData.getRadius()) {
+        if (distanceSquared > maxVisibleDistanceSquared) {
             return; // Çok uzak
         }
         
@@ -160,12 +174,6 @@ public class TerritoryBoundaryParticleTask {
         if (boundaryLine.isEmpty()) {
             return; // Sınır koordinatları yok
         }
-        
-        // ✅ OPTİMİZE: Daha şeffaf, görüşü kapatmayan partikül tipi
-        // END_ROD: Küçük, şeffaf, görüşü kapatmayan
-        // ENCHANT: Büyü efekti, şeffaf
-        Particle particleType = Particle.END_ROD; // Varsayılan: Şeffaf, küçük partikül
-        org.bukkit.Color particleColor = config.getBoundaryParticleColor();
         
         // ✅ OPTİMİZE: Daha seyrek partiküller (performans)
         double spacing = Math.max(config.getBoundaryParticleSpacing(), 15.0); // Minimum 15 blok aralık
@@ -197,19 +205,20 @@ public class TerritoryBoundaryParticleTask {
             // ✅ YENİ: Config'den mesafe limitini al
             int maxParticleDistance = config.getMaxParticleDistance();
             
-            // ✅ YENİ: 2D mesafe kontrolü (config'den gelen limit - performans optimizasyonu)
-            double distance2D = Math.sqrt(
-                Math.pow(playerLoc.getX() - boundaryLoc.getX(), 2) +
-                Math.pow(playerLoc.getZ() - boundaryLoc.getZ(), 2)
-            );
+            // ✅ OPTİMİZE: 2D mesafe kontrolü (squared kullan - performans)
+            double dx = playerLoc.getX() - boundaryLoc.getX();
+            double dz = playerLoc.getZ() - boundaryLoc.getZ();
+            double distance2DSquared = dx * dx + dz * dz;
+            double maxParticleDistanceSquared = maxParticleDistance * maxParticleDistance;
+            double visibleDistanceSquared = visibleDistance * visibleDistance;
             
-            // ✅ YENİ: maxParticleDistance bloktan uzaktaki sınırları gösterme (performans)
-            if (distance2D > maxParticleDistance) {
+            // ✅ YENİ: maxParticleDistance bloktan uzaktaki sınırları gösterme (performans - squared)
+            if (distance2DSquared > maxParticleDistanceSquared) {
                 continue; // Çok uzak, bu sınır noktasını atla
             }
             
-            // ✅ YENİ: visibleDistance kontrolü (config'den gelen değer, daha esnek)
-            if (distance2D > visibleDistance) {
+            // ✅ YENİ: visibleDistance kontrolü (squared - performans)
+            if (distance2DSquared > visibleDistanceSquared) {
                 continue; // Config'den gelen mesafe limitinden uzak
             }
             
@@ -234,9 +243,10 @@ public class TerritoryBoundaryParticleTask {
                 Location particleLoc = boundaryLoc.clone();
                 particleLoc.setY(y);
                 
-                // 3D mesafe kontrolü (performans)
-                double distance3D = playerLoc.distance(particleLoc);
-                if (distance3D > visibleDistance) {
+                // ✅ OPTİMİZE: 3D mesafe kontrolü (squared kullan - performans)
+                // Not: visibleDistanceSquared zaten yukarıda tanımlı (satır 210)
+                double distance3DSquared = playerLoc.distanceSquared(particleLoc);
+                if (distance3DSquared > visibleDistanceSquared) {
                     continue; // Çok uzak (3D mesafe)
                 }
                 
@@ -256,20 +266,25 @@ public class TerritoryBoundaryParticleTask {
         
         // ✅ YENİ: ActionBar ile sınır bilgisi (görüşü kapatmayan alternatif)
         if (particleCount > 0) {
+            double distanceToCenter = Math.sqrt(playerLoc.distanceSquared(center));
             double distanceToBoundary = Math.abs(distanceToCenter - territoryData.getRadius());
             if (distanceToBoundary <= 5) {
                 // Sınırın 5 blok yakınındaysa ActionBar'da bilgi göster
+                // ✅ OPTİMİZE: Adventure API kullan (Paper 1.16+ - deprecated değil)
                 try {
-                    player.spigot().sendMessage(
-                        net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
-                        new net.md_5.bungee.api.chat.TextComponent("§a§lKlan Sınırına Yakınsınız")
-                    );
-                } catch (Exception e) {
-                    // Spigot API yoksa normal mesaj gönder (fallback)
+                    // Modern Adventure API (deprecated değil)
+                    net.kyori.adventure.text.Component component = 
+                        net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
+                            .legacySection().deserialize("§a§lKlan Sınırına Yakınsınız");
+                    player.sendActionBar(component);
+                } catch (NoClassDefFoundError | NoSuchMethodError | Exception e) {
+                    // Eski versiyonlarda Adventure API yoksa normal mesaj gönder (fallback)
+                    // Not: sendActionBar(String) deprecated ama çalışır, bu yüzden kullanmıyoruz
                     player.sendMessage("§a§lKlan Sınırına Yakınsınız");
                 }
             }
         }
+        
     }
 }
 

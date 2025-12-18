@@ -355,7 +355,7 @@ public class GameBalanceConfig {
         
         // Task intervals
         path = "game-balance.tasks.";
-        mobRideTaskInterval = config.getLong(path + "mob-ride-interval", 5L);
+        mobRideTaskInterval = Math.max(40L, config.getLong(path + "mob-ride-interval", 40L)); // ✅ OPTİMİZE: En az 2 saniye (40 tick)
         
         // Training sistemi
         path = "game-balance.training.thresholds.";

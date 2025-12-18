@@ -337,7 +337,7 @@ public class StructureCoreListener implements Listener {
     }
     
     /**
-     * ✅ YENİ: Yapı çekirdeği kırıldığında veri geri getirme
+     * ✅ DÜZELTME: Yapı çekirdeği kırıldığında özel item drop et
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onStructureCoreBreak(BlockBreakEvent event) {
@@ -354,19 +354,31 @@ public class StructureCoreListener implements Listener {
             return; // Normal OAK_LOG
         }
         
-        // ✅ ItemStack'e veri ekle
-        ItemStack item = player.getInventory().getItemInMainHand();
-        if (item != null && item.getType() == Material.OAK_LOG) {
-            org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+        // ✅ Normal drop'ları iptal et
+        event.setDropItems(false);
+        
+        // ✅ Özel item oluştur (STRUCTURE_CORE item'ı)
+        ItemStack structureCoreItem = ItemManager.STRUCTURE_CORE.clone();
+        if (structureCoreItem != null) {
+            // ✅ ItemStack'e owner verisi ekle (PersistentDataContainer ile)
+            org.bukkit.inventory.meta.ItemMeta meta = structureCoreItem.getItemMeta();
             if (meta != null) {
                 org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
-                org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "structure_core");
-                container.set(key, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
-                org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey("stratocraft", "structure_core_owner");
+                org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey(plugin, "structure_core_owner");
                 container.set(ownerKey, org.bukkit.persistence.PersistentDataType.STRING, ownerId.toString());
-                item.setItemMeta(meta);
+                structureCoreItem.setItemMeta(meta);
             }
+            
+            // ✅ Özel item'ı drop et
+            block.getWorld().dropItemNaturally(block.getLocation(), structureCoreItem);
         }
+        
+        // ✅ Yapı çekirdeğini temizle (StructureCoreManager'dan)
+        Location coreLoc = block.getLocation();
+        coreManager.removeStructure(coreLoc);
+        
+        // ✅ CustomBlockData'dan da temizle
+        me.mami.stratocraft.util.CustomBlockData.removeStructureCoreData(block);
     }
     
     /**

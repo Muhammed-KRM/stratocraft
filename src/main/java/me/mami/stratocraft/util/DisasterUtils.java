@@ -195,7 +195,7 @@ public class DisasterUtils {
     }
     
     /**
-     * Chunk yükle (force load)
+     * Chunk yükle (✅ OPTİMİZE: Force load kaldırıldı - sonsuz döngüye neden olabilir)
      */
     public static void loadChunk(Location loc, boolean force) {
         if (loc == null || loc.getWorld() == null) return;
@@ -204,13 +204,15 @@ public class DisasterUtils {
         int chunkZ = loc.getBlockZ() >> 4;
         org.bukkit.Chunk chunk = loc.getWorld().getChunkAt(chunkX, chunkZ);
         
+        // ✅ OPTİMİZE: Force load kaldırıldı (sonsuz döngü önleme)
         if (!chunk.isLoaded()) {
-            chunk.load(force);
+            chunk.load(false); // Normal load kullan (force load değil)
         }
         
-        if (force) {
-            chunk.setForceLoaded(true);
-        }
+        // ✅ OPTİMİZE: setForceLoaded kaldırıldı (memory leak ve sonsuz döngü önleme)
+        // if (force) {
+        //     chunk.setForceLoaded(true);
+        // }
     }
     
     /**

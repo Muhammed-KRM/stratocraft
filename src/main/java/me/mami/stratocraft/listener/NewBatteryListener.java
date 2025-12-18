@@ -1,13 +1,5 @@
 package me.mami.stratocraft.listener;
 
-import me.mami.stratocraft.manager.ItemManager;
-import me.mami.stratocraft.manager.NewBatteryManager;
-import me.mami.stratocraft.manager.NewBatteryManager.BlockPattern;
-import me.mami.stratocraft.manager.NewBatteryManager.NewBatteryData;
-import me.mami.stratocraft.manager.NewBatteryManager.RecipeCheckResult;
-import me.mami.stratocraft.manager.TerritoryManager;
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.model.Structure;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
@@ -19,6 +11,14 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+
+import me.mami.stratocraft.manager.ItemManager;
+import me.mami.stratocraft.manager.NewBatteryManager;
+import me.mami.stratocraft.manager.NewBatteryManager.NewBatteryData;
+import me.mami.stratocraft.manager.NewBatteryManager.RecipeCheckResult;
+import me.mami.stratocraft.manager.TerritoryManager;
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.Structure;
 /**
  * Yeni Esnek Batarya Sistemi Listener
  * Her bataryanın kendine özel tarif kontrol fonksiyonu var
@@ -442,15 +442,21 @@ public class NewBatteryListener implements Listener {
                     
                     org.bukkit.Location particleLoc = new org.bukkit.Location(loc.getWorld(), x, y, z);
                     
-                    // Sadece diğer oyunculara göster (kendine gösterme)
+                    // ✅ OPTİMİZE: Sadece yakındaki diğer oyunculara göster (performans)
+                    double maxDistance = 50.0; // 50 blok mesafe limiti
+                    double maxDistanceSquared = maxDistance * maxDistance;
                     for (org.bukkit.entity.Player other : org.bukkit.Bukkit.getOnlinePlayers()) {
-                        if (!other.equals(player)) {
-                            other.spawnParticle(particleType, particleLoc, 1, 0, 0, 0, 0);
+                        if (other != null && !other.equals(player) && other.getWorld().equals(loc.getWorld())) {
+                            // Mesafe kontrolü (squared - performans)
+                            double distanceSquared = other.getLocation().distanceSquared(particleLoc);
+                            if (distanceSquared <= maxDistanceSquared) {
+                                other.spawnParticle(particleType, particleLoc, 1, 0, 0, 0, 0);
+                            }
                         }
                     }
                 }
             }
-        }.runTaskTimer(batteryManager.getPlugin(), 0L, 10L); // ✅ OPTİMİZE: Her 10 tick'te bir (0.5 saniye) - performans için
+        }.runTaskTimer(batteryManager.getPlugin(), 0L, 20L); // ✅ OPTİMİZE: Her 20 tick'te bir (1 saniye) - performans için (10L -> 20L)
     }
     
     /**

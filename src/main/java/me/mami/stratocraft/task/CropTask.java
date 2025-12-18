@@ -1,12 +1,13 @@
 package me.mami.stratocraft.task;
 
-import me.mami.stratocraft.manager.TerritoryManager;
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.model.Structure;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import me.mami.stratocraft.manager.TerritoryManager;
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.Structure;
 
 public class CropTask extends BukkitRunnable {
     private final TerritoryManager territoryManager;
@@ -17,8 +18,11 @@ public class CropTask extends BukkitRunnable {
 
     @Override
     public void run() {
+        
         // ✅ OPTİMİZE: Sadece chunk'ı yüklü olan klanlar için çalış
+        int clanCount = 0;
         for (Clan clan : territoryManager.getClanManager().getAllClans()) {
+            clanCount++;
             if (clan == null) continue;
             
             for (Structure s : clan.getStructures()) {
@@ -70,6 +74,7 @@ public class CropTask extends BukkitRunnable {
                 }
             }
         }
+        
     }
     
     private boolean isCrop(Material type) {

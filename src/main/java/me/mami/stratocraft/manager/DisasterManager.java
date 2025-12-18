@@ -448,7 +448,12 @@ public class DisasterManager {
         World world = spawnLoc.getWorld();
         int chunkX = spawnLoc.getBlockX() >> 4;
         int chunkZ = spawnLoc.getBlockZ() >> 4;
-        world.getChunkAt(chunkX, chunkZ).load(true); // Force load
+        // ✅ OPTİMİZE: Force load kaldırıldı (sonsuz döngüye neden olabilir)
+        // Chunk zaten yüklüyse işlem yapma
+        org.bukkit.Chunk chunk = world.getChunkAt(chunkX, chunkZ);
+        if (!chunk.isLoaded()) {
+            chunk.load(false); // Normal load kullan (force load değil)
+        }
         
         // Yeni enum'ları kullan
         DisasterCategory category = Disaster.getCategory(type);
@@ -572,7 +577,12 @@ public class DisasterManager {
         // Chunk'ı force load et (felaket hareket edebilsin diye)
         int chunkX = x >> 4;
         int chunkZ = z >> 4;
-        world.getChunkAt(chunkX, chunkZ).load(true); // Force load
+        // ✅ OPTİMİZE: Force load kaldırıldı (sonsuz döngüye neden olabilir)
+        // Chunk zaten yüklüyse işlem yapma
+        org.bukkit.Chunk chunk = world.getChunkAt(chunkX, chunkZ);
+        if (!chunk.isLoaded()) {
+            chunk.load(false); // Normal load kullan (force load değil)
+        }
         
         // Chunk yüklendikten sonra spawn yap
         int y = world.getHighestBlockYAt(x, z);
@@ -594,7 +604,12 @@ public class DisasterManager {
         World world = spawnLoc.getWorld();
         int chunkX = spawnLoc.getBlockX() >> 4;
         int chunkZ = spawnLoc.getBlockZ() >> 4;
-        world.getChunkAt(chunkX, chunkZ).load(true); // Force load
+        // ✅ OPTİMİZE: Force load kaldırıldı (sonsuz döngüye neden olabilir)
+        // Chunk zaten yüklüyse işlem yapma
+        org.bukkit.Chunk chunk = world.getChunkAt(chunkX, chunkZ);
+        if (!chunk.isLoaded()) {
+            chunk.load(false); // Normal load kullan (force load değil)
+        }
         
         // Canlı felaketler için merkeze giden yol boyunca chunk'ları da yükle (opsiyonel, performans için)
         // NOT: DisasterTask içinde chunk yönetimi yapılıyor, burada sadece spawn chunk'ını yükle

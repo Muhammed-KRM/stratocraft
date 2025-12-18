@@ -1,8 +1,9 @@
 package me.mami.stratocraft.task;
 
+import org.bukkit.scheduler.BukkitRunnable;
+
 import me.mami.stratocraft.manager.ClanManager;
 import me.mami.stratocraft.manager.StructureEffectManager;
-import org.bukkit.scheduler.BukkitRunnable;
 
 /**
  * StructureEffectTask - Yapı efektlerini periyodik olarak uygular
@@ -37,7 +38,6 @@ public class StructureEffectTask extends BukkitRunnable {
     @Override
     public void run() {
         if (effectManager == null) {
-            // Eski sistem devre dışı
             return;
         }
         

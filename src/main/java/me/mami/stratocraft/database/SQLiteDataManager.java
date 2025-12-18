@@ -622,10 +622,16 @@ public class SQLiteDataManager {
                         // ID'den parse et (fallback)
                         String[] parts = trap.id.split(":");
                         if (parts.length >= 4) {
-                            world = parts[0];
-                            x = Integer.parseInt(parts[1]);
-                            y = Integer.parseInt(parts[2]);
-                            z = Integer.parseInt(parts[3]);
+                            try {
+                                world = parts[0];
+                                x = Integer.parseInt(parts[1]);
+                                y = Integer.parseInt(parts[2]);
+                                z = Integer.parseInt(parts[3]);
+                            } catch (NumberFormatException e) {
+                                // Geçersiz format, bu tuzak kaydedilemez
+                                plugin.getLogger().warning("Tuzak kaydedilemedi: Geçersiz ID formatı (trap.id: " + trap.id + ")");
+                                continue;
+                            }
                         }
                     }
                     
@@ -903,32 +909,65 @@ public class SQLiteDataManager {
             DataManager.ContractTermsSnapshot termsSnapshot) throws SQLException {
         
         saveLock.lock();
+        boolean transactionStarted = false;
         try {
             // ✅ ACID UYUMLU: Tüm işlemler tek transaction içinde
-            databaseManager.beginTransaction();
-            
+            // Transaction başlat (nested transaction destekleniyor)
+            // ✅ DÜZELTME: Veritabanı bağlantısı kontrolü (onDisable sırasında kapatılmış olabilir)
             try {
-                // Tüm snapshot'ları transaction içinde kaydet
-                if (clanSnapshot != null) saveClanSnapshot(clanSnapshot, true);
-                if (contractSnapshot != null) saveContractSnapshot(contractSnapshot, true);
-                if (shopSnapshot != null) saveShopSnapshot(shopSnapshot, true);
-                if (inventorySnapshot != null) saveInventorySnapshot(inventorySnapshot, true);
-                if (allianceSnapshot != null) saveAllianceSnapshot(allianceSnapshot, true);
-                if (disasterSnapshot != null) saveDisasterSnapshot(disasterSnapshot, true);
-                if (bankSnapshot != null) saveClanBankSnapshot(bankSnapshot, true);
-                if (missionSnapshot != null) saveClanMissionSnapshot(missionSnapshot, true);
-                if (trapSnapshot != null) saveTrapSnapshot(trapSnapshot, true);
-                if (requestSnapshot != null) saveContractRequestSnapshot(requestSnapshot, true);
-                if (termsSnapshot != null) saveContractTermsSnapshot(termsSnapshot, true);
+                // Veritabanı bağlantısı kontrolü
+                Connection testConn = databaseManager.getConnection();
+                if (testConn == null || testConn.isClosed()) {
+                    saveLock.unlock();
+                    plugin.getLogger().warning("SQLite veritabanı bağlantısı kapalı, kayıt atlanıyor.");
+                    return; // Bağlantı kapalıysa sessizce çık (onDisable sırasında normal)
+                }
                 
-                databaseManager.commit();
-                plugin.getLogger().info("§aTüm veriler SQLite'a kaydedildi.");
-                
-            } catch (SQLException e) {
-                databaseManager.rollback();
-                plugin.getLogger().severe("SQLite kayıt hatası: " + e.getMessage());
-                throw e;
+                databaseManager.beginTransaction();
+                transactionStarted = true;
+            } catch (SQLException beginEx) {
+                saveLock.unlock();
+                // ✅ DÜZELTME: onDisable sırasında bağlantı kapatılmış olabilir, bu normal
+                if (beginEx.getMessage() != null && 
+                    (beginEx.getMessage().contains("closed") || beginEx.getMessage().contains("Connection"))) {
+                    plugin.getLogger().info("SQLite veritabanı bağlantısı kapalı, kayıt atlanıyor.");
+                } else {
+                    plugin.getLogger().severe("SQLite transaction başlatma hatası: " + beginEx.getMessage());
+                }
+                throw beginEx;
             }
+            
+            // Tüm snapshot'ları transaction içinde kaydet
+            if (clanSnapshot != null) saveClanSnapshot(clanSnapshot, true);
+            if (contractSnapshot != null) saveContractSnapshot(contractSnapshot, true);
+            if (shopSnapshot != null) saveShopSnapshot(shopSnapshot, true);
+            if (inventorySnapshot != null) saveInventorySnapshot(inventorySnapshot, true);
+            if (allianceSnapshot != null) saveAllianceSnapshot(allianceSnapshot, true);
+            if (disasterSnapshot != null) saveDisasterSnapshot(disasterSnapshot, true);
+            if (bankSnapshot != null) saveClanBankSnapshot(bankSnapshot, true);
+            if (missionSnapshot != null) saveClanMissionSnapshot(missionSnapshot, true);
+            if (trapSnapshot != null) saveTrapSnapshot(trapSnapshot, true);
+            if (requestSnapshot != null) saveContractRequestSnapshot(requestSnapshot, true);
+            if (termsSnapshot != null) saveContractTermsSnapshot(termsSnapshot, true);
+            
+            // ✅ DÜZELTME: Commit et (nested transaction desteği sayesinde güvenli)
+            if (transactionStarted) {
+                databaseManager.commit();
+                transactionStarted = false; // Commit başarılı, rollback gerekmez
+            }
+            plugin.getLogger().info("§aTüm veriler SQLite'a kaydedildi.");
+            
+        } catch (SQLException e) {
+            // ✅ DÜZELTME: Rollback et (sadece transaction başlatılmışsa)
+            if (transactionStarted) {
+                try {
+                    databaseManager.rollback();
+                } catch (SQLException rollbackEx) {
+                    plugin.getLogger().severe("SQLite rollback hatası: " + rollbackEx.getMessage());
+                }
+            }
+            plugin.getLogger().severe("SQLite kayıt hatası: " + e.getMessage());
+            throw e;
         } finally {
             saveLock.unlock();
         }

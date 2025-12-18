@@ -149,6 +149,7 @@ public class DisasterTask extends BukkitRunnable {
             // Mini felaketler
             handleMiniDisaster(disaster);
         }
+        
     }
     
     /**

@@ -1,8 +1,8 @@
 package me.mami.stratocraft.task;
 
-import me.mami.stratocraft.manager.TerritoryManager;
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.model.Structure;
+import java.util.Map;
+import java.util.Random;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -10,8 +10,9 @@ import org.bukkit.block.Block;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.Random;
-import java.util.Map;
+import me.mami.stratocraft.manager.TerritoryManager;
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.model.Structure;
 
 public class DrillTask extends BukkitRunnable {
     private final TerritoryManager territoryManager;
@@ -23,8 +24,11 @@ public class DrillTask extends BukkitRunnable {
 
     @Override
     public void run() {
+        
         // ✅ OPTİMİZE: Sadece chunk'ı yüklü olan klanlar için çalış
+        int clanCount = 0;
         for (Clan clan : territoryManager.getClanManager().getAllClans()) {
+            clanCount++;
             if (clan == null) continue;
             
             for (Structure s : clan.getStructures()) {
@@ -104,6 +108,7 @@ public class DrillTask extends BukkitRunnable {
                 }
             }
         }
+        
     }
     
     /**

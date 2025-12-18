@@ -47,7 +47,9 @@ public class BuffTask extends BukkitRunnable {
         tickCounter++;
         
         // Online oyuncu yoksa hiçbir şey yapma
-        if (Bukkit.getOnlinePlayers().isEmpty()) return;
+        if (Bukkit.getOnlinePlayers().isEmpty()) {
+            return;
+        }
         
         // ========== KATEGORİ 2: KLAN ÖZEL YAPILAR ==========
         // OPTİMİZE: Her 2 tick'te bir çalış (saniyede 10 kez yerine 5 kez)
@@ -60,6 +62,7 @@ public class BuffTask extends BukkitRunnable {
         if (tickCounter % 5 == 0) {
             processTerritoryStructures();
         }
+        
     }
     
     /**
@@ -68,7 +71,9 @@ public class BuffTask extends BukkitRunnable {
     private void processSpecialStructures() {
         // Oyuncu listesini bir kez al
         var players = Bukkit.getOnlinePlayers();
-        if (players.isEmpty()) return;
+        if (players.isEmpty()) {
+            return;
+        }
         
         // Oyuncu -> Klan cache'i (aynı oyuncu için tekrar sorgu yapma)
         Map<UUID, Clan> playerClanCache = new HashMap<>();
@@ -96,6 +101,7 @@ public class BuffTask extends BukkitRunnable {
             // 4. SAVUNMA DUVARI
             checkDefenseWall(p, playerLoc, clanId);
         }
+        
     }
     
     // OPTİMİZE: distanceSquared kullan (Math.sqrt pahalı)
@@ -157,7 +163,10 @@ public class BuffTask extends BukkitRunnable {
     private void processTerritoryStructures() {
         // ✅ OPTİMİZE: Oyuncu listesini bir kez al
         Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
-        if (onlinePlayers.isEmpty()) return;
+        if (onlinePlayers.isEmpty()) {
+            return;
+        }
+        
         
         for (Player p : onlinePlayers) {
             if (p == null || !p.isOnline()) continue;
@@ -233,6 +242,7 @@ public class BuffTask extends BukkitRunnable {
                 }
             }
         }
+        
     }
     
     private void processWatchtower(Player p, Clan territoryClan, Structure s) {

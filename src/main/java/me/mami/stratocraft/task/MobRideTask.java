@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Phantom;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -28,7 +29,15 @@ public class MobRideTask extends BukkitRunnable {
     public void run() {
         long currentTime = System.currentTimeMillis();
         
-        for (Player p : Bukkit.getOnlinePlayers()) {
+        // ✅ OPTİMİZE: Oyuncu yoksa erken çıkış
+        Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+        if (onlinePlayers.isEmpty()) {
+            return;
+        }
+        
+        int playerCount = 0;
+        for (Player p : onlinePlayers) {
+            playerCount++;
             if (p.isInsideVehicle()) {
                 mobManager.handleRiding(p);
                 
@@ -112,6 +121,7 @@ public class MobRideTask extends BukkitRunnable {
                 wyvernLastMessage.remove(p.getUniqueId());
             }
         }
+        
     }
 }
 

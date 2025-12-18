@@ -119,6 +119,9 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.gui.ClanTerritoryMenu clanTerritoryMenu;
     private me.mami.stratocraft.task.TerritoryBoundaryParticleTask boundaryParticleTask; // ✅ YENİ: Partikül task'ı
     
+    // ✅ YENİ: Async task takibi (shutdown için)
+    private final java.util.Set<org.bukkit.scheduler.BukkitTask> asyncTasks = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+    
     public me.mami.stratocraft.listener.SpecialWeaponListener getSpecialWeaponListener() {
         return specialWeaponListener;
     }
@@ -514,10 +517,22 @@ public class Main extends JavaPlugin {
         // Seviyeli Silah ve Zırh Listener
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.WeaponArmorListener(), this);
 
-        // Veri yükleme (yeni sistemlerle)
-        dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener, 
-                allianceManager, disasterManager, clanBankSystem, clanMissionSystem, 
-                clanActivitySystem, trapManager, contractRequestManager, contractTermsManager);
+        // ✅ OPTİMİZE: Veri yükleme async olarak yap (başlatma performansı için)
+        // ✅ OPTİMİZE: Async task'ı takip et (shutdown için)
+        final org.bukkit.scheduler.BukkitTask[] loadTaskRef = new org.bukkit.scheduler.BukkitTask[1];
+        loadTaskRef[0] = Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            try {
+                dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener,
+                        allianceManager, disasterManager, clanBankSystem, clanMissionSystem,
+                    clanActivitySystem, trapManager, contractRequestManager, contractTermsManager);
+            } finally {
+                // Task tamamlandı, takipten çıkar
+                if (loadTaskRef[0] != null) {
+                    asyncTasks.remove(loadTaskRef[0]);
+                }
+            }
+        });
+        asyncTasks.add(loadTaskRef[0]);
         
         // Periyodik otomatik kayıt başlat
         if (dataManager != null) {
@@ -543,9 +558,21 @@ public class Main extends JavaPlugin {
             }
         }
         
-        // Güç profillerini yükle (StratocraftPowerSystem varsa)
+        // ✅ OPTİMİZE: Güç profillerini async olarak yükle (başlatma performansı için)
         if (stratocraftPowerSystem != null) {
-            stratocraftPowerSystem.loadAllPlayerProfiles();
+            // ✅ OPTİMİZE: Async task'ı takip et (shutdown için)
+            final org.bukkit.scheduler.BukkitTask[] powerLoadTaskRef = new org.bukkit.scheduler.BukkitTask[1];
+            powerLoadTaskRef[0] = Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+                try {
+                    stratocraftPowerSystem.loadAllPlayerProfiles();
+                } finally {
+                    // Task tamamlandı, takipten çıkar
+                    if (powerLoadTaskRef[0] != null) {
+                        asyncTasks.remove(powerLoadTaskRef[0]);
+                    }
+                }
+            });
+            asyncTasks.add(powerLoadTaskRef[0]);
         }
         
         // ✅ BATARYA PARTİKÜL SİSTEMİ: Config yükle (configManager hazır olduktan sonra)
@@ -578,8 +605,8 @@ public class Main extends JavaPlugin {
         }
         
         // 3. Zamanlayıcıları Başlat
-        // OPTİMİZE: BuffTask interval'i 20L'den 10L'ye düşürüldü ama iç optimizasyonlar ile daha verimli
-        new BuffTask(territoryManager, siegeWeaponManager).runTaskTimer(this, 20L, 10L);
+        // ✅ OPTİMİZE: BuffTask interval'i artırıldı (10L -> 20L = 1 saniye) - performans için
+        new BuffTask(territoryManager, siegeWeaponManager).runTaskTimer(this, 20L, 20L);
         // ✅ PERFORMANS OPTİMİZASYONU: DisasterTask interval'i artırıldı (20L -> 60L = 3 saniye)
         new DisasterTask(disasterManager, territoryManager).runTaskTimer(this, 20L, 60L);
         
@@ -606,22 +633,51 @@ public class Main extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new org.bukkit.event.Listener() {
             @org.bukkit.event.EventHandler
             public void onPlayerJoin(org.bukkit.event.player.PlayerJoinEvent event) {
+                org.bukkit.entity.Player player = event.getPlayer();
+                
+                if (player == null) {
+                    return;
+                }
+                
+                // ✅ OPTİMİZE: Kritik olmayan işlemleri async yap (oyuncu giriş performansı için)
+                // Hemen yapılması gereken işlemler (sync)
                 if (disasterManager != null) {
-                    disasterManager.onPlayerJoin(event.getPlayer());
+                    disasterManager.onPlayerJoin(player);
                 }
                 if (contractManager != null) {
-                    contractManager.onPlayerJoin(event.getPlayer());
+                    contractManager.onPlayerJoin(player);
                 }
                 if (bossManager != null) {
-                    bossManager.onPlayerJoin(event.getPlayer());
+                    bossManager.onPlayerJoin(player);
                 }
                 if (hudManager != null) {
-                    hudManager.onPlayerJoin(event.getPlayer());
+                    hudManager.onPlayerJoin(player);
                 }
-                // YENİ: StructureEffectManager - Oyuncu girişinde yapı efektlerini uygula
+                
+                // ✅ OPTİMİZE: Ağır işlemleri async yap (StructureEffectManager - tüm yapıları kontrol ediyor)
                 if (structureEffectManager != null) {
-                    structureEffectManager.onPlayerJoin(event.getPlayer());
+                    // ✅ OPTİMİZE: Async task'ı takip et (shutdown için)
+                    final org.bukkit.scheduler.BukkitTask[] joinTaskRef = new org.bukkit.scheduler.BukkitTask[1];
+                    joinTaskRef[0] = org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(me.mami.stratocraft.Main.this, () -> {
+                        // Async işlemler - sonra sync'e dönüp efektleri uygula
+                        org.bukkit.Bukkit.getScheduler().runTask(me.mami.stratocraft.Main.this, () -> {
+                            try {
+                                if (player.isOnline()) {
+                                    structureEffectManager.onPlayerJoin(player);
+                                }
+                            } finally {
+                                // Task tamamlandı, takipten çıkar
+                                if (joinTaskRef[0] != null) {
+                                    asyncTasks.remove(joinTaskRef[0]);
+                                }
+                            }
+                        });
+                    });
+                    if (joinTaskRef[0] != null) {
+                        asyncTasks.add(joinTaskRef[0]);
+                    }
                 }
+                
                 // ✅ OYUNCU ADI GÜNCELLEME: Seviyeye göre renk ve seviye gösterimi
                 // PowerSystemListener zaten PlayerJoinEvent'i dinliyor ve updatePlayerName çağırıyor
             }
@@ -681,7 +737,7 @@ public class Main extends JavaPlugin {
             configManager != null && configManager.getGameBalanceConfig() != null 
                 ? Math.max(40L, configManager.getGameBalanceConfig().getMainRayTraceInterval()) : 40L); // ✅ OPTİMİZE: En az 2 saniye (40 tick)
         long mobRideInterval = configManager != null && configManager.getGameBalanceConfig() != null 
-            ? configManager.getGameBalanceConfig().getMobRideTaskInterval() : 5L;
+            ? Math.max(40L, configManager.getGameBalanceConfig().getMobRideTaskInterval()) : 40L; // ✅ OPTİMİZE: En az 2 saniye (40 tick)
         new MobRideTask(mobManager).runTaskTimer(this, mobRideInterval, mobRideInterval);
         new DrillTask(territoryManager).runTaskTimer(this, configManager.getDrillInterval(),
                 configManager.getDrillInterval());
@@ -1098,8 +1154,19 @@ public class Main extends JavaPlugin {
             dataManager.getSQLiteDataManager().stopOldDataCleanupTask();
         }
         
-        // ✅ ÖNCE: Tüm async task'ları iptal et (plugin kapatılırken)
+        // ✅ ÖNCE: Tüm task'ları iptal et (plugin kapatılırken - sync ve async)
+        // Not: cancelTasks hem sync hem async task'ları iptal eder
         org.bukkit.Bukkit.getScheduler().cancelTasks(this);
+        
+        // ✅ YENİ: Takip edilen async task'ları iptal et (ekstra güvenlik)
+        synchronized (asyncTasks) {
+            for (org.bukkit.scheduler.BukkitTask task : asyncTasks) {
+                if (task != null && !task.isCancelled()) {
+                    task.cancel();
+                }
+            }
+            asyncTasks.clear();
+        }
         
         // ✅ YENİ: PlayerFeatureMonitor durdur
         // ⚠️ OPTİMİZE: Devre dışı bırakıldı (BuffTask zaten yapıyor)
@@ -1161,15 +1228,24 @@ public class Main extends JavaPlugin {
                 shopManager != null && virtualStorageListener != null && allianceManager != null && disasterManager != null) {
             // Kapanış işlemlerinde her zaman senkron kayıt (yeni sistemlerle)
             // Tuzaklar da DataManager üzerinden kaydediliyor
-            dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener, 
-                    allianceManager, disasterManager, clanBankSystem, clanMissionSystem, clanActivitySystem, 
-                    trapManager, contractRequestManager, contractTermsManager, true);
-            getLogger().info("Stratocraft: Veriler kaydedildi.");
+            try {
+                dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener, 
+                        allianceManager, disasterManager, clanBankSystem, clanMissionSystem, clanActivitySystem, 
+                        trapManager, contractRequestManager, contractTermsManager, true);
+                getLogger().info("Stratocraft: Veriler kaydedildi.");
+            } catch (Exception e) {
+                getLogger().severe("Stratocraft: Veri kaydetme hatası: " + e.getMessage());
+                e.printStackTrace();
+            }
             
             // ✅ SQLite veritabanını kapat
             if (dataManager != null && dataManager.getDatabaseManager() != null) {
-                dataManager.getDatabaseManager().close();
-                getLogger().info("Stratocraft: SQLite veritabanı kapatıldı.");
+                try {
+                    dataManager.getDatabaseManager().close();
+                    getLogger().info("Stratocraft: SQLite veritabanı kapatıldı.");
+                } catch (Exception e) {
+                    getLogger().warning("Stratocraft: SQLite veritabanı kapatma hatası: " + e.getMessage());
+                }
             }
             
             // Güç profillerini kaydet (sync - onDisable)
@@ -1186,6 +1262,7 @@ public class Main extends JavaPlugin {
         // NOT: Tuzaklar artık DataManager üzerinden kaydediliyor
         // TrapManager.saveTraps() çağrılmıyor çünkü duplikasyon olur
         getLogger().info("Stratocraft: Plugin kapatılıyor.");
+        
     }
 
     public ConfigManager getConfigManager() {
