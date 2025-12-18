@@ -117,6 +117,7 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.TerritoryBoundaryManager territoryBoundaryManager;
     private me.mami.stratocraft.manager.config.TerritoryConfig territoryConfig;
     private me.mami.stratocraft.gui.ClanTerritoryMenu clanTerritoryMenu;
+    private me.mami.stratocraft.task.TerritoryBoundaryParticleTask boundaryParticleTask; // ✅ YENİ: Partikül task'ı
     
     public me.mami.stratocraft.listener.SpecialWeaponListener getSpecialWeaponListener() {
         return specialWeaponListener;
@@ -318,8 +319,8 @@ public class Main extends JavaPlugin {
             territoryManager.setBoundaryManager(territoryBoundaryManager);
         }
         
-        // YENİ: TerritoryListener güncelle
-        TerritoryListener territoryListener = new TerritoryListener(territoryManager, siegeManager);
+        // ✅ YENİ: TerritoryListener güncelle (field'a atanıyor)
+        territoryListener = new TerritoryListener(territoryManager, siegeManager);
         if (territoryBoundaryManager != null) {
             territoryListener.setBoundaryManager(territoryBoundaryManager);
         }
@@ -328,13 +329,13 @@ public class Main extends JavaPlugin {
         }
         Bukkit.getPluginManager().registerEvents(territoryListener, this);
         
-        // YENİ: TerritoryBoundaryParticleTask başlat
+        // ✅ YENİ: TerritoryBoundaryParticleTask başlat
         if (territoryConfig != null && territoryConfig.isBoundaryParticleEnabled() && territoryBoundaryManager != null) {
             try {
-                me.mami.stratocraft.task.TerritoryBoundaryParticleTask boundaryTask = 
-                    new me.mami.stratocraft.task.TerritoryBoundaryParticleTask(
-                        this, territoryManager, territoryBoundaryManager, territoryConfig);
-                boundaryTask.start();
+                boundaryParticleTask = new me.mami.stratocraft.task.TerritoryBoundaryParticleTask(
+                    this, territoryManager, territoryBoundaryManager, territoryConfig);
+                boundaryParticleTask.start();
+                getLogger().info("§aTerritoryBoundaryParticleTask başlatıldı.");
             } catch (Exception e) {
                 getLogger().warning("TerritoryBoundaryParticleTask başlatılamadı: " + e.getMessage());
                 e.printStackTrace();
@@ -523,6 +524,19 @@ public class Main extends JavaPlugin {
                         clanActivitySystem, trapManager, contractRequestManager, contractTermsManager, false);
                 return null;
             });
+            
+            // ✅ YENİ: DataManager temizleme task'larını başlat
+            dataManager.startCleanupTasks();
+            
+            // ✅ YENİ: SQLite WAL checkpoint task'ını başlat
+            if (dataManager.getDatabaseManager() != null) {
+                dataManager.getDatabaseManager().startWalCheckpointTask();
+            }
+            
+            // ✅ YENİ: SQLiteDataManager eski veri temizleme task'ını başlat
+            if (dataManager.getSQLiteDataManager() != null) {
+                dataManager.getSQLiteDataManager().startOldDataCleanupTask();
+            }
         }
         
         // Güç profillerini yükle (StratocraftPowerSystem varsa)
@@ -1064,6 +1078,16 @@ public class Main extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // ✅ YENİ: DataManager temizleme task'larını durdur
+        if (dataManager != null) {
+            dataManager.stopCleanupTasks();
+        }
+        
+        // ✅ YENİ: SQLiteDataManager eski veri temizleme task'ını durdur
+        if (dataManager != null && dataManager.getSQLiteDataManager() != null) {
+            dataManager.getSQLiteDataManager().stopOldDataCleanupTask();
+        }
+        
         // ✅ ÖNCE: Tüm async task'ları iptal et (plugin kapatılırken)
         org.bukkit.Bukkit.getScheduler().cancelTasks(this);
         
@@ -1071,6 +1095,12 @@ public class Main extends JavaPlugin {
         if (playerFeatureMonitor != null) {
             playerFeatureMonitor.stop();
             getLogger().info("PlayerFeatureMonitor durduruldu.");
+        }
+        
+        // ✅ YENİ: TerritoryBoundaryParticleTask durdur
+        if (boundaryParticleTask != null) {
+            boundaryParticleTask.stop();
+            getLogger().info("TerritoryBoundaryParticleTask durduruldu.");
         }
         
         // ✅ DisasterArenaManager'ı durdur

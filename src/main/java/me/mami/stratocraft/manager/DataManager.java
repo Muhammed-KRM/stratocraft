@@ -47,9 +47,13 @@ public class DataManager {
     private static final String BACKUP_FOLDER = "backups";
     
     // Auto-save ayarları (config'den yüklenecek)
-    private long autoSaveInterval = 300000L; // 5 dakika (ms) - default
+    private long autoSaveInterval = 600000L; // 10 dakika (ms) - default (optimize edildi)
     private boolean autoSaveEnabled = true;
     private org.bukkit.scheduler.BukkitTask autoSaveTask;
+    
+    // ✅ YENİ: Periyodik temizleme task'ları
+    private org.bukkit.scheduler.BukkitTask tempFileCleanupTask;
+    private org.bukkit.scheduler.BukkitTask backupCleanupTask;
     
     // SQLite entegrasyonu
     private boolean useSQLite = false;
@@ -71,6 +75,12 @@ public class DataManager {
         // Config'den ayarları yükle
         loadConfig();
         
+        // ✅ YENİ: Plugin başlangıcında geçici dosyaları temizle
+        cleanupTempFiles();
+        
+        // NOT: Periyodik temizleme task'ları Main.java'da başlatılıyor
+        // (Plugin lifecycle yönetimi için)
+        
         // ✅ SQLite başlat (eğer kullanılıyorsa)
         if (useSQLite) {
             try {
@@ -90,9 +100,109 @@ public class DataManager {
     private void loadConfig() {
         org.bukkit.configuration.file.FileConfiguration config = plugin.getConfig();
         if (config != null) {
-            autoSaveInterval = config.getLong("data-manager.auto-save-interval", 300000L); // 5 dakika default
+            autoSaveInterval = config.getLong("data-manager.auto-save-interval", 600000L); // 10 dakika default (optimize edildi)
             autoSaveEnabled = config.getBoolean("data-manager.auto-save-enabled", true);
             useSQLite = config.getBoolean("data-manager.use-sqlite", true); // SQLite varsayılan olarak aktif
+        }
+    }
+    
+    /**
+     * ✅ YENİ: Periyodik temizleme task'larını başlat
+     */
+    public void startCleanupTasks() {
+        // Eğer zaten task'lar varsa önce durdur
+        stopCleanupTasks();
+        
+        // Geçici dosya temizleme (her 1 saatte bir)
+        tempFileCleanupTask = org.bukkit.Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+            cleanupTempFiles();
+        }, 72000L, 72000L); // 1 saat = 72000 tick
+        
+        // Backup temizleme (her 6 saatte bir)
+        backupCleanupTask = org.bukkit.Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+            cleanupOldBackupsPeriodic();
+        }, 432000L, 432000L); // 6 saat = 432000 tick
+        
+        plugin.getLogger().info("§aPeriyodik temizleme task'ları başlatıldı.");
+    }
+    
+    /**
+     * ✅ YENİ: Periyodik temizleme task'larını durdur
+     */
+    public void stopCleanupTasks() {
+        if (tempFileCleanupTask != null) {
+            tempFileCleanupTask.cancel();
+            tempFileCleanupTask = null;
+        }
+        if (backupCleanupTask != null) {
+            backupCleanupTask.cancel();
+            backupCleanupTask = null;
+        }
+    }
+    
+    /**
+     * ✅ YENİ: Geçici dosyaları temizle (.tmp ve .old dosyaları)
+     */
+    private void cleanupTempFiles() {
+        try {
+            File dataFolder = new File(plugin.getDataFolder(), "data");
+            if (!dataFolder.exists()) return;
+            
+            File[] tempFiles = dataFolder.listFiles((dir, name) -> 
+                name.endsWith(".tmp") || name.endsWith(".old"));
+            
+            if (tempFiles == null || tempFiles.length == 0) return;
+            
+            long now = System.currentTimeMillis();
+            long maxAge = 24 * 60 * 60 * 1000; // 24 saat
+            int deletedCount = 0;
+            
+            for (File tempFile : tempFiles) {
+                if (now - tempFile.lastModified() > maxAge) {
+                    if (tempFile.delete()) {
+                        deletedCount++;
+                    }
+                }
+            }
+            
+            if (deletedCount > 0) {
+                plugin.getLogger().info("§aGeçici dosyalar temizlendi: " + deletedCount + " dosya");
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Geçici dosya temizleme hatası: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * ✅ YENİ: Periyodik backup temizleme (tüm backup dosyaları için)
+     */
+    private void cleanupOldBackupsPeriodic() {
+        try {
+            File backupFolder = new File(dataFolder, BACKUP_FOLDER);
+            if (!backupFolder.exists()) return;
+            
+            File[] backupFiles = backupFolder.listFiles((dir, name) -> 
+                name.endsWith(".json") || name.endsWith(".db"));
+            
+            if (backupFiles == null || backupFiles.length == 0) return;
+            
+            // Her dosya tipi için ayrı temizleme
+            java.util.Map<String, String> fileTypes = new java.util.HashMap<>();
+            for (File backupFile : backupFiles) {
+                String fileName = backupFile.getName();
+                int lastDot = fileName.lastIndexOf('.');
+                if (lastDot > 0) {
+                    String baseName = fileName.substring(0, fileName.lastIndexOf('_') > 0 ? 
+                        fileName.lastIndexOf('_') : lastDot);
+                    String extension = fileName.substring(lastDot);
+                    if (!fileTypes.containsKey(baseName)) {
+                        fileTypes.put(baseName, extension);
+                        cleanupOldBackups(backupFolder, baseName, extension);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Backup temizleme hatası: " + e.getMessage());
         }
     }
     
@@ -527,6 +637,20 @@ public class DataManager {
         } catch (Exception e) {
             plugin.getLogger().severe("§cVeri snapshot hatası: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            // ✅ YENİ: Snapshot'ları temizle (memory leak önleme)
+            clanSnapshot = null;
+            contractSnapshot = null;
+            shopSnapshot = null;
+            inventorySnapshot = null;
+            allianceSnapshot = null;
+            disasterSnapshot = null;
+            requestSnapshot = null;
+            termsSnapshot = null;
+            bankSnapshot = null;
+            missionSnapshot = null;
+            activitySnapshot = null;
+            trapSnapshot = null;
         }
     }
     

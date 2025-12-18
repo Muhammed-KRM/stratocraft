@@ -23,6 +23,11 @@ public class TerritoryConfig {
     private int boundaryParticleVisibleDistance = 100;
     private double boundaryParticleSpacing = 2.0;
     
+    // ✅ YENİ: Partikül performans ayarları (config'den ayarlanabilir)
+    private int maxParticlesPerPlayer = 50; // Oyuncu başına maksimum partikül
+    private int maxTotalDistance = 80; // 80 bloktan uzaktaysa hiç partikül gösterme
+    private int maxParticleDistance = 100; // 100 bloktan uzaktaki partikülleri gösterme
+    
     // Alan Genişletme/Küçültme
     private int minArea = 9;
     private int maxArea = 10000;
@@ -72,6 +77,11 @@ public class TerritoryConfig {
         boundaryParticleUpdateInterval = config.getInt("clan.territory.boundary-particle.update-interval", 20);
         boundaryParticleVisibleDistance = config.getInt("clan.territory.boundary-particle.visible-distance", 100);
         boundaryParticleSpacing = config.getDouble("clan.territory.boundary-particle.particle-spacing", 2.0);
+        
+        // ✅ YENİ: Partikül performans ayarları
+        maxParticlesPerPlayer = config.getInt("clan.territory.boundary-particle.max-particles-per-player", 50);
+        maxTotalDistance = config.getInt("clan.territory.boundary-particle.max-total-distance", 80);
+        maxParticleDistance = config.getInt("clan.territory.boundary-particle.max-particle-distance", 100);
         
         // Alan Genişletme/Küçültme
         minArea = config.getInt("clan.territory.expansion.min-area", 9);
@@ -129,6 +139,11 @@ public class TerritoryConfig {
     public int getBoundaryParticleUpdateInterval() { return boundaryParticleUpdateInterval; }
     public int getBoundaryParticleVisibleDistance() { return boundaryParticleVisibleDistance; }
     public double getBoundaryParticleSpacing() { return boundaryParticleSpacing; }
+    
+    // ✅ YENİ: Partikül performans ayarları getter'ları
+    public int getMaxParticlesPerPlayer() { return maxParticlesPerPlayer; }
+    public int getMaxTotalDistance() { return maxTotalDistance; }
+    public int getMaxParticleDistance() { return maxParticleDistance; }
     public int getMinArea() { return minArea; }
     public int getMaxArea() { return maxArea; }
     public int getExpansionCooldown() { return expansionCooldown; }

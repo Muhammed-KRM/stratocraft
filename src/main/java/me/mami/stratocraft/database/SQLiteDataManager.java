@@ -33,12 +33,18 @@ public class SQLiteDataManager {
     private final Gson gson;
     private final ReentrantLock saveLock = new ReentrantLock();
     
+    // ✅ YENİ: Eski veri temizleme task'ı
+    private org.bukkit.scheduler.BukkitTask oldDataCleanupTask;
+    
     public SQLiteDataManager(Main plugin, DatabaseManager databaseManager) {
         this.plugin = plugin;
         this.databaseManager = databaseManager;
         this.gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .create();
+        
+        // NOT: Eski veri temizleme task'ı Main.java'da başlatılıyor
+        // (Plugin lifecycle yönetimi için)
     }
     
     /**
@@ -925,6 +931,103 @@ public class SQLiteDataManager {
             }
         } finally {
             saveLock.unlock();
+        }
+    }
+    
+    /**
+     * ✅ YENİ: Eski veri temizleme task'ını başlat (her 24 saatte bir)
+     */
+    public void startOldDataCleanupTask() {
+        // Eğer zaten bir task varsa önce durdur
+        if (oldDataCleanupTask != null) {
+            stopOldDataCleanupTask();
+        }
+        
+        oldDataCleanupTask = org.bukkit.Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+            try {
+                cleanupOldData();
+            } catch (Exception e) {
+                plugin.getLogger().warning("Eski veri temizleme hatası: " + e.getMessage());
+            }
+        }, 1728000L, 1728000L); // 24 saat = 1728000 tick
+        
+        plugin.getLogger().info("§aEski veri temizleme task'ı başlatıldı (24 saat aralıkla).");
+    }
+    
+    /**
+     * ✅ YENİ: Eski veri temizleme task'ını durdur
+     */
+    public void stopOldDataCleanupTask() {
+        if (oldDataCleanupTask != null) {
+            oldDataCleanupTask.cancel();
+            oldDataCleanupTask = null;
+        }
+    }
+    
+    /**
+     * ✅ YENİ: Eski verileri temizle (30 günden eski)
+     */
+    public void cleanupOldData() throws SQLException {
+        Connection conn = databaseManager.getConnection();
+        long cutoffTime = System.currentTimeMillis() - (30L * 24 * 60 * 60 * 1000); // 30 gün
+        Timestamp cutoffTimestamp = new Timestamp(cutoffTime);
+        
+        int totalDeleted = 0;
+        
+        // Tamamlanmış kontratlar (30 günden eski)
+        try (PreparedStatement stmt = conn.prepareStatement(
+            "DELETE FROM contracts WHERE delivered = 1 AND created_at < ?")) {
+            stmt.setTimestamp(1, cutoffTimestamp);
+            int deleted = stmt.executeUpdate();
+            if (deleted > 0) {
+                plugin.getLogger().info("Eski kontratlar temizlendi: " + deleted);
+                totalDeleted += deleted;
+            }
+        }
+        
+        // Pasif ittifaklar (30 günden eski ve broken = true)
+        try (PreparedStatement stmt = conn.prepareStatement(
+            "DELETE FROM alliances WHERE broken = 1 AND created_at < ?")) {
+            stmt.setTimestamp(1, cutoffTimestamp);
+            int deleted = stmt.executeUpdate();
+            if (deleted > 0) {
+                plugin.getLogger().info("Eski ittifaklar temizlendi: " + deleted);
+                totalDeleted += deleted;
+            }
+        }
+        
+        // Pasif felaketler (30 günden eski ve active = false)
+        try (PreparedStatement stmt = conn.prepareStatement(
+            "DELETE FROM disasters WHERE active = 0 AND start_time < ?")) {
+            stmt.setTimestamp(1, cutoffTimestamp);
+            int deleted = stmt.executeUpdate();
+            if (deleted > 0) {
+                plugin.getLogger().info("Eski felaketler temizlendi: " + deleted);
+                totalDeleted += deleted;
+            }
+        }
+        
+        // Eski kontrat istekleri (30 günden eski ve status != 'PENDING')
+        try (PreparedStatement stmt = conn.prepareStatement(
+            "DELETE FROM contract_requests WHERE status != 'PENDING' AND created_at < ?")) {
+            stmt.setTimestamp(1, cutoffTimestamp);
+            int deleted = stmt.executeUpdate();
+            if (deleted > 0) {
+                plugin.getLogger().info("Eski kontrat istekleri temizlendi: " + deleted);
+                totalDeleted += deleted;
+            }
+        }
+        
+        if (totalDeleted > 0) {
+            plugin.getLogger().info("§aToplam " + totalDeleted + " eski veri kaydı temizlendi.");
+            
+            // VACUUM yap (veritabanı boyutunu küçült)
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("VACUUM;");
+                plugin.getLogger().info("§aVeritabanı optimize edildi (VACUUM).");
+            } catch (SQLException e) {
+                plugin.getLogger().warning("VACUUM hatası: " + e.getMessage());
+            }
         }
     }
 }

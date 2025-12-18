@@ -38,6 +38,10 @@ public class DatabaseManager {
     private static final int MAX_RETRIES = 3;
     private static final long RETRY_DELAY = 1000L; // 1 saniye
     
+    // ✅ YENİ: WAL checkpoint task
+    private org.bukkit.scheduler.BukkitTask walCheckpointTask;
+    private long connectionAge = 0; // Connection yaşı (yenileme için)
+    
     public DatabaseManager(Main plugin) {
         this.plugin = plugin;
         
@@ -65,6 +69,9 @@ public class DatabaseManager {
             // Migration kontrolü
             checkAndMigrate();
             
+            // NOT: WAL checkpoint task'ı Main.java'da başlatılıyor
+            // (Plugin lifecycle yönetimi için)
+            
             plugin.getLogger().info("§aSQLite veritabanı başlatıldı: " + databaseFile.getAbsolutePath());
             
         } catch (ClassNotFoundException e) {
@@ -84,6 +91,9 @@ public class DatabaseManager {
     public Connection getConnection() throws SQLException {
         connectionLock.lock();
         try {
+            // ✅ YENİ: Connection'ı yenile (yaş kontrolü ile)
+            refreshConnectionIfNeeded();
+            
             // Bağlantı var mı ve geçerli mi kontrol et
             if (connection != null && !connection.isClosed()) {
                 return connection;
@@ -95,6 +105,7 @@ public class DatabaseManager {
             String url = "jdbc:sqlite:" + databaseFile.getPath();
             
             connection = DriverManager.getConnection(url);
+            connectionAge = System.currentTimeMillis(); // ✅ YENİ: Connection yaşını kaydet
             
             // ✅ CRASH-SAFE: WAL (Write-Ahead Logging) modu etkinleştir
             // Bu mod crash durumunda bile veri kaybını önler
@@ -481,9 +492,65 @@ public class DatabaseManager {
     }
     
     /**
+     * ✅ YENİ: WAL checkpoint task'ını başlat (periyodik)
+     */
+    public void startWalCheckpointTask() {
+        if (walCheckpointTask != null) {
+            stopWalCheckpointTask();
+        }
+        
+        walCheckpointTask = org.bukkit.Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+            try {
+                Connection conn = getConnection();
+                if (conn != null && !conn.isClosed()) {
+                    try (Statement stmt = conn.createStatement()) {
+                        // PASSIVE checkpoint (non-blocking)
+                        stmt.execute("PRAGMA wal_checkpoint(PASSIVE);");
+                    }
+                }
+            } catch (SQLException e) {
+                plugin.getLogger().warning("WAL checkpoint hatası: " + e.getMessage());
+            }
+        }, 12000L, 12000L); // Her 10 dakikada bir (12000 tick)
+        
+        plugin.getLogger().info("§aWAL checkpoint task'ı başlatıldı (10 dakika aralıkla).");
+    }
+    
+    /**
+     * ✅ YENİ: WAL checkpoint task'ını durdur
+     */
+    public void stopWalCheckpointTask() {
+        if (walCheckpointTask != null) {
+            walCheckpointTask.cancel();
+            walCheckpointTask = null;
+        }
+    }
+    
+    /**
+     * ✅ YENİ: Connection'ı yenile (yaş kontrolü ile)
+     */
+    private void refreshConnectionIfNeeded() throws SQLException {
+        long now = System.currentTimeMillis();
+        long maxAge = 24 * 60 * 60 * 1000; // 24 saat
+        
+        if (connection != null && (connection.isClosed() || (now - connectionAge > maxAge))) {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                // Ignore
+            }
+            connection = null;
+            connectionAge = 0;
+        }
+    }
+    
+    /**
      * Veritabanını kapat
      */
     public void close() {
+        // ✅ YENİ: WAL checkpoint task'ını durdur
+        stopWalCheckpointTask();
+        
         connectionLock.lock();
         try {
             if (connection != null && !connection.isClosed()) {

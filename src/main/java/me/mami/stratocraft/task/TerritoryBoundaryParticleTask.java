@@ -11,7 +11,9 @@ import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.entity.Player;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -26,6 +28,13 @@ public class TerritoryBoundaryParticleTask {
     private final TerritoryConfig config;
     
     private int taskId = -1;
+    
+    // ✅ YENİ: Oyuncu bazlı cooldown (performans optimizasyonu)
+    private final Map<UUID, Long> playerCooldown = new HashMap<>();
+    private static final long PARTICLE_COOLDOWN = 2000L; // 2 saniye (ms)
+    
+    // ✅ YENİ: Mesafe limitleri (config'den alınacak)
+    // Not: MAX_PARTICLES_PER_PLAYER, MAX_TOTAL_DISTANCE, MAX_PARTICLE_DISTANCE artık config'den alınıyor
     
     public TerritoryBoundaryParticleTask(Main plugin, TerritoryManager territoryManager,
                                         TerritoryBoundaryManager boundaryManager,
@@ -71,9 +80,6 @@ public class TerritoryBoundaryParticleTask {
             return;
         }
         
-        // OPTİMİZE: Sadece klan alanına yakın oyuncular için partikül göster
-        int visibleDistance = config.getBoundaryParticleVisibleDistance();
-        
         // Tüm online oyuncuları kontrol et
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player == null || !player.isOnline()) continue;
@@ -91,10 +97,23 @@ public class TerritoryBoundaryParticleTask {
                 continue; // Farklı dünya veya center yok
             }
             
-            // OPTİMİZE: Oyuncu klan alanına yakın mı? (mesafe kontrolü)
+            // ✅ OPTİMİZE: Oyuncu klan alanına yakın mı? (mesafe kontrolü)
             double distanceToCenter = player.getLocation().distance(center);
-            double maxDistance = visibleDistance + territoryData.getRadius();
+            double radius = territoryData.getRadius();
             
+            // ✅ YENİ: Config'den mesafe limitini al
+            int maxTotalDistance = config.getMaxTotalDistance();
+            
+            // ✅ YENİ: maxTotalDistance bloktan uzaktaysa hiç partikül gösterme (performans)
+            // Oyuncunun sınır çizgisine olan minimum mesafesini hesapla
+            double distanceToBoundary = Math.abs(distanceToCenter - radius);
+            if (distanceToBoundary > maxTotalDistance) {
+                continue; // Çok uzak, hiç partikül gösterme
+            }
+            
+            // ✅ YENİ: Center'a olan mesafe kontrolü (eski mantık - geriye uyumluluk)
+            // Not: distanceToBoundary kontrolü zaten yapıldı, bu ek bir güvenlik kontrolü
+            double maxDistance = maxTotalDistance + radius;
             if (distanceToCenter > maxDistance) {
                 continue; // Çok uzak, partikül gösterme
             }
@@ -106,9 +125,19 @@ public class TerritoryBoundaryParticleTask {
     
     /**
      * Sınır partikülleri göster
+     * ✅ OPTİMİZE: Görüşü kapatmayan, performans dostu partiküller
      */
     private void showBoundaryParticles(Player player, TerritoryData territoryData) {
         if (player == null || territoryData == null) return;
+        
+        // ✅ YENİ: Cooldown kontrolü (performans)
+        UUID playerId = player.getUniqueId();
+        long now = System.currentTimeMillis();
+        Long lastTime = playerCooldown.get(playerId);
+        if (lastTime != null && (now - lastTime) < PARTICLE_COOLDOWN) {
+            return; // Cooldown'da
+        }
+        playerCooldown.put(playerId, now);
         
         Location playerLoc = player.getLocation();
         Location center = territoryData.getCenter();
@@ -131,55 +160,105 @@ public class TerritoryBoundaryParticleTask {
             return; // Sınır koordinatları yok
         }
         
-        // Partikül tipi ve rengi
-        Particle particleType = config.getBoundaryParticleType();
+        // ✅ OPTİMİZE: Daha şeffaf, görüşü kapatmayan partikül tipi
+        // END_ROD: Küçük, şeffaf, görüşü kapatmayan
+        // ENCHANT: Büyü efekti, şeffaf
+        Particle particleType = Particle.END_ROD; // Varsayılan: Şeffaf, küçük partikül
         org.bukkit.Color particleColor = config.getBoundaryParticleColor();
-        double density = config.getBoundaryParticleDensity();
-        double spacing = config.getBoundaryParticleSpacing();
         
-        // ✅ YENİ: Y ekseni sınırlarını al
-        int minY = territoryData.getMinY() - territoryData.getGroundDepth();
-        int maxY = territoryData.getMaxY() + territoryData.getSkyHeight();
+        // ✅ OPTİMİZE: Daha seyrek partiküller (performans)
+        double spacing = Math.max(config.getBoundaryParticleSpacing(), 15.0); // Minimum 15 blok aralık
+        
+        // ✅ OPTİMİZE: Sadece oyuncunun Y seviyesinde ve yakınında partikül göster
         int playerY = playerLoc.getBlockY();
-        
-        // Oyuncunun Y seviyesini sınırlar içinde tut
-        int effectiveY = Math.max(minY, Math.min(maxY, playerY));
+        int yRange = 10; // Oyuncunun Y seviyesinden ±10 blok
+        int minY = Math.max(
+            territoryData.getMinY() - territoryData.getGroundDepth(),
+            playerY - yRange
+        );
+        int maxY = Math.min(
+            territoryData.getMaxY() + territoryData.getSkyHeight(),
+            playerY + yRange
+        );
         
         // Sınır boyunca partikül göster
         int particleCount = 0;
-        int maxParticles = (int) (boundaryLine.size() * density);
         
+        // ✅ OPTİMİZE: Her X-Z koordinatında, sadece oyuncunun Y seviyesinde partikül göster
         for (Location boundaryLoc : boundaryLine) {
-            // Mesafe kontrolü
-            if (playerLoc.distance(boundaryLoc) > visibleDistance) {
-                continue;
+            // ✅ YENİ: Config'den mesafe limitini al
+            int maxParticleDistance = config.getMaxParticleDistance();
+            
+            // ✅ YENİ: 2D mesafe kontrolü (config'den gelen limit - performans optimizasyonu)
+            double distance2D = Math.sqrt(
+                Math.pow(playerLoc.getX() - boundaryLoc.getX(), 2) +
+                Math.pow(playerLoc.getZ() - boundaryLoc.getZ(), 2)
+            );
+            
+            // ✅ YENİ: maxParticleDistance bloktan uzaktaki sınırları gösterme (performans)
+            if (distance2D > maxParticleDistance) {
+                continue; // Çok uzak, bu sınır noktasını atla
             }
             
-            // Partikül arası mesafe kontrolü
+            // ✅ YENİ: visibleDistance kontrolü (config'den gelen değer, daha esnek)
+            if (distance2D > visibleDistance) {
+                continue; // Config'den gelen mesafe limitinden uzak
+            }
+            
+            // ✅ OPTİMİZE: Daha seyrek partiküller (her 15+ blokta bir)
             if (particleCount % (int) spacing != 0) {
                 particleCount++;
                 continue;
             }
             
-            // ✅ YENİ: Y koordinatını sınırlar içinde ayarla
-            // Oyuncunun Y seviyesine göre partikül göster, ama sınırlar içinde kal
-            double y = Math.max(minY, Math.min(maxY, effectiveY + (Math.random() * 4 - 2)));
-            Location particleLoc = boundaryLoc.clone();
-            particleLoc.setY(y);
+            // ✅ OPTİMİZE: Sadece oyuncunun Y seviyesinde ve yakınında partikül göster
+            // Oyuncunun Y seviyesine en yakın Y koordinatını bul
+            int targetY = playerY;
+            if (targetY < minY) targetY = minY;
+            if (targetY > maxY) targetY = maxY;
             
-            // Partikül göster
-            if (particleType == Particle.REDSTONE) {
-                player.spawnParticle(particleType, particleLoc, 1, 0, 0, 0, 0,
-                    new Particle.DustOptions(particleColor, 1.0f));
-            } else {
-                player.spawnParticle(particleType, particleLoc, 1, 0, 0, 0, 0);
+            // Sadece birkaç Y seviyesinde partikül göster (oyuncunun seviyesi ±2 blok)
+            for (int yOffset = -2; yOffset <= 2; yOffset += 2) {
+                int y = targetY + yOffset;
+                if (y < minY || y > maxY) continue;
+                
+                Location particleLoc = boundaryLoc.clone();
+                particleLoc.setY(y);
+                
+                // 3D mesafe kontrolü (performans)
+                double distance3D = playerLoc.distance(particleLoc);
+                if (distance3D > visibleDistance) {
+                    continue; // Çok uzak (3D mesafe)
+                }
+                
+                // ✅ OPTİMİZE: Şeffaf, küçük partikül göster (görüşü kapatmayan)
+                // END_ROD: Küçük, şeffaf, görüşü kapatmayan
+                player.spawnParticle(Particle.END_ROD, particleLoc, 1, 0, 0, 0, 0);
+                
+                particleCount++;
+                
+                // ✅ OPTİMİZE: Config'den maksimum partikül limitini al
+                int maxParticlesPerPlayer = config.getMaxParticlesPerPlayer();
+                if (particleCount >= maxParticlesPerPlayer) {
+                    return; // Limit aşıldı
+                }
             }
-            
-            particleCount++;
-            
-            // Maksimum partikül limiti (performans)
-            if (particleCount >= maxParticles) {
-                break;
+        }
+        
+        // ✅ YENİ: ActionBar ile sınır bilgisi (görüşü kapatmayan alternatif)
+        if (particleCount > 0) {
+            double distanceToBoundary = Math.abs(distanceToCenter - territoryData.getRadius());
+            if (distanceToBoundary <= 5) {
+                // Sınırın 5 blok yakınındaysa ActionBar'da bilgi göster
+                try {
+                    player.spigot().sendMessage(
+                        net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                        new net.md_5.bungee.api.chat.TextComponent("§a§lKlan Sınırına Yakınsınız")
+                    );
+                } catch (Exception e) {
+                    // Spigot API yoksa normal mesaj gönder (fallback)
+                    player.sendMessage("§a§lKlan Sınırına Yakınsınız");
+                }
             }
         }
     }
