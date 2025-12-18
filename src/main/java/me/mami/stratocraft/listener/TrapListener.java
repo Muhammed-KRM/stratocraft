@@ -10,10 +10,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import java.util.UUID;
 
 /**
  * Tuzak sistemi dinleyicisi:
@@ -68,8 +71,13 @@ public class TrapListener implements Listener {
             }
 
             placeBlock.setType(Material.LODESTONE);
-            placeBlock.setMetadata("TrapCoreItem", new org.bukkit.metadata.FixedMetadataValue(
-                    me.mami.stratocraft.Main.getInstance(), true));
+            
+            // ✅ YENİ: PersistentDataContainer kullan (metadata yerine)
+            me.mami.stratocraft.util.CustomBlockData.setTrapCoreData(placeBlock, player.getUniqueId());
+            
+            // ❌ ESKİ: Metadata kaldırıldı
+            // placeBlock.setMetadata("TrapCoreItem", new org.bukkit.metadata.FixedMetadataValue(
+            //         me.mami.stratocraft.Main.getInstance(), true));
 
             // Metadata kalıcı olmadığı için dosyaya kaydet (sunucu restart sonrası için)
             trapManager.registerInactiveTrapCore(placeBlock.getLocation(), player.getUniqueId());
@@ -243,9 +251,14 @@ public class TrapListener implements Listener {
             trapManager.triggerTrap(below2.getLocation(), player);
         }
 
-        // Tuzak kapatma kontrolü (oyuncu üzerinde yürüyorsa, altındaki tuzakları kontrol et)
-        if (below.getType() == Material.LODESTONE && below.hasMetadata("TrapCore")) {
+        // ✅ YENİ: Tuzak kapatma kontrolü (PersistentDataContainer)
+        if (below.getType() == Material.LODESTONE && me.mami.stratocraft.util.CustomBlockData.isTrapCore(below)) {
             trapManager.checkTrapCoverage(below.getLocation());
         }
+        
+        // ❌ ESKİ: Metadata kontrolü kaldırıldı
+        // if (below.getType() == Material.LODESTONE && below.hasMetadata("TrapCore")) {
+        //     trapManager.checkTrapCoverage(below.getLocation());
+        // }
     }
 }

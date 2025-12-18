@@ -90,6 +90,9 @@ public class TerritoryBoundaryManager {
             
             data.addFenceLocation(fenceLoc);
             
+            // ✅ YENİ: Y ekseni sınırlarını güncelle
+            data.updateYBounds();
+            
             // Config'den kontrol: Çit yerleştirildiğinde yeniden hesapla
             if (config != null && config.isRecalculateOnFencePlace()) {
                 if (config.isAsyncBoundaryCalculation()) {
@@ -117,6 +120,9 @@ public class TerritoryBoundaryManager {
             }
             
             data.removeFenceLocation(fenceLoc);
+            
+            // ✅ YENİ: Y ekseni sınırlarını güncelle
+            data.updateYBounds();
             
             // Config'den kontrol: Çit kırıldığında yeniden hesapla
             if (config != null && config.isRecalculateOnFenceBreak()) {
@@ -187,16 +193,25 @@ public class TerritoryBoundaryManager {
             Block current = queue.poll();
             area++;
             
-            // 4 Yöne bak
+            // ✅ YENİ: 3D flood-fill (6 yöne bak)
             Block[] neighbors = {
                 current.getRelative(BlockFace.NORTH),
                 current.getRelative(BlockFace.SOUTH),
                 current.getRelative(BlockFace.EAST),
-                current.getRelative(BlockFace.WEST)
+                current.getRelative(BlockFace.WEST),
+                current.getRelative(BlockFace.UP),    // ✅ Y ekseni eklendi
+                current.getRelative(BlockFace.DOWN)   // ✅ Y ekseni eklendi
             };
             
             for (Block neighbor : neighbors) {
                 if (visited.contains(neighbor)) continue;
+                
+                // ✅ YENİ: Yükseklik toleransı kontrolü
+                int heightDiff = Math.abs(neighbor.getY() - centerY);
+                if (heightDiff > heightTolerance) {
+                    visited.add(neighbor); // Ziyaret edildi olarak işaretle
+                    continue; // Tolerans dışında, atla
+                }
                 
                 // Çit kontrolü
                 boolean isFence = false;

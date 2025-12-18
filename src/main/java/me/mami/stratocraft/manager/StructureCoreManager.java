@@ -63,12 +63,15 @@ public class StructureCoreManager {
         // GERİYE UYUMLULUK: Eski sistem
         inactiveCores.put(blockLoc, owner);
         
-        // Metadata ekle
+        // ✅ YENİ: PersistentDataContainer kullan (metadata yerine)
         Block block = blockLoc.getBlock();
         if (block != null) {
-            block.setMetadata(METADATA_KEY_CORE, new FixedMetadataValue(plugin, true));
-            block.setMetadata(METADATA_KEY_OWNER, new FixedMetadataValue(plugin, owner.toString()));
+            me.mami.stratocraft.util.CustomBlockData.setStructureCoreData(block, owner);
         }
+        
+        // ❌ ESKİ: Metadata kaldırıldı
+        // block.setMetadata(METADATA_KEY_CORE, new FixedMetadataValue(plugin, true));
+        // block.setMetadata(METADATA_KEY_OWNER, new FixedMetadataValue(plugin, owner.toString()));
     }
     
     /**
@@ -207,13 +210,16 @@ public class StructureCoreManager {
         inactiveCores.remove(loc);
         activeStructures.remove(loc);
         
-        // Metadata temizle
+        // ✅ YENİ: PersistentDataContainer temizle
         Block block = loc.getBlock();
         if (block != null) {
-            block.removeMetadata(METADATA_KEY_CORE, plugin);
-            block.removeMetadata(METADATA_KEY_OWNER, plugin);
-            block.removeMetadata("ActiveStructure", plugin);
+            me.mami.stratocraft.util.CustomBlockData.removeStructureCoreData(block);
         }
+        
+        // ❌ ESKİ: Metadata temizleme kaldırıldı
+        // block.removeMetadata(METADATA_KEY_CORE, plugin);
+        // block.removeMetadata(METADATA_KEY_OWNER, plugin);
+        // block.removeMetadata("ActiveStructure", plugin);
     }
     
     /**
@@ -234,11 +240,18 @@ public class StructureCoreManager {
             return true;
         }
         
-        // GERİYE UYUMLULUK: Eski sistem (metadata kontrolü)
-        return block.hasMetadata(METADATA_KEY_CORE) || 
-               block.hasMetadata("ActiveStructure") ||
-               inactiveCores.containsKey(loc) ||
+        // ✅ YENİ: PersistentDataContainer kontrolü
+        if (me.mami.stratocraft.util.CustomBlockData.isStructureCore(block)) {
+            return true;
+        }
+        
+        // GERİYE UYUMLULUK: Eski sistem (memory'deki veriler)
+        return inactiveCores.containsKey(loc) ||
                activeStructures.containsKey(loc);
+        
+        // ❌ ESKİ: Metadata kontrolü kaldırıldı
+        // return block.hasMetadata(METADATA_KEY_CORE) || 
+        //        block.hasMetadata("ActiveStructure") ||
     }
     
     /**

@@ -129,6 +129,10 @@ public class DatabaseManager {
         // Mevcut versiyonu al
         int currentVersion = getCurrentVersion();
         
+        // KRİTİK DÜZELTME: Tabloları her zaman kontrol et ve yoksa oluştur
+        // Migration sırasında oluşturulmuş olabilir ama sonra silinmiş olabilir
+        ensureTablesExist();
+        
         if (currentVersion < CURRENT_DB_VERSION) {
             plugin.getLogger().info("§eVeritabanı migration başlatılıyor: " + currentVersion + " -> " + CURRENT_DB_VERSION);
             migrate(currentVersion, CURRENT_DB_VERSION);
@@ -136,6 +140,18 @@ public class DatabaseManager {
             plugin.getLogger().warning("§cVeritabanı versiyonu plugin'den daha yeni! Plugin güncellenmeli.");
         } else {
             plugin.getLogger().info("§aVeritabanı versiyonu güncel: " + CURRENT_DB_VERSION);
+        }
+    }
+    
+    /**
+     * Tüm tabloların var olduğundan emin ol (yoksa oluştur)
+     * Bu metod migration'dan bağımsız olarak tabloları garanti eder
+     */
+    private void ensureTablesExist() throws SQLException {
+        Connection conn = getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            // Tüm tabloları oluştur (IF NOT EXISTS ile güvenli)
+            createTables(conn);
         }
     }
     

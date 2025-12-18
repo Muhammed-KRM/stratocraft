@@ -14,6 +14,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -169,14 +170,20 @@ public class ClanSystemListener implements Listener {
         Block clicked = event.getClickedBlock();
         if (clicked == null) return;
         
-        // Banka sistemi entegrasyonu - GUI aç
+        // ✅ YENİ: Banka sistemi entegrasyonu - GUI aç (PersistentDataContainer)
         if (bankSystem != null && clicked.getType() == Material.ENDER_CHEST) {
-            // Metadata kontrolü (ClanBankSystem'den)
-            if (clicked.hasMetadata("ClanBank")) {
+            // ✅ YENİ: PersistentDataContainer kontrolü
+            if (me.mami.stratocraft.util.CustomBlockData.isClanBank(clicked)) {
                 event.setCancelled(true);
                 // Banka GUI aç
                 if (plugin.getClanBankMenu() != null) {
                     plugin.getClanBankMenu().openMainMenu(player);
+                }
+                return;
+            }
+            
+            // ❌ ESKİ: Metadata kontrolü kaldırıldı
+            // if (clicked.hasMetadata("ClanBank")) {
                 }
             }
         }
@@ -199,9 +206,56 @@ public class ClanSystemListener implements Listener {
      * Not: RitualInteractionListener'da da kontrol edilebilir
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onRitualUse(org.bukkit.event.block.BlockBreakEvent event) {
+    public void onRitualUse(BlockBreakEvent event) {
         // Bu event RitualInteractionListener'da işleniyor
         // Burada sadece görev ilerlemesi için entegrasyon yapılabilir
+    }
+    
+    /**
+     * ✅ YENİ: Klan bankası kırıldığında veri geri getirme
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onClanBankBreak(BlockBreakEvent event) {
+        Block block = event.getBlock();
+        Player player = event.getPlayer();
+        
+        if (block.getType() != Material.ENDER_CHEST) {
+            return;
+        }
+        
+        // ✅ PersistentDataContainer'dan veri oku
+        UUID clanId = me.mami.stratocraft.util.CustomBlockData.getClanBankData(block);
+        if (clanId == null) {
+            return; // Normal ENDER_CHEST
+        }
+        
+        // ✅ ItemStack'e veri ekle
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (item != null && item.getType() == Material.ENDER_CHEST) {
+            org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+            if (meta != null) {
+                org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
+                org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "clan_bank");
+                container.set(key, org.bukkit.persistence.PersistentDataType.STRING, clanId.toString());
+                item.setItemMeta(meta);
+            }
+        }
+        
+        // ✅ bankChestLocations'dan kaldır
+        if (bankSystem != null) {
+            try {
+                java.lang.reflect.Field field = bankSystem.getClass().getDeclaredField("bankChestLocations");
+                field.setAccessible(true);
+                @SuppressWarnings("unchecked")
+                java.util.Map<UUID, org.bukkit.Location> locations = 
+                    (java.util.Map<UUID, org.bukkit.Location>) field.get(bankSystem);
+                if (locations != null) {
+                    locations.remove(clanId);
+                }
+            } catch (Exception e) {
+                // Reflection hatası - önemli değil
+            }
+        }
     }
 }
 

@@ -591,10 +591,15 @@ public class SQLiteDataManager {
                     if (trap == null) continue;
                     
                     // ✅ DÜZELTME: clan_id NOT NULL constraint hatası - null kontrolü
+                    // Eğer clanId null ise, ownerClanId'den al (fallback)
                     if (trap.clanId == null || trap.clanId.isEmpty()) {
-                        plugin.getLogger().warning("Tuzak kaydedilemedi: clan_id null veya boş (trap.id: " + 
-                            (trap.id != null ? trap.id : "null") + ")");
-                        continue; // clan_id olmayan tuzakları atla
+                        if (trap.ownerClanId != null && !trap.ownerClanId.isEmpty()) {
+                            trap.clanId = trap.ownerClanId; // Fallback: ownerClanId'den al
+                        } else {
+                            plugin.getLogger().warning("Tuzak kaydedilemedi: clan_id null veya boş (trap.id: " + 
+                                (trap.id != null ? trap.id : "null") + ")");
+                            continue; // clan_id olmayan tuzakları atla
+                        }
                     }
                     
                     // Location kontrolü (LocationData veya String formatında olabilir)

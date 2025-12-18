@@ -95,13 +95,10 @@ public class ClanTerritoryMenu implements Listener {
         
         Inventory menu = Bukkit.createInventory(null, 27, "§6Klan Alanı Yönetimi");
         
-        // Genişlet butonu (Slot 10)
-        menu.setItem(10, createButton(Material.GREEN_CONCRETE, "§a§lGenişlet",
-            Arrays.asList("§7Klan alanını genişlet", "§7Çitlerle çevrelenmiş alan gerekli")));
-        
-        // Küçült butonu (Slot 12)
-        menu.setItem(12, createButton(Material.RED_CONCRETE, "§c§lKüçült",
-            Arrays.asList("§7Klan alanını küçült", "§7Çitlerle çevrelenmiş alan gerekli")));
+        // ✅ YENİ: Tek "Alan Güncelle" butonu (Slot 10)
+        menu.setItem(10, createButton(Material.EMERALD_BLOCK, "§a§lAlan Güncelle",
+            Arrays.asList("§7Klan çitlerini kontrol et", "§7Yeni çevrelenen alanı hesapla", 
+                          "§7Eski alan verilerini sil", "§7Yeni alan verilerini oluştur")));
         
         // Bilgi butonu (Slot 14)
         TerritoryData territoryData = boundaryManager != null ? 
@@ -170,11 +167,8 @@ public class ClanTerritoryMenu implements Listener {
         int slot = event.getSlot();
         
         switch (slot) {
-            case 10: // Genişlet
-                handleExpand(player, clan);
-                break;
-            case 12: // Küçült
-                handleShrink(player, clan);
+            case 10: // ✅ YENİ: Alan Güncelle (tek tuş)
+                recalculateBoundaries(player, clan);
                 break;
             case 14: // Bilgi
                 showInfo(player, clan);
@@ -182,7 +176,7 @@ public class ClanTerritoryMenu implements Listener {
             case 16: // Sınırlar
                 showBoundaries(player, clan);
                 break;
-            case 22: // Yeniden Hesapla
+            case 22: // Yeniden Hesapla (eski - geriye uyumluluk için)
                 recalculateBoundaries(player, clan);
                 break;
             case 26: // Çıkış
@@ -198,40 +192,8 @@ public class ClanTerritoryMenu implements Listener {
         }
     }
     
-    /**
-     * Genişletme işlemi
-     */
-    private void handleExpand(Player player, Clan clan) {
-        player.sendMessage("§7Çit kontrolü yapılıyor...");
-        
-        // Async çit kontrolü
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            // Çit kontrolü yapılacak (isSurroundedByClanFences benzeri)
-            // Şimdilik basit kontrol
-            
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                player.sendMessage("§cGenişletme özelliği henüz tamamlanmadı!");
-                player.sendMessage("§7Çitlerle yeni alan çevreleyip menüden tekrar deneyin.");
-            });
-        });
-    }
-    
-    /**
-     * Küçültme işlemi
-     */
-    private void handleShrink(Player player, Clan clan) {
-        player.sendMessage("§7Çit kontrolü yapılıyor...");
-        
-        // Async çit kontrolü
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            // Çit kontrolü yapılacak
-            
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                player.sendMessage("§cKüçültme özelliği henüz tamamlanmadı!");
-                player.sendMessage("§7Çitlerle yeni alan çevreleyip menüden tekrar deneyin.");
-            });
-        });
-    }
+    // ✅ YENİ: handleExpand() ve handleShrink() kaldırıldı
+    // Artık tek bir "Alan Güncelle" butonu var (recalculateBoundaries() kullanılıyor)
     
     /**
      * Bilgi göster
@@ -284,6 +246,20 @@ public class ClanTerritoryMenu implements Listener {
             org.bukkit.Color particleColor = config.getBoundaryParticleColor();
             double spacing = config.getBoundaryParticleSpacing();
             
+            // ✅ YENİ: Y ekseni sınırlarını al
+            TerritoryData territoryData = boundaryManager != null ? 
+                boundaryManager.getTerritoryData(clan) : null;
+            int minY = Integer.MIN_VALUE;
+            int maxY = Integer.MAX_VALUE;
+            if (territoryData != null) {
+                minY = territoryData.getMinY() - territoryData.getGroundDepth();
+                maxY = territoryData.getMaxY() + territoryData.getSkyHeight();
+            }
+            int playerY = player.getLocation().getBlockY();
+            int effectiveY = (minY != Integer.MIN_VALUE && maxY != Integer.MAX_VALUE) 
+                ? Math.max(minY, Math.min(maxY, playerY)) 
+                : playerY;
+            
             int count = 0;
             for (Location boundaryLoc : boundaryLine) {
                 if (count % (int) spacing != 0) {
@@ -291,7 +267,8 @@ public class ClanTerritoryMenu implements Listener {
                     continue;
                 }
                 
-                double y = player.getLocation().getY() + (Math.random() * 4 - 2);
+                // ✅ YENİ: Y koordinatını sınırlar içinde ayarla
+                double y = Math.max(minY, Math.min(maxY, effectiveY + (Math.random() * 4 - 2)));
                 Location particleLoc = boundaryLoc.clone();
                 particleLoc.setY(y);
                 
@@ -360,6 +337,15 @@ public class ClanTerritoryMenu implements Listener {
                 territoryData.addFenceLocation(fenceLoc);
             }
             
+            // ✅ YENİ: Y ekseni sınırlarını güncelle
+            territoryData.updateYBounds();
+            
+            // ✅ YENİ: Config'den skyHeight ve groundDepth set et
+            if (config != null) {
+                territoryData.setSkyHeight(config.getSkyHeight());
+                territoryData.setGroundDepth(config.getGroundDepth());
+            }
+            
             // Sınırları hesapla
             territoryData.calculateBoundaries();
             
@@ -399,25 +385,24 @@ public class ClanTerritoryMenu implements Listener {
                 return false; // Çok büyük alan
             }
             
+            // ✅ YENİ: 3D flood-fill (6 yöne bak)
             Block[] neighbors = {
                 current.getRelative(BlockFace.NORTH),
                 current.getRelative(BlockFace.SOUTH),
                 current.getRelative(BlockFace.EAST),
-                current.getRelative(BlockFace.WEST)
+                current.getRelative(BlockFace.WEST),
+                current.getRelative(BlockFace.UP),    // ✅ Y ekseni eklendi
+                current.getRelative(BlockFace.DOWN)   // ✅ Y ekseni eklendi
             };
             
             for (Block neighbor : neighbors) {
                 if (visited.contains(neighbor)) continue;
                 
                 if (neighbor.getType() == Material.OAK_FENCE) {
-                    // Klan çiti mi kontrol et
-                    boolean isClanFence = false;
-                    if (config != null) {
-                        String metadataKey = config.getFenceMetadataKey();
-                        isClanFence = neighbor.hasMetadata(metadataKey);
-                    }
+                    // ✅ YENİ: CustomBlockData.isClanFence() kullan
+                    boolean isClanFence = me.mami.stratocraft.util.CustomBlockData.isClanFence(neighbor);
                     
-                    // TerritoryData'dan kontrol et
+                    // ✅ FALLBACK: TerritoryData kontrolü (backup)
                     if (!isClanFence && boundaryManager != null) {
                         TerritoryData data = boundaryManager.getTerritoryData(clan);
                         if (data != null) {
@@ -454,33 +439,68 @@ public class ClanTerritoryMenu implements Listener {
     /**
      * Klan kristali etrafındaki çit lokasyonlarını topla
      */
+    /**
+     * ✅ YENİ: 3D flood-fill ile çit lokasyonlarını topla
+     * Klan kristalini çevreleyen tüm klan çitlerini bulur
+     */
     private List<Location> collectFenceLocations(Location crystalLoc, Clan clan) {
         List<Location> fenceLocations = new ArrayList<>();
         
-        // Kristal etrafında 100 blok yarıçapta çitleri ara
-        int searchRadius = 100;
-        World world = crystalLoc.getWorld();
-        if (world == null) return fenceLocations;
+        if (crystalLoc == null || crystalLoc.getWorld() == null || clan == null) {
+            return fenceLocations;
+        }
         
-        for (int x = -searchRadius; x <= searchRadius; x++) {
-            for (int z = -searchRadius; z <= searchRadius; z++) {
-                Block block = world.getBlockAt(
-                    crystalLoc.getBlockX() + x,
-                    crystalLoc.getBlockY(),
-                    crystalLoc.getBlockZ() + z
-                );
+        // ✅ YENİ: 3D flood-fill ile çitleri bul
+        Set<Block> visited = new HashSet<>();
+        Queue<Block> queue = new LinkedList<>();
+        
+        Block centerBlock = crystalLoc.getBlock();
+        queue.add(centerBlock);
+        visited.add(centerBlock);
+        
+        int maxIterations = 50000; // Büyük alanlar için limit
+        int iterations = 0;
+        
+        while (!queue.isEmpty() && iterations < maxIterations) {
+            Block current = queue.poll();
+            iterations++;
+            
+            // ✅ YENİ: 3D flood-fill (6 yöne bak)
+            BlockFace[] faces = {
+                BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST,
+                BlockFace.UP, BlockFace.DOWN
+            };
+            
+            for (BlockFace face : faces) {
+                Block neighbor = current.getRelative(face);
+                if (visited.contains(neighbor)) continue;
                 
-                if (block.getType() == Material.OAK_FENCE) {
-                    // Klan çiti mi kontrol et
-                    boolean isClanFence = false;
-                    if (config != null) {
-                        String metadataKey = config.getFenceMetadataKey();
-                        isClanFence = block.hasMetadata(metadataKey);
-                    }
+                Material type = neighbor.getType();
+                
+                if (type == Material.OAK_FENCE) {
+                    // ✅ YENİ: CustomBlockData.isClanFence() kullan
+                    boolean isClanFence = me.mami.stratocraft.util.CustomBlockData.isClanFence(neighbor);
                     
                     if (isClanFence) {
-                        fenceLocations.add(block.getLocation());
+                        UUID fenceClanId = me.mami.stratocraft.util.CustomBlockData.getClanFenceData(neighbor);
+                        if (fenceClanId != null && fenceClanId.equals(clan.getId())) {
+                            fenceLocations.add(neighbor.getLocation());
+                            visited.add(neighbor);
+                            continue; // Sınır, devam etme
+                        }
                     }
+                }
+                
+                // Hava veya geçilebilir blok
+                if (type == Material.AIR || 
+                    type == Material.CAVE_AIR || 
+                    type == Material.VOID_AIR ||
+                    !type.isSolid()) {
+                    visited.add(neighbor);
+                    queue.add(neighbor);
+                } else {
+                    // Solid blok - engel
+                    visited.add(neighbor);
                 }
             }
         }

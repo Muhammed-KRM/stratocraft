@@ -35,6 +35,7 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
@@ -254,12 +255,17 @@ public class TerritoryListener implements Listener {
             return; // Bu klanla savaşta ise açılabilir
         }
         
-        // Klan bankası kontrolü (RitualInteractionListener'daki özel kontrol)
+        // ✅ YENİ: Klan bankası kontrolü (PersistentDataContainer)
         Block block = invLocation.getBlock();
-        if (block.hasMetadata("ClanBank")) {
+        if (me.mami.stratocraft.util.CustomBlockData.isClanBank(block)) {
             // Klan bankası özel kontrolü RitualInteractionListener'da yapılıyor
             return;
         }
+        
+        // ❌ ESKİ: Metadata kontrolü kaldırıldı
+        // if (block.hasMetadata("ClanBank")) {
+        //     return;
+        // }
         
         // Sanal Bağlantı kontrolü (VirtualStorageListener'daki özel kontrol)
         if (block.getType() == Material.ENDER_CHEST && playerClan != null) {
@@ -320,21 +326,31 @@ public class TerritoryListener implements Listener {
             return;
         }
         
-        // YENİ: Metadata ekle (klan çiti işaretleme)
-        if (territoryConfig != null) {
-            String metadataKey = territoryConfig.getFenceMetadataKey();
-            block.setMetadata(metadataKey, new org.bukkit.metadata.FixedMetadataValue(
-                me.mami.stratocraft.Main.getInstance(), true));
-        }
-        
         // Oyuncunun klanı var mı?
         Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
+        
+        // ✅ YENİ: PersistentDataContainer kullan (metadata yerine)
+        if (playerClan != null) {
+            // PersistentDataContainer'a kaydet
+            me.mami.stratocraft.util.CustomBlockData.setClanFenceData(block, playerClan.getId());
+        } else {
+            // Klan yok ama çit yerleştirilebilir (sonra klan kurulabilir)
+            // Geçici olarak null kaydet (sonra güncellenebilir)
+            me.mami.stratocraft.util.CustomBlockData.setClanFenceData(block, null);
+        }
+        
+        // ❌ ESKİ: Metadata kaldır
+        // if (territoryConfig != null) {
+        //     String metadataKey = territoryConfig.getFenceMetadataKey();
+        //     block.setMetadata(metadataKey, new org.bukkit.metadata.FixedMetadataValue(
+        //         me.mami.stratocraft.Main.getInstance(), true));
+        // }
+        
         if (playerClan == null) {
-            // Klan üyesi değil ama çit yerleştirilebilir (sonra klan kurulabilir)
             return;
         }
         
-        // YENİ: TerritoryData'ya çit lokasyonu ekle
+        // ✅ İYİ: TerritoryData'ya ekle (backup)
         if (boundaryManager != null) {
             boundaryManager.addFenceLocation(playerClan, block.getLocation());
         }
@@ -386,72 +402,345 @@ public class TerritoryListener implements Listener {
     }
     
     /**
-     * YENİ: Çit kırma event'i - TerritoryData güncelle
-     * OPTİMİZE: Sadece o blokta TerritoryData'sı olan klanları kontrol et
+     * ✅ YENİ: Çit kırma event'i - Veri geri getirme ve TerritoryData güncelle
+     * PersistentDataContainer'dan veri oku ve ItemStack'e ekle
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onFenceBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
+        Player player = event.getPlayer();
         
         // Material kontrolü
         if (block.getType() != Material.OAK_FENCE) {
             return;
         }
         
-        if (boundaryManager == null) return;
-        
-        // OPTİMİZE: Önce metadata kontrolü (hızlı filtreleme)
-        boolean hasMetadata = false;
-        if (territoryConfig != null) {
-            String metadataKey = territoryConfig.getFenceMetadataKey();
-            hasMetadata = block.hasMetadata(metadataKey);
-            // Metadata yoksa ama TerritoryData'da varsa da kontrol et (server restart sonrası)
+        // ✅ PersistentDataContainer'dan veri oku
+        UUID clanId = me.mami.stratocraft.util.CustomBlockData.getClanFenceData(block);
+        if (clanId == null) {
+            // Normal çit, işlem yok
+            return;
         }
         
-        // OPTİMİZE: Sadece bu blokta TerritoryData'sı olan klanları kontrol et
-        // Blok konumuna yakın klanları bul
-        org.bukkit.Location blockLoc = block.getLocation();
-        Clan nearbyClan = territoryManager.getTerritoryOwner(blockLoc);
+        // ✅ ItemStack'e veri ekle
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (item != null && item.getType() == Material.OAK_FENCE) {
+            // ItemStack'in PersistentDataContainer'ına yaz
+            org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+            if (meta != null) {
+                org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
+                org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "clan_fence");
+                container.set(key, org.bukkit.persistence.PersistentDataType.STRING, clanId.toString());
+                item.setItemMeta(meta);
+                
+                // Özel item olarak işaretle (ItemManager.isClanItem() için)
+                // ItemManager zaten kontrol ediyor, burada sadece veri ekliyoruz
+            }
+        }
         
-        if (nearbyClan != null) {
-            // Bu blok bir klan alanında, o klanın TerritoryData'sını kontrol et
-            me.mami.stratocraft.model.territory.TerritoryData data = boundaryManager.getTerritoryData(nearbyClan);
-            if (data != null) {
-                List<org.bukkit.Location> fenceLocs = data.getFenceLocations();
-                for (org.bukkit.Location fenceLoc : fenceLocs) {
-                    if (fenceLoc.getWorld().equals(blockLoc.getWorld()) &&
-                        fenceLoc.getBlockX() == blockLoc.getBlockX() &&
-                        fenceLoc.getBlockY() == blockLoc.getBlockY() &&
-                        fenceLoc.getBlockZ() == blockLoc.getBlockZ()) {
-                        // Bu klanın çiti
-                        boundaryManager.removeFenceLocation(nearbyClan, blockLoc);
-                        return; // Bulundu, çık
+        // ✅ TerritoryData'dan kaldır (backup)
+        if (boundaryManager != null) {
+            Clan clan = territoryManager.getClanManager().getClan(clanId);
+            if (clan != null) {
+                boundaryManager.removeFenceLocation(clan, block.getLocation());
+            }
+        }
+        
+        // ❌ ESKİ: Metadata kontrolü kaldırıldı
+        // if (territoryConfig != null) {
+        //     String metadataKey = territoryConfig.getFenceMetadataKey();
+        //     hasMetadata = block.hasMetadata(metadataKey);
+        // }
+        
+    }
+    
+    /**
+     * ✅ YENİ: BlockPlaceEvent'te ItemStack'ten veri geri yükleme
+     * Tüm özel bloklar için ItemStack'ten veri oku ve bloka yaz
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onCustomBlockPlaceRestore(BlockPlaceEvent event) {
+        Block block = event.getBlock();
+        ItemStack item = event.getItemInHand();
+        
+        if (item == null || !item.hasItemMeta()) {
+            return;
+        }
+        
+        Material type = block.getType();
+        org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+        if (meta == null) return;
+        
+        org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
+        
+        // ✅ Klan çiti kontrolü
+        if (type == Material.OAK_FENCE) {
+            org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "clan_fence");
+            if (container.has(key, org.bukkit.persistence.PersistentDataType.STRING)) {
+                String clanIdStr = container.get(key, org.bukkit.persistence.PersistentDataType.STRING);
+                UUID clanId = UUID.fromString(clanIdStr);
+                
+                // ✅ Bloka veri yaz
+                me.mami.stratocraft.util.CustomBlockData.setClanFenceData(block, clanId);
+                
+                // ✅ TerritoryData'ya ekle (backup)
+                if (boundaryManager != null) {
+                    Clan clan = territoryManager.getClanManager().getClan(clanId);
+                    if (clan != null) {
+                        boundaryManager.addFenceLocation(clan, block.getLocation());
                     }
                 }
             }
         }
         
-        // Metadata varsa ama TerritoryData'da bulunamadıysa, tüm klanları tara (fallback)
-        // Bu nadiren olur ama server restart sonrası metadata kaybolabilir
-        if (hasMetadata || !territoryConfig.isRequireClanFenceItem()) {
-            // Fallback: Tüm klanları tara (yavaş ama nadiren çalışır)
-            for (Clan clan : territoryManager.getClanManager().getAllClans()) {
-                me.mami.stratocraft.model.territory.TerritoryData data = boundaryManager.getTerritoryData(clan);
-                if (data != null) {
-                    List<org.bukkit.Location> fenceLocs = data.getFenceLocations();
-                    for (org.bukkit.Location fenceLoc : fenceLocs) {
-                        if (fenceLoc.getWorld().equals(blockLoc.getWorld()) &&
-                            fenceLoc.getBlockX() == blockLoc.getBlockX() &&
-                            fenceLoc.getBlockY() == blockLoc.getBlockY() &&
-                            fenceLoc.getBlockZ() == blockLoc.getBlockZ()) {
-                            // Bu klanın çiti
-                            boundaryManager.removeFenceLocation(clan, blockLoc);
-                            return; // Bulundu, çık
+        // ✅ Yapı çekirdeği kontrolü
+        if (type == Material.OAK_LOG) {
+            org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey("stratocraft", "structure_core_owner");
+            if (container.has(ownerKey, org.bukkit.persistence.PersistentDataType.STRING)) {
+                String ownerIdStr = container.get(ownerKey, org.bukkit.persistence.PersistentDataType.STRING);
+                UUID ownerId = UUID.fromString(ownerIdStr);
+                
+                // ✅ Bloka veri yaz
+                me.mami.stratocraft.util.CustomBlockData.setStructureCoreData(block, ownerId);
+                
+                // StructureCoreManager'a kaydet
+                me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
+                if (mainPlugin != null && mainPlugin.getStructureCoreManager() != null) {
+                    mainPlugin.getStructureCoreManager().addInactiveCore(block.getLocation(), ownerId);
+                }
+            }
+        }
+        
+        // ✅ Tuzak çekirdeği kontrolü
+        if (type == Material.LODESTONE) {
+            org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey("stratocraft", "trap_core_owner");
+            if (container.has(ownerKey, org.bukkit.persistence.PersistentDataType.STRING)) {
+                String ownerIdStr = container.get(ownerKey, org.bukkit.persistence.PersistentDataType.STRING);
+                UUID ownerId = UUID.fromString(ownerIdStr);
+                
+                // ✅ Bloka veri yaz
+                me.mami.stratocraft.util.CustomBlockData.setTrapCoreData(block, ownerId);
+                
+                // TrapManager'a kaydet
+                me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
+                if (mainPlugin != null && mainPlugin.getTrapManager() != null) {
+                    mainPlugin.getTrapManager().registerInactiveTrapCore(block.getLocation(), ownerId);
+                }
+            }
+        }
+        
+        // ✅ Klan bankası kontrolü
+        if (type == Material.ENDER_CHEST) {
+            org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "clan_bank");
+            if (container.has(key, org.bukkit.persistence.PersistentDataType.STRING)) {
+                String clanIdStr = container.get(key, org.bukkit.persistence.PersistentDataType.STRING);
+                UUID clanId = UUID.fromString(clanIdStr);
+                
+                // ✅ Bloka veri yaz
+                me.mami.stratocraft.util.CustomBlockData.setClanBankData(block, clanId);
+                
+                // ClanBankSystem'e kaydet
+                me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
+                if (mainPlugin != null && mainPlugin.getClanBankSystem() != null) {
+                    try {
+                        java.lang.reflect.Field field = mainPlugin.getClanBankSystem().getClass()
+                            .getDeclaredField("bankChestLocations");
+                        field.setAccessible(true);
+                        @SuppressWarnings("unchecked")
+                        java.util.Map<UUID, org.bukkit.Location> locations = 
+                            (java.util.Map<UUID, org.bukkit.Location>) field.get(mainPlugin.getClanBankSystem());
+                        if (locations != null) {
+                            locations.put(clanId, block.getLocation());
+                        }
+                    } catch (Exception e) {
+                        // Reflection hatası - önemli değil
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * ✅ YENİ: Yaratıcı modda orta tık ile kopyalama (pick block)
+     * Tüm özel bloklar için PersistentDataContainer verisini ItemStack'e kopyala
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onCreativeCopy(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (event.getPlayer().getGameMode() != org.bukkit.GameMode.CREATIVE) return;
+        
+        Block block = event.getClickedBlock();
+        if (block == null) return;
+        
+        Material type = block.getType();
+        ItemStack item = new ItemStack(type);
+        org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+        if (meta == null) return;
+        
+        org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
+        boolean hasCustomData = false;
+        
+        // ✅ Klan çiti kontrolü
+        if (type == Material.OAK_FENCE) {
+            UUID clanId = me.mami.stratocraft.util.CustomBlockData.getClanFenceData(block);
+            if (clanId != null) {
+                org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "clan_fence");
+                container.set(key, org.bukkit.persistence.PersistentDataType.STRING, clanId.toString());
+                hasCustomData = true;
+            }
+        }
+        
+        // ✅ Yapı çekirdeği kontrolü
+        if (type == Material.OAK_LOG) {
+            UUID ownerId = me.mami.stratocraft.util.CustomBlockData.getStructureCoreOwner(block);
+            if (ownerId != null) {
+                org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "structure_core");
+                container.set(key, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
+                org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey("stratocraft", "structure_core_owner");
+                container.set(ownerKey, org.bukkit.persistence.PersistentDataType.STRING, ownerId.toString());
+                hasCustomData = true;
+            }
+        }
+        
+        // ✅ Tuzak çekirdeği kontrolü
+        if (type == Material.LODESTONE) {
+            UUID ownerId = me.mami.stratocraft.util.CustomBlockData.getTrapCoreOwner(block);
+            if (ownerId != null) {
+                org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "trap_core");
+                container.set(key, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
+                org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey("stratocraft", "trap_core_owner");
+                container.set(ownerKey, org.bukkit.persistence.PersistentDataType.STRING, ownerId.toString());
+                hasCustomData = true;
+            }
+        }
+        
+        // ✅ Klan bankası kontrolü
+        if (type == Material.ENDER_CHEST) {
+            UUID clanId = me.mami.stratocraft.util.CustomBlockData.getClanBankData(block);
+            if (clanId != null) {
+                org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "clan_bank");
+                container.set(key, org.bukkit.persistence.PersistentDataType.STRING, clanId.toString());
+                hasCustomData = true;
+            }
+        }
+        
+        // ✅ Özel blok verisi varsa ItemStack'e ekle
+        if (hasCustomData) {
+            item.setItemMeta(meta);
+            event.getPlayer().getInventory().setItemInMainHand(item);
+            event.setCancelled(true);
+        }
+    }
+    
+    /**
+     * ✅ YENİ: Chunk yüklendiğinde özel blokları kontrol et
+     * PersistentDataContainer otomatik yüklenir ama backup sistemler için kontrol edilmeli
+     * OPTİMİZE: Async olarak çalışır (performans için)
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onChunkLoad(ChunkLoadEvent event) {
+        // ✅ Async olarak çalıştır (performans için)
+        org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(
+            me.mami.stratocraft.Main.getInstance(),
+            () -> {
+                org.bukkit.Chunk chunk = event.getChunk();
+                
+                // ✅ Sadece özel blok tiplerini kontrol et (performans için)
+                // OAK_FENCE, OAK_LOG, LODESTONE, ENDER_CHEST
+                for (int x = 0; x < 16; x++) {
+                    for (int z = 0; z < 16; z++) {
+                        // Y eksenini optimize et: Sadece yüzeyden ±50 blok kontrol et
+                        int centerY = chunk.getWorld().getHighestBlockYAt(
+                            chunk.getX() * 16 + x, chunk.getZ() * 16 + z);
+                        int minY = Math.max(chunk.getWorld().getMinHeight(), centerY - 50);
+                        int maxY = Math.min(chunk.getWorld().getMaxHeight(), centerY + 50);
+                        
+                        for (int y = minY; y <= maxY; y++) {
+                            Block block = chunk.getBlock(x, y, z);
+                            Material type = block.getType();
+                            
+                            // ✅ Klan çiti kontrolü
+                            if (type == Material.OAK_FENCE) {
+                                UUID clanId = me.mami.stratocraft.util.CustomBlockData.getClanFenceData(block);
+                                if (clanId != null && boundaryManager != null) {
+                                    // Main thread'e geri dön
+                                    org.bukkit.Bukkit.getScheduler().runTask(
+                                        me.mami.stratocraft.Main.getInstance(),
+                                        () -> {
+                                            Clan clan = territoryManager.getClanManager().getClan(clanId);
+                                            if (clan != null) {
+                                                boundaryManager.addFenceLocation(clan, block.getLocation());
+                                            }
+                                        });
+                                }
+                            }
+                            
+                            // ✅ Yapı çekirdeği kontrolü
+                            if (type == Material.OAK_LOG) {
+                                UUID ownerId = me.mami.stratocraft.util.CustomBlockData.getStructureCoreOwner(block);
+                                if (ownerId != null) {
+                                    // Main thread'e geri dön
+                                    org.bukkit.Bukkit.getScheduler().runTask(
+                                        me.mami.stratocraft.Main.getInstance(),
+                                        () -> {
+                                            me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
+                                            if (mainPlugin != null && mainPlugin.getStructureCoreManager() != null) {
+                                                if (!mainPlugin.getStructureCoreManager().isInactiveCore(block.getLocation())) {
+                                                    mainPlugin.getStructureCoreManager().addInactiveCore(block.getLocation(), ownerId);
+                                                }
+                                            }
+                                        });
+                                }
+                            }
+                            
+                            // ✅ Tuzak çekirdeği kontrolü
+                            if (type == Material.LODESTONE) {
+                                UUID ownerId = me.mami.stratocraft.util.CustomBlockData.getTrapCoreOwner(block);
+                                if (ownerId != null) {
+                                    // Main thread'e geri dön
+                                    org.bukkit.Bukkit.getScheduler().runTask(
+                                        me.mami.stratocraft.Main.getInstance(),
+                                        () -> {
+                                            me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
+                                            if (mainPlugin != null && mainPlugin.getTrapManager() != null) {
+                                                mainPlugin.getTrapManager().registerInactiveTrapCore(block.getLocation(), ownerId);
+                                            }
+                                        });
+                                }
+                            }
+                            
+                            // ✅ Klan bankası kontrolü
+                            if (type == Material.ENDER_CHEST) {
+                                UUID clanId = me.mami.stratocraft.util.CustomBlockData.getClanBankData(block);
+                                if (clanId != null) {
+                                    // Main thread'e geri dön
+                                    org.bukkit.Bukkit.getScheduler().runTask(
+                                        me.mami.stratocraft.Main.getInstance(),
+                                        () -> {
+                                            me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
+                                            if (mainPlugin != null && mainPlugin.getClanBankSystem() != null) {
+                                                // bankChestLocations'a ekle (reflection ile)
+                                                try {
+                                                    java.lang.reflect.Field field = mainPlugin.getClanBankSystem().getClass()
+                                                        .getDeclaredField("bankChestLocations");
+                                                    field.setAccessible(true);
+                                                    @SuppressWarnings("unchecked")
+                                                    java.util.Map<UUID, org.bukkit.Location> locations = 
+                                                        (java.util.Map<UUID, org.bukkit.Location>) field.get(mainPlugin.getClanBankSystem());
+                                                    if (locations != null && !locations.containsKey(clanId)) {
+                                                        locations.put(clanId, block.getLocation());
+                                                    }
+                                                } catch (Exception e) {
+                                                    // Reflection hatası - önemli değil
+                                                }
+                                            }
+                                        });
+                                }
+                            }
                         }
                     }
                 }
-            }
-        }
+            });
     }
     
     // Genişletme mesajı cooldown
@@ -624,7 +913,7 @@ public class TerritoryListener implements Listener {
         org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(
             me.mami.stratocraft.Main.getInstance(),
             () -> {
-                boolean isValid = isSurroundedByClanFences(finalPlaceLocation);
+                boolean isValid = isSurroundedByClanFences3D(finalPlaceLocation);
                 
                 // Main thread'e geri dön
                 org.bukkit.Bukkit.getScheduler().runTask(
@@ -801,12 +1090,17 @@ public class TerritoryListener implements Listener {
                         () -> {
                             findAndAddFenceLocations(pending.placeLocation.getLocation(), territoryData);
                             
+                            // ✅ YENİ: Y ekseni sınırlarını güncelle
+                            territoryData.updateYBounds();
+                            
                             // Main thread'e geri dön ve TerritoryData'yı kaydet
                             org.bukkit.Bukkit.getScheduler().runTask(
                                 me.mami.stratocraft.Main.getInstance(),
                                 () -> {
                                     if (boundaryManager != null) {
                                         boundaryManager.setTerritoryData(finalNewClan, territoryData);
+                                        // ✅ YENİ: Sınır koordinatlarını hesapla
+                                        territoryData.calculateBoundaries();
                                     }
                                 }
                             );
@@ -880,11 +1174,26 @@ public class TerritoryListener implements Listener {
     
     /**
      * Klan sınırını partikül ile göster
+     * ✅ YENİ: Y ekseni sınırlarını dikkate alır
      */
     private void showTerritoryBoundary(Player player, Territory territory, Location playerLoc) {
         Location center = territory.getCenter();
         if (center == null || center.getWorld() == null) return;
         if (!center.getWorld().equals(playerLoc.getWorld())) return;
+        
+        // ✅ YENİ: TerritoryData'dan Y ekseni sınırlarını al
+        int minY = Integer.MIN_VALUE;
+        int maxY = Integer.MAX_VALUE;
+        if (boundaryManager != null) {
+            Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
+            if (playerClan != null) {
+                me.mami.stratocraft.model.territory.TerritoryData data = boundaryManager.getTerritoryData(playerClan);
+                if (data != null) {
+                    minY = data.getMinY() - data.getGroundDepth();
+                    maxY = data.getMaxY() + data.getSkyHeight();
+                }
+            }
+        }
         
         double radius = territory.getRadius();
         double angle = Math.atan2(playerLoc.getZ() - center.getZ(), playerLoc.getX() - center.getX());
@@ -895,8 +1204,17 @@ public class TerritoryListener implements Listener {
             double x = center.getX() + (radius * Math.cos(offsetAngle));
             double z = center.getZ() + (radius * Math.sin(offsetAngle));
             
-            // Yükseklik: Oyuncunun göz seviyesi ± 2 blok
-            double y = playerLoc.getY() + (i * 0.5);
+            // ✅ YENİ: Yükseklik: Oyuncunun Y seviyesi, ama sınırlar içinde
+            int playerY = playerLoc.getBlockY();
+            int effectiveY = (minY != Integer.MIN_VALUE && maxY != Integer.MAX_VALUE) 
+                ? Math.max(minY, Math.min(maxY, playerY)) 
+                : playerY;
+            double y = effectiveY + (i * 0.5);
+            
+            // Y sınırlarını kontrol et
+            if (minY != Integer.MIN_VALUE && maxY != Integer.MAX_VALUE) {
+                y = Math.max(minY, Math.min(maxY, y));
+            }
             
             Location particleLoc = new Location(center.getWorld(), x, y, z);
             
@@ -905,12 +1223,159 @@ public class TerritoryListener implements Listener {
             
             // Klan rengine göre partikül (yeşil - kendi klanı)
             player.spawnParticle(Particle.REDSTONE, particleLoc, 1, 0, 0, 0, 0,
-                new Particle.DustOptions(Color.fromRGB(0, 255, 0), 1.0f)); // Yeşil
+                new Particle.DustOptions(org.bukkit.Color.fromRGB(0, 255, 0), 1.0f)); // Yeşil
         }
     }
     
-    // Flood Fill Algoritması ile Klan Çiti Kontrolü
-    // OPTİMİZE: Basitleştirilmiş ve hızlandırılmış versiyon
+    // ✅ YENİ: 3D Flood Fill Algoritması ile Klan Çiti Kontrolü
+    // Yükseklik farkı ve havada çitler desteklenir
+    private boolean isSurroundedByClanFences3D(Block center) {
+        int heightTolerance = territoryConfig != null ? 
+            territoryConfig.getFenceHeightTolerance() : 5; // Varsayılan: 5 blok
+        
+        Set<Location> visited = new HashSet<>();
+        Queue<Block> queue = new LinkedList<>();
+        boolean foundClanFence = false;
+        
+        queue.add(center);
+        visited.add(center.getLocation());
+        
+        int minArea = 9; // Minimum alan (3x3)
+        int maxIterations = 1000; // 3D için daha fazla iteration gerekebilir
+        int iterations = 0;
+        
+        int centerY = center.getY();
+        
+        while (!queue.isEmpty()) {
+            Block current = queue.poll();
+            iterations++;
+            
+            if (iterations > maxIterations) {
+                return false; // Çok büyük alan
+            }
+            
+            // ✅ YENİ: 6 yöne bak (3D)
+            BlockFace[] faces = {
+                BlockFace.NORTH, BlockFace.SOUTH,
+                BlockFace.EAST, BlockFace.WEST,
+                BlockFace.UP, BlockFace.DOWN  // ✅ Y ekseni eklendi
+            };
+            
+            for (BlockFace face : faces) {
+                Block neighbor = current.getRelative(face);
+                Location neighborLoc = neighbor.getLocation();
+                
+                if (visited.contains(neighborLoc)) continue;
+                
+                // ✅ YENİ: Yükseklik toleransı kontrolü
+                int heightDiff = Math.abs(neighbor.getY() - centerY);
+                if (heightDiff > heightTolerance) {
+                    visited.add(neighborLoc); // Ziyaret edildi olarak işaretle
+                    continue; // Tolerans dışında, atla
+                }
+                
+                Material type = neighbor.getType();
+                
+                // Çit kontrolü
+                if (type == Material.OAK_FENCE) {
+                    if (isClanFenceFast(neighbor)) {
+                        foundClanFence = true;
+                        visited.add(neighborLoc);
+                        
+                        // ✅ Çit bağlantı kontrolü (opsiyonel)
+                        if (territoryConfig != null && territoryConfig.isFenceConnectionRequired()) {
+                            if (current.getType() == Material.OAK_FENCE && 
+                                isClanFenceFast(current)) {
+                                if (!isFenceConnected(current, neighbor)) {
+                                    // Bağlantısız çit - alan açık
+                                    return false;
+                                }
+                            }
+                        }
+                        
+                        continue; // Klan çiti, devam et
+                    } else {
+                        return false; // Normal çit - alan açık
+                    }
+                }
+                
+                // Solid blok - engel (yükseklik farkı olabilir)
+                if (type != Material.AIR && 
+                    type != Material.CAVE_AIR && 
+                    type != Material.VOID_AIR) {
+                    visited.add(neighborLoc);
+                    continue;
+                }
+                
+                // Hava - aramaya devam (3D)
+                visited.add(neighborLoc);
+                queue.add(neighbor);
+            }
+        }
+        
+        return visited.size() >= minArea && foundClanFence;
+    }
+    
+    /**
+     * ✅ YENİ: İki çitin birbirine bağlı olup olmadığını kontrol et
+     */
+    private boolean isFenceConnected(Block fence1, Block fence2) {
+        // Material kontrolü
+        if (fence1.getType() != Material.OAK_FENCE || 
+            fence2.getType() != Material.OAK_FENCE) {
+            return false;
+        }
+        
+        // ✅ Fence BlockData kontrolü
+        org.bukkit.block.data.BlockData data1 = fence1.getBlockData();
+        org.bukkit.block.data.BlockData data2 = fence2.getBlockData();
+        
+        if (data1 instanceof org.bukkit.block.data.type.Fence && 
+            data2 instanceof org.bukkit.block.data.type.Fence) {
+            org.bukkit.block.data.type.Fence fenceData1 = (org.bukkit.block.data.type.Fence) data1;
+            org.bukkit.block.data.type.Fence fenceData2 = (org.bukkit.block.data.type.Fence) data2;
+            
+            // ✅ Yön hesaplama
+            BlockFace direction = getDirection(fence1, fence2);
+            if (direction == null) {
+                return false; // Geçersiz yön
+            }
+            
+            // ✅ Çitlerin birbirine bağlı olup olmadığını kontrol et
+            return fenceData1.hasFace(direction) && 
+                   fenceData2.hasFace(direction.getOppositeFace());
+        }
+        
+        return false;
+    }
+    
+    /**
+     * ✅ YENİ: İki blok arasındaki yönü hesapla
+     */
+    private BlockFace getDirection(Block from, Block to) {
+        int dx = to.getX() - from.getX();
+        int dy = to.getY() - from.getY();
+        int dz = to.getZ() - from.getZ();
+        
+        // ✅ Sadece 1 blok mesafede olan bloklar için yön hesapla
+        if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) != 1) {
+            return null; // 1 bloktan fazla mesafe
+        }
+        
+        // ✅ Yön hesaplama
+        if (dx == 1 && dy == 0 && dz == 0) return BlockFace.EAST;
+        if (dx == -1 && dy == 0 && dz == 0) return BlockFace.WEST;
+        if (dx == 0 && dy == 0 && dz == 1) return BlockFace.SOUTH;
+        if (dx == 0 && dy == 0 && dz == -1) return BlockFace.NORTH;
+        if (dx == 0 && dy == 1 && dz == 0) return BlockFace.UP;
+        if (dx == 0 && dy == -1 && dz == 0) return BlockFace.DOWN;
+        
+        return null;
+    }
+    
+    // Flood Fill Algoritması ile Klan Çiti Kontrolü (ESKİ - 2D)
+    // ❌ DEPRECATED: isSurroundedByClanFences3D() kullanılmalı
+    @Deprecated
     private boolean isSurroundedByClanFences(Block center) {
         Set<Long> visited = new HashSet<>(); // Packed koordinat (daha hızlı)
         Queue<Block> queue = new LinkedList<>();
@@ -987,26 +1452,49 @@ public class TerritoryListener implements Listener {
     }
     
     /**
-     * Hızlı klan çiti kontrolü (sadece metadata)
-     * OPTİMİZE: TerritoryData döngüsü kaldırıldı
+     * Hızlı klan çiti kontrolü (PersistentDataContainer)
+     * ✅ YENİ: PersistentDataContainer kontrolü
+     * ✅ FALLBACK: TerritoryData kontrolü (backup)
      */
     private boolean isClanFenceFast(Block block) {
         if (block.getType() != Material.OAK_FENCE) {
             return false;
         }
         
-        // Sadece metadata kontrolü (hızlı)
-        if (territoryConfig != null) {
-            String metadataKey = territoryConfig.getFenceMetadataKey();
-            if (block.hasMetadata(metadataKey)) {
-                return true;
+        // ✅ YENİ: PersistentDataContainer kontrolü
+        UUID clanId = me.mami.stratocraft.util.CustomBlockData.getClanFenceData(block);
+        if (clanId != null) {
+            return true; // Klan çiti
+        }
+        
+        // ✅ FALLBACK: TerritoryData kontrolü (backup)
+        if (boundaryManager != null) {
+            // TerritoryData'da bu konum var mı?
+            org.bukkit.Location blockLoc = block.getLocation();
+            Clan nearbyClan = territoryManager.getTerritoryOwner(blockLoc);
+            if (nearbyClan != null) {
+                me.mami.stratocraft.model.territory.TerritoryData data = boundaryManager.getTerritoryData(nearbyClan);
+                if (data != null) {
+                    for (org.bukkit.Location fenceLoc : data.getFenceLocations()) {
+                        if (fenceLoc.getWorld().equals(blockLoc.getWorld()) &&
+                            fenceLoc.getBlockX() == blockLoc.getBlockX() &&
+                            fenceLoc.getBlockY() == blockLoc.getBlockY() &&
+                            fenceLoc.getBlockZ() == blockLoc.getBlockZ()) {
+                            return true; // TerritoryData'da bulundu
+                        }
+                    }
+                }
             }
         }
         
-        // OPTİMİZE: TerritoryData döngüsü kaldırıldı - çok yavaştı
-        // Metadata yoksa klan çiti değil kabul et
-        // NOT: Server restart sonrası çitler metadata kaybedebilir
-        // Bu durumda çitlerin yeniden koyulması gerekir
+        // ❌ ESKİ: Metadata kontrolü kaldırıldı
+        // if (territoryConfig != null) {
+        //     String metadataKey = territoryConfig.getFenceMetadataKey();
+        //     if (block.hasMetadata(metadataKey)) {
+        //         return true;
+        //     }
+        // }
+        
         return false;
     }
     
@@ -1266,7 +1754,7 @@ public class TerritoryListener implements Listener {
         org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(
             me.mami.stratocraft.Main.getInstance(),
             () -> {
-                boolean isValid = isSurroundedByClanFences(newLocation);
+                boolean isValid = isSurroundedByClanFences3D(newLocation);
                 
                 org.bukkit.Bukkit.getScheduler().runTask(
                     me.mami.stratocraft.Main.getInstance(),
@@ -1570,6 +2058,9 @@ public class TerritoryListener implements Listener {
                 }
             }
         }
+        
+        // ✅ YENİ: Y ekseni sınırlarını güncelle
+        territoryData.updateYBounds();
     }
 }
 

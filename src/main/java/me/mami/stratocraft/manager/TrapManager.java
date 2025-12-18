@@ -525,7 +525,11 @@ public class TrapManager {
 
         // 1. Trigger bloğunun altında tuzak var mı? (1 blok altında - üstteki bloklara basıldığında)
         Block below = triggerBlock.getRelative(0, -1, 0);
-        if (below.hasMetadata("TrapCore")) {
+        // ✅ YENİ: PersistentDataContainer kontrolü
+        if (me.mami.stratocraft.util.CustomBlockData.isTrapCore(below)) {
+        
+        // ❌ ESKİ: Metadata kontrolü kaldırıldı
+        // if (below.hasMetadata("TrapCore")) {
             Location belowLoc = below.getLocation();
             // YENİ MODEL: Önce TrapCoreBlock kontrol et
             trapCoreBlock = activeTrapCores.get(belowLoc);
@@ -540,7 +544,11 @@ public class TrapManager {
         // 2. Trigger bloğunun altında tuzak var mı? (2 blok altında)
         else {
             Block below2 = below.getRelative(0, -1, 0);
-            if (below2.hasMetadata("TrapCore")) {
+            // ✅ YENİ: PersistentDataContainer kontrolü
+            if (me.mami.stratocraft.util.CustomBlockData.isTrapCore(below2)) {
+            
+            // ❌ ESKİ: Metadata kontrolü kaldırıldı
+            // if (below2.hasMetadata("TrapCore")) {
                 Location below2Loc = below2.getLocation();
                 // YENİ MODEL: Önce TrapCoreBlock kontrol et
                 trapCoreBlock = activeTrapCores.get(below2Loc);
@@ -1251,12 +1259,15 @@ public class TrapManager {
                     trap.getFrameBlocks().addAll(frameBlocks);
                     activeTraps.put(loc, trap);
 
-                    // Metadata'yı geri yükle
+                    // ✅ YENİ: PersistentDataContainer'a geri yükle
                     Block block = loc.getBlock();
                     if (block.getType() == Material.LODESTONE) {
-                        block.setMetadata("TrapCore", new FixedMetadataValue(plugin, true));
-                        block.setMetadata("TrapOwner", new FixedMetadataValue(plugin, ownerId.toString()));
+                        me.mami.stratocraft.util.CustomBlockData.setTrapCoreData(block, ownerId);
                     }
+                    
+                    // ❌ ESKİ: Metadata kaldırıldı
+                    // block.setMetadata("TrapCore", new FixedMetadataValue(plugin, true));
+                    // block.setMetadata("TrapOwner", new FixedMetadataValue(plugin, ownerId.toString()));
                     
                     // PERFORMANS OPTİMİZASYONU: Cover block mapping'ini yeniden oluştur (sunucu restart sonrası)
                     updateCoverBlockMappingForTrapCore(loc, trapCore);
@@ -1301,7 +1312,8 @@ public class TrapManager {
                         // Metadata'yı geri yükle (sunucu restart sonrası)
                         Block block = loc.getBlock();
                         if (block.getType() == Material.LODESTONE) {
-                            block.setMetadata("TrapCoreItem", new FixedMetadataValue(plugin, true));
+                            // ✅ YENİ: PersistentDataContainer kullan (TrapListener'da zaten yapılıyor)
+                        // block.setMetadata("TrapCoreItem", new FixedMetadataValue(plugin, true));
                         }
                     } catch (Exception e) {
                         plugin.getLogger().warning(
@@ -1425,12 +1437,13 @@ public class TrapManager {
         trap.getFrameBlocks().addAll(frameBlocks);
         activeTraps.put(coreLoc, trap);
 
-        // Metadata ekle
-        coreBlock.setMetadata("TrapCore", new FixedMetadataValue(plugin, true));
-        coreBlock.setMetadata("TrapOwner", new FixedMetadataValue(plugin, player.getUniqueId().toString()));
-
-        // Metadata'yı kaldır (artık aktif tuzak)
-        coreBlock.removeMetadata("TrapCoreItem", plugin);
+        // ✅ YENİ: PersistentDataContainer güncelle (aktif tuzak için)
+        me.mami.stratocraft.util.CustomBlockData.setTrapCoreData(coreBlock, player.getUniqueId());
+        
+        // ❌ ESKİ: Metadata kaldırıldı
+        // coreBlock.setMetadata("TrapCore", new FixedMetadataValue(plugin, true));
+        // coreBlock.setMetadata("TrapOwner", new FixedMetadataValue(plugin, player.getUniqueId().toString()));
+        // coreBlock.removeMetadata("TrapCoreItem", plugin);
         inactiveTrapCores.remove(coreLoc);
         
         // Performans optimizasyonu: Üstteki blok -> tuzak çekirdeği mapping'i oluştur

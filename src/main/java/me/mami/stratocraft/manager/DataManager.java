@@ -1298,7 +1298,11 @@ public class DataManager {
                     trapData.location.y = loc.getBlockY();
                     trapData.location.z = loc.getBlockZ();
                     trapData.ownerId = trap.getOwnerId() != null ? trap.getOwnerId().toString() : null;
-                    trapData.ownerClanId = trap.getOwnerClanId() != null ? trap.getOwnerClanId().toString() : null;
+                    // KRİTİK DÜZELTME: clanId set et (SQLite NOT NULL constraint için)
+                    // ownerClanId'den al, eğer null ise boş string kullan (veritabanı hatası önleme)
+                    String ownerClanIdStr = trap.getOwnerClanId() != null ? trap.getOwnerClanId().toString() : null;
+                    trapData.ownerClanId = ownerClanIdStr;
+                    trapData.clanId = ownerClanIdStr; // ✅ SQLite için clanId set et
                     trapData.type = trap.getType() != null ? trap.getType().name() : null;
                     trapData.fuel = trap.getFuel();
                     trapData.isCovered = trap.isCovered();

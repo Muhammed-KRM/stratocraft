@@ -43,6 +43,9 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.GhostRecipeManager ghostRecipeManager;
     private me.mami.stratocraft.manager.TrainingManager trainingManager;
     private BuffManager buffManager;
+    
+    // ✅ YENİ: Oyuncu özellik kontrol sistemi
+    private me.mami.stratocraft.task.PlayerFeatureMonitor playerFeatureMonitor;
     private DataManager dataManager;
     private VirtualStorageListener virtualStorageListener;
     private ConfigManager configManager;
@@ -122,6 +125,9 @@ public class Main extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+        
+        // CustomBlockData'yı başlat
+        me.mami.stratocraft.util.CustomBlockData.initialize(this);
 
         // Klasör Hazırlığı - WorldEdit'e bağımlı olmadan klasörleri oluştur
         try {
@@ -170,6 +176,7 @@ public class Main extends JavaPlugin {
         clanManager = new ClanManager(this);
         territoryManager = new TerritoryManager(clanManager);
         clanManager.setTerritoryManager(territoryManager); // Cache güncellemesi için
+        // ✅ YENİ: TerritoryBoundaryManager TerritoryManager'a set edilecek (aşağıda)
         batteryManager = new BatteryManager(this);
         newBatteryManager = new NewBatteryManager(this); // Yeni batarya sistemi
         siegeManager = new SiegeManager();
@@ -307,6 +314,8 @@ public class Main extends JavaPlugin {
         if (territoryConfig != null) {
             territoryBoundaryManager = new me.mami.stratocraft.manager.TerritoryBoundaryManager(
                 this, territoryManager, territoryConfig);
+            // ✅ YENİ: TerritoryManager'a TerritoryBoundaryManager'ı set et (Y ekseni kontrolü için)
+            territoryManager.setBoundaryManager(territoryBoundaryManager);
         }
         
         // YENİ: TerritoryListener güncelle
@@ -349,6 +358,19 @@ public class Main extends JavaPlugin {
         this.clanTerritoryMenu = clanTerritoryMenu;
         this.territoryBoundaryManager = territoryBoundaryManager;
         this.territoryConfig = territoryConfig;
+        
+        // ✅ YENİ: PlayerFeatureMonitor başlat (oyuncu özellik kontrol sistemi)
+        if (clanManager != null && buffManager != null) {
+            try {
+                playerFeatureMonitor = new me.mami.stratocraft.task.PlayerFeatureMonitor(
+                    this, clanManager, buffManager);
+                playerFeatureMonitor.start();
+                getLogger().info("PlayerFeatureMonitor başlatıldı.");
+            } catch (Exception e) {
+                getLogger().warning("PlayerFeatureMonitor başlatılamadı: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
         // YENİ: StructureActivationListener'a ClanRankSystem ve StructureCoreManager ekle
         Bukkit.getPluginManager().registerEvents(
             new StructureActivationListener(clanManager, territoryManager, 
@@ -1044,6 +1066,12 @@ public class Main extends JavaPlugin {
     public void onDisable() {
         // ✅ ÖNCE: Tüm async task'ları iptal et (plugin kapatılırken)
         org.bukkit.Bukkit.getScheduler().cancelTasks(this);
+        
+        // ✅ YENİ: PlayerFeatureMonitor durdur
+        if (playerFeatureMonitor != null) {
+            playerFeatureMonitor.stop();
+            getLogger().info("PlayerFeatureMonitor durduruldu.");
+        }
         
         // ✅ DisasterArenaManager'ı durdur
         if (disasterArenaManager != null) {

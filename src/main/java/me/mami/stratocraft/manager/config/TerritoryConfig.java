@@ -38,6 +38,8 @@ public class TerritoryConfig {
     private boolean requireClanFenceItem = true;
     private int minFenceCount = 4;
     private int fenceConnectionDistance = 2;
+    private int fenceHeightTolerance = 5; // ✅ YENİ: Çitler arası maksimum yükseklik farkı
+    private boolean fenceConnectionRequired = true; // ✅ YENİ: Çitlerin bağlantılı olması gerekli mi?
     
     // Kristal Ayarları
     private String crystalMetadataKey = "ClanCrystal";
@@ -86,6 +88,8 @@ public class TerritoryConfig {
         requireClanFenceItem = config.getBoolean("clan.territory.fence.require-clan-fence-item", true);
         minFenceCount = config.getInt("clan.territory.fence.min-fence-count", 4);
         fenceConnectionDistance = config.getInt("clan.territory.fence.fence-connection-distance", 2);
+        fenceHeightTolerance = config.getInt("clan.territory.fence.height-tolerance", 5); // ✅ YENİ
+        fenceConnectionRequired = config.getBoolean("clan.territory.fence.connection-required", true); // ✅ YENİ
         
         // Kristal Ayarları
         crystalMetadataKey = config.getString("clan.territory.crystal.metadata-key", "ClanCrystal");
@@ -137,6 +141,8 @@ public class TerritoryConfig {
     public boolean isRequireClanFenceItem() { return requireClanFenceItem; }
     public int getMinFenceCount() { return minFenceCount; }
     public int getFenceConnectionDistance() { return fenceConnectionDistance; }
+    public int getFenceHeightTolerance() { return fenceHeightTolerance; } // ✅ YENİ
+    public boolean isFenceConnectionRequired() { return fenceConnectionRequired; } // ✅ YENİ
     public String getCrystalMetadataKey() { return crystalMetadataKey; }
     public boolean isRequireClanCrystalItem() { return requireClanCrystalItem; }
     public int getMinDistanceFromOtherCrystal() { return minDistanceFromOtherCrystal; }

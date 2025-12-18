@@ -2,6 +2,7 @@ package me.mami.stratocraft.manager;
 
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Territory;
+import me.mami.stratocraft.model.territory.TerritoryData;
 import me.mami.stratocraft.util.GeometryUtil;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -11,6 +12,9 @@ import java.util.UUID;
 
 public class TerritoryManager {
     private final ClanManager clanManager;
+    
+    // ✅ YENİ: TerritoryBoundaryManager referansı (Y ekseni kontrolü için)
+    private TerritoryBoundaryManager boundaryManager;
     
     // Chunk-based cache: O(1) lookup için
     // Key: "chunkX;chunkZ", Value: Clan ID
@@ -22,11 +26,37 @@ public class TerritoryManager {
     }
 
     public ClanManager getClanManager() { return clanManager; }
+    
+    /**
+     * ✅ YENİ: TerritoryBoundaryManager setter (Main.java'da çağrılacak)
+     */
+    public void setBoundaryManager(TerritoryBoundaryManager boundaryManager) {
+        this.boundaryManager = boundaryManager;
+    }
 
     /**
      * Chunk-based cache kullanarak bölge sahibini bul (O(1) lookup)
+     * ✅ YENİ: Y ekseni kontrolü eklendi (TerritoryData.isInsideTerritory() kullanılıyor)
      */
     public Clan getTerritoryOwner(Location loc) {
+        if (loc == null) return null;
+        
+        // ✅ YENİ: Önce TerritoryData.isInsideTerritory() ile kontrol et (Y ekseni dahil)
+        if (boundaryManager != null) {
+            for (Clan clan : clanManager.getAllClans()) {
+                TerritoryData data = boundaryManager.getTerritoryData(clan);
+                if (data != null && data.isInsideTerritory(loc)) {
+                    // Cache'e ekle (performans için)
+                    int chunkX = loc.getBlockX() >> 4;
+                    int chunkZ = loc.getBlockZ() >> 4;
+                    String chunkKey = chunkX + ";" + chunkZ;
+                    chunkTerritoryCache.put(chunkKey, clan.getId());
+                    return clan;
+                }
+            }
+        }
+        
+        // Fallback: Eski yöntem (geriye uyumluluk için)
         // Sadece veri değiştiyse güncelle (event-based)
         if (isCacheDirty) {
             updateChunkCache();
@@ -38,7 +68,7 @@ public class TerritoryManager {
         int chunkZ = loc.getBlockZ() >> 4;
         String chunkKey = chunkX + ";" + chunkZ;
         
-        // Cache'den kontrol et
+        // Cache'den kontrol et (2D kontrol - geriye uyumluluk)
         UUID clanId = chunkTerritoryCache.get(chunkKey);
         if (clanId != null) {
             Clan clan = clanManager.getAllClans().stream()
@@ -48,6 +78,13 @@ public class TerritoryManager {
             if (clan != null) {
                 Territory t = clan.getTerritory();
                 if (t != null && GeometryUtil.isInsideRadius(t.getCenter(), loc, t.getRadius())) {
+                    // ✅ YENİ: Y ekseni kontrolü ekle (TerritoryData varsa)
+                    if (boundaryManager != null) {
+                        TerritoryData data = boundaryManager.getTerritoryData(clan);
+                        if (data != null && !data.isInsideTerritory(loc)) {
+                            return null; // Y ekseni dışında
+                        }
+                    }
                     return clan;
                 }
             }
@@ -59,13 +96,36 @@ public class TerritoryManager {
     
     /**
      * Eski yöntem (fallback) - O(N) ama nadiren kullanılır
+     * ✅ YENİ: Y ekseni kontrolü eklendi
      */
     private Clan getTerritoryOwnerLegacy(Location loc) {
         for (Clan clan : clanManager.getAllClans()) {
             Territory t = clan.getTerritory();
             if (t == null) continue;
 
+            // ✅ YENİ: Önce TerritoryData.isInsideTerritory() ile kontrol et (Y ekseni dahil)
+            if (boundaryManager != null) {
+                TerritoryData data = boundaryManager.getTerritoryData(clan);
+                if (data != null && data.isInsideTerritory(loc)) {
+                    // Cache'e ekle
+                    int chunkX = loc.getBlockX() >> 4;
+                    int chunkZ = loc.getBlockZ() >> 4;
+                    String chunkKey = chunkX + ";" + chunkZ;
+                    chunkTerritoryCache.put(chunkKey, clan.getId());
+                    return clan;
+                }
+            }
+            
+            // Fallback: Eski 2D kontrol (geriye uyumluluk)
             if (GeometryUtil.isInsideRadius(t.getCenter(), loc, t.getRadius())) {
+                // ✅ YENİ: Y ekseni kontrolü ekle (TerritoryData varsa)
+                if (boundaryManager != null) {
+                    TerritoryData data = boundaryManager.getTerritoryData(clan);
+                    if (data != null && !data.isInsideTerritory(loc)) {
+                        continue; // Y ekseni dışında, sonraki klana bak
+                    }
+                }
+                
                 // Cache'e ekle
                 int chunkX = loc.getBlockX() >> 4;
                 int chunkZ = loc.getBlockZ() >> 4;

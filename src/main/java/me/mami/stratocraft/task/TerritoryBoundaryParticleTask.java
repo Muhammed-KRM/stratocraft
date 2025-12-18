@@ -137,6 +137,14 @@ public class TerritoryBoundaryParticleTask {
         double density = config.getBoundaryParticleDensity();
         double spacing = config.getBoundaryParticleSpacing();
         
+        // ✅ YENİ: Y ekseni sınırlarını al
+        int minY = territoryData.getMinY() - territoryData.getGroundDepth();
+        int maxY = territoryData.getMaxY() + territoryData.getSkyHeight();
+        int playerY = playerLoc.getBlockY();
+        
+        // Oyuncunun Y seviyesini sınırlar içinde tut
+        int effectiveY = Math.max(minY, Math.min(maxY, playerY));
+        
         // Sınır boyunca partikül göster
         int particleCount = 0;
         int maxParticles = (int) (boundaryLine.size() * density);
@@ -153,8 +161,9 @@ public class TerritoryBoundaryParticleTask {
                 continue;
             }
             
-            // Y yüksekliği kontrolü (oyuncunun göz seviyesi ± 2 blok)
-            double y = playerLoc.getY() + (Math.random() * 4 - 2);
+            // ✅ YENİ: Y koordinatını sınırlar içinde ayarla
+            // Oyuncunun Y seviyesine göre partikül göster, ama sınırlar içinde kal
+            double y = Math.max(minY, Math.min(maxY, effectiveY + (Math.random() * 4 - 2)));
             Location particleLoc = boundaryLoc.clone();
             particleLoc.setY(y);
             

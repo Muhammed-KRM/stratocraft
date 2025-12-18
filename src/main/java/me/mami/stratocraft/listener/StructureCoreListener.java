@@ -14,6 +14,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -333,6 +334,72 @@ public class StructureCoreListener implements Listener {
      */
     private void setCooldown(UUID playerId) {
         activationCooldowns.put(playerId, System.currentTimeMillis());
+    }
+    
+    /**
+     * ✅ YENİ: Yapı çekirdeği kırıldığında veri geri getirme
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onStructureCoreBreak(BlockBreakEvent event) {
+        Block block = event.getBlock();
+        Player player = event.getPlayer();
+        
+        if (block.getType() != Material.OAK_LOG) {
+            return;
+        }
+        
+        // ✅ PersistentDataContainer'dan veri oku
+        UUID ownerId = me.mami.stratocraft.util.CustomBlockData.getStructureCoreOwner(block);
+        if (ownerId == null) {
+            return; // Normal OAK_LOG
+        }
+        
+        // ✅ ItemStack'e veri ekle
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (item != null && item.getType() == Material.OAK_LOG) {
+            org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+            if (meta != null) {
+                org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
+                org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "structure_core");
+                container.set(key, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
+                org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey("stratocraft", "structure_core_owner");
+                container.set(ownerKey, org.bukkit.persistence.PersistentDataType.STRING, ownerId.toString());
+                item.setItemMeta(meta);
+            }
+        }
+    }
+    
+    /**
+     * ✅ YENİ: BlockPlaceEvent'te ItemStack'ten veri geri yükleme
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onStructureCorePlaceRestore(BlockPlaceEvent event) {
+        Block block = event.getBlock();
+        ItemStack item = event.getItemInHand();
+        
+        if (block.getType() != Material.OAK_LOG || item == null) {
+            return;
+        }
+        
+        // ✅ ItemStack'ten veri oku
+        if (item.hasItemMeta()) {
+            org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+            if (meta != null) {
+                org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
+                org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey("stratocraft", "structure_core_owner");
+                
+                if (container.has(ownerKey, org.bukkit.persistence.PersistentDataType.STRING)) {
+                    String ownerIdStr = container.get(ownerKey, org.bukkit.persistence.PersistentDataType.STRING);
+                    UUID ownerId = UUID.fromString(ownerIdStr);
+                    
+                    // ✅ Bloka veri yaz
+                    me.mami.stratocraft.util.CustomBlockData.setStructureCoreData(block, ownerId);
+                    
+                    // StructureCoreManager'a kaydet
+                    coreManager.addInactiveCore(block.getLocation(), ownerId);
+                }
+            }
+        }
     }
 }
 

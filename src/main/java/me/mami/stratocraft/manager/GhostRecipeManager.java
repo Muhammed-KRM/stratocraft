@@ -523,13 +523,17 @@ public class GhostRecipeManager {
         }
         
         // Yeni tarif oluştur
-        GhostRecipe recipe = new GhostRecipe(recipeId, baseLocation, data);
+        // KRİTİK DÜZELTME: baseLocation'ı tam sayıya çevir (blok merkezi)
+        // Çünkü offset hesaplaması ve key oluşturma tam sayı koordinat kullanıyor
+        Location baseBlockCenter = baseLocation.getBlock().getLocation();
+        GhostRecipe recipe = new GhostRecipe(recipeId, baseBlockCenter, data);
         
         // Hayalet blokları oluştur
         for (Map.Entry<Vector, Material> entry : data.getBlocks().entrySet()) {
             Vector offset = entry.getKey();
             Material material = entry.getValue();
-            Location blockLoc = baseLocation.clone().add(offset);
+            // Offset'i tam sayı baseLocation'a ekle
+            Location blockLoc = baseBlockCenter.clone().add(offset);
             
             // BUG DÜZELTME: Blokların ortasına değil üstüne denk gelmesi için
             // blockLoc'u blok merkezine hizala (0.5, 0, 0.5 offset)
@@ -589,16 +593,20 @@ public class GhostRecipeManager {
      * Blok koyulduğunda kontrol et ve doğru blok ise hayalet görüntüsünü kaldır
      */
     public void checkAndRemoveBlock(Player player, Location blockLocation, Material placedMaterial) {
+        if (blockLocation == null || blockLocation.getWorld() == null) return;
+        Location blockCenter = blockLocation.getBlock().getLocation();
+        
         // Aktif tarif kontrolü
         GhostRecipe activeRecipe = getActiveGhostRecipe(player.getUniqueId());
         if (activeRecipe != null) {
-            checkAndRemoveBlockFromRecipe(player, activeRecipe, blockLocation, placedMaterial, true);
+            // Aktif tarif için kontrol et
+            boolean removed = checkAndRemoveBlockFromRecipe(player, activeRecipe, blockLocation, placedMaterial, true);
+            // Eğer aktif tariften blok kaldırıldıysa, sabit tarif kontrolüne geçme (performans)
+            if (removed) return;
         }
         
         // Sabit tarif kontrolü - Tüm sabit tarifleri kontrol et (blockLocation'a yakın olanları)
         // OPTİMİZASYON: Mesafe kontrolü ekle (sadece yakın tarifleri kontrol et)
-        if (blockLocation == null || blockLocation.getWorld() == null) return;
-        Location blockCenter = blockLocation.getBlock().getLocation();
         for (Map.Entry<Location, GhostRecipe> entry : new HashMap<>(fixedGhostRecipes).entrySet()) {
             Location baseLoc = entry.getKey();
             GhostRecipe fixedRecipe = entry.getValue();
@@ -628,16 +636,17 @@ public class GhostRecipeManager {
     
     /**
      * Tariften blok kontrolü
+     * @return true eğer blok kaldırıldıysa, false aksi halde
      */
-    private void checkAndRemoveBlockFromRecipe(Player player, GhostRecipe recipe, 
+    private boolean checkAndRemoveBlockFromRecipe(Player player, GhostRecipe recipe, 
             Location blockLocation, Material placedMaterial, boolean isActive) {
         GhostRecipeData data = recipe.getData();
         Location baseLoc = recipe.getBaseLocation();
         
         // Null kontrolü
-        if (data == null || baseLoc == null || baseLoc.getWorld() == null) return;
-        if (blockLocation == null || blockLocation.getWorld() == null) return;
-        if (!blockLocation.getWorld().equals(baseLoc.getWorld())) return;
+        if (data == null || baseLoc == null || baseLoc.getWorld() == null) return false;
+        if (blockLocation == null || blockLocation.getWorld() == null) return false;
+        if (!blockLocation.getWorld().equals(baseLoc.getWorld())) return false;
         
         // BUG DÜZELTME: Blok konumunu baseLocation'a göre offset'e çevir
         // blockLocation'ı blok merkezine hizala (getBlock().getLocation() kullan)
@@ -647,36 +656,41 @@ public class GhostRecipeManager {
         
         // Bu konumda blok var mı?
         Material requiredMaterial = data.getBlocks().get(offset);
-        if (requiredMaterial == null) return;
+        if (requiredMaterial == null) return false;
         
         // Doğru blok mu?
-        if (requiredMaterial != placedMaterial) return;
+        if (requiredMaterial != placedMaterial) return false;
 
         // DÜZELTME: String key kullan (Location.equals() problemi için)
         String blockKey = GhostRecipe.locationToKey(blockCenter);
         ArmorStand stand = recipe.getGhostBlocks().get(blockKey);
-        if (stand != null) {
+        if (stand != null && stand.isValid()) {
             stand.remove();
+            recipe.getGhostBlocks().remove(blockKey);
+        } else {
+            // Stand bulunamadı veya geçersiz, yine de key'i kaldır
             recipe.getGhostBlocks().remove(blockKey);
         }
         
         // Tüm bloklar tamamlandı mı?
         if (recipe.getGhostBlocks().isEmpty()) {
+            // DÜZELTME: Hem aktif hem sabit tarifler için partikül efekti göster
+            Location centerLoc = baseBlockCenter.clone().add(0.5, 0.5, 0.5);
+            baseLoc.getWorld().spawnParticle(Particle.TOTEM, centerLoc, 50, 0.5, 1, 0.5, 0.3);
+            baseLoc.getWorld().spawnParticle(Particle.END_ROD, centerLoc, 30, 0.5, 1, 0.5, 0.1);
+            baseLoc.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, centerLoc, 20, 0.5, 1, 0.5, 0.1);
+            player.playSound(baseLoc, org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+            player.playSound(baseLoc, org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+            player.sendMessage("§a§l✓ Tarif tamamlandı!");
+            
             if (isActive) {
                 removeActiveGhostRecipe(player.getUniqueId());
-                player.sendMessage("§a§l✓ Tarif tamamlandı!");
-                
-                // YENİ: Tarif tamamlanınca partikül ve ses efekti
-                Location centerLoc = baseLoc.clone().add(0.5, 0.5, 0.5);
-                baseLoc.getWorld().spawnParticle(Particle.TOTEM, centerLoc, 50, 0.5, 1, 0.5, 0.3);
-                baseLoc.getWorld().spawnParticle(Particle.END_ROD, centerLoc, 30, 0.5, 1, 0.5, 0.1);
-                baseLoc.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, centerLoc, 20, 0.5, 1, 0.5, 0.1);
-                player.playSound(baseLoc, org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
-                player.playSound(baseLoc, org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
             } else {
                 removeFixedGhostRecipe(baseLoc);
             }
         }
+        
+        return true; // Blok kaldırıldı
     }
     
     /**
@@ -686,8 +700,18 @@ public class GhostRecipeManager {
         GhostRecipe activeRecipe = getActiveGhostRecipe(player.getUniqueId());
         if (activeRecipe == null) return;
         
+        // DÜZELTME: baseLocation'ı tam sayıya çevir (blok merkezi)
+        Location baseBlockCenter = baseLocation.getBlock().getLocation();
+        
+        // Yeni bir GhostRecipe oluştur (baseLocation'ı güncelle)
+        GhostRecipe fixedRecipe = new GhostRecipe(activeRecipe.getRecipeId(), baseBlockCenter, activeRecipe.getData());
+        // Hayalet blokları kopyala
+        for (Map.Entry<String, ArmorStand> entry : activeRecipe.getGhostBlocks().entrySet()) {
+            fixedRecipe.getGhostBlocks().put(entry.getKey(), entry.getValue());
+        }
+        
         // Sabit tarif olarak ekle
-        addFixedGhostRecipe(baseLocation, activeRecipe);
+        addFixedGhostRecipe(baseBlockCenter, fixedRecipe);
         
         // Aktif tariften kaldır (ama hayalet bloklar kalır)
         removeActiveGhostRecipe(player.getUniqueId());

@@ -95,8 +95,11 @@ public class ClanBankSystem {
             return false;
         }
         
-        // Metadata ekle
-        block.setMetadata("ClanBank", new FixedMetadataValue(plugin, clan.getId().toString()));
+        // ✅ YENİ: PersistentDataContainer kullan (metadata yerine)
+        me.mami.stratocraft.util.CustomBlockData.setClanBankData(block, clan.getId());
+        
+        // ❌ ESKİ: Metadata kaldırıldı
+        // block.setMetadata("ClanBank", new FixedMetadataValue(plugin, clan.getId().toString()));
         
         // Konumu kaydet
         bankChestLocations.put(clan.getId(), chestLoc);
@@ -179,16 +182,22 @@ public class ClanBankSystem {
             return null;
         }
         
-        // Metadata kontrolü
-        try {
-            List<MetadataValue> metadata = block.getMetadata("ClanBank");
-            if (metadata.isEmpty()) {
-                return null;
-            }
-            
-            // EnderChest bir BlockState ama InventoryHolder değil
-            // Klan bankası için sanal bir inventory oluştur
-            Inventory inventory = bankChestCache.get(clanId);
+        // ✅ YENİ: PersistentDataContainer kontrolü
+        UUID blockClanId = me.mami.stratocraft.util.CustomBlockData.getClanBankData(block);
+        if (blockClanId == null || !blockClanId.equals(clanId)) {
+            return null;
+        }
+        
+        // ❌ ESKİ: Metadata kontrolü kaldırıldı
+        // try {
+        //     List<MetadataValue> metadata = block.getMetadata("ClanBank");
+        //     if (metadata.isEmpty()) {
+        //         return null;
+        //     }
+        
+        // EnderChest bir BlockState ama InventoryHolder değil
+        // Klan bankası için sanal bir inventory oluştur
+        Inventory inventory = bankChestCache.get(clanId);
             if (inventory == null) {
                 // Yeni bir inventory oluştur (27 slot - ender chest boyutu)
                 inventory = org.bukkit.Bukkit.createInventory(null, 27, "§5Klan Bankası");
