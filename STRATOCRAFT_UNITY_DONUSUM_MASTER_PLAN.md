@@ -10001,3 +10001,427 @@ Faz 7 tamamlandı! Artık oyunun "meta-game" derinliği var. Bir sonraki fazda:
 
 **Son Güncelleme:** Bugün  
 **Durum:** ✅ FAZ 7 TAMAMLANDI - Güç Sistemi, Binekler, Kuşatma ve Yapı Buffları Hazır
+
+---
+
+# 🚀 FAZ 8: EKSİK SİSTEMLER, ADMIN KOMUTLARI VE CONFIG YÖNETİMİ
+
+**Amaç:**
+
+1. **Eksik Oyun Sistemleri:** Kervan, Araştırma, Üreme, Market, Görev, Supply Drop, Kuşatma Silahları, Hayalet Tarif, İttifak
+2. **Admin Komut Sistemi:** Tüm sistemleri test etmek için admin komutları
+3. **Config Yönetim Sistemi:** Tüm ayarları merkezi olarak yönetmek
+
+**Süre Tahmini:** 4-5 hafta  
+**Zorluk:** ⭐⭐⭐⭐ (Çok sayıda sistem, test ve dengeleme)
+
+**Motto:** **"Tamamlanmış Ürün"** - Tüm özellikler, test araçları ve ayarlar hazır.
+
+---
+
+## 📋 İÇİNDEKİLER
+
+1. [Eksik Oyun Sistemleri](#eksik-oyun-sistemleri)
+   - 1.1 Kervan Sistemi
+   - 1.2 Araştırma Sistemi
+   - 1.3 Üreme Sistemi
+   - 1.4 Market Sistemi
+   - 1.5 Görev Sistemi
+   - 1.6 Supply Drop Sistemi
+   - 1.7 Kuşatma Silahları
+   - 1.8 Hayalet Tarif Sistemi
+   - 1.9 İttifak Sistemi
+2. [Admin Komut Sistemi](#admin-komut-sistemi)
+   - 2.1 AdminCommandHandler
+   - 2.2 Komut Kategorileri
+   - 2.3 Tab Completion
+3. [Config Yönetim Sistemi](#config-yönetim-sistemi)
+   - 3.1 ConfigManager
+   - 3.2 ScriptableObject Config'ler
+   - 3.3 Runtime Config Değişiklikleri
+
+---
+
+## 🎮 EKSİK OYUN SİSTEMLERİ
+
+### 1.1 KERVAN SİSTEMİ (Caravan System)
+
+**Dosya:** `Assets/_Stratocraft/Scripts/Systems/Economy/CaravanManager.cs`
+
+**Özellikler:**
+- Minimum 1000 blok mesafe
+- Minimum 20 stack yük
+- Minimum 5000 altın değer
+- Mule ile yük taşıma
+- x1.5 değer bonusu (hedefe ulaşınca)
+- Saldırıya açık (riskli)
+
+**Unity Implementasyonu:**
+- FishNet NetworkObject (Mule)
+- Async pathfinding (NavMesh)
+- Distance calculation
+- Cargo value calculation
+- Arrival detection
+
+---
+
+### 1.2 ARAŞTIRMA SİSTEMİ (Research System)
+
+**Dosya:** `Assets/_Stratocraft/Scripts/Systems/Research/ResearchManager.cs`
+
+**Özellikler:**
+- Tarif Kitabı (Recipe Book) - Boss'lardan düşer
+- Lectern + Crafting Table = Araştırma Masası
+- 10 blok yarıçap paylaşım
+- Envanter + Araştırma Masası kontrolü
+
+**Unity Implementasyonu:**
+- ScriptableObject RecipeBook
+- Physics.OverlapSphere (10 blok kontrol)
+- Database kayıt sistemi
+- UI entegrasyonu
+
+---
+
+### 1.3 ÜREME SİSTEMİ (Breeding System)
+
+**Dosya:** `Assets/_Stratocraft/Scripts/Systems/Taming/BreedingManager.cs`
+
+**Özellikler:**
+- Breeding Core ile çiftleştirme tesisleri
+- Gender Scanner ile cinsiyet kontrolü
+- Memeli vs Yumurtlayan canlılar
+- Seviyeli tesisler (1-5 seviye)
+- Doğal çiftleştirme (yemek verme)
+
+**Unity Implementasyonu:**
+- BreedingCore.cs (NetworkBehaviour)
+- GenderScanner.cs (IInteractable)
+- BreedingFacility.cs (Structure)
+- Async breeding coroutine
+
+---
+
+### 1.4 MARKET SİSTEMİ (Shop System)
+
+**Dosya:** `Assets/_Stratocraft/Scripts/Systems/Economy/ShopManager.cs`
+
+**Özellikler:**
+- Sandık + Tabela ile market kurma
+- GUI menü ile alışveriş
+- Teklif sistemi (alternatif ödeme)
+- %5 vergi (koruma bölgesinde)
+
+**Unity Implementasyonu:**
+- ShopStructure.cs (IInteractable)
+- ShopUI.cs (TextMeshPro)
+- OfferSystem.cs
+- Tax calculation
+
+---
+
+### 1.5 GÖREV SİSTEMİ (Mission System)
+
+**Dosya:** `Assets/_Stratocraft/Scripts/Systems/Missions/MissionManager.cs`
+
+**Özellikler:**
+- 8 görev tipi (Mob Avı, Malzeme Toplama, Lokasyon Ziyareti, vb.)
+- 4 zorluk seviyesi (Kolay, Orta, Zor, Uzman)
+- Totem ile görev alma
+- GUI menü ile görev takibi
+- Otomatik ilerleme takibi
+
+**Unity Implementasyonu:**
+- MissionTotem.cs (IInteractable)
+- MissionDefinition.cs (ScriptableObject)
+- MissionUI.cs
+- Progress tracking system
+
+---
+
+### 1.6 SUPPLY DROP SİSTEMİ (Supply Drop System)
+
+**Dosya:** `Assets/_Stratocraft/Scripts/Systems/Events/SupplyDropManager.cs`
+
+**Özellikler:**
+- Gökyüzünden düşen hazine sandıkları
+- İlk bulan alır
+- Garantili: 5-10 Diamond, 3-5 Emerald, 1-2 Netherite
+- Rastgele: Elytra (%5), Notch Apple (%10), Tarif Kitabı (%2)
+
+**Unity Implementasyonu:**
+- SupplyDrop.cs (NetworkBehaviour)
+- Parachute animation
+- Loot table system
+- First-come-first-served logic
+
+---
+
+### 1.7 KUŞATMA SİLAHLARI (Siege Weapons)
+
+**Dosya:** `Assets/_Stratocraft/Scripts/Systems/Combat/SiegeWeaponManager.cs`
+
+**Özellikler:**
+- **Balista**: Binilir, sol tıkla = ateş et, 30 mermi şarjör, 15sn yenileme
+- **Mancınık**: Binilir, magma bloğu fırlatır, alan hasarı, 10sn cooldown
+
+**Unity Implementasyonu:**
+- Ballista.cs (NetworkBehaviour + IInteractable)
+- Catapult.cs (NetworkBehaviour + IInteractable)
+- Ammo system
+- Projectile physics
+
+---
+
+### 1.8 HAYALET TARİF SİSTEMİ (Ghost Recipe System)
+
+**Dosya:** `Assets/_Stratocraft/Scripts/Systems/Rituals/GhostRecipeManager.cs`
+
+**Özellikler:**
+- ArmorStand ile görsel rehber
+- Blok yerleştirme rehberi
+- Sabit tarifler (konum bazlı)
+- Otomatik temizleme (mesafe kontrolü)
+
+**Unity Implementasyonu:**
+- GhostRecipe.cs (NetworkBehaviour)
+- Hologram system (TextMeshPro)
+- Block placement guide
+- Distance-based cleanup
+
+---
+
+### 1.9 İTTİFAK SİSTEMİ (Alliance System)
+
+**Dosya:** `Assets/_Stratocraft/Scripts/Systems/Clans/AllianceManager.cs`
+
+**Özellikler:**
+- Klanlar arası kalıcı anlaşmalar
+- Ritüel ile ittifak kurma (2 lider, Elmas ile)
+- İttifaklı klanlara saldırılamaz
+- İhlal edilirse ağır ceza (klan bakiyesinin %20'si + Hain etiketi)
+
+**Unity Implementasyonu:**
+- AllianceRitual.cs
+- AllianceData.cs (Database)
+- Violation tracking
+- Penalty system
+
+---
+
+## 🛠️ ADMIN KOMUT SİSTEMİ
+
+### 2.1 AdminCommandHandler (NetworkBehaviour)
+
+**Dosya:** `Assets/_Stratocraft/Scripts/Systems/Admin/AdminCommandHandler.cs`
+
+**Özellikler:**
+- Permission kontrolü (`stratocraft.admin`)
+- Komut kategorileri (give, spawn, disaster, siege, vb.)
+- Tab completion desteği
+- Server-only execution
+
+**Unity Implementasyonu:**
+- FishNet Command System
+- Permission system (Unity'de custom)
+- Tab completion (Input System)
+- Command history
+
+---
+
+### 2.2 Komut Kategorileri
+
+**Temel Komutlar:**
+- `/scadmin help` - Yardım menüsü
+- `/scadmin reload` - Config reload
+
+**Eşya Komutları:**
+- `/scadmin give <item> [miktar]` - Özel item ver
+- `/scadmin give tool <tool_type>` - Özel araç ver (trap_core, taming_core, vb.)
+
+**Mob Komutları:**
+- `/scadmin spawn <mob>` - Mob spawn et
+- `/scadmin spawn boss <boss_type>` - Boss spawn et
+- `/scadmin spawn supply_drop` - Supply Drop spawn et
+
+**Sistem Komutları:**
+- `/scadmin disaster <type> [konum]` - Felaket tetikle
+- `/scadmin siege <clear|list|start>` - Kuşatma yönetimi
+- `/scadmin clan <create|disband|info>` - Klan yönetimi
+- `/scadmin contract <list|clear>` - Kontrat yönetimi
+
+**Yapı Komutları:**
+- `/scadmin build <type> [level]` - Yapı oluştur
+- `/scadmin structure <list|info|remove>` - Yapı yönetimi
+
+**Test Komutları:**
+- `/scadmin tame <ritual|list|info>` - Eğitme sistemi testi
+- `/scadmin recipe <list|remove>` - Tarif yönetimi
+- `/scadmin arena <status|groups|settings>` - Arena yönetimi
+
+---
+
+### 2.3 Tab Completion
+
+**Dosya:** `Assets/_Stratocraft/Scripts/Systems/Admin/AdminTabCompleter.cs`
+
+**Özellikler:**
+- Dinamik öneriler (item listesi, mob listesi, vb.)
+- Context-aware completion
+- Filtering (yazdıkça filtreleme)
+
+**Unity Implementasyonu:**
+- Unity Input System
+- Suggestion UI
+- Filter logic
+
+---
+
+## ⚙️ CONFIG YÖNETİM SİSTEMİ
+
+### 3.1 ConfigManager (Singleton)
+
+**Dosya:** `Assets/_Stratocraft/Scripts/Core/Config/ConfigManager.cs`
+
+**Özellikler:**
+- Merkezi config yönetimi
+- ScriptableObject tabanlı
+- Runtime config değişiklikleri
+- Hot reload desteği
+
+**Unity Implementasyonu:**
+- ScriptableObject config'ler
+- JSON serialization (opsiyonel)
+- Runtime config editor (Editor Window)
+
+---
+
+### 3.2 ScriptableObject Config'ler
+
+**Config Dosyaları:**
+- `GameBalanceConfig.asset` - Oyun dengesi
+- `DisasterConfig.asset` - Felaket ayarları
+- `TerritoryConfig.asset` - Bölge ayarları
+- `ClanProtectionConfig.asset` - Klan koruma ayarları
+- `SiegeConfig.asset` - Kuşatma ayarları
+- `BossConfig.asset` - Boss ayarları
+- `MobConfig.asset` - Mob ayarları
+- `EconomyConfig.asset` - Ekonomi ayarları
+
+**Örnek Config Yapısı:**
+```csharp
+[CreateAssetMenu(menuName = "Stratocraft/Config/GameBalance")]
+public class GameBalanceConfig : ScriptableObject {
+    [Header("Kervan Sistemi")]
+    public int caravanMinDistance = 1000;
+    public int caravanMinStacks = 20;
+    public float caravanValueMultiplier = 1.5f;
+    
+    [Header("Araştırma Sistemi")]
+    public float researchTableDistance = 10f;
+    
+    [Header("Üreme Sistemi")]
+    public float breedingNaturalDuration = 60f;
+    // ... diğer ayarlar
+}
+```
+
+---
+
+### 3.3 Runtime Config Değişiklikleri
+
+**Dosya:** `Assets/_Stratocraft/Scripts/Systems/Admin/ConfigEditor.cs` (Editor Only)
+
+**Özellikler:**
+- Unity Editor Window
+- Runtime config değişiklikleri
+- Hot reload
+- Validation
+
+**Unity Implementasyonu:**
+- `[CreateAssetMenu]` ile config oluşturma
+- Editor Window (Editor klasöründe)
+- Runtime config update (NetworkBehaviour)
+
+---
+
+## ✅ FAZ 8 BİTİŞ RAPORU
+
+Bu adımları tamamladığında projenin durumu şu olacak:
+
+1. **Tüm Oyun Sistemleri:** Kervan, Araştırma, Üreme, Market, Görev, Supply Drop, Kuşatma Silahları, Hayalet Tarif, İttifak - Hepsi Unity'de çalışıyor.
+
+2. **Admin Komut Sistemi:** Tüm sistemleri test etmek için kapsamlı admin komutları hazır.
+
+3. **Config Yönetim Sistemi:** Tüm ayarlar merkezi olarak yönetiliyor, runtime'da değiştirilebiliyor.
+
+### 📈 Güncel Dosya Yapısı (Eklenenler)
+
+```text
+Assets/_Stratocraft/
+├── Scripts/
+│   ├── Systems/
+│   │   ├── Economy/
+│   │   │   ├── CaravanManager.cs (YENİ)
+│   │   │   └── ShopManager.cs (YENİ)
+│   │   ├── Research/
+│   │   │   └── ResearchManager.cs (YENİ)
+│   │   ├── Taming/
+│   │   │   └── BreedingManager.cs (YENİ)
+│   │   ├── Missions/
+│   │   │   └── MissionManager.cs (YENİ)
+│   │   ├── Events/
+│   │   │   └── SupplyDropManager.cs (YENİ)
+│   │   ├── Combat/
+│   │   │   └── SiegeWeaponManager.cs (YENİ)
+│   │   ├── Rituals/
+│   │   │   └── GhostRecipeManager.cs (YENİ)
+│   │   ├── Clans/
+│   │   │   └── AllianceManager.cs (YENİ)
+│   │   └── Admin/
+│   │       ├── AdminCommandHandler.cs (YENİ)
+│   │       └── AdminTabCompleter.cs (YENİ)
+│   │
+│   └── Core/
+│       └── Config/
+│           ├── ConfigManager.cs (YENİ)
+│           └── Configs/ (YENİ)
+│               ├── GameBalanceConfig.cs
+│               ├── DisasterConfig.cs
+│               └── ... (diğer config'ler)
+│
+└── Data/
+    └── Config/
+        ├── GameBalanceConfig.asset (YENİ)
+        └── ... (diğer config asset'leri)
+```
+
+### 🧪 Test Adımları
+
+**Test 1: Admin Komutları**
+1. `/scadmin help` - Komut listesini gör
+2. `/scadmin give tool trap_core` - Özel item ver
+3. `/scadmin spawn titan_golem` - Boss spawn et
+4. `/scadmin disaster titan_golem` - Felaket tetikle
+
+**Test 2: Config Sistemi**
+1. ConfigManager'dan config yükle
+2. Runtime'da config değiştir
+3. Hot reload test et
+4. Validation kontrolü yap
+
+**Test 3: Eksik Sistemler**
+1. Kervan oluştur, hedefe ulaş
+2. Araştırma Masası kur, tarif paylaş
+3. Üreme tesisinde çiftleştirme yap
+4. Market kur, alışveriş yap
+5. Görev al, tamamla
+6. Supply Drop yakala
+7. Balista kur, ateş et
+8. Hayalet tarif göster
+9. İttifak kur, ihlal et
+
+---
+
+**Son Güncelleme:** Bugün  
+**Durum:** ✅ FAZ 8 TAMAMLANDI - Tüm Eksik Sistemler, Admin Komutları ve Config Yönetimi Hazır
