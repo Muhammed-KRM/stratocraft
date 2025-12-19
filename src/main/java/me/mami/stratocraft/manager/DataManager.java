@@ -1421,8 +1421,8 @@ public class DataManager {
                 me.mami.stratocraft.manager.TrapManager.class.getDeclaredField("inactiveTrapCores");
             inactiveTrapCoresField.setAccessible(true);
             @SuppressWarnings("unchecked")
-            Map<Location, UUID> inactiveTrapCores = 
-                (Map<Location, UUID>) inactiveTrapCoresField.get(trapManager);
+            Map<Location, Object> inactiveTrapCores = 
+                (Map<Location, Object>) inactiveTrapCoresField.get(trapManager);
             
             // Aktif tuzakları kaydet
             if (activeTraps != null) {
@@ -1492,12 +1492,39 @@ public class DataManager {
                 }
             }
             
-            // İnaktif tuzak çekirdeklerini kaydet
+            // İnaktif tuzak çekirdeklerini kaydet (YENİ MODEL: TrapCoreBlock)
             if (inactiveTrapCores != null) {
-                for (Map.Entry<Location, UUID> entry : inactiveTrapCores.entrySet()) {
+                for (Map.Entry<Location, ?> entry : inactiveTrapCores.entrySet()) {
+                    Location loc = entry.getKey();
+                    Object value = entry.getValue();
+                    
+                    // ✅ DÜZELTME: Type safety kontrolü (eski veriler UUID olabilir)
+                    me.mami.stratocraft.model.block.TrapCoreBlock coreBlock = null;
+                    if (value instanceof me.mami.stratocraft.model.block.TrapCoreBlock) {
+                        coreBlock = (me.mami.stratocraft.model.block.TrapCoreBlock) value;
+                    } else if (value instanceof UUID) {
+                        // Eski format (UUID) - TrapCoreBlock'a dönüştür
+                        UUID ownerId = (UUID) value;
+                        coreBlock = new me.mami.stratocraft.model.block.TrapCoreBlock(loc);
+                        coreBlock.setOwnerId(ownerId);
+                        coreBlock.setActive(false);
+                        // Düzeltilmiş değeri geri yaz
+                        try {
+                            inactiveTrapCores.put(loc, coreBlock);
+                        } catch (Exception e) {
+                            // Map'e yazılamadı, devam et
+                        }
+                    } else {
+                        // Geçersiz veri - atla
+                        plugin.getLogger().warning("Geçersiz inactiveTrapCore verisi: " + loc + " - " + (value != null ? value.getClass().getName() : "null"));
+                        continue;
+                    }
+                    
+                    if (coreBlock == null || coreBlock.getOwnerId() == null) continue;
+                    
                     InactiveTrapCoreData coreData = new InactiveTrapCoreData();
-                    coreData.location = serializeLocation(entry.getKey());
-                    coreData.ownerId = entry.getValue() != null ? entry.getValue().toString() : null;
+                    coreData.location = serializeLocation(loc);
+                    coreData.ownerId = coreBlock.getOwnerId().toString();
                     snapshot.inactiveCores.add(coreData);
                 }
             }
@@ -2575,8 +2602,8 @@ public class DataManager {
                 me.mami.stratocraft.manager.TrapManager.class.getDeclaredField("inactiveTrapCores");
             inactiveTrapCoresField.setAccessible(true);
             @SuppressWarnings("unchecked")
-            Map<Location, UUID> inactiveTrapCores = 
-                (Map<Location, UUID>) inactiveTrapCoresField.get(trapManager);
+            Map<Location, Object> inactiveTrapCores = 
+                (Map<Location, Object>) inactiveTrapCoresField.get(trapManager);
             
             // Aktif tuzakları yükle
             if (snapshot.activeTraps != null && activeTraps != null) {
@@ -2649,7 +2676,7 @@ public class DataManager {
                 }
             }
             
-            // İnaktif tuzak çekirdeklerini yükle
+            // İnaktif tuzak çekirdeklerini yükle (YENİ MODEL: TrapCoreBlock)
             if (snapshot.inactiveCores != null && inactiveTrapCores != null) {
                 for (InactiveTrapCoreData coreData : snapshot.inactiveCores) {
                     Location loc = null;
@@ -2667,7 +2694,12 @@ public class DataManager {
                     
                     UUID ownerId = coreData.ownerId != null ? UUID.fromString(coreData.ownerId) : null;
                     if (ownerId != null) {
-                        inactiveTrapCores.put(loc, ownerId);
+                        // ✅ YENİ MODEL: TrapCoreBlock oluştur
+                        me.mami.stratocraft.model.block.TrapCoreBlock inactiveCore = 
+                            new me.mami.stratocraft.model.block.TrapCoreBlock(loc);
+                        inactiveCore.setOwnerId(ownerId);
+                        inactiveCore.setActive(false);
+                        inactiveTrapCores.put(loc, (Object) inactiveCore);
                     }
                 }
             }

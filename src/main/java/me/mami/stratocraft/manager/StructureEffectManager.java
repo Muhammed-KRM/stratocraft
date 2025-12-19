@@ -49,6 +49,8 @@ public class StructureEffectManager {
     // ✅ OPTİMİZE: Player → Clan cache (performans için)
     private final java.util.Map<UUID, Clan> playerClanCache = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.Map<UUID, Long> playerClanCacheTime = new java.util.concurrent.ConcurrentHashMap<>();
+    // ✅ DÜZELTME: Negatif cache (klan yok) için ayrı Set (ConcurrentHashMap null value kabul etmez)
+    private final java.util.Set<UUID> playerNoClanCache = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private static final long PLAYER_CLAN_CACHE_DURATION = 5000L; // 5 saniye
     
     public StructureEffectManager(Main plugin, ClanManager clanManager, PlayerDataManager playerDataManager) {
@@ -142,6 +144,7 @@ public class StructureEffectManager {
             UUID playerId = player.getUniqueId();
             playerClanCache.remove(playerId);
             playerClanCacheTime.remove(playerId);
+            playerNoClanCache.remove(playerId); // ✅ DÜZELTME: Negatif cache'den de kaldır
         }
         
         // Mevcut cleanup
@@ -182,17 +185,24 @@ public class StructureEffectManager {
             Clan clan = null;
             Long cacheTime = playerClanCacheTime.get(playerId);
             if (cacheTime != null && (now - cacheTime) < PLAYER_CLAN_CACHE_DURATION) {
-                clan = playerClanCache.get(playerId);
+                // Cache hit - önce negatif cache kontrolü
+                if (playerNoClanCache.contains(playerId)) {
+                    clan = null; // Negatif cache - klan yok
+                } else {
+                    clan = playerClanCache.get(playerId);
+                }
             } else {
                 // Cache miss - ClanManager'dan al
                 clan = clanManager.getClanByPlayer(playerId);
                 if (clan != null) {
                     playerClanCache.put(playerId, clan);
                     playerClanCacheTime.put(playerId, now);
+                    playerNoClanCache.remove(playerId); // Negatif cache'den kaldır
                 } else {
-                    // Klan yok - cache'e null kaydet (negatif cache)
-                    playerClanCache.put(playerId, null);
+                    // Klan yok - negatif cache'e kaydet (ConcurrentHashMap null value kabul etmez)
+                    playerNoClanCache.add(playerId);
                     playerClanCacheTime.put(playerId, now);
+                    playerClanCache.remove(playerId); // Cache'den kaldır
                 }
             }
             

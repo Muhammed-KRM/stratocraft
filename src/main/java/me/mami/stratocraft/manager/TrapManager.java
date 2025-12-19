@@ -1158,8 +1158,25 @@ public class TrapManager {
         // Henüz aktifleştirilmemiş tuzak çekirdeklerini kaydet (YENİ MODEL)
         for (Map.Entry<Location, TrapCoreBlock> entry : inactiveTrapCores.entrySet()) {
             Location loc = entry.getKey();
-            TrapCoreBlock coreBlock = entry.getValue();
+            Object value = entry.getValue();
             
+            // ✅ DÜZELTME: Type safety kontrolü (eski veriler UUID olabilir)
+            if (!(value instanceof TrapCoreBlock)) {
+                // Eski format (UUID) - TrapCoreBlock'a dönüştür
+                if (value instanceof UUID) {
+                    UUID ownerId = (UUID) value;
+                    TrapCoreBlock coreBlock = new TrapCoreBlock(loc);
+                    coreBlock.setOwnerId(ownerId);
+                    coreBlock.setActive(false);
+                    inactiveTrapCores.put(loc, coreBlock); // Düzeltilmiş değeri geri yaz
+                } else {
+                    // Geçersiz veri - atla
+                    plugin.getLogger().warning("Geçersiz inactiveTrapCore verisi: " + loc + " - " + (value != null ? value.getClass().getName() : "null"));
+                    continue;
+                }
+            }
+            
+            TrapCoreBlock coreBlock = (TrapCoreBlock) value;
             if (coreBlock == null || coreBlock.getOwnerId() == null) continue;
 
             String path = "inactive_cores." + loc.getWorld().getName() + "." +
