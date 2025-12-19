@@ -105,13 +105,105 @@ public class CustomBossAI {
      * Entity'nin normal AI'sını devre dışı bırak ve özel AI'yı aktif et
      */
     public static void initializeBossAI(Entity entity, Disaster disaster, DisasterConfig config) {
-        if (entity == null || !(entity instanceof LivingEntity)) return;
+        if (entity == null || !(entity instanceof LivingEntity)) {
+            if (Main.getInstance() != null) {
+                Main.getInstance().getLogger().warning("CustomBossAI.initializeBossAI: Entity null veya LivingEntity değil!");
+            }
+            return;
+        }
         
         UUID entityId = entity.getUniqueId();
         LivingEntity living = (LivingEntity) entity;
         
-        // Normal AI'yı devre dışı bırak
-        living.setAI(false);
+        // ✅ DÜZELTME: EnderDragon için özel AI ayarları (animasyonlar için AI açık kalmalı)
+        if (entity instanceof org.bukkit.entity.EnderDragon) {
+            org.bukkit.entity.EnderDragon dragon = (org.bukkit.entity.EnderDragon) entity;
+            
+            // ✅ ÖNEMLİ: EnderDragon için AI'yı AÇIK tut (animasyonlar için gerekli)
+            // setAI(false) animasyonları durdurur, bu yüzden AI açık kalmalı
+            living.setAI(true);
+            
+            // ✅ EnderDragon için AI açık tutuldu (animasyonlar için gerekli)
+            // Paper API goal kaldırma yapılmıyor - EnderDragon'un kendi AI'sı animasyonları kontrol ediyor
+            if (Main.getInstance() != null) {
+                Main.getInstance().getLogger().info("CustomBossAI: EnderDragon AI açık (animasyonlar için) - " + entityId);
+            }
+            
+            // Hitbox ve görünürlük ayarları
+            dragon.setInvulnerable(false); // Hasar alabilir yap
+            dragon.setSilent(false); // Ses çıkarabilir
+            
+            // ✅ EnderDragon Phase ayarı - CIRCLING animasyonu için
+            try {
+                dragon.setPhase(org.bukkit.entity.EnderDragon.Phase.CIRCLING);
+            } catch (Exception e) {
+                // Phase ayarı başarısız olabilir, devam et
+            }
+            
+            if (Main.getInstance() != null) {
+                Main.getInstance().getLogger().info("CustomBossAI: EnderDragon için özel AI başlatıldı (AI açık, animasyonlar aktif) - " + entityId);
+            }
+        } else {
+            // Diğer boss'lar için normal AI kapatma
+            // ✅ YENİ: Paper API Goal sistemi kullanarak özel AI
+            // Normal AI'yı kapat, sadece bizim kontrol ettiğimiz hareketleri yapsın
+            living.setAI(false);
+            
+            // ✅ Paper API ile tüm goal'ları kaldır (eğer Mob ise)
+            if (entity instanceof Mob) {
+                try {
+                    Mob mob = (Mob) entity;
+                    // Paper API: Tüm goal'ları kaldır
+                    org.bukkit.Bukkit.getMobGoals().removeAllGoals(mob);
+                    if (Main.getInstance() != null) {
+                        Main.getInstance().getLogger().info("CustomBossAI: Tüm goal'lar kaldırıldı - " + entityId);
+                    }
+                } catch (Exception e) {
+                    // Paper API yoksa veya hata varsa, setAI(false) yeterli
+                    if (Main.getInstance() != null) {
+                        Main.getInstance().getLogger().warning("CustomBossAI: Paper API goal kaldırma hatası - " + e.getMessage());
+                    }
+                }
+            }
+        }
+        
+        // ✅ DÜZELTME: Diğer boss tipleri için özel ayarlar
+        if (entity instanceof org.bukkit.entity.Wither) {
+            org.bukkit.entity.Wither wither = (org.bukkit.entity.Wither) entity;
+            wither.setInvulnerable(false); // Hasar alabilir yap
+            wither.setSilent(false); // Ses çıkarabilir
+            if (Main.getInstance() != null) {
+                Main.getInstance().getLogger().info("CustomBossAI: Wither için özel AI başlatıldı - " + entityId);
+            }
+        } else if (entity instanceof org.bukkit.entity.Wither) {
+            org.bukkit.entity.Wither wither = (org.bukkit.entity.Wither) entity;
+            wither.setInvulnerable(false); // Hasar alabilir yap
+            wither.setSilent(false); // Ses çıkarabilir
+            if (Main.getInstance() != null) {
+                Main.getInstance().getLogger().info("CustomBossAI: Wither için özel AI başlatıldı - " + entityId);
+            }
+        } else if (entity instanceof org.bukkit.entity.ElderGuardian) {
+            org.bukkit.entity.ElderGuardian guardian = (org.bukkit.entity.ElderGuardian) entity;
+            guardian.setInvulnerable(false); // Hasar alabilir yap
+            guardian.setSilent(false); // Ses çıkarabilir
+            if (Main.getInstance() != null) {
+                Main.getInstance().getLogger().info("CustomBossAI: ElderGuardian için özel AI başlatıldı - " + entityId);
+            }
+        } else if (entity instanceof org.bukkit.entity.IronGolem) {
+            org.bukkit.entity.IronGolem golem = (org.bukkit.entity.IronGolem) entity;
+            golem.setInvulnerable(false); // Hasar alabilir yap
+            golem.setSilent(false); // Ses çıkarabilir
+            if (Main.getInstance() != null) {
+                Main.getInstance().getLogger().info("CustomBossAI: IronGolem için özel AI başlatıldı - " + entityId);
+            }
+        } else if (entity instanceof org.bukkit.entity.Silverfish) {
+            org.bukkit.entity.Silverfish silverfish = (org.bukkit.entity.Silverfish) entity;
+            silverfish.setInvulnerable(false); // Hasar alabilir yap
+            silverfish.setSilent(false); // Ses çıkarabilir
+            if (Main.getInstance() != null) {
+                Main.getInstance().getLogger().info("CustomBossAI: Silverfish için özel AI başlatıldı - " + entityId);
+            }
+        }
         
         // Başlangıç durumu
         entityStates.put(entityId, AIState.MOVING_TO_TARGET);
@@ -122,8 +214,22 @@ public class CustomBossAI {
         
         // Hedef belirle
         Location target = disaster.getTargetCrystal() != null ? disaster.getTargetCrystal() : disaster.getTarget();
+        if (target == null) {
+            // Hedef yoksa merkeze git
+            Main plugin = Main.getInstance();
+            if (plugin != null && plugin.getDifficultyManager() != null) {
+                target = plugin.getDifficultyManager().getCenterLocation();
+            }
+            if (target == null) {
+                target = entity.getLocation().getWorld().getSpawnLocation();
+            }
+        }
+        
         if (target != null) {
             currentTarget.put(entityId, target);
+            if (Main.getInstance() != null) {
+                Main.getInstance().getLogger().info("CustomBossAI: Hedef belirlendi - " + target);
+            }
         }
         
         // Waypoint'leri oluştur (hedefe giden yol boyunca)
@@ -133,6 +239,10 @@ public class CustomBossAI {
         
         // Saldırı planlarını oluştur
         createAttackPlans(entity, disaster, config);
+        
+        if (Main.getInstance() != null) {
+            Main.getInstance().getLogger().info("CustomBossAI: Boss AI başlatıldı - " + entityId + ", Type: " + entity.getType());
+        }
     }
     
     // ✅ PERFORMANS: Tick sayacı (her 2 tick'te bir çalıştır)
@@ -143,19 +253,51 @@ public class CustomBossAI {
      * ✅ PERFORMANS OPTİMİZASYONU: Her 2 tick'te bir çalıştır (saniyede 10 kez)
      */
     public static void updateBossAI(Entity entity, Disaster disaster, DisasterConfig config) {
-        if (entity == null || !(entity instanceof LivingEntity)) return;
+        if (entity == null || !(entity instanceof LivingEntity)) {
+            return;
+        }
+        // ✅ DÜZELTME: Entity valid kontrolü - EnderDragon kaybolma sorunu için
         if (entity.isDead() || !entity.isValid()) {
             cleanupBossAI(entity);
             return;
         }
         
+        // ✅ DÜZELTME: Entity görünürlük kontrolü - EnderDragon kaybolma sorunu için
+        if (entity instanceof org.bukkit.entity.EnderDragon) {
+            org.bukkit.entity.EnderDragon dragon = (org.bukkit.entity.EnderDragon) entity;
+            // Entity görünür değilse görünür yap
+            if (!dragon.isVisibleByDefault()) {
+                dragon.setVisibleByDefault(true);
+            }
+            // Entity'nin chunk'ı yüklü değilse yükle
+            org.bukkit.Chunk chunk = dragon.getLocation().getChunk();
+            if (!chunk.isLoaded()) {
+                chunk.load(false);
+            }
+        }
+        
         UUID entityId = entity.getUniqueId();
         
-        // ✅ PERFORMANS: Her 2 tick'te bir çalıştır
-        int tickCount = tickCounters.getOrDefault(entityId, 0);
-        tickCounters.put(entityId, tickCount + 1);
-        if (tickCount % 2 != 0) {
-            return; // Bu tick'te çalıştırma
+        // ✅ DÜZELTME: AI durumu kontrolü - eğer initialize edilmemişse initialize et
+        if (!entityStates.containsKey(entityId)) {
+            // AI initialize edilmemiş, şimdi initialize et
+            initializeBossAI(entity, disaster, config);
+            return; // Bu tick'te sadece initialize et, bir sonraki tick'te çalıştır
+        }
+        
+        // ✅ DÜZELTME: EnderDragon için her tick çalıştır (animasyonlar için)
+        boolean isEnderDragon = entity instanceof org.bukkit.entity.EnderDragon;
+        
+        if (!isEnderDragon) {
+            // Diğer boss'lar için performans optimizasyonu: Her 2 tick'te bir çalıştır
+            int tickCount = tickCounters.getOrDefault(entityId, 0);
+            tickCounters.put(entityId, tickCount + 1);
+            if (tickCount % 2 != 0) {
+                return; // Bu tick'te çalıştırma
+            }
+        } else {
+            // EnderDragon için tick sayacını güncelle (cleanup için)
+            tickCounters.put(entityId, tickCounters.getOrDefault(entityId, 0) + 1);
         }
         
         Location current = entity.getLocation();
@@ -239,14 +381,38 @@ public class CustomBossAI {
             long lastMove = lastMoveTime.getOrDefault(entityId, 0L);
             boolean shouldUsePathfinding = (now - lastMove) >= 500L; // 500ms = 10 tick
             
-            if (shouldUsePathfinding && entity instanceof Mob) {
+            // ✅ DÜZELTME: EnderDragon için özel hareket (AI açık, animasyonlar çalışıyor)
+            if (entity instanceof org.bukkit.entity.EnderDragon) {
+                org.bukkit.entity.EnderDragon dragon = (org.bukkit.entity.EnderDragon) entity;
+                
+                // ✅ EnderDragon için AI açık, bu yüzden velocity ile sürekli hareket ettir
+                // AI açık olduğu için animasyonlar çalışacak
+                // Her tick velocity uygula (animasyonlar için gerekli)
+                moveWithVelocity(entity, target, config);
+                
+                // ✅ EnderDragon Phase kontrolü - hareket animasyonu için
+                try {
+                    org.bukkit.entity.EnderDragon.Phase currentPhase = dragon.getPhase();
+                    // CIRCLING veya STRAFING phase'i hareket animasyonu için en iyisi
+                    // Diğer phase'lerde CIRCLING'e geç
+                    if (currentPhase != org.bukkit.entity.EnderDragon.Phase.CIRCLING && 
+                        currentPhase != org.bukkit.entity.EnderDragon.Phase.STRAFING) {
+                        dragon.setPhase(org.bukkit.entity.EnderDragon.Phase.CIRCLING);
+                    }
+                } catch (Exception e) {
+                    // Phase ayarı başarısız olabilir, devam et
+                }
+            } else if (shouldUsePathfinding && entity instanceof Mob) {
+                // Diğer Mob'lar için Paper API pathfinding kullan
                 Mob mob = (Mob) entity;
                 try {
-                    // Paper API: removeAllGoals ve moveTo (daha az sıklıkta)
-                    org.bukkit.Bukkit.getMobGoals().removeAllGoals(mob);
+                    // Paper API: Pathfinder ile hedefe git (daha doğal pathfinding)
                     mob.getPathfinder().moveTo(target, config.getMoveSpeed());
                 } catch (Exception e) {
-                    // Paper API yoksa velocity kullan
+                    // Paper API yoksa veya hata varsa velocity kullan
+                    if (Main.getInstance() != null) {
+                        Main.getInstance().getLogger().fine("CustomBossAI: Pathfinding hatası, velocity kullanılıyor - " + e.getMessage());
+                    }
                     moveWithVelocity(entity, target, config);
                 }
             } else {
@@ -271,6 +437,7 @@ public class CustomBossAI {
     
     /**
      * Velocity ile hareket et (Paper API yoksa)
+     * ✅ DÜZELTME: Tüm boss tipleri için özel kontrol
      */
     private static void moveWithVelocity(Entity entity, Location target, DisasterConfig config) {
         Location current = entity.getLocation();
@@ -278,17 +445,175 @@ public class CustomBossAI {
         
         Vector direction = DisasterUtils.calculateDirection(current, target);
         double speed = config.getMoveSpeed();
-        Vector velocity = direction.multiply(speed);
         
-        // EnderDragon gibi uçan entity'ler için Y eksenini de kullan
+        // ✅ DÜZELTME: EnderDragon için özel hareket (AI açık, animasyonlar çalışıyor)
         if (entity instanceof org.bukkit.entity.EnderDragon) {
-            double yComponent = direction.getY() * speed * 0.5;
-            velocity.setY(Math.max(0.1, Math.max(0, yComponent)));
-        } else {
-            velocity.setY(0);
+            org.bukkit.entity.EnderDragon dragon = (org.bukkit.entity.EnderDragon) entity;
+            
+            // ✅ DÜZELTME: EnderDragon için AI açık, bu yüzden velocity ile sürekli hareket ettir
+            // AI açık olduğu için animasyonlar çalışacak
+            double distance = current.distance(target);
+            
+            // Mesafe bazlı velocity ayarları (daha agresif hareket)
+            double velocityMultiplier = 0.6; // Varsayılan hız çarpanı (artırıldı)
+            if (distance > 50) {
+                velocityMultiplier = 0.8; // Uzak mesafe - daha hızlı
+            } else if (distance > 20) {
+                velocityMultiplier = 0.6; // Orta mesafe
+            } else if (distance > 5) {
+                velocityMultiplier = 0.4; // Yakın mesafe - yavaş
+            } else {
+                velocityMultiplier = 0.3; // Çok yakın - çok yavaş
+            }
+            
+            Vector velocity = direction.multiply(speed * velocityMultiplier);
+            // EnderDragon uçan entity, Y ekseni hareketi önemli (artırıldı)
+            double yComponent = Math.max(0.2, Math.min(0.6, direction.getY() * speed * 0.8));
+            velocity.setY(yComponent);
+            
+            // ✅ DÜZELTME: Entity valid kontrolü - her zaman velocity uygula (animasyonlar için)
+            if (dragon.isValid() && !dragon.isDead()) {
+                dragon.setVelocity(velocity);
+            }
+            
+            // ✅ DÜZELTME: EnderDragon için hitbox ve görünürlük kontrolü
+            if (dragon.isInvulnerable()) {
+                dragon.setInvulnerable(false); // Hasar alabilir yap
+            }
+            // Görünürlük kontrolü
+            if (!dragon.isVisibleByDefault()) {
+                dragon.setVisibleByDefault(true);
+            }
+            
+            // ✅ EnderDragon Phase kontrolü - hareket animasyonu için
+            try {
+                org.bukkit.entity.EnderDragon.Phase currentPhase = dragon.getPhase();
+                // CIRCLING veya STRAFING phase'i hareket animasyonu için en iyisi
+                if (currentPhase != org.bukkit.entity.EnderDragon.Phase.CIRCLING && 
+                    currentPhase != org.bukkit.entity.EnderDragon.Phase.STRAFING) {
+                    dragon.setPhase(org.bukkit.entity.EnderDragon.Phase.CIRCLING);
+                }
+            } catch (Exception e) {
+                // Phase ayarı başarısız olabilir, devam et
+            }
+            
+            return;
         }
         
+        // ✅ DÜZELTME: Wither için özel hareket (uçan entity)
+        if (entity instanceof org.bukkit.entity.Wither) {
+            org.bukkit.entity.Wither wither = (org.bukkit.entity.Wither) entity;
+            Vector velocity = direction.multiply(speed * 0.4);
+            double yComponent = Math.max(0.1, direction.getY() * speed * 0.6);
+            velocity.setY(yComponent);
+            wither.setVelocity(velocity);
+            
+            // Hitbox kontrolü
+            if (wither.isInvulnerable()) {
+                wither.setInvulnerable(false);
+            }
+            return;
+        }
+        
+        // ✅ DÜZELTME: ElderGuardian için özel hareket (su canavarı - havada asılı kalma sorunu çözümü)
+        if (entity instanceof org.bukkit.entity.ElderGuardian) {
+            org.bukkit.entity.ElderGuardian guardian = (org.bukkit.entity.ElderGuardian) entity;
+            Location currentLoc = guardian.getLocation();
+            
+            // ✅ DÜZELTME: Su kontrolü - ElderGuardian suda olmalı veya suya yakın olmalı
+            org.bukkit.block.Block blockBelow = currentLoc.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN);
+            org.bukkit.block.Block blockAt = currentLoc.getBlock();
+            boolean isInWater = blockAt.getType() == org.bukkit.Material.WATER || 
+                               blockAt.getType() == org.bukkit.Material.LAVA ||
+                               blockBelow.getType() == org.bukkit.Material.WATER ||
+                               blockBelow.getType() == org.bukkit.Material.LAVA;
+            
+            // Su yoksa suya doğru git veya yere in
+            if (!isInWater) {
+                // En yakın su bloğunu bul veya yere in
+                Location targetLoc = target.clone();
+                // Y eksenini düşür (yere in)
+                if (targetLoc.getY() > currentLoc.getY() - 5) {
+                    targetLoc.setY(Math.max(currentLoc.getY() - 5, targetLoc.getY() - 10));
+                }
+                // Yeni direction hesapla
+                direction = DisasterUtils.calculateDirection(currentLoc, targetLoc);
+            }
+            
+            Vector velocity = direction.multiply(speed * 0.6); // Su canavarı için daha hızlı
+            
+            // ✅ DÜZELTME: Y ekseni hareketi - suda yukarı/aşağı hareket edebilmeli
+            // Su altındaysa yukarı, su üstündeyse aşağı veya hedefe doğru
+            double yComponent;
+            if (isInWater) {
+                // Su içinde - hedefe doğru Y ekseni hareketi
+                yComponent = direction.getY() * speed * 0.5;
+            } else {
+                // Su dışında - yere doğru (negatif Y)
+                yComponent = Math.min(-0.1, direction.getY() * speed * 0.4);
+            }
+            velocity.setY(yComponent);
+            
+            // ✅ DÜZELTME: Entity valid kontrolü
+            if (guardian.isValid() && !guardian.isDead()) {
+                guardian.setVelocity(velocity);
+            }
+            
+            // Hitbox kontrolü
+            if (guardian.isInvulnerable()) {
+                guardian.setInvulnerable(false);
+            }
+            
+            // ✅ DÜZELTME: ElderGuardian için görünürlük kontrolü
+            if (!guardian.isVisibleByDefault()) {
+                guardian.setVisibleByDefault(true);
+            }
+            
+            return;
+        }
+        
+        // ✅ DÜZELTME: Silverfish için özel hareket (küçük, yeraltında)
+        if (entity instanceof org.bukkit.entity.Silverfish) {
+            org.bukkit.entity.Silverfish silverfish = (org.bukkit.entity.Silverfish) entity;
+            Vector velocity = direction.multiply(speed * 0.6);
+            // Y ekseni hareketi (yeraltında tünel açabilir)
+            double yComponent = direction.getY() * speed * 0.4;
+            velocity.setY(yComponent);
+            silverfish.setVelocity(velocity);
+            
+            // Hitbox kontrolü
+            if (silverfish.isInvulnerable()) {
+                silverfish.setInvulnerable(false);
+            }
+            return;
+        }
+        
+        // ✅ DÜZELTME: IronGolem için normal yürüyen hareket
+        if (entity instanceof org.bukkit.entity.IronGolem) {
+            org.bukkit.entity.IronGolem golem = (org.bukkit.entity.IronGolem) entity;
+            Vector velocity = direction.multiply(speed);
+            velocity.setY(0); // Yerde yürür
+            golem.setVelocity(velocity);
+            
+            // Hitbox kontrolü
+            if (golem.isInvulnerable()) {
+                golem.setInvulnerable(false);
+            }
+            return;
+        }
+        
+        // Diğer entity'ler için normal velocity
+        Vector velocity = direction.multiply(speed);
+        velocity.setY(0);
         entity.setVelocity(velocity);
+        
+        // Genel hitbox kontrolü
+        if (entity instanceof org.bukkit.entity.LivingEntity) {
+            org.bukkit.entity.LivingEntity living = (org.bukkit.entity.LivingEntity) entity;
+            if (living.isInvulnerable()) {
+                living.setInvulnerable(false);
+            }
+        }
     }
     
     /**

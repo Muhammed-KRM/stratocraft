@@ -782,6 +782,9 @@ public class DisasterManager {
                 if (entity instanceof org.bukkit.entity.LivingEntity) {
                     org.bukkit.entity.LivingEntity living = (org.bukkit.entity.LivingEntity) entity;
                     living.setAI(false); // Özel AI kullanılacak
+                    // ✅ DÜZELTME: Hitbox ve görünürlük ayarları
+                    living.setInvulnerable(false); // Hasar alabilir yap
+                    living.setSilent(false); // Ses çıkarabilir
                     // Boyut: Normal IronGolem ~2.7 blok, 30 blok için ~11.1 kat
                     try {
                         org.bukkit.attribute.Attribute scaleAttr = org.bukkit.attribute.Attribute.valueOf("GENERIC_SCALE");
@@ -810,6 +813,9 @@ public class DisasterManager {
                 if (entity instanceof org.bukkit.entity.LivingEntity) {
                     org.bukkit.entity.LivingEntity living = (org.bukkit.entity.LivingEntity) entity;
                     living.setAI(false); // Özel AI kullanılacak
+                    // ✅ DÜZELTME: Hitbox ve görünürlük ayarları
+                    living.setInvulnerable(false); // Hasar alabilir yap
+                    living.setSilent(false); // Ses çıkarabilir
                     living.addPotionEffect(new org.bukkit.potion.PotionEffect(
                         org.bukkit.potion.PotionEffectType.INVISIBILITY, 999999, 0, false, false));
                 }
@@ -820,7 +826,11 @@ public class DisasterManager {
                 entity.setCustomName("§5§lFELAKET KHAOS EJDERİ");
                 // ✅ ÖZEL AI: EnderDragon AI'sını devre dışı bırak (sadece felaket hareketlerini yapsın)
                 if (entity instanceof org.bukkit.entity.LivingEntity) {
-                    ((org.bukkit.entity.LivingEntity) entity).setAI(false);
+                    org.bukkit.entity.LivingEntity living = (org.bukkit.entity.LivingEntity) entity;
+                    living.setAI(false);
+                    // ✅ DÜZELTME: Hitbox ve görünürlük ayarları
+                    living.setInvulnerable(false); // Hasar alabilir yap
+                    living.setSilent(false); // Ses çıkarabilir
                 }
                 break;
                 
@@ -829,7 +839,16 @@ public class DisasterManager {
                 entity.setCustomName("§8§lFELAKET BOŞLUK TİTANI");
                 // ✅ ÖZEL AI: Normal AI'yı devre dışı bırak
                 if (entity instanceof org.bukkit.entity.LivingEntity) {
-                    ((org.bukkit.entity.LivingEntity) entity).setAI(false);
+                    org.bukkit.entity.LivingEntity living = (org.bukkit.entity.LivingEntity) entity;
+                    living.setAI(false);
+                    // ✅ DÜZELTME: Hitbox ve görünürlük ayarları
+                    living.setInvulnerable(false); // Hasar alabilir yap
+                    living.setSilent(false); // Ses çıkarabilir
+                    // Wither için özel ayarlar
+                    if (entity instanceof org.bukkit.entity.Wither) {
+                        org.bukkit.entity.Wither wither = (org.bukkit.entity.Wither) entity;
+                        wither.setInvulnerable(false); // Wither'ın kendi invulnerable'ı var
+                    }
                 }
                 break;
                 
@@ -840,8 +859,12 @@ public class DisasterManager {
                 if (entity instanceof org.bukkit.entity.LivingEntity) {
                     org.bukkit.entity.LivingEntity living = (org.bukkit.entity.LivingEntity) entity;
                     living.setAI(false); // Özel AI kullanılacak
-                    living.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                        org.bukkit.potion.PotionEffectType.SLOW, 999999, 0, false, false));
+                    // ✅ DÜZELTME: Hitbox ve görünürlük ayarları
+                    living.setInvulnerable(false); // Hasar alabilir yap
+                    living.setSilent(false); // Ses çıkarabilir
+                    // SLOW efektini kaldırdık - hareket edebilmeli
+                    // living.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                    //     org.bukkit.potion.PotionEffectType.SLOW, 999999, 0, false, false));
                 }
                 break;
                 

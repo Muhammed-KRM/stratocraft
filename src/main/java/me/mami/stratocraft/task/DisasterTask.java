@@ -147,13 +147,28 @@ public class DisasterTask extends BukkitRunnable {
             }
             
             // Tek boss felaketler için kontrol
-            if (entity == null || entity.isDead()) {
+            // ✅ DÜZELTME: Entity valid kontrolü - EnderDragon kaybolma sorunu için
+            if (entity == null || entity.isDead() || !entity.isValid()) {
                 // Plan'a göre: Felaket yok edilince ödül
                 disasterManager.dropRewards(disaster);
                 disaster.kill();
                 disasterManager.setActiveDisaster(null);
                 cleanupForceLoadedChunks(); // Chunk'ları temizle
                 return;
+            }
+            
+            // ✅ DÜZELTME: Entity görünürlük kontrolü - EnderDragon kaybolma sorunu için
+            if (entity instanceof org.bukkit.entity.EnderDragon) {
+                org.bukkit.entity.EnderDragon dragon = (org.bukkit.entity.EnderDragon) entity;
+                // Entity görünür değilse görünür yap
+                if (!dragon.isVisibleByDefault()) {
+                    dragon.setVisibleByDefault(true);
+                }
+                // Entity'nin chunk'ı yüklü değilse yükle
+                org.bukkit.Chunk chunk = dragon.getLocation().getChunk();
+                if (!chunk.isLoaded()) {
+                    chunk.load(false);
+                }
             }
             handleCreatureDisaster(disaster, entity);
         } else if (disaster.getCategory() == Disaster.Category.NATURAL) {

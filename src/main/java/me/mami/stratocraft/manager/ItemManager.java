@@ -232,6 +232,7 @@ public class ItemManager {
     public static ItemStack CASUSLUK_DURBUN; // Casusluk Dürbünü
     public static ItemStack PERSONAL_TERMINAL; // Kişisel Yönetim Terminali
     public static ItemStack CONTRACT_PAPER; // Kontrat Kağıdı
+    public static ItemStack CLAN_FENCE; // Klan Çiti (STRUCTURE_CORE gibi static field)
     
     // ========== YENİ MAYIN SİSTEMİ (25 Mayın + Gizleme Aleti) ==========
     // Seviye 1
@@ -655,6 +656,11 @@ public class ItemManager {
                 "§7Yerleştir ve etrafına yapıyı kur",
                 "§7Aktivasyon item'ı ile aktifleştir"
             ));
+        // ✅ YAPı ÇEKİRDEĞİ GİBİ: Klan çiti static field oluştur
+        CLAN_FENCE = create(Material.OAK_FENCE, "CLAN_FENCE", "§6§lKlan Çiti",
+            java.util.Arrays.asList(
+                "§7Klan bölgesi sınırlarını belirler."
+            ));
         GENDER_SCANNER = create(Material.SPYGLASS, "GENDER_SCANNER", "§bCinsiyet Ayırıcı");
         CASUSLUK_DURBUN = create(Material.SPYGLASS, "CASUSLUK_DURBUN", "§eCasusluk Dürbünü");
         PERSONAL_TERMINAL = create(Material.COMPASS, "PERSONAL_TERMINAL", "§e§lKişisel Yönetim Terminali",
@@ -1002,19 +1008,16 @@ public class ItemManager {
     }
 
     private void registerClanFenceRecipe() {
-        // Klan Çiti (Normal çit ama ortası demir)
-        ItemStack fence = new ItemStack(Material.OAK_FENCE);
-        ItemMeta meta = fence.getItemMeta();
-        meta.setDisplayName("§6§lKlan Çiti");
-        List<String> lore = new ArrayList<>();
-        lore.add("§7Klan bölgesi sınırlarını belirler.");
-        meta.setLore(lore);
+        // ✅ YAPı ÇEKİRDEĞİ GİBİ: Static field'ı kullan (CLAN_FENCE zaten oluşturuldu)
+        // CLAN_FENCE static field'ı init() metodunda create() ile oluşturuldu
+        // Burada sadece recipe'yi kaydet
+        if (CLAN_FENCE == null) {
+            // Fallback: Eğer CLAN_FENCE null ise (olmamalı ama güvenlik için)
+            CLAN_FENCE = create(Material.OAK_FENCE, "CLAN_FENCE", "§6§lKlan Çiti",
+                java.util.Arrays.asList("§7Klan bölgesi sınırlarını belirler."));
+        }
 
-        NamespacedKey key = new NamespacedKey(Main.getInstance(), "clan_item");
-        meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, "FENCE");
-        fence.setItemMeta(meta);
-
-        ShapedRecipe recipe = new ShapedRecipe(new NamespacedKey(Main.getInstance(), "clan_fence"), fence);
+        ShapedRecipe recipe = new ShapedRecipe(new NamespacedKey(Main.getInstance(), "clan_fence"), CLAN_FENCE);
         // Tarif: Tahta - Demir - Tahta (2 satır)
         recipe.shape("WIW", "WIW");
         recipe.setIngredient('W', Material.OAK_PLANKS);

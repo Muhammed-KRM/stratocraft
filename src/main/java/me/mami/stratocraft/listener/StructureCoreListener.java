@@ -373,16 +373,14 @@ public class StructureCoreListener implements Listener {
         event.setDropItems(false);
         
         // ✅ Özel item oluştur (STRUCTURE_CORE item'ı)
-        ItemStack structureCoreItem = ItemManager.STRUCTURE_CORE.clone();
+        // ✅ DÜZELTME: Owner verisi ekleme - stacklenme için owner verisi eklenmeyecek
+        // Owner verisi sadece yerleştirme sırasında memory'den alınır, item'da tutulmaz
+        // Bu sayede tüm yapı çekirdekleri stacklenebilir
+        ItemStack structureCoreItem = ItemManager.STRUCTURE_CORE != null ? ItemManager.STRUCTURE_CORE.clone() : null;
         if (structureCoreItem != null) {
-            // ✅ ItemStack'e owner verisi ekle (PersistentDataContainer ile)
-            org.bukkit.inventory.meta.ItemMeta meta = structureCoreItem.getItemMeta();
-            if (meta != null) {
-                org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
-                org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey(plugin, "structure_core_owner");
-                container.set(ownerKey, org.bukkit.persistence.PersistentDataType.STRING, ownerId.toString());
-                structureCoreItem.setItemMeta(meta);
-            }
+            // ✅ Owner verisi EKLENMEYECEK - stacklenme için
+            // Owner verisi sadece StructureCoreManager'da memory'de tutulur
+            // Item'da owner verisi yok, bu yüzden tüm çekirdekler stacklenebilir
             
             // ✅ Özel item'ı drop et
             block.getWorld().dropItemNaturally(block.getLocation(), structureCoreItem);
