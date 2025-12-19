@@ -557,6 +557,14 @@ public class SpecialItemManager {
     }
     
     /**
+     * ✅ OPTİMİZE: Dürbün kullanan oyuncuları döndür (Main.java task optimizasyonu için)
+     */
+    public java.util.Set<Player> getSpyglassUsers() {
+        // spyStartTimes Map'indeki tüm oyuncuları döndür (dürbün kullananlar)
+        return new java.util.HashSet<>(spyStartTimes.keySet());
+    }
+    
+    /**
      * Düşme hasarı koruması kontrolü
      * @return true eğer oyuncu korumalıysa
      */

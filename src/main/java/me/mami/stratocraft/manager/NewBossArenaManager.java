@@ -179,10 +179,18 @@ public class NewBossArenaManager {
                     if (other == null || assigned.contains(other)) continue;
                     if (!player.getWorld().equals(other.getWorld())) continue;
                     
-                    // Grup içindeki herhangi bir oyuncuya yakın mı kontrol et
+                    // ✅ OPTİMİZE: Grup içindeki herhangi bir oyuncuya yakın mı kontrol et (distanceSquared kullan)
+                    double currentPlayerGroupDistanceSquared = currentPlayerGroupDistance * currentPlayerGroupDistance;
+                    Location otherLoc = other.getLocation();
+                    if (otherLoc == null) continue;
+                    
                     for (org.bukkit.entity.Player groupPlayer : group) {
-                        double distance = groupPlayer.getLocation().distance(other.getLocation());
-                        if (distance <= currentPlayerGroupDistance) {
+                        Location groupPlayerLoc = groupPlayer.getLocation();
+                        if (groupPlayerLoc == null) continue;
+                        
+                        // ✅ OPTİMİZE: distanceSquared() kullan (Math.sqrt pahalı)
+                        double distanceSquared = groupPlayerLoc.distanceSquared(otherLoc);
+                        if (distanceSquared <= currentPlayerGroupDistanceSquared) {
                             group.add(other);
                             assigned.add(other);
                             foundNew = true;
@@ -225,15 +233,24 @@ public class NewBossArenaManager {
                 continue;
             }
             
-            // En yakın oyuncu mesafesini hesapla
-            double minPlayerDistance = Double.MAX_VALUE;
+            // ✅ OPTİMİZE: En yakın oyuncu mesafesini hesapla (distanceSquared kullan)
+            double minPlayerDistanceSquared = Double.MAX_VALUE;
             for (org.bukkit.entity.Player player : players) {
+                if (player == null || !player.isOnline()) continue;
                 if (!player.getWorld().equals(arenaCenter.getWorld())) continue;
-                double dist = player.getLocation().distance(arenaCenter);
-                if (dist < minPlayerDistance) {
-                    minPlayerDistance = dist;
+                
+                Location playerLoc = player.getLocation();
+                if (playerLoc == null) continue;
+                
+                // ✅ OPTİMİZE: distanceSquared() kullan (Math.sqrt pahalı)
+                double distSquared = playerLoc.distanceSquared(arenaCenter);
+                if (distSquared < minPlayerDistanceSquared) {
+                    minPlayerDistanceSquared = distSquared;
                 }
             }
+            
+            // ✅ OPTİMİZE: Karekök al (sadece bir kez, kaydetmek için)
+            double minPlayerDistance = Math.sqrt(minPlayerDistanceSquared);
             
             arenasWithDistance.add(new AbstractMap.SimpleEntry<>(entry.getKey(), arena));
             arena.setNearestPlayerDistance(minPlayerDistance);
@@ -297,15 +314,24 @@ public class NewBossArenaManager {
                     
                     if (world == null) continue;
                     
-                    // En yakın oyuncu mesafesini bul
-                    double minDistance = Double.MAX_VALUE;
+                    // ✅ OPTİMİZE: En yakın oyuncu mesafesini bul (distanceSquared kullan)
+                    double minDistanceSquared = Double.MAX_VALUE;
                     for (org.bukkit.entity.Player player : players) {
+                        if (player == null || !player.isOnline()) continue;
                         if (!player.getWorld().equals(world)) continue;
-                        double dist = player.getLocation().distance(center);
-                        if (dist < minDistance) {
-                            minDistance = dist;
+                        
+                        Location playerLoc = player.getLocation();
+                        if (playerLoc == null) continue;
+                        
+                        // ✅ OPTİMİZE: distanceSquared() kullan (Math.sqrt pahalı)
+                        double distSquared = playerLoc.distanceSquared(center);
+                        if (distSquared < minDistanceSquared) {
+                            minDistanceSquared = distSquared;
                         }
                     }
+                    
+                    // ✅ OPTİMİZE: Karekök al (sadece bir kez, kaydetmek için)
+                    double minDistance = Math.sqrt(minDistanceSquared);
                     
                     // Arena'ya mesafeyi kaydet
                     arena.setNearestPlayerDistance(minDistance);

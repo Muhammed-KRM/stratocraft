@@ -703,32 +703,39 @@ public class Main extends JavaPlugin {
 
         // ✅ OPTİMİZE: Casusluk Dürbünü için Scheduler - PERFORMANS OPTİMİZASYONU
         // RayTrace ağır bir işlem olduğu için sıklığı azaltıldı ve sadece dürbün kullanan oyuncular için çalışır
-        // Event bazlı kontrol için SpecialItemListener'da PlayerInteractEvent kullanılabilir
+        // ✅ YENİ: Sadece dürbün kullanan oyuncuları takip et (SpecialItemManager'dan al)
         new org.bukkit.scheduler.BukkitRunnable() {
             @Override
             public void run() {
-                // ✅ OPTİMİZE: Sadece dürbün kullanan oyuncuları kontrol et
-                for (Player player : Bukkit.getOnlinePlayers()) {
+                // ✅ OPTİMİZE: Sadece dürbün kullanan oyuncuları kontrol et (SpecialItemManager'dan al)
+                // SpecialItemManager'da spyStartTimes Map'i var - bu oyuncuları kullan
+                java.util.Set<org.bukkit.entity.Player> spyglassUsers = specialItemManager.getSpyglassUsers();
+                if (spyglassUsers.isEmpty()) {
+                    return; // Dürbün kullanan oyuncu yok
+                }
+                
+                int maxDistance = configManager != null && configManager.getGameBalanceConfig() != null 
+                    ? configManager.getGameBalanceConfig().getMainRayTraceMaxDistance() : 50;
+                
+                for (Player player : spyglassUsers) {
                     if (player == null || !player.isOnline()) continue;
                     
+                    // ✅ OPTİMİZE: Dürbün hala elinde mi kontrol et (hızlı kontrol)
                     ItemStack item = player.getInventory().getItemInMainHand();
-                    // Özel Casusluk Dürbünü kontrolü
-                    if (item != null && item.getType() == org.bukkit.Material.SPYGLASS && 
-                        me.mami.stratocraft.manager.ItemManager.isCustomItem(item, "CASUSLUK_DURBUN")) {
-                        int maxDistance = configManager != null && configManager.getGameBalanceConfig() != null 
-                            ? configManager.getGameBalanceConfig().getMainRayTraceMaxDistance() : 50;
-                        // ✅ OPTİMİZE: RayTrace async thread'de yapılabilir ama şimdilik sync'te kalıyor
-                        org.bukkit.util.RayTraceResult result = player.rayTraceEntities(maxDistance);
-                        // Null kontrolü: Oyuncu boşluğa bakıyorsa result null olabilir
-                        if (result != null) {
-                            specialItemManager.handleSpyglass(player, result);
-                        } else {
-                            // Boşluğa bakıyorsa spyglass verisini temizle
-                            specialItemManager.clearSpyData(player);
-                        }
+                    if (item == null || item.getType() != org.bukkit.Material.SPYGLASS || 
+                        !me.mami.stratocraft.manager.ItemManager.isCustomItem(item, "CASUSLUK_DURBUN")) {
+                        // Dürbün kullanmıyor, veriyi temizle
+                        specialItemManager.clearSpyData(player);
+                        continue;
+                    }
+                    
+                    // ✅ OPTİMİZE: RayTrace async thread'de yapılabilir ama şimdilik sync'te kalıyor
+                    org.bukkit.util.RayTraceResult result = player.rayTraceEntities(maxDistance);
+                    // Null kontrolü: Oyuncu boşluğa bakıyorsa result null olabilir
+                    if (result != null) {
+                        specialItemManager.handleSpyglass(player, result);
                     } else {
-                        // Dürbün kullanmıyorsa veriyi temizle (sadece bir kez)
-                        // ✅ OPTİMİZE: hasSpyData kontrolü yerine direkt temizle (performans için)
+                        // Boşluğa bakıyorsa spyglass verisini temizle
                         specialItemManager.clearSpyData(player);
                     }
                 }

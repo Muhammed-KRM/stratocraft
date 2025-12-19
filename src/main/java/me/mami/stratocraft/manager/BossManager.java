@@ -56,6 +56,11 @@ public class BossManager {
     private final Map<UUID, BossBar> bossBars = new HashMap<>();
     private int maxBossBarDistance = 100;
     private int maxBossBarsPerPlayer = 3;
+    
+    // ✅ OPTİMİZE: Player → Nearby Bosses cache (performans için)
+    private final java.util.Map<UUID, java.util.List<UUID>> playerNearbyBossesCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<UUID, Long> playerNearbyBossesCacheTime = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long PLAYER_NEARBY_BOSSES_CACHE_DURATION = 2000L; // 2 saniye
 
     // Ritüel cooldown’ları (merkez blok konumu → son kullanım zamanı)
     private final Map<Location, Long> ritualCooldowns = new HashMap<>();
@@ -563,12 +568,12 @@ public class BossManager {
                     finalLoc.getWorld().spawnParticle(Particle.FLAME, finalLoc, 8, 0.3, 0.3, 0.3, 0.02);
                     finalLoc.getWorld().spawnParticle(Particle.SMOKE_LARGE, finalLoc, 2, 0.2, 0.2, 0.2, 0.01);
 
-                    for (Entity e : finalLoc.getWorld().getNearbyEntities(finalLoc, 1.0, 1.0, 1.0)) {
-                        if (e instanceof Player) {
-                            Player p = (Player) e;
-                            p.setFireTicks(60);
-                            p.damage(3.0, boss);
-                        }
+                    // ✅ OPTİMİZE: getNearbyPlayers() kullan (Player'lar için daha hızlı)
+                    // Not: getNearbyPlayers() tek parametreli (radius) veya 6 parametreli (x, y, z, xRadius, yRadius, zRadius)
+                    for (Player p : finalLoc.getWorld().getNearbyPlayers(finalLoc, 1.0, 1.0, 1.0)) {
+                        if (p == null || !p.isOnline()) continue;
+                        p.setFireTicks(60);
+                        p.damage(3.0, boss);
                     }
                 }
             }.runTaskLater(plugin, step * 2L);
@@ -588,10 +593,10 @@ public class BossManager {
         safe.getWorld().strikeLightningEffect(safe);
         safe.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, safe, 30, 0.5, 1.0, 0.5, 0.1);
 
-        for (Entity e : safe.getWorld().getNearbyEntities(targetLoc, 2, 3, 2)) {
-            if (e instanceof Player) {
-                ((Player) e).damage(5.0);
-            }
+        // ✅ OPTİMİZE: getNearbyPlayers() kullan (Player'lar için daha hızlı)
+        for (Player p : safe.getWorld().getNearbyPlayers(targetLoc, 2, 3, 2)) {
+            if (p == null || !p.isOnline()) continue;
+            p.damage(5.0);
         }
     }
 
@@ -617,11 +622,10 @@ public class BossManager {
         center.getWorld().spawnParticle(Particle.SPELL_MOB, center, 60, 2.5, 1.0, 2.5, 0.1);
         center.getWorld().playSound(center, Sound.ENTITY_WITCH_AMBIENT, 1.0f, 0.8f);
 
-        for (Entity e : center.getWorld().getNearbyEntities(center, 4, 2, 4)) {
-            if (e instanceof Player) {
-                Player p = (Player) e;
-                p.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 60, 0));
-            }
+        // ✅ OPTİMİZE: getNearbyPlayers() kullan (Player'lar için daha hızlı)
+        for (Player p : center.getWorld().getNearbyPlayers(center, 4, 2, 4)) {
+            if (p == null || !p.isOnline()) continue;
+            p.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 60, 0));
         }
     }
 
@@ -694,12 +698,12 @@ public class BossManager {
         center.getWorld().spawnParticle(Particle.EXPLOSION_NORMAL, center, 20, radius, 0.2, radius, 0.1);
         center.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
 
-        for (Entity e : center.getWorld().getNearbyEntities(center, radius, radius, radius)) {
-            if (e instanceof Player) {
-                Player p = (Player) e;
-                p.damage(4.0, boss);
-                Vector kb = p.getLocation().toVector().subtract(center.toVector()).normalize();
-                kb.setY(0.4);
+        // ✅ OPTİMİZE: getNearbyPlayers() kullan (Player'lar için daha hızlı)
+        for (Player p : center.getWorld().getNearbyPlayers(center, radius, radius, radius)) {
+            if (p == null || !p.isOnline()) continue;
+            p.damage(4.0, boss);
+            Vector kb = p.getLocation().toVector().subtract(center.toVector()).normalize();
+            kb.setY(0.4);
                 p.setVelocity(kb);
             }
         }
@@ -740,8 +744,11 @@ public class BossManager {
                 }
 
                 String msg = "§c§l⚠ " + abilityName + " " + remaining + " SANİYE!";
-                for (Player p : loc.getWorld().getPlayers()) {
-                    if (p.getLocation().distance(loc) <= 30) {
+                // ✅ OPTİMİZE: getNearbyPlayers() kullan ve distanceSquared() kullan
+                double maxDistanceSquared = 30.0 * 30.0;
+                for (Player p : loc.getWorld().getNearbyPlayers(loc, 30)) {
+                    if (p == null || !p.isOnline()) continue;
+                    if (p.getLocation().distanceSquared(loc) <= maxDistanceSquared) {
                         p.sendTitle("", msg, 0, 20, 0);
                         p.playSound(p.getLocation(),
                                 Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f + remaining * 0.1f);
@@ -821,31 +828,58 @@ public class BossManager {
                     bar.setVisible(true); // Her zaman görünür yap
                 }
 
-                // Her oyuncu için en yakın bossBar'ları göster
+                // ✅ OPTİMİZE: Her oyuncu için en yakın bossBar'ları göster (cache ile)
+                long now = System.currentTimeMillis();
+                double maxBossBarDistanceSquared = maxBossBarDistance * maxBossBarDistance; // ✅ OPTİMİZE: distanceSquared için
+                
                 for (Player player : Bukkit.getOnlinePlayers()) {
-                    List<Map.Entry<UUID, BossData>> nearby = new ArrayList<>();
+                    if (player == null || !player.isOnline()) continue;
+                    
+                    UUID playerId = player.getUniqueId();
                     Location pl = player.getLocation();
-
-                    for (Map.Entry<UUID, BossData> entry : activeBosses.entrySet()) {
-                        LivingEntity boss = entry.getValue().getEntity();
-                        if (boss == null || !boss.isValid() || boss.isDead()) continue;
-                        if (!boss.getWorld().equals(pl.getWorld())) continue;
-                        double dist = pl.distance(boss.getLocation());
-                        if (dist <= maxBossBarDistance) {
-                            nearby.add(entry);
+                    if (pl == null || pl.getWorld() == null) continue;
+                    
+                    // ✅ OPTİMİZE: Cache kontrolü
+                    java.util.List<UUID> nearbyBossIds = null;
+                    Long cacheTime = playerNearbyBossesCacheTime.get(playerId);
+                    if (cacheTime != null && (now - cacheTime) < PLAYER_NEARBY_BOSSES_CACHE_DURATION) {
+                        nearbyBossIds = playerNearbyBossesCache.get(playerId);
+                    }
+                    
+                    // Cache miss - hesapla
+                    if (nearbyBossIds == null) {
+                        nearbyBossIds = new java.util.ArrayList<>();
+                        List<Map.Entry<UUID, BossData>> nearby = new ArrayList<>();
+                        
+                        for (Map.Entry<UUID, BossData> entry : activeBosses.entrySet()) {
+                            LivingEntity boss = entry.getValue().getEntity();
+                            if (boss == null || !boss.isValid() || boss.isDead()) continue;
+                            if (!boss.getWorld().equals(pl.getWorld())) continue;
+                            
+                            // ✅ OPTİMİZE: distanceSquared() kullan (Math.sqrt pahalı)
+                            double distSquared = pl.distanceSquared(boss.getLocation());
+                            if (distSquared <= maxBossBarDistanceSquared) {
+                                nearby.add(entry);
+                            }
                         }
+                        
+                        // ✅ OPTİMİZE: Mesafeye göre sırala (distanceSquared kullan)
+                        nearby.sort(Comparator.comparingDouble(
+                            e -> pl.distanceSquared(e.getValue().getEntity().getLocation())
+                        ));
+                        
+                        // Sadece ilk maxBossBarsPerPlayer kadarını al
+                        for (int i = 0; i < Math.min(maxBossBarsPerPlayer, nearby.size()); i++) {
+                            nearbyBossIds.add(nearby.get(i).getKey());
+                        }
+                        
+                        // Cache'e kaydet
+                        playerNearbyBossesCache.put(playerId, nearbyBossIds);
+                        playerNearbyBossesCacheTime.put(playerId, now);
                     }
-
-                    // mesafeye göre sırala
-                    nearby.sort(Comparator.comparingDouble(
-                            e -> e.getValue().getEntity().getLocation().distance(pl)
-                    ));
-
-                    // sadece ilk maxBossBarsPerPlayer kadarını göster
-                    Set<UUID> visibleIds = new HashSet<>();
-                    for (int i = 0; i < Math.min(maxBossBarsPerPlayer, nearby.size()); i++) {
-                        visibleIds.add(nearby.get(i).getKey());
-                    }
+                    
+                    // ✅ OPTİMİZE: Set oluştur (contains() kontrolü için)
+                    Set<UUID> visibleIds = new HashSet<>(nearbyBossIds);
 
                     // BossBar'lara ekle/çıkar
                     for (Map.Entry<UUID, BossBar> entry : bossBars.entrySet()) {
@@ -866,25 +900,29 @@ public class BossManager {
                     }
                 }
             }
-        }.runTaskTimer(plugin, 0L, 20L); // her saniye
+        }.runTaskTimer(plugin, 0L, 40L); // ✅ OPTİMİZE: Her 2 saniye (40L) - performans için
     }
 
     /**
-     * En yakın oyuncuyu bul (sadece aynı dünyadakiler arasında, max mesafe sınırıyla).
+     * ✅ OPTİMİZE: En yakın oyuncuyu bul (distanceSquared kullan)
      */
     private Player findNearestPlayer(Location loc, double maxDistance) {
         if (loc == null || loc.getWorld() == null) return null;
 
         Player nearest = null;
-        double nearestDist = maxDistance;
+        double nearestDistSquared = maxDistance * maxDistance; // ✅ OPTİMİZE: distanceSquared için
 
         for (Player player : loc.getWorld().getPlayers()) {
             if (player == null || !player.isOnline()) continue;
+            
+            Location playerLoc = player.getLocation();
+            if (playerLoc == null || !playerLoc.getWorld().equals(loc.getWorld())) continue;
 
-            double d = player.getLocation().distance(loc);
-            if (d <= nearestDist) {
+            // ✅ OPTİMİZE: distanceSquared() kullan (Math.sqrt pahalı)
+            double dSquared = playerLoc.distanceSquared(loc);
+            if (dSquared <= nearestDistSquared) {
                 nearest = player;
-                nearestDist = d;
+                nearestDistSquared = dSquared;
             }
         }
 
@@ -898,6 +936,17 @@ public class BossManager {
       */
     public void onPlayerJoin(Player player) {
         // Bilinçli olarak boş bırakıldı.
+    }
+    
+    /**
+     * ✅ OPTİMİZE: Oyuncu çıkış yaptığında cache'i temizle
+     */
+    public void onPlayerQuit(Player player) {
+        if (player != null) {
+            UUID playerId = player.getUniqueId();
+            playerNearbyBossesCache.remove(playerId);
+            playerNearbyBossesCacheTime.remove(playerId);
+        }
     }
 
     /**

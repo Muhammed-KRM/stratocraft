@@ -4980,11 +4980,15 @@ public class NewBatteryManager {
         me.mami.stratocraft.model.Clan playerClan = clanManager.getClanByPlayer(player.getUniqueId());
         if (playerClan == null) return members;
         
-        for (Player nearby : player.getWorld().getPlayers()) {
-            if (nearby != player && nearby.getLocation().distance(player.getLocation()) <= radius) {
-                me.mami.stratocraft.model.Clan nearbyClan = clanManager.getClanByPlayer(nearby.getUniqueId());
-                if (nearbyClan != null && nearbyClan.getId().equals(playerClan.getId())) {
-                    members.add(nearby);
+        // ✅ OPTİMİZE: getNearbyPlayers() kullan ve distanceSquared() kullan
+        double radiusSquared = radius * radius;
+        for (Player nearby : player.getWorld().getNearbyPlayers(player.getLocation(), radius)) {
+            if (nearby != player) {
+                if (nearby.getLocation().distanceSquared(player.getLocation()) <= radiusSquared) {
+                    me.mami.stratocraft.model.Clan nearbyClan = clanManager.getClanByPlayer(nearby.getUniqueId());
+                    if (nearbyClan != null && nearbyClan.getId().equals(playerClan.getId())) {
+                        members.add(nearby);
+                    }
                 }
             }
         }

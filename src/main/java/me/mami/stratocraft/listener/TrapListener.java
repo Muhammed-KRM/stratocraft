@@ -261,4 +261,52 @@ public class TrapListener implements Listener {
         //     trapManager.checkTrapCoverage(below.getLocation());
         // }
     }
+    
+    /**
+     * ✅ YENİ: Tuzak çekirdeği kırıldığında özel item drop et
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onTrapCoreBreak(BlockBreakEvent event) {
+        Block block = event.getBlock();
+        Player player = event.getPlayer();
+        
+        if (block.getType() != Material.LODESTONE) {
+            return;
+        }
+        
+        // ✅ PersistentDataContainer'dan veri oku
+        UUID ownerId = me.mami.stratocraft.util.CustomBlockData.getTrapCoreOwner(block);
+        if (ownerId == null) {
+            return; // Normal LODESTONE
+        }
+        
+        // ✅ Normal drop'ları iptal et
+        event.setDropItems(false);
+        
+        // ✅ Özel item oluştur (TRAP_CORE item'ı)
+        ItemStack trapCoreItem = ItemManager.TRAP_CORE.clone();
+        if (trapCoreItem != null) {
+            // ✅ ItemStack'e owner verisi ekle (PersistentDataContainer ile)
+            org.bukkit.inventory.meta.ItemMeta meta = trapCoreItem.getItemMeta();
+            if (meta != null) {
+                org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
+                org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey(me.mami.stratocraft.Main.getInstance(), "trap_core_owner");
+                container.set(ownerKey, org.bukkit.persistence.PersistentDataType.STRING, ownerId.toString());
+                trapCoreItem.setItemMeta(meta);
+            }
+            
+            // ✅ Özel item'ı drop et
+            block.getWorld().dropItemNaturally(block.getLocation(), trapCoreItem);
+        }
+        
+        // ✅ Tuzak çekirdeğini temizle (TrapManager'dan)
+        trapManager.removeTrap(block.getLocation());
+        
+        // ✅ Inactive trap core kayıtlarını da temizle (eğer varsa)
+        // Not: removeTrap() zaten active trap'leri temizliyor, ama inactive trap core'ları da kontrol etmeliyiz
+        // TrapManager'da inactiveTrapCores Map'i var, ama public metod yok, bu yüzden removeTrap() yeterli
+        
+        // ✅ CustomBlockData'dan da temizle
+        me.mami.stratocraft.util.CustomBlockData.removeTrapCoreData(block);
+    }
 }

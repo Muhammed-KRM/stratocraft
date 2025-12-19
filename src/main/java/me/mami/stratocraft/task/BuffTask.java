@@ -253,29 +253,64 @@ public class BuffTask extends BukkitRunnable {
         if (lastWarning != null && (currentTime - lastWarning) < 10000) return;
         
         Location structLoc = s.getLocation();
-        // ✅ OPTİMİZE: Sadece aynı dünyadaki ve yakındaki oyuncuları kontrol et
-        Collection<? extends Player> nearbyPlayers = structLoc.getWorld().getPlayers();
-        for (Player nearby : nearbyPlayers) {
+        if (structLoc == null || structLoc.getWorld() == null) return;
+        
+        // ✅ OPTİMİZE: getNearbyPlayers() kullan (mesafe limiti ile, daha hızlı)
+        double maxDistance = 200.0; // 200 blok
+        double maxDistanceSquared = maxDistance * maxDistance;
+        
+        for (Player nearby : structLoc.getWorld().getNearbyPlayers(structLoc, maxDistance)) {
             if (nearby == null || !nearby.isOnline()) continue;
             if (territoryClan.getMembers().containsKey(nearby.getUniqueId())) continue;
-            if (nearby.getLocation().distanceSquared(structLoc) > 40000) continue; // 200^2
             
-            int distance = (int) nearby.getLocation().distance(structLoc);
+            Location nearbyLoc = nearby.getLocation();
+            if (nearbyLoc == null) continue;
+            
+            // ✅ OPTİMİZE: distanceSquared() zaten kullanılıyor (iyi)
+            if (nearbyLoc.distanceSquared(structLoc) > maxDistanceSquared) continue;
+            
+            // ✅ OPTİMİZE: Mesafe hesaplama (sadece mesaj için, bir kez)
+            int distance = (int) Math.sqrt(nearbyLoc.distanceSquared(structLoc));
             p.sendMessage("§c§l[RADAR] §7Düşman: §c" + nearby.getName() + " §7(" + distance + " blok)");
             setLastRadarWarning(playerId, currentTime);
             break;
         }
     }
     
+    // ✅ OPTİMİZE: MobGrinder cooldown (her mob grinder için ayrı - location bazlı key)
+    private final java.util.Map<String, Long> mobGrinderCooldowns = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long MOB_GRINDER_COOLDOWN = 2000L; // 2 saniye
+    
     private void processMobGrinder(Structure s) {
         Location loc = s.getLocation();
+        if (loc == null || loc.getWorld() == null) return;
+        
+        // ✅ OPTİMİZE: Cooldown kontrolü (location bazlı key)
+        String structureKey = loc.getWorld().getName() + ";" + loc.getBlockX() + ";" + loc.getBlockY() + ";" + loc.getBlockZ();
+        
+        long now = System.currentTimeMillis();
+        Long lastProcess = mobGrinderCooldowns.get(structureKey);
+        if (lastProcess != null && (now - lastProcess) < MOB_GRINDER_COOLDOWN) {
+            return; // Cooldown'da
+        }
+        
+        // ✅ OPTİMİZE: Limit ekle (maksimum 20 entity işle)
+        int processedCount = 0;
+        int maxEntities = 20;
+        
         for (org.bukkit.entity.Entity entity : loc.getWorld().getNearbyEntities(loc, 10, 10, 10)) {
+            if (processedCount >= maxEntities) break; // ✅ OPTİMİZE: Limit aşıldı
+            
             if (entity instanceof org.bukkit.entity.LivingEntity && 
                 !(entity instanceof Player) && 
                 !(entity instanceof org.bukkit.entity.Villager)) {
                 ((org.bukkit.entity.LivingEntity) entity).damage(2.0);
+                processedCount++;
             }
         }
+        
+        // Cooldown'u güncelle
+        mobGrinderCooldowns.put(structureKey, now);
     }
 }
 

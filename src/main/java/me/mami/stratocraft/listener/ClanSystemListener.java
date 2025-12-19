@@ -212,7 +212,7 @@ public class ClanSystemListener implements Listener {
     }
     
     /**
-     * ✅ YENİ: Klan bankası kırıldığında veri geri getirme
+     * ✅ DÜZELTME: Klan bankası kırıldığında özel item drop et
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onClanBankBreak(BlockBreakEvent event) {
@@ -229,17 +229,33 @@ public class ClanSystemListener implements Listener {
             return; // Normal ENDER_CHEST
         }
         
-        // ✅ ItemStack'e veri ekle
-        ItemStack item = player.getInventory().getItemInMainHand();
-        if (item != null && item.getType() == Material.ENDER_CHEST) {
-            org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
-            if (meta != null) {
-                org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
-                org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "clan_bank");
-                container.set(key, org.bukkit.persistence.PersistentDataType.STRING, clanId.toString());
-                item.setItemMeta(meta);
-            }
+        // ✅ Normal drop'ları iptal et
+        event.setDropItems(false);
+        
+        // ✅ Özel item oluştur (ENDER_CHEST + PDC verisi)
+        ItemStack clanBankItem = new ItemStack(Material.ENDER_CHEST);
+        org.bukkit.inventory.meta.ItemMeta meta = clanBankItem.getItemMeta();
+        if (meta != null) {
+            // Display name ve lore ekle
+            meta.setDisplayName("§6§lKlan Bankası");
+            java.util.List<String> lore = new java.util.ArrayList<>();
+            lore.add("§7Klan üyeleri için özel depolama.");
+            meta.setLore(lore);
+            
+            // ✅ PDC verisini ekle
+            org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
+            org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "clan_bank");
+            container.set(key, org.bukkit.persistence.PersistentDataType.STRING, clanId.toString());
+            
+            // ✅ ItemManager.isCustomItem() için custom_id ekle
+            org.bukkit.NamespacedKey customIdKey = new org.bukkit.NamespacedKey(plugin, "custom_id");
+            container.set(customIdKey, org.bukkit.persistence.PersistentDataType.STRING, "CLAN_BANK");
+            
+            clanBankItem.setItemMeta(meta);
         }
+        
+        // ✅ Özel item'ı drop et
+        block.getWorld().dropItemNaturally(block.getLocation(), clanBankItem);
         
         // ✅ bankChestLocations'dan kaldır
         if (bankSystem != null) {
@@ -256,6 +272,9 @@ public class ClanSystemListener implements Listener {
                 // Reflection hatası - önemli değil
             }
         }
+        
+        // ✅ CustomBlockData'dan da temizle
+        me.mami.stratocraft.util.CustomBlockData.removeClanBankData(block);
     }
 }
 

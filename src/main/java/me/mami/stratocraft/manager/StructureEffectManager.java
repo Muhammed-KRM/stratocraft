@@ -46,6 +46,11 @@ public class StructureEffectManager {
     // Tick counter (periyodik efektler için)
     private int tickCounter = 0;
     
+    // ✅ OPTİMİZE: Player → Clan cache (performans için)
+    private final java.util.Map<UUID, Clan> playerClanCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<UUID, Long> playerClanCacheTime = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long PLAYER_CLAN_CACHE_DURATION = 5000L; // 5 saniye
+    
     public StructureEffectManager(Main plugin, ClanManager clanManager, PlayerDataManager playerDataManager) {
         this.plugin = plugin;
         this.clanManager = clanManager;
@@ -130,9 +135,16 @@ public class StructureEffectManager {
     }
     
     /**
-     * Oyuncu çıkış yaptığında yapı efektlerini kaldır
+     * ✅ OPTİMİZE: Oyuncu çıkış yaptığında cache'i temizle
      */
     public void onPlayerQuit(Player player) {
+        if (player != null) {
+            UUID playerId = player.getUniqueId();
+            playerClanCache.remove(playerId);
+            playerClanCacheTime.remove(playerId);
+        }
+        
+        // Mevcut cleanup
         if (player == null) return;
         
         UUID playerId = player.getUniqueId();
@@ -159,12 +171,31 @@ public class StructureEffectManager {
         }
         
         
-        // ✅ OPTİMİZE: Her online oyuncu için klanını kontrol et (daha verimli)
+        // ✅ OPTİMİZE: Her online oyuncu için klanını kontrol et (cache ile)
+        long now = System.currentTimeMillis();
         for (Player player : onlinePlayers) {
             if (player == null || !player.isOnline()) continue;
             
             UUID playerId = player.getUniqueId();
-            Clan clan = clanManager.getClanByPlayer(playerId);
+            
+            // ✅ OPTİMİZE: Cache kontrolü
+            Clan clan = null;
+            Long cacheTime = playerClanCacheTime.get(playerId);
+            if (cacheTime != null && (now - cacheTime) < PLAYER_CLAN_CACHE_DURATION) {
+                clan = playerClanCache.get(playerId);
+            } else {
+                // Cache miss - ClanManager'dan al
+                clan = clanManager.getClanByPlayer(playerId);
+                if (clan != null) {
+                    playerClanCache.put(playerId, clan);
+                    playerClanCacheTime.put(playerId, now);
+                } else {
+                    // Klan yok - cache'e null kaydet (negatif cache)
+                    playerClanCache.put(playerId, null);
+                    playerClanCacheTime.put(playerId, now);
+                }
+            }
+            
             if (clan == null) continue;
             
             // ✅ OPTİMİZE: Maksimum 50 yapı kontrol et (çok fazla yapı varsa performans sorunu olabilir)

@@ -183,12 +183,19 @@ public class BatteryParticleManager {
             Location particleLoc = playerLoc.clone().add(x, y, z);
             
             // Tüm oyunculara göster
-            for (Player viewer : playerLoc.getWorld().getPlayers()) {
+            // ✅ OPTİMİZE: getNearbyPlayers() kullan ve distanceSquared() kullan
+            double maxViewDistance = 32.0;
+            double maxViewDistanceSquared = maxViewDistance * maxViewDistance;
+            
+            for (Player viewer : playerLoc.getWorld().getNearbyPlayers(playerLoc, maxViewDistance)) {
                 if (viewer == null || !viewer.isOnline()) continue;
                 if (viewer.getWorld() != playerLoc.getWorld()) continue;
                 
-                // Mesafe kontrolü (performans)
-                if (viewer.getLocation().distance(playerLoc) > 32) continue;
+                Location viewerLoc = viewer.getLocation();
+                if (viewerLoc == null) continue;
+                
+                // ✅ OPTİMİZE: Mesafe kontrolü (distanceSquared - performans)
+                if (viewerLoc.distanceSquared(playerLoc) > maxViewDistanceSquared) continue;
                 
                 // Kendi partiküllerini göster (bakış açısına göre)
                 if (viewer.equals(player)) {

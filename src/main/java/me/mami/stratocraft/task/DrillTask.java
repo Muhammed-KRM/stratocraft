@@ -1,7 +1,9 @@
 package me.mami.stratocraft.task;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -22,8 +24,17 @@ public class DrillTask extends BukkitRunnable {
         this.territoryManager = tm;
     }
 
+    // ✅ OPTİMİZE: Mesaj cooldown (aynı mesajı sürekli gönderme)
+    private final Map<UUID, Long> lastWarningTime = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long WARNING_COOLDOWN = 30000L; // 30 saniye
+    
     @Override
     public void run() {
+        // ✅ OPTİMİZE: getOnlinePlayers() çağrısını nested loop'tan çıkar (bir kez al)
+        Collection<? extends org.bukkit.entity.Player> onlinePlayers = Bukkit.getOnlinePlayers();
+        if (onlinePlayers.isEmpty()) {
+            return; // Online oyuncu yoksa hiçbir şey yapma
+        }
         
         // ✅ OPTİMİZE: Sadece chunk'ı yüklü olan klanlar için çalış
         int clanCount = 0;
@@ -46,11 +57,31 @@ public class DrillTask extends BukkitRunnable {
                 // YAKIT KONTROLÜ - Matkabın altında veya yanında kömür olmalı
                 boolean hasFuel = checkFuel(drillLoc);
                 if (!hasFuel) {
-                    // Yakıt yok - üretimi durdur ve uyarı gönder
-                    for (org.bukkit.entity.Player member : Bukkit.getOnlinePlayers()) {
-                        if (clan.getMembers().containsKey(member.getUniqueId()) &&
-                            member.getLocation().distance(drillLoc) <= 50) {
+                    // ✅ OPTİMİZE: Yakıt yok - üretimi durdur ve uyarı gönder (cache'lenmiş onlinePlayers kullan)
+                    long now = System.currentTimeMillis();
+                    for (org.bukkit.entity.Player member : onlinePlayers) {
+                        if (member == null || !member.isOnline()) continue;
+                        UUID memberId = member.getUniqueId();
+                        
+                        // ✅ OPTİMİZE: Sadece klan üyelerini kontrol et (önceden filtrele)
+                        if (!clan.getMembers().containsKey(memberId)) continue;
+                        
+                        // ✅ OPTİMİZE: Cooldown kontrolü (aynı mesajı sürekli gönderme)
+                        Long lastWarning = lastWarningTime.get(memberId);
+                        if (lastWarning != null && (now - lastWarning) < WARNING_COOLDOWN) {
+                            continue; // Cooldown'da
+                        }
+                        
+                        // ✅ OPTİMİZE: Mesafe kontrolü için distanceSquared() kullan (Math.sqrt pahalı)
+                        Location memberLoc = member.getLocation();
+                        if (memberLoc == null || !memberLoc.getWorld().equals(drillLoc.getWorld())) continue;
+                        
+                        double distanceSquared = memberLoc.distanceSquared(drillLoc);
+                        double maxDistanceSquared = 50.0 * 50.0; // 50 blok
+                        
+                        if (distanceSquared <= maxDistanceSquared) {
                             member.sendMessage("§c§l[MATKAP] Yakıt yok! Kömür ekleyin.");
+                            lastWarningTime.put(memberId, now);
                         }
                     }
                     continue; // Bu matkap için üretimi durdur
@@ -73,12 +104,31 @@ public class DrillTask extends BukkitRunnable {
                             
                             // Sandık dolu mu kontrol et
                             if (chest.getInventory().firstEmpty() == -1) {
-                                // Sandık dolu - üretimi durdur
-                                // Oyunculara uyarı göndermek için klan üyelerini bul
-                                for (org.bukkit.entity.Player member : Bukkit.getOnlinePlayers()) {
-                                    if (clan.getMembers().containsKey(member.getUniqueId()) &&
-                                        member.getLocation().distance(drillLoc) <= 50) {
+                                // ✅ OPTİMİZE: Sandık dolu - üretimi durdur (cache'lenmiş onlinePlayers kullan)
+                                long now = System.currentTimeMillis();
+                                for (org.bukkit.entity.Player member : onlinePlayers) {
+                                    if (member == null || !member.isOnline()) continue;
+                                    UUID memberId = member.getUniqueId();
+                                    
+                                    // ✅ OPTİMİZE: Sadece klan üyelerini kontrol et
+                                    if (!clan.getMembers().containsKey(memberId)) continue;
+                                    
+                                    // ✅ OPTİMİZE: Cooldown kontrolü
+                                    Long lastWarning = lastWarningTime.get(memberId);
+                                    if (lastWarning != null && (now - lastWarning) < WARNING_COOLDOWN) {
+                                        continue;
+                                    }
+                                    
+                                    // ✅ OPTİMİZE: Mesafe kontrolü için distanceSquared() kullan
+                                    Location memberLoc = member.getLocation();
+                                    if (memberLoc == null || !memberLoc.getWorld().equals(drillLoc.getWorld())) continue;
+                                    
+                                    double distanceSquared = memberLoc.distanceSquared(drillLoc);
+                                    double maxDistanceSquared = 50.0 * 50.0;
+                                    
+                                    if (distanceSquared <= maxDistanceSquared) {
                                         member.sendMessage("§c§l[MATKAP] Sandık dolu! Üretim durdu.");
+                                        lastWarningTime.put(memberId, now);
                                     }
                                 }
                                 continue; // Bu matkap için üretimi durdur

@@ -122,7 +122,7 @@ public class TerritoryListener implements Listener {
         this.territoryConfig = territoryConfig;
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.NORMAL) // ✅ DÜZELTME: Priority belirtildi (özel blok handler'ları HIGH priority'de)
     public void onBreak(BlockBreakEvent event) {
         // Admin bypass kontrolü
         if (me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(event.getPlayer())) {
@@ -139,17 +139,9 @@ public class TerritoryListener implements Listener {
             return; // Kristal yoksa koruma yok
         }
         
-        // YENİ: Klan yapıları kırılmamalı (korunmalı)
-        Block block = event.getBlock();
-        Main mainPlugin = Main.getInstance();
-        if (mainPlugin != null && mainPlugin.getStructureCoreManager() != null) {
-            if (mainPlugin.getStructureCoreManager().isStructureCore(block)) {
-                // Bu bir yapı çekirdeği, kırılamaz
-                event.setCancelled(true);
-                event.getPlayer().sendMessage("§cKlan yapıları kırılamaz! Yapıyı kaldırmak için klan menüsünü kullanın.");
-                return;
-            }
-        }
+        // ✅ DÜZELTME: Yapı çekirdeği korumasını kaldırdık
+        // Özel blok handler'ları (StructureCoreListener, TrapListener, vb.) zaten var
+        // ve doğru çalışıyor. Burada koruma yapmaya gerek yok.
         
         // Kendi yerinse kırılabilir (Rütbe kontrolü dahil)
         Clan playerClan = territoryManager.getClanManager().getClanByPlayer(event.getPlayer().getUniqueId());
@@ -426,8 +418,8 @@ public class TerritoryListener implements Listener {
     }
     
     /**
-     * ✅ YENİ: Çit kırma event'i - Veri geri getirme ve TerritoryData güncelle
-     * PersistentDataContainer'dan veri oku ve ItemStack'e ekle
+     * ✅ DÜZELTME: Çit kırma event'i - Özel item drop et
+     * PersistentDataContainer'dan veri oku ve drop edilen item'a ekle
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onFenceBreak(BlockBreakEvent event) {
@@ -446,21 +438,33 @@ public class TerritoryListener implements Listener {
             return;
         }
         
-        // ✅ ItemStack'e veri ekle
-        ItemStack item = player.getInventory().getItemInMainHand();
-        if (item != null && item.getType() == Material.OAK_FENCE) {
-            // ItemStack'in PersistentDataContainer'ına yaz
-            org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
-            if (meta != null) {
-                org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
-                org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "clan_fence");
-                container.set(key, org.bukkit.persistence.PersistentDataType.STRING, clanId.toString());
-                item.setItemMeta(meta);
-                
-                // Özel item olarak işaretle (ItemManager.isClanItem() için)
-                // ItemManager zaten kontrol ediyor, burada sadece veri ekliyoruz
-            }
+        // ✅ Normal drop'ları iptal et
+        event.setDropItems(false);
+        
+        // ✅ Özel item oluştur (OAK_FENCE + PDC verisi)
+        ItemStack clanFenceItem = new ItemStack(Material.OAK_FENCE);
+        org.bukkit.inventory.meta.ItemMeta meta = clanFenceItem.getItemMeta();
+        if (meta != null) {
+            // Display name ve lore ekle (ItemManager.registerClanFenceRecipe() ile uyumlu)
+            meta.setDisplayName("§6§lKlan Çiti");
+            java.util.List<String> lore = new java.util.ArrayList<>();
+            lore.add("§7Klan bölgesi sınırlarını belirler.");
+            meta.setLore(lore);
+            
+            // ✅ PDC verisini ekle
+            org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
+            org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "clan_fence");
+            container.set(key, org.bukkit.persistence.PersistentDataType.STRING, clanId.toString());
+            
+            // ✅ ItemManager.isClanItem() için custom_id ekle (ItemManager.registerClanFenceRecipe() ile uyumlu)
+            org.bukkit.NamespacedKey customIdKey = new org.bukkit.NamespacedKey(me.mami.stratocraft.Main.getInstance(), "custom_id");
+            container.set(customIdKey, org.bukkit.persistence.PersistentDataType.STRING, "CLAN_FENCE");
+            
+            clanFenceItem.setItemMeta(meta);
         }
+        
+        // ✅ Özel item'ı drop et
+        block.getWorld().dropItemNaturally(block.getLocation(), clanFenceItem);
         
         // ✅ TerritoryData'dan kaldır (backup)
         if (boundaryManager != null) {
@@ -470,12 +474,8 @@ public class TerritoryListener implements Listener {
             }
         }
         
-        // ❌ ESKİ: Metadata kontrolü kaldırıldı
-        // if (territoryConfig != null) {
-        //     String metadataKey = territoryConfig.getFenceMetadataKey();
-        //     hasMetadata = block.hasMetadata(metadataKey);
-        // }
-        
+        // ✅ CustomBlockData'dan da temizle
+        me.mami.stratocraft.util.CustomBlockData.removeClanFenceData(block);
     }
     
     /**

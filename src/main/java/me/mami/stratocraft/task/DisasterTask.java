@@ -40,6 +40,16 @@ public class DisasterTask extends BukkitRunnable {
     private Location cachedNearestCrystal = null;
     private long lastCrystalCacheUpdate = 0;
     
+    // ✅ OPTİMİZE: Crystal location → Clan cache (performans için)
+    private final java.util.Map<String, Clan> crystalLocationCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<String, Long> crystalLocationCacheTime = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long CRYSTAL_LOCATION_CACHE_DURATION = 5000L; // 5 saniye
+    
+    // ✅ OPTİMİZE: findCrystalsInRadius() cache (performans için)
+    private final java.util.Map<String, java.util.List<org.bukkit.Location>> crystalsInRadiusCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<String, Long> crystalsInRadiusCacheTime = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long CRYSTALS_IN_RADIUS_CACHE_DURATION = 2000L; // 2 saniye
+    
     // Kristal yok edildikten sonra oyuncularla savaşma durumu
     private boolean crystalDestroyed = false;
     private long crystalDestroyedTime = 0;
@@ -152,17 +162,6 @@ public class DisasterTask extends BukkitRunnable {
         
     }
     
-    /**
-     * Force-loaded chunk'ları temizle (Memory leak önleme)
-     */
-    private void cleanupForceLoadedChunks() {
-        for (org.bukkit.Chunk chunk : forceLoadedChunks.values()) {
-            if (chunk != null && chunk.isLoaded()) {
-                chunk.setForceLoaded(false);
-            }
-        }
-        forceLoadedChunks.clear();
-    }
     
     /**
      * Canlı felaketleri işle
@@ -209,9 +208,9 @@ public class DisasterTask extends BukkitRunnable {
         
         // Merkeze ulaştıysa özel mantık
         if (merkezeUlasildi) {
-            // Merkezde 1000 blok yarıçapında klan var mı?
+            // ✅ OPTİMİZE: Merkezde 1000 blok yarıçapında klan var mı? (cache'li)
             java.util.List<org.bukkit.Location> centerCrystals = 
-                disasterManager.findCrystalsInRadius(centerLoc, 1000.0);
+                findCrystalsInRadiusCached(centerLoc, 1000.0);
             
             if (!centerCrystals.isEmpty()) {
                 // Klan var, en yakın klana saldır
@@ -260,6 +259,8 @@ public class DisasterTask extends BukkitRunnable {
                             disaster.setTargetCrystal(null);
                             cachedNearestCrystal = null;
                             lastCrystalCacheUpdate = 0;
+                            // ✅ OPTİMİZE: Cache'i temizle
+                            clearCrystalCaches();
                         }
                     }
                 } else {
@@ -272,9 +273,9 @@ public class DisasterTask extends BukkitRunnable {
                 }
             } else {
                 // Merkezde klan yok, oyunculara saldır
-                // Oyuncu saldırısı sırasında klan kontrolü (1000 blok yarıçap)
+                // ✅ OPTİMİZE: Oyuncu saldırısı sırasında klan kontrolü (1000 blok yarıçap - cache'li)
                 java.util.List<org.bukkit.Location> nearbyCrystals = 
-                    disasterManager.findCrystalsInRadius(current, 1000.0);
+                    findCrystalsInRadiusCached(current, 1000.0);
                 
                 if (!nearbyCrystals.isEmpty()) {
                     // Yeni klan görüldü, en yakın klana yönel
@@ -300,10 +301,10 @@ public class DisasterTask extends BukkitRunnable {
                 }
             }
         } else {
-            // Merkeze ulaşmadı, normal mantık
+            // ✅ OPTİMİZE: Merkeze ulaşmadı, normal mantık (cache'li)
             // 1000 blok yarıçapında klan var mı?
             java.util.List<org.bukkit.Location> nearbyCrystals = 
-                disasterManager.findCrystalsInRadius(current, 1000.0);
+                findCrystalsInRadiusCached(current, 1000.0);
             
             if (!nearbyCrystals.isEmpty()) {
                 // Klan var, en yakın klana saldır
@@ -346,13 +347,15 @@ public class DisasterTask extends BukkitRunnable {
                             disaster.setTargetCrystal(null);
                             cachedNearestCrystal = null;
                             lastCrystalCacheUpdate = 0;
+                            // ✅ OPTİMİZE: Cache'i temizle
+                            clearCrystalCaches();
                         }
                     }
                 } else {
-                    // Normal durum: Config'den saldırı aralığı (1-2 dakikada bir)
+                    // ✅ OPTİMİZE: Normal durum: Config'den saldırı aralığı (1-2 dakikada bir - cache'li)
                     // Oyunculara saldırırken klan kontrolü yap
                     java.util.List<org.bukkit.Location> checkCrystals = 
-                        disasterManager.findCrystalsInRadius(current, 1000.0);
+                        findCrystalsInRadiusCached(current, 1000.0);
                     
                     if (!checkCrystals.isEmpty()) {
                         // Yeni klan görüldü, ona yönel
@@ -369,15 +372,15 @@ public class DisasterTask extends BukkitRunnable {
                         attackNearbyPlayersIfNeeded(disaster, entity, current, config, false, attackInterval);
                     }
                 }
-            } else {
-                // Klan yok, merkeze ilerle
-                disaster.setTargetCrystal(null);
-                disaster.setTarget(centerLoc);
-                
-                // Merkeze ilerlerken de oyunculara saldır (1-2 dakikada bir)
-                // Ayrıca oyunculara saldırırken klan kontrolü yap
-                java.util.List<org.bukkit.Location> checkCrystals2 = 
-                    disasterManager.findCrystalsInRadius(current, 1000.0);
+                } else {
+                    // Klan yok, merkeze ilerle
+                    disaster.setTargetCrystal(null);
+                    disaster.setTarget(centerLoc);
+                    
+                    // ✅ OPTİMİZE: Merkeze ilerlerken de oyunculara saldır (1-2 dakikada bir - cache'li)
+                    // Ayrıca oyunculara saldırırken klan kontrolü yap
+                    java.util.List<org.bukkit.Location> checkCrystals2 = 
+                        findCrystalsInRadiusCached(current, 1000.0);
                 
                 if (!checkCrystals2.isEmpty()) {
                     // Yeni klan görüldü, ona yönel
@@ -436,10 +439,10 @@ public class DisasterTask extends BukkitRunnable {
         if (targetCrystal != null) {
             disaster.setTarget(targetCrystal);
         } else if (merkezeUlasildi) {
-            // ✅ Merkeze ulaştıysa ve kristal yoksa, en yakın oyuncuya hedef ayarla
+            // ✅ OPTİMİZE: Merkeze ulaştıysa ve kristal yoksa, en yakın oyuncuya hedef ayarla (cache'li)
             // Önce klan kontrolü yap (1000 blok yarıçap)
             java.util.List<org.bukkit.Location> centerCrystals = 
-                disasterManager.findCrystalsInRadius(current, 1000.0);
+                findCrystalsInRadiusCached(current, 1000.0);
             
             if (!centerCrystals.isEmpty()) {
                 // Klan var, en yakın klana yönel
@@ -576,7 +579,7 @@ public class DisasterTask extends BukkitRunnable {
             disaster.setTargetCrystal(cachedNearestCrystal);
             disaster.setTarget(cachedNearestCrystal != null ? cachedNearestCrystal : disaster.getTarget());
             
-            // Plan'a göre: Klan kristali hedef alındığında uyarı
+                // Plan'a göre: Klan kristali hedef alındığında uyarı
             if (cachedNearestCrystal != null && (oldCrystal == null || !oldCrystal.equals(cachedNearestCrystal))) {
                 Clan targetClan = findClanByCrystalLocation(cachedNearestCrystal);
                 if (targetClan != null) {
@@ -585,6 +588,20 @@ public class DisasterTask extends BukkitRunnable {
                 }
             }
         }
+    }
+    
+    /**
+     * ✅ OPTİMİZE: Cleanup - Force-loaded chunk'ları temizle ve cache'leri temizle
+     */
+    private void cleanupForceLoadedChunks() {
+        for (org.bukkit.Chunk chunk : forceLoadedChunks.values()) {
+            if (chunk != null && chunk.isLoaded()) {
+                chunk.setForceLoaded(false);
+            }
+        }
+        forceLoadedChunks.clear();
+        // ✅ OPTİMİZE: Cache'leri de temizle (felaket bittiğinde)
+        clearCrystalCaches();
     }
     
     /**
@@ -688,17 +705,45 @@ public class DisasterTask extends BukkitRunnable {
     }
     
     /**
-     * Kristal lokasyonuna göre klanı bul
+     * ✅ OPTİMİZE: Kristal lokasyonuna göre klanı bul (cache ile)
      */
     private Clan findClanByCrystalLocation(Location crystalLoc) {
-        if (territoryManager == null) return null;
+        if (territoryManager == null || crystalLoc == null) return null;
         
-        for (Clan clan : territoryManager.getClanManager().getAllClans()) {
-            if (clan.getCrystalLocation() != null && 
-                clan.getCrystalLocation().distance(crystalLoc) < 1.0) {
-                return clan;
+        // ✅ OPTİMİZE: Cache key oluştur (location bazlı)
+        String cacheKey = crystalLoc.getBlockX() + ";" + crystalLoc.getBlockY() + ";" + crystalLoc.getBlockZ();
+        long now = System.currentTimeMillis();
+        
+        // Cache kontrolü
+        Long cacheTime = crystalLocationCacheTime.get(cacheKey);
+        if (cacheTime != null && (now - cacheTime) < CRYSTAL_LOCATION_CACHE_DURATION) {
+            Clan cached = crystalLocationCache.get(cacheKey);
+            if (cached != null) {
+                // ✅ OPTİMİZE: Cache'deki klanın kristal lokasyonunu kontrol et (hala geçerli mi?)
+                if (cached.getCrystalLocation() != null && 
+                    cached.getCrystalLocation().distanceSquared(crystalLoc) < 1.0) {
+                    return cached; // Cache hit
+                }
             }
         }
+        
+        // Cache miss - tüm klanları döngüye al
+        for (Clan clan : territoryManager.getClanManager().getAllClans()) {
+            if (clan.getCrystalLocation() != null) {
+                // ✅ OPTİMİZE: distanceSquared() kullan (Math.sqrt pahalı)
+                double distanceSquared = clan.getCrystalLocation().distanceSquared(crystalLoc);
+                if (distanceSquared < 1.0) {
+                    // Cache'e kaydet
+                    crystalLocationCache.put(cacheKey, clan);
+                    crystalLocationCacheTime.put(cacheKey, now);
+                    return clan;
+                }
+            }
+        }
+        
+        // Klan bulunamadı - cache'e null kaydet (negatif cache)
+        crystalLocationCache.put(cacheKey, null);
+        crystalLocationCacheTime.put(cacheKey, now);
         return null;
     }
     
@@ -801,6 +846,45 @@ public class DisasterTask extends BukkitRunnable {
         }
     }
     
+    
+    /**
+     * ✅ OPTİMİZE: findCrystalsInRadius() cache'li versiyonu
+     */
+    private java.util.List<org.bukkit.Location> findCrystalsInRadiusCached(Location from, double radius) {
+        if (from == null || disasterManager == null) return new java.util.ArrayList<>();
+        
+        // ✅ OPTİMİZE: Cache key oluştur (location + radius bazlı)
+        String cacheKey = from.getBlockX() + ";" + from.getBlockY() + ";" + from.getBlockZ() + ";" + (int)radius;
+        long now = System.currentTimeMillis();
+        
+        // Cache kontrolü
+        Long cacheTime = crystalsInRadiusCacheTime.get(cacheKey);
+        if (cacheTime != null && (now - cacheTime) < CRYSTALS_IN_RADIUS_CACHE_DURATION) {
+            java.util.List<org.bukkit.Location> cached = crystalsInRadiusCache.get(cacheKey);
+            if (cached != null) {
+                return new java.util.ArrayList<>(cached); // Defensive copy
+            }
+        }
+        
+        // Cache miss - DisasterManager'dan al
+        java.util.List<org.bukkit.Location> result = disasterManager.findCrystalsInRadius(from, radius);
+        
+        // Cache'e kaydet
+        crystalsInRadiusCache.put(cacheKey, new java.util.ArrayList<>(result));
+        crystalsInRadiusCacheTime.put(cacheKey, now);
+        
+        return result;
+    }
+    
+    /**
+     * ✅ OPTİMİZE: Crystal cache'lerini temizle (kristal yok edildiğinde)
+     */
+    private void clearCrystalCaches() {
+        crystalLocationCache.clear();
+        crystalLocationCacheTime.clear();
+        crystalsInRadiusCache.clear();
+        crystalsInRadiusCacheTime.clear();
+    }
     
     /**
      * Doğa olaylarını işle (Handler sistemi ile)

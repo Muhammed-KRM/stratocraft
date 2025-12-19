@@ -57,9 +57,9 @@ public class MobRideTask extends BukkitRunnable {
                             if (!wyvernFeedTimes.containsKey(playerId) || 
                                 (currentTime - wyvernFeedTimes.get(playerId)) >= FEED_INTERVAL) {
                                 
-                                // Oyuncunun envanterinde Kızıl Elmas var mı?
+                                // ✅ OPTİMİZE: Oyuncunun envanterinde Kızıl Elmas var mı? (getStorageContents() kullan)
                                 boolean hasRedDiamond = false;
-                                for (ItemStack item : p.getInventory().getContents()) {
+                                for (ItemStack item : p.getInventory().getStorageContents()) { // ✅ OPTİMİZE: getStorageContents() daha hızlı
                                     if (item != null && ItemManager.isCustomItem(item, "RED_DIAMOND")) {
                                         hasRedDiamond = true;
                                         // Eşyayı sil
