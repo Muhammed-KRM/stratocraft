@@ -42,14 +42,32 @@ public class TerritoryManager {
         if (loc == null) return null;
         
         // ✅ YENİ: Önce TerritoryData.isInsideTerritory() ile kontrol et (Y ekseni dahil)
+        // ✅ OPTİMİZE: Chunk cache'den önce kontrol et (cache'de varsa hemen return)
+        int chunkX = loc.getBlockX() >> 4;
+        int chunkZ = loc.getBlockZ() >> 4;
+        String chunkKey = chunkX + ";" + chunkZ;
+        
+        // ✅ OPTİMİZE: Önce chunk cache'den kontrol et
+        UUID cachedClanId = chunkTerritoryCache.get(chunkKey);
+        if (cachedClanId != null) {
+            Clan cachedClan = clanManager.getAllClans().stream()
+                .filter(c -> c.getId().equals(cachedClanId))
+                .findFirst().orElse(null);
+            
+            if (cachedClan != null && boundaryManager != null) {
+                TerritoryData data = boundaryManager.getTerritoryData(cachedClan);
+                if (data != null && data.isInsideTerritory(loc)) {
+                    return cachedClan; // ✅ Cache'den bulundu, hemen return
+                }
+            }
+        }
+        
+        // Cache'de yoksa veya geçersizse tüm klanları kontrol et
         if (boundaryManager != null) {
             for (Clan clan : clanManager.getAllClans()) {
                 TerritoryData data = boundaryManager.getTerritoryData(clan);
                 if (data != null && data.isInsideTerritory(loc)) {
                     // Cache'e ekle (performans için)
-                    int chunkX = loc.getBlockX() >> 4;
-                    int chunkZ = loc.getBlockZ() >> 4;
-                    String chunkKey = chunkX + ";" + chunkZ;
                     chunkTerritoryCache.put(chunkKey, clan.getId());
                     return clan;
                 }
@@ -63,11 +81,7 @@ public class TerritoryManager {
             isCacheDirty = false;
         }
         
-        // Chunk key oluştur
-        int chunkX = loc.getBlockX() >> 4;
-        int chunkZ = loc.getBlockZ() >> 4;
-        String chunkKey = chunkX + ";" + chunkZ;
-        
+        // ✅ OPTİMİZE: Chunk key zaten yukarıda oluşturuldu, tekrar oluşturma
         // Cache'den kontrol et (2D kontrol - geriye uyumluluk)
         UUID clanId = chunkTerritoryCache.get(chunkKey);
         if (clanId != null) {

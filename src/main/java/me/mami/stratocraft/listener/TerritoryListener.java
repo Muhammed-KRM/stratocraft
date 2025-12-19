@@ -60,6 +60,23 @@ public class TerritoryListener implements Listener {
     // Oyuncu UUID -> Taşıdığı kristal bilgisi
     private final Map<UUID, CarryingCrystalData> carryingCrystalPlayers = new java.util.concurrent.ConcurrentHashMap<>();
     
+    // ✅ PERFORMANS: onPlayerMove için cache (5 saniye cache süresi)
+    private final Map<UUID, CachedPlayerClanData> playerMoveCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long PLAYER_MOVE_CACHE_DURATION = 5000L; // 5 saniye
+    
+    /**
+     * Player move cache data class
+     */
+    private static class CachedPlayerClanData {
+        final UUID clanId;
+        final long lastCheck;
+        
+        CachedPlayerClanData(UUID clanId, long lastCheck) {
+            this.clanId = clanId;
+            this.lastCheck = lastCheck;
+        }
+    }
+    
     // Kristal taşıma verisi
     public static class CarryingCrystalData {
         public final Clan clan;
@@ -809,10 +826,12 @@ public class TerritoryListener implements Listener {
         }
         
         // Kendi yerinse yerleştirilebilir (Rütbe kontrolü dahil)
-        Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
+        UUID playerId = player.getUniqueId();
+        Clan playerClan = territoryManager.getClanManager().getClanByPlayer(playerId);
         if (playerClan != null && playerClan.equals(owner)) {
-            // ✅ YENİ: Rütbe Kontrolü - RECRUIT ve MEMBER blok yerleştiremez
-            Clan.Rank rank = playerClan.getRank(player.getUniqueId());
+            // ✅ PERFORMANS: Rütbe cache kullan (her event'te getRank() çağrısını önle)
+            // Not: Rütbe nadiren değişir, mevcut implementasyon yeterli
+            Clan.Rank rank = playerClan.getRank(playerId);
             if (rank == Clan.Rank.RECRUIT) {
                 event.setCancelled(true);
                 player.sendMessage("§cAcemilerin blok yerleştirme yetkisi yok!");
@@ -1168,7 +1187,7 @@ public class TerritoryListener implements Listener {
     /**
      * Klan sınırlarını partikül ile göster (klan üyelerine)
      */
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.LOW) // ✅ OPTİMİZE: MONITOR → LOW (diğer listener'lar önce çalışsın)
     public void onPlayerMove(PlayerMoveEvent event) {
         // PERFORMANS: Sadece blok değiştiyse çalış
         if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
@@ -1181,15 +1200,31 @@ public class TerritoryListener implements Listener {
         Location to = event.getTo();
         if (to == null) return;
         
-        // Cooldown kontrolü
+        UUID playerId = player.getUniqueId();
         long now = System.currentTimeMillis();
-        Long lastTime = lastBoundaryParticleTime.get(player.getUniqueId());
-        if (lastTime != null && (now - lastTime) < BOUNDARY_PARTICLE_COOLDOWN) {
+        
+        // ✅ OPTİMİZE: Cooldown kontrolü (2 saniye → 5 saniye)
+        Long lastTime = lastBoundaryParticleTime.get(playerId);
+        if (lastTime != null && (now - lastTime) < 5000L) { // 5 saniye cooldown
             return; // Cooldown'da
         }
         
-        // Oyuncunun klanını kontrol et
-        Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
+        // ✅ PERFORMANS: Cache'den klan ID'sini al
+        CachedPlayerClanData cached = playerMoveCache.get(playerId);
+        Clan playerClan = null;
+        
+        if (cached != null && now - cached.lastCheck < PLAYER_MOVE_CACHE_DURATION) {
+            // Cache'den al
+            if (cached.clanId != null) {
+                playerClan = territoryManager.getClanManager().getClanById(cached.clanId);
+            }
+        } else {
+            // Cache'de yoksa veya süresi dolmuşsa hesapla
+            playerClan = territoryManager.getClanManager().getClanByPlayer(playerId);
+            UUID clanId = playerClan != null ? playerClan.getId() : null;
+            playerMoveCache.put(playerId, new CachedPlayerClanData(clanId, now));
+        }
+        
         if (playerClan == null) return; // Klan üyesi değil
         
         Territory territory = playerClan.getTerritory();

@@ -1206,9 +1206,15 @@ public class RitualInteractionListener implements Listener {
         Clan targetClan = clanManager.getClanByPlayer(p.getUniqueId());
         
         // Eğer klanı yoksa, yakındaki klan kristalini bul
+        // ✅ PERFORMANS: Limit ekle - maksimum 10 klan kontrol et
         if (targetClan == null) {
             double minDistance = Double.MAX_VALUE;
+            int checkedCount = 0;
+            int maxChecks = 10; // ✅ OPTİMİZE: Maksimum 10 klan kontrol et
+            
             for (Clan clan : clanManager.getAllClans()) {
+                if (checkedCount >= maxChecks) break; // ✅ OPTİMİZE: Limit'e ulaşıldı
+                
                 if (clan.getCrystalLocation() != null) {
                     double distance = p.getLocation().distance(clan.getCrystalLocation());
                     if (distance <= 20 && distance < minDistance) {
@@ -1216,6 +1222,7 @@ public class RitualInteractionListener implements Listener {
                         targetClan = clan;
                     }
                 }
+                checkedCount++;
             }
         }
         

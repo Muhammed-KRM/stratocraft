@@ -31,7 +31,7 @@ public class PlayerFeatureMonitor {
     private final Map<UUID, UUID> playerClanCache = new ConcurrentHashMap<>();
     
     private int taskId = -1;
-    private static final long UPDATE_INTERVAL = 100L; // ✅ OPTİMİZE: 5 saniye (100 tick) - BuffTask zaten yapıyor, gereksiz tekrarı azalt
+    private static final long UPDATE_INTERVAL = 200L; // ✅ OPTİMİZE: 10 saniye (200 tick) - BuffTask zaten yapıyor, gereksiz tekrarı azalt
     
     public PlayerFeatureMonitor(Main plugin, ClanManager clanManager, BuffManager buffManager) {
         this.plugin = plugin;

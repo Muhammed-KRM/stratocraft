@@ -3125,6 +3125,7 @@ public class ContractMenu implements Listener {
     
     /**
      * Oyuncu oyundan çıktığında wizard state'lerini temizle
+     * ✅ PERFORMANS: Memory leak önleme - tüm Map'leri temizle
      */
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
@@ -3142,6 +3143,12 @@ public class ContractMenu implements Listener {
         
         // Personal Terminal flag'ini temizle
         isPersonalTerminal.remove(playerId);
+        
+        // ✅ YENİ: Kontrat şablonlarını temizle
+        playerTemplates.remove(playerId);
+        
+        // ✅ YENİ: Kontrat geçmişini temizle
+        contractHistory.remove(playerId);
         
         // İptal isteklerini temizle (bu oyuncunun gönderdiği istekler)
         cancelRequests.entrySet().removeIf(entry -> entry.getValue().equals(playerId));

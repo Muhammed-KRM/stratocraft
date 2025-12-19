@@ -50,6 +50,23 @@ public class StructureActivationListener implements Listener {
     // Cooldown: Oyuncu UUID -> Son aktivasyon zamanı
     private final Map<UUID, Long> activationCooldowns = new HashMap<>();
     private static final long ACTIVATION_COOLDOWN = 5000L; // 5 saniye
+    
+    // ✅ PERFORMANS: Location-based territory cache (1 saniye cache süresi)
+    private final Map<String, CachedTerritoryData> territoryCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long TERRITORY_CACHE_DURATION = 1000L; // 1 saniye
+    
+    /**
+     * Territory cache data class
+     */
+    private static class CachedTerritoryData {
+        final UUID clanId;
+        final long lastCheck;
+        
+        CachedTerritoryData(UUID clanId, long lastCheck) {
+            this.clanId = clanId;
+            this.lastCheck = lastCheck;
+        }
+    }
 
     public StructureActivationListener(ClanManager cm, TerritoryManager tm, ClanRankSystem rankSystem, 
                                       me.mami.stratocraft.manager.StructureCoreManager coreManager) {
@@ -59,7 +76,7 @@ public class StructureActivationListener implements Listener {
         this.coreManager = coreManager; // YENİ: Yapı çekirdeği yöneticisi
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.NORMAL) // ✅ OPTİMİZE: HIGH → NORMAL (diğer listener'lar önce çalışsın)
     public void onStructureActivation(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK)
             return;
@@ -109,8 +126,8 @@ public class StructureActivationListener implements Listener {
             detectedType == StructureType.RECIPE_LIBRARY) {
             
             // Kişisel yapılar için klan kontrolü yok
-            // Yapıyı en yakın klana ekle (varsa) veya geçici olarak sakla
-            Clan nearbyClan = territoryManager.getTerritoryOwner(clicked.getLocation());
+            // ✅ OPTİMİZE: Location-based cache kullan
+            Clan nearbyClan = getCachedTerritoryOwner(clickedLoc);
             if (nearbyClan != null) {
                 nearbyClan.addStructure(detectedStructure);
             } else {
@@ -142,7 +159,8 @@ public class StructureActivationListener implements Listener {
         }
 
         // ✅ DÜZELTME: Klan bölgesinde mi? (kristal kontrolü)
-        Clan owner = territoryManager.getTerritoryOwner(clicked.getLocation());
+        // ✅ OPTİMİZE: Location-based cache kullan
+        Clan owner = getCachedTerritoryOwner(clickedLoc);
         if (owner == null) {
             player.sendMessage("§cBu yapıyı sadece klan alanında kurabilirsiniz!");
             player.sendMessage("§7Klan alanı olmayan yere yapı kurulamaz!");
@@ -1073,5 +1091,54 @@ public class StructureActivationListener implements Listener {
      */
     private void setCooldown(UUID playerId) {
         activationCooldowns.put(playerId, System.currentTimeMillis());
+    }
+    
+    /**
+     * Territory owner'ı cache ile al
+     * ✅ PERFORMANS: Location-based cache kullanarak gereksiz getTerritoryOwner() çağrılarını önler
+     */
+    private Clan getCachedTerritoryOwner(Location loc) {
+        if (loc == null) return null;
+        
+        // Location key oluştur
+        String locKey = loc.getBlockX() + ";" + loc.getBlockY() + ";" + loc.getBlockZ();
+        long now = System.currentTimeMillis();
+        
+        // Cache kontrolü
+        CachedTerritoryData cached = territoryCache.get(locKey);
+        if (cached != null && now - cached.lastCheck < TERRITORY_CACHE_DURATION) {
+            // Cache'den al
+            if (cached.clanId != null) {
+                return clanManager.getClanById(cached.clanId);
+            }
+            return null;
+        }
+        
+        // Cache'de yoksa veya süresi dolmuşsa hesapla
+        Clan owner = territoryManager.getTerritoryOwner(loc);
+        
+        // Cache'e kaydet
+        UUID clanId = owner != null ? owner.getId() : null;
+        territoryCache.put(locKey, new CachedTerritoryData(clanId, now));
+        
+        return owner;
+    }
+    
+    /**
+     * Cache'i temizle (territory değiştiğinde çağrılacak)
+     * ✅ PERFORMANS: Event-based cache invalidation
+     */
+    public void clearTerritoryCache() {
+        territoryCache.clear();
+    }
+    
+    /**
+     * Belirli bir lokasyon için cache'i temizle
+     * ✅ PERFORMANS: Event-based cache invalidation
+     */
+    public void clearTerritoryCache(Location loc) {
+        if (loc == null) return;
+        String locKey = loc.getBlockX() + ";" + loc.getBlockY() + ";" + loc.getBlockZ();
+        territoryCache.remove(locKey);
     }
 }

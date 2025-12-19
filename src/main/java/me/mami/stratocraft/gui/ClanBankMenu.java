@@ -12,6 +12,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -40,6 +41,9 @@ public class ClanBankMenu implements Listener {
     // Açık banka menüleri (player -> inventory)
     private final java.util.Map<UUID, Inventory> openMenus = new java.util.concurrent.ConcurrentHashMap<>();
     
+    // ✅ PERFORMANS: Menü açılışında klan ID cache'i (oyuncu çıkışına kadar geçerli)
+    private final java.util.Map<UUID, UUID> menuClanCache = new java.util.concurrent.ConcurrentHashMap<>();
+    
     public ClanBankMenu(Main plugin, ClanManager clanManager, ClanBankSystem bankSystem, ClanRankSystem rankSystem) {
         this.plugin = plugin;
         this.clanManager = clanManager;
@@ -60,11 +64,15 @@ public class ClanBankMenu implements Listener {
             return;
         }
         
-        Clan clan = clanManager.getClanByPlayer(player.getUniqueId());
+        UUID playerId = player.getUniqueId();
+        Clan clan = clanManager.getClanByPlayer(playerId);
         if (clan == null) {
             player.sendMessage("§cBir klana üye değilsiniz!");
             return;
         }
+        
+        // ✅ PERFORMANS: Cache'e klan ID'sini kaydet
+        menuClanCache.put(playerId, clan.getId());
         
         Inventory menu = Bukkit.createInventory(null, 27, "§6Klan Bankası");
         
@@ -228,8 +236,22 @@ public class ClanBankMenu implements Listener {
     public void onInventoryClose(InventoryCloseEvent event) {
         if (event.getPlayer() instanceof Player) {
             Player player = (Player) event.getPlayer();
-            openMenus.remove(player.getUniqueId());
+            UUID playerId = player.getUniqueId();
+            openMenus.remove(playerId);
+            // ✅ PERFORMANS: Menü kapandığında cache'i temizle (oyuncu çıkışında da temizlenecek)
+            // Not: Cache'i burada temizlemiyoruz çünkü oyuncu menüyü tekrar açabilir
         }
+    }
+    
+    /**
+     * Oyuncu çıkışında cache'i temizle
+     * ✅ PERFORMANS: Memory leak önleme
+     */
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        UUID playerId = event.getPlayer().getUniqueId();
+        menuClanCache.remove(playerId);
+        openMenus.remove(playerId);
     }
     
     private void handleMainMenuClick(InventoryClickEvent event) {
@@ -241,15 +263,30 @@ public class ClanBankMenu implements Listener {
         
         if (clicked == null || clicked.getType() == Material.AIR) return;
         
-        Clan clan = clanManager.getClanByPlayer(player.getUniqueId());
+        UUID playerId = player.getUniqueId();
+        // ✅ PERFORMANS: Cache'den klan ID'sini al
+        UUID cachedClanId = menuClanCache.get(playerId);
+        Clan clan = null;
+        
+        if (cachedClanId != null) {
+            // Cache'den al
+            clan = clanManager.getClanById(cachedClanId);
+        }
+        
         if (clan == null) {
-            player.sendMessage("§cBir klana üye değilsiniz!");
-            player.closeInventory();
-            return;
+            // Cache'de yoksa hesapla
+            clan = clanManager.getClanByPlayer(playerId);
+            if (clan == null) {
+                player.sendMessage("§cBir klana üye değilsiniz!");
+                player.closeInventory();
+                return;
+            }
+            // Cache'e kaydet
+            menuClanCache.put(playerId, clan.getId());
         }
         
         // YENİ: Yetki kontrolü
-        if (rankSystem != null && !rankSystem.hasPermission(clan, player.getUniqueId(), 
+        if (rankSystem != null && !rankSystem.hasPermission(clan, playerId, 
                 ClanRankSystem.Permission.MANAGE_BANK)) {
             player.sendMessage("§cBanka işlemleri için yetkiniz yok!");
             player.closeInventory();
@@ -284,8 +321,22 @@ public class ClanBankMenu implements Listener {
         if (slot == 45 || slot == 46) {
             event.setCancelled(true);
             
-            Clan clan = clanManager.getClanByPlayer(player.getUniqueId());
-            if (clan == null) return;
+            UUID playerId = player.getUniqueId();
+            // ✅ PERFORMANS: Cache'den klan ID'sini al
+            UUID cachedClanId = menuClanCache.get(playerId);
+            Clan clan = null;
+            
+            if (cachedClanId != null) {
+                clan = clanManager.getClanById(cachedClanId);
+            }
+            
+            if (clan == null) {
+                // Cache'de yoksa hesapla
+                clan = clanManager.getClanByPlayer(playerId);
+                if (clan == null) return;
+                // Cache'e kaydet
+                menuClanCache.put(playerId, clan.getId());
+            }
             
             if (slot == 45) {
                 // Yatır - Elindeki itemleri bankaya yatır
@@ -307,7 +358,22 @@ public class ClanBankMenu implements Listener {
         // Sandık slotları (0-44) - Normal işlem
         if (slot < 45) {
             // Sandık içeriğini güncelle
-            Clan playerClan = clanManager.getClanByPlayer(player.getUniqueId());
+            UUID playerId = player.getUniqueId();
+            // ✅ PERFORMANS: Cache'den klan ID'sini al
+            UUID cachedClanId = menuClanCache.get(playerId);
+            Clan playerClan = null;
+            
+            if (cachedClanId != null) {
+                playerClan = clanManager.getClanById(cachedClanId);
+            }
+            
+            if (playerClan == null) {
+                playerClan = clanManager.getClanByPlayer(playerId);
+                if (playerClan != null) {
+                    menuClanCache.put(playerId, playerClan.getId());
+                }
+            }
+            
             if (playerClan != null) {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     updateBankChest(player, playerClan);

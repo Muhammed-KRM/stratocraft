@@ -53,6 +53,33 @@ public class HUDManager {
     // Kontrat bildirimi takibi (son 60 saniye içindeki bildirimler)
     private final Map<UUID, List<ContractNotification>> contractNotifications = new HashMap<>();
     
+    // ✅ PERFORMANS: HUD cache sistemi (5 saniye cache süresi)
+    private final Map<UUID, CachedHUDData> hudCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long CACHE_DURATION = 5000L; // 5 saniye
+    
+    // ✅ PERFORMANS: Scoreboard içerik cache (lazy update için)
+    private final Map<UUID, String> lastScoreboardContent = new java.util.concurrent.ConcurrentHashMap<>();
+    
+    /**
+     * HUD cache data class
+     */
+    private static class CachedHUDData {
+        final UUID clanId;
+        final List<Contract> contracts;
+        final Contract bounty;
+        final long lastUpdate;
+        final boolean hasNotifications;
+        
+        CachedHUDData(UUID clanId, List<Contract> contracts, Contract bounty, 
+                      long lastUpdate, boolean hasNotifications) {
+            this.clanId = clanId;
+            this.contracts = contracts != null ? new ArrayList<>(contracts) : new ArrayList<>();
+            this.bounty = bounty;
+            this.lastUpdate = lastUpdate;
+            this.hasNotifications = hasNotifications;
+        }
+    }
+    
     public HUDManager(Main plugin) {
         this.plugin = plugin;
     }
@@ -104,17 +131,24 @@ public class HUDManager {
     
     /**
      * HUD sistemini başlat
+     * ✅ PERFORMANS: Interval artırıldı (40L → 100L), erken çıkış eklendi
      */
     public void start() {
-        // ✅ OPTİMİZE: Her 2 saniyede bir güncelle (performans için)
+        // ✅ OPTİMİZE: Her 5 saniyede bir güncelle (performans için)
         updateTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            // ✅ OPTİMİZE: Erken çıkış - online oyuncu yoksa return
+            Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+            if (onlinePlayers.isEmpty()) {
+                return; // Online oyuncu yoksa hiçbir şey yapma
+            }
+            
             // Sadece online ve aktif oyuncular için güncelle
-            for (Player player : Bukkit.getOnlinePlayers()) {
+            for (Player player : onlinePlayers) {
                 if (player != null && player.isOnline()) {
                     updateHUD(player);
                 }
             }
-        }, 0L, 40L); // ✅ OPTİMİZE: Her 2 saniye (40 tick) - performans için
+        }, 0L, 100L); // ✅ OPTİMİZE: Her 5 saniye (100 tick) - performans için
     }
     
     /**
@@ -136,28 +170,44 @@ public class HUDManager {
     
     /**
      * Oyuncu için HUD'u güncelle
+     * ✅ PERFORMANS: Scoreboard cache ile lazy update
      */
     private void updateHUD(Player player) {
         List<HUDLine> lines = collectHUDInfo(player);
         
         if (lines.isEmpty()) {
             clearHUD(player);
+            lastScoreboardContent.remove(player.getUniqueId());
             return;
         }
         
+        // ✅ OPTİMİZE: Scoreboard içeriği değişmediyse güncelleme yapma
+        String currentContent = lines.stream()
+            .map(HUDLine::getText)
+            .collect(java.util.stream.Collectors.joining("\n"));
+        
+        UUID playerId = player.getUniqueId();
+        String lastContent = lastScoreboardContent.get(playerId);
+        
+        if (currentContent.equals(lastContent)) {
+            return; // İçerik değişmemiş, güncelleme yapma
+        }
+        
+        lastScoreboardContent.put(playerId, currentContent);
+        
         // Scoreboard oluştur veya al
-        Scoreboard scoreboard = playerScoreboards.get(player.getUniqueId());
+        Scoreboard scoreboard = playerScoreboards.get(playerId);
         if (scoreboard == null) {
             scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
-            playerScoreboards.put(player.getUniqueId(), scoreboard);
+            playerScoreboards.put(playerId, scoreboard);
         }
         
         // Objective oluştur veya al
-        Objective objective = playerObjectives.get(player.getUniqueId());
+        Objective objective = playerObjectives.get(playerId);
         if (objective == null) {
             objective = scoreboard.registerNewObjective("hud_info", "dummy", "§e§l📊 BİLGİ PANELİ");
             objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-            playerObjectives.put(player.getUniqueId(), objective);
+            playerObjectives.put(playerId, objective);
         }
         
         // Tüm entry'leri temizle
@@ -612,25 +662,64 @@ public class HUDManager {
     
     /**
      * Kontrat bilgisi
+     * ✅ PERFORMANS: Cache kullanarak gereksiz metod çağrılarını önler
      * ✅ DRY: Bounty kontrolü tek yerde yapılıyor
      */
     private HUDLine getContractInfo(Player player) {
         if (contractManager == null) return null;
         
-        List<Contract> contracts = contractManager.getPlayerContracts(player.getUniqueId());
-        Contract bounty = contractManager.getBountyContract(player.getUniqueId());
+        UUID playerId = player.getUniqueId();
+        long now = System.currentTimeMillis();
         
+        // Cache kontrolü
+        CachedHUDData cached = hudCache.get(playerId);
+        if (cached != null && now - cached.lastUpdate < CACHE_DURATION) {
+            // Cache'den al
+            if (cached.contracts.isEmpty() && cached.bounty == null) {
+                return null;
+            }
+            
+            // Cache'den bilgiyi kullan
+            if (cached.bounty != null) {
+                if (cached.contracts.isEmpty()) {
+                    return new HUDLine("§c⚠ Bounty: §6" + (int)cached.bounty.getReward() + " altın");
+                } else {
+                    return new HUDLine("§e📜 Kontrat: §6" + cached.contracts.size() + 
+                        " §7| §cBounty: §6" + (int)cached.bounty.getReward());
+                }
+            } else {
+                return new HUDLine("§e📜 Kontrat: §6" + cached.contracts.size() + " aktif");
+            }
+        }
+        
+        // Cache'de yoksa veya süresi dolmuşsa hesapla
+        List<Contract> contracts = contractManager.getPlayerContracts(playerId);
+        Contract bounty = contractManager.getBountyContract(playerId);
+        
+        // Cache'e kaydet
+        boolean hasNotifications = contractNotifications.containsKey(playerId) && 
+                                   !contractNotifications.get(playerId).isEmpty();
+        UUID clanId = null;
+        if (clanManager != null) {
+            Clan clan = clanManager.getClanByPlayer(playerId);
+            if (clan != null) {
+                clanId = clan.getId();
+            }
+        }
+        
+        hudCache.put(playerId, new CachedHUDData(clanId, contracts, bounty, now, hasNotifications));
+        
+        // Normal hesaplama
         if (contracts.isEmpty()) {
-            // Bounty kontratı var mı? (başında ödül)
             if (bounty != null) {
                 return new HUDLine("§c⚠ Bounty: §6" + (int)bounty.getReward() + " altın");
             }
             return null;
         }
         
-        // Bounty kontratı var mı?
         if (bounty != null) {
-            return new HUDLine("§e📜 Kontrat: §6" + contracts.size() + " §7| §cBounty: §6" + (int)bounty.getReward());
+            return new HUDLine("§e📜 Kontrat: §6" + contracts.size() + 
+                " §7| §cBounty: §6" + (int)bounty.getReward());
         }
         
         return new HUDLine("§e📜 Kontrat: §6" + contracts.size() + " aktif");
@@ -638,25 +727,64 @@ public class HUDManager {
     
     /**
      * Buff bilgisi
+     * ✅ PERFORMANS: Cache kullanarak gereksiz getClanByPlayer() çağrılarını önler
      */
     private HUDLine getBuffInfo(Player player) {
         if (buffManager == null || clanManager == null) return null;
         
-        Clan clan = clanManager.getClanByPlayer(player.getUniqueId());
+        UUID playerId = player.getUniqueId();
+        long now = System.currentTimeMillis();
+        
+        // Cache kontrolü
+        CachedHUDData cached = hudCache.get(playerId);
+        if (cached != null && cached.clanId != null && now - cached.lastUpdate < CACHE_DURATION) {
+            // Cache'den klan ID'sini kullan
+            Clan clan = clanManager.getClanById(cached.clanId);
+            if (clan != null) {
+                // Buff kontrolü (cache'den klan ID kullan)
+                Long conquerorEnd = buffManager.getConquerorBuffEnd(cached.clanId);
+                if (conquerorEnd != null && conquerorEnd > now) {
+                    long remaining = conquerorEnd - now;
+                    String timeText = formatTime(remaining);
+                    return new HUDLine("§6⚡ Buff: §eFatih §7(" + timeText + ")");
+                }
+                
+                Long heroEnd = buffManager.getHeroBuffEnd(cached.clanId);
+                if (heroEnd != null && heroEnd > now) {
+                    long remaining = heroEnd - now;
+                    String timeText = formatTime(remaining);
+                    return new HUDLine("§b⚡ Buff: §eKahraman §7(" + timeText + ")");
+                }
+            }
+            return null;
+        }
+        
+        // Cache'de yoksa hesapla
+        Clan clan = clanManager.getClanByPlayer(playerId);
         if (clan == null) return null;
         
-        // Fatih Buff'ı kontrol et
+        // Cache'e klan ID'sini kaydet (eğer cache yoksa veya süresi dolmuşsa)
+        if (cached == null || now - cached.lastUpdate >= CACHE_DURATION) {
+            List<Contract> contracts = contractManager != null ? 
+                contractManager.getPlayerContracts(playerId) : new ArrayList<>();
+            Contract bounty = contractManager != null ? 
+                contractManager.getBountyContract(playerId) : null;
+            boolean hasNotifications = contractNotifications.containsKey(playerId) && 
+                                       !contractNotifications.get(playerId).isEmpty();
+            hudCache.put(playerId, new CachedHUDData(clan.getId(), contracts, bounty, now, hasNotifications));
+        }
+        
+        // Normal buff kontrolü
         Long conquerorEnd = buffManager.getConquerorBuffEnd(clan.getId());
-        if (conquerorEnd != null && conquerorEnd > System.currentTimeMillis()) {
-            long remaining = conquerorEnd - System.currentTimeMillis();
+        if (conquerorEnd != null && conquerorEnd > now) {
+            long remaining = conquerorEnd - now;
             String timeText = formatTime(remaining);
             return new HUDLine("§6⚡ Buff: §eFatih §7(" + timeText + ")");
         }
         
-        // Kahraman Buff'ı kontrol et
         Long heroEnd = buffManager.getHeroBuffEnd(clan.getId());
-        if (heroEnd != null && heroEnd > System.currentTimeMillis()) {
-            long remaining = heroEnd - System.currentTimeMillis();
+        if (heroEnd != null && heroEnd > now) {
+            long remaining = heroEnd - now;
             String timeText = formatTime(remaining);
             return new HUDLine("§b⚡ Buff: §eKahraman §7(" + timeText + ")");
         }
@@ -779,11 +907,32 @@ public class HUDManager {
         
         // ✅ PERFORMANS: Cache'leri temizle
         if (player != null) {
-            java.util.UUID playerId = player.getUniqueId();
+            UUID playerId = player.getUniqueId();
             powerCache.remove(playerId);
             powerCacheTime.remove(playerId);
-            contractNotifications.remove(playerId); // ✅ Memory leak önleme
+            contractNotifications.remove(playerId);
+            hudCache.remove(playerId); // ✅ YENİ: HUD cache'i temizle
+            lastScoreboardContent.remove(playerId); // ✅ YENİ: Scoreboard cache'i temizle
         }
+    }
+    
+    /**
+     * Cache'i geçersiz kıl (kontrat değiştiğinde çağrılacak)
+     * ✅ PERFORMANS: Event-based cache invalidation
+     */
+    public void invalidateCache(UUID playerId) {
+        if (playerId != null) {
+            hudCache.remove(playerId);
+        }
+    }
+    
+    /**
+     * Cache'i güncelle (kontrat eklendiğinde çağrılacak)
+     * ✅ PERFORMANS: Event-based cache update
+     */
+    public void updateCache(UUID playerId) {
+        // Cache'i kaldır, bir sonraki güncellemede yeniden hesaplanacak
+        invalidateCache(playerId);
     }
     
     /**
