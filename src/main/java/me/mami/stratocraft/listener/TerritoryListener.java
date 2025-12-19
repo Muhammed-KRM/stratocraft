@@ -3,14 +3,12 @@ package me.mami.stratocraft.listener;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -29,6 +27,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
@@ -466,6 +465,9 @@ public class TerritoryListener implements Listener {
         // ✅ Özel item'ı drop et
         block.getWorld().dropItemNaturally(block.getLocation(), clanFenceItem);
         
+        // ✅ PERFORMANS: Cache temizleme ile birlikte veri silme
+        me.mami.stratocraft.util.CustomBlockData.removeClanFenceData(block);
+        
         // ✅ TerritoryData'dan kaldır (backup)
         if (boundaryManager != null) {
             Clan clan = territoryManager.getClanManager().getClan(clanId);
@@ -524,10 +526,10 @@ public class TerritoryListener implements Listener {
                 String ownerIdStr = container.get(ownerKey, org.bukkit.persistence.PersistentDataType.STRING);
                 UUID ownerId = UUID.fromString(ownerIdStr);
                 
-                // ✅ Bloka veri yaz
+                // ✅ DÜZELTME: CustomBlockData kütüphanesi ile PDC kullan (OAK_LOG TileState değil ama artık çalışıyor)
                 me.mami.stratocraft.util.CustomBlockData.setStructureCoreData(block, ownerId);
                 
-                // StructureCoreManager'a kaydet
+                // StructureCoreManager'a kaydet (memory'de tutulacak + PDC'ye de kaydediliyor)
                 me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
                 if (mainPlugin != null && mainPlugin.getStructureCoreManager() != null) {
                     mainPlugin.getStructureCoreManager().addInactiveCore(block.getLocation(), ownerId);
@@ -542,10 +544,10 @@ public class TerritoryListener implements Listener {
                 String ownerIdStr = container.get(ownerKey, org.bukkit.persistence.PersistentDataType.STRING);
                 UUID ownerId = UUID.fromString(ownerIdStr);
                 
-                // ✅ Bloka veri yaz
+                // ✅ DÜZELTME: CustomBlockData kütüphanesi ile PDC kullan (LODESTONE TileState değil ama artık çalışıyor)
                 me.mami.stratocraft.util.CustomBlockData.setTrapCoreData(block, ownerId);
                 
-                // TrapManager'a kaydet
+                // TrapManager'a kaydet (memory'de tutulacak + PDC'ye de kaydediliyor)
                 me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
                 if (mainPlugin != null && mainPlugin.getTrapManager() != null) {
                     mainPlugin.getTrapManager().registerInactiveTrapCore(block.getLocation(), ownerId);
@@ -1662,9 +1664,63 @@ public class TerritoryListener implements Listener {
                     breaker.sendMessage("§cKlan Kristalini sadece klan lideri kırabilir!");
                     return;
                 }
+                
+                // ✅ Lider kristali kırıyor - özel item drop EntityDeathEvent'te yapılacak
+                // Not: EnderCrystal entity olduğu için BlockBreakEvent değil, EntityDeathEvent kullanılacak
             } else {
                 // Doğal hasar (lava, patlama vb.) - engelle
                 event.setCancelled(true);
+            }
+        }
+    }
+    
+    /**
+     * ✅ YENİ: EnderCrystal öldüğünde özel item drop et (CLAN_CRYSTAL)
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onCrystalDeath(EntityDeathEvent event) {
+        if (!(event.getEntity() instanceof EnderCrystal)) return;
+        
+        EnderCrystal crystal = (EnderCrystal) event.getEntity();
+        
+        // Bu kristal bir klan kristali mi?
+        Clan owner = findClanByCrystal(crystal);
+        if (owner == null) return; // Normal end crystal
+        
+        // ✅ Normal drop'ları iptal et
+        event.getDrops().clear();
+        
+        // ✅ Özel item oluştur (END_CRYSTAL + PDC verisi)
+        ItemStack crystalItem = new ItemStack(Material.END_CRYSTAL);
+        org.bukkit.inventory.meta.ItemMeta meta = crystalItem.getItemMeta();
+        if (meta != null) {
+            // Display name ve lore ekle (ItemManager.registerClanCrystalRecipe() ile uyumlu)
+            meta.setDisplayName("§5§lKlan Kristali");
+            java.util.List<String> lore = new java.util.ArrayList<>();
+            lore.add("§7Klan bölgesinin merkezi.");
+            meta.setLore(lore);
+            
+            // ✅ PDC verisini ekle
+            org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
+            org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "clan_crystal");
+            container.set(key, org.bukkit.persistence.PersistentDataType.STRING, owner.getId().toString());
+            
+            // ✅ ItemManager.isClanItem() için custom_id ekle
+            org.bukkit.NamespacedKey customIdKey = new org.bukkit.NamespacedKey(me.mami.stratocraft.Main.getInstance(), "custom_id");
+            container.set(customIdKey, org.bukkit.persistence.PersistentDataType.STRING, "CLAN_CRYSTAL");
+            
+            crystalItem.setItemMeta(meta);
+        }
+        
+        // ✅ Özel item'ı drop et
+        crystal.getWorld().dropItemNaturally(crystal.getLocation(), crystalItem);
+        
+        // ✅ CustomBlockData'dan temizle (eğer blok olarak kaydedilmişse)
+        org.bukkit.Location crystalLoc = crystal.getLocation();
+        if (crystalLoc != null) {
+            org.bukkit.block.Block block = crystalLoc.getBlock();
+            if (block != null && block.getType() == Material.END_CRYSTAL) {
+                me.mami.stratocraft.util.CustomBlockData.removeClanCrystalData(block);
             }
         }
     }

@@ -1,8 +1,8 @@
 package me.mami.stratocraft.listener;
 
-import me.mami.stratocraft.enums.TrapType;
-import me.mami.stratocraft.manager.ItemManager;
-import me.mami.stratocraft.manager.TrapManager;
+import java.util.UUID;
+
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -11,12 +11,14 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import java.util.UUID;
+
+import me.mami.stratocraft.enums.TrapType;
+import me.mami.stratocraft.manager.ItemManager;
+import me.mami.stratocraft.manager.TrapManager;
 
 /**
  * Tuzak sistemi dinleyicisi:
@@ -72,14 +74,15 @@ public class TrapListener implements Listener {
 
             placeBlock.setType(Material.LODESTONE);
             
-            // ✅ YENİ: PersistentDataContainer kullan (metadata yerine)
+            // ✅ DÜZELTME: CustomBlockData kütüphanesi ile PDC kullan (LODESTONE TileState değil ama artık çalışıyor)
             me.mami.stratocraft.util.CustomBlockData.setTrapCoreData(placeBlock, player.getUniqueId());
             
             // ❌ ESKİ: Metadata kaldırıldı
             // placeBlock.setMetadata("TrapCoreItem", new org.bukkit.metadata.FixedMetadataValue(
             //         me.mami.stratocraft.Main.getInstance(), true));
 
-            // Metadata kalıcı olmadığı için dosyaya kaydet (sunucu restart sonrası için)
+            // ✅ Metadata kalıcı olmadığı için dosyaya kaydet (sunucu restart sonrası için)
+            // ✅ Memory'de tutulacak (registerInactiveTrapCore) + PDC'ye de kaydediliyor
             trapManager.registerInactiveTrapCore(placeBlock.getLocation(), player.getUniqueId());
 
             player.sendMessage("§a§lTuzak çekirdeği yerleştirildi!");
@@ -274,8 +277,33 @@ public class TrapListener implements Listener {
             return;
         }
         
-        // ✅ PersistentDataContainer'dan veri oku
-        UUID ownerId = me.mami.stratocraft.util.CustomBlockData.getTrapCoreOwner(block);
+        Location trapLoc = block.getLocation();
+        
+        // ✅ ÖNCE MEMORY'DEN KONTROL ET (TileState gerektirmez)
+        UUID ownerId = trapManager.getInactiveTrapCoreOwner(trapLoc);
+        
+        // ✅ Eğer memory'de yoksa, aktif tuzak kontrolü yap
+        if (ownerId == null) {
+            // Aktif tuzak var mı kontrol et (activeTraps Map'inden)
+            java.util.Map<org.bukkit.Location, me.mami.stratocraft.manager.TrapManager.TrapData> activeTraps = trapManager.getActiveTraps();
+            me.mami.stratocraft.manager.TrapManager.TrapData trapData = activeTraps.get(trapLoc);
+            if (trapData != null) {
+                ownerId = trapData.getOwnerId();
+            }
+        }
+        
+        // ✅ Eğer hala memory'de yoksa, PDC'den oku (chunk yüklüyse)
+        if (ownerId == null) {
+            try {
+                org.bukkit.Chunk chunk = trapLoc.getChunk();
+                if (chunk.isLoaded()) {
+                    ownerId = me.mami.stratocraft.util.CustomBlockData.getTrapCoreOwner(block);
+                }
+            } catch (Exception e) {
+                // Chunk yüklenemiyorsa atla
+            }
+        }
+        
         if (ownerId == null) {
             return; // Normal LODESTONE
         }
@@ -306,7 +334,7 @@ public class TrapListener implements Listener {
         // Not: removeTrap() zaten active trap'leri temizliyor, ama inactive trap core'ları da kontrol etmeliyiz
         // TrapManager'da inactiveTrapCores Map'i var, ama public metod yok, bu yüzden removeTrap() yeterli
         
-        // ✅ CustomBlockData'dan da temizle
+        // ✅ PERFORMANS: Cache temizleme ile birlikte veri silme
         me.mami.stratocraft.util.CustomBlockData.removeTrapCoreData(block);
     }
 }

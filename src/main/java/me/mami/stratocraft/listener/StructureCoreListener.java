@@ -348,8 +348,23 @@ public class StructureCoreListener implements Listener {
             return;
         }
         
-        // ✅ PersistentDataContainer'dan veri oku
-        UUID ownerId = me.mami.stratocraft.util.CustomBlockData.getStructureCoreOwner(block);
+        Location coreLoc = block.getLocation();
+        
+        // ✅ ÖNCE MEMORY'DEN KONTROL ET (TileState gerektirmez)
+        UUID ownerId = coreManager.getCoreOwner(coreLoc);
+        
+        // ✅ Eğer memory'de yoksa, PDC'den oku (chunk yüklüyse)
+        if (ownerId == null) {
+            try {
+                org.bukkit.Chunk chunk = coreLoc.getChunk();
+                if (chunk.isLoaded()) {
+                    ownerId = me.mami.stratocraft.util.CustomBlockData.getStructureCoreOwner(block);
+                }
+            } catch (Exception e) {
+                // Chunk yüklenemiyorsa atla
+            }
+        }
+        
         if (ownerId == null) {
             return; // Normal OAK_LOG
         }
@@ -374,7 +389,6 @@ public class StructureCoreListener implements Listener {
         }
         
         // ✅ Yapı çekirdeğini temizle (StructureCoreManager'dan)
-        Location coreLoc = block.getLocation();
         coreManager.removeStructure(coreLoc);
         
         // ✅ CustomBlockData'dan da temizle
@@ -404,10 +418,10 @@ public class StructureCoreListener implements Listener {
                     String ownerIdStr = container.get(ownerKey, org.bukkit.persistence.PersistentDataType.STRING);
                     UUID ownerId = UUID.fromString(ownerIdStr);
                     
-                    // ✅ Bloka veri yaz
+                    // ✅ DÜZELTME: CustomBlockData kütüphanesi ile PDC kullan (OAK_LOG TileState değil ama artık çalışıyor)
                     me.mami.stratocraft.util.CustomBlockData.setStructureCoreData(block, ownerId);
                     
-                    // StructureCoreManager'a kaydet
+                    // StructureCoreManager'a kaydet (memory'de tutulacak + PDC'ye de kaydediliyor)
                     coreManager.addInactiveCore(block.getLocation(), ownerId);
                 }
             }

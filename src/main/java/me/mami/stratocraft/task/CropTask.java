@@ -28,51 +28,51 @@ public class CropTask extends BukkitRunnable {
             for (Structure s : clan.getStructures()) {
                 if (s.getType() != Structure.Type.CROP_ACCELERATOR) continue;
                 
-                Location center = s.getLocation();
+                    Location center = s.getLocation();
                 if (center == null || center.getWorld() == null) continue;
                 
                 // ✅ OPTİMİZE: Chunk yüklü değilse atla
                 if (!center.getChunk().isLoaded()) continue;
                 
-                int radius = 15; // 15 blok yarıçap
-                int level = s.getLevel();
+                    int radius = 15; // 15 blok yarıçap
+                    int level = s.getLevel();
                 
                 // ✅ OPTİMİZE: Her seferinde sadece birkaç ekin büyüt (performans için)
                 int cropsProcessed = 0;
                 int maxCropsPerRun = 10; // Her çalışmada maksimum 10 ekin
-                
-                // Etraftaki ekinleri büyüt
+                    
+                    // Etraftaki ekinleri büyüt
                 for (int x = -radius; x <= radius && cropsProcessed < maxCropsPerRun; x++) {
                     for (int z = -radius; z <= radius && cropsProcessed < maxCropsPerRun; z++) {
-                        Block block = center.clone().add(x, 0, z).getBlock();
-                        Material type = block.getType();
-                        
-                        // Ekin kontrolü
-                        if (isCrop(type)) {
-                            // Modern API kullan (1.13+)
-                            if (type == Material.BEETROOTS || type == Material.CARROTS ||
-                                    type == Material.POTATOES || type == Material.WHEAT) {
-                                // Modern API için
-                                if (Math.random() < (0.1 + level * 0.05)) {
-                                    org.bukkit.block.data.Ageable ageable =
-                                            (org.bukkit.block.data.Ageable) block.getBlockData();
-                                    if (ageable.getAge() < ageable.getMaximumAge()) {
-                                        ageable.setAge(ageable.getAge() + 1);
-                                        block.setBlockData(ageable);
+                            Block block = center.clone().add(x, 0, z).getBlock();
+                            Material type = block.getType();
+                            
+                            // Ekin kontrolü
+                            if (isCrop(type)) {
+                                // Modern API kullan (1.13+)
+                                if (type == Material.BEETROOTS || type == Material.CARROTS ||
+                                        type == Material.POTATOES || type == Material.WHEAT) {
+                                    // Modern API için
+                                    if (Math.random() < (0.1 + level * 0.05)) {
+                                        org.bukkit.block.data.Ageable ageable =
+                                                (org.bukkit.block.data.Ageable) block.getBlockData();
+                                        if (ageable.getAge() < ageable.getMaximumAge()) {
+                                            ageable.setAge(ageable.getAge() + 1);
+                                            block.setBlockData(ageable);
 
-                                        block.getWorld().spawnParticle(
-                                                org.bukkit.Particle.VILLAGER_HAPPY,
-                                                block.getLocation().add(0.5, 0.5, 0.5),
-                                                3
-                                        );
+                                            block.getWorld().spawnParticle(
+                                                    org.bukkit.Particle.VILLAGER_HAPPY,
+                                                    block.getLocation().add(0.5, 0.5, 0.5),
+                                                    3
+                                            );
                                         cropsProcessed++;
-                                    }
                                 }
                             }
                         }
                     }
                 }
             }
+        }
         }
         
     }

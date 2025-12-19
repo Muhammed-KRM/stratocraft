@@ -316,7 +316,7 @@ public class BatteryManager {
                                 continue;
                             if (viewer.getWorld() == null || viewer.getWorld() != player.getWorld())
                                 continue;
-                            
+
                             // ✅ OPTİMİZE: Mesafe kontrolü - çok uzaktaki oyunculara partikül gösterme
                             Location viewerLoc = viewer.getLocation();
                             if (viewerLoc.distanceSquared(particleLoc) > maxViewDistance * maxViewDistance)

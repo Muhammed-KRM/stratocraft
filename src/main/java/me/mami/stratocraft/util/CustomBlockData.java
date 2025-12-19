@@ -7,12 +7,15 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.TileState;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+// ✅ CustomBlockData kütüphanesi (shade edildikten sonra aktif olacak)
+// import me.mami.stratocraft.lib.customblockdata.CustomBlockData;
 
 import java.util.UUID;
 
 /**
  * Özel Blok Veri Yönetimi
  * 
+ * ✅ YENİ: CustomBlockData kütüphanesi kullanılıyor (TileState olmayan bloklar için)
  * PersistentDataContainer kullanarak özel blok verilerini kalıcı şekilde tutar.
  * Server restart sonrası veriler korunur.
  */
@@ -28,17 +31,129 @@ public class CustomBlockData {
     private static final NamespacedKey TRAP_CORE_OWNER_KEY = new NamespacedKey("stratocraft", "trap_core_owner");
     private static final NamespacedKey CLAN_BANK_KEY = new NamespacedKey("stratocraft", "clan_bank");
     
+    // ✅ PERFORMANS: Reflection cache (reflection çağrıları pahalı)
+    private static Class<?> cachedCustomBlockDataClass = null;
+    private static java.lang.reflect.Constructor<?> cachedConstructor = null;
+    private static java.lang.reflect.Method cachedRegisterMethod = null;
+    private static final Object reflectionLock = new Object();
+    
+    // ✅ PERFORMANS: PDC container cache (Location bazlı, 5 saniye cache)
+    private static final java.util.Map<String, PersistentDataContainer> pdcCache = 
+        new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<String, Long> pdcCacheTime = 
+        new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long PDC_CACHE_DURATION = 5000L; // 5 saniye
+    
     /**
      * Plugin instance'ı set et (Main.java'da çağrılmalı)
+     * ✅ YENİ: CustomBlockData kütüphanesi listener'ını kaydet
+     * ✅ PERFORMANS: Reflection cache kullanılıyor
      */
     public static void initialize(Main mainPlugin) {
         plugin = mainPlugin;
+        // ✅ CustomBlockData kütüphanesi listener'ını kaydet (blok kırılınca otomatik temizlik)
+        synchronized (reflectionLock) {
+            try {
+                // ✅ PERFORMANS: Reflection cache kullan (ilk çağrıda cache'le)
+                if (cachedCustomBlockDataClass == null) {
+                    cachedCustomBlockDataClass = Class.forName("me.mami.stratocraft.lib.customblockdata.CustomBlockData");
+                    cachedRegisterMethod = cachedCustomBlockDataClass.getMethod("registerListener", org.bukkit.plugin.Plugin.class);
+                }
+                // Cache'den al ve çağır
+                if (cachedRegisterMethod != null) {
+                    cachedRegisterMethod.invoke(null, mainPlugin);
+                }
+            } catch (Exception e) {
+                // Kütüphane henüz yüklenmemiş olabilir, bu normal (build sonrası çalışacak)
+                mainPlugin.getLogger().info("CustomBlockData listener kaydedilemedi (build sonrası aktif olacak): " + e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * ✅ YENİ: CustomBlockData kütüphanesi ile PDC al (TileState olmayan bloklar için)
+     * ✅ PERFORMANS: Reflection cache + PDC cache kullanılıyor
+     */
+    private static PersistentDataContainer getCustomBlockDataContainer(Block block) {
+        if (block == null || plugin == null) return null;
+        
+        // ✅ PERFORMANS: Location bazlı cache key oluştur
+        String cacheKey = block.getWorld().getName() + ":" + block.getX() + ":" + block.getY() + ":" + block.getZ();
+        long now = System.currentTimeMillis();
+        
+        // ✅ Cache kontrolü
+        PersistentDataContainer cached = pdcCache.get(cacheKey);
+        Long cacheTime = pdcCacheTime.get(cacheKey);
+        if (cached != null && cacheTime != null && now - cacheTime < PDC_CACHE_DURATION) {
+            return cached; // Cache'den dön
+        }
+        
+        try {
+            synchronized (reflectionLock) {
+                // ✅ PERFORMANS: Reflection cache kullan (ilk çağrıda cache'le)
+                if (cachedCustomBlockDataClass == null) {
+                    cachedCustomBlockDataClass = Class.forName("me.mami.stratocraft.lib.customblockdata.CustomBlockData");
+                }
+                if (cachedConstructor == null) {
+                    cachedConstructor = cachedCustomBlockDataClass.getConstructor(
+                        org.bukkit.block.Block.class, 
+                        org.bukkit.plugin.Plugin.class
+                    );
+                }
+                
+                // Cache'den constructor'ı kullan
+                Object instance = cachedConstructor.newInstance(block, plugin);
+                PersistentDataContainer container = (PersistentDataContainer) instance;
+                
+                // ✅ Cache'e kaydet
+                pdcCache.put(cacheKey, container);
+                pdcCacheTime.put(cacheKey, now);
+                
+                return container;
+            }
+        } catch (ClassNotFoundException e) {
+            // Kütüphane henüz build edilmemiş, bu normal (maven build sonrası çalışacak)
+            return null;
+        } catch (Exception e) {
+            // Diğer hatalar
+            if (plugin != null) {
+                plugin.getLogger().fine("CustomBlockData container alınamadı: " + e.getMessage());
+            }
+            return null;
+        }
+    }
+    
+    /**
+     * ✅ PERFORMANS: PDC cache'i temizle (blok kırıldığında veya değiştiğinde)
+     */
+    public static void clearPDCCache(Block block) {
+        if (block == null) return;
+        String cacheKey = block.getWorld().getName() + ":" + block.getX() + ":" + block.getY() + ":" + block.getZ();
+        pdcCache.remove(cacheKey);
+        pdcCacheTime.remove(cacheKey);
+    }
+    
+    /**
+     * ✅ PERFORMANS: Periyodik cache temizleme (eski cache'leri sil)
+     */
+    public static void cleanupPDCCache() {
+        long now = System.currentTimeMillis();
+        java.util.Iterator<java.util.Map.Entry<String, Long>> iterator = pdcCacheTime.entrySet().iterator();
+        while (iterator.hasNext()) {
+            java.util.Map.Entry<String, Long> entry = iterator.next();
+            if (now - entry.getValue() > PDC_CACHE_DURATION) {
+                // Cache süresi dolmuş, temizle
+                pdcCache.remove(entry.getKey());
+                iterator.remove();
+            }
+        }
     }
     
     // ========== KLAN ÇİTİ METODLARI ==========
     
     /**
      * Klan çiti verisini kaydet
+     * ✅ DÜZELTME: CustomBlockData kütüphanesi kullanılıyor (OAK_FENCE TileState değil)
      * 
      * @param block Çit bloğu
      * @param clanId Klan ID'si (null olabilir)
@@ -48,24 +163,41 @@ public class CustomBlockData {
         if (block == null) return false;
         
         try {
+            // ✅ ÖNCE TileState kontrolü (TileState ise normal PDC kullan)
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                if (plugin != null) {
-                    plugin.getLogger().warning("Klan çiti verisi kaydedilemedi: Blok TileState değil");
-                }
-                return false;
-            }
+            PersistentDataContainer container = null;
+            boolean isTileState = false;
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
+            if (state instanceof TileState) {
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+                isTileState = true;
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan (cache ile)
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    if (plugin != null) {
+                        plugin.getLogger().warning("Klan çiti verisi kaydedilemedi: CustomBlockData container alınamadı");
+                    }
+                    return false;
+                }
+            }
             
             if (clanId != null) {
                 container.set(CLAN_FENCE_KEY, PersistentDataType.STRING, clanId.toString());
             } else {
                 container.remove(CLAN_FENCE_KEY);
+                // ✅ Cache'i temizle (veri silindi)
+                if (!isTileState) {
+                    clearPDCCache(block);
+                }
             }
             
-            tileState.update(); // ✅ KRİTİK: BlockState güncellemesi gerekli!
+            // ✅ TileState ise update() çağır
+            if (isTileState) {
+                ((TileState) state).update();
+            }
+            
             return true;
         } catch (Exception e) {
             if (plugin != null) {
@@ -77,6 +209,7 @@ public class CustomBlockData {
     
     /**
      * Klan çiti verisini oku
+     * ✅ DÜZELTME: CustomBlockData kütüphanesi kullanılıyor (OAK_FENCE TileState değil)
      * 
      * @param block Çit bloğu
      * @return Klan ID'si (yoksa null)
@@ -86,14 +219,21 @@ public class CustomBlockData {
         
         try {
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                return null;
+            PersistentDataContainer container = null;
+            
+            if (state instanceof TileState) {
+                // ✅ TileState ise normal PDC kullan
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    return null;
+                }
             }
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
-            
-            if (container.has(CLAN_FENCE_KEY, PersistentDataType.STRING)) {
+            if (container != null && container.has(CLAN_FENCE_KEY, PersistentDataType.STRING)) {
                 String clanIdStr = container.get(CLAN_FENCE_KEY, PersistentDataType.STRING);
                 return UUID.fromString(clanIdStr);
             }
@@ -123,6 +263,8 @@ public class CustomBlockData {
     
     /**
      * Klan çiti verisini temizle
+     * ✅ DÜZELTME: CustomBlockData kütüphanesi kullanılıyor (OAK_FENCE TileState değil)
+     * ✅ PERFORMANS: Cache temizleme
      * 
      * @param block Çit bloğu
      */
@@ -131,14 +273,32 @@ public class CustomBlockData {
         
         try {
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                return;
+            PersistentDataContainer container = null;
+            boolean isTileState = false;
+            
+            if (state instanceof TileState) {
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+                isTileState = true;
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan (cache ile)
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    return;
+                }
             }
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
-            container.remove(CLAN_FENCE_KEY);
-            tileState.update();
+            if (container != null) {
+                container.remove(CLAN_FENCE_KEY);
+                
+                // ✅ TileState ise update() çağır
+                if (isTileState) {
+                    ((TileState) state).update();
+                } else {
+                    // ✅ Cache'i temizle (veri silindi)
+                    clearPDCCache(block);
+                }
+            }
         } catch (Exception e) {
             if (plugin != null) {
                 plugin.getLogger().warning("Klan çiti verisi temizlenemedi: " + e.getMessage());
@@ -150,6 +310,7 @@ public class CustomBlockData {
     
     /**
      * Klan kristali verisini kaydet
+     * ✅ DÜZELTME: CustomBlockData kütüphanesi kullanılıyor (END_CRYSTAL TileState değil)
      * 
      * @param block Kristal bloğu
      * @param clanId Klan ID'si (null olabilir)
@@ -159,24 +320,41 @@ public class CustomBlockData {
         if (block == null) return false;
         
         try {
+            // ✅ ÖNCE TileState kontrolü (TileState ise normal PDC kullan)
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                if (plugin != null) {
-                    plugin.getLogger().warning("Klan kristali verisi kaydedilemedi: Blok TileState değil");
-                }
-                return false;
-            }
+            PersistentDataContainer container = null;
+            boolean isTileState = false;
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
+            if (state instanceof TileState) {
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+                isTileState = true;
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan (cache ile)
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    if (plugin != null) {
+                        plugin.getLogger().warning("Klan kristali verisi kaydedilemedi: CustomBlockData container alınamadı");
+                    }
+                    return false;
+                }
+            }
             
             if (clanId != null) {
                 container.set(CLAN_CRYSTAL_KEY, PersistentDataType.STRING, clanId.toString());
             } else {
                 container.remove(CLAN_CRYSTAL_KEY);
+                // ✅ Cache'i temizle (veri silindi)
+                if (!isTileState) {
+                    clearPDCCache(block);
+                }
             }
             
-            tileState.update();
+            // ✅ TileState ise update() çağır
+            if (isTileState) {
+                ((TileState) state).update();
+            }
+            
             return true;
         } catch (Exception e) {
             if (plugin != null) {
@@ -188,6 +366,7 @@ public class CustomBlockData {
     
     /**
      * Klan kristali verisini oku
+     * ✅ DÜZELTME: CustomBlockData kütüphanesi kullanılıyor (END_CRYSTAL TileState değil)
      * 
      * @param block Kristal bloğu
      * @return Klan ID'si (yoksa null)
@@ -197,14 +376,21 @@ public class CustomBlockData {
         
         try {
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                return null;
+            PersistentDataContainer container = null;
+            
+            if (state instanceof TileState) {
+                // ✅ TileState ise normal PDC kullan
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    return null;
+                }
             }
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
-            
-            if (container.has(CLAN_CRYSTAL_KEY, PersistentDataType.STRING)) {
+            if (container != null && container.has(CLAN_CRYSTAL_KEY, PersistentDataType.STRING)) {
                 String clanIdStr = container.get(CLAN_CRYSTAL_KEY, PersistentDataType.STRING);
                 return UUID.fromString(clanIdStr);
             }
@@ -232,6 +418,8 @@ public class CustomBlockData {
     
     /**
      * Klan kristali verisini temizle
+     * ✅ DÜZELTME: CustomBlockData kütüphanesi kullanılıyor (END_CRYSTAL TileState değil)
+     * ✅ PERFORMANS: Cache temizleme
      * 
      * @param block Kristal bloğu
      */
@@ -240,14 +428,32 @@ public class CustomBlockData {
         
         try {
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                return;
+            PersistentDataContainer container = null;
+            boolean isTileState = false;
+            
+            if (state instanceof TileState) {
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+                isTileState = true;
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan (cache ile)
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    return;
+                }
             }
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
-            container.remove(CLAN_CRYSTAL_KEY);
-            tileState.update();
+            if (container != null) {
+                container.remove(CLAN_CRYSTAL_KEY);
+                
+                // ✅ TileState ise update() çağır
+                if (isTileState) {
+                    ((TileState) state).update();
+                } else {
+                    // ✅ Cache'i temizle (veri silindi)
+                    clearPDCCache(block);
+                }
+            }
         } catch (Exception e) {
             if (plugin != null) {
                 plugin.getLogger().warning("Klan kristali verisi temizlenemedi: " + e.getMessage());
@@ -259,21 +465,32 @@ public class CustomBlockData {
     
     /**
      * Yapı çekirdeği verisini kaydet
+     * ✅ DÜZELTME: CustomBlockData kütüphanesi kullanılıyor (OAK_LOG TileState değil)
+     * ✅ PERFORMANS: Cache kullanılıyor
      */
     public static boolean setStructureCoreData(Block block, UUID ownerId) {
         if (block == null) return false;
         
         try {
+            // ✅ ÖNCE TileState kontrolü (TileState ise normal PDC kullan)
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                if (plugin != null) {
-                    plugin.getLogger().warning("Yapı çekirdeği verisi kaydedilemedi: Blok TileState değil");
-                }
-                return false;
-            }
+            PersistentDataContainer container = null;
+            boolean isTileState = false;
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
+            if (state instanceof TileState) {
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+                isTileState = true;
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan (cache ile)
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    if (plugin != null) {
+                        plugin.getLogger().warning("Yapı çekirdeği verisi kaydedilemedi: CustomBlockData container alınamadı");
+                    }
+                    return false;
+                }
+            }
             
             if (ownerId != null) {
                 container.set(STRUCTURE_CORE_KEY, PersistentDataType.BYTE, (byte) 1);
@@ -281,9 +498,17 @@ public class CustomBlockData {
             } else {
                 container.remove(STRUCTURE_CORE_KEY);
                 container.remove(STRUCTURE_CORE_OWNER_KEY);
+                // ✅ Cache'i temizle (veri silindi)
+                if (!isTileState) {
+                    clearPDCCache(block);
+                }
             }
             
-            tileState.update();
+            // ✅ TileState ise update() çağır
+            if (isTileState) {
+                ((TileState) state).update();
+            }
+            
             return true;
         } catch (Exception e) {
             if (plugin != null) {
@@ -295,20 +520,28 @@ public class CustomBlockData {
     
     /**
      * Yapı çekirdeği verisini oku
+     * ✅ DÜZELTME: CustomBlockData kütüphanesi kullanılıyor (OAK_LOG TileState değil)
      */
     public static UUID getStructureCoreOwner(Block block) {
         if (block == null) return null;
         
         try {
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                return null;
+            PersistentDataContainer container = null;
+            
+            if (state instanceof TileState) {
+                // ✅ TileState ise normal PDC kullan
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    return null;
+                }
             }
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
-            
-            if (container.has(STRUCTURE_CORE_OWNER_KEY, PersistentDataType.STRING)) {
+            if (container != null && container.has(STRUCTURE_CORE_OWNER_KEY, PersistentDataType.STRING)) {
                 String ownerIdStr = container.get(STRUCTURE_CORE_OWNER_KEY, PersistentDataType.STRING);
                 return UUID.fromString(ownerIdStr);
             }
@@ -324,6 +557,7 @@ public class CustomBlockData {
     
     /**
      * Yapı çekirdeği mi kontrol et
+     * ✅ DÜZELTME: CustomBlockData kütüphanesi kullanılıyor (OAK_LOG TileState değil)
      */
     public static boolean isStructureCore(Block block) {
         if (block == null || block.getType() != org.bukkit.Material.OAK_LOG) {
@@ -332,13 +566,21 @@ public class CustomBlockData {
         
         try {
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                return false;
+            PersistentDataContainer container = null;
+            
+            if (state instanceof TileState) {
+                // ✅ TileState ise normal PDC kullan
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    return false;
+                }
             }
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
-            return container.has(STRUCTURE_CORE_KEY, PersistentDataType.BYTE);
+            return container != null && container.has(STRUCTURE_CORE_KEY, PersistentDataType.BYTE);
         } catch (Exception e) {
             return false;
         }
@@ -346,21 +588,41 @@ public class CustomBlockData {
     
     /**
      * Yapı çekirdeği verisini temizle
+     * ✅ DÜZELTME: CustomBlockData kütüphanesi kullanılıyor (OAK_LOG TileState değil)
+     * ✅ PERFORMANS: Cache temizleme
      */
     public static void removeStructureCoreData(Block block) {
         if (block == null) return;
         
         try {
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                return;
+            PersistentDataContainer container = null;
+            boolean isTileState = false;
+            
+            if (state instanceof TileState) {
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+                isTileState = true;
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan (cache ile)
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    return;
+                }
             }
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
-            container.remove(STRUCTURE_CORE_KEY);
-            container.remove(STRUCTURE_CORE_OWNER_KEY);
-            tileState.update();
+            if (container != null) {
+                container.remove(STRUCTURE_CORE_KEY);
+                container.remove(STRUCTURE_CORE_OWNER_KEY);
+                
+                // ✅ TileState ise update() çağır
+                if (isTileState) {
+                    ((TileState) state).update();
+                } else {
+                    // ✅ Cache'i temizle (veri silindi)
+                    clearPDCCache(block);
+                }
+            }
         } catch (Exception e) {
             if (plugin != null) {
                 plugin.getLogger().warning("Yapı çekirdeği verisi temizlenemedi: " + e.getMessage());
@@ -372,21 +634,32 @@ public class CustomBlockData {
     
     /**
      * Tuzak çekirdeği verisini kaydet
+     * ✅ DÜZELTME: CustomBlockData kütüphanesi kullanılıyor (LODESTONE TileState değil)
+     * ✅ PERFORMANS: Cache kullanılıyor
      */
     public static boolean setTrapCoreData(Block block, UUID ownerId) {
         if (block == null) return false;
         
         try {
+            // ✅ ÖNCE TileState kontrolü (TileState ise normal PDC kullan)
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                if (plugin != null) {
-                    plugin.getLogger().warning("Tuzak çekirdeği verisi kaydedilemedi: Blok TileState değil");
-                }
-                return false;
-            }
+            PersistentDataContainer container = null;
+            boolean isTileState = false;
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
+            if (state instanceof TileState) {
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+                isTileState = true;
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan (cache ile)
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    if (plugin != null) {
+                        plugin.getLogger().warning("Tuzak çekirdeği verisi kaydedilemedi: CustomBlockData container alınamadı");
+                    }
+                    return false;
+                }
+            }
             
             if (ownerId != null) {
                 container.set(TRAP_CORE_KEY, PersistentDataType.BYTE, (byte) 1);
@@ -394,9 +667,17 @@ public class CustomBlockData {
             } else {
                 container.remove(TRAP_CORE_KEY);
                 container.remove(TRAP_CORE_OWNER_KEY);
+                // ✅ Cache'i temizle (veri silindi)
+                if (!isTileState) {
+                    clearPDCCache(block);
+                }
             }
             
-            tileState.update();
+            // ✅ TileState ise update() çağır
+            if (isTileState) {
+                ((TileState) state).update();
+            }
+            
             return true;
         } catch (Exception e) {
             if (plugin != null) {
@@ -408,20 +689,28 @@ public class CustomBlockData {
     
     /**
      * Tuzak çekirdeği verisini oku
+     * ✅ DÜZELTME: CustomBlockData kütüphanesi kullanılıyor (LODESTONE TileState değil)
      */
     public static UUID getTrapCoreOwner(Block block) {
         if (block == null) return null;
         
         try {
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                return null;
+            PersistentDataContainer container = null;
+            
+            if (state instanceof TileState) {
+                // ✅ TileState ise normal PDC kullan
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    return null;
+                }
             }
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
-            
-            if (container.has(TRAP_CORE_OWNER_KEY, PersistentDataType.STRING)) {
+            if (container != null && container.has(TRAP_CORE_OWNER_KEY, PersistentDataType.STRING)) {
                 String ownerIdStr = container.get(TRAP_CORE_OWNER_KEY, PersistentDataType.STRING);
                 return UUID.fromString(ownerIdStr);
             }
@@ -437,6 +726,7 @@ public class CustomBlockData {
     
     /**
      * Tuzak çekirdeği mi kontrol et
+     * ✅ DÜZELTME: CustomBlockData kütüphanesi kullanılıyor (LODESTONE TileState değil)
      */
     public static boolean isTrapCore(Block block) {
         if (block == null || block.getType() != org.bukkit.Material.LODESTONE) {
@@ -445,13 +735,21 @@ public class CustomBlockData {
         
         try {
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                return false;
+            PersistentDataContainer container = null;
+            
+            if (state instanceof TileState) {
+                // ✅ TileState ise normal PDC kullan
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    return false;
+                }
             }
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
-            return container.has(TRAP_CORE_KEY, PersistentDataType.BYTE);
+            return container != null && container.has(TRAP_CORE_KEY, PersistentDataType.BYTE);
         } catch (Exception e) {
             return false;
         }
@@ -459,21 +757,41 @@ public class CustomBlockData {
     
     /**
      * Tuzak çekirdeği verisini temizle
+     * ✅ DÜZELTME: CustomBlockData kütüphanesi kullanılıyor (LODESTONE TileState değil)
+     * ✅ PERFORMANS: Cache temizleme
      */
     public static void removeTrapCoreData(Block block) {
         if (block == null) return;
         
         try {
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                return;
+            PersistentDataContainer container = null;
+            boolean isTileState = false;
+            
+            if (state instanceof TileState) {
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+                isTileState = true;
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan (cache ile)
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    return;
+                }
             }
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
-            container.remove(TRAP_CORE_KEY);
-            container.remove(TRAP_CORE_OWNER_KEY);
-            tileState.update();
+            if (container != null) {
+                container.remove(TRAP_CORE_KEY);
+                container.remove(TRAP_CORE_OWNER_KEY);
+                
+                // ✅ TileState ise update() çağır
+                if (isTileState) {
+                    ((TileState) state).update();
+                } else {
+                    // ✅ Cache'i temizle (veri silindi)
+                    clearPDCCache(block);
+                }
+            }
         } catch (Exception e) {
             if (plugin != null) {
                 plugin.getLogger().warning("Tuzak çekirdeği verisi temizlenemedi: " + e.getMessage());
@@ -490,24 +808,41 @@ public class CustomBlockData {
         if (block == null) return false;
         
         try {
+            // ✅ ÖNCE TileState kontrolü (TileState ise normal PDC kullan)
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                if (plugin != null) {
-                    plugin.getLogger().warning("Klan bankası verisi kaydedilemedi: Blok TileState değil");
-                }
-                return false;
-            }
+            PersistentDataContainer container = null;
+            boolean isTileState = false;
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
+            if (state instanceof TileState) {
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+                isTileState = true;
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan (cache ile)
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    if (plugin != null) {
+                        plugin.getLogger().warning("Klan bankası verisi kaydedilemedi: CustomBlockData container alınamadı");
+                    }
+                    return false;
+                }
+            }
             
             if (clanId != null) {
                 container.set(CLAN_BANK_KEY, PersistentDataType.STRING, clanId.toString());
             } else {
                 container.remove(CLAN_BANK_KEY);
+                // ✅ Cache'i temizle (veri silindi)
+                if (!isTileState) {
+                    clearPDCCache(block);
+                }
             }
             
-            tileState.update();
+            // ✅ TileState ise update() çağır
+            if (isTileState) {
+                ((TileState) state).update();
+            }
+            
             return true;
         } catch (Exception e) {
             if (plugin != null) {
@@ -525,14 +860,21 @@ public class CustomBlockData {
         
         try {
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                return null;
+            PersistentDataContainer container = null;
+            
+            if (state instanceof TileState) {
+                // ✅ TileState ise normal PDC kullan
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    return null;
+                }
             }
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
-            
-            if (container.has(CLAN_BANK_KEY, PersistentDataType.STRING)) {
+            if (container != null && container.has(CLAN_BANK_KEY, PersistentDataType.STRING)) {
                 String clanIdStr = container.get(CLAN_BANK_KEY, PersistentDataType.STRING);
                 return UUID.fromString(clanIdStr);
             }
@@ -563,14 +905,32 @@ public class CustomBlockData {
         
         try {
             BlockState state = block.getState();
-            if (!(state instanceof TileState)) {
-                return;
+            PersistentDataContainer container = null;
+            boolean isTileState = false;
+            
+            if (state instanceof TileState) {
+                TileState tileState = (TileState) state;
+                container = tileState.getPersistentDataContainer();
+                isTileState = true;
+            } else {
+                // ✅ TileState değilse CustomBlockData kütüphanesi kullan (cache ile)
+                container = getCustomBlockDataContainer(block);
+                if (container == null) {
+                    return;
+                }
             }
             
-            TileState tileState = (TileState) state;
-            PersistentDataContainer container = tileState.getPersistentDataContainer();
-            container.remove(CLAN_BANK_KEY);
-            tileState.update();
+            if (container != null) {
+                container.remove(CLAN_BANK_KEY);
+                
+                // ✅ TileState ise update() çağır
+                if (isTileState) {
+                    ((TileState) state).update();
+                } else {
+                    // ✅ Cache'i temizle (veri silindi)
+                    clearPDCCache(block);
+                }
+            }
         } catch (Exception e) {
             if (plugin != null) {
                 plugin.getLogger().warning("Klan bankası verisi temizlenemedi: " + e.getMessage());

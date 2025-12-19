@@ -132,6 +132,11 @@ public class Main extends JavaPlugin {
         
         // CustomBlockData'yı başlat
         me.mami.stratocraft.util.CustomBlockData.initialize(this);
+        
+        // ✅ PERFORMANS: CustomBlockData PDC cache temizleme task'ı (her 5 dakika)
+        org.bukkit.Bukkit.getScheduler().runTaskTimer(this, () -> {
+            me.mami.stratocraft.util.CustomBlockData.cleanupPDCCache();
+        }, 6000L, 6000L); // 5 dakika = 6000 tick
 
         // Klasör Hazırlığı - WorldEdit'e bağımlı olmadan klasörleri oluştur
         try {
@@ -684,16 +689,21 @@ public class Main extends JavaPlugin {
             
             @org.bukkit.event.EventHandler
             public void onPlayerQuit(org.bukkit.event.player.PlayerQuitEvent event) {
-                if (disasterManager != null) {
-                    disasterManager.onPlayerQuit(event.getPlayer());
-                }
-                if (hudManager != null) {
-                    hudManager.onPlayerQuit(event.getPlayer());
-                }
-                // YENİ: StructureEffectManager - Oyuncu çıkışında yapı efektlerini kaldır
-                if (structureEffectManager != null) {
-                    structureEffectManager.onPlayerQuit(event.getPlayer());
-                }
+                // ✅ PERFORMANS: Oyuncu çıkış işlemlerini bir sonraki tick'te yap (sunucuyu bloklamasın)
+                // PlayerQuitEvent zaten async context'te değil, bu yüzden bir sonraki tick'te çalıştır
+                org.bukkit.Bukkit.getScheduler().runTask(me.mami.stratocraft.Main.this, () -> {
+                    org.bukkit.entity.Player player = event.getPlayer();
+                    if (disasterManager != null) {
+                        disasterManager.onPlayerQuit(player);
+                    }
+                    if (hudManager != null) {
+                        hudManager.onPlayerQuit(player);
+                    }
+                    // YENİ: StructureEffectManager - Oyuncu çıkışında yapı efektlerini kaldır
+                    if (structureEffectManager != null) {
+                        structureEffectManager.onPlayerQuit(player);
+                    }
+                });
             }
         }, this);
         

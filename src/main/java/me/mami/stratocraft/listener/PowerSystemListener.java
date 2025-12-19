@@ -340,7 +340,7 @@ public class PowerSystemListener implements Listener {
         
         for (Player player : onlinePlayers) {
             if (player != null && player.isOnline()) {
-                updatePlayerName(player);
+            updatePlayerName(player);
             }
         }
     }

@@ -63,13 +63,12 @@ public class StructureCoreManager {
         // GERİYE UYUMLULUK: Eski sistem
         inactiveCores.put(blockLoc, owner);
         
-        // ✅ YENİ: PersistentDataContainer kullan (metadata yerine)
-        // ✅ OPTİMİZE: Chunk yüklü mü kontrol et (chunk yükleme tetikleme önleme)
+        // ✅ DÜZELTME: CustomBlockData kütüphanesi ile PDC kullan (OAK_LOG TileState değil ama artık çalışıyor)
         Block block = blockLoc.getBlock();
         if (block != null && blockLoc.getWorld() != null) {
             org.bukkit.Chunk chunk = blockLoc.getChunk();
             if (chunk.isLoaded()) {
-                // Sadece chunk yüklüyse veri kaydet (TileState kontrolü CustomBlockData içinde)
+                // ✅ CustomBlockData kütüphanesi sayesinde artık OAK_LOG için de PDC kullanılabilir
                 me.mami.stratocraft.util.CustomBlockData.setStructureCoreData(block, owner);
             }
         }

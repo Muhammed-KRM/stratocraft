@@ -97,6 +97,8 @@ public class DisasterTask extends BukkitRunnable {
         
         // Süre doldu mu kontrol et (tüm felaketler için, öncelikli)
         if (disaster.isExpired()) {
+            // ✅ PERFORMANS: Felaket bittiğinde handler temizliği
+            cleanupDisasterHandlers(disaster);
             disaster.kill();
             disasterManager.setActiveDisaster(null);
             cleanupForceLoadedChunks();
@@ -108,6 +110,8 @@ public class DisasterTask extends BukkitRunnable {
         
         // Felaket ölü mü kontrol et (canlı felaketler için)
         if (disaster.isDead()) {
+            // ✅ PERFORMANS: Felaket bittiğinde handler temizliği
+            cleanupDisasterHandlers(disaster);
             cleanupForceLoadedChunks();
             return;
         }
@@ -169,6 +173,15 @@ public class DisasterTask extends BukkitRunnable {
     private void handleCreatureDisaster(Disaster disaster, Entity entity) {
         Location current = entity.getLocation();
         DisasterConfig config = getConfig(disaster);
+        
+        // ✅ ÖZEL AI: Tek boss felaketler için CustomBossAI kullan
+        boolean useCustomAI = disaster.getCreatureDisasterType() == Disaster.CreatureDisasterType.SINGLE_BOSS;
+        if (useCustomAI) {
+            me.mami.stratocraft.util.CustomBossAI.updateBossAI(entity, disaster, config);
+            // CustomBossAI zaten tüm hareket ve saldırıları yönetiyor, bu yüzden handler'ı atla
+            // Ancak faz sistemi ve diğer kontrolleri yapmaya devam et
+            // Handler çağrısını atla (aşağıda)
+        }
         
         // FAZ SİSTEMİ: Faz kontrolü ve geçişi
         if (phaseManager != null) {
@@ -494,15 +507,15 @@ public class DisasterTask extends BukkitRunnable {
                     }
                 }
                 
-                // Grup felaketler için oyuncu saldırısı (tüm entity'ler için)
+                // ✅ PERFORMANS: Grup felaketler için oyuncu saldırısı (daha az entity)
                 if (disaster.getTargetCrystal() == null || crystalDestroyed) {
                     // Klan yoksa veya kristal yok edildiyse oyunculara saldır
                     long attackInterval = config.getAttackInterval();
                     if (phaseManager != null && phaseManager.shouldAttackPlayers(disaster)) {
                         attackInterval = phaseManager.getAttackInterval(disaster);
                     }
-                    // Her entity için oyuncu saldırısı (performans için sadece birkaç entity)
-                    int attackCount = Math.min(groupEntities.size(), 10); // Her tick maksimum 10 entity saldırır
+                    // ✅ PERFORMANS: Daha az entity saldırır (10 -> 5)
+                    int attackCount = Math.min(groupEntities.size(), 5); // Her tick maksimum 5 entity saldırır
                     for (int i = 0; i < attackCount; i++) {
                         Entity e = groupEntities.get((int)(System.currentTimeMillis() % groupEntities.size()));
                         if (e != null && !e.isDead() && e.isValid()) {
@@ -524,21 +537,25 @@ public class DisasterTask extends BukkitRunnable {
             currentTarget = disaster.getTargetCrystal() != null ? disaster.getTargetCrystal() : disaster.getTarget();
         }
         
-        // Tek boss felaketler için handler kullan
-        if (handler != null) {
-            handler.handle(disaster, entity, config);
-        } else {
-            // Handler yoksa, manuel hareket
-            if (currentTarget != null) {
-                me.mami.stratocraft.util.DisasterBehavior.moveToTarget(entity, currentTarget, config);
+        // ✅ ÖZEL AI: CustomBossAI kullanıldığında handler'ı atla
+        if (!useCustomAI) {
+            // Tek boss felaketler için handler kullan (CustomBossAI kullanılmıyorsa)
+            if (handler != null) {
+                handler.handle(disaster, entity, config);
+            } else {
+                // Handler yoksa, manuel hareket
+                if (currentTarget != null) {
+                    me.mami.stratocraft.util.DisasterBehavior.moveToTarget(entity, currentTarget, config);
+                }
+            }
+            
+            // Özel yetenekleri kullan (faz bazlı)
+            me.mami.stratocraft.model.DisasterPhase currentPhase = disaster.getCurrentPhase();
+            if (currentPhase != null && handler != null) {
+                handler.useSpecialAbilities(disaster, entity, config, currentPhase);
             }
         }
-        
-        // Özel yetenekleri kullan (faz bazlı)
-        me.mami.stratocraft.model.DisasterPhase currentPhase = disaster.getCurrentPhase();
-        if (currentPhase != null && handler != null) {
-            handler.useSpecialAbilities(disaster, entity, config, currentPhase);
-        }
+        // CustomBossAI zaten tüm hareket, saldırı ve özel yetenekleri yönetiyor
         
         // Çevre değişimi (bazı felaketler için)
         if (handler != null) {
@@ -920,6 +937,19 @@ public class DisasterTask extends BukkitRunnable {
         DisasterConfig config = getConfig(disaster);
         DisasterHandler handler = handlerRegistry.getHandler(disaster.getType());
         handler.handle(disaster, null, config);
+    }
+    
+    /**
+     * ✅ PERFORMANS: Felaket handler'larını temizle (cache ve tick counter'ları)
+     */
+    private void cleanupDisasterHandlers(Disaster disaster) {
+        if (disaster == null) return;
+        
+        // MobInvasionHandler temizliği
+        DisasterHandler handler = handlerRegistry.getHandler(disaster.getType());
+        if (handler instanceof me.mami.stratocraft.handler.impl.MobInvasionHandler) {
+            ((me.mami.stratocraft.handler.impl.MobInvasionHandler) handler).cleanup(disaster);
+        }
     }
     
 }

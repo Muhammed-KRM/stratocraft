@@ -1442,11 +1442,30 @@ public class DataManager {
                     trapData.location.y = loc.getBlockY();
                     trapData.location.z = loc.getBlockZ();
                     trapData.ownerId = trap.getOwnerId() != null ? trap.getOwnerId().toString() : null;
-                    // KRİTİK DÜZELTME: clanId set et (SQLite NOT NULL constraint için)
-                    // ownerClanId'den al, eğer null ise boş string kullan (veritabanı hatası önleme)
+                    // ✅ DÜZELTME: clanId set et (SQLite NOT NULL constraint için)
+                    // Önce ownerClanId'den al, eğer null ise ownerId'den klan bul
                     String ownerClanIdStr = trap.getOwnerClanId() != null ? trap.getOwnerClanId().toString() : null;
-                    trapData.ownerClanId = ownerClanIdStr;
-                    trapData.clanId = ownerClanIdStr; // ✅ SQLite için clanId set et
+                    if (ownerClanIdStr == null && trap.getOwnerId() != null) {
+                        // ownerId'den klan bul (fallback) - Main plugin'ten TerritoryManager al
+                        try {
+                            me.mami.stratocraft.manager.TerritoryManager territoryManager = 
+                                plugin != null ? plugin.getTerritoryManager() : null;
+                            if (territoryManager != null && territoryManager.getClanManager() != null) {
+                                Clan ownerClan = territoryManager.getClanManager().getClanByPlayer(trap.getOwnerId());
+                                if (ownerClan != null) {
+                                    ownerClanIdStr = ownerClan.getId().toString();
+                                }
+                            }
+                        } catch (Exception e) {
+                            // TerritoryManager alınamadı, devam et (boş string kullanılacak)
+                        }
+                    }
+                    // Eğer hala null ise, boş string kullan (SQLite NOT NULL constraint için)
+                    if (ownerClanIdStr == null) {
+                        ownerClanIdStr = ""; // Boş string (veritabanı hatası önleme)
+                    }
+                    trapData.ownerClanId = ownerClanIdStr.isEmpty() ? null : ownerClanIdStr;
+                    trapData.clanId = ownerClanIdStr; // ✅ SQLite için clanId set et (boş string bile olsa)
                     trapData.type = trap.getType() != null ? trap.getType().name() : null;
                     trapData.fuel = trap.getFuel();
                     trapData.isCovered = trap.isCovered();

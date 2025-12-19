@@ -2,6 +2,7 @@ package me.mami.stratocraft.manager;
 
 import java.util.Collection;
 import java.util.Random;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -21,7 +22,6 @@ import me.mami.stratocraft.enums.DisasterType;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Disaster;
 import me.mami.stratocraft.model.DisasterPhase;
-import java.util.UUID;
 
 /**
  * Gelişmiş Felaket Yönetim Sistemi
@@ -507,6 +507,21 @@ public class DisasterManager {
                                       targetLoc, power.health, power.damage, duration);
         setDisasterTarget(activeDisaster);
         
+        // ✅ ÖZEL AI: Tek boss felaketler için CustomBossAI'yı başlat
+        if (entity != null && category == DisasterCategory.CREATURE) {
+            Disaster.CreatureDisasterType creatureType = Disaster.getCreatureDisasterType(convertToOldType(type));
+            if (creatureType == Disaster.CreatureDisasterType.SINGLE_BOSS) {
+                me.mami.stratocraft.model.DisasterConfig disasterConfig = null;
+                if (configManager != null) {
+                    disasterConfig = configManager.getConfig(convertToOldType(type), internalLevel);
+                }
+                if (disasterConfig == null) {
+                    disasterConfig = new me.mami.stratocraft.model.DisasterConfig();
+                }
+                me.mami.stratocraft.util.CustomBossAI.initializeBossAI(entity, activeDisaster, disasterConfig);
+            }
+        }
+        
         // Arena transformasyon başlat
         if (arenaManager != null && category == DisasterCategory.CREATURE) {
             // getId() metodu yok, UUID oluştur
@@ -685,14 +700,25 @@ public class DisasterManager {
                 activeDisaster.setTarget(currentTarget);
             }
             
-            // EnderDragon gibi özel entity'ler için hedefi hemen ayarla
+            // ✅ DÜZELTME: EnderDragon gibi özel entity'ler için spawn sonrası hemen hareket ettir
             if (entity instanceof org.bukkit.entity.EnderDragon) {
                 org.bukkit.entity.EnderDragon dragon = (org.bukkit.entity.EnderDragon) entity;
                 Location finalTarget = activeDisaster.getTargetCrystal() != null ? 
                     activeDisaster.getTargetCrystal() : activeDisaster.getTarget();
-                if (finalTarget != null) {
-                    // Dragon'un hedefini ayarla (ilk spawn'da hemen hareket etmesi için)
+                if (finalTarget != null && entity.getLocation().getWorld().equals(finalTarget.getWorld())) {
+                    // ✅ Dragon'un hedefini ayarla (ilk spawn'da hemen hareket etmesi için)
                     activeDisaster.setTarget(finalTarget);
+                    
+                    // ✅ DÜZELTME: Spawn sonrası hemen velocity ile hareket ettir (AI devre dışı olduğu için)
+                    org.bukkit.util.Vector direction = me.mami.stratocraft.util.DisasterUtils.calculateDirection(
+                        entity.getLocation(), finalTarget);
+                    double initialSpeed = 0.4; // İlk hareket için hızlı başlangıç
+                    org.bukkit.util.Vector initialVelocity = direction.multiply(initialSpeed);
+                    initialVelocity.setY(Math.max(0.2, direction.getY() * initialSpeed * 0.5)); // Uçması için
+                    dragon.setVelocity(initialVelocity);
+                    
+                    // Yüz yönlendirme
+                    me.mami.stratocraft.util.DisasterBehavior.faceTarget(entity, finalTarget);
                 }
             }
         }
@@ -750,14 +776,13 @@ public class DisasterManager {
         switch (type) {
             case CATASTROPHIC_TITAN:
                 // Felaket Titanı - 30 blok boyutunda dev golem
-                // IronGolem AI'sı var ve hareket edebilir, boyutunu scale ile büyütüyoruz
                 entity = world.spawnEntity(loc, EntityType.IRON_GOLEM);
                 entity.setCustomName("§4§lFELAKET TİTANI");
-                // IronGolem'i güçlendir ve boyutunu büyüt (30 blok = ~11 kat büyük)
+                // ✅ ÖZEL AI: Normal AI'yı devre dışı bırak
                 if (entity instanceof org.bukkit.entity.LivingEntity) {
                     org.bukkit.entity.LivingEntity living = (org.bukkit.entity.LivingEntity) entity;
+                    living.setAI(false); // Özel AI kullanılacak
                     // Boyut: Normal IronGolem ~2.7 blok, 30 blok için ~11.1 kat
-                    // GENERIC_SCALE sadece 1.20.5+ için var, eski versiyonlarda yok
                     try {
                         org.bukkit.attribute.Attribute scaleAttr = org.bukkit.attribute.Attribute.valueOf("GENERIC_SCALE");
                         if (living.getAttribute(scaleAttr) != null) {
@@ -781,8 +806,11 @@ public class DisasterManager {
             case CATASTROPHIC_ABYSSAL_WORM:
                 entity = world.spawnEntity(loc, EntityType.SILVERFISH);
                 entity.setCustomName("§5§lFELAKET HİÇLİK SOLUCANI");
+                // ✅ ÖZEL AI: Normal AI'yı devre dışı bırak
                 if (entity instanceof org.bukkit.entity.LivingEntity) {
-                    ((org.bukkit.entity.LivingEntity) entity).addPotionEffect(new org.bukkit.potion.PotionEffect(
+                    org.bukkit.entity.LivingEntity living = (org.bukkit.entity.LivingEntity) entity;
+                    living.setAI(false); // Özel AI kullanılacak
+                    living.addPotionEffect(new org.bukkit.potion.PotionEffect(
                         org.bukkit.potion.PotionEffectType.INVISIBILITY, 999999, 0, false, false));
                 }
                 break;
@@ -790,18 +818,29 @@ public class DisasterManager {
             case CATASTROPHIC_CHAOS_DRAGON:
                 entity = world.spawnEntity(loc, EntityType.ENDER_DRAGON);
                 entity.setCustomName("§5§lFELAKET KHAOS EJDERİ");
+                // ✅ ÖZEL AI: EnderDragon AI'sını devre dışı bırak (sadece felaket hareketlerini yapsın)
+                if (entity instanceof org.bukkit.entity.LivingEntity) {
+                    ((org.bukkit.entity.LivingEntity) entity).setAI(false);
+                }
                 break;
                 
             case CATASTROPHIC_VOID_TITAN:
                 entity = world.spawnEntity(loc, EntityType.WITHER);
                 entity.setCustomName("§8§lFELAKET BOŞLUK TİTANI");
+                // ✅ ÖZEL AI: Normal AI'yı devre dışı bırak
+                if (entity instanceof org.bukkit.entity.LivingEntity) {
+                    ((org.bukkit.entity.LivingEntity) entity).setAI(false);
+                }
                 break;
                 
             case CATASTROPHIC_ICE_LEVIATHAN:
                 entity = world.spawnEntity(loc, EntityType.ELDER_GUARDIAN);
                 entity.setCustomName("§b§lFELAKET BUZUL LEVİATHAN");
+                // ✅ ÖZEL AI: Normal AI'yı devre dışı bırak
                 if (entity instanceof org.bukkit.entity.LivingEntity) {
-                    ((org.bukkit.entity.LivingEntity) entity).addPotionEffect(new org.bukkit.potion.PotionEffect(
+                    org.bukkit.entity.LivingEntity living = (org.bukkit.entity.LivingEntity) entity;
+                    living.setAI(false); // Özel AI kullanılacak
+                    living.addPotionEffect(new org.bukkit.potion.PotionEffect(
                         org.bukkit.potion.PotionEffectType.SLOW, 999999, 0, false, false));
                 }
                 break;
@@ -848,7 +887,7 @@ public class DisasterManager {
             Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
             for (Player player : onlinePlayers) {
                 if (player != null && player.isOnline()) {
-                    disasterBossBar.addPlayer(player);
+                disasterBossBar.addPlayer(player);
                 }
             }
             
@@ -1936,6 +1975,7 @@ public class DisasterManager {
         // Performans kontrolü - max 500
         int actualCount = Math.min(count, 500);
         
+        // ✅ PERFORMANS: Spawn işlemini optimize et (batch spawn)
         // Spawn (config'den spawn radius ile)
         for (int i = 0; i < actualCount; i++) {
             // Config'den spawn radius ile rastgele konum
@@ -1947,6 +1987,11 @@ public class DisasterManager {
             entityLoc.setY(world.getHighestBlockYAt(entityLoc) + 1);
             
             org.bukkit.entity.Entity entity = world.spawnEntity(entityLoc, entityType);
+            
+            // ✅ PERFORMANS: AI'yı devre dışı bırak (sadece velocity ile hareket)
+            if (entity instanceof org.bukkit.entity.LivingEntity) {
+                ((org.bukkit.entity.LivingEntity) entity).setAI(false);
+            }
             
             // DisasterUtils ile güçlendirme (healthPercentage ile)
             me.mami.stratocraft.util.DisasterUtils.strengthenEntity(entity, config, power.multiplier * healthPercentage);

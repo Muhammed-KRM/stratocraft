@@ -436,6 +436,10 @@ public class DatabaseManager {
         transactionLock.lock();
         try {
             Connection conn = getConnection();
+            // ✅ DÜZELTME: Connection null veya kapalı kontrolü
+            if (conn == null || conn.isClosed()) {
+                throw new SQLException("Veritabanı bağlantısı kapalı veya null!");
+            }
             if (transactionDepth == 0) {
                 conn.setAutoCommit(false);
             }

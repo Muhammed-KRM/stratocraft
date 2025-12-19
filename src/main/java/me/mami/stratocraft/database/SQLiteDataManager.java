@@ -569,7 +569,15 @@ public class SQLiteDataManager {
      * ⚠️ NOT: Bu metod transaction içinde çağrılmalı (saveAll içinden)
      */
     public void saveTrapSnapshot(DataManager.TrapSnapshot snapshot, boolean inTransaction) throws SQLException {
-        if (snapshot == null || snapshot.activeTraps == null) return;
+        if (snapshot == null || snapshot.activeTraps == null) {
+            // ✅ DÜZELTME: Hiç trap yoksa transaction başlatma
+            return;
+        }
+        
+        // ✅ DÜZELTME: Trap sayısı 0 ise transaction başlatma
+        if (snapshot.activeTraps.isEmpty()) {
+            return;
+        }
         
         if (!inTransaction) {
             saveLock.lock();
@@ -623,10 +631,10 @@ public class SQLiteDataManager {
                         String[] parts = trap.id.split(":");
                         if (parts.length >= 4) {
                             try {
-                                world = parts[0];
-                                x = Integer.parseInt(parts[1]);
-                                y = Integer.parseInt(parts[2]);
-                                z = Integer.parseInt(parts[3]);
+                            world = parts[0];
+                            x = Integer.parseInt(parts[1]);
+                            y = Integer.parseInt(parts[2]);
+                            z = Integer.parseInt(parts[3]);
                             } catch (NumberFormatException e) {
                                 // Geçersiz format, bu tuzak kaydedilemez
                                 plugin.getLogger().warning("Tuzak kaydedilemedi: Geçersiz ID formatı (trap.id: " + trap.id + ")");
@@ -652,13 +660,35 @@ public class SQLiteDataManager {
                 stmt.executeBatch(); // ✅ OPTIMIZATION: Tüm batch'i bir seferde çalıştır
             }
             
+            // ✅ DÜZELTME: Sadece transaction başlatılmışsa commit et
             if (!inTransaction) {
-                databaseManager.commit();
+                // Transaction başlatılmış mı kontrol et
+                try {
+                    // ✅ DÜZELTME: conn zaten yukarıda tanımlı, yeniden tanımlama
+                    // conn null olamaz çünkü yukarıda getConnection() çağrıldı
+                    if (!conn.getAutoCommit()) {
+                        databaseManager.commit();
+                    }
+                } catch (SQLException commitEx) {
+                    // Transaction başlatılmamışsa sessizce geç
+                    if (commitEx.getMessage() != null && 
+                        commitEx.getMessage().contains("transaction başlatılmamış")) {
+                        // Transaction başlatılmamış, bu normal (hiç trap yoksa)
+                        plugin.getLogger().fine("Trap snapshot kaydı: Transaction başlatılmamış (hiç trap yok)");
+                    } else {
+                        throw commitEx;
+                    }
+                }
             }
             
         } catch (SQLException e) {
             if (!inTransaction) {
-                databaseManager.rollback();
+                try {
+                    databaseManager.rollback();
+                } catch (SQLException rollbackEx) {
+                    // Rollback hatası sessizce log'lanır
+                    plugin.getLogger().fine("Trap snapshot rollback hatası: " + rollbackEx.getMessage());
+                }
             }
             throw e;
         } finally {
@@ -928,15 +958,17 @@ public class SQLiteDataManager {
             } catch (SQLException beginEx) {
                 saveLock.unlock();
                 // ✅ DÜZELTME: onDisable sırasında bağlantı kapatılmış olabilir, bu normal
+                // ✅ DÜZELTME: Exception fırlatma yerine return (async context'te sorun çıkmasın)
                 if (beginEx.getMessage() != null && 
                     (beginEx.getMessage().contains("closed") || beginEx.getMessage().contains("Connection"))) {
                     plugin.getLogger().info("SQLite veritabanı bağlantısı kapalı, kayıt atlanıyor.");
                 } else {
                     plugin.getLogger().severe("SQLite transaction başlatma hatası: " + beginEx.getMessage());
                 }
-                throw beginEx;
+                return; // ✅ DÜZELTME: Exception fırlatma yerine return (async context'te sorun çıkmasın)
             }
             
+            // ✅ DÜZELTME: Transaction başlatıldıktan sonra snapshot'ları kaydet
             // Tüm snapshot'ları transaction içinde kaydet
             if (clanSnapshot != null) saveClanSnapshot(clanSnapshot, true);
             if (contractSnapshot != null) saveContractSnapshot(contractSnapshot, true);
@@ -950,13 +982,38 @@ public class SQLiteDataManager {
             if (requestSnapshot != null) saveContractRequestSnapshot(requestSnapshot, true);
             if (termsSnapshot != null) saveContractTermsSnapshot(termsSnapshot, true);
             
-            // ✅ DÜZELTME: Commit et (nested transaction desteği sayesinde güvenli)
+            // ✅ DÜZELTME: Commit et (sadece transaction başlatılmışsa)
             if (transactionStarted) {
-                databaseManager.commit();
-                transactionStarted = false; // Commit başarılı, rollback gerekmez
+                try {
+                    // ✅ DÜZELTME: Commit'ten önce connection kontrolü (bağlantı kapanmış olabilir)
+                    Connection testConn = databaseManager.getConnection();
+                    if (testConn == null || testConn.isClosed()) {
+                        plugin.getLogger().warning("SQLite veritabanı bağlantısı commit sırasında kapalı, rollback yapılıyor.");
+                        try {
+                            databaseManager.rollback();
+                        } catch (SQLException rollbackEx) {
+                            // Rollback hatası sessizce log'lanır
+                        }
+                        return; // Bağlantı kapalıysa commit yapma
+                    }
+                    
+                    databaseManager.commit();
+                    plugin.getLogger().info("§aTüm veriler SQLite'a kaydedildi.");
+                } catch (SQLException commitEx) {
+                    // ✅ DÜZELTME: "Commit çağrıldı ama transaction başlatılmamış!" hatası için özel kontrol
+                    if (commitEx.getMessage() != null && commitEx.getMessage().contains("transaction başlatılmamış")) {
+                        plugin.getLogger().warning("SQLite transaction durumu tutarsız, rollback yapılıyor: " + commitEx.getMessage());
+                        try {
+                            databaseManager.rollback();
+                        } catch (SQLException rollbackEx) {
+                            // Rollback hatası sessizce log'lanır
+                        }
+                        return; // Transaction tutarsız, exception fırlatma
+                    }
+                    throw commitEx; // Diğer hatalar için dış catch'e fırlat
+                }
             }
-            plugin.getLogger().info("§aTüm veriler SQLite'a kaydedildi.");
-            
+                
         } catch (SQLException e) {
             // ✅ DÜZELTME: Rollback et (sadece transaction başlatılmışsa)
             if (transactionStarted) {
@@ -967,7 +1024,8 @@ public class SQLiteDataManager {
                 }
             }
             plugin.getLogger().severe("SQLite kayıt hatası: " + e.getMessage());
-            throw e;
+            // ✅ DÜZELTME: Async context'te exception fırlatma yerine log yaz (DataManager zaten try-catch içinde)
+            // throw e; // Async context'te exception fırlatma sorun çıkarabilir
         } finally {
             saveLock.unlock();
         }

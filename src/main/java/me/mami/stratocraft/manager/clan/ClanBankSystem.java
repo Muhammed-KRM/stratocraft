@@ -198,7 +198,7 @@ public class ClanBankSystem {
         // EnderChest bir BlockState ama InventoryHolder değil
         // Klan bankası için sanal bir inventory oluştur
         try {
-            Inventory inventory = bankChestCache.get(clanId);
+        Inventory inventory = bankChestCache.get(clanId);
             if (inventory == null) {
                 // Yeni bir inventory oluştur (27 slot - ender chest boyutu)
                 inventory = org.bukkit.Bukkit.createInventory(null, 27, "§5Klan Bankası");

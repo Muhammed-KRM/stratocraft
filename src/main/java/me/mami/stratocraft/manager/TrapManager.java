@@ -14,7 +14,6 @@ import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.metadata.FixedMetadataValue;
 
 import me.mami.stratocraft.Main;
 import me.mami.stratocraft.model.block.TrapCoreBlock;
@@ -1259,10 +1258,14 @@ public class TrapManager {
                     trap.getFrameBlocks().addAll(frameBlocks);
                     activeTraps.put(loc, trap);
 
-                    // ✅ YENİ: PersistentDataContainer'a geri yükle
+                    // ✅ DÜZELTME: CustomBlockData kütüphanesi ile PDC kullan (LODESTONE TileState değil ama artık çalışıyor)
                     Block block = loc.getBlock();
-                    if (block.getType() == Material.LODESTONE) {
-                        me.mami.stratocraft.util.CustomBlockData.setTrapCoreData(block, ownerId);
+                    if (block != null && loc.getWorld() != null) {
+                        org.bukkit.Chunk chunk = loc.getChunk();
+                        if (chunk.isLoaded()) {
+                            // ✅ CustomBlockData kütüphanesi sayesinde artık LODESTONE için de PDC kullanılabilir
+                            me.mami.stratocraft.util.CustomBlockData.setTrapCoreData(block, ownerId);
+                        }
                     }
                     
                     // ❌ ESKİ: Metadata kaldırıldı
@@ -1437,7 +1440,7 @@ public class TrapManager {
         trap.getFrameBlocks().addAll(frameBlocks);
         activeTraps.put(coreLoc, trap);
 
-        // ✅ YENİ: PersistentDataContainer güncelle (aktif tuzak için)
+        // ✅ DÜZELTME: CustomBlockData kütüphanesi ile PDC kullan (LODESTONE TileState değil ama artık çalışıyor)
         me.mami.stratocraft.util.CustomBlockData.setTrapCoreData(coreBlock, player.getUniqueId());
         
         // ❌ ESKİ: Metadata kaldırıldı
