@@ -962,34 +962,50 @@ public class TerritoryListener implements Listener {
             return;
         }
         
-        // --- ALAN KONTROLÜ (FENCE CHECK) - ASYNC ---
-        event.setCancelled(true); // Önce iptal et, async kontrol sonrası devam edeceğiz
+        // --- ALAN KONTROLÜ (FENCE CHECK) - MAIN THREAD ---
+        event.setCancelled(true); // Önce iptal et, kontrol sonrası devam edeceğiz
         
-        // Async flood-fill kontrolü (büyük alanlar için main thread'i kilitlememek için)
+        // ✅ DÜZELTME: Main thread'de çalıştır (chunk yükleme ve PDC okuma için gerekli)
+        // Async context'te chunk yükleme ve blok state'i alma sorunlu olabilir
         Player finalPlayer = player;
         Block finalPlaceLocation = placeLocation;
-        org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(
-            me.mami.stratocraft.Main.getInstance(),
-            () -> {
-                boolean isValid = isSurroundedByClanFences3D(finalPlaceLocation);
-                
-                // Main thread'e geri dön
-                org.bukkit.Bukkit.getScheduler().runTask(
-                    me.mami.stratocraft.Main.getInstance(),
-                    () -> {
-                        if (!isValid) {
-                            finalPlayer.sendMessage("§cKlan Kristali sadece §6Klan Çitleri §cile tamamen çevrelenmiş güvenli bir alana kurulabilir!");
-                            return;
-                        }
-                        
-                        // --- KLAN KURULUMU ---
-                        continueCrystalPlacement(finalPlayer, finalPlaceLocation);
-                    }
-                );
-            }
-        );
         
-        return; // Async işlem başladı, buradan çık
+        // ✅ DÜZELTME: Önce tüm chunk'ları yükle (çit kontrolü için)
+        org.bukkit.Location crystalLoc = finalPlaceLocation.getLocation();
+        int radius = 20; // Çit kontrolü için yarıçap
+        java.util.Set<org.bukkit.Chunk> loadedChunks = new java.util.HashSet<>();
+        for (int x = -radius; x <= radius; x++) {
+            for (int z = -radius; z <= radius; z++) {
+                int chunkX = (crystalLoc.getBlockX() + x) >> 4;
+                int chunkZ = (crystalLoc.getBlockZ() + z) >> 4;
+                try {
+                    org.bukkit.Chunk chunk = crystalLoc.getWorld().getChunkAt(chunkX, chunkZ);
+                    if (!chunk.isLoaded()) {
+                        boolean loaded = chunk.load(false);
+                        if (loaded) {
+                            loadedChunks.add(chunk);
+                        }
+                    }
+                } catch (Exception e) {
+                    // Chunk yüklenemedi, devam et
+                    me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
+                    if (mainPlugin != null) {
+                        mainPlugin.getLogger().fine("Chunk yüklenemedi: " + chunkX + "," + chunkZ + " - " + e.getMessage());
+                    }
+                }
+            }
+        }
+        
+        // Main thread'de çit kontrolü yap
+        boolean isValid = isSurroundedByClanFences3D(finalPlaceLocation);
+        
+        if (!isValid) {
+            finalPlayer.sendMessage("§cKlan Kristali sadece §6Klan Çitleri §cile tamamen çevrelenmiş güvenli bir alana kurulabilir!");
+            return;
+        }
+        
+        // --- KLAN KURULUMU ---
+        continueCrystalPlacement(finalPlayer, finalPlaceLocation);
     }
     
     /**
@@ -1341,6 +1357,19 @@ public class TerritoryListener implements Listener {
                 
                 if (visited.contains(neighborLoc)) continue;
                 
+                // ✅ DÜZELTME: Chunk yükleme kontrolü (blok okumak için chunk yüklü olmalı)
+                // Not: Zaten önceden chunk'lar yükleniyor ama yine de kontrol edelim (güvenlik için)
+                org.bukkit.Chunk neighborChunk = neighbor.getChunk();
+                if (!neighborChunk.isLoaded()) {
+                    // Chunk yüklenmemiş, yükle (ama bu nadiren olmalı çünkü önceden yükleniyor)
+                    neighborChunk.load(false);
+                    // Chunk yüklenemediyse bu bloğu atla
+                    if (!neighborChunk.isLoaded()) {
+                        visited.add(neighborLoc);
+                        continue;
+                    }
+                }
+                
                 // ✅ YENİ: Yükseklik toleransı kontrolü
                 int heightDiff = Math.abs(neighbor.getY() - centerY);
                 if (heightDiff > heightTolerance) {
@@ -1535,13 +1564,17 @@ public class TerritoryListener implements Listener {
             return false;
         }
         
+        // ✅ DÜZELTME: Chunk yükleme kontrolü (PDC okumak için chunk yüklü olmalı)
+        // Not: getClanFenceData() zaten chunk yükleme kontrolü yapıyor, burada tekrar yapmaya gerek yok
+        // Ancak async context'te çalışıyorsak chunk yükleme gerekebilir
+        
         // ✅ YENİ: PersistentDataContainer kontrolü
         UUID clanId = me.mami.stratocraft.util.CustomBlockData.getClanFenceData(block);
         if (clanId != null) {
             return true; // Klan çiti
         }
         
-        // ✅ FALLBACK: TerritoryData kontrolü (backup)
+        // ✅ FALLBACK: TerritoryData kontrolü (backup - chunk yükleme gerektirmez)
         if (boundaryManager != null) {
             // TerritoryData'da bu konum var mı?
             org.bukkit.Location blockLoc = block.getLocation();

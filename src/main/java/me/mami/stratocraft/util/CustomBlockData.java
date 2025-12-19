@@ -1,16 +1,15 @@
 package me.mami.stratocraft.util;
 
-import me.mami.stratocraft.Main;
+import java.util.UUID;
+
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.TileState;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-// ✅ CustomBlockData kütüphanesi (shade edildikten sonra aktif olacak)
-// import me.mami.stratocraft.lib.customblockdata.CustomBlockData;
 
-import java.util.UUID;
+import me.mami.stratocraft.Main;
 
 /**
  * Özel Blok Veri Yönetimi
@@ -77,6 +76,13 @@ public class CustomBlockData {
     private static PersistentDataContainer getCustomBlockDataContainer(Block block) {
         if (block == null || plugin == null) return null;
         
+        // ✅ DÜZELTME: Chunk yükleme kontrolü (PDC okumak için chunk yüklü olmalı)
+        org.bukkit.Chunk chunk = block.getChunk();
+        if (!chunk.isLoaded()) {
+            // Chunk yüklenmemiş, yükle
+            chunk.load(false);
+        }
+        
         // ✅ PERFORMANS: Location bazlı cache key oluştur
         String cacheKey = block.getWorld().getName() + ":" + block.getX() + ":" + block.getY() + ":" + block.getZ();
         long now = System.currentTimeMillis();
@@ -99,6 +105,12 @@ public class CustomBlockData {
                         org.bukkit.block.Block.class, 
                         org.bukkit.plugin.Plugin.class
                     );
+                }
+                
+                // ✅ DÜZELTME: Chunk yüklü mü tekrar kontrol et (constructor çağrısından önce)
+                if (!chunk.isLoaded()) {
+                    // Chunk hala yüklenmemiş, container alınamaz
+                    return null;
                 }
                 
                 // Cache'den constructor'ı kullan
@@ -163,6 +175,20 @@ public class CustomBlockData {
         if (block == null) return false;
         
         try {
+            // ✅ DÜZELTME: Chunk yükleme kontrolü (PDC yazmak için chunk yüklü olmalı)
+            org.bukkit.Chunk chunk = block.getChunk();
+            if (!chunk.isLoaded()) {
+                // Chunk yüklenmemiş, yükle
+                chunk.load(false);
+                // Chunk yüklenemediyse hata dön
+                if (!chunk.isLoaded()) {
+                    if (plugin != null) {
+                        plugin.getLogger().warning("Klan çiti verisi kaydedilemedi: Chunk yüklenemedi");
+                    }
+                    return false;
+                }
+            }
+            
             // ✅ ÖNCE TileState kontrolü (TileState ise normal PDC kullan)
             BlockState state = block.getState();
             PersistentDataContainer container = null;
@@ -183,8 +209,19 @@ public class CustomBlockData {
                 }
             }
             
+            if (container == null) {
+                if (plugin != null) {
+                    plugin.getLogger().warning("Klan çiti verisi kaydedilemedi: Container null");
+                }
+                return false;
+            }
+            
             if (clanId != null) {
                 container.set(CLAN_FENCE_KEY, PersistentDataType.STRING, clanId.toString());
+                // ✅ Cache'i temizle (veri değişti)
+                if (!isTileState) {
+                    clearPDCCache(block);
+                }
             } else {
                 container.remove(CLAN_FENCE_KEY);
                 // ✅ Cache'i temizle (veri silindi)
@@ -202,6 +239,7 @@ public class CustomBlockData {
         } catch (Exception e) {
             if (plugin != null) {
                 plugin.getLogger().warning("Klan çiti verisi kaydedilemedi: " + e.getMessage());
+                e.printStackTrace();
             }
             return false;
         }
@@ -218,6 +256,18 @@ public class CustomBlockData {
         if (block == null) return null;
         
         try {
+            // ✅ DÜZELTME: Chunk yükleme kontrolü (PDC okumak için chunk yüklü olmalı)
+            org.bukkit.Chunk chunk = block.getChunk();
+            if (!chunk.isLoaded()) {
+                // Chunk yüklenmemiş, yükle
+                boolean loaded = chunk.load(false);
+                // Chunk yüklenemediyse null dön
+                if (!loaded || !chunk.isLoaded()) {
+                    return null; // Chunk yüklenemedi
+                }
+            }
+            
+            // ✅ DÜZELTME: State'i chunk yüklendikten sonra al (daha güvenilir)
             BlockState state = block.getState();
             PersistentDataContainer container = null;
             
@@ -229,13 +279,36 @@ public class CustomBlockData {
                 // ✅ TileState değilse CustomBlockData kütüphanesi kullan
                 container = getCustomBlockDataContainer(block);
                 if (container == null) {
-                    return null;
+                    // ✅ DÜZELTME: Container null ise, chunk yüklü mü tekrar kontrol et
+                    if (!chunk.isLoaded()) {
+                        return null; // Chunk yüklenemedi
+                    }
+                    // ✅ DÜZELTME: Container null ise, cache'i temizle ve tekrar dene
+                    clearPDCCache(block);
+                    container = getCustomBlockDataContainer(block);
+                    if (container == null) {
+                        return null; // Container alınamadı
+                    }
                 }
             }
             
-            if (container != null && container.has(CLAN_FENCE_KEY, PersistentDataType.STRING)) {
+            if (container == null) {
+                return null; // Container null
+            }
+            
+            if (container.has(CLAN_FENCE_KEY, PersistentDataType.STRING)) {
                 String clanIdStr = container.get(CLAN_FENCE_KEY, PersistentDataType.STRING);
-                return UUID.fromString(clanIdStr);
+                if (clanIdStr == null || clanIdStr.isEmpty()) {
+                    return null;
+                }
+                try {
+                    return UUID.fromString(clanIdStr);
+                } catch (IllegalArgumentException e) {
+                    if (plugin != null) {
+                        plugin.getLogger().warning("Klan çiti UUID formatı geçersiz: " + clanIdStr);
+                    }
+                    return null;
+                }
             }
             
             return null;
