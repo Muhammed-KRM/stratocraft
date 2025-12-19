@@ -21,7 +21,6 @@ import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.LivingEntity;
@@ -704,8 +703,7 @@ public class BossManager {
             p.damage(4.0, boss);
             Vector kb = p.getLocation().toVector().subtract(center.toVector()).normalize();
             kb.setY(0.4);
-                p.setVelocity(kb);
-            }
+            p.setVelocity(kb);
         }
     }
 

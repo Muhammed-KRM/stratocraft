@@ -1,10 +1,10 @@
 package me.mami.stratocraft.gui;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.manager.ClanManager;
-import me.mami.stratocraft.manager.clan.ClanBankSystem;
-import me.mami.stratocraft.manager.clan.ClanRankSystem;
-import me.mami.stratocraft.model.Clan;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -17,10 +17,11 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.manager.ClanManager;
+import me.mami.stratocraft.manager.clan.ClanBankSystem;
+import me.mami.stratocraft.manager.clan.ClanRankSystem;
+import me.mami.stratocraft.model.Clan;
 
 /**
  * Klan Bankası GUI Menüsü
@@ -374,9 +375,11 @@ public class ClanBankMenu implements Listener {
                 }
             }
             
-            if (playerClan != null) {
+            // ✅ DÜZELTME: Lambda için final değişken
+            final Clan finalPlayerClan = playerClan;
+            if (finalPlayerClan != null) {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    updateBankChest(player, playerClan);
+                    updateBankChest(player, finalPlayerClan);
                 }, 1L);
             }
         }
