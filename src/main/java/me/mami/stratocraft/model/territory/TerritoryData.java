@@ -229,37 +229,45 @@ public class TerritoryData extends BaseModel {
     public void calculateBoundaries() {
         boundaryCoordinates.clear();
         
-        if (fenceLocations.isEmpty() || center == null || center.getWorld() == null) {
+        // ✅ DÜZELTME: Center kontrolü (center yoksa hesaplayamayız)
+        if (center == null || center.getWorld() == null) {
             boundariesDirty = false;
             return;
         }
         
-        // ✅ DÜZELTME: Sadece kenarlara (sınırlara) partikül göster
-        // Radius bazlı sınır hesaplama (basit versiyon)
-        // Gerçek hesaplama TerritoryBoundaryManager'da yapılacak
-        int radius = getRadius();
-        if (radius <= 0) {
-            // Radius yoksa çitlerden hesapla
+        // ✅ DÜZELTME: Önce çitlerden hesapla (çitler varsa), yoksa radius'tan hesapla
+        // Çitler varsa çitlerin sınırından itibaren partikül gösterilmeli
+        if (!fenceLocations.isEmpty()) {
+            // ✅ DÜZELTME: Çitler varsa, çitlerden hesapla (radius'tan değil)
             for (Location fenceLoc : fenceLocations) {
                 if (fenceLoc == null || fenceLoc.getWorld() == null) continue;
                 if (!center.getWorld().equals(fenceLoc.getWorld())) continue;
                 boundaryCoordinates.add(fenceLoc.clone());
             }
         } else {
-            // ✅ DÜZELTME: Radius varsa, sadece kenarlara (sınırlara) partikül göster
-            // Daire çevresi boyunca partikül noktaları oluştur
-            // Her 2 blokta bir partikül (daha yoğun görünüm için)
-            int particleCount = (int) (radius * 2 * Math.PI / 2.0); // Her 2 blokta bir partikül
-            for (int i = 0; i < particleCount; i++) {
-                double angle = (2 * Math.PI * i) / particleCount;
-                double x = center.getX() + radius * Math.cos(angle);
-                double z = center.getZ() + radius * Math.sin(angle);
-                // ✅ DÜZELTME: Y koordinatını center'dan al (sınır çizgisi için)
-                // TerritoryBoundaryParticleTask'ta oyuncunun Y seviyesine göre ayarlanacak
-                Location boundaryLoc = new Location(center.getWorld(), x, center.getY(), z);
-                boundaryCoordinates.add(boundaryLoc);
+            // ✅ YENİ: Çitler yoksa, radius varsa radius'tan hesapla
+            int currentRadius = getRadius();
+            if (currentRadius > 0) {
+                // ✅ DÜZELTME: Radius varsa, çitler olmasa bile sınır çizgisi hesapla
+                // Daire çevresi boyunca partikül noktaları oluştur
+                // Her 2 blokta bir partikül (daha yoğun görünüm için)
+                int particleCount = (int) (currentRadius * 2 * Math.PI / 2.0); // Her 2 blokta bir partikül
+                // Minimum partikül sayısı (küçük radius'lar için)
+                if (particleCount < 8) {
+                    particleCount = 8; // En az 8 nokta (düzgün daire için)
+                }
+                for (int i = 0; i < particleCount; i++) {
+                    double angle = (2 * Math.PI * i) / particleCount;
+                    double x = center.getX() + currentRadius * Math.cos(angle);
+                    double z = center.getZ() + currentRadius * Math.sin(angle);
+                    // ✅ DÜZELTME: Y koordinatını center'dan al (sınır çizgisi için)
+                    // TerritoryBoundaryParticleTask'ta oyuncunun Y seviyesine göre ayarlanacak
+                    Location boundaryLoc = new Location(center.getWorld(), x, center.getY(), z);
+                    boundaryCoordinates.add(boundaryLoc);
+                }
             }
         }
+        // ✅ YENİ: Hem radius yok hem çit yoksa, boş liste döner (sınır gösterilmez)
         
         lastBoundaryUpdate = System.currentTimeMillis();
         boundariesDirty = false;

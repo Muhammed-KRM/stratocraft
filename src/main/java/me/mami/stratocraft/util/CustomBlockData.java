@@ -42,7 +42,7 @@ public class CustomBlockData {
     private static final java.util.Map<String, Long> pdcCacheTime = 
         new java.util.concurrent.ConcurrentHashMap<>();
     private static final long PDC_CACHE_DURATION = 5000L; // 5 saniye
-
+    
     /**
      * ✅ RUNTIME FALLBACK: Klan çitleri için memory işaretleme
      * 
@@ -287,9 +287,9 @@ public class CustomBlockData {
                 plugin.getLogger().info("[CustomBlockData.setClanFenceData] PDC'ye yazılıyor (CLAN_FENCE_KEY)");
             }
             container.set(CLAN_FENCE_KEY, PersistentDataType.BYTE, (byte) 1);
-            // ✅ Cache'i temizle (veri değişti)
-            if (!isTileState) {
-                clearPDCCache(block);
+                // ✅ Cache'i temizle (veri değişti)
+                if (!isTileState) {
+                    clearPDCCache(block);
             }
             
             // ✅ TileState ise update() çağır

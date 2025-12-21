@@ -81,11 +81,9 @@ public class TerritoryBoundaryParticleTask {
             return;
         }
         
-        int playerCount = 0;
         // ✅ OPTİMİZE: Sadece aynı dünyadaki oyuncuları kontrol et (performans)
         // Tüm online oyuncuları kontrol et
         for (Player player : Bukkit.getOnlinePlayers()) {
-            playerCount++;
             if (player == null || !player.isOnline()) continue;
             
             // Oyuncunun klanı var mı?
@@ -159,10 +157,13 @@ public class TerritoryBoundaryParticleTask {
             return;
         }
         
-        // ✅ OPTİMİZE: Mesafe kontrolü (squared kullan - performans)
+        // ✅ DÜZELTME: Mesafe kontrolü (squared kullan - performans)
+        // Sınıra yaklaşınca partikül gözükmemesi sorununu çözmek için
+        // visibleDistance kontrolünü kaldırdık, sadece maxParticleDistance kontrolü yeterli
         double distanceSquared = playerLoc.distanceSquared(center);
-        int visibleDistance = config.getBoundaryParticleVisibleDistance();
-        double maxVisibleDistance = visibleDistance + territoryData.getRadius();
+        int maxParticleDistance = config.getMaxParticleDistance();
+        double radius = territoryData.getRadius();
+        double maxVisibleDistance = maxParticleDistance + radius;
         double maxVisibleDistanceSquared = maxVisibleDistance * maxVisibleDistance;
         
         if (distanceSquared > maxVisibleDistanceSquared) {
@@ -171,12 +172,29 @@ public class TerritoryBoundaryParticleTask {
         
         // Sınır çizgisini al
         List<Location> boundaryLine = territoryData.getBoundaryLine();
-        if (boundaryLine.isEmpty()) {
-            return; // Sınır koordinatları yok
-        }
         
-        // ✅ OPTİMİZE: Daha seyrek partiküller (performans)
-        double spacing = Math.max(config.getBoundaryParticleSpacing(), 15.0); // Minimum 15 blok aralık
+        // ✅ YENİ: BoundaryLine boşsa ama radius varsa, dinamik olarak hesapla
+        // Çit olmasa bile sınırlar gösterilmeli
+        if (boundaryLine.isEmpty()) {
+            // ✅ DÜZELTME: radius zaten yukarıda tanımlı, tekrar tanımlama
+            if (radius > 0 && center != null && center.getWorld() != null) {
+                // Radius varsa, dinamik olarak sınır çizgisi oluştur
+                int particleCount = (int) (radius * 2 * Math.PI / 2.0); // Her 2 blokta bir partikül
+                if (particleCount < 8) {
+                    particleCount = 8; // En az 8 nokta
+                }
+                boundaryLine = new java.util.ArrayList<>();
+                for (int i = 0; i < particleCount; i++) {
+                    double angle = (2 * Math.PI * i) / particleCount;
+                    double x = center.getX() + radius * Math.cos(angle);
+                    double z = center.getZ() + radius * Math.sin(angle);
+                    Location boundaryLoc = new Location(center.getWorld(), x, center.getY(), z);
+                    boundaryLine.add(boundaryLoc);
+                }
+            } else {
+                return; // Sınır koordinatları yok ve radius da yok
+            }
+        }
         
         // ✅ OPTİMİZE: Sadece oyuncunun Y seviyesinde ve yakınında partikül göster
         int playerY = playerLoc.getBlockY();
@@ -190,43 +208,92 @@ public class TerritoryBoundaryParticleTask {
             playerY + yRange
         );
         
-        // Sınır boyunca partikül göster
+        // ✅ YENİ: Mesafeye göre yoğunluk ayarlı partikül sistemi
+        // Yakınlaştıkça en yakın olduğun yerdeki partiküller atsın, uzak yerdekiler azalsın
         int particleCount = 0;
         
         // ✅ OPTİMİZE: boundaryLine boyutunu kontrol et (çok büyükse sadece bir kısmını işle)
         int boundarySize = boundaryLine.size();
-        int maxBoundaryPoints = config.getMaxParticlesPerPlayer() * 2; // Partikül limitinin 2 katı kadar nokta kontrol et
+        int maxBoundaryPoints = config.getMaxParticlesPerPlayer() * 3; // Daha fazla nokta kontrol et (mesafeye göre filtreleme için)
+        
+        // ✅ DÜZELTME: maxParticleDistance zaten yukarıda tanımlı, tekrar tanımlama
+        double maxParticleDistanceSquared = maxParticleDistance * maxParticleDistance;
+        
+        // ✅ YENİ: Mesafeye göre yoğunluk faktörü hesaplama için minimum ve maksimum mesafeler
+        double minDensityDistance = 10.0; // 10 blok içinde maksimum yoğunluk
+        double maxDensityDistance = maxParticleDistance; // maxParticleDistance'te minimum yoğunluk
+        double densityRange = maxDensityDistance - minDensityDistance;
+        
+        // ✅ DÜZELTME: Oyuncuya en yakın sınır noktalarını önce işle
+        // boundaryLine içindeki noktaları oyuncuya göre mesafeye göre sırala
+        // Böylece oyuncuya yakın noktalar önce işlenir ve daha fazla partikül gösterilir
+        java.util.List<Location> sortedBoundaryLine = new java.util.ArrayList<>(boundaryLine);
+        sortedBoundaryLine.sort((loc1, loc2) -> {
+            double dist1Squared = playerLoc.distanceSquared(loc1);
+            double dist2Squared = playerLoc.distanceSquared(loc2);
+            return Double.compare(dist1Squared, dist2Squared);
+        });
         
         // ✅ OPTİMİZE: Her X-Z koordinatında, sadece oyuncunun Y seviyesinde partikül göster
         // Sadece ilk maxBoundaryPoints kadar noktayı kontrol et (performans için)
-        int pointsToCheck = Math.min(boundarySize, maxBoundaryPoints);
+        // Artık oyuncuya en yakın noktalar önce işlenecek
+        int pointsToCheck = Math.min(sortedBoundaryLine.size(), maxBoundaryPoints);
         for (int i = 0; i < pointsToCheck; i++) {
-            Location boundaryLoc = boundaryLine.get(i);
-            // ✅ YENİ: Config'den mesafe limitini al
-            int maxParticleDistance = config.getMaxParticleDistance();
+            Location boundaryLoc = sortedBoundaryLine.get(i);
             
             // ✅ OPTİMİZE: 2D mesafe kontrolü (squared kullan - performans)
             double dx = playerLoc.getX() - boundaryLoc.getX();
             double dz = playerLoc.getZ() - boundaryLoc.getZ();
             double distance2DSquared = dx * dx + dz * dz;
-            double maxParticleDistanceSquared = maxParticleDistance * maxParticleDistance;
-            double visibleDistanceSquared = visibleDistance * visibleDistance;
             
-            // ✅ YENİ: maxParticleDistance bloktan uzaktaki sınırları gösterme (performans - squared)
+            // ✅ DÜZELTME: visibleDistance kontrolü (squared - performans)
+            // Sınıra yaklaşınca partikül gözükmemesi sorununu çözmek için
+            // visibleDistance kontrolünü kaldırdık, sadece maxParticleDistance kontrolü yeterli
             if (distance2DSquared > maxParticleDistanceSquared) {
                 continue; // Çok uzak, bu sınır noktasını atla
             }
             
-            // ✅ YENİ: visibleDistance kontrolü (squared - performans)
-            if (distance2DSquared > visibleDistanceSquared) {
-                continue; // Config'den gelen mesafe limitinden uzak
+            // ✅ DÜZELTME: Mesafeye göre yoğunluk faktörü hesapla (0.0 - 1.0 arası)
+            // Yakın = 1.0 (her zaman göster), uzak = 0.1 (nadiren göster)
+            double distance2D = Math.sqrt(distance2DSquared);
+            double densityFactor;
+            if (distance2D <= minDensityDistance) {
+                densityFactor = 1.0; // Çok yakın, maksimum yoğunluk
+            } else if (distance2D >= maxDensityDistance) {
+                densityFactor = 0.1; // Çok uzak, minimum yoğunluk
+            } else {
+                // Lineer interpolasyon: yakın -> uzak (1.0 -> 0.1)
+                double normalizedDistance = (distance2D - minDensityDistance) / densityRange;
+                densityFactor = 1.0 - (normalizedDistance * 0.9); // 1.0'dan 0.1'e düş
             }
             
-            // ✅ OPTİMİZE: Daha seyrek partiküller (her 15+ blokta bir)
-            // Spacing kontrolü: Her N partikülden birini göster
-            if (particleCount > 0 && particleCount % (int) spacing != 0) {
-                particleCount++;
-                continue;
+            // ✅ DÜZELTME: Yoğunluk faktörüne göre partikül göster (rastgele kontrol)
+            // densityFactor = 1.0 ise %100 göster, 0.1 ise %10 göster
+            // Yakın = yüksek densityFactor = daha fazla göster
+            // Uzak = düşük densityFactor = daha az göster
+            // DÜZELTME: Math.random() < densityFactor kullan (doğru mantık)
+            // Math.random() 0.0-1.0 arası (1.0 dahil değil), densityFactor 0.1-1.0 arası
+            // densityFactor = 1.0 -> Math.random() < 1.0 her zaman true -> her zaman göster ✓
+            // densityFactor = 0.1 -> Math.random() < 0.1 sadece %10 ihtimalle true -> nadiren göster ✓
+            // ✅ DÜZELTME: Mantık hatası düzeltildi
+            // Math.random() < densityFactor -> göster
+            // Math.random() >= densityFactor -> gösterme (continue)
+            // densityFactor = 1.0 -> Math.random() < 1.0 her zaman true -> her zaman göster ✓
+            // densityFactor = 0.1 -> Math.random() < 0.1 sadece %10 ihtimalle true -> nadiren göster ✓
+            // NOT: if (Math.random() >= densityFactor) continue; YANLIŞ çünkü:
+            // - densityFactor = 1.0 -> Math.random() >= 1.0 asla true olmaz -> her zaman göster ✓ (doğru)
+            // - densityFactor = 0.1 -> Math.random() >= 0.1 çoğu zaman true -> çoğu zaman gösterilmez ✗ (yanlış, tersine çalışıyor)
+            // DOĞRUSU: if (Math.random() < densityFactor) göster, else continue
+            // Yani: if (Math.random() >= densityFactor) continue; YANLIŞ
+            // ÇÖZÜM: if (Math.random() < densityFactor) { /* göster */ } else { continue; }
+            // Ama daha basit: if (Math.random() >= densityFactor) continue; yerine
+            // if (Math.random() < densityFactor) { /* göster */ } else { continue; }
+            // Veya: if (Math.random() >= (1.0 - densityFactor + 0.1)) continue; (karmaşık)
+            // EN BASİT ÇÖZÜM: if (Math.random() < densityFactor) kullan
+            if (Math.random() < densityFactor) {
+                // Göster (yoğunluk faktörüne göre)
+            } else {
+                continue; // Bu sefer gösterme (yoğunluk faktörüne göre)
             }
             
             // ✅ OPTİMİZE: Sadece oyuncunun Y seviyesinde ve yakınında partikül göster
@@ -235,24 +302,46 @@ public class TerritoryBoundaryParticleTask {
             if (targetY < minY) targetY = minY;
             if (targetY > maxY) targetY = maxY;
             
-            // Sadece birkaç Y seviyesinde partikül göster (oyuncunun seviyesi ±2 blok)
-            for (int yOffset = -2; yOffset <= 2; yOffset += 2) {
+            // ✅ YENİ: Yoğunluk faktörüne göre Y seviyesi sayısını ayarla
+            // Yakın = daha fazla Y seviyesi, uzak = daha az Y seviyesi
+            int yLevels = (int) Math.max(1, Math.ceil(densityFactor * 3)); // 1-3 Y seviyesi
+            int yStep = yLevels > 1 ? 2 : 1; // 2 blok aralık
+            
+            // Sadece birkaç Y seviyesinde partikül göster (oyuncunun seviyesi ±yLevels blok)
+            for (int yOffset = -yLevels; yOffset <= yLevels; yOffset += yStep) {
                 int y = targetY + yOffset;
                 if (y < minY || y > maxY) continue;
                 
                 Location particleLoc = boundaryLoc.clone();
                 particleLoc.setY(y);
                 
-                // ✅ OPTİMİZE: 3D mesafe kontrolü (squared kullan - performans)
-                // Not: visibleDistanceSquared zaten yukarıda tanımlı (satır 210)
+                // ✅ DÜZELTME: 3D mesafe kontrolü (squared kullan - performans)
+                // Sınıra yaklaşınca partikül gözükmemesi sorununu çözmek için
+                // visibleDistance kontrolünü kaldırdık, sadece maxParticleDistance kontrolü yeterli
                 double distance3DSquared = playerLoc.distanceSquared(particleLoc);
-                if (distance3DSquared > visibleDistanceSquared) {
+                double maxParticleDistance3DSquared = maxParticleDistance * maxParticleDistance;
+                if (distance3DSquared > maxParticleDistance3DSquared) {
                     continue; // Çok uzak (3D mesafe)
                 }
                 
+                // ✅ YENİ: Yoğunluk faktörüne göre partikül sayısını ayarla
+                // Yakın = daha fazla partikül, uzak = daha az partikül
+                int particleAmount = (int) Math.max(1, Math.ceil(densityFactor * 2)); // 1-2 partikül
+                
                 // ✅ OPTİMİZE: Şeffaf, küçük partikül göster (görüşü kapatmayan)
-                // END_ROD: Küçük, şeffaf, görüşü kapatmayan
-                player.spawnParticle(Particle.END_ROD, particleLoc, 1, 0, 0, 0, 0);
+                // Config'den partikül tipini al
+                Particle particleType = config.getBoundaryParticleType();
+                org.bukkit.Color particleColor = config.getBoundaryParticleColor();
+                
+                if (particleType == Particle.REDSTONE && particleColor != null) {
+                    // REDSTONE partikülü için renk ayarla
+                    org.bukkit.Particle.DustOptions dustOptions = new org.bukkit.Particle.DustOptions(
+                        particleColor, 1.0f);
+                    player.spawnParticle(particleType, particleLoc, particleAmount, 0, 0, 0, 0, dustOptions);
+                } else {
+                    // Diğer partikül tipleri için normal spawn
+                    player.spawnParticle(particleType, particleLoc, particleAmount, 0, 0, 0, 0);
+                }
                 
                 particleCount++;
                 

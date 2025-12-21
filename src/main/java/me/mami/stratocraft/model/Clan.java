@@ -101,25 +101,99 @@ public class Clan {
     public void removeXP(int amount) { this.storedXP = Math.max(0, this.storedXP - amount); }
     
     public Location getCrystalLocation() { return crystalLocation; }
-    public void setCrystalLocation(Location loc) { 
+    public void setCrystalLocation(Location loc) {
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        if (plugin != null) {
+            plugin.getLogger().info("[CLAN] setCrystalLocation çağrıldı: " + getName() + 
+                ", location: " + (loc != null ? loc.toString() : "null") + 
+                ", mevcut hasCrystal: " + hasCrystal);
+        }
+        
         this.crystalLocation = loc;
+        // ✅ DÜZELTME: crystalLocation null ise hasCrystal false, değilse true
         this.hasCrystal = (loc != null);
+        
+        if (plugin != null) {
+            plugin.getLogger().info("[CLAN] setCrystalLocation tamamlandı: " + getName() + 
+                ", yeni hasCrystal: " + hasCrystal);
+        }
     }
+    
     public EnderCrystal getCrystalEntity() { return crystalEntity; }
+    
     public void setCrystalEntity(EnderCrystal crystal) { 
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        if (plugin != null) {
+            plugin.getLogger().info("[CLAN] setCrystalEntity çağrıldı: " + getName() + 
+                ", entity: " + (crystal != null ? crystal.getUniqueId() : "null") + 
+                ", mevcut hasCrystal: " + hasCrystal);
+        }
+        
         this.crystalEntity = crystal;
-        this.hasCrystal = (crystal != null);
+        // ✅ DÜZELTME: crystalEntity null ise hasCrystal false yapma, sadece crystalLocation kontrolü yeterli
+        // (crystalEntity null olabilir ama crystalLocation var olabilir - sunucu restart sonrası)
+        // hasCrystal'ı crystalLocation'dan çıkar
+        this.hasCrystal = (this.crystalLocation != null);
+        
+        if (plugin != null) {
+            plugin.getLogger().info("[CLAN] setCrystalEntity tamamlandı: " + getName() + 
+                ", yeni hasCrystal: " + hasCrystal + 
+                ", crystalLocation: " + (crystalLocation != null ? crystalLocation.toString() : "null"));
+        }
     }
     
     /**
      * Kristal yerleştirildi mi? (Ölümsüz klan önleme)
      */
-    public boolean hasCrystal() { return hasCrystal; }
+    public boolean hasCrystal() { 
+        // ✅ DÜZELTME: crystalLocation varsa hasCrystal true olmalı (crystalEntity null olsa bile)
+        boolean result = hasCrystal || (crystalLocation != null);
+        
+        // ✅ DEBUG: Tutarsızlık kontrolü
+        if (crystalLocation != null && !hasCrystal) {
+            me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+            if (plugin != null) {
+                plugin.getLogger().warning("[CLAN] hasCrystal() tutarsızlık tespit edildi: " + getName() + 
+                    " - crystalLocation var ama hasCrystal false! Düzeltiliyor...");
+            }
+            // Düzelt
+            this.hasCrystal = true;
+            return true;
+        }
+        
+        return result;
+    }
     
     /**
      * Kristal durumunu ayarla
      */
-    public void setHasCrystal(boolean hasCrystal) { this.hasCrystal = hasCrystal; }
+    public void setHasCrystal(boolean hasCrystal) { 
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        if (plugin != null) {
+            plugin.getLogger().info("[CLAN] setHasCrystal çağrıldı: " + getName() + 
+                ", hasCrystal: " + hasCrystal + 
+                ", mevcut crystalLocation: " + (crystalLocation != null ? crystalLocation.toString() : "null"));
+        }
+        
+        this.hasCrystal = hasCrystal;
+        
+        // ✅ DÜZELTME: hasCrystal false yapılıyorsa ve crystalLocation varsa, crystalLocation'ı null yap
+        // (Tutarsızlık önleme)
+        if (!hasCrystal && crystalLocation != null) {
+            if (plugin != null) {
+                plugin.getLogger().warning("[CLAN] setHasCrystal(false) çağrıldı ama crystalLocation var! " + 
+                    "crystalLocation null yapılıyor: " + getName());
+            }
+            this.crystalLocation = null;
+            this.crystalEntity = null;
+        }
+        
+        if (plugin != null) {
+            plugin.getLogger().info("[CLAN] setHasCrystal tamamlandı: " + getName() + 
+                ", hasCrystal: " + this.hasCrystal + 
+                ", crystalLocation: " + (crystalLocation != null ? crystalLocation.toString() : "null"));
+        }
+    }
     
     public boolean isGeneral(UUID uuid) {
         Rank rank = getRank(uuid);

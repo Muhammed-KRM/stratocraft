@@ -69,81 +69,203 @@ public class RitualInteractionListener implements Listener {
     
     @EventHandler(priority = EventPriority.HIGH)
     public void onRecruitmentRitual(PlayerInteractEvent event) {
+        // ✅ DEBUG: Event tetiklendi - her zaman log
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        Player player = event.getPlayer();
+        if (plugin != null) {
+            plugin.getLogger().info("[RITÜEL] Event tetiklendi - Oyuncu: " + player.getName() + 
+                ", Action: " + event.getAction() + ", Hand: " + event.getHand() + 
+                ", Sneaking: " + player.isSneaking() + ", Cancelled: " + event.isCancelled());
+        }
+        
+        // Event zaten cancel edilmişse işleme alma
+        if (event.isCancelled()) {
+            if (plugin != null) {
+                plugin.getLogger().info("[RITÜEL] Event zaten cancel edilmiş, işlem yapılmıyor");
+            }
+            return;
+        }
+        
         // Şartlar: Shift + Sağ Tık + Elde Çakmak
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        if (!event.getPlayer().isSneaking()) return;
-        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            if (plugin != null) {
+                plugin.getLogger().info("[RITÜEL] Action kontrolü başarısız: " + event.getAction() + " (beklenen: RIGHT_CLICK_BLOCK)");
+            }
+            return;
+        }
+        
+        if (!player.isSneaking()) {
+            if (plugin != null) {
+                plugin.getLogger().info("[RITÜEL] Shift kontrolü başarısız - Oyuncu shift'e basmıyor");
+            }
+            return;
+        }
+        
+        if (event.getHand() != EquipmentSlot.HAND) {
+            if (plugin != null) {
+                plugin.getLogger().info("[RITÜEL] El kontrolü başarısız: " + event.getHand() + " (beklenen: HAND)");
+            }
+            return;
+        }
         
         ItemStack handItem = event.getItem();
-        if (handItem == null || handItem.getType() != Material.FLINT_AND_STEEL) return;
+        if (plugin != null) {
+            plugin.getLogger().info("[RITÜEL] Elindeki item: " + 
+                (handItem != null ? handItem.getType() : "null"));
+        }
+        
+        if (handItem == null || handItem.getType() != Material.FLINT_AND_STEEL) {
+            if (plugin != null) {
+                plugin.getLogger().info("[RITÜEL] Çakmak kontrolü başarısız - Elinde: " + 
+                    (handItem != null ? handItem.getType() : "null") + " (beklenen: FLINT_AND_STEEL)");
+            }
+            return;
+        }
         
         Block centerBlock = event.getClickedBlock();
-        if (centerBlock == null) return;
+        if (centerBlock == null) {
+            if (plugin != null) {
+                plugin.getLogger().info("[RITÜEL] Blok kontrolü başarısız - centerBlock null");
+            }
+            return;
+        }
         
-        // Merkez blok "Soyulmuş Odun" (Stripped Log) olmalı
-        if (!isStrippedLog(centerBlock.getType())) return;
+        if (plugin != null) {
+            plugin.getLogger().info("[RITÜEL] Tıklanan blok: " + centerBlock.getType() + 
+                " @ " + centerBlock.getLocation());
+        }
         
-        Player leader = event.getPlayer();
+        // Tıklanan blok "Soyulmuş Odun" (Stripped Log) olmalı
+        if (!isStrippedLog(centerBlock.getType())) {
+            if (plugin != null) {
+                plugin.getLogger().info("[RITÜEL] Soyulmuş odun kontrolü başarısız - Blok tipi: " + centerBlock.getType());
+            }
+            return;
+        }
+        
+        Player leader = player;
         Clan clan = clanManager.getClanByPlayer(leader.getUniqueId());
         
         // Yetki Kontrolü
-        if (clan == null) return;
-        UUID leaderId = clan.getLeader();
-        if (leaderId == null || (!leaderId.equals(leader.getUniqueId()) && !clan.isGeneral(leader.getUniqueId()))) {
-            leader.sendMessage("§cBu ritüeli sadece Lider veya Generaller yapabilir!");
+        if (clan == null) {
+            if (plugin != null) {
+                plugin.getLogger().info("[RITÜEL] Klan kontrolü başarısız - Oyuncunun klanı yok");
+            }
+            return;
+        }
+        
+        // ✅ YETKİ KONTROLÜ: Elit, General veya Lider olmalı
+        Clan.Rank playerRank = clan.getRank(leader.getUniqueId());
+        if (playerRank == null || 
+            (playerRank != Clan.Rank.LEADER && 
+             playerRank != Clan.Rank.GENERAL && 
+             playerRank != Clan.Rank.ELITE)) {
+            if (plugin != null) {
+                plugin.getLogger().info("[RITÜEL] Yetki kontrolü başarısız - Oyuncu rütbesi: " + 
+                    (playerRank != null ? playerRank.name() : "null"));
+            }
+            leader.sendMessage("§cBu ritüeli sadece Elit, General veya Lider yapabilir!");
             event.setCancelled(true); // Ateş yakmasını engelle
             return;
         }
         
-        // 3x3 Alan Kontrolü
-        if (!checkRitualStructure(centerBlock)) {
-            // Yapı bozuksa ateş yakar geçer, ritüel tetiklenmez
+        if (plugin != null) {
+            plugin.getLogger().info("[RITÜEL] 5x5 çerçeve yapı kontrolü başlatılıyor...");
+        }
+        
+        // ✅ DÜZELTME: 5x5 çerçeve kontrolü (end portalı gibi - kenarlar dolu, içi boş)
+        // Tıklanan blok kenarda olmalı, çerçeveyi bul
+        RitualFrame frame = findRitualFrame(centerBlock);
+        if (frame == null) {
+            if (plugin != null) {
+                plugin.getLogger().info("[RITÜEL] Çerçeve bulunamadı - Tıklanan blok kenarda değil veya yapı bozuk");
+            }
+            leader.sendMessage("§cRitüel yapısı eksik! End portalı gibi 5x5 çerçeve gerekli (kenarlar soyulmuş odun, içi boş).");
             return;
+        }
+        
+        if (plugin != null) {
+            plugin.getLogger().info("[RITÜEL] Çerçeve bulundu! Merkez: " + frame.center + ", İç alan: " + 
+                frame.innerMinX + "," + frame.innerMinZ + " -> " + frame.innerMaxX + "," + frame.innerMaxZ);
+        }
+        
+        // Çerçeve kontrolü
+        String structureError = checkRitualFrameStructure(frame);
+        if (structureError != null) {
+            if (plugin != null) {
+                plugin.getLogger().info("[RITÜEL] Çerçeve kontrolü başarısız - " + structureError);
+            }
+            leader.sendMessage("§cRitüel yapısı eksik! " + structureError);
+            leader.sendMessage("§7End portalı gibi 5x5 çerçeve gerekli (kenarlar soyulmuş odun, içi boş).");
+            return;
+        }
+        
+        if (plugin != null) {
+            plugin.getLogger().info("[RITÜEL] Çerçeve kontrolü başarılı! Ritüel tetikleniyor...");
         }
         
         event.setCancelled(true); // Normal ateş yakmayı engelle, büyülü ateş yakıcaz
         
         // --- RİTÜEL BAŞARILI ---
-        // Karenin içindeki oyuncuları bul (centerBlock'un 1 blok yukarısındaki 3x3 alan)
-        Location centerLoc = centerBlock.getLocation().add(0.5, 1, 0.5);
+        // ✅ OPTİMİZASYON: World'ü cache'le
+        org.bukkit.World world = centerBlock.getWorld();
+        
+        // İç alanın merkezini bul (3x3 iç alan)
+        Location innerCenter = new Location(world, 
+            frame.innerMinX + 1.5, 
+            centerBlock.getY() + 1, 
+            frame.innerMinZ + 1.5);
         
         List<Player> recruitedPlayers = new ArrayList<>();
-        // 3x3 alan içindeki oyuncuları bul (1.5 blok yarıçap, 2 blok yükseklik)
-        for (Entity entity : centerBlock.getWorld().getNearbyEntities(centerLoc, 1.5, 2, 1.5)) {
-            if (entity instanceof Player) {
-                Player target = (Player) entity;
-                // Kendisi değilse ve klanı yoksa
-                if (!target.equals(leader) && clanManager.getClanByPlayer(target.getUniqueId()) == null) {
-                    recruitedPlayers.add(target);
+        // İç alandaki oyuncuları bul (3x3 alan, 2 blok yükseklik)
+        // ✅ OPTİMİZASYON: instanceof pattern kullan (Java 16+)
+        for (Entity entity : world.getNearbyEntities(innerCenter, 1.5, 2, 1.5)) {
+            if (entity instanceof Player target) {
+                // Kendisi değilse ve klanı yoksa veya farklı klandaysa
+                if (!target.equals(leader)) {
+                    Clan targetClan = clanManager.getClanByPlayer(target.getUniqueId());
+                    if (targetClan == null || !targetClan.equals(clan)) {
+                        recruitedPlayers.add(target);
+                    }
                 }
             }
         }
         
+        // ✅ DÜZELTME: Ritüel başarılı olduğunda oyuncu olmasa bile ses ve partikül çıkar
+        // Ateş efekti (her zaman göster) - çerçevenin merkezinde
+        if (plugin != null) {
+            plugin.getLogger().info("[RITÜEL] Ritüel başarılı! Partikül ve ses gösteriliyor...");
+        }
+        Location effectLoc = frame.center.getLocation().add(0.5, 1, 0.5);
+        world.spawnParticle(Particle.FLAME, effectLoc, 100, 1, 0.5, 1, 0.1);
+        world.playSound(effectLoc, Sound.BLOCK_BEACON_ACTIVATE, 1f, 0.5f);
+        
+        if (plugin != null) {
+            plugin.getLogger().info("[RITÜEL] Ritüel alanında bulunan klansız oyuncu sayısı: " + recruitedPlayers.size());
+        }
+        
         if (recruitedPlayers.isEmpty()) {
-            leader.sendMessage("§eRitüel alanında klansız kimse yok.");
-            return;
+            leader.sendMessage("§eRitüel tamamlandı, ancak alanında klansız kimse yok.");
+            if (plugin != null) {
+                plugin.getLogger().info("[RITÜEL] Ritüel tamamlandı ama oyuncu yok");
+            }
+            // Oyuncu olmasa bile ritüel başarılı sayılır, sadece kimse eklenmedi
+        } else {
+            // Oyuncuları Klana Ekle
+            for (Player newMember : recruitedPlayers) {
+                clanManager.addMember(clan, newMember.getUniqueId(), Clan.Rank.RECRUIT);
+                newMember.sendMessage("§6§l" + clan.getName() + " §eklanına ruhun bağlandı!");
+                newMember.getWorld().spawnParticle(Particle.FLAME, newMember.getLocation(), 50, 0.5, 1, 0.5, 0.1);
+                newMember.playSound(newMember.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 1f, 1f);
+                newMember.sendTitle("§a§lKLANA KATILDI", "§e" + clan.getName(), 10, 70, 20);
+            }
+            
+            leader.sendMessage("§aRitüel tamamlandı! " + recruitedPlayers.size() + " kişi katıldı.");
         }
         
-        // Oyuncuları Klana Ekle
-        for (Player newMember : recruitedPlayers) {
-            clanManager.addMember(clan, newMember.getUniqueId(), Clan.Rank.RECRUIT);
-            newMember.sendMessage("§6§l" + clan.getName() + " §eklanına ruhun bağlandı!");
-            newMember.getWorld().spawnParticle(Particle.FLAME, newMember.getLocation(), 50, 0.5, 1, 0.5, 0.1);
-            newMember.playSound(newMember.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 1f, 1f);
-            newMember.sendTitle("§a§lKLANA KATILDI", "§e" + clan.getName(), 10, 70, 20);
-        }
-        
-        // Ateş efekti
-        centerBlock.getWorld().spawnParticle(Particle.FLAME, centerLoc, 100, 1, 0.5, 1, 0.1);
-        centerBlock.getWorld().playSound(centerLoc, Sound.BLOCK_BEACON_ACTIVATE, 1f, 0.5f);
-        
-        leader.sendMessage("§aRitüel tamamlandı! " + recruitedPlayers.size() + " kişi katıldı.");
-        
-        // ✅ GÜÇ SİSTEMİ ENTEGRASYONU: Ritüel başarılı oldu
-        // ✅ NULL KONTROLÜ: Klan ve başarı kontrolü
-        if (clan != null && recruitedPlayers.size() > 0) {
-            me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
-            if (plugin != null && plugin.getStratocraftPowerSystem() != null) {
+        // ✅ GÜÇ SİSTEMİ ENTEGRASYONU: Ritüel başarılı oldu (oyuncu olmasa bile)
+        if (plugin != null) {
+            if (plugin.getStratocraftPowerSystem() != null) {
                 java.util.Map<String, Integer> usedResources = new java.util.HashMap<>();
                 usedResources.put("FLINT_AND_STEEL", 1); // Çakmak tüketildi
                 
@@ -154,8 +276,8 @@ public class RitualInteractionListener implements Listener {
                 );
             }
             
-            // ✅ KLAN GÖREV SİSTEMİ ENTEGRASYONU: Ritüel görevi ilerlemesi
-            if (plugin != null && plugin.getClanMissionSystem() != null) {
+            // ✅ KLAN GÖREV SİSTEMİ ENTEGRASYONU: Ritüel görevi ilerlemesi (oyuncu olmasa bile)
+            if (plugin.getClanMissionSystem() != null) {
                 try {
                     plugin.getClanMissionSystem().updateMissionProgress(
                         clan, 
@@ -177,16 +299,224 @@ public class RitualInteractionListener implements Listener {
         }
     }
     
-    // 3x3 Kare Kontrolü
-    private boolean checkRitualStructure(Block center) {
-        // Merkez zaten kontrol edildi. Etrafındaki 8 bloğa bak.
-        for (int x = -1; x <= 1; x++) {
-            for (int z = -1; z <= 1; z++) {
-                Block rel = center.getRelative(x, 0, z);
-                if (!isStrippedLog(rel.getType())) return false;
+    // ✅ YENİ: Ritüel çerçeve bilgisi
+    private static class RitualFrame {
+        Block center; // Çerçevenin merkez bloğu (kenardaki tıklanan bloktan hesaplanır)
+        int minX, maxX, minZ, maxZ; // Çerçevenin sınırları (5x5)
+        int innerMinX, innerMaxX, innerMinZ, innerMaxZ; // İç alan sınırları (3x3)
+        
+        RitualFrame(Block center, int minX, int maxX, int minZ, int maxZ) {
+            this.center = center;
+            this.minX = minX;
+            this.maxX = maxX;
+            this.minZ = minZ;
+            this.maxZ = maxZ;
+            // İç alan: kenarlar hariç (1 blok içeride)
+            this.innerMinX = minX + 1;
+            this.innerMaxX = maxX - 1;
+            this.innerMinZ = minZ + 1;
+            this.innerMaxZ = maxZ - 1;
+        }
+    }
+    
+    // ✅ YENİ: Tıklanan bloktan 5x5 çerçeveyi bul (soyulmuş odun için)
+    // Tıklanan blok kenarda olmalı, çerçeveyi bulmak için tıklanan bloktan başlayarak 5x5 çerçeve kontrol eder
+    private RitualFrame findRitualFrame(Block clickedBlock) {
+        return findRitualFrame(clickedBlock, true); // true = soyulmuş odun
+    }
+    
+    // ✅ YENİ: Tıklanan bloktan 5x5 çerçeveyi bul (taş tuğla veya soyulmuş odun)
+    private RitualFrame findRitualFrame(Block clickedBlock, boolean useStrippedLog) {
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        
+        int clickedX = clickedBlock.getX();
+        int clickedZ = clickedBlock.getZ();
+        int clickedY = clickedBlock.getY();
+        org.bukkit.World world = clickedBlock.getWorld();
+        
+        // ✅ OPTİMİZASYON: Tıklanan blok kenarda olmalı, çerçeveyi bulmak için
+        // Tıklanan blok çerçevenin herhangi bir kenarında olabilir
+        // 5x5 çerçeve için, tıklanan blok çerçevenin 0-4 pozisyonunda olabilir
+        
+        // Çerçeve bulma: Tıklanan bloktan başlayarak 5x5 çerçeve olup olmadığını kontrol et
+        // Tıklanan blok köşe olabilir (offsetX=0 veya 4, offsetZ=0 veya 4)
+        // Tıklanan blok kenar olabilir (offsetX=0-4, offsetZ=0 veya 4, veya offsetX=0 veya 4, offsetZ=0-4)
+        
+        for (int offsetX = 0; offsetX <= 4; offsetX++) {
+            for (int offsetZ = 0; offsetZ <= 4; offsetZ++) {
+                int minX = clickedX - offsetX;
+                int maxX = minX + 4;
+                int minZ = clickedZ - offsetZ;
+                int maxZ = minZ + 4;
+                
+                // Çerçeve kontrolü: kenarlar soyulmuş odun veya taş tuğla olmalı
+                boolean isValidFrame = true;
+                
+                // Üst kenar (minZ) - 5 blok
+                for (int x = minX; x <= maxX && isValidFrame; x++) {
+                    Block b = world.getBlockAt(x, clickedY, minZ);
+                    if (useStrippedLog) {
+                        if (!isStrippedLog(b.getType())) {
+                            isValidFrame = false;
+                        }
+                    } else {
+                        if (b.getType() != Material.STONE_BRICKS) {
+                            isValidFrame = false;
+                        }
+                    }
+                }
+                if (!isValidFrame) continue;
+                
+                // Alt kenar (maxZ) - 5 blok
+                for (int x = minX; x <= maxX && isValidFrame; x++) {
+                    Block b = world.getBlockAt(x, clickedY, maxZ);
+                    if (useStrippedLog) {
+                        if (!isStrippedLog(b.getType())) {
+                            isValidFrame = false;
+                        }
+                    } else {
+                        if (b.getType() != Material.STONE_BRICKS) {
+                            isValidFrame = false;
+                        }
+                    }
+                }
+                if (!isValidFrame) continue;
+                
+                // Sol kenar (minX) - 3 blok (köşeler hariç)
+                for (int z = minZ + 1; z < maxZ && isValidFrame; z++) {
+                    Block b = world.getBlockAt(minX, clickedY, z);
+                    if (useStrippedLog) {
+                        if (!isStrippedLog(b.getType())) {
+                            isValidFrame = false;
+                        }
+                    } else {
+                        if (b.getType() != Material.STONE_BRICKS) {
+                            isValidFrame = false;
+                        }
+                    }
+                }
+                if (!isValidFrame) continue;
+                
+                // Sağ kenar (maxX) - 3 blok (köşeler hariç)
+                for (int z = minZ + 1; z < maxZ && isValidFrame; z++) {
+                    Block b = world.getBlockAt(maxX, clickedY, z);
+                    if (useStrippedLog) {
+                        if (!isStrippedLog(b.getType())) {
+                            isValidFrame = false;
+                        }
+                    } else {
+                        if (b.getType() != Material.STONE_BRICKS) {
+                            isValidFrame = false;
+                        }
+                    }
+                }
+                if (!isValidFrame) continue;
+                
+                // Çerçeve bulundu! Merkez bloğu hesapla (kenardan 2 blok içeride)
+                Block centerBlock = world.getBlockAt(minX + 2, clickedY, minZ + 2);
+                if (plugin != null) {
+                    plugin.getLogger().info("[RITÜEL] Çerçeve bulundu: " + minX + "," + minZ + " -> " + maxX + "," + maxZ + 
+                        " (Tıklanan: " + clickedX + "," + clickedZ + ")");
+                }
+                return new RitualFrame(centerBlock, minX, maxX, minZ, maxZ);
             }
         }
-        return true;
+        
+        if (plugin != null) {
+            plugin.getLogger().info("[RITÜEL] Çerçeve bulunamadı - Tıklanan blok: " + clickedX + "," + clickedZ);
+        }
+        return null; // Çerçeve bulunamadı
+    }
+    
+    // ✅ YENİ: 5x5 çerçeve yapısını kontrol et (kenarlar dolu, içi boş)
+    private String checkRitualFrameStructure(RitualFrame frame) {
+        return checkRitualFrameStructure(frame, true); // true = soyulmuş odun
+    }
+    
+    // ✅ YENİ: 5x5 çerçeve yapısını kontrol et (taş tuğla veya soyulmuş odun)
+    private String checkRitualFrameStructure(RitualFrame frame, boolean useStrippedLog) {
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        org.bukkit.World world = frame.center.getWorld();
+        int y = frame.center.getY();
+        
+        java.util.List<String> errors = new java.util.ArrayList<>();
+        
+        // Kenarları kontrol et (soyulmuş odun veya taş tuğla olmalı)
+        // Üst kenar (minZ)
+        for (int x = frame.minX; x <= frame.maxX; x++) {
+            Block b = world.getBlockAt(x, y, frame.minZ);
+            if (useStrippedLog) {
+                if (!isStrippedLog(b.getType())) {
+                    errors.add("Üst kenar (" + x + "," + frame.minZ + "): " + b.getType());
+                }
+            } else {
+                if (b.getType() != Material.STONE_BRICKS) {
+                    errors.add("Üst kenar (" + x + "," + frame.minZ + "): " + b.getType());
+                }
+            }
+        }
+        
+        // Alt kenar (maxZ)
+        for (int x = frame.minX; x <= frame.maxX; x++) {
+            Block b = world.getBlockAt(x, y, frame.maxZ);
+            if (useStrippedLog) {
+                if (!isStrippedLog(b.getType())) {
+                    errors.add("Alt kenar (" + x + "," + frame.maxZ + "): " + b.getType());
+                }
+            } else {
+                if (b.getType() != Material.STONE_BRICKS) {
+                    errors.add("Alt kenar (" + x + "," + frame.maxZ + "): " + b.getType());
+                }
+            }
+        }
+        
+        // Sol kenar (minX)
+        for (int z = frame.minZ + 1; z < frame.maxZ; z++) {
+            Block b = world.getBlockAt(frame.minX, y, z);
+            if (useStrippedLog) {
+                if (!isStrippedLog(b.getType())) {
+                    errors.add("Sol kenar (" + frame.minX + "," + z + "): " + b.getType());
+                }
+            } else {
+                if (b.getType() != Material.STONE_BRICKS) {
+                    errors.add("Sol kenar (" + frame.minX + "," + z + "): " + b.getType());
+                }
+            }
+        }
+        
+        // Sağ kenar (maxX)
+        for (int z = frame.minZ + 1; z < frame.maxZ; z++) {
+            Block b = world.getBlockAt(frame.maxX, y, z);
+            if (useStrippedLog) {
+                if (!isStrippedLog(b.getType())) {
+                    errors.add("Sağ kenar (" + frame.maxX + "," + z + "): " + b.getType());
+                }
+            } else {
+                if (b.getType() != Material.STONE_BRICKS) {
+                    errors.add("Sağ kenar (" + frame.maxX + "," + z + "): " + b.getType());
+                }
+            }
+        }
+        
+        // İç alanı kontrol et (boş olmalı - AIR veya hava olmalı)
+        for (int x = frame.innerMinX; x <= frame.innerMaxX; x++) {
+            for (int z = frame.innerMinZ; z <= frame.innerMaxZ; z++) {
+                Block b = world.getBlockAt(x, y, z);
+                if (b.getType() != Material.AIR && !b.getType().isAir()) {
+                    errors.add("İç alan (" + x + "," + z + "): " + b.getType() + " (boş olmalı)");
+                }
+            }
+        }
+        
+        if (errors.isEmpty()) {
+            if (plugin != null) {
+                plugin.getLogger().info("[RITÜEL] Çerçeve kontrolü başarılı - Kenarlar dolu, içi boş");
+            }
+            return null; // Başarılı
+        } else {
+            return "Hatalar: " + String.join(", ", errors.subList(0, Math.min(5, errors.size()))) + 
+                (errors.size() > 5 ? " ve " + (errors.size() - 5) + " hata daha" : "");
+        }
     }
     
     private boolean isStrippedLog(Material mat) {
@@ -355,46 +685,47 @@ public class RitualInteractionListener implements Listener {
     }
 
     // ========== KLANDAN AYRILMA: "Yemin Kağıdı Yakma" ==========
-    // Oyuncu elinde isimlendirilmiş bir kağıt ile normal ateşe shift+sağ tık yaparak klandan ayrılabilir
-    // Her yerden yapılabilir, sadece ateş gerekir
+    // ========== KLANDAN ÇIKMA RİTÜELİ: "Yemin Kırma Ritüeli" (5x5 Taş Tuğla Çerçeve) ==========
+    // Kurucu hariç herkes klandan çıkabilir, 5x5 taş tuğla çerçeveye shift+sağ tık+çakmak yapar
     
     @EventHandler(priority = EventPriority.HIGH)
     public void onLeaveRitual(PlayerInteractEvent event) {
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        Player player = event.getPlayer();
+        
+        // Event zaten cancel edilmişse işleme alma
+        if (event.isCancelled()) return;
+        
+        // Şartlar: Shift + Sağ Tık + Elde Çakmak
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (!player.isSneaking()) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
-        if (!event.getPlayer().isSneaking()) return; // Shift kontrolü
         
-        Player p = event.getPlayer();
-        Block clicked = event.getClickedBlock();
+        ItemStack handItem = event.getItem();
+        if (handItem == null || handItem.getType() != Material.FLINT_AND_STEEL) return;
         
-        // Normal ateş kontrolü (FIRE veya SOUL_FIRE)
-        if (clicked.getType() != Material.FIRE && clicked.getType() != Material.SOUL_FIRE) return;
+        Block centerBlock = event.getClickedBlock();
+        if (centerBlock == null) return;
         
-        // Elinde isimlendirilmiş kağıt var mı?
-        ItemStack handItem = p.getInventory().getItemInMainHand();
-        if (handItem == null || handItem.getType() != Material.PAPER) return;
+        // Tıklanan blok "Taş Tuğla" (Stone Bricks) olmalı
+        if (centerBlock.getType() != Material.STONE_BRICKS) return;
         
-        ItemMeta meta = handItem.getItemMeta();
-        if (meta == null || !meta.hasDisplayName()) {
-            p.sendMessage("§cRitüel için isimlendirilmiş bir kağıt gerekli! (Örs'te isim yaz)");
-            return;
-        }
-        
+        Player p = player;
         Clan clan = clanManager.getClanByPlayer(p.getUniqueId());
+        
         if (clan == null) {
+            if (plugin != null) {
+                plugin.getLogger().info("[ÇIKMA RİTÜELİ] Klan kontrolü başarısız - Oyuncunun klanı yok");
+            }
             p.sendMessage("§cBir klana üye değilsin!");
             return;
         }
         
-        // Kağıttaki isim klan ismi veya oyuncu ismi olmalı (doğrulama için)
-        String paperName = meta.getDisplayName().replace("§r", "").trim();
-        if (!paperName.equalsIgnoreCase(clan.getName()) && !paperName.equalsIgnoreCase(p.getName())) {
-            p.sendMessage("§cKağıttaki isim klan ismin veya kendi ismin olmalı!");
-            return;
-        }
-        
-        // Lider ayrılamaz
+        // ✅ YETKİ KONTROLÜ: Kurucu (Lider) hariç herkes klandan çıkabilir
         if (clan.getRank(p.getUniqueId()) == Clan.Rank.LEADER) {
+            if (plugin != null) {
+                plugin.getLogger().info("[ÇIKMA RİTÜELİ] Yetki kontrolü başarısız - Lider klandan ayrılamaz");
+            }
             p.sendMessage("§cLider klandan ayrılamaz! Önce liderliği devret.");
             event.setCancelled(true);
             return;
@@ -407,47 +738,68 @@ public class RitualInteractionListener implements Listener {
             return;
         }
         
-        // Ateş yakmayı engelle, ritüel yapacağız
-        event.setCancelled(true);
+        // 5x5 taş tuğla çerçeve kontrolü
+        RitualFrame frame = findRitualFrame(centerBlock, false); // false = taş tuğla
+        if (frame == null) {
+            if (plugin != null) {
+                plugin.getLogger().info("[ÇIKMA RİTÜELİ] Çerçeve bulunamadı");
+            }
+            p.sendMessage("§cRitüel yapısı eksik! End portalı gibi 5x5 taş tuğla çerçeve gerekli (kenarlar taş tuğla, içi boş).");
+            return;
+        }
+        
+        String structureError = checkRitualFrameStructure(frame, false); // false = taş tuğla
+        if (structureError != null) {
+            if (plugin != null) {
+                plugin.getLogger().info("[ÇIKMA RİTÜELİ] Çerçeve kontrolü başarısız - " + structureError);
+            }
+            p.sendMessage("§cRitüel yapısı eksik! " + structureError);
+            return;
+        }
+        
+        event.setCancelled(true); // Normal ateş yakmayı engelle
+        
+        // ✅ NULL KONTROLÜ: Klan kontrolü (ayrılmadan önce kaydet)
+        me.mami.stratocraft.model.Clan ritualClan = clan;
+        String clanName = clan.getName();
+        String playerName = p.getName();
         
         // Klandan ayrıl
         clanManager.removeMember(clan, p.getUniqueId());
         
-        // Kağıdı tüket
-        if (handItem.getAmount() > 1) {
-            handItem.setAmount(handItem.getAmount() - 1);
-        } else {
-            p.getInventory().setItemInMainHand(null);
-        }
-        
-        // Efektler
-        Location fireLoc = clicked.getLocation().add(0.5, 0.5, 0.5);
+        // Ritüel efekti
+        org.bukkit.World world = centerBlock.getWorld();
+        Location effectLoc = frame.center.getLocation().add(0.5, 1, 0.5);
         
         // Ateş partikülleri
-        fireLoc.getWorld().spawnParticle(Particle.FLAME, fireLoc, 50, 0.3, 0.3, 0.3, 0.1);
-        fireLoc.getWorld().spawnParticle(Particle.SMOKE_NORMAL, fireLoc, 30, 0.5, 0.5, 0.5, 0.05);
+        world.spawnParticle(Particle.FLAME, effectLoc, 50, 1, 0.5, 1, 0.1);
+        world.spawnParticle(Particle.SMOKE_NORMAL, effectLoc, 30, 0.5, 0.5, 0.5, 0.05);
         
         // Oyuncu etrafında efektler
         p.getWorld().spawnParticle(Particle.CLOUD, p.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.1);
         p.getWorld().spawnParticle(Particle.CRIT, p.getLocation().add(0, 1, 0), 20, 0.5, 1, 0.5, 0.2);
         
         // Sesler
-        p.playSound(fireLoc, Sound.ITEM_FIRECHARGE_USE, 1f, 0.8f);
+        p.playSound(effectLoc, Sound.ITEM_FIRECHARGE_USE, 1f, 0.8f);
         p.playSound(p.getLocation(), Sound.ENTITY_ITEM_BREAK, 1f, 1f);
         p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
         
         // Title
-        p.sendTitle("§e§lYEMİN KIRILDI", "§7" + clan.getName() + " klanından ayrıldın", 10, 70, 20);
-        p.sendMessage("§e§l" + clan.getName() + " §7klanından ayrıldın!");
+        p.sendTitle("§e§lYEMİN KIRILDI", "§7" + clanName + " klanından ayrıldın", 10, 70, 20);
+        p.sendMessage("§e§l" + clanName + " §7klanından ayrıldın!");
+        
+        // Çakmağı tüket
+        if (handItem.getDurability() >= handItem.getType().getMaxDurability() - 1) {
+            handItem.setAmount(0);
+        } else {
+            handItem.setDurability((short) (handItem.getDurability() + 1));
+        }
         
         // ✅ GÜÇ SİSTEMİ ENTEGRASYONU: Ritüel başarılı oldu (ayrılma ritüeli)
-        // ✅ NULL KONTROLÜ: Klan kontrolü (ayrıldıktan sonra clan null olabilir, önce kaydet)
-        me.mami.stratocraft.model.Clan ritualClan = clan; // Ayrılmadan önce kaydet
-        if (ritualClan != null) {
-            me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
-            if (plugin != null && plugin.getStratocraftPowerSystem() != null) {
+        if (ritualClan != null && plugin != null) {
+            if (plugin.getStratocraftPowerSystem() != null) {
                 java.util.Map<String, Integer> usedResources = new java.util.HashMap<>();
-                usedResources.put("PAPER", 1); // Kağıt tüketildi
+                usedResources.put("FLINT_AND_STEEL", 1); // Çakmak tüketildi
                 
                 plugin.getStratocraftPowerSystem().onRitualSuccess(
                     ritualClan,
@@ -457,8 +809,7 @@ public class RitualInteractionListener implements Listener {
             }
             
             // ✅ KLAN GÖREV SİSTEMİ ENTEGRASYONU: Ritüel görevi ilerlemesi (ayrılma ritüeli)
-            // Not: Ayrılma ritüeli de bir ritüel olduğu için görev ilerlemesi eklenebilir
-            if (plugin != null && plugin.getClanMissionSystem() != null) {
+            if (plugin.getClanMissionSystem() != null) {
                 try {
                     plugin.getClanMissionSystem().updateMissionProgress(
                         ritualClan, 
@@ -470,14 +821,13 @@ public class RitualInteractionListener implements Listener {
                     plugin.getLogger().warning("Görev ilerlemesi hatası (Ayrılma Ritüeli): " + e.getMessage());
                 }
             }
-        }
-        
-        // Klan üyelerine bildir (isteğe bağlı)
-        String playerName = p.getName();
-        for (UUID memberId : clan.getMembers().keySet()) {
-            Player member = Bukkit.getPlayer(memberId);
-            if (member != null && member.isOnline()) {
-                member.sendMessage("§7" + playerName + " klanından ayrıldı.");
+            
+            // Klan üyelerine bildir
+            for (UUID memberId : ritualClan.getMembers().keySet()) {
+                Player member = Bukkit.getPlayer(memberId);
+                if (member != null && member.isOnline()) {
+                    member.sendMessage("§7" + playerName + " klanından ayrıldı.");
+                }
             }
         }
         
@@ -485,117 +835,191 @@ public class RitualInteractionListener implements Listener {
         setCooldown(p.getUniqueId());
     }
 
-    // ========== TERFİ RİTÜELİ (Eski RitualListener'dan) ==========
+    // ========== TERFİ RİTÜELİ: "Yükseltme Ritüeli" (5x5 Çerçeve) ==========
+    // General veya Lider elinde Altın/Demir ile 5x5 çerçeveye shift+sağ tık+çakmak yapar
+    // İç alandaki oyuncular terfi edilir
     
     @EventHandler(priority = EventPriority.HIGH)
     public void onPromotionRitual(PlayerInteractEvent event) {
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        Player player = event.getPlayer();
+        
+        // Event zaten cancel edilmişse işleme alma
+        if (event.isCancelled()) return;
+        
+        // Şartlar: Shift + Sağ Tık + Elde Çakmak
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (!player.isSneaking()) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
         
-        Block b = event.getClickedBlock();
-        if (b == null) return;
-        Player leader = event.getPlayer();
+        ItemStack handItem = event.getItem();
+        if (handItem == null || handItem.getType() != Material.FLINT_AND_STEEL) return;
+        
+        Block centerBlock = event.getClickedBlock();
+        if (centerBlock == null) return;
+        
+        // Tıklanan blok "Soyulmuş Odun" (Stripped Log) olmalı
+        if (!isStrippedLog(centerBlock.getType())) return;
+        
+        Player leader = player;
         Clan clan = clanManager.getClanByPlayer(leader.getUniqueId());
-
-        if (clan == null || clan.getRank(leader.getUniqueId()) != Clan.Rank.LEADER) return;
+        
+        if (clan == null) {
+            if (plugin != null) {
+                plugin.getLogger().info("[TERFİ RİTÜELİ] Klan kontrolü başarısız - Oyuncunun klanı yok");
+            }
+            return;
+        }
+        
+        // ✅ YETKİ KONTROLÜ: Sadece General veya Lider terfi yapabilir
+        Clan.Rank playerRank = clan.getRank(leader.getUniqueId());
+        if (playerRank == null || 
+            (playerRank != Clan.Rank.LEADER && playerRank != Clan.Rank.GENERAL)) {
+            if (plugin != null) {
+                plugin.getLogger().info("[TERFİ RİTÜELİ] Yetki kontrolü başarısız - Oyuncu rütbesi: " + 
+                    (playerRank != null ? playerRank.name() : "null"));
+            }
+            leader.sendMessage("§cBu ritüeli sadece General veya Lider yapabilir!");
+            event.setCancelled(true);
+            return;
+        }
         
         // Cooldown kontrolü
         if (isOnCooldown(leader.getUniqueId())) {
             leader.sendMessage("§cRitüel henüz hazır değil! Lütfen bekleyin.");
+            event.setCancelled(true);
             return;
         }
         
-        // --- TERFİ RİTÜELİ KONTROLÜ ---
-        // Kurulum: 3x3 Taş Tuğla, Köşelerde Kızıltaş Meşalesi, Ortada Ateş
-        if (b.getType() == Material.FIRE && b.getRelative(BlockFace.DOWN).getType() == Material.STONE_BRICKS) {
-            
-            // Köşelerde Kızıltaş Meşalesi kontrolü
-            boolean hasRedstoneTorches = 
-                b.getRelative(BlockFace.NORTH_WEST).getType() == Material.REDSTONE_TORCH &&
-                b.getRelative(BlockFace.NORTH_EAST).getType() == Material.REDSTONE_TORCH &&
-                b.getRelative(BlockFace.SOUTH_WEST).getType() == Material.REDSTONE_TORCH &&
-                b.getRelative(BlockFace.SOUTH_EAST).getType() == Material.REDSTONE_TORCH;
-            
-            if (!hasRedstoneTorches) {
-                leader.sendMessage("§cRitüel için köşelerde 4 Kızıltaş Meşalesi gerekli!");
-                return;
+        // 5x5 çerçeve kontrolü
+        RitualFrame frame = findRitualFrame(centerBlock);
+        if (frame == null) {
+            if (plugin != null) {
+                plugin.getLogger().info("[TERFİ RİTÜELİ] Çerçeve bulunamadı");
             }
-            
-            // Ateş yakmayı engelle
-            event.setCancelled(true);
-            
-            // Altın Külçe ile General terfisi
-            ItemStack handItem = leader.getInventory().getItemInMainHand();
-            if (handItem != null && handItem.getType() == Material.GOLD_INGOT) {
-                
-                leader.getNearbyEntities(2, 2, 2).stream()
-                    .filter(e -> e instanceof Player && e != leader)
-                    .map(e -> (Player)e)
-                    .findFirst()
-                    .ifPresent(target -> {
-                        // YENİ: Klan üyeliği kontrolü
-                        if (!clan.getMembers().containsKey(target.getUniqueId())) {
-                            leader.sendMessage("§cBu oyuncu klanınızın üyesi değil!");
-                            return;
-                        }
-                        
-                        if (clan.getRank(target.getUniqueId()) == Clan.Rank.MEMBER) {
-                            clanManager.addMember(clan, target.getUniqueId(), Clan.Rank.GENERAL);
-                            
-                            // Efektler
-                            Location loc = target.getLocation();
-                            loc.getWorld().spawnParticle(Particle.TOTEM, loc, 30, 0.5, 1, 0.5, 0.3);
-                            leader.playSound(loc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
-                            
-                            leader.sendMessage("§a" + target.getName() + " General rütbesine yükseltildi!");
-                            target.sendTitle("§6§lTERFİ EDİLDİN", "§eGeneral rütbesine yükseltildin!", 10, 70, 20);
-                            if (handItem.getAmount() > 1) {
-                                handItem.setAmount(handItem.getAmount() - 1);
-                            } else {
-                                leader.getInventory().setItemInMainHand(null);
-                            }
-                            
-                            setCooldown(leader.getUniqueId());
-                        } else {
-                            leader.sendMessage("§eBu kişi zaten General veya daha üst rütbede.");
-                        }
-                    });
-            } else if (handItem != null && handItem.getType() == Material.IRON_INGOT) {
-                // Üye terfisi: Recruit -> Member
-                leader.getNearbyEntities(2, 2, 2).stream()
-                    .filter(e -> e instanceof Player && e != leader)
-                    .map(e -> (Player)e)
-                    .findFirst()
-                    .ifPresent(target -> {
-                        // YENİ: Klan üyeliği kontrolü
-                        if (!clan.getMembers().containsKey(target.getUniqueId())) {
-                            leader.sendMessage("§cBu oyuncu klanınızın üyesi değil!");
-                            return;
-                        }
-                        
-                        if (clan.getRank(target.getUniqueId()) == Clan.Rank.RECRUIT) {
-                            clanManager.addMember(clan, target.getUniqueId(), Clan.Rank.MEMBER);
-                            
-                            // Efektler
-                            Location loc = target.getLocation();
-                            loc.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, loc, 30, 0.5, 1, 0.5, 0.3);
-                            leader.playSound(loc, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-                            
-                            leader.sendMessage("§a" + target.getName() + " Üye rütbesine yükseltildi!");
-                            target.sendTitle("§a§lTERFİ EDİLDİN", "§eÜye rütbesine yükseltildin!", 10, 70, 20);
-                            if (handItem.getAmount() > 1) {
-                                handItem.setAmount(handItem.getAmount() - 1);
-                            } else {
-                                leader.getInventory().setItemInMainHand(null);
-                            }
-                            
-                            setCooldown(leader.getUniqueId());
-                        } else {
-                            leader.sendMessage("§eBu kişi zaten Üye veya daha üst rütbede.");
-                        }
-                    });
+            leader.sendMessage("§cRitüel yapısı eksik! End portalı gibi 5x5 çerçeve gerekli (kenarlar soyulmuş odun, içi boş).");
+            return;
+        }
+        
+        String structureError = checkRitualFrameStructure(frame);
+        if (structureError != null) {
+            if (plugin != null) {
+                plugin.getLogger().info("[TERFİ RİTÜELİ] Çerçeve kontrolü başarısız - " + structureError);
+            }
+            leader.sendMessage("§cRitüel yapısı eksik! " + structureError);
+            return;
+        }
+        
+        event.setCancelled(true); // Normal ateş yakmayı engelle
+        
+        // İç alandaki oyuncuları bul
+        org.bukkit.World world = centerBlock.getWorld();
+        Location innerCenter = new Location(world, 
+            frame.innerMinX + 1.5, 
+            centerBlock.getY() + 1, 
+            frame.innerMinZ + 1.5);
+        
+        List<Player> targets = new ArrayList<>();
+        for (Entity entity : world.getNearbyEntities(innerCenter, 1.5, 2, 1.5)) {
+            if (entity instanceof Player target && !target.equals(leader)) {
+                // Klan üyesi olmalı
+                if (clan.getMembers().containsKey(target.getUniqueId())) {
+                    targets.add(target);
+                }
             }
         }
+        
+        if (targets.isEmpty()) {
+            leader.sendMessage("§eRitüel tamamlandı, ancak alanında klan üyesi yok.");
+            // Çakmağı tüket
+            if (handItem.getDurability() >= handItem.getType().getMaxDurability() - 1) {
+                handItem.setAmount(0);
+            } else {
+                handItem.setDurability((short) (handItem.getDurability() + 1));
+            }
+            return;
+        }
+        
+        // Ritüel efekti
+        Location effectLoc = frame.center.getLocation().add(0.5, 1, 0.5);
+        world.spawnParticle(Particle.TOTEM, effectLoc, 100, 1, 0.5, 1, 0.1);
+        world.playSound(effectLoc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
+        
+        // Elindeki item'a göre terfi yap
+        ItemStack inventoryItem = leader.getInventory().getItemInMainHand();
+        Material terfiItem = null;
+        if (inventoryItem != null) {
+            if (inventoryItem.getType() == Material.GOLD_INGOT) {
+                terfiItem = Material.GOLD_INGOT;
+            } else if (inventoryItem.getType() == Material.IRON_INGOT) {
+                terfiItem = Material.IRON_INGOT;
+            }
+        }
+        
+        if (terfiItem == null) {
+            leader.sendMessage("§cTerfi ritüeli için elinde Altın Külçe (General terfisi) veya Demir Külçe (Üye terfisi) olmalı!");
+            // Çakmağı tüket
+            if (handItem.getDurability() >= handItem.getType().getMaxDurability() - 1) {
+                handItem.setAmount(0);
+            } else {
+                handItem.setDurability((short) (handItem.getDurability() + 1));
+            }
+            return;
+        }
+        
+        int terfiSayisi = 0;
+        for (Player target : targets) {
+            Clan.Rank currentRank = clan.getRank(target.getUniqueId());
+            if (currentRank == null) continue;
+            
+            boolean terfiEdildi = false;
+            if (terfiItem == Material.GOLD_INGOT && currentRank == Clan.Rank.MEMBER) {
+                // Member -> General
+                clanManager.addMember(clan, target.getUniqueId(), Clan.Rank.GENERAL);
+                terfiEdildi = true;
+                
+                target.getWorld().spawnParticle(Particle.TOTEM, target.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.3);
+                target.playSound(target.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
+                target.sendTitle("§6§lTERFİ EDİLDİN", "§eGeneral rütbesine yükseltildin!", 10, 70, 20);
+                leader.sendMessage("§a" + target.getName() + " General rütbesine yükseltildi!");
+                
+            } else if (terfiItem == Material.IRON_INGOT && currentRank == Clan.Rank.RECRUIT) {
+                // Recruit -> Member
+                clanManager.addMember(clan, target.getUniqueId(), Clan.Rank.MEMBER);
+                terfiEdildi = true;
+                
+                target.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, target.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.3);
+                target.playSound(target.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+                target.sendTitle("§a§lTERFİ EDİLDİN", "§eÜye rütbesine yükseltildin!", 10, 70, 20);
+                leader.sendMessage("§a" + target.getName() + " Üye rütbesine yükseltildi!");
+            }
+            
+            if (terfiEdildi) {
+                terfiSayisi++;
+            }
+        }
+        
+        if (terfiSayisi > 0) {
+            // Item tüket
+            if (inventoryItem.getAmount() > 1) {
+                inventoryItem.setAmount(inventoryItem.getAmount() - 1);
+            } else {
+                leader.getInventory().setItemInMainHand(null);
+            }
+            
+            leader.sendMessage("§aRitüel tamamlandı! " + terfiSayisi + " kişi terfi etti.");
+        } else {
+            leader.sendMessage("§eRitüel tamamlandı, ancak terfi edilecek kimse yok.");
+        }
+        
+        // Çakmağı tüket
+        if (handItem.getDurability() >= handItem.getType().getMaxDurability() - 1) {
+            handItem.setAmount(0);
+        } else {
+            handItem.setDurability((short) (handItem.getDurability() + 1));
+        }
+        
+        setCooldown(leader.getUniqueId());
     }
 
     // ========== İTTİFAK: "Kan Anlaşması Ritüeli" (YENİ SİSTEM) ==========

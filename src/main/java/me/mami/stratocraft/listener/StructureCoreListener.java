@@ -417,7 +417,7 @@ public class StructureCoreListener implements Listener {
         // ✅ KRİTİK: Blok artık dünyada, PDC'ye yazabiliriz
         // Owner verisi oyuncunun UUID'si (item'da yok, stacklenme için)
         me.mami.stratocraft.util.CustomBlockData.setStructureCoreData(block, player.getUniqueId());
-        
+                    
         // ✅ Memory'de zaten kayıtlı (onStructureCorePlace'te), burada sadece PDC'ye yazıyoruz
     }
 }

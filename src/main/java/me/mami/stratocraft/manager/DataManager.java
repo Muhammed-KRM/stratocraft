@@ -268,7 +268,7 @@ public class DataManager {
                        boolean forceSync) {
         saveAll(clanManager, contractManager, shopManager, virtualStorage, allianceManager,
                 disasterManager, clanBankSystem, clanMissionSystem, clanActivitySystem,
-                trapManager, null, null, forceSync);
+                trapManager, null, null, null, forceSync);
     }
     
     /**
@@ -283,6 +283,7 @@ public class DataManager {
                        me.mami.stratocraft.manager.TrapManager trapManager,
                        me.mami.stratocraft.manager.ContractRequestManager contractRequestManager,
                        me.mami.stratocraft.manager.ContractTermsManager contractTermsManager,
+                       me.mami.stratocraft.manager.TerritoryBoundaryManager territoryBoundaryManager,
                        boolean forceSync) {
         long startTime = System.currentTimeMillis();
         
@@ -434,6 +435,16 @@ public class DataManager {
                         try {
                             writeContractTermsSnapshot(termsSnapshot);
                             writtenFiles.add(new File(dataFolder, "data/contract_terms.json"));
+                        } catch (Exception e) {
+                            errors.add(e);
+                        }
+                    }
+                    
+                    // ✅ YENİ: TerritoryBoundaryData kaydet
+                    if (territoryBoundaryManager != null) {
+                        try {
+                            saveTerritoryBoundaries(territoryBoundaryManager, clanManager);
+                            writtenFiles.add(new File(dataFolder, "data/territory_boundaries.json"));
                         } catch (Exception e) {
                             errors.add(e);
                         }
@@ -845,6 +856,9 @@ public class DataManager {
             if (clan.getCrystalLocation() != null) {
                 data.crystalLocation = serializeLocation(clan.getCrystalLocation());
             }
+            
+            // ✅ YENİ: hasCrystal flag'i
+            data.hasCrystal = clan.hasCrystal();
             
             // Structures
             data.structures = clan.getStructures().stream()
@@ -1783,7 +1797,7 @@ public class DataManager {
                        ShopManager shopManager, VirtualStorageListener virtualStorage,
                        AllianceManager allianceManager, DisasterManager disasterManager) {
         loadAll(clanManager, contractManager, shopManager, virtualStorage, allianceManager, 
-                disasterManager, null, null, null, null);
+                disasterManager, null, null, null, null, null, null, null);
     }
     
     /**
@@ -1798,7 +1812,7 @@ public class DataManager {
                        me.mami.stratocraft.manager.TrapManager trapManager) {
         loadAll(clanManager, contractManager, shopManager, virtualStorage, allianceManager,
                 disasterManager, clanBankSystem, clanMissionSystem, clanActivitySystem,
-                trapManager, null, null);
+                trapManager, null, null, null);
     }
     
     /**
@@ -1812,7 +1826,8 @@ public class DataManager {
                        me.mami.stratocraft.manager.clan.ClanActivitySystem clanActivitySystem,
                        me.mami.stratocraft.manager.TrapManager trapManager,
                        me.mami.stratocraft.manager.ContractRequestManager contractRequestManager,
-                       me.mami.stratocraft.manager.ContractTermsManager contractTermsManager) {
+                       me.mami.stratocraft.manager.ContractTermsManager contractTermsManager,
+                       me.mami.stratocraft.manager.TerritoryBoundaryManager territoryBoundaryManager) {
         try {
             // ✅ SQLite'dan yükle (eğer aktifse)
             if (useSQLite && sqliteDataManager != null) {
@@ -1838,6 +1853,12 @@ public class DataManager {
             if (contractTermsManager != null) {
                 loadContractTerms(contractTermsManager);
             }
+            
+            // ✅ YENİ: TerritoryBoundaryData yükle
+            if (territoryBoundaryManager != null) {
+                loadTerritoryBoundaries(territoryBoundaryManager, clanManager);
+            }
+            
             // Sonra çift taraflı kontratları yükle
             if (contractRequestManager != null && contractTermsManager != null && contractManager != null) {
                 loadBilateralContracts(contractManager, contractRequestManager, contractTermsManager);
@@ -1978,6 +1999,33 @@ public class DataManager {
                             plugin.getLogger().warning("Geçersiz alliance clan ID atlandı: " + allianceClanId);
                         }
                     }
+                }
+                
+                // ✅ YENİ: Klan kristali konumu ve hasCrystal flag'i
+                if (data.crystalLocation != null) {
+                    Location crystalLoc = deserializeLocation(data.crystalLocation);
+                    plugin.getLogger().info("[DATA_LOAD] Klan kristali yükleniyor: " + clan.getName() + 
+                        ", crystalLocation: " + crystalLoc.toString() + 
+                        ", hasCrystal (DB): " + data.hasCrystal);
+                    
+                    clan.setCrystalLocation(crystalLoc);
+                    // hasCrystal flag'ini set et (data.hasCrystal varsa onu kullan, yoksa crystalLocation'dan çıkar)
+                    if (data.hasCrystal != null) {
+                        clan.setHasCrystal(data.hasCrystal);
+                        plugin.getLogger().info("[DATA_LOAD] hasCrystal DB'den alındı: " + data.hasCrystal + " -> " + clan.hasCrystal());
+                    } else {
+                        // Eski veriler için: crystalLocation varsa hasCrystal = true
+                        plugin.getLogger().warning("[DATA_LOAD] hasCrystal null, crystalLocation'dan true yapılıyor: " + clan.getName());
+                        clan.setHasCrystal(true);
+                    }
+                    
+                    plugin.getLogger().info("[DATA_LOAD] Klan kristali yüklendi: " + clan.getName() + 
+                        ", hasCrystal: " + clan.hasCrystal() + 
+                        ", crystalLocation: " + (clan.getCrystalLocation() != null ? clan.getCrystalLocation().toString() : "null"));
+                } else {
+                    // Crystal location yoksa hasCrystal = false
+                    plugin.getLogger().info("[DATA_LOAD] crystalLocation null, hasCrystal false yapılıyor: " + clan.getName());
+                    clan.setHasCrystal(false);
                 }
                 
                 // ClanManager'a ekle
@@ -2343,6 +2391,131 @@ public class DataManager {
             plugin.getLogger().warning("Backup listeleme hatası: " + e.getMessage());
         }
         return backups;
+    }
+    
+    /**
+     * ✅ YENİ: TerritoryBoundaryData kaydet
+     */
+    private void saveTerritoryBoundaries(me.mami.stratocraft.manager.TerritoryBoundaryManager boundaryManager,
+                                        ClanManager clanManager) throws IOException {
+        if (boundaryManager == null || clanManager == null) return;
+        
+        File file = new File(dataFolder, "data/territory_boundaries.json");
+        file.getParentFile().mkdirs();
+        
+        List<TerritoryBoundaryData> boundaryDataList = new ArrayList<>();
+        
+        // Tüm TerritoryData'ları al
+        Map<UUID, me.mami.stratocraft.model.territory.TerritoryData> allTerritoryData = 
+            boundaryManager.getAllTerritoryData();
+        
+        for (Map.Entry<UUID, me.mami.stratocraft.model.territory.TerritoryData> entry : allTerritoryData.entrySet()) {
+            UUID clanId = entry.getKey();
+            me.mami.stratocraft.model.territory.TerritoryData territoryData = entry.getValue();
+            
+            if (territoryData == null) continue;
+            
+            TerritoryBoundaryData data = new TerritoryBoundaryData();
+            data.clanId = clanId.toString();
+            data.center = serializeLocation(territoryData.getCenter());
+            data.radius = territoryData.getRadius();
+            
+            // Çit lokasyonları
+            data.fenceLocations = territoryData.getFenceLocations().stream()
+                .map(this::serializeLocation)
+                .collect(Collectors.toList());
+            
+            // Sınır koordinatları
+            data.boundaryCoordinates = territoryData.getBoundaryCoordinates().stream()
+                .map(this::serializeLocation)
+                .collect(Collectors.toList());
+            
+            data.minY = territoryData.getMinY();
+            data.maxY = territoryData.getMaxY();
+            data.skyHeight = territoryData.getSkyHeight();
+            data.groundDepth = territoryData.getGroundDepth();
+            data.lastBoundaryUpdate = territoryData.getLastBoundaryUpdate();
+            
+            boundaryDataList.add(data);
+        }
+        
+        try (FileWriter writer = new FileWriter(file)) {
+            gson.toJson(boundaryDataList, writer);
+        }
+    }
+    
+    /**
+     * ✅ YENİ: TerritoryBoundaryData yükle
+     */
+    private void loadTerritoryBoundaries(me.mami.stratocraft.manager.TerritoryBoundaryManager boundaryManager,
+                                        ClanManager clanManager) throws IOException {
+        if (boundaryManager == null || clanManager == null) return;
+        
+        File file = new File(dataFolder, "data/territory_boundaries.json");
+        if (!file.exists()) return;
+        
+        List<TerritoryBoundaryData> boundaryDataList = safeJsonParse(file, 
+            new TypeToken<List<TerritoryBoundaryData>>(){});
+        if (boundaryDataList == null) return;
+        
+        for (TerritoryBoundaryData data : boundaryDataList) {
+            if (data.clanId == null || !isValidUUID(data.clanId)) {
+                plugin.getLogger().warning("Geçersiz TerritoryBoundaryData clan ID atlandı: " + data.clanId);
+                continue;
+            }
+            
+            try {
+                UUID clanId = UUID.fromString(data.clanId);
+                Clan clan = clanManager.getClanById(clanId);
+                if (clan == null) {
+                    plugin.getLogger().warning("TerritoryBoundaryData için klan bulunamadı: " + data.clanId);
+                    continue;
+                }
+                
+                // TerritoryData oluştur veya al
+                me.mami.stratocraft.model.territory.TerritoryData territoryData = 
+                    boundaryManager.getTerritoryData(clan);
+                
+                if (territoryData == null) {
+                    // TerritoryData yoksa oluştur
+                    Location center = deserializeLocation(data.center);
+                    if (center == null) {
+                        plugin.getLogger().warning("Geçersiz TerritoryBoundaryData center atlandı: " + data.clanId);
+                        continue;
+                    }
+                    territoryData = new me.mami.stratocraft.model.territory.TerritoryData(clanId, center);
+                    boundaryManager.setTerritoryData(clan, territoryData);
+                }
+                
+                // Verileri yükle
+                territoryData.setRadius(data.radius);
+                territoryData.setSkyHeight(data.skyHeight);
+                territoryData.setGroundDepth(data.groundDepth);
+                
+                // Çit lokasyonları
+                if (data.fenceLocations != null) {
+                    for (String fenceLocStr : data.fenceLocations) {
+                        Location fenceLoc = deserializeLocation(fenceLocStr);
+                        if (fenceLoc != null) {
+                            territoryData.addFenceLocation(fenceLoc);
+                        }
+                    }
+                }
+                
+                // ✅ DÜZELTME: Sınır koordinatları zaten calculateBoundaries() ile hesaplanacak
+                // boundaryCoordinates'u direkt yüklemeye gerek yok, çünkü fenceLocations'tan hesaplanacak
+                
+                // Y ekseni sınırlarını güncelle (fenceLocations'tan)
+                territoryData.updateYBounds();
+                
+                // Sınırları yeniden hesapla (fenceLocations'tan)
+                territoryData.calculateBoundaries();
+                
+            } catch (Exception e) {
+                plugin.getLogger().warning("TerritoryBoundaryData yükleme hatası: " + data.clanId + " - " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
     }
     
     private void loadClanBank(me.mami.stratocraft.manager.clan.ClanBankSystem bankSystem,
@@ -3073,6 +3246,7 @@ public class DataManager {
         public int storedXP;
         public long createdAt; // Grace period için
         public String crystalLocation; // Ölümsüz klan önleme için
+        public Boolean hasCrystal; // ✅ YENİ: Klan kristali var mı? (null olabilir - eski veriler için)
         public List<String> guests;
         public TerritoryData territory;
         public List<StructureData> structures;
@@ -3086,6 +3260,20 @@ public class DataManager {
         public String center;
         public int radius;
         public List<String> outposts;
+    }
+    
+    // ✅ YENİ: TerritoryData (sınır verileri) için inner class
+    public static class TerritoryBoundaryData {
+        public String clanId;
+        public String center;
+        public int radius;
+        public List<String> fenceLocations; // Çit lokasyonları
+        public List<String> boundaryCoordinates; // Sınır koordinatları
+        public int minY;
+        public int maxY;
+        public int skyHeight;
+        public int groundDepth;
+        public long lastBoundaryUpdate;
     }
     
     public static class StructureData {

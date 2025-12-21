@@ -644,17 +644,8 @@ public class TerritoryListener implements Listener {
             }
         }
         
-        // ✅ Yapı çekirdeği kontrolü
-        if (type == Material.OAK_LOG) {
-            UUID ownerId = me.mami.stratocraft.util.CustomBlockData.getStructureCoreOwner(block);
-            if (ownerId != null) {
-                org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "structure_core");
-                container.set(key, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
-                org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey("stratocraft", "structure_core_owner");
-                container.set(ownerKey, org.bukkit.persistence.PersistentDataType.STRING, ownerId.toString());
-                hasCustomData = true;
-            }
-        }
+        // ✅ Yapı çekirdeği kontrolü - KALDIRILDI (kullanıcı isteği)
+        // Yapı çekirdeğine sağ tıklayınca item verilmesi özelliği kaldırıldı
         
         // ✅ Tuzak çekirdeği kontrolü
         if (type == Material.LODESTONE) {
@@ -1633,9 +1624,18 @@ public class TerritoryListener implements Listener {
     
     @EventHandler(priority = EventPriority.HIGH)
     public void onCrystalBreak(EntityDamageEvent event) {
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        
         if (!(event.getEntity() instanceof EnderCrystal)) return;
         
         EnderCrystal crystal = (EnderCrystal) event.getEntity();
+        Location crystalLoc = crystal.getLocation();
+        
+        if (plugin != null) {
+            plugin.getLogger().info("[KRISTAL KIRMA] Event tetiklendi - Kristal: " + crystal.getUniqueId() + 
+                " @ " + crystalLoc.getBlockX() + "," + crystalLoc.getBlockY() + "," + crystalLoc.getBlockZ() +
+                ", Final Damage: " + event.getFinalDamage() + ", Cancelled: " + event.isCancelled());
+        }
         
         // ⚠️ YENİ: Pending klan oluşturma var mı? (Kristal kırılma kontrolü)
         for (Map.Entry<UUID, PendingClanCreation> entry : waitingForClanName.entrySet()) {
@@ -1654,11 +1654,36 @@ public class TerritoryListener implements Listener {
         
         // Bu kristal bir klan kristali mi?
         Clan owner = findClanByCrystal(crystal);
-        if (owner == null) return; // Normal end crystal
+        if (plugin != null) {
+            plugin.getLogger().info("[KRISTAL KIRMA] findClanByCrystal sonucu: " + 
+                (owner != null ? owner.getName() + " (ID: " + owner.getId() + ")" : "null"));
+        }
+        
+        if (owner == null) {
+            if (plugin != null) {
+                plugin.getLogger().info("[KRISTAL KIRMA] Normal end crystal, işlem yapılmıyor");
+            }
+            return; // Normal end crystal
+        }
+        
+        if (plugin != null) {
+            plugin.getLogger().info("[KRISTAL KIRMA] Klan bulundu: " + owner.getName() + 
+                ", hasCrystal: " + owner.hasCrystal() + 
+                ", crystalEntity: " + (owner.getCrystalEntity() != null ? owner.getCrystalEntity().getUniqueId() : "null") +
+                ", crystalLocation: " + (owner.getCrystalLocation() != null ? owner.getCrystalLocation().toString() : "null"));
+        }
         
         // Kristal kırılıyor mu? (EnderCrystal'ın sağlığı 1.0, yeterli hasar aldığında kırılır)
         // EnderCrystal'da getHealth() yok ama hasar >= 1.0 olduğunda kırılır
+        if (plugin != null) {
+            plugin.getLogger().info("[KRISTAL KIRMA] Hasar kontrolü - Final Damage: " + event.getFinalDamage() + 
+                ", Cancelled: " + event.isCancelled() + ", Kırılma koşulu: " + (event.getFinalDamage() >= 1.0 && !event.isCancelled()));
+        }
+        
         if (event.getFinalDamage() >= 1.0 && !event.isCancelled()) {
+            if (plugin != null) {
+                plugin.getLogger().info("[KRISTAL KIRMA] Kristal kırılıyor! İşlem başlatılıyor...");
+            }
             // Kırılma nedenini kontrol et
             Player breaker = null;
             Entity damager = null;
@@ -1666,21 +1691,33 @@ public class TerritoryListener implements Listener {
                 damager = ((EntityDamageByEntityEvent) event).getDamager();
                 if (damager instanceof Player) {
                     breaker = (Player) damager;
+                } else if (damager instanceof org.bukkit.entity.Projectile) {
+                    // ✅ YENİ: Ender pearl, kartopu vb. projectile'lar için shooter'ı bul
+                    org.bukkit.entity.Projectile projectile = (org.bukkit.entity.Projectile) damager;
+                    if (projectile.getShooter() instanceof Player) {
+                        breaker = (Player) projectile.getShooter();
+                    }
                 }
             }
             
             // Felaket entity'si kristali kırıyor mu? (DisasterTask'tan geliyor)
             // Felaket entity'leri için özel durum - klanı dağıt
-            if (damager != null && !(damager instanceof Player)) {
+            if (damager != null && !(damager instanceof Player) && !(damager instanceof org.bukkit.entity.Projectile)) {
                 // Bu bir felaket entity'si olabilir - DisasterTask zaten klanı dağıtacak
                 // Burada sadece event'i işle, klan dağıtma DisasterTask'ta yapılıyor
                 return; // DisasterTask zaten işleyecek
             }
             
-            // Lider kendi kristalini kırıyor mu?
+            // ✅ YENİ: Lider kendi kristalini kırıyor mu?
             if (breaker != null && owner.getRank(breaker.getUniqueId()) == Clan.Rank.LEADER) {
+                if (plugin != null) {
+                    plugin.getLogger().info("[KRISTAL KIRMA] Lider kendi kristalini kırıyor - Klan dağıtılıyor: " + owner.getName());
+                }
+                
                 // YENİ: Klan alanı korumasını kaldır ve sınırları temizle
                 owner.setCrystalLocation(null);
+                owner.setCrystalEntity(null);
+                owner.setHasCrystal(false);
                 if (boundaryManager != null) {
                     boundaryManager.removeTerritoryData(owner);
                 }
@@ -1690,18 +1727,35 @@ public class TerritoryListener implements Listener {
                 territoryManager.setCacheDirty(); // Cache'i güncelle
                 breaker.sendMessage("§cKlanınız dağıtıldı!");
                 crystal.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, crystal.getLocation(), 1);
+                
+                if (plugin != null) {
+                    plugin.getLogger().info("[KRISTAL KIRMA] Lider tarafından klan dağıtıldı: " + owner.getName());
+                }
                 return;
             }
             
             // ✅ YENİ: Kuşatma var mı? - Sadece bu oyuncunun klanıyla savaşta ise
             if (breaker != null) {
                 Clan attacker = territoryManager.getClanManager().getClanByPlayer(breaker.getUniqueId());
+                if (plugin != null) {
+                    plugin.getLogger().info("[KRISTAL KIRMA] Breaker klanı: " + 
+                        (attacker != null ? attacker.getName() : "null") + 
+                        ", Owner: " + owner.getName() + 
+                        ", Savaş durumu: " + (attacker != null && owner.isAtWarWith(attacker.getId())));
+                }
+                
                 if (attacker != null && !attacker.equals(owner) && owner.isAtWarWith(attacker.getId())) {
+                    if (plugin != null) {
+                        plugin.getLogger().info("[KRISTAL KIRMA] Savaşta kristal kırıldı - Klan dağıtılıyor: " + owner.getName());
+                    }
+                    
                     // Savaşta kristal kırıldı - klan bozuldu
                     siegeManager.endSiege(attacker, owner);
                     breaker.sendMessage("§6§lZAFER! Düşman kristalini parçaladın.");
                     // YENİ: Klan alanı korumasını kaldır ve sınırları temizle
                     owner.setCrystalLocation(null);
+                    owner.setCrystalEntity(null);
+                    owner.setHasCrystal(false);
                     if (boundaryManager != null) {
                         boundaryManager.removeTerritoryData(owner);
                     }
@@ -1709,24 +1763,109 @@ public class TerritoryListener implements Listener {
                     territoryManager.getClanManager().disbandClan(owner);
                     territoryManager.setCacheDirty(); // Cache'i güncelle
                     crystal.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, crystal.getLocation(), 1);
+                    
+                    if (plugin != null) {
+                        plugin.getLogger().info("[KRISTAL KIRMA] Savaş sonucu klan dağıtıldı: " + owner.getName());
+                    }
                     return;
                 }
             }
             
-            // Normal durumda sadece lider kırabilir
+            // ✅ YENİ: Normal durumda (ender pearl, kartopu vb. ile kırılıyorsa) klanı dağıt
+            // Klan kristali yok olunca klan da yok olmalı
             if (breaker != null) {
                 Clan playerClan = territoryManager.getClanManager().getClanByPlayer(breaker.getUniqueId());
+                
+                if (plugin != null) {
+                    plugin.getLogger().info("[KRISTAL KIRMA] Breaker kontrolü - PlayerClan: " + 
+                        (playerClan != null ? playerClan.getName() : "null") + 
+                        ", Owner: " + owner.getName() + 
+                        ", Aynı klan: " + (playerClan != null && playerClan.equals(owner)) +
+                        ", Breaker rütbesi: " + (playerClan != null ? owner.getRank(breaker.getUniqueId()) : "null"));
+                }
+                
+                // Eğer atan oyuncu lider değilse veya farklı bir klan üyesiyse, klanı dağıt
                 if (playerClan == null || !playerClan.equals(owner) || owner.getRank(breaker.getUniqueId()) != Clan.Rank.LEADER) {
-                    event.setCancelled(true);
-                    breaker.sendMessage("§cKlan Kristalini sadece klan lideri kırabilir!");
+                    if (plugin != null) {
+                        plugin.getLogger().info("[KRISTAL KIRMA] Normal durum - Klan dağıtılıyor: " + owner.getName() + 
+                            " (Breaker: " + breaker.getName() + ")");
+                    }
+                    
+                    // Klan kristali yok oldu - klan da yok olmalı
+                    owner.setCrystalLocation(null);
+                    owner.setCrystalEntity(null);
+                    owner.setHasCrystal(false);
+                    if (boundaryManager != null) {
+                        boundaryManager.removeTerritoryData(owner);
+                    }
+                    
+                    territoryManager.getClanManager().disbandClan(owner);
+                    territoryManager.setCacheDirty(); // Cache'i güncelle
+                    
+                    // Tüm klan üyelerine mesaj gönder
+                    for (UUID memberId : owner.getMembers().keySet()) {
+                        Player member = Bukkit.getPlayer(memberId);
+                        if (member != null && member.isOnline()) {
+                            member.sendMessage("§c§lKLAN KRISTALİ YOK OLDU!");
+                            member.sendMessage("§7Klanınız dağıtıldı.");
+                        }
+                    }
+                    
+                    if (breaker != null) {
+                        breaker.sendMessage("§6§lZAFER! Düşman klan kristalini yok ettin!");
+                    }
+                    
+                    crystal.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, crystal.getLocation(), 1);
+                    
+                    if (plugin != null) {
+                        plugin.getLogger().info("[KRISTAL KIRMA] Normal durum - Klan dağıtıldı: " + owner.getName());
+                    }
                     return;
                 }
                 
                 // ✅ Lider kristali kırıyor - özel item drop EntityDeathEvent'te yapılacak
                 // Not: EnderCrystal entity olduğu için BlockBreakEvent değil, EntityDeathEvent kullanılacak
+                if (plugin != null) {
+                    plugin.getLogger().info("[KRISTAL KIRMA] Lider kendi kristalini kırıyor - Item drop EntityDeathEvent'te yapılacak");
+                }
             } else {
-                // Doğal hasar (lava, patlama vb.) - engelle
-                event.setCancelled(true);
+                // ✅ YENİ: Doğal hasar veya bilinmeyen neden (ender pearl/kartopu shooter yok)
+                // Klan kristali yok oldu - klan da yok olmalı
+                if (plugin != null) {
+                    plugin.getLogger().info("[KRISTAL KIRMA] Breaker null - Doğal hasar veya bilinmeyen neden, klan dağıtılıyor: " + owner.getName());
+                }
+                
+                owner.setCrystalLocation(null);
+                owner.setCrystalEntity(null);
+                owner.setHasCrystal(false);
+                if (boundaryManager != null) {
+                    boundaryManager.removeTerritoryData(owner);
+                }
+                
+                territoryManager.getClanManager().disbandClan(owner);
+                territoryManager.setCacheDirty(); // Cache'i güncelle
+                
+                // Tüm klan üyelerine mesaj gönder
+                for (UUID memberId : owner.getMembers().keySet()) {
+                    Player member = Bukkit.getPlayer(memberId);
+                    if (member != null && member.isOnline()) {
+                        member.sendMessage("§c§lKLAN KRISTALİ YOK OLDU!");
+                        member.sendMessage("§7Klanınız dağıtıldı.");
+                    }
+                }
+                
+                crystal.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, crystal.getLocation(), 1);
+                
+                if (plugin != null) {
+                    plugin.getLogger().info("[KRISTAL KIRMA] Doğal hasar - Klan dağıtıldı: " + owner.getName());
+                }
+                // Event'i cancel etme - kristal yok olmalı
+            }
+        } else {
+            if (plugin != null) {
+                plugin.getLogger().info("[KRISTAL KIRMA] Kristal kırılmıyor - Final Damage: " + event.getFinalDamage() + 
+                    " < 1.0 veya Event cancelled: " + event.isCancelled() + 
+                    ", Owner: " + (owner != null ? owner.getName() : "null"));
             }
         }
     }
@@ -1736,13 +1875,57 @@ public class TerritoryListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onCrystalDeath(EntityDeathEvent event) {
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        
         if (!(event.getEntity() instanceof EnderCrystal)) return;
         
         EnderCrystal crystal = (EnderCrystal) event.getEntity();
+        Location crystalLoc = crystal.getLocation();
+        
+        if (plugin != null) {
+            plugin.getLogger().info("[KRISTAL ÖLÜM] Event tetiklendi - Kristal: " + crystal.getUniqueId() + 
+                " @ " + crystalLoc.getBlockX() + "," + crystalLoc.getBlockY() + "," + crystalLoc.getBlockZ());
+        }
         
         // Bu kristal bir klan kristali mi?
         Clan owner = findClanByCrystal(crystal);
-        if (owner == null) return; // Normal end crystal
+        if (plugin != null) {
+            plugin.getLogger().info("[KRISTAL ÖLÜM] findClanByCrystal sonucu: " + 
+                (owner != null ? owner.getName() + " (ID: " + owner.getId() + ")" : "null"));
+        }
+        
+        if (owner == null) {
+            if (plugin != null) {
+                plugin.getLogger().info("[KRISTAL ÖLÜM] Normal end crystal, item drop yapılmıyor");
+            }
+            return; // Normal end crystal
+        }
+        
+        if (plugin != null) {
+            plugin.getLogger().info("[KRISTAL ÖLÜM] Klan bulundu: " + owner.getName() + 
+                ", hasCrystal: " + owner.hasCrystal() + 
+                ", crystalEntity: " + (owner.getCrystalEntity() != null ? owner.getCrystalEntity().getUniqueId() : "null") +
+                ", crystalEntity equals: " + (owner.getCrystalEntity() != null && owner.getCrystalEntity().equals(crystal)));
+        }
+        
+        // ✅ YENİ: Eğer klan zaten dağıtıldıysa (crystal entity null ise), item drop etme
+        // onCrystalBreak'te klan dağıtıldıysa, burada item drop etmemeliyiz
+        // Not: onCrystalBreak HIGH priority'de çalışıyor, bu HIGH priority'de çalışıyor
+        // Ama onCrystalBreak'te event cancel edilmediği için onCrystalDeath de tetiklenir
+        // Bu durumda klan zaten dağıtılmış olabilir, kontrol et
+        if (owner.getCrystalEntity() == null || !owner.hasCrystal() || 
+            owner.getCrystalEntity() != crystal) {
+            if (plugin != null) {
+                plugin.getLogger().info("[KRISTAL ÖLÜM] Klan zaten dağıtıldı veya farklı kristal - Item drop yapılmıyor");
+            }
+            // Klan zaten dağıtıldı veya farklı bir kristal, item drop etme
+            event.getDrops().clear();
+            return;
+        }
+        
+        if (plugin != null) {
+            plugin.getLogger().info("[KRISTAL ÖLÜM] Item drop yapılıyor - Klan: " + owner.getName());
+        }
         
         // ✅ Normal drop'ları iptal et
         event.getDrops().clear();
@@ -1773,7 +1956,7 @@ public class TerritoryListener implements Listener {
         crystal.getWorld().dropItemNaturally(crystal.getLocation(), crystalItem);
         
         // ✅ CustomBlockData'dan temizle (eğer blok olarak kaydedilmişse)
-        org.bukkit.Location crystalLoc = crystal.getLocation();
+        // crystalLoc zaten yukarıda tanımlanmış (satır 1883)
         if (crystalLoc != null) {
             org.bukkit.block.Block block = crystalLoc.getBlock();
             if (block != null && block.getType() == Material.END_CRYSTAL) {
@@ -1784,18 +1967,85 @@ public class TerritoryListener implements Listener {
     
     // Kristal entity'sine göre klanı bul
     private Clan findClanByCrystal(EnderCrystal crystal) {
-        // YENİ: Metadata kontrolü (klan kristali mi?)
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        Location crystalLoc = crystal.getLocation();
+        
+        if (plugin != null) {
+            plugin.getLogger().info("[KRISTAL BULMA] findClanByCrystal başlatıldı - Kristal: " + crystal.getUniqueId() + 
+                " @ " + crystalLoc.getBlockX() + "," + crystalLoc.getBlockY() + "," + crystalLoc.getBlockZ());
+        }
+        
+        // ✅ DÜZELTME: Metadata kontrolü opsiyonel - metadata yoksa location kontrolü yeterli
+        boolean hasMetadata = false;
         if (territoryConfig != null) {
             String metadataKey = territoryConfig.getCrystalMetadataKey();
-            if (!crystal.hasMetadata(metadataKey)) {
-                return null; // Normal End Crystal, klan kristali değil
+            hasMetadata = crystal.hasMetadata(metadataKey);
+            if (plugin != null) {
+                plugin.getLogger().info("[KRISTAL BULMA] Metadata kontrolü - Key: " + metadataKey + ", Has Metadata: " + hasMetadata);
             }
         }
         
+        // ✅ DÜZELTME: Sunucu restart sonrası crystalEntity null olabilir, location kontrolü de yap
         for (Clan clan : territoryManager.getClanManager().getAllClans()) {
+            if (plugin != null) {
+                plugin.getLogger().info("[KRISTAL BULMA] Klan kontrol ediliyor: " + clan.getName() + 
+                    ", hasCrystal: " + clan.hasCrystal() + 
+                    ", crystalLocation: " + (clan.getCrystalLocation() != null ? clan.getCrystalLocation().toString() : "null") +
+                    ", crystalEntity: " + (clan.getCrystalEntity() != null ? clan.getCrystalEntity().getUniqueId() : "null"));
+            }
+            
+            // Önce entity referansına bak
             if (clan.getCrystalEntity() != null && clan.getCrystalEntity().equals(crystal)) {
+                if (plugin != null) {
+                    plugin.getLogger().info("[KRISTAL BULMA] Entity referansı ile bulundu: " + clan.getName());
+                }
                 return clan;
             }
+            
+            // Entity referansı null ise location kontrolü yap
+            // ✅ DÜZELTME: hasCrystal() kontrolü gereksiz - crystalLocation varsa yeterli
+            // (hasCrystal() metodu zaten crystalLocation kontrolü yapıyor)
+            Location clanCrystalLoc = clan.getCrystalLocation();
+            if (clanCrystalLoc != null) {
+                // Location'ları karşılaştır (blok seviyesinde)
+                boolean locationMatch = clanCrystalLoc.getBlockX() == crystalLoc.getBlockX() &&
+                    clanCrystalLoc.getBlockY() == crystalLoc.getBlockY() &&
+                    clanCrystalLoc.getBlockZ() == crystalLoc.getBlockZ() &&
+                    clanCrystalLoc.getWorld().equals(crystalLoc.getWorld());
+                
+                if (plugin != null) {
+                    plugin.getLogger().info("[KRISTAL BULMA] Location karşılaştırması: " + 
+                        "Clan: " + clanCrystalLoc.getBlockX() + "," + clanCrystalLoc.getBlockY() + "," + clanCrystalLoc.getBlockZ() +
+                        " vs Crystal: " + crystalLoc.getBlockX() + "," + crystalLoc.getBlockY() + "," + crystalLoc.getBlockZ() +
+                        ", Match: " + locationMatch);
+                }
+                
+                if (locationMatch) {
+                    if (plugin != null) {
+                        plugin.getLogger().info("[KRISTAL BULMA] Location kontrolü ile bulundu: " + clan.getName() + 
+                            " (Entity referansı null, location eşleşti)");
+                    }
+                    
+                    // ✅ ÖNEMLİ: Entity referansını güncelle (sunucu restart sonrası)
+                    clan.setCrystalEntity(crystal);
+                    
+                    // ✅ ÖNEMLİ: Metadata ekle (eğer yoksa)
+                    if (territoryConfig != null && !hasMetadata) {
+                        String metadataKey = territoryConfig.getCrystalMetadataKey();
+                        crystal.setMetadata(metadataKey, new org.bukkit.metadata.FixedMetadataValue(
+                            me.mami.stratocraft.Main.getInstance(), true));
+                        if (plugin != null) {
+                            plugin.getLogger().info("[KRISTAL BULMA] Metadata eklendi: " + clan.getName());
+                        }
+                    }
+                    
+                    return clan;
+                }
+            }
+        }
+        
+        if (plugin != null) {
+            plugin.getLogger().info("[KRISTAL BULMA] Klan bulunamadı - Normal end crystal olabilir veya location eşleşmedi");
         }
         return null;
     }

@@ -12,6 +12,7 @@ import me.mami.stratocraft.task.DrillTask;
 import me.mami.stratocraft.task.CropTask;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -319,10 +320,11 @@ public class Main extends JavaPlugin {
         // YENİ: TerritoryBoundaryManager ve TerritoryConfig
         me.mami.stratocraft.manager.config.TerritoryConfig territoryConfig = 
             configManager != null ? configManager.getTerritoryConfig() : null;
-        me.mami.stratocraft.manager.TerritoryBoundaryManager territoryBoundaryManager = null;
-        if (territoryConfig != null) {
-            territoryBoundaryManager = new me.mami.stratocraft.manager.TerritoryBoundaryManager(
-                this, territoryManager, territoryConfig);
+        // ✅ DÜZELTME: Final yaparak lambda ifadelerinde kullanılabilir hale getir
+        final me.mami.stratocraft.manager.TerritoryBoundaryManager territoryBoundaryManager = 
+            (territoryConfig != null) ? new me.mami.stratocraft.manager.TerritoryBoundaryManager(
+                this, territoryManager, territoryConfig) : null;
+        if (territoryBoundaryManager != null) {
             // ✅ YENİ: TerritoryManager'a TerritoryBoundaryManager'ı set et (Y ekseni kontrolü için)
             territoryManager.setBoundaryManager(territoryBoundaryManager);
         }
@@ -529,12 +531,22 @@ public class Main extends JavaPlugin {
             try {
                 dataManager.loadAll(clanManager, contractManager, shopManager, virtualStorageListener,
                         allianceManager, disasterManager, clanBankSystem, clanMissionSystem,
-                    clanActivitySystem, trapManager, contractRequestManager, contractTermsManager);
+                    clanActivitySystem, trapManager, contractRequestManager, contractTermsManager,
+                    territoryBoundaryManager);
             } finally {
                 // Task tamamlandı, takipten çıkar
                 if (loadTaskRef[0] != null) {
                     asyncTasks.remove(loadTaskRef[0]);
                 }
+                
+                // ✅ YENİ: Klan kristali entity'lerini oluştur (main thread'de çalışmalı)
+                Bukkit.getScheduler().runTask(this, () -> {
+                    restoreClanCrystals(clanManager);
+                    // ✅ YENİ: TerritoryData'ları geri yükle (sınırlar için)
+                    if (territoryBoundaryManager != null) {
+                        restoreTerritoryData(clanManager, territoryBoundaryManager);
+                    }
+                });
             }
         });
         asyncTasks.add(loadTaskRef[0]);
@@ -545,7 +557,8 @@ public class Main extends JavaPlugin {
                 // Auto-save callback: Tüm verileri kaydet (async)
                 dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener, 
                         allianceManager, disasterManager, clanBankSystem, clanMissionSystem, 
-                        clanActivitySystem, trapManager, contractRequestManager, contractTermsManager, false);
+                        clanActivitySystem, trapManager, contractRequestManager, contractTermsManager,
+                        territoryBoundaryManager, false);
                 return null;
             });
             
@@ -1248,7 +1261,7 @@ public class Main extends JavaPlugin {
             try {
                 dataManager.saveAll(clanManager, contractManager, shopManager, virtualStorageListener, 
                         allianceManager, disasterManager, clanBankSystem, clanMissionSystem, clanActivitySystem, 
-                        trapManager, contractRequestManager, contractTermsManager, true);
+                        trapManager, contractRequestManager, contractTermsManager, territoryBoundaryManager, true);
                 getLogger().info("Stratocraft: Veriler kaydedildi.");
             } catch (Exception e) {
                 getLogger().severe("Stratocraft: Veri kaydetme hatası: " + e.getMessage());
@@ -1973,5 +1986,219 @@ public class Main extends JavaPlugin {
         } catch (ClassNotFoundException e) {
             return false;
         }
+    }
+    
+    /**
+     * ✅ YENİ: Sunucu açılışında klan kristali entity'lerini geri yükle
+     * DB'den yüklenen klanların crystalLocation'ları varsa EnderCrystal entity'lerini oluştur
+     */
+    private void restoreClanCrystals(me.mami.stratocraft.manager.ClanManager clanManager) {
+        if (clanManager == null) {
+            getLogger().warning("[CLAN_CRYSTAL_RESTORE] ClanManager null!");
+            return;
+        }
+        
+        getLogger().info("[CLAN_CRYSTAL_RESTORE] Klan kristali entity'leri geri yükleniyor...");
+        int restoredCount = 0;
+        int failedCount = 0;
+        
+        for (me.mami.stratocraft.model.Clan clan : clanManager.getAllClans()) {
+            if (clan == null) continue;
+            
+            Location crystalLoc = clan.getCrystalLocation();
+            boolean hasCrystal = clan.hasCrystal();
+            org.bukkit.entity.EnderCrystal crystalEntity = clan.getCrystalEntity();
+            
+            getLogger().info("[CLAN_CRYSTAL_RESTORE] Klan kontrolü: " + clan.getName() + 
+                ", crystalLocation: " + (crystalLoc != null ? crystalLoc.toString() : "null") +
+                ", hasCrystal: " + hasCrystal +
+                ", crystalEntity: " + (crystalEntity != null ? crystalEntity.getUniqueId() : "null"));
+            
+            if (crystalLoc == null) {
+                getLogger().info("[CLAN_CRYSTAL_RESTORE] crystalLocation null, atlanıyor: " + clan.getName());
+                continue; // Kristal yok, atla
+            }
+            
+            // ✅ DÜZELTME: hasCrystal false olsa bile crystalLocation varsa kristal var demektir
+            // (Sunucu restart sonrası hasCrystal yanlış olabilir)
+            if (!hasCrystal) {
+                getLogger().warning("[CLAN_CRYSTAL_RESTORE] hasCrystal false ama crystalLocation var! Düzeltiliyor: " + clan.getName());
+                clan.setHasCrystal(true); // Düzelt
+            }
+            
+            try {
+                // World yüklü mü kontrol et
+                org.bukkit.World world = crystalLoc.getWorld();
+                if (world == null) {
+                    getLogger().warning("[CLAN_CRYSTAL_RESTORE] World null: " + crystalLoc);
+                    failedCount++;
+                    continue;
+                }
+                
+                // Chunk yüklü mü kontrol et ve yükle
+                org.bukkit.Chunk chunk = world.getChunkAt(crystalLoc);
+                if (!chunk.isLoaded()) {
+                    chunk.load(false);
+                }
+                
+                // Kristal entity'si zaten var mı kontrol et (aynı konumda)
+                boolean crystalExists = false;
+                getLogger().info("[CLAN_CRYSTAL_RESTORE] Chunk'taki entity'ler kontrol ediliyor: " + clan.getName() + 
+                    " @ " + crystalLoc.getBlockX() + "," + crystalLoc.getBlockY() + "," + crystalLoc.getBlockZ());
+                
+                for (org.bukkit.entity.Entity entity : chunk.getEntities()) {
+                    if (entity instanceof org.bukkit.entity.EnderCrystal) {
+                        Location entityLoc = entity.getLocation();
+                        getLogger().info("[CLAN_CRYSTAL_RESTORE] EnderCrystal bulundu: " + entity.getUniqueId() + 
+                            " @ " + entityLoc.getBlockX() + "," + entityLoc.getBlockY() + "," + entityLoc.getBlockZ());
+                        
+                        if (entityLoc.getBlockX() == crystalLoc.getBlockX() &&
+                            entityLoc.getBlockY() == crystalLoc.getBlockY() &&
+                            entityLoc.getBlockZ() == crystalLoc.getBlockZ()) {
+                            // Aynı konumda kristal var, bunu kullan
+                            getLogger().info("[CLAN_CRYSTAL_RESTORE] Mevcut kristal entity bulundu ve bağlandı: " + clan.getName());
+                            clan.setCrystalEntity((org.bukkit.entity.EnderCrystal) entity);
+                            
+                            // ✅ ÖNEMLİ: Metadata ekle (eğer yoksa)
+                            if (territoryConfig != null) {
+                                String metadataKey = territoryConfig.getCrystalMetadataKey();
+                                if (!entity.hasMetadata(metadataKey)) {
+                                    entity.setMetadata(metadataKey, new org.bukkit.metadata.FixedMetadataValue(this, true));
+                                    getLogger().info("[CLAN_CRYSTAL_RESTORE] Metadata eklendi: " + clan.getName());
+                                }
+                            }
+                            
+                            crystalExists = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (!crystalExists) {
+                    getLogger().info("[CLAN_CRYSTAL_RESTORE] Yeni kristal entity oluşturuluyor: " + clan.getName());
+                    
+                    // Yeni kristal entity'si oluştur
+                    // Konumu blok merkezine ayarla (0.5, 0, 0.5 offset)
+                    // crystalLoc zaten doğru konum (blok merkezi + 0.5 offset)
+                    Location spawnLoc = crystalLoc.clone();
+                    // Eğer crystalLoc tam blok koordinatıysa, merkeze ayarla
+                    if (spawnLoc.getX() == spawnLoc.getBlockX() && 
+                        spawnLoc.getZ() == spawnLoc.getBlockZ()) {
+                        spawnLoc.add(0.5, 0, 0.5);
+                    }
+                    
+                    getLogger().info("[CLAN_CRYSTAL_RESTORE] Spawn lokasyonu: " + spawnLoc.toString());
+                    
+                    // ✅ DÜZELTME: crystalEntity zaten yukarıda tanımlanmış (satır 2010), yeni değişken adı kullan
+                    org.bukkit.entity.EnderCrystal newCrystalEntity = 
+                        (org.bukkit.entity.EnderCrystal) world.spawnEntity(spawnLoc, org.bukkit.entity.EntityType.ENDER_CRYSTAL);
+                    newCrystalEntity.setShowingBottom(true); // Tabanı görünsün
+                    newCrystalEntity.setBeamTarget(null);
+                    
+                    getLogger().info("[CLAN_CRYSTAL_RESTORE] Kristal entity oluşturuldu: " + newCrystalEntity.getUniqueId());
+                    
+                    // Metadata ekle (TerritoryConfig'den)
+                    if (territoryConfig != null) {
+                        String metadataKey = territoryConfig.getCrystalMetadataKey();
+                        newCrystalEntity.setMetadata(metadataKey, new org.bukkit.metadata.FixedMetadataValue(this, true));
+                        getLogger().info("[CLAN_CRYSTAL_RESTORE] Metadata eklendi: " + metadataKey + " = true");
+                    } else {
+                        getLogger().warning("[CLAN_CRYSTAL_RESTORE] TerritoryConfig null! Metadata eklenemedi.");
+                    }
+                    
+                    // Klan'a entity'yi bağla
+                    clan.setCrystalEntity(newCrystalEntity);
+                    clan.setHasCrystal(true); // ✅ GÜVENCE: hasCrystal'ı true yap
+                    
+                    getLogger().info("[CLAN_CRYSTAL_RESTORE] Klan'a entity bağlandı - hasCrystal: " + clan.hasCrystal() + 
+                        ", crystalEntity: " + (clan.getCrystalEntity() != null ? clan.getCrystalEntity().getUniqueId() : "null"));
+                    
+                    // ✅ YENİ: Blok PDC'sine klan ID'sini yaz (CustomBlockData)
+                    // Kristal entity'si havada spawn olur, PDC'yi altındaki blokta tut
+                    org.bukkit.block.Block belowBlock = crystalLoc.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN);
+                    me.mami.stratocraft.util.CustomBlockData.setClanCrystalData(belowBlock, clan.getId());
+                    
+                    restoredCount++;
+                    getLogger().info("[CLAN_CRYSTAL_RESTORE] Klan kristali geri yüklendi: " + 
+                        clan.getName() + " @ " + crystalLoc);
+                } else {
+                    // Mevcut entity'yi kullan, PDC'yi kontrol et ve güncelle
+                    getLogger().info("[CLAN_CRYSTAL_RESTORE] Mevcut entity kullanılıyor, PDC güncelleniyor: " + clan.getName());
+                    
+                    org.bukkit.block.Block belowBlock = crystalLoc.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN);
+                    me.mami.stratocraft.util.CustomBlockData.setClanCrystalData(belowBlock, clan.getId());
+                    
+                    // ✅ GÜVENCE: hasCrystal'ı true yap
+                    clan.setHasCrystal(true);
+                    
+                    restoredCount++;
+                    getLogger().info("[CLAN_CRYSTAL_RESTORE] Mevcut kristal entity kullanıldı: " + 
+                        clan.getName() + " @ " + crystalLoc + 
+                        ", hasCrystal: " + clan.hasCrystal() +
+                        ", crystalEntity: " + (clan.getCrystalEntity() != null ? clan.getCrystalEntity().getUniqueId() : "null"));
+                }
+            } catch (Exception e) {
+                failedCount++;
+                getLogger().warning("[CLAN_CRYSTAL_RESTORE] Klan kristali geri yükleme hatası (" + 
+                    clan.getName() + "): " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        
+        getLogger().info("[CLAN_CRYSTAL_RESTORE] Tamamlandı: " + restoredCount + " kristal geri yüklendi, " +
+            failedCount + " hata");
+    }
+    
+    /**
+     * ✅ YENİ: TerritoryData'ları geri yükle (sunucu açıldığında)
+     * TerritoryBoundaryManager'daki TerritoryData'ları güncelle
+     */
+    private void restoreTerritoryData(me.mami.stratocraft.manager.ClanManager clanManager,
+                                     me.mami.stratocraft.manager.TerritoryBoundaryManager boundaryManager) {
+        if (clanManager == null || boundaryManager == null) {
+            getLogger().warning("[TERRITORY_DATA_RESTORE] ClanManager veya TerritoryBoundaryManager null!");
+            return;
+        }
+        
+        getLogger().info("[TERRITORY_DATA_RESTORE] TerritoryData'lar geri yükleniyor...");
+        int restoredCount = 0;
+        int failedCount = 0;
+        
+        for (me.mami.stratocraft.model.Clan clan : clanManager.getAllClans()) {
+            if (clan == null) continue;
+            
+            // TerritoryData'yı al (yoksa oluşturulur)
+            me.mami.stratocraft.model.territory.TerritoryData territoryData = 
+                boundaryManager.getTerritoryData(clan);
+            
+            if (territoryData == null) {
+                continue; // TerritoryData yok, atla
+            }
+            
+            try {
+                // Sınırları yeniden hesapla (fenceLocations'tan)
+                // Bu, loadTerritoryBoundaries'de yapılıyor ama emin olmak için burada da yapıyoruz
+                if (!territoryData.getFenceLocations().isEmpty()) {
+                    territoryData.calculateBoundaries();
+                    restoredCount++;
+                    getLogger().info("[TERRITORY_DATA_RESTORE] TerritoryData geri yüklendi: " +
+                        clan.getName() + " (Çit sayısı: " + territoryData.getFenceCount() + ")");
+                } else if (territoryData.getRadius() > 0) {
+                    // Çit yoksa ama radius varsa, radius'tan hesapla
+                    territoryData.calculateBoundaries();
+                    restoredCount++;
+                    getLogger().info("[TERRITORY_DATA_RESTORE] TerritoryData geri yüklendi: " +
+                        clan.getName() + " (Radius: " + territoryData.getRadius() + ")");
+                }
+            } catch (Exception e) {
+                failedCount++;
+                getLogger().warning("[TERRITORY_DATA_RESTORE] TerritoryData geri yükleme hatası (" +
+                    clan.getName() + "): " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        
+        getLogger().info("[TERRITORY_DATA_RESTORE] Tamamlandı: " + restoredCount + " TerritoryData geri yüklendi, " +
+            failedCount + " hata");
     }
 }
