@@ -15,7 +15,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
@@ -485,16 +484,11 @@ public class ClanTerritoryMenu implements Listener {
                 Material type = neighbor.getType();
                 
                 if (type == Material.OAK_FENCE) {
-                    // ✅ YENİ: CustomBlockData.isClanFence() kullan
-                    boolean isClanFence = me.mami.stratocraft.util.CustomBlockData.isClanFence(neighbor);
-                    
-                    if (isClanFence) {
-                        UUID fenceClanId = me.mami.stratocraft.util.CustomBlockData.getClanFenceData(neighbor);
-                        if (fenceClanId != null && fenceClanId.equals(clan.getId())) {
-                            fenceLocations.add(neighbor.getLocation());
-                            visited.add(neighbor);
-                            continue; // Sınır, devam etme
-                        }
+                    // ✅ DÜZELTME: Sadece klan çiti olup olmadığını kontrol et (clanId yok)
+                    if (me.mami.stratocraft.util.CustomBlockData.isClanFence(neighbor)) {
+                        fenceLocations.add(neighbor.getLocation());
+                        visited.add(neighbor);
+                        continue; // Sınır, devam etme
                     }
                 }
                 

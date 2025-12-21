@@ -2820,7 +2820,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "clan_fence":
             case "klan_çiti":
             case "klan_citi":
-                return createClanFence();
+                // ✅ DÜZELTME: ItemManager.CLAN_FENCE.clone() kullan (createClanFence yanlış PDC key kullanıyor)
+                return ItemManager.CLAN_FENCE != null ? ItemManager.CLAN_FENCE.clone() : null;
             case "structure_core":
             case "yapi_cekirdegi":
             case "yapı_çekirdeği":
@@ -3022,7 +3023,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "clan_fence":
             case "klan_çiti":
             case "klan_citi":
-                return createClanFence();
+                // ✅ DÜZELTME: ItemManager.CLAN_FENCE.clone() kullan (createClanFence yanlış PDC key kullanıyor)
+                return ItemManager.CLAN_FENCE != null ? ItemManager.CLAN_FENCE.clone() : null;
             default:
                 return null;
         }
@@ -4046,7 +4048,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "clan_fence":
             case "klan_çiti":
             case "klan_citi":
-                return createClanFence();
+                // ✅ DÜZELTME: ItemManager.CLAN_FENCE.clone() kullan (createClanFence yanlış PDC key kullanıyor)
+                return ItemManager.CLAN_FENCE != null ? ItemManager.CLAN_FENCE.clone() : null;
             // Kancalar - 3 Kademeli Sistem
             case "rusty_hook":
             case "pasli_kanca":
@@ -4146,18 +4149,20 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         return crystal;
     }
 
-    private ItemStack createClanFence() {
-        ItemStack fence = new ItemStack(Material.OAK_FENCE);
-        org.bukkit.inventory.meta.ItemMeta meta = fence.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName("§6§lKlan Çiti");
-            meta.setLore(Arrays.asList("§7Klan bölgesi sınırlarını belirler."));
-            org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey(plugin, "clan_item");
-            meta.getPersistentDataContainer().set(key, org.bukkit.persistence.PersistentDataType.STRING, "FENCE");
-            fence.setItemMeta(meta);
-        }
-        return fence;
-    }
+    // ❌ ESKİ METOD KALDIRILDI: createClanFence() yanlış PDC key kullanıyordu ("clan_item" yerine "custom_id" olmalı)
+    // ✅ Artık ItemManager.CLAN_FENCE.clone() kullanılıyor (yapı çekirdeği gibi)
+    // private ItemStack createClanFence() {
+    //     ItemStack fence = new ItemStack(Material.OAK_FENCE);
+    //     org.bukkit.inventory.meta.ItemMeta meta = fence.getItemMeta();
+    //     if (meta != null) {
+    //         meta.setDisplayName("§6§lKlan Çiti");
+    //         meta.setLore(Arrays.asList("§7Klan bölgesi sınırlarını belirler."));
+    //         org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey(plugin, "clan_item"); // ❌ YANLIŞ KEY!
+    //         meta.getPersistentDataContainer().set(key, org.bukkit.persistence.PersistentDataType.STRING, "FENCE");
+    //         fence.setItemMeta(meta);
+    //     }
+    //     return fence;
+    // }
 
     /**
      * ItemStack'ten display name al

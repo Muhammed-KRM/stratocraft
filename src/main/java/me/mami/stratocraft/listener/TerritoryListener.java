@@ -308,49 +308,58 @@ public class TerritoryListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onFencePlace(BlockPlaceEvent event) {
-        Block block = event.getBlock();
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] Event tetiklendi - Priority: HIGH");
+        
+        ItemStack item = event.getItemInHand();
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] Item: " + (item != null ? item.getType().name() : "NULL"));
+        
+        // ✅ YAPı ÇEKİRDEĞİ GİBİ: Önce item kontrolü yap (blok yerleştirilmeden önce)
+        boolean isClanFenceItem = ItemManager.isCustomItem(item, "CLAN_FENCE");
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] isClanFenceItem: " + isClanFenceItem);
+        
+        if (!isClanFenceItem) {
+            me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] Normal çit kontrolü başlıyor");
+            // Normal çit kontrolü - bypass kontrolü
+            boolean hasBypass = me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(event.getPlayer());
+            me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] hasBypass: " + hasBypass);
+            if (!hasBypass) {
+                Block block = event.getBlock();
+                // Material kontrolü - Sadece OAK_FENCE kontrol et (klan çiti OAK_FENCE)
+                if (block.getType() == Material.OAK_FENCE) {
+                    me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] Normal çit engellendi");
+                    event.setCancelled(true);
+                    event.getPlayer().sendMessage("§cKlan alanında sadece §6Klan Çiti §cyerleştirilebilir!");
+                    event.getPlayer().sendMessage("§7Normal çitler kabul edilmez. Klan Çiti craft edin.");
+                }
+            }
+            return;
+        }
+        
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] Klan çiti item'ı tespit edildi, blok işaretleme başlıyor");
+        
+        // ✅ KRİTİK: Klan çiti item'ı ile yerleştirme - blok yerleştirildikten SONRA işaretle
+        // YAPı ÇEKİRDEĞİ GİBİ: getBlockPlaced() kullan (blok artık dünyada)
+        Block placed = event.getBlockPlaced();
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] getBlockPlaced(): " + (placed != null ? placed.getType().name() + " @ " + placed.getLocation() : "NULL"));
+        
+        if (placed == null || placed.getType() != Material.OAK_FENCE) {
+            me.mami.stratocraft.Main.getInstance().getLogger().warning("[CLAN_FENCE_PLACE] Blok null veya OAK_FENCE değil, return");
+            return;
+        }
+        
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] setClanFenceData() çağrılıyor: " + placed.getLocation());
+        // ✅ KRİTİK: Admin bypass olsa bile özel blok işaretlemesi yapılmalı
+        // Böylece /stratocraft give ile alınan veya craftlanan klan çiti yere konup kırılınca
+        // tekrar klan çiti olarak düşer.
+        boolean setResult = me.mami.stratocraft.util.CustomBlockData.setClanFenceData(placed);
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] setClanFenceData() sonucu: " + setResult);
+        
         Player player = event.getPlayer();
         
-        // Admin bypass kontrolü
-        if (me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(player)) {
-            return; // Admin bypass yetkisi varsa korumaları atla
-        }
-        
-        // Material kontrolü - Sadece OAK_FENCE kontrol et (klan çiti OAK_FENCE)
-        if (block.getType() != Material.OAK_FENCE) {
-            return;
-        }
-        
-        // ✅ YAPı ÇEKİRDEĞİ GİBİ: ItemStack'ten kontrol et (isCustomItem kullan)
-        ItemStack item = event.getItemInHand();
-        if (!ItemManager.isCustomItem(item, "CLAN_FENCE")) {
-            // Normal çit yerleştirme engelle
-            event.setCancelled(true);
-            player.sendMessage("§cKlan alanında sadece §6Klan Çiti §cyerleştirilebilir!");
-            player.sendMessage("§7Normal çitler kabul edilmez. Klan Çiti craft edin.");
-            return;
-        }
-        
-        // ✅ YAPı ÇEKİRDEĞİ GİBİ: Oyuncunun klanını kullan (ilk yerleştirmede item'da veri yok)
-        // Kırıldıktan sonra yerleştirildiğinde item'dan veri onCustomBlockPlaceRestore'da okunur
+        // ✅ Klan kontrolü - genişletme için (klan yoksa genişletme yapılmaz)
         Clan playerClan = territoryManager.getClanManager().getClanByPlayer(player.getUniqueId());
-        UUID clanIdToSave = null;
-        if (playerClan != null) {
-            clanIdToSave = playerClan.getId();
-        }
-        
-        // ✅ YAPı ÇEKİRDEĞİ GİBİ: PersistentDataContainer'a kaydet
-        // Not: onCustomBlockPlaceRestore'da item'dan veri varsa o öncelikli olacak (event priority aynı ama sonra çalışır)
-        me.mami.stratocraft.util.CustomBlockData.setClanFenceData(block, clanIdToSave);
-        
-        // ✅ Eğer klan yoksa, genişletme işlemi yapma
-        if (clanIdToSave == null || playerClan == null) {
-            return;
-        }
-        
-        // ✅ TerritoryData'ya ekle (backup - sadece bir kez)
-        if (boundaryManager != null) {
-            boundaryManager.addFenceLocation(playerClan, block.getLocation());
+        if (playerClan == null) {
+            return; // Klan yoksa genişletme işlemi yapma
         }
         
         // Kristal var mı?
@@ -362,7 +371,7 @@ public class TerritoryListener implements Listener {
         if (territory == null) return;
         
         Location crystalLoc = playerClan.getCrystalLocation();
-        Location fenceLoc = block.getLocation();
+        Location fenceLoc = placed.getLocation();
         
         // Aynı dünya kontrolü
         if (!crystalLoc.getWorld().equals(fenceLoc.getWorld())) {
@@ -406,54 +415,68 @@ public class TerritoryListener implements Listener {
     /**
      * ✅ YAPı ÇEKİRDEĞİ GİBİ: Klan çiti kırma event'i
      * PersistentDataContainer'dan veri oku ve drop edilen item'a ekle
+     * ✅ KRİTİK: HIGHEST priority kullan (diğer listener'lar override etmesin)
      */
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onFenceBreak(BlockBreakEvent event) {
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] Event tetiklendi - Priority: HIGHEST");
+        
         Block block = event.getBlock();
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] Block: " + block.getType().name() + " @ " + block.getLocation());
         
         // Material kontrolü
         if (block.getType() != Material.OAK_FENCE) {
+            me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] OAK_FENCE değil, return");
             return;
         }
         
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] OAK_FENCE tespit edildi, chunk kontrolü başlıyor");
+        
         // ✅ YAPı ÇEKİRDEĞİ GİBİ: Chunk yükleme kontrolü (PDC okumak için chunk yüklü olmalı)
         org.bukkit.Chunk chunk = block.getChunk();
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] Chunk yüklü mü: " + chunk.isLoaded());
+        
         if (!chunk.isLoaded()) {
+            me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] Chunk yüklü değil, yüklenmeye çalışılıyor");
             try {
                 chunk.load(false);
+                me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] Chunk yükleme sonucu: " + chunk.isLoaded());
             } catch (Exception e) {
                 // Chunk yüklenemiyorsa atla
-                if (me.mami.stratocraft.Main.getInstance() != null) {
-                    me.mami.stratocraft.Main.getInstance().getLogger().fine("Klan çiti kırma: Chunk yüklenemedi - " + e.getMessage());
-                }
+                me.mami.stratocraft.Main.getInstance().getLogger().warning("[CLAN_FENCE_BREAK] Chunk yüklenemedi: " + e.getMessage());
                 return;
             }
         }
         
-        // ✅ YAPı ÇEKİRDEĞİ GİBİ: PDC'den veri oku (chunk yüklüyse)
-        UUID clanId = null;
-        try {
-            clanId = me.mami.stratocraft.util.CustomBlockData.getClanFenceData(block);
-        } catch (Exception e) {
-            // PDC okuma hatası
-            if (me.mami.stratocraft.Main.getInstance() != null) {
-                me.mami.stratocraft.Main.getInstance().getLogger().warning("Klan çiti kırma: PDC okuma hatası - " + e.getMessage());
-            }
-        }
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] isClanFence() kontrolü başlıyor");
+        // ✅ DÜZELTME: Sadece klan çiti bayrağını kontrol et (clanId yok)
+        // ✅ DEBUG: Runtime + PDC kontrolü
+        boolean isClanFence = me.mami.stratocraft.util.CustomBlockData.isClanFence(block);
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] isClanFence() sonucu: " + isClanFence);
         
-        if (clanId == null) {
+        if (!isClanFence) {
             // Normal çit, işlem yok
+            me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] Normal çit, return (klan çiti değil)");
             return;
         }
         
-        // ✅ Normal drop'ları iptal et
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] KLAN ÇİTİ TESPİT EDİLDİ! Drop işlemi başlıyor");
+        
+        // ✅ Normal drop'ları iptal et (HIGHEST priority'de önce biz çalışalım)
         event.setDropItems(false);
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] setDropItems(false) çağrıldı");
         
         // ✅ YAPı ÇEKİRDEĞİ GİBİ: ItemManager'dan static field'ı kullan
+        // ✅ DÜZELTME: ClanId verisi ekleme - stacklenme için clanId verisi eklenmeyecek
+        // ClanId verisi sadece yerleştirme sırasında oyuncunun klanından alınır, item'da tutulmaz
+        // Bu sayede tüm klan çitleri stacklenebilir
         ItemStack clanFenceItem = ItemManager.CLAN_FENCE != null ? ItemManager.CLAN_FENCE.clone() : null;
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] ItemManager.CLAN_FENCE: " + (ItemManager.CLAN_FENCE != null ? "VAR" : "NULL"));
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] clanFenceItem clone: " + (clanFenceItem != null ? "VAR" : "NULL"));
         
         // ✅ YAPı ÇEKİRDEĞİ GİBİ: Eğer item null ise fallback (olmamalı ama güvenlik için)
         if (clanFenceItem == null) {
+            me.mami.stratocraft.Main.getInstance().getLogger().warning("[CLAN_FENCE_BREAK] clanFenceItem null, fallback oluşturuluyor");
             clanFenceItem = new ItemStack(Material.OAK_FENCE);
             org.bukkit.inventory.meta.ItemMeta meta = clanFenceItem.getItemMeta();
             if (meta != null) {
@@ -469,41 +492,34 @@ public class TerritoryListener implements Listener {
                 clanFenceItem.setItemMeta(meta);
             }
         } else {
-            // ✅ YAPı ÇEKİRDEĞİ GİBİ: PDC verisini ekle (bloka geri yazmak için)
-            // Not: Structure core'da owner verisi item'a EKLENMİYOR (stacklenme için)
-            // Ama klan çitlerinde clanId verisi item'a eklenmeli (bloka geri yazmak için)
-            // Ancak bu stacklenmeyi engellemez çünkü tüm klan çitleri aynı item (CLAN_FENCE)
-            org.bukkit.inventory.meta.ItemMeta meta = clanFenceItem.getItemMeta();
-            if (meta != null) {
-                org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
-                org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "clan_fence");
-                container.set(key, org.bukkit.persistence.PersistentDataType.STRING, clanId.toString());
-                clanFenceItem.setItemMeta(meta);
-            }
+            // ✅ DÜZELTME: ClanId verisi EKLENMEYECEK - stacklenme için
+            // ClanId verisi sadece CustomBlockData'da (PDC) tutulur
+            // Item'da clanId verisi yok, bu yüzden tüm çitler stacklenebilir
+            // Yerleştirme sırasında oyuncunun klanı kullanılır (onFencePlace'te)
+            me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] clanFenceItem hazır: " + clanFenceItem.getType().name());
         }
         
         if (clanFenceItem != null) {
             // ✅ Özel item'ı drop et
+            me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] dropItemNaturally çağrılıyor: " + block.getLocation());
             block.getWorld().dropItemNaturally(block.getLocation(), clanFenceItem);
+            me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] dropItemNaturally tamamlandı");
+        } else {
+            me.mami.stratocraft.Main.getInstance().getLogger().severe("[CLAN_FENCE_BREAK] clanFenceItem hala null, drop edilemedi!");
         }
         
         // ✅ YAPı ÇEKİRDEĞİ GİBİ: CustomBlockData'dan temizle
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] removeClanFenceData() çağrılıyor");
         me.mami.stratocraft.util.CustomBlockData.removeClanFenceData(block);
-        
-        // ✅ TerritoryData'dan kaldır (backup)
-        if (boundaryManager != null) {
-            Clan clan = territoryManager.getClanManager().getClan(clanId);
-            if (clan != null) {
-                boundaryManager.removeFenceLocation(clan, block.getLocation());
-            }
-        }
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_BREAK] removeClanFenceData() tamamlandı");
     }
     
     /**
      * ✅ YENİ: BlockPlaceEvent'te ItemStack'ten veri geri yükleme
      * YAPı ÇEKİRDEĞİ GİBİ: Tüm özel bloklar için ItemStack'ten veri oku ve bloka yaz
+     * ✅ KRİTİK: MONITOR priority kullan (blok artık dünyada olduğu için PDC'ye yazabiliriz)
      */
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCustomBlockPlaceRestore(BlockPlaceEvent event) {
         Block block = event.getBlock();
         ItemStack item = event.getItemInHand();
@@ -518,70 +534,52 @@ public class TerritoryListener implements Listener {
         
         org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
         
-        // ✅ YAPı ÇEKİRDEĞİ GİBİ: Klan çiti kontrolü (item'dan geri yükleme)
-        // Klan çiti kırıldığında item'a clan_fence verisi ekleniyor, buradan geri yükleniyor
+        // ✅ YAPı ÇEKİRDEĞİ GİBİ: Klan çiti kontrolü
+        // ✅ DÜZELTME: onFencePlace zaten HIGH priority'de setClanFenceData() çağırıyor
+        // Bu MONITOR event'i sadece ek güvence (double-check) için
+        // onFencePlace'te runtime set edildiği için burada tekrar set etmeye gerek yok
+        // Ama PDC yazımını garantilemek için burada da deneyebiliriz (idempotent)
         if (type == Material.OAK_FENCE) {
+            me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE_RESTORE] OAK_FENCE tespit edildi (MONITOR priority)");
             // ✅ ÖNCE: isCustomItem kontrolü (yapı çekirdeği gibi)
-            if (ItemManager.isCustomItem(item, "CLAN_FENCE")) {
-                org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "clan_fence");
-                if (container.has(key, org.bukkit.persistence.PersistentDataType.STRING)) {
-                    try {
-                        String clanIdStr = container.get(key, org.bukkit.persistence.PersistentDataType.STRING);
-                        UUID clanId = UUID.fromString(clanIdStr);
-                        
-                        // ✅ YAPı ÇEKİRDEĞİ GİBİ: Bloka veri yaz
-                        me.mami.stratocraft.util.CustomBlockData.setClanFenceData(block, clanId);
-                        
-                        // ✅ TerritoryData'ya ekle (backup)
-                        if (boundaryManager != null) {
-                            Clan clan = territoryManager.getClanManager().getClan(clanId);
-                            if (clan != null) {
-                                boundaryManager.addFenceLocation(clan, block.getLocation());
-                            }
-                        }
-                    } catch (IllegalArgumentException e) {
-                        // UUID parse hatası
-                        if (me.mami.stratocraft.Main.getInstance() != null) {
-                            me.mami.stratocraft.Main.getInstance().getLogger().warning("Klan çiti yerleştirme: UUID parse hatası - " + e.getMessage());
-                        }
-                    }
-                }
+            boolean isClanFenceItem = ItemManager.isCustomItem(item, "CLAN_FENCE");
+            me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE_RESTORE] isClanFenceItem: " + isClanFenceItem);
+            if (isClanFenceItem) {
+                // ✅ MONITOR priority'de blok kesinlikle dünyada, PDC yazımını garantile
+                // (onFencePlace HIGH priority'de PDC yazımı başarısız olmuşsa burada deneriz)
+                me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE_RESTORE] setClanFenceData() çağrılıyor (MONITOR): " + block.getLocation());
+                boolean setResult = me.mami.stratocraft.util.CustomBlockData.setClanFenceData(block);
+                me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE_RESTORE] setClanFenceData() sonucu: " + setResult);
             }
         }
         
         // ✅ Yapı çekirdeği kontrolü
+        // ✅ DÜZELTME: Item'dan veri okunmayacak (stacklenme için item'da veri yok)
+        // Yapı çekirdeği yerleştirildiğinde oyuncunun UUID'si kullanılır (StructureCoreListener'da zaten yapılıyor)
+        // Bu event sadece item kontrolü için, veri geri yükleme yapılmaz
+        // Çünkü StructureCoreListener'da zaten CustomBlockData.setStructureCoreData() çağrılıyor
         if (type == Material.OAK_LOG) {
-            org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey("stratocraft", "structure_core_owner");
-            if (container.has(ownerKey, org.bukkit.persistence.PersistentDataType.STRING)) {
-                String ownerIdStr = container.get(ownerKey, org.bukkit.persistence.PersistentDataType.STRING);
-                UUID ownerId = UUID.fromString(ownerIdStr);
-                
-                // ✅ DÜZELTME: CustomBlockData kütüphanesi ile PDC kullan (OAK_LOG TileState değil ama artık çalışıyor)
-                me.mami.stratocraft.util.CustomBlockData.setStructureCoreData(block, ownerId);
-                
-                // StructureCoreManager'a kaydet (memory'de tutulacak + PDC'ye de kaydediliyor)
-                me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
-                if (mainPlugin != null && mainPlugin.getStructureCoreManager() != null) {
-                    mainPlugin.getStructureCoreManager().addInactiveCore(block.getLocation(), ownerId);
-                }
+            // ✅ ÖNCE: isCustomItem kontrolü (yapı çekirdeği gibi)
+            if (ItemManager.isCustomItem(item, "STRUCTURE_CORE")) {
+                // ✅ DÜZELTME: Item'da owner verisi yok (stacklenme için)
+                // Yerleştirme sırasında oyuncunun UUID'si kullanılır (StructureCoreListener'da zaten yapılıyor)
+                // Bu event sadece item kontrolü için, veri geri yükleme yapılmaz
+                // Çünkü StructureCoreListener'da zaten CustomBlockData.setStructureCoreData() çağrılıyor
             }
         }
         
         // ✅ Tuzak çekirdeği kontrolü
+        // ✅ DÜZELTME: Item'dan veri okunmayacak (stacklenme için item'da veri yok)
+        // Tuzak çekirdeği yerleştirildiğinde oyuncunun UUID'si kullanılır (TrapListener'da zaten yapılıyor)
+        // Bu event sadece item kontrolü için, veri geri yükleme yapılmaz
+        // Çünkü TrapListener'da zaten CustomBlockData.setTrapCoreData() çağrılıyor
         if (type == Material.LODESTONE) {
-            org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey("stratocraft", "trap_core_owner");
-            if (container.has(ownerKey, org.bukkit.persistence.PersistentDataType.STRING)) {
-                String ownerIdStr = container.get(ownerKey, org.bukkit.persistence.PersistentDataType.STRING);
-                UUID ownerId = UUID.fromString(ownerIdStr);
-                
-                // ✅ DÜZELTME: CustomBlockData kütüphanesi ile PDC kullan (LODESTONE TileState değil ama artık çalışıyor)
-                me.mami.stratocraft.util.CustomBlockData.setTrapCoreData(block, ownerId);
-                
-                // TrapManager'a kaydet (memory'de tutulacak + PDC'ye de kaydediliyor)
-                me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
-                if (mainPlugin != null && mainPlugin.getTrapManager() != null) {
-                    mainPlugin.getTrapManager().registerInactiveTrapCore(block.getLocation(), ownerId);
-                }
+            // ✅ ÖNCE: isCustomItem kontrolü (tuzak çekirdeği gibi)
+            if (ItemManager.isCustomItem(item, "TRAP_CORE")) {
+                // ✅ DÜZELTME: Item'da owner verisi yok (stacklenme için)
+                // Yerleştirme sırasında oyuncunun UUID'si kullanılır (TrapListener'da zaten yapılıyor)
+                // Bu event sadece item kontrolü için, veri geri yükleme yapılmaz
+                // Çünkü TrapListener'da zaten CustomBlockData.setTrapCoreData() çağrılıyor
             }
         }
         
@@ -637,11 +635,11 @@ public class TerritoryListener implements Listener {
         boolean hasCustomData = false;
         
         // ✅ Klan çiti kontrolü
+        // ✅ DÜZELTME: Sadece boolean bayrak tutuluyor (clanId yok)
         if (type == Material.OAK_FENCE) {
-            UUID clanId = me.mami.stratocraft.util.CustomBlockData.getClanFenceData(block);
-            if (clanId != null) {
+            if (me.mami.stratocraft.util.CustomBlockData.isClanFence(block)) {
                 org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "clan_fence");
-                container.set(key, org.bukkit.persistence.PersistentDataType.STRING, clanId.toString());
+                container.set(key, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
                 hasCustomData = true;
             }
         }
@@ -729,16 +727,9 @@ public class TerritoryListener implements Listener {
                             Material type = block.getType();
                             
                             // ✅ Klan çiti kontrolü
-                            if (type == Material.OAK_FENCE) {
-                                UUID clanId = me.mami.stratocraft.util.CustomBlockData.getClanFenceData(block);
-                                if (clanId != null && boundaryManager != null) {
-                                    // ✅ DÜZELTME: Artık main thread'deyiz, direkt çağır
-                                    Clan clan = territoryManager.getClanManager().getClan(clanId);
-                                    if (clan != null) {
-                                        boundaryManager.addFenceLocation(clan, block.getLocation());
-                                    }
-                                }
-                            }
+                            // ✅ DÜZELTME: Klan çiti artık sadece bayrak tutuyor (clanId yok)
+                            // Chunk yüklendiğinde özel bir işlem yapmaya gerek yok
+                            // Çünkü çitler sadece yerleştirildiğinde set ediliyor
                             
                             // ✅ Yapı çekirdeği kontrolü
                             if (type == Material.OAK_LOG) {
@@ -1030,13 +1021,13 @@ public class TerritoryListener implements Listener {
         // ✅ DÜZELTME: Debug log ekle (çit algılama sorununu tespit etmek için)
         me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
         if (mainPlugin != null) {
-            mainPlugin.getLogger().info("Klan kristali yerleştirme: Çit kontrolü başlatılıyor...");
+            mainPlugin.getLogger().info("[CRYSTAL_PLACE] Çit kontrolü başlatılıyor... Center: " + finalPlaceLocation.getLocation());
         }
         
         boolean isValid = isSurroundedByClanFences3D(finalPlaceLocation);
         
         if (mainPlugin != null) {
-            mainPlugin.getLogger().info("Klan kristali yerleştirme: Çit kontrolü sonucu: " + isValid);
+            mainPlugin.getLogger().info("[CRYSTAL_PLACE] Çit kontrolü sonucu: " + isValid + " (Center: " + finalPlaceLocation.getLocation() + ")");
         }
         
         if (!isValid) {
@@ -1358,121 +1349,130 @@ public class TerritoryListener implements Listener {
         }
     }
     
-    // ✅ YENİ: 3D Flood Fill Algoritması ile Klan Çiti Kontrolü
-    // Yükseklik farkı ve havada çitler desteklenir
+    // ✅ DÜZELTME: Klan Çiti “çevreleme” kontrolü (2.5D Flood Fill)
+    //
+    // Problem: Tam 3D flood-fill (UP/DOWN ile) çitlerin ÜSTÜNDEN kaçabiliyor.
+    // Çünkü çitler yalnızca kendi blok koordinatında (ör. y=86) var; y=88 gibi seviyelerde
+    // “çit üstü hava”dan dışarı sızma olabiliyor ve bu da maxIterations ile false’a düşürüyor.
+    //
+    // Çözüm: Sadece yatay (N/S/E/W) arama yap.
+    // Ayrıca “çitler genelde zeminde, iç alan ise 1 blok üstte hava” olduğu için,
+    // yatay komşuyu kontrol ederken hem aranan Y seviyesinde (scanY) hem de 1 blok altında (scanY-1)
+    // çit var mı diye bak.
     private boolean isSurroundedByClanFences3D(Block center) {
-        int heightTolerance = territoryConfig != null ? 
-            territoryConfig.getFenceHeightTolerance() : 5; // Varsayılan: 5 blok
-        
-        Set<Location> visited = new HashSet<>();
-        Queue<Block> queue = new LinkedList<>();
+        me.mami.stratocraft.Main.getInstance().getLogger()
+            .info("[isSurroundedByClanFences3D] Başlangıç (2.5D) - Center: " + center.getLocation());
+
+        if (center == null || center.getWorld() == null) {
+            me.mami.stratocraft.Main.getInstance().getLogger()
+                .warning("[isSurroundedByClanFences3D] Center null/world null, return false");
+            return false;
+        }
+
+        // İç alan taramasını mümkünse havada başlat (zemin üstü 1 blok)
+        Block start = center;
+        if (start.getType().isSolid()) {
+            Block up = start.getRelative(BlockFace.UP);
+            if (up != null && !up.getType().isSolid()) {
+                start = up;
+            }
+        }
+
+        final int scanY = start.getY();
+        final int centerX = center.getX();
+        final int centerZ = center.getZ();
+
+        // Bu kontrolün “makul” sınırı (lag önlemek için). 64 blok yarıçap = 4 chunk.
+        final int maxRadius = 64;
+        final int minArea = 9; // 3x3
+        final int maxIterations = (2 * maxRadius + 1) * (2 * maxRadius + 1); // 2D alan üst limiti
+
+        me.mami.stratocraft.Main.getInstance().getLogger().info(
+            "[isSurroundedByClanFences3D] scanY=" + scanY + ", maxRadius=" + maxRadius + ", maxIterations=" + maxIterations);
+
+        java.util.Set<Long> visited = new java.util.HashSet<>();
+        java.util.Queue<Block> queue = new java.util.LinkedList<>();
         boolean foundClanFence = false;
-        
-        queue.add(center);
-        visited.add(center.getLocation());
-        
-        int minArea = 9; // Minimum alan (3x3)
-        int maxIterations = 1000; // 3D için daha fazla iteration gerekebilir
+
+        queue.add(start);
+        visited.add(packCoords(start));
+
         int iterations = 0;
-        
-        int centerY = center.getY();
-        
+
+        BlockFace[] faces = { BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST };
+
         while (!queue.isEmpty()) {
             Block current = queue.poll();
             iterations++;
-            
+
             if (iterations > maxIterations) {
-                return false; // Çok büyük alan
+                me.mami.stratocraft.Main.getInstance().getLogger().info(
+                    "[isSurroundedByClanFences3D] maxIterations aşıldı (alan açık ya da çok büyük). iterations=" + iterations);
+                return false;
             }
-            
-            // ✅ YENİ: 6 yöne bak (3D)
-            BlockFace[] faces = {
-                BlockFace.NORTH, BlockFace.SOUTH,
-                BlockFace.EAST, BlockFace.WEST,
-                BlockFace.UP, BlockFace.DOWN  // ✅ Y ekseni eklendi
-            };
-            
+
             for (BlockFace face : faces) {
-                Block neighbor = current.getRelative(face);
-                Location neighborLoc = neighbor.getLocation();
-                
-                if (visited.contains(neighborLoc)) continue;
-                
-                // ✅ DÜZELTME: Chunk yükleme kontrolü (blok okumak için chunk yüklü olmalı)
-                // Not: Zaten önceden chunk'lar yükleniyor ama yine de kontrol edelim (güvenlik için)
-                org.bukkit.Chunk neighborChunk = neighbor.getChunk();
-                if (!neighborChunk.isLoaded()) {
-                    // Chunk yüklenmemiş, yükle (ama bu nadiren olmalı çünkü önceden yükleniyor)
-                    neighborChunk.load(false);
-                    // Chunk yüklenemediyse bu bloğu atla
-                    if (!neighborChunk.isLoaded()) {
-                        visited.add(neighborLoc);
-                        continue;
-                    }
+                int nx = current.getX() + face.getModX();
+                int nz = current.getZ() + face.getModZ();
+
+                // Yarıçap sınırı (çitle çevrili değilse dışarı sızmayı hızlı yakalar)
+                if (Math.abs(nx - centerX) > maxRadius || Math.abs(nz - centerZ) > maxRadius) {
+                    me.mami.stratocraft.Main.getInstance().getLogger().info(
+                        "[isSurroundedByClanFences3D] maxRadius dışına kaçış tespit edildi -> açık alan. nx=" + nx + " nz=" + nz);
+                    return false;
                 }
-                
-                // ✅ YENİ: Yükseklik toleransı kontrolü
-                int heightDiff = Math.abs(neighbor.getY() - centerY);
-                if (heightDiff > heightTolerance) {
-                    visited.add(neighborLoc); // Ziyaret edildi olarak işaretle
-                    continue; // Tolerans dışında, atla
+
+                Block neighbor = center.getWorld().getBlockAt(nx, scanY, nz);
+                long neighborKey = packCoords(neighbor);
+                if (visited.contains(neighborKey)) continue;
+
+                // ✅ Çit bariyeri kontrolü: scanY ve scanY-1 seviyesinde bak
+                Block fenceAtY = neighbor.getType() == Material.OAK_FENCE ? neighbor : null;
+                Block fenceBelow = center.getWorld().getBlockAt(nx, scanY - 1, nz);
+                if (fenceBelow.getType() == Material.OAK_FENCE) {
+                    // Eğer scanY’de de çit varsa, aşağıya bakmaya gerek yok; ama ikisini de destekleyelim
+                    if (fenceAtY == null) fenceAtY = fenceBelow;
                 }
-                
-                Material type = neighbor.getType();
-                
-                // Çit kontrolü
-                if (type == Material.OAK_FENCE) {
-                    // ✅ DÜZELTME: Chunk yükleme kontrolü (isClanFenceFast içinde de var ama burada da kontrol edelim)
-                    org.bukkit.Chunk fenceChunk = neighbor.getChunk();
-                    if (!fenceChunk.isLoaded()) {
-                        fenceChunk.load(false);
+
+                if (fenceAtY != null && fenceAtY.getType() == Material.OAK_FENCE) {
+                    me.mami.stratocraft.Main.getInstance().getLogger().info(
+                        "[isSurroundedByClanFences3D] OAK_FENCE bulundu (barrier) @ " + fenceAtY.getLocation());
+
+                    boolean isClanFence = isClanFenceFast(fenceAtY);
+                    me.mami.stratocraft.Main.getInstance().getLogger().info(
+                        "[isSurroundedByClanFences3D] isClanFenceFast sonucu: " + isClanFence + " @ " + fenceAtY.getLocation());
+
+                    if (!isClanFence) {
+                        // Normal çit varsa alan geçersiz
+                        me.mami.stratocraft.Main.getInstance().getLogger().info(
+                            "[isSurroundedByClanFences3D] Normal çit bulundu -> geçersiz alan: " + fenceAtY.getLocation());
+                        return false;
                     }
-                    
-                    if (isClanFenceFast(neighbor)) {
-                        foundClanFence = true;
-                        visited.add(neighborLoc);
-                        
-                        // ✅ Çit bağlantı kontrolü (opsiyonel)
-                        if (territoryConfig != null && territoryConfig.isFenceConnectionRequired()) {
-                            if (current.getType() == Material.OAK_FENCE && 
-                                isClanFenceFast(current)) {
-                                if (!isFenceConnected(current, neighbor)) {
-                                    // Bağlantısız çit - alan açık
-                                    me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
-                                    if (mainPlugin != null) {
-                                        mainPlugin.getLogger().info("Klan kristali: Bağlantısız çit tespit edildi - " + neighborLoc);
-                                    }
-                                    return false;
-                                }
-                            }
-                        }
-                        
-                        continue; // Klan çiti, devam et
-                    } else {
-                        // ✅ DÜZELTME: Normal çit tespit edildi - debug log
-                        me.mami.stratocraft.Main mainPlugin = me.mami.stratocraft.Main.getInstance();
-                        if (mainPlugin != null) {
-                            mainPlugin.getLogger().info("Klan kristali: Normal çit tespit edildi (klan çiti değil) - " + neighborLoc);
-                        }
-                        return false; // Normal çit - alan açık
-                    }
-                }
-                
-                // Solid blok - engel (yükseklik farkı olabilir)
-                if (type != Material.AIR && 
-                    type != Material.CAVE_AIR && 
-                    type != Material.VOID_AIR) {
-                    visited.add(neighborLoc);
+
+                    foundClanFence = true;
+                    visited.add(neighborKey); // Bariyer olarak işaretle
                     continue;
                 }
-                
-                // Hava - aramaya devam (3D)
-                visited.add(neighborLoc);
+
+                Material type = neighbor.getType();
+
+                // Solid blok bariyer (duvar vs.)
+                if (type.isSolid()) {
+                    visited.add(neighborKey);
+                    continue;
+                }
+
+                // Geçilebilir alan
+                visited.add(neighborKey);
                 queue.add(neighbor);
             }
         }
-        
-        return visited.size() >= minArea && foundClanFence;
+
+        boolean result = visited.size() >= minArea && foundClanFence;
+        me.mami.stratocraft.Main.getInstance().getLogger().info(
+            "[isSurroundedByClanFences3D] Bitiş (2.5D) - visited.size=" + visited.size() +
+            ", minArea=" + minArea + ", foundClanFence=" + foundClanFence + ", result=" + result);
+        return result;
     }
     
     /**
@@ -1616,49 +1616,17 @@ public class TerritoryListener implements Listener {
      * ✅ FALLBACK: TerritoryData kontrolü (backup)
      */
     private boolean isClanFenceFast(Block block) {
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[isClanFenceFast] Başlangıç - Block: " + (block != null ? block.getType().name() + " @ " + block.getLocation() : "NULL"));
+        
         if (block.getType() != Material.OAK_FENCE) {
+            me.mami.stratocraft.Main.getInstance().getLogger().info("[isClanFenceFast] OAK_FENCE değil, return false");
             return false;
         }
         
-        // ✅ DÜZELTME: Chunk yükleme kontrolü (PDC okumak için chunk yüklü olmalı)
-        // Not: getClanFenceData() zaten chunk yükleme kontrolü yapıyor, burada tekrar yapmaya gerek yok
-        // Ancak async context'te çalışıyorsak chunk yükleme gerekebilir
-        
-        // ✅ YENİ: PersistentDataContainer kontrolü
-        UUID clanId = me.mami.stratocraft.util.CustomBlockData.getClanFenceData(block);
-        if (clanId != null) {
-            return true; // Klan çiti
-        }
-        
-        // ✅ FALLBACK: TerritoryData kontrolü (backup - chunk yükleme gerektirmez)
-        if (boundaryManager != null) {
-            // TerritoryData'da bu konum var mı?
-            org.bukkit.Location blockLoc = block.getLocation();
-            Clan nearbyClan = territoryManager.getTerritoryOwner(blockLoc);
-            if (nearbyClan != null) {
-                me.mami.stratocraft.model.territory.TerritoryData data = boundaryManager.getTerritoryData(nearbyClan);
-                if (data != null) {
-                    for (org.bukkit.Location fenceLoc : data.getFenceLocations()) {
-                        if (fenceLoc.getWorld().equals(blockLoc.getWorld()) &&
-                            fenceLoc.getBlockX() == blockLoc.getBlockX() &&
-                            fenceLoc.getBlockY() == blockLoc.getBlockY() &&
-                            fenceLoc.getBlockZ() == blockLoc.getBlockZ()) {
-                            return true; // TerritoryData'da bulundu
-                        }
-                    }
-                }
-            }
-        }
-        
-        // ❌ ESKİ: Metadata kontrolü kaldırıldı
-        // if (territoryConfig != null) {
-        //     String metadataKey = territoryConfig.getFenceMetadataKey();
-        //     if (block.hasMetadata(metadataKey)) {
-        //         return true;
-        //     }
-        // }
-        
-        return false;
+        // ✅ DÜZELTME: Sadece boolean bayrak kontrol ediliyor (clanId yok)
+        boolean result = me.mami.stratocraft.util.CustomBlockData.isClanFence(block);
+        me.mami.stratocraft.Main.getInstance().getLogger().info("[isClanFenceFast] isClanFence() sonucu: " + result + " @ " + block.getLocation());
+        return result;
     }
     
     // ========== KLAN KRISTALİ KIRILMA ==========

@@ -11,6 +11,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -312,16 +313,14 @@ public class TrapListener implements Listener {
         event.setDropItems(false);
         
         // ✅ Özel item oluştur (TRAP_CORE item'ı)
-        ItemStack trapCoreItem = ItemManager.TRAP_CORE.clone();
+        // ✅ DÜZELTME: Owner verisi ekleme - stacklenme için owner verisi eklenmeyecek
+        // Owner verisi sadece yerleştirme sırasında memory'den alınır, item'da tutulmaz
+        // Bu sayede tüm tuzak çekirdekleri stacklenebilir
+        ItemStack trapCoreItem = ItemManager.TRAP_CORE != null ? ItemManager.TRAP_CORE.clone() : null;
         if (trapCoreItem != null) {
-            // ✅ ItemStack'e owner verisi ekle (PersistentDataContainer ile)
-            org.bukkit.inventory.meta.ItemMeta meta = trapCoreItem.getItemMeta();
-            if (meta != null) {
-                org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
-                org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey(me.mami.stratocraft.Main.getInstance(), "trap_core_owner");
-                container.set(ownerKey, org.bukkit.persistence.PersistentDataType.STRING, ownerId.toString());
-                trapCoreItem.setItemMeta(meta);
-            }
+            // ✅ Owner verisi EKLENMEYECEK - stacklenme için
+            // Owner verisi sadece TrapManager'da memory'de tutulur
+            // Item'da owner verisi yok, bu yüzden tüm çekirdekler stacklenebilir
             
             // ✅ Özel item'ı drop et
             block.getWorld().dropItemNaturally(block.getLocation(), trapCoreItem);
@@ -336,5 +335,32 @@ public class TrapListener implements Listener {
         
         // ✅ PERFORMANS: Cache temizleme ile birlikte veri silme
         me.mami.stratocraft.util.CustomBlockData.removeTrapCoreData(block);
+    }
+    
+    /**
+     * ✅ YENİ: BlockPlaceEvent'te ItemStack'ten veri geri yükleme
+     * Yapı çekirdeği gibi: Tuzak çekirdeği yerleştirildiğinde memory'den owner verisi alınır
+     * Item'da owner verisi yok (stacklenme için), bu yüzden sadece memory'den kontrol edilir
+     * ✅ KRİTİK: MONITOR priority kullan (blok artık dünyada olduğu için PDC'ye yazabiliriz)
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onTrapCorePlaceRestore(BlockPlaceEvent event) {
+        Block block = event.getBlock();
+        ItemStack item = event.getItemInHand();
+        
+        if (block.getType() != Material.LODESTONE || item == null) {
+            return;
+        }
+        
+        // ✅ ItemStack'ten kontrol et (TRAP_CORE item'ı mı?)
+        if (!ItemManager.isCustomItem(item, "TRAP_CORE")) {
+            return;
+        }
+        
+        // ✅ DÜZELTME: Item'da owner verisi yok (stacklenme için)
+        // Owner verisi sadece TrapManager'da memory'de tutulur
+        // Yerleştirme sırasında oyuncunun UUID'si kullanılır (onTrapInteract'te zaten yapılıyor)
+        // Bu event sadece item kontrolü için, veri geri yükleme yapılmaz
+        // Çünkü onTrapInteract'te zaten CustomBlockData.setTrapCoreData() çağrılıyor
     }
 }

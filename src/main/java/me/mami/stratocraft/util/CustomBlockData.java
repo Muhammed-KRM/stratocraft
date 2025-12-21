@@ -42,6 +42,24 @@ public class CustomBlockData {
     private static final java.util.Map<String, Long> pdcCacheTime = 
         new java.util.concurrent.ConcurrentHashMap<>();
     private static final long PDC_CACHE_DURATION = 5000L; // 5 saniye
+
+    /**
+     * ✅ RUNTIME FALLBACK: Klan çitleri için memory işaretleme
+     * 
+     * Bazı durumlarda (özellikle CustomBlockData kütüphanesi erişilemediğinde) OAK_FENCE gibi TileState olmayan
+     * bloklara PDC yazılamayabiliyor. Tuzak çekirdeğinde "memory" ile çalıştığı için sorun görünmüyordu,
+     * fakat klan çitinde sadece PDC kontrolü olduğu için kırınca normal çit gibi düşüyordu.
+     * 
+     * Bu set sayesinde, bu oturum içinde yerleştirilen klan çitleri PDC yazılamasa bile "klan çiti" olarak
+     * tanınır ve özel drop çalışır.
+     */
+    private static final java.util.Set<String> clanFenceRuntime =
+        java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    private static String runtimeKey(Block block) {
+        if (block == null || block.getWorld() == null) return null;
+        return block.getWorld().getName() + ":" + block.getX() + ":" + block.getY() + ":" + block.getZ();
+    }
     
     /**
      * Plugin instance'ı set et (Main.java'da çağrılmalı)
@@ -164,28 +182,64 @@ public class CustomBlockData {
     // ========== KLAN ÇİTİ METODLARI ==========
     
     /**
-     * Klan çiti verisini kaydet
-     * ✅ DÜZELTME: CustomBlockData kütüphanesi kullanılıyor (OAK_FENCE TileState değil)
+     * Klan çiti bayrağını set et (sadece "bu bir klan çiti" bayrağı)
+     * ✅ DÜZELTME: ClanId kaldırıldı - sadece boolean bayrak tutuluyor
      * 
      * @param block Çit bloğu
-     * @param clanId Klan ID'si (null olabilir)
      * @return Başarılıysa true
      */
-    public static boolean setClanFenceData(Block block, UUID clanId) {
-        if (block == null) return false;
+    public static boolean setClanFenceData(Block block) {
+        if (plugin != null) {
+            plugin.getLogger().info("[CustomBlockData.setClanFenceData] Başlangıç - Block: " + (block != null ? block.getType().name() + " @ " + block.getLocation() : "NULL"));
+        }
+        
+        if (block == null) {
+            if (plugin != null) {
+                plugin.getLogger().warning("[CustomBlockData.setClanFenceData] Block null, return false");
+            }
+            return false;
+        }
+
+        // ✅ Önce runtime'a yaz (PDC başarısız olsa bile oturum içinde çalışsın)
+        String rtKey = runtimeKey(block);
+        if (plugin != null) {
+            plugin.getLogger().info("[CustomBlockData.setClanFenceData] runtimeKey: " + rtKey);
+        }
+        
+        if (rtKey != null) {
+            boolean added = clanFenceRuntime.add(rtKey);
+            if (plugin != null) {
+                plugin.getLogger().info("[CustomBlockData.setClanFenceData] Runtime'a eklendi: " + added + " (mevcut size: " + clanFenceRuntime.size() + ")");
+            }
+        } else {
+            if (plugin != null) {
+                plugin.getLogger().warning("[CustomBlockData.setClanFenceData] runtimeKey null, runtime'a eklenemedi!");
+            }
+        }
         
         try {
             // ✅ DÜZELTME: Chunk yükleme kontrolü (PDC yazmak için chunk yüklü olmalı)
             org.bukkit.Chunk chunk = block.getChunk();
+            if (plugin != null) {
+                plugin.getLogger().info("[CustomBlockData.setClanFenceData] Chunk yüklü mü: " + chunk.isLoaded());
+            }
+            
             if (!chunk.isLoaded()) {
                 // Chunk yüklenmemiş, yükle
+                if (plugin != null) {
+                    plugin.getLogger().info("[CustomBlockData.setClanFenceData] Chunk yükleniyor...");
+                }
                 chunk.load(false);
-                // Chunk yüklenemediyse hata dön
+                // Chunk yüklenemediyse PDC yazılamaz ama runtime'a zaten eklendi, true dön
                 if (!chunk.isLoaded()) {
                     if (plugin != null) {
-                        plugin.getLogger().warning("Klan çiti verisi kaydedilemedi: Chunk yüklenemedi");
+                        plugin.getLogger().warning("[CustomBlockData.setClanFenceData] Chunk yüklenemedi, ama runtime'a eklendi (return true)");
                     }
-                    return false;
+                    // ✅ Runtime'a zaten eklendi, bu yeterli (oturum içinde çalışır)
+                    return true;
+                }
+                if (plugin != null) {
+                    plugin.getLogger().info("[CustomBlockData.setClanFenceData] Chunk yüklendi");
                 }
             }
             
@@ -194,76 +248,131 @@ public class CustomBlockData {
             PersistentDataContainer container = null;
             boolean isTileState = false;
             
+            if (plugin != null) {
+                plugin.getLogger().info("[CustomBlockData.setClanFenceData] BlockState: " + state.getClass().getSimpleName() + " (TileState: " + (state instanceof TileState) + ")");
+            }
+            
             if (state instanceof TileState) {
                 TileState tileState = (TileState) state;
                 container = tileState.getPersistentDataContainer();
                 isTileState = true;
+                if (plugin != null) {
+                    plugin.getLogger().info("[CustomBlockData.setClanFenceData] TileState container kullanılıyor");
+                }
             } else {
                 // ✅ TileState değilse CustomBlockData kütüphanesi kullan (cache ile)
+                if (plugin != null) {
+                    plugin.getLogger().info("[CustomBlockData.setClanFenceData] TileState değil, CustomBlockData container kullanılıyor");
+                }
                 container = getCustomBlockDataContainer(block);
                 if (container == null) {
                     if (plugin != null) {
-                        plugin.getLogger().warning("Klan çiti verisi kaydedilemedi: CustomBlockData container alınamadı");
+                        plugin.getLogger().warning("[CustomBlockData.setClanFenceData] CustomBlockData container alınamadı, ama runtime'a eklendi (return true)");
                     }
-                    return false;
+                    // ✅ PDC yazılamadı ama runtime set edildi, oturum içinde çalışsın
+                    return true;
                 }
             }
             
             if (container == null) {
                 if (plugin != null) {
-                    plugin.getLogger().warning("Klan çiti verisi kaydedilemedi: Container null");
+                    plugin.getLogger().warning("[CustomBlockData.setClanFenceData] Container null, ama runtime'a eklendi (return true)");
                 }
-                return false;
+                // ✅ PDC yazılamadı ama runtime set edildi, oturum içinde çalışsın
+                return true;
             }
             
-            if (clanId != null) {
-                container.set(CLAN_FENCE_KEY, PersistentDataType.STRING, clanId.toString());
-                // ✅ Cache'i temizle (veri değişti)
-                if (!isTileState) {
-                    clearPDCCache(block);
-                }
-            } else {
-                container.remove(CLAN_FENCE_KEY);
-                // ✅ Cache'i temizle (veri silindi)
-                if (!isTileState) {
-                    clearPDCCache(block);
-                }
+            // ✅ Sadece boolean bayrak set et (clanId yok)
+            if (plugin != null) {
+                plugin.getLogger().info("[CustomBlockData.setClanFenceData] PDC'ye yazılıyor (CLAN_FENCE_KEY)");
+            }
+            container.set(CLAN_FENCE_KEY, PersistentDataType.BYTE, (byte) 1);
+            // ✅ Cache'i temizle (veri değişti)
+            if (!isTileState) {
+                clearPDCCache(block);
             }
             
             // ✅ TileState ise update() çağır
             if (isTileState) {
                 ((TileState) state).update();
+                if (plugin != null) {
+                    plugin.getLogger().info("[CustomBlockData.setClanFenceData] TileState.update() çağrıldı");
+                }
             }
             
+            if (plugin != null) {
+                plugin.getLogger().info("[CustomBlockData.setClanFenceData] Başarılı (return true)");
+            }
             return true;
         } catch (Exception e) {
             if (plugin != null) {
-                plugin.getLogger().warning("Klan çiti verisi kaydedilemedi: " + e.getMessage());
+                plugin.getLogger().severe("[CustomBlockData.setClanFenceData] HATA: " + e.getMessage());
                 e.printStackTrace();
             }
-            return false;
+            // ✅ Runtime set edildiği için oturum içinde yine de çalışsın
+            return true;
         }
     }
     
     /**
-     * Klan çiti verisini oku
-     * ✅ DÜZELTME: CustomBlockData kütüphanesi kullanılıyor (OAK_FENCE TileState değil)
+     * Klan çiti mi kontrol et (sadece bayrak kontrolü)
+     * ✅ DÜZELTME: ClanId kaldırıldı - sadece boolean bayrak kontrol ediliyor
      * 
      * @param block Çit bloğu
-     * @return Klan ID'si (yoksa null)
+     * @return Klan çiti ise true
      */
-    public static UUID getClanFenceData(Block block) {
-        if (block == null) return null;
+    public static boolean isClanFence(Block block) {
+        if (plugin != null) {
+            plugin.getLogger().info("[CustomBlockData.isClanFence] Başlangıç - Block: " + (block != null ? block.getType().name() + " @ " + block.getLocation() : "NULL"));
+        }
+        
+        if (block == null || block.getType() != org.bukkit.Material.OAK_FENCE) {
+            if (plugin != null) {
+                plugin.getLogger().info("[CustomBlockData.isClanFence] Block null veya OAK_FENCE değil, return false");
+            }
+            return false;
+        }
+
+        // ✅ Önce runtime kontrolü (hızlı + PDC bağımsız)
+        String rtKey = runtimeKey(block);
+        if (plugin != null) {
+            plugin.getLogger().info("[CustomBlockData.isClanFence] runtimeKey: " + rtKey);
+            plugin.getLogger().info("[CustomBlockData.isClanFence] Runtime set size: " + clanFenceRuntime.size());
+        }
+        
+        if (rtKey != null && clanFenceRuntime.contains(rtKey)) {
+            if (plugin != null) {
+                plugin.getLogger().info("[CustomBlockData.isClanFence] RUNTIME'DA BULUNDU! (return true)");
+            }
+            return true;
+        }
+        
+        if (plugin != null) {
+            plugin.getLogger().info("[CustomBlockData.isClanFence] Runtime'da bulunamadı, PDC kontrolü başlıyor");
+        }
         
         try {
             // ✅ DÜZELTME: Chunk yükleme kontrolü (PDC okumak için chunk yüklü olmalı)
             org.bukkit.Chunk chunk = block.getChunk();
+            if (plugin != null) {
+                plugin.getLogger().info("[CustomBlockData.isClanFence] Chunk yüklü mü: " + chunk.isLoaded());
+            }
+            
             if (!chunk.isLoaded()) {
                 // Chunk yüklenmemiş, yükle
+                if (plugin != null) {
+                    plugin.getLogger().info("[CustomBlockData.isClanFence] Chunk yükleniyor...");
+                }
                 boolean loaded = chunk.load(false);
-                // Chunk yüklenemediyse null dön
+                // Chunk yüklenemediyse false dön
                 if (!loaded || !chunk.isLoaded()) {
-                    return null; // Chunk yüklenemedi
+                    if (plugin != null) {
+                        plugin.getLogger().warning("[CustomBlockData.isClanFence] Chunk yüklenemedi (return false)");
+                    }
+                    return false; // Chunk yüklenemedi
+                }
+                if (plugin != null) {
+                    plugin.getLogger().info("[CustomBlockData.isClanFence] Chunk yüklendi");
                 }
             }
             
@@ -271,68 +380,54 @@ public class CustomBlockData {
             BlockState state = block.getState();
             PersistentDataContainer container = null;
             
+            if (plugin != null) {
+                plugin.getLogger().info("[CustomBlockData.isClanFence] BlockState: " + state.getClass().getSimpleName() + " (TileState: " + (state instanceof TileState) + ")");
+            }
+            
             if (state instanceof TileState) {
                 // ✅ TileState ise normal PDC kullan
                 TileState tileState = (TileState) state;
                 container = tileState.getPersistentDataContainer();
+                if (plugin != null) {
+                    plugin.getLogger().info("[CustomBlockData.isClanFence] TileState container kullanılıyor");
+                }
             } else {
                 // ✅ TileState değilse CustomBlockData kütüphanesi kullan
+                if (plugin != null) {
+                    plugin.getLogger().info("[CustomBlockData.isClanFence] TileState değil, CustomBlockData container kullanılıyor");
+                }
                 container = getCustomBlockDataContainer(block);
                 if (container == null) {
                     // ✅ DÜZELTME: Container null ise, chunk yüklü mü tekrar kontrol et
+                    if (plugin != null) {
+                        plugin.getLogger().warning("[CustomBlockData.isClanFence] Container null (return false)");
+                    }
                     if (!chunk.isLoaded()) {
-                        return null; // Chunk yüklenemedi
+                        return false; // Chunk yüklenemedi
                     }
                     // ✅ DÜZELTME: Container null ise, cache'i temizle ve tekrar dene
                     clearPDCCache(block);
                     container = getCustomBlockDataContainer(block);
                     if (container == null) {
-                        return null; // Container alınamadı
+                        return false; // Container alınamadı
                     }
                 }
             }
             
             if (container == null) {
-                return null; // Container null
+                return false; // Container null
             }
             
-            if (container.has(CLAN_FENCE_KEY, PersistentDataType.STRING)) {
-                String clanIdStr = container.get(CLAN_FENCE_KEY, PersistentDataType.STRING);
-                if (clanIdStr == null || clanIdStr.isEmpty()) {
-                    return null;
-                }
-                try {
-                    return UUID.fromString(clanIdStr);
-                } catch (IllegalArgumentException e) {
-                    if (plugin != null) {
-                        plugin.getLogger().warning("Klan çiti UUID formatı geçersiz: " + clanIdStr);
-                    }
-                    return null;
-                }
-            }
-            
-            return null;
+            // ✅ Sadece boolean bayrak kontrol et (clanId yok)
+            return container.has(CLAN_FENCE_KEY, PersistentDataType.BYTE);
         } catch (Exception e) {
             if (plugin != null) {
-                plugin.getLogger().warning("Klan çiti verisi okunamadı: " + e.getMessage());
+                plugin.getLogger().warning("Klan çiti kontrolü yapılamadı: " + e.getMessage());
             }
-            return null;
+            return false;
         }
     }
     
-    /**
-     * Klan çiti mi kontrol et
-     * 
-     * @param block Çit bloğu
-     * @return Klan çiti ise true
-     */
-    public static boolean isClanFence(Block block) {
-        if (block == null || block.getType() != org.bukkit.Material.OAK_FENCE) {
-            return false;
-        }
-        
-        return getClanFenceData(block) != null;
-    }
     
     /**
      * Klan çiti verisini temizle
@@ -342,7 +437,29 @@ public class CustomBlockData {
      * @param block Çit bloğu
      */
     public static void removeClanFenceData(Block block) {
-        if (block == null) return;
+        if (plugin != null) {
+            plugin.getLogger().info("[CustomBlockData.removeClanFenceData] Başlangıç - Block: " + (block != null ? block.getType().name() + " @ " + block.getLocation() : "NULL"));
+        }
+        
+        if (block == null) {
+            if (plugin != null) {
+                plugin.getLogger().warning("[CustomBlockData.removeClanFenceData] Block null, return");
+            }
+            return;
+        }
+
+        // ✅ Önce runtime'dan temizle
+        String rtKey = runtimeKey(block);
+        if (plugin != null) {
+            plugin.getLogger().info("[CustomBlockData.removeClanFenceData] runtimeKey: " + rtKey);
+        }
+        
+        if (rtKey != null) {
+            boolean removed = clanFenceRuntime.remove(rtKey);
+            if (plugin != null) {
+                plugin.getLogger().info("[CustomBlockData.removeClanFenceData] Runtime'dan silindi: " + removed + " (kalan size: " + clanFenceRuntime.size() + ")");
+            }
+        }
         
         try {
             BlockState state = block.getState();

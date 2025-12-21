@@ -81,7 +81,8 @@ public class StructureCoreListener implements Listener {
         Location coreLoc = placed.getLocation();
         Player player = event.getPlayer();
         
-        // Yapı çekirdeği olarak işaretle
+        // Yapı çekirdeği olarak işaretle (memory'de tut)
+        // ✅ KRİTİK: PDC'ye yazma işlemi onStructureCorePlaceRestore'da yapılacak (MONITOR priority)
         coreManager.addInactiveCore(coreLoc, player.getUniqueId());
         
         // Mesaj
@@ -395,35 +396,29 @@ public class StructureCoreListener implements Listener {
     
     /**
      * ✅ YENİ: BlockPlaceEvent'te ItemStack'ten veri geri yükleme
+     * ✅ KRİTİK: MONITOR priority kullan (blok artık dünyada olduğu için PDC'ye yazabiliriz)
+     * ✅ DÜZELTME: Item'da owner verisi yok (stacklenme için), bu yüzden oyuncunun UUID'sini kullan
      */
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onStructureCorePlaceRestore(BlockPlaceEvent event) {
         Block block = event.getBlock();
         ItemStack item = event.getItemInHand();
+        Player player = event.getPlayer();
         
-        if (block.getType() != Material.OAK_LOG || item == null) {
+        if (block.getType() != Material.OAK_LOG || item == null || player == null) {
             return;
         }
         
-        // ✅ ItemStack'ten veri oku
-        if (item.hasItemMeta()) {
-            org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
-            if (meta != null) {
-                org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
-                org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey("stratocraft", "structure_core_owner");
-                
-                if (container.has(ownerKey, org.bukkit.persistence.PersistentDataType.STRING)) {
-                    String ownerIdStr = container.get(ownerKey, org.bukkit.persistence.PersistentDataType.STRING);
-                    UUID ownerId = UUID.fromString(ownerIdStr);
-                    
-                    // ✅ DÜZELTME: CustomBlockData kütüphanesi ile PDC kullan (OAK_LOG TileState değil ama artık çalışıyor)
-                    me.mami.stratocraft.util.CustomBlockData.setStructureCoreData(block, ownerId);
-                    
-                    // StructureCoreManager'a kaydet (memory'de tutulacak + PDC'ye de kaydediliyor)
-                    coreManager.addInactiveCore(block.getLocation(), ownerId);
-                }
-            }
+        // ✅ ItemStack'ten kontrol et (STRUCTURE_CORE item'ı mı?)
+        if (!ItemManager.isCustomItem(item, "STRUCTURE_CORE")) {
+            return;
         }
+        
+        // ✅ KRİTİK: Blok artık dünyada, PDC'ye yazabiliriz
+        // Owner verisi oyuncunun UUID'si (item'da yok, stacklenme için)
+        me.mami.stratocraft.util.CustomBlockData.setStructureCoreData(block, player.getUniqueId());
+        
+        // ✅ Memory'de zaten kayıtlı (onStructureCorePlace'te), burada sadece PDC'ye yazıyoruz
     }
 }
 
