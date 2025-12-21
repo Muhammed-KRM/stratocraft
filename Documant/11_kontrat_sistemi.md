@@ -6,6 +6,8 @@ Kontratlar, oyuncular arasında **koda dayalı** anlaşmalardır. Sözleşmeyi b
 
 **GÜVENLİK**: Performans optimizasyonları (1 saniye cooldown) ve can kaybı geri kazanım sistemi eklendi.
 
+**YENİ ÖZELLİK**: Çift taraflı kontrat sistemi ve wizard tabanlı kontrat oluşturma eklendi. Detaylı akış şeması için `KONTRAT_SISTEMI_AKIS_SEMASI.md` dosyasına bakın.
+
 ---
 
 ## 📋 İÇİNDEKİLER
@@ -17,59 +19,46 @@ Kontratlar, oyuncular arasında **koda dayalı** anlaşmalardır. Sözleşmeyi b
 
 ---
 
-## 📝 KONTRAT OLUŞTURMA
+## 📝 KONTRAT OLUŞTURMA ⭐ YENİ WIZARD SİSTEMİ
 
-### Adım 1: Kontrat Kağıdı Hazırla
-
-**Malz eme**: Named Paper (Örs'te isimlendir)
-
-```
-Örs'te Paper'a şartları yaz:
-
-Örnek 1:
-"64 Titanyum - 3 gün - 1000 Altın"
-
-Örnek 2:
-"Dragon öldür - 7 gün - 5000 Altın + Tarif Kitabı"
-
-Örnek 3:
-"Base koru - 24 saat - 500 Altın"
-```
-
----
-
-### Adım 2: İhale Panosuna As
-
-**Panel Craft**:
-```
-[W][W][W]
-[W][S][W]    W = Oak Planks
-[W][W][W]    S = Sign
-
-= Contract Board (Kontrat Panosu)
-```
+### Yeni Kontrat Oluşturma (GUI Wizard)
 
 **Kullanım**:
 ```
-1. Contract Board koy (klan bölgesine veya güvenli yere)
-2. Eline kontrat kağıdı al
-3. Board'a SAĞ TIK
-4. Kontrat panoya asılır
-5. Herkes görebilir
+1. /kontrat komutunu kullan
+2. Ana menüde "Yeni Kontrat Oluştur" butonuna tıkla
+3. Wizard sistemi başlar (9 adım)
+4. Her adımda şartları belirle
+5. Özet menüsünde [ONAYLA VE GÖNDER] tıkla
+6. İstek karşı tarafa gönderilir
 ```
+
+**Wizard Adımları**:
+- [Adım 1/9] Kontrat Tipi Seç
+- [Adım 2/9] Kapsam Seç (PLAYER_TO_PLAYER, CLAN_TO_CLAN, vb.)
+- [Adım 3/9] Hedef Oyuncu Seç (sadece PLAYER_TO_PLAYER için)
+- [Adım 4/9] Ödül Belirle
+- [Adım 5/9] Ceza Tipi Seç
+- [Adım 6/9] Ceza Miktarı Belirle
+- [Adım 7/9] Süre Belirle
+- [Adım 8/9] Tip'e Özel Parametreler
+- [Adım 9/9] Özet ve Onay
+
+**Önemli Notlar**:
+- Oyuncu seçildiğinde istek hemen gönderilmez
+- Önce tüm şartlar belirlenir
+- Şartlar belirlendikten sonra özet menüsünde [ONAYLA VE GÖNDER] tıklanır
+- O zaman istek gönderilir ve karşı tarafa bildirim gider
 
 ---
 
-### Adım 3: Kontrat Kabul
+### Eski Sistem (DEPRECATED) ⚠️
 
-**Kabul Eden**:
-```
-1. Contract Board'a sağ tık
-2. Kontrat listesini gör
-3. İstediğini seç
-4. "Kabul Et" butonuna tık
-5. Kan imzası gerekli (sonraki adım)
-```
+**NOT:** Aşağıdaki sistem artık kullanılmıyor. Yeni wizard sistemi kullanılmalı.
+
+~~**Adım 1: Kontrat Kağıdı Hazırla**~~
+~~**Adım 2: İhale Panosuna As**~~
+~~**Adım 3: Kontrat Kabul**~~
 
 ---
 
@@ -94,133 +83,104 @@ Kontratlar, oyuncular arasında **koda dayalı** anlaşmalardır. Sözleşmeyi b
 
 ---
 
-## 📋 KONTRAT TİPLERİ (6 Tip)
+## 📋 KONTRAT TİPLERİ (4 Tip)
 
-### 1. Malzeme Temini Kontratı (MATERIAL_DELIVERY)
+### 1. Kaynak Toplama Kontratı (RESOURCE_COLLECTION)
 
-**Şablon**:
+**Özellikler**:
 ```
-ŞART: 64 Titanyum getir
-SÜRE: 3 gün
-ÖDÜL: 1000 Altın
+ŞART: Belirli malzemeden belirli miktar getir
+SÜRE: Belirlenen süre (gün/hafta/ay)
+ÖDÜL: Belirlenen altın miktarı
+CEZA: Belirlenen ceza tipi ve miktarı
 
-İhlal: Tazminat 1500 Altın
+Parametreler:
+- Malzeme: Herhangi bir Minecraft malzemesi
+- Miktar: Getirilmesi gereken miktar
 ```
 
 **İşleyiş**:
 ```
-1. Kontrat imzalanır
-2. Alıcı 3 gün içinde 64 Titanyum verir
-3. Verer contract board'a koyar
+1. Kontrat aktif olur
+2. Alıcı belirlenen süre içinde malzemeyi toplar
+3. /kontrat teslim komutu ile teslim eder
 4. Sistem otomatik kontrol eder
-5. Doğruysa → 1000 Altın transfer
+5. Doğruysa → Ödül transfer
 6. Yanlışsa/Süre bitti → Ceza
 ```
 
 ---
 
-### 2. Boss Av Kontratı
+### 2. Savaş Kontratı (COMBAT)
 
-**Şablon**:
+**Özellikler**:
 ```
-ŞART: Titan Golem öldür
-SÜRE: 7 gün
-ÖDÜL: 5000 Altın + Tarif Kitabı
+ŞART: Belirli oyuncuya/klana saldır veya öldür
+SÜRE: Belirlenen süre (gün/hafta/ay)
+ÖDÜL: Belirlenen altın miktarı
+CEZA: Belirlenen ceza tipi ve miktarı
 
-Kanıt: Karanlık Madde drop göster
-```
-
-**İşleyiş**:
-```
-1. Boss öldür
-2. Dropu al (Karanlık Madde)
-3. Contract board'a koy
-4. Sistem doğrular
-5. Ödül transfer
-```
-
----
-
-### 3. Koruma Kontratı
-
-**Şablon**:
-```
-ŞART: Base'i 24 saat koru
-SÜRE: 24 saat
-ÖDÜL: 500 Altın/saat
-
-İhlal: Base hasar alırsa ceza
+Parametreler:
+- Hedef: Oyuncu veya Klan
 ```
 
 **İşleyiş**:
 ```
-1. Kontrat imzalanır
-2. Koruma başlar
-3. 24 saat boyunca base hasar almazsa → Ödül
-4. Hasar alırsa → İhlal, ceza
+1. Kontrat aktif olur
+2. Hedef oyuncu/klana saldırılır veya öldürülür
+3. Sistem otomatik kontrol eder
+4. Başarılıysa → Ödül transfer
+5. Başarısızsa/Süre bitti → Ceza
 ```
 
 ---
 
-### 4. Bölge Yasağı Kontratı (TERRITORY_RESTRICT)
+### 3. Bölge Yasağı Kontratı (TERRITORY)
 
-**Şablon**:
+**Özellikler**:
 ```
 ŞART: Belirli bölgelere girme
-SÜRE: 7 gün
-ÖDÜL: 2000 Altın
+SÜRE: Belirlenen süre (gün/hafta/ay)
+ÖDÜL: Belirlenen altın miktarı
+CEZA: Belirlenen ceza tipi ve miktarı
 
-İhlal: Yasak bölgeye girildiğinde otomatik ceza
+Parametreler:
+- Yasak Bölgeler: Lokasyon listesi
+- Yarıçap: Her bölge için yarıçap (blok)
 ```
 
 **İşleyiş**:
 ```
-1. Kontrat imzalanır
+1. Kontrat aktif olur
 2. Yasak bölgeler belirlenir (koordinat + yarıçap)
 3. Oyuncu yasak bölgeye girerse → İhlal
 4. Otomatik ceza uygulanır
+5. Süre bitene kadar yasak bölgelere girilmezse → Ödül
 ```
 
 ---
 
-### 5. Saldırmama Anlaşması (NON_AGGRESSION)
+### 4. Yapı İnşa Kontratı (CONSTRUCTION)
 
-**Şablon**:
-```
-ŞART: Belirli oyuncuya/klana saldırma
-SÜRE: 14 gün
-ÖDÜL: 5000 Altın
-
-İhlal: Saldırıldığında otomatik ceza
-```
-
-**İşleyiş**:
-```
-1. Kontrat imzalanır
-2. Hedef oyuncu/klan belirlenir
-3. Saldırı yapılırsa → İhlal
-4. Otomatik ceza uygulanır
-```
-
----
-
-### 6. Yapı İnşa Kontratı (STRUCTURE_BUILD)
-
-**Şablon**:
+**Özellikler**:
 ```
 ŞART: Belirli yapıyı inşa et
-SÜRE: 5 gün
-ÖDÜL: 3000 Altın
+SÜRE: Belirlenen süre (gün/hafta/ay)
+ÖDÜL: Belirlenen altın miktarı
+CEZA: Belirlenen ceza tipi ve miktarı
 
-Kanıt: Yapı inşa edildiğinde otomatik kontrol
+Parametreler:
+- Yapı Tipi: Belirlenen yapı tipi
 ```
 
 **İşleyiş**:
 ```
-1. Kontrat imzalanır
+1. Kontrat aktif olur
 2. Yapı tipi belirlenir
 3. Yapı inşa edilirse → Tamamlandı
-4. Ödül transfer edilir
+4. Sistem otomatik kontrol eder
+5. Başarılıysa → Ödül transfer
+6. Başarısızsa/Süre bitti → Ceza
 ```
 
 ---
@@ -370,6 +330,8 @@ Tek oyuncuya zor ama:
 3. **Tazminat Zorunlu**: İhlal = Otomatik ceza
 4. **Hain Tag**: 7 gün boyunca kırmızı isim
 5. **Envanter Kilidi**: Borç bitene kadar kilitli
+6. **Çift Taraflı Kontrat**: Her iki tarafın şartları belirlenir ve onaylanır
+7. **Final Onay**: Sender son onayı verir, her iki taraf onayladığında kontrat aktif olur
 
 ---
 
@@ -395,26 +357,42 @@ Tek oyuncuya zor ama:
 
 ## 🎯 HIZLI KONTRAT REHBERİ
 
-### Basit Malzeme Kontratı
-
-```
-1. Paper al
-2. Örs'te isimlendir: "64 Iron - 1 day - 100 Gold"
-3. Contract Board koy (klan bölgesine)
-4. Board'a paper ile sağ tık
-5. Bekle (birisi alana kadar)
-```
-
-### Kontrat Kabul Etme
+### Basit Malzeme Kontratı Oluşturma
 
 ```
 1. /kontrat komutunu kullan
-2. GUI menü açılır (54 slot, sayfalama)
-3. Aktif kontratları görüntüle
-4. İstediğin kontratı seç
-5. Detay menüsünde "Kabul Et" butonuna tıkla
-6. -3 kalp can kaybı (Kan imzası)
-7. BAŞLA! (süre işliyor)
+2. "Yeni Kontrat Oluştur" butonuna tıkla
+3. [Adım 1/9] RESOURCE_COLLECTION seç
+4. [Adım 2/9] PLAYER_TO_PLAYER seç
+5. [Adım 3/9] Hedef oyuncuyu seç
+6. [Adım 4/9] Ödül belirle (örn: 1000 Altın)
+7. [Adım 5/9] Ceza tipi seç (CASH)
+8. [Adım 6/9] Ceza miktarı belirle (örn: 500 Altın)
+9. [Adım 7/9] Süre belirle (örn: 7 Gün)
+10. [Adım 8/9] Malzeme seç (örn: Elmas) ve miktar (örn: 64)
+11. [Adım 9/9] Özet menüsünde [ONAYLA VE GÖNDER] tıkla
+12. ✅ İstek gönderildi! Karşı taraf kabul ettiğinde bildirim alacaksınız.
+```
+
+### Kontrat İsteği Kabul Etme
+
+```
+1. /kontrat komutunu kullan
+2. "Gelen İstekler" butonuna tıkla (bildirim varsa)
+3. İstek listesinde gönderenin şartlarını gör
+4. İki seçenek:
+   
+   SEÇENEK 1: [✅ Kabul Et (Direkt)]
+   - Sol tıkla
+   - Sender'ın şartlarını direkt kabul edersiniz
+   - Sender'a son onay mesajı gider
+   
+   SEÇENEK 2: [➕ Şart Ekle]
+   - Orta tıkla
+   - Kendi şartlarınızı belirlersiniz
+   - Wizard sistemi başlar
+   - Şartlarınızı belirleyip onaylarsınız
+   - Sender'a son onay mesajı gider
 ```
 
 ---
@@ -429,16 +407,146 @@ Tek oyuncuya zor ama:
 - Kontrat ikonları: Tip'e göre farklı materyaller
 - Detay görüntüleme: Kontrata tıkla → Detay menüsü
 - Önceki/Sonraki sayfa butonları
+- Gelen İstekler: Yeni kontrat istekleri bildirimi
+- Atılan İstekler: Gönderdiğiniz isteklerin durumu
 ```
 
 **Kontrat İkonları**:
 ```
-- MATERIAL_DELIVERY → Material icon (örn: Iron Ingot)
-- PLAYER_KILL → Player Head (bounty)
-- TERRITORY_RESTRICT → Barrier (yasak)
-- NON_AGGRESSION → Shield (saldırmama)
-- BASE_PROTECTION → Chest (koruma)
-- STRUCTURE_BUILD → Structure Block (yapı)
+- RESOURCE_COLLECTION → Chest (malzeme toplama)
+- COMBAT → Diamond Sword (savaş)
+- TERRITORY → Barrier (bölge yasağı)
+- CONSTRUCTION → Structure Block (yapı inşaatı)
+```
+
+### Kontrat Oluşturma Wizard Sistemi ⭐ YENİ
+
+**Özellikler**:
+```
+- Adım adım kontrat oluşturma
+- Her menüde adım numarası gösterilir (örn: [Adım 4/9])
+- Açıklayıcı bilgi mesajları
+- Her menüde [GERİ] ve [İPTAL] butonları
+- Şartlar belirlendikten sonra istek gönderilir
+```
+
+**Wizard Adımları**:
+```
+1. [Adım 1/9] Kontrat Tipi Seç
+   - RESOURCE_COLLECTION
+   - COMBAT
+   - TERRITORY
+   - CONSTRUCTION
+
+2. [Adım 2/9] Kapsam Seç
+   - PLAYER_TO_PLAYER (Personal Terminal'den sadece bu)
+   - CLAN_TO_CLAN
+   - PLAYER_TO_CLAN
+   - CLAN_TO_PLAYER
+
+3. [Adım 3/9] Hedef Oyuncu Seç
+   - Online oyuncular listesi
+   - Chat input desteği
+   - ℹ️ Bilgi: Oyuncu seçildikten sonra şartlar belirlenecek
+
+4. [Adım 4/9] Ödül Belirle
+   - Slider menü
+   - Hızlı değerler (100, 500, 1000, 5000)
+   - Artırma/Azaltma butonları
+
+5. [Adım 5/9] Ceza Tipi Seç
+   - CASH (Altın)
+   - HEALTH (Can kaybı)
+   - ITEM (Eşya)
+
+6. [Adım 6/9] Ceza Miktarı Belirle
+   - Slider menü
+   - Ödülün yüzdesi seçenekleri
+
+7. [Adım 7/9] Süre Belirle
+   - Gün/Hafta/Ay seçimi
+   - Detaylı zaman ayarlama
+
+8. [Adım 8/9] Tip'e Özel Parametreler
+   - RESOURCE_COLLECTION → Malzeme + Miktar
+   - COMBAT → Hedef oyuncu/klan
+   - TERRITORY → Lokasyon + Yarıçap
+   - CONSTRUCTION → Yapı tipi
+
+9. [Adım 9/9] Özet ve Onay
+   - Sizin şartlarınız gösterilir
+   - Karşı tarafın şartları (eğer varsa) gösterilir
+   - [ONAYLA VE GÖNDER] butonu
+   - [İPTAL] butonu
+```
+
+### Çift Taraflı Kontrat Sistemi ⭐ YENİ
+
+**Akış**:
+
+#### İlk Gönderen (Sender) Akışı:
+```
+1. Kontrat oluşturma wizard'ını başlat
+2. Tip, kapsam, oyuncu seç
+3. Şartları belirle (ödül, ceza, süre, tip'e özel)
+4. Özet menüsünde [ONAYLA VE GÖNDER] tıkla
+5. ✅ İstek gönderilir (ContractRequest oluşturulur)
+6. ✅ Sender'ın şartları kaydedilir (ContractTerms)
+7. ✅ Sender'ın şartları otomatik onaylanır
+8. ✅ Target oyuncuya bildirim gönderilir
+```
+
+#### Hedef Oyuncu (Target) Akışı:
+```
+1. [Gelen İstekler] menüsünde isteği gör
+2. Gönderenin şartları gösterilir
+3. İki seçenek:
+   
+   SEÇENEK 1: [✅ Kabul Et (Direkt)]
+   - Sender'ın şartlarını direkt kabul eder
+   - Sender'a "Son Onay Gerekiyor" mesajı gider
+   - Sender'a Final Onay Menüsü açılır
+   
+   SEÇENEK 2: [➕ Şart Ekle]
+   - Şart belirleme wizard'ı başlar
+   - Target kendi şartlarını belirler
+   - Özet menüsünde:
+     * Sizin şartlarınız gösterilir
+     * Karşı tarafın şartları gösterilir
+   - [ONAYLA] tıkla
+   - ✅ Target'ın şartları kaydedilir
+   - ✅ Sender'a "Son Onay Gerekiyor" mesajı gider
+```
+
+#### Sender'ın Son Onay Akışı:
+```
+1. [Final Onay Menüsü] otomatik açılır
+2. Her iki tarafın şartları yan yana gösterilir:
+   - 📋 SİZİN ŞARTLARINIZ
+   - 📋 KARŞI TARAFIN ŞARTLARI
+3. İki seçenek:
+   
+   SEÇENEK 1: [✅ ONAYLA]
+   - ✅ Bilateral Contract oluşturulur
+   - ✅ Her iki oyuncuya bildirim: "Kontrat aktif oldu!"
+   
+   SEÇENEK 2: [❌ REDDET]
+   - ❌ İstek iptal edilir
+   - ❌ Target'a bildirim: "Kontrat reddedildi."
+```
+
+### Final Onay Menüsü (54 Slot) ⭐ YENİ
+
+**Özellikler**:
+```
+- Daha büyük menü (54 slot = 6x9)
+- Her iki tarafın şartları yan yana gösterilir
+- Açıklayıcı başlık: "⚠️ SON ONAY GEREKİYOR!"
+- Slot 20: Sizin Şartlarınız (sol taraf)
+- Slot 24: Karşı Tarafın Şartları (sağ taraf)
+- Slot 22: [✅ ONAYLA] butonu (ortada)
+- Slot 40: [❌ REDDET] butonu
+- Slot 0: [GERİ] butonu
 ```
 
 ### Detay Menüsü (27 Slot)
@@ -477,6 +585,46 @@ Tek oyuncuya zor ama:
 - Aktif kontratları listeler
 - Sayfalama desteği
 - Detay görüntüleme
+- Yeni kontrat oluşturma wizard'ı
+- Gelen/Atılan istekleri görüntüleme
+
+### Personal Terminal Entegrasyonu ⭐ YENİ
+
+**Özellikler**:
+```
+- Personal Terminal'den kontrat oluşturma
+- Sadece PLAYER_TO_PLAYER kontratları yapılabilir
+- Klan kontratları için CONTRACT_OFFICE yapısı gerekli
+```
+
+## 🔄 ÇİFT TARAFLI KONTRAT AKIŞI ⭐ YENİ
+
+### Akış Şeması
+
+Detaylı akış şeması için: `KONTRAT_SISTEMI_AKIS_SEMASI.md` dosyasına bakın.
+
+**Özet**:
+1. **Sender**: Kontrat oluştur → Şartları belirle → İstek gönder
+2. **Target**: İsteği gör → Kabul et veya şart ekle
+3. **Sender**: Final onay ver → Kontrat aktif olur
+
+### Önemli Özellikler
+
+**Oyuncu Seçimi**:
+- Oyuncu seçildiğinde istek hemen gönderilmez
+- Önce şartlar belirlenir
+- Şartlar belirlendikten sonra özet menüsünde [ONAYLA VE GÖNDER] tıklanır
+- O zaman istek gönderilir
+
+**Şart Ekleme**:
+- Target şart eklerken kendi tipini seçebilir
+- Her iki taraf farklı kontrat tiplerinde anlaşabilir
+- Örnek: Sender "64 elmas getir" (RESOURCE_COLLECTION), Target "1000 altın öde" (COMBAT)
+
+**Final Onay**:
+- Her iki tarafın şartları yan yana gösterilir
+- Sender son onayı verir
+- Her iki taraf onayladığında kontrat aktif olur
 
 ---
 

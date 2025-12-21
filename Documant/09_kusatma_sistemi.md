@@ -702,6 +702,69 @@ Klan B ve Klan C ittifak (OFFENSIVE veya FULL):
 
 ---
 
+## 📝 SON GÜNCELLEMELER (Son 3 Gün) ⭐
+
+### Çoklu Savaş Desteği
+
+**Dosya:** `SiegeManager.java`, `Clan.java`
+
+**Özellikler:**
+- ✅ Çoklu savaş desteği (bir klan birden fazla klanla savaşabilir)
+- ✅ İki taraflı savaş (her iki klan da birbirine saldırabilir)
+- ✅ İttifak kontrolü (ittifaklı klanlara saldırılamaz)
+
+**Algoritma:**
+
+```java
+// Clan.java - Savaşta olunan klanlar
+private final Set<UUID> warringClans = Collections.synchronizedSet(new HashSet<>());
+
+public void addWarringClan(UUID clanId) {
+    if (clanId != null && !clanId.equals(this.id)) {
+        warringClans.add(clanId);
+    }
+}
+
+public boolean isAtWarWith(UUID clanId) {
+    return warringClans.contains(clanId);
+}
+
+// SiegeManager.java - İki taraflı savaş başlatma
+public void startSiege(Clan attacker, Clan defender, Player attackerPlayer) {
+    // ✅ İttifak kontrolü
+    if (allianceManager != null && allianceManager.hasAlliance(attacker.getId(), defender.getId())) {
+        attackerPlayer.sendMessage("§cİttifaklı klanlara saldıramazsın!");
+        return;
+    }
+    
+    // ✅ Her iki klanı da savaşta işaretle
+    attacker.addWarringClan(defender.getId());
+    defender.addWarringClan(attacker.getId());
+    
+    // ✅ Eski sistem (geriye uyumluluk)
+    activeSieges.put(defender, attacker);
+    
+    // ✅ Broadcast
+    Bukkit.broadcastMessage("§c§lKUŞATMA BAŞLADI!");
+    Bukkit.broadcastMessage("§7Saldıran: " + attacker.getName());
+    Bukkit.broadcastMessage("§7Savunan: " + defender.getName());
+}
+```
+
+**Çalışma Süreci:**
+1. Saldıran klan savaş ilan eder
+2. İttifak kontrolü yapılır (ittifaklı klanlara saldırılamaz)
+3. Her iki klan da `warringClans` set'ine eklenir
+4. Savaş başlar, her iki klan da birbirine saldırabilir
+5. Savaş, bir taraf pes edene veya kristal kırılana kadar devam eder
+
+**Çoklu Savaş Senaryosu:**
+- Bir klan aynı anda birden fazla klanla savaşabilir
+- Her savaş bağımsız olarak yönetilir
+- Bir savaş bitse bile diğer savaşlar devam eder
+
+---
+
 **🎮 Kuşatma ile düşmanı yok et, ganimetleri topla, Fatih ol!**
 
 **🕊️ Barış anlaşması ile savaşı kayıpsız bitir!**

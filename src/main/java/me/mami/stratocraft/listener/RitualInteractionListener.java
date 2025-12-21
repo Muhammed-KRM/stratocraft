@@ -225,10 +225,10 @@ public class RitualInteractionListener implements Listener {
                 if (!target.equals(leader)) {
                     Clan targetClan = clanManager.getClanByPlayer(target.getUniqueId());
                     if (targetClan == null || !targetClan.equals(clan)) {
-                        recruitedPlayers.add(target);
-                    }
+                    recruitedPlayers.add(target);
                 }
             }
+        }
         }
         
         // ✅ DÜZELTME: Ritüel başarılı olduğunda oyuncu olmasa bile ses ve partikül çıkar
@@ -248,19 +248,19 @@ public class RitualInteractionListener implements Listener {
             leader.sendMessage("§eRitüel tamamlandı, ancak alanında klansız kimse yok.");
             if (plugin != null) {
                 plugin.getLogger().info("[RITÜEL] Ritüel tamamlandı ama oyuncu yok");
-            }
+        }
             // Oyuncu olmasa bile ritüel başarılı sayılır, sadece kimse eklenmedi
         } else {
-            // Oyuncuları Klana Ekle
-            for (Player newMember : recruitedPlayers) {
-                clanManager.addMember(clan, newMember.getUniqueId(), Clan.Rank.RECRUIT);
-                newMember.sendMessage("§6§l" + clan.getName() + " §eklanına ruhun bağlandı!");
-                newMember.getWorld().spawnParticle(Particle.FLAME, newMember.getLocation(), 50, 0.5, 1, 0.5, 0.1);
-                newMember.playSound(newMember.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 1f, 1f);
-                newMember.sendTitle("§a§lKLANA KATILDI", "§e" + clan.getName(), 10, 70, 20);
-            }
-            
-            leader.sendMessage("§aRitüel tamamlandı! " + recruitedPlayers.size() + " kişi katıldı.");
+        // Oyuncuları Klana Ekle
+        for (Player newMember : recruitedPlayers) {
+            clanManager.addMember(clan, newMember.getUniqueId(), Clan.Rank.RECRUIT);
+            newMember.sendMessage("§6§l" + clan.getName() + " §eklanına ruhun bağlandı!");
+            newMember.getWorld().spawnParticle(Particle.FLAME, newMember.getLocation(), 50, 0.5, 1, 0.5, 0.1);
+            newMember.playSound(newMember.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 1f, 1f);
+            newMember.sendTitle("§a§lKLANA KATILDI", "§e" + clan.getName(), 10, 70, 20);
+        }
+        
+        leader.sendMessage("§aRitüel tamamlandı! " + recruitedPlayers.size() + " kişi katıldı.");
         }
         
         // ✅ GÜÇ SİSTEMİ ENTEGRASYONU: Ritüel başarılı oldu (oyuncu olmasa bile)
@@ -504,8 +504,8 @@ public class RitualInteractionListener implements Listener {
                 Block b = world.getBlockAt(x, y, z);
                 if (b.getType() != Material.AIR && !b.getType().isAir()) {
                     errors.add("İç alan (" + x + "," + z + "): " + b.getType() + " (boş olmalı)");
-                }
             }
+        }
         }
         
         if (errors.isEmpty()) {
@@ -819,14 +819,14 @@ public class RitualInteractionListener implements Listener {
                     );
                 } catch (Exception e) {
                     plugin.getLogger().warning("Görev ilerlemesi hatası (Ayrılma Ritüeli): " + e.getMessage());
-                }
             }
-            
+        }
+        
             // Klan üyelerine bildir
             for (UUID memberId : ritualClan.getMembers().keySet()) {
-                Player member = Bukkit.getPlayer(memberId);
-                if (member != null && member.isOnline()) {
-                    member.sendMessage("§7" + playerName + " klanından ayrıldı.");
+            Player member = Bukkit.getPlayer(memberId);
+            if (member != null && member.isOnline()) {
+                member.sendMessage("§7" + playerName + " klanından ayrıldı.");
                 }
             }
         }
@@ -863,7 +863,7 @@ public class RitualInteractionListener implements Listener {
         
         Player leader = player;
         Clan clan = clanManager.getClanByPlayer(leader.getUniqueId());
-        
+
         if (clan == null) {
             if (plugin != null) {
                 plugin.getLogger().info("[TERFİ RİTÜELİ] Klan kontrolü başarısız - Oyuncunun klanı yok");
@@ -907,9 +907,9 @@ public class RitualInteractionListener implements Listener {
                 plugin.getLogger().info("[TERFİ RİTÜELİ] Çerçeve kontrolü başarısız - " + structureError);
             }
             leader.sendMessage("§cRitüel yapısı eksik! " + structureError);
-            return;
-        }
-        
+                return;
+            }
+            
         event.setCancelled(true); // Normal ateş yakmayı engelle
         
         // İç alandaki oyuncuları bul
@@ -937,14 +937,14 @@ public class RitualInteractionListener implements Listener {
             } else {
                 handItem.setDurability((short) (handItem.getDurability() + 1));
             }
-            return;
-        }
-        
+                            return;
+                        }
+                        
         // Ritüel efekti
         Location effectLoc = frame.center.getLocation().add(0.5, 1, 0.5);
         world.spawnParticle(Particle.TOTEM, effectLoc, 100, 1, 0.5, 1, 0.1);
         world.playSound(effectLoc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
-        
+                            
         // Elindeki item'a göre terfi yap
         ItemStack inventoryItem = leader.getInventory().getItemInMainHand();
         Material terfiItem = null;
@@ -961,12 +961,12 @@ public class RitualInteractionListener implements Listener {
             // Çakmağı tüket
             if (handItem.getDurability() >= handItem.getType().getMaxDurability() - 1) {
                 handItem.setAmount(0);
-            } else {
+                        } else {
                 handItem.setDurability((short) (handItem.getDurability() + 1));
             }
-            return;
-        }
-        
+                            return;
+                        }
+                        
         int terfiSayisi = 0;
         for (Player target : targets) {
             Clan.Rank currentRank = clan.getRank(target.getUniqueId());
@@ -990,7 +990,7 @@ public class RitualInteractionListener implements Listener {
                 
                 target.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, target.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.3);
                 target.playSound(target.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-                target.sendTitle("§a§lTERFİ EDİLDİN", "§eÜye rütbesine yükseltildin!", 10, 70, 20);
+                            target.sendTitle("§a§lTERFİ EDİLDİN", "§eÜye rütbesine yükseltildin!", 10, 70, 20);
                 leader.sendMessage("§a" + target.getName() + " Üye rütbesine yükseltildi!");
             }
             
@@ -1003,21 +1003,21 @@ public class RitualInteractionListener implements Listener {
             // Item tüket
             if (inventoryItem.getAmount() > 1) {
                 inventoryItem.setAmount(inventoryItem.getAmount() - 1);
-            } else {
-                leader.getInventory().setItemInMainHand(null);
-            }
-            
+                            } else {
+                                leader.getInventory().setItemInMainHand(null);
+                            }
+                            
             leader.sendMessage("§aRitüel tamamlandı! " + terfiSayisi + " kişi terfi etti.");
-        } else {
+                        } else {
             leader.sendMessage("§eRitüel tamamlandı, ancak terfi edilecek kimse yok.");
-        }
+                        }
         
         // Çakmağı tüket
         if (handItem.getDurability() >= handItem.getType().getMaxDurability() - 1) {
             handItem.setAmount(0);
         } else {
             handItem.setDurability((short) (handItem.getDurability() + 1));
-        }
+            }
         
         setCooldown(leader.getUniqueId());
     }

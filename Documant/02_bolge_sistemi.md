@@ -4,6 +4,12 @@
 
 Bölge, **Klan Çitinin çevrelediği alandan** oluşur. Sadece bu alanda yapılar kurabilir ve felaketlerden korunabilirsiniz.
 
+**Son Güncellemeler** ⭐:
+- ✅ **Territory Boundary Particle Sistemi**: Dinamik partikül yoğunluğu (oyuncuya yakınken daha yoğun)
+- ✅ **Flood Fill Algoritması**: 2.5D ve 2D flood fill ile çit tespiti ve alan hesaplama
+- ✅ **Territory Persistence**: Bölge sınırları veritabanında saklanır, sunucu restart sonrası otomatik restore edilir
+- ✅ **Performans Optimizasyonları**: Chunk-based cache, async hesaplama, rate limiting
+
 ---
 
 ## 📋 İÇİNDEKİLER
@@ -13,10 +19,35 @@ Bölge, **Klan Çitinin çevrelediği alandan** oluşur. Sadece bu alanda yapıl
 3. [Bölge Korumaları](#bölge-korumalari)
 4. [Offline Koruma](#offline-koruma)
 5. [Kristal Yönetimi](#kristal-yönetimi)
+6. [Territory Boundary Particle Sistemi](#territory-boundary-particle-sistemi) ⭐ YENİ
+7. [Son Güncellemeler](#son-güncellemeler-son-3-gün) ⭐ YENİ
 
 ---
 
 ## 🏗️ BÖLGE OLUŞTURMA
+
+### ⚠️ Önemli Not: Çit Tespiti Sistemi ⭐ YENİ
+
+**Yeni Algoritma:**
+- Sistem artık klan kristalinden başlayarak tüm yönlere yayılır
+- Klan çitleri (OAK_FENCE) ile karşılaşınca durur
+- Kapalı alan tespit edilirse → Bölge oluşur
+- Açık alan ise → "Çitlerle tam çevrele!" hatası
+
+**Flood Fill Algoritması:**
+```
+1. Klan kristali yerleştirilir
+2. Sistem kristalden başlayarak tüm yönlere yayılır (2.5D flood fill)
+3. Klan Çiti (OAK_FENCE) ile karşılaşınca durur
+4. Kapalı alan tespit edilirse → Bölge oluşur
+5. Açık alan ise → Hata verir
+```
+
+**Performans Optimizasyonları:**
+- ✅ Chunk-based cache (territory cache)
+- ✅ Async hesaplama (büyük alanlar için)
+- ✅ Rate limiting (lag önleme)
+- ✅ Max radius kontrolü (sonsuz döngü önleme)
 
 ### Sistem Nasıl Çalışır?
 
@@ -192,7 +223,85 @@ Başkasının Klan Bölgesine:
 - ✅ **Metadata Sistemi**: Klan çitleri metadata ile işaretleniyor
 - ✅ **TerritoryData Yönetimi**: Çitler otomatik olarak TerritoryData'ya ekleniyor/kaldırılıyor
 - ✅ **Async Hesaplama**: Büyük alanlar için async flood-fill algoritması (lag önleme)
+
+---
+
+## 🎆 TERRITORY BOUNDARY PARTICLE SİSTEMİ ⭐ YENİ
+
+### Dinamik Partikül Yoğunluğu
+
+**Özellikler:**
+- Oyuncuya yakınken partiküller daha yoğun gösterilir
+- Oyuncudan uzaklaştıkça partiküller azalır
+- Sınır çizgisi boyunca partiküller gösterilir
+- Performans optimizasyonu: Chunk-based cache ve rate limiting
+
+**Algoritma:**
 ```
+1. Oyuncu bölge sınırına yaklaşır
+2. Sistem oyuncunun konumunu kontrol eder
+3. Sınır çizgisi hesaplanır (TerritoryData'dan)
+4. Partikül yoğunluğu oyuncuya olan mesafeye göre ayarlanır:
+   - Yakın (< 10 blok): Yüksek yoğunluk (her 2 blokta 1 partikül)
+   - Orta (10-30 blok): Orta yoğunluk (her 5 blokta 1 partikül)
+   - Uzak (> 30 blok): Düşük yoğunluk (her 10 blokta 1 partikül)
+5. Partiküller sınır çizgisi boyunca gösterilir
+```
+
+**Performans Optimizasyonları:**
+- ✅ Chunk-based cache (territory cache)
+- ✅ Rate limiting (1 saniye cooldown)
+- ✅ Async hesaplama (büyük alanlar için)
+- ✅ Oyuncu bazlı partikül gösterimi (sadece yakındaki oyuncular için)
+
+### Territory Persistence
+
+**Özellikler:**
+- Bölge sınırları veritabanında saklanır
+- Sunucu restart sonrası otomatik restore edilir
+- TerritoryData model ile yönetilir
+- Flood fill algoritması ile çitler otomatik tespit edilir
+
+**Çalışma Süreci:**
+1. Klan kristali yerleştirilir
+2. Çitler toplanır (`collectFenceLocations()`)
+3. `calculateBoundaries()` çağrılır
+4. Çitler varsa flood fill ile alan bulunur
+5. Sınır çizgisi hesaplanır
+6. TerritoryData güncellenir ve kaydedilir
+7. Partikül task'ı güncellenmiş veriyi kullanır
+
+Detaylı bilgi için: `SON_3_GUN_DEGISIKLIKLER_VE_SISTEM_DOKUMANI.md` dosyasına bakın.
+
+---
+
+## 🔧 SON GÜNCELLEMELER (Son 3 Gün) ⭐
+
+### Territory Boundary Particle Sistemi
+
+**Yeni Özellikler:**
+- Dinamik partikül yoğunluğu (oyuncuya yakınken daha yoğun)
+- Territory persistence (bölge sınırları veritabanında saklanır)
+- Flood fill algoritması ile çit tespiti
+- Performans optimizasyonları (chunk-based cache, async hesaplama)
+
+### Territory Persistence
+
+**Sorun:** Sunucu restart sonrası bölge sınırları yanlış gösteriliyordu.
+
+**Çözüm:** TerritoryData model ile bölge sınırları veritabanında saklanır ve sunucu açıldığında otomatik restore edilir.
+
+**Algoritma:**
+1. Bölge oluşturulduğunda TerritoryData kaydedilir
+2. Sunucu kapanırken `saveAll()` çağrılır
+3. TerritoryData JSON'a çevrilir ve `territory_data.json`'a yazılır
+4. Sunucu açıldığında `loadAll()` çağrılır
+5. JSON'dan okunur ve TerritoryData objeleri oluşturulur
+6. Partikül task'ı güncellenmiş veriyi kullanır
+
+Detaylı bilgi için: `SON_3_GUN_DEGISIKLIKLER_VE_SISTEM_DOKUMANI.md` dosyasına bakın.
+
+---
 
 **YENİ Özellikler** ⭐:
 - ✅ **ClanRankSystem Entegrasyonu**: Yapı kurma/yıkma işlemlerinde detaylı yetki kontrolü

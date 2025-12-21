@@ -250,9 +250,9 @@ public class ClanTerritoryMenu implements Listener {
                     finalBoundaryLine.add(boundaryLoc);
                 }
             } else {
-                player.sendMessage("§cSınır koordinatları hesaplanmamış!");
+            player.sendMessage("§cSınır koordinatları hesaplanmamış!");
                 player.sendMessage("§7Önce 'Alan Güncelle' butonuna basın.");
-                return;
+            return;
             }
         } else {
             // ✅ DÜZELTME: Lambda içinde kullanmak için final kopya oluştur
@@ -356,22 +356,22 @@ public class ClanTerritoryMenu implements Listener {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 // ✅ YENİ: Klan kristalini çevreleyen çitler tam şekilde kapanıyor mu kontrol et
-                Block crystalBlock = crystalLoc.getBlock();
-                boolean isSurrounded = isSurroundedByClanFences(crystalBlock, clan);
-                
-                if (!isSurrounded) {
-                    Bukkit.getScheduler().runTask(plugin, () -> {
-                        player.sendMessage("§cKlan kristalini çevreleyen çitler tam şekilde kapanmamış!");
+            Block crystalBlock = crystalLoc.getBlock();
+            boolean isSurrounded = isSurroundedByClanFences(crystalBlock, clan);
+            
+            if (!isSurrounded) {
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    player.sendMessage("§cKlan kristalini çevreleyen çitler tam şekilde kapanmamış!");
                         player.sendMessage("§7Boşluk var veya normal çit bulundu. Lütfen tüm çitleri kontrol edin.");
                         player.sendMessage("§7Not: Sadece Klan Çiti (CLAN_FENCE item'ı ile yerleştirilen) kullanılmalıdır.");
-                    });
-                    return;
-                }
-                
+                });
+                return;
+            }
+            
                 // ✅ YENİ: Çitler tam şekilde kapanmış, yeni çit lokasyonlarını topla
                 player.sendMessage("§7Çitler tespit edildi, lokasyonlar toplanıyor...");
-                List<Location> newFenceLocations = collectFenceLocations(crystalLoc, clan);
-                
+            List<Location> newFenceLocations = collectFenceLocations(crystalLoc, clan);
+            
                 if (newFenceLocations.isEmpty()) {
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         player.sendMessage("§cHiç klan çiti bulunamadı!");
@@ -383,37 +383,37 @@ public class ClanTerritoryMenu implements Listener {
                 
                 // ✅ YENİ: Eski sınırları temizle
                 territoryData.clearBoundaries();
-                territoryData.clearFenceLocations();
+            territoryData.clearFenceLocations();
                 
                 // ✅ YENİ: Yeni çit lokasyonlarını ekle
-                for (Location fenceLoc : newFenceLocations) {
-                    territoryData.addFenceLocation(fenceLoc);
-                }
-                
-                // ✅ YENİ: Y ekseni sınırlarını güncelle
-                territoryData.updateYBounds();
-                
-                // ✅ YENİ: Config'den skyHeight ve groundDepth set et
-                if (config != null) {
-                    territoryData.setSkyHeight(config.getSkyHeight());
-                    territoryData.setGroundDepth(config.getGroundDepth());
-                }
-                
+            for (Location fenceLoc : newFenceLocations) {
+                territoryData.addFenceLocation(fenceLoc);
+            }
+            
+            // ✅ YENİ: Y ekseni sınırlarını güncelle
+            territoryData.updateYBounds();
+            
+            // ✅ YENİ: Config'den skyHeight ve groundDepth set et
+            if (config != null) {
+                territoryData.setSkyHeight(config.getSkyHeight());
+                territoryData.setGroundDepth(config.getGroundDepth());
+            }
+            
                 // ✅ YENİ: Sınırları hesapla
-                territoryData.calculateBoundaries();
-                
-                // Main thread'e geri dön
-                Bukkit.getScheduler().runTask(plugin, () -> {
+            territoryData.calculateBoundaries();
+            
+            // Main thread'e geri dön
+            Bukkit.getScheduler().runTask(plugin, () -> {
                     player.sendMessage("§a§l✓ Klan alanı başarıyla güncellendi!");
-                    player.sendMessage("§7Çit Sayısı: §e" + territoryData.getFenceCount());
-                    player.sendMessage("§7Sınır Koordinat Sayısı: §e" + territoryData.getBoundaryCoordinates().size());
+                player.sendMessage("§7Çit Sayısı: §e" + territoryData.getFenceCount());
+                player.sendMessage("§7Sınır Koordinat Sayısı: §e" + territoryData.getBoundaryCoordinates().size());
                     player.sendMessage("§7Y Yüksekliği: §e" + territoryData.getMinY() + " - " + territoryData.getMaxY());
-                    
-                    // Cache'i güncelle
-                    if (territoryManager != null) {
-                        territoryManager.setCacheDirty();
-                    }
-                });
+                
+                // Cache'i güncelle
+                if (territoryManager != null) {
+                    territoryManager.setCacheDirty();
+                }
+            });
             } catch (Exception e) {
                 // Hata durumunda oyuncuya bilgi ver
                 Bukkit.getScheduler().runTask(plugin, () -> {
@@ -621,7 +621,7 @@ public class ClanTerritoryMenu implements Listener {
                         // Klan çiti bulundu, listeye ekle
                         fenceLocations.add(neighborLoc);
                         visited.add(neighborLoc);
-                        continue; // Sınır, devam etme
+                            continue; // Sınır, devam etme
                     } else {
                         // Normal çit, sınır sayılmaz - engel olarak kabul et
                         visited.add(neighborLoc);

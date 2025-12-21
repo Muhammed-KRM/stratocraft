@@ -101,7 +101,7 @@ public class Clan {
     public void removeXP(int amount) { this.storedXP = Math.max(0, this.storedXP - amount); }
     
     public Location getCrystalLocation() { return crystalLocation; }
-    public void setCrystalLocation(Location loc) {
+    public void setCrystalLocation(Location loc) { 
         me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
         if (plugin != null) {
             plugin.getLogger().info("[CLAN] setCrystalLocation çağrıldı: " + getName() + 

@@ -1,8 +1,18 @@
-# STRATOCRAFT - BATARYA SİSTEMİ (BÜYÜ)
+# STRATOCRAFT - BATARYA SİSTEMİ
+
+**Son Güncellemeler** ⭐:
+- ✅ **75 Batarya Sistemi**: 3 kategori x 5 seviye x 5 batarya = 75 batarya
+- ✅ **Çakışma Sorunu Düzeltmesi**: Merkez blok kontrolü ile çakışma önleme
+- ✅ **RecipeChecker Interface**: Her batarya için özel `RecipeChecker` interface'i (BÜYÜ)
 
 ## ⚡ Batarya Sistemi Nedir?
 
 Bataryalar **sanal olarak** envanterinize yüklenir ve savaşta kullanılır. **Komut yok**, fiziksel blok düzenleriyle büyü yaratırsınız!
+
+**Son Güncellemeler** ⭐:
+- ✅ **75 Batarya Sistemi**: 3 kategori x 5 seviye x 5 batarya = 75 batarya
+- ✅ **Çakışma Sorunu Düzeltmesi**: Merkez blok kontrolü ile çakışma önleme
+- ✅ **RecipeChecker Interface**: Her batarya için özel `RecipeChecker` interface'i
 
 ---
 
@@ -2324,6 +2334,77 @@ clan-power-system:
     dark-matter: 50
     default: 3
 ```
+
+---
+
+## 📝 SON GÜNCELLEMELER (Son 3 Gün) ⭐
+
+### 75 Batarya Sistemi
+
+**Dosya:** `NewBatteryManager.java`
+
+**Kategoriler:**
+- **Saldırı Bataryaları:** 25 batarya (hasar veren)
+- **Oluşturma Bataryaları:** 25 batarya (yapı yapan)
+- **Destek Bataryaları:** 25 batarya (şifa, hız, zırh)
+
+**Seviyeler:**
+- L1: 5 batarya/kategori (toplam 15)
+- L2: 5 batarya/kategori (toplam 15)
+- L3: 5 batarya/kategori (toplam 15)
+- L4: 5 batarya/kategori (toplam 15)
+- L5: 5 batarya/kategori (toplam 15)
+
+**Toplam:** 3 kategori × 5 seviye × 5 batarya = **75 batarya**
+
+### Çakışma Sorunu Düzeltmesi
+
+**Sorun:** Farklı tarifli bataryalar çakışıyordu. Aynı blok düzeninde birden fazla batarya tarifi eşleşiyordu.
+
+**Çözüm:** Merkez blok kontrolü ile çakışma önleme sistemi eklendi.
+
+**Algoritma:**
+
+```java
+// Merkez blok kontrolü ile çakışma önleme
+private BatteryData checkBatteryRecipe(Block centerBlock) {
+    // ✅ Önce merkez bloğa göre filtrele
+    List<RecipeChecker> matchingCenterBlock = allRecipeCheckers.stream()
+        .filter(checker -> checker.getPattern().getCenterBlock() == centerBlock.getType())
+        .collect(Collectors.toList());
+    
+    // ✅ Sadece aynı merkez bloğu olan tarifler kontrol ediliyor
+    for (RecipeChecker checker : matchingCenterBlock) {
+        if (checker.checkRecipe(centerBlock)) {
+            return checker.getBatteryData();
+        }
+    }
+    
+    return null;
+}
+```
+
+**Özellikler:**
+- ✅ Merkez blok kontrolü ile çakışma önleme
+- ✅ Her batarya için özel `RecipeChecker` interface'i
+- ✅ Esnek `BlockPattern` sistemi
+- ✅ Performans optimizasyonu (sadece aynı merkez bloğu olan tarifler kontrol ediliyor)
+
+**RecipeChecker Interface:**
+
+Her batarya için özel bir `RecipeChecker` interface'i kullanılıyor. Bu interface, batarya tariflerinin kontrolünü yapar ve çakışmaları önler.
+
+```java
+public interface RecipeChecker {
+    BlockPattern getPattern();
+    boolean checkRecipe(Block centerBlock);
+    BatteryData getBatteryData();
+}
+```
+
+**BlockPattern Sistemi:**
+
+Her batarya tarifi için bir `BlockPattern` tanımlanır. Bu pattern, merkez blok ve çevresindeki blokların düzenini belirler.
 
 ---
 

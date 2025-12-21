@@ -9,6 +9,9 @@ Ritüeller, Stratocraft'ta **fiziksel blok düzenekleriyle** yapılan özel etki
 - ✅ **Config Entegrasyonu**: Cooldown süreleri config'den alınıyor
 - ✅ **Klan Üyeliği Kontrolleri**: Terfi ritüelinde klan üyeliği kontrolü eklendi
 - ✅ **Hata Yönetimi**: Kritik bölgelerde try-catch blokları eklendi
+- ✅ **Yeni Ritüel Yapıları**: 5x5 çerçeve yapıları (End Portal tarzı)
+- ✅ **Permission Kontrolü**: Her ritüel için yetki kontrolü eklendi
+- ✅ **Detaylı Hata Mesajları**: Ritüel yapısı hatalıysa hangi blokların yanlış olduğu gösterilir
 
 ---
 
@@ -33,32 +36,37 @@ Ritüeller, Stratocraft'ta **fiziksel blok düzenekleriyle** yapılan özel etki
 
 ## 👥 ÜYE YÖNETİM RİTÜELLERİ
 
-### 1. Ateş Ritüeli (Üye Alma)
+### 1. Klan Üye Alma Ritüeli ⭐ GÜNCELLENDİ
 
 **Gereksinimler**:
-- 3x3 Stripped Log (soyulmuş odun kütüğü) platform
+- 5x5 Stripped Log (soyulmuş odun kütüğü) çerçeve (End Portal tarzı)
 - 1 Flint and Steel (çakmak)
-- Lider veya General yetkisi
+- Elite, General veya Leader yetkisi
 
-**Platform Kurulumu**:
+**Yapı Kurulumu** (End Portal Tarzı):
 ```
-[L][L][L]
-[L][L][L]    L = Stripped Log (herhangi bir soyulmuş kütük)
-[L][L][L]
+[L][L][L][L][L]
+[L]         [L]
+[L]  BOŞ   [L]    L = Stripped Log (herhangi bir soyulmuş kütük)
+[L]  ALAN  [L]    İç alan tamamen boş olmalı
+[L][L][L][L][L]
 
-Tüm bloklar Stripped Log olmalı!
+Kurallar:
+- Dış çerçeve: Stripped Log (5x5)
+- İç alan: Tamamen boş (AIR)
+- Minimum 3x3 iç alan (daha büyük olabilir)
 ```
 
 **Adımlar**:
 ```
-1. Davet edilecek oyuncu platformun üzerine gelir
-2. Lider/General eline Flint and Steel alır
-3. SHIFT + SAĞ TIK (platforma)
+1. İç alana davet edilecek oyuncuları yerleştir
+2. Elite/General/Leader eline Flint and Steel alır
+3. Kenardaki bir Stripped Log bloğa SAĞ TIK (çakmakla ateş yak)
 4. SONUÇ:
-   - Platform üzerindeki klansız oyuncular klan üyesi olur
+   - İç alandaki klansız oyuncular klan üyesi olur
    - FLAME partikülleri
    - "KLANA KATILDI" title
-   - Globalk mesaj: "X kişi katıldı"
+   - Global mesaj: "X kişi katıldı"
 ```
 
 **Görsel Efektler**:
@@ -68,43 +76,52 @@ Tüm bloklar Stripped Log olmalı!
 
 **Cooldown**: 10 saniye (config'den ayarlanabilir)
 
+**Yetki Kontrolü** ⭐ YENİ:
+```java
+Clan.Rank rank = clan.getRank(player.getUniqueId());
+if (rank != Clan.Rank.LEADER && 
+    rank != Clan.Rank.GENERAL && 
+    rank != Clan.Rank.ELITE) {
+    player.sendMessage("§cBu ritüeli sadece Elite, General veya Leader yapabilir!");
+    return;
+}
+```
+
 **Güvenlik Kontrolleri** ⭐ YENİ:
 - ✅ **Null Check**: Elindeki item null kontrolü yapılıyor (güvenlik)
-- ✅ **Yetki Kontrolü**: Sadece Lider veya General yapabilir
+- ✅ **Yetki Kontrolü**: Sadece Elite, General veya Leader yapabilir
 - ✅ **Config Entegrasyonu**: Cooldown süresi config'den alınıyor
+- ✅ **Detaylı Hata Mesajları**: Yapı hatalıysa hangi blokların yanlış olduğu gösterilir
 
 ---
 
-### 3. Terfi Ritüeli (Rütbe Verme)
+### 2. Klan Terfi Ritüeli ⭐ GÜNCELLENDİ
 
 **Gereksinimler**:
-- 3x3 Stone Brick platform
-- 4 Redstone Torch (köşelerde)
-- Külçe (Altın = General, Demir = Member)
-- Sadece Lider yapabilir
+- 5x5 Stripped Log (soyulmuş odun kütüğü) çerçeve (End Portal tarzı)
+- 1 Flint and Steel (çakmak)
+- Gold Ingot (Member → General) veya Iron Ingot (Recruit → Member)
+- General veya Leader yetkisi
 
-**Platform Kurulumu**:
+**Yapı Kurulumu** (End Portal Tarzı - Üye Alma ile aynı):
 ```
-[T]   [S]   [T]
-    [S][S]
-[F]  [S][F]  [F]    S = Stone Brick
-    [S][S]          F = Fire/Campfire (ortada)
-[T]   [S]   [T]    T = Redstone Torch (köşelerde)
-
-Ortada ateş yak!
+[L][L][L][L][L]
+[L]         [L]
+[L]  BOŞ   [L]    L = Stripped Log (herhangi bir soyulmuş kütük)
+[L]  ALAN  [L]    İç alan tamamen boş olmalı
+[L][L][L][L][L]
 ```
 
 **Adımlar**:
 ```
-1. Terfi edilecek kişi platformun üzerine gelir
-2. Lider eline rütbeye göre külçe alır:
-   - Altın Külçe → GENERAL
-   - Demir Külçe → MEMBER
-3. Lider o kişinin ÜZERİNE KÜLÇEYI ATAR (Q tuşu veya sürükle-bırak)
-4. Külçe yere düştüğünde ritüel tetiklenir
-5. SONUÇ:
-   - Rütbe verilir
-   - Altın/Gri partikülaltar
+1. İç alana terfi edilecek oyuncuları yerleştir
+2. General/Leader eline külçe alır:
+   - Gold Ingot → Member → General
+   - Iron Ingot → Recruit → Member
+3. Kenardaki bir Stripped Log bloğa SAĞ TIK (çakmakla ateş yak)
+4. SONUÇ:
+   - İç alandaki oyuncular terfi eder
+   - Altın/Gri partiküller
    - Şimşek efekti
    - "TERFİ ETTİ" title
 ```
@@ -113,11 +130,21 @@ Ortada ateş yak!
 - General: VILLAGER_HAPPY (altın)
 - Member: SMOKE_NORMAL (gri)
 
+**Yetki Kontrolü** ⭐ YENİ:
+```java
+Clan.Rank rank = clan.getRank(player.getUniqueId());
+if (rank != Clan.Rank.LEADER && rank != Clan.Rank.GENERAL) {
+    player.sendMessage("§cBu ritüeli sadece Lider veya General yapabilir!");
+    return;
+}
+```
+
 **Güvenlik Kontrolleri** ⭐ YENİ:
 - ✅ **Klan Üyeliği Kontrolü**: Terfi edilecek oyuncu mutlaka klan üyesi olmalı
 - ✅ **Null Check**: Elindeki item (Altın/Demir Külçe) null kontrolü yapılıyor
 - ✅ **Rütbe Kontrolü**: Zaten üst rütbede olan oyunculara terfi verilemez
 - ✅ **Cooldown Sistemi**: Ritüel spam önleme için cooldown var
+- ✅ **Detaylı Hata Mesajları**: Yapı hatalıysa hangi blokların yanlış olduğu gösterilir
 
 **Admin Komutu** ⭐ YENİ:
 ```
@@ -138,6 +165,85 @@ Ortada ateş yak!
 /stratocraft clan promote TestKlan PlayerName GENERAL
 /stratocraft clan terfi TestKlan PlayerName ELITE
 ```
+
+### 3. Klandan Çıkma Ritüeli ⭐ YENİ
+
+**Gereksinimler**:
+- 5x5 Stone Bricks (taş tuğla) çerçeve (End Portal tarzı)
+- 1 Flint and Steel (çakmak)
+- Leader hariç tüm rütbeler yapabilir
+
+**Yapı Kurulumu** (End Portal Tarzı - Taş Tuğla):
+```
+[B][B][B][B][B]
+[B]         [B]
+[B]  BOŞ   [B]    B = Stone Bricks (taş tuğla)
+[B]  ALAN  [B]    İç alan tamamen boş olmalı
+[B][B][B][B][B]
+
+Kurallar:
+- Dış çerçeve: Stone Bricks (5x5)
+- İç alan: Tamamen boş (AIR)
+- Üye Alma ritüelinden farklı: Taş Tuğla kullanılır (Stripped Log değil)
+```
+
+**Adımlar**:
+```
+1. İç alana gir (klan üyesi olmalısın)
+2. Leader hariç herhangi bir rütbe
+3. Elinde Flint and Steel al
+4. Kenardaki bir Stone Bricks bloğa SAĞ TIK (çakmakla ateş yak)
+5. SONUÇ:
+   - Klandan çıkarsın
+   - Partikül efektleri
+   - "Klandan çıktın!" mesajı
+```
+
+**Yetki Kontrolü** ⭐ YENİ:
+```java
+Clan.Rank rank = clan.getRank(player.getUniqueId());
+if (rank == Clan.Rank.LEADER) {
+    player.sendMessage("§cLider klanından çıkamaz! Önce liderliği devretmelisin.");
+    return;
+}
+// Leader hariç herkes yapabilir
+```
+
+**Özellikler**:
+- ✅ Leader hariç tüm rütbeler yapabilir
+- ✅ İsim yazma gerekmez (kendi çıkıyor)
+- ✅ Taş Tuğla çerçeve (Üye Alma'dan farklı)
+- ✅ Detaylı hata mesajları
+
+Detaylı tarif için: `RITUEL_TARIFLERI.md` dosyasına bakın.
+
+---
+
+## 🔧 SON GÜNCELLEMELER (Son 3 Gün) ⭐
+
+### Yeni Ritüel Yapıları
+
+**Değişiklikler:**
+- ✅ **5x5 Çerçeve Yapısı**: Tüm ritüeller artık 5x5 çerçeve (End Portal tarzı) kullanıyor
+- ✅ **Farklı Malzemeler**: Üye Alma (Stripped Log), Çıkma (Stone Bricks), Terfi (Stripped Log)
+- ✅ **Permission Kontrolü**: Her ritüel için yetki kontrolü eklendi
+- ✅ **Detaylı Hata Mesajları**: Yapı hatalıysa hangi blokların yanlış olduğu gösterilir
+
+### Ritüel Yapı Kontrol Algoritması
+
+**Dosya:** `RitualInteractionListener.java`
+
+**Algoritma:**
+- `findRitualFrame()`: Çerçeve bulma (Stripped Log veya Stone Bricks)
+- `checkRitualFrameStructure()`: Çerçeve yapısı kontrolü (5x5, iç alan boş)
+- Detaylı hata mesajları (hangi blokların yanlış olduğu)
+
+**Performans Optimizasyonları:**
+- ✅ Early return'ler (ritüel değilse hemen çık)
+- ✅ Debug logları optimize edildi (gereksiz loglar kaldırıldı)
+- ✅ Null check'ler eklendi
+
+Detaylı bilgi için: `SON_3_GUN_DEGISIKLIKLER_VE_SISTEM_DOKUMANI.md` ve `RITUEL_TARIFLERI.md` dosyalarına bakın.
 
 ---
 

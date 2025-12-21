@@ -88,6 +88,7 @@ public class ContractMenu implements Listener {
         public Integer materialPage = 0; // Material seçim sayfası
         public ContractTemplate selectedTemplate = null; // Seçilen şablon
         public UUID contractRequestId = null; // Çift taraflı kontrat için request ID
+        public UUID targetPlayerForRequest = null; // PLAYER_TO_PLAYER için seçilen hedef oyuncu (istek gönderilmeden önce)
     }
     
     /**
@@ -1357,7 +1358,7 @@ public class ContractMenu implements Listener {
             handleFinalApprovalClick(event);
         }
         // Oyuncu seçim menüsü
-        else if (title.equals("§6Hedef Oyuncu Seç") || title.equals("§6Hedef Oyuncu Seç (İstek Gönder)")) {
+        else if (title.equals("§6Hedef Oyuncu Seç")) {
             handlePlayerSelectionClick(event);
         }
     }
@@ -1700,6 +1701,56 @@ public class ContractMenu implements Listener {
     }
     
     /**
+     * Wizard adım sayısını hesapla (iyileştirme için)
+     */
+    private int getTotalWizardSteps(ContractWizardState state) {
+        if (state == null) return 8;
+        
+        // Eğer contractRequestId varsa (şart ekleme durumu), scope ve oyuncu seçimi yok
+        if (state.contractRequestId != null) {
+            // Tip seçimi (1) + Ödül (2) + Ceza Tipi (3) + Ceza (4) + Süre (5) + Tip'e özel (6) + Özet (7) = 7 adım
+            return 7;
+        }
+        
+        // Normal akış: Tip (1) + Scope (2) + Oyuncu (3) + Ödül (4) + Ceza Tipi (5) + Ceza (6) + Süre (7) + Tip'e özel (8) + Özet (9) = 9 adım
+        // Ancak scope PLAYER_TO_PLAYER ise oyuncu seçimi var, diğerlerinde yok
+        if (state.scope == Contract.ContractScope.PLAYER_TO_PLAYER) {
+            return 9;
+        } else {
+            return 8; // Oyuncu seçimi yok
+        }
+    }
+    
+    /**
+     * Mevcut adım numarasını hesapla (iyileştirme için)
+     */
+    private int getCurrentStepNumber(ContractWizardState state) {
+        if (state == null) return 1;
+        
+        // Eğer contractRequestId varsa (şart ekleme durumu)
+        if (state.contractRequestId != null) {
+            if (state.contractType == null) return 1; // Tip seçimi
+            if (state.step < 2) return 2; // Ödül
+            if (state.step < 3) return 3; // Ceza Tipi
+            if (state.step < 4) return 4; // Ceza
+            if (state.step < 5) return 5; // Süre
+            if (state.step < 6) return 6; // Tip'e özel
+            return 7; // Özet
+        }
+        
+        // Normal akış
+        if (state.contractType == null) return 1; // Tip seçimi
+        if (state.scope == null) return 2; // Scope seçimi
+        if (state.scope == Contract.ContractScope.PLAYER_TO_PLAYER && state.targetPlayerForRequest == null) return 3; // Oyuncu seçimi
+        if (state.step < 2) return 4; // Ödül
+        if (state.step < 3) return 5; // Ceza Tipi
+        if (state.step < 4) return 6; // Ceza
+        if (state.step < 5) return 7; // Süre
+        if (state.step < 6) return 8; // Tip'e özel
+        return 9; // Özet
+    }
+    
+    /**
      * Şartları detaylı göster
      */
     private void displayTermsDetails(Player player, me.mami.stratocraft.model.ContractTerms terms) {
@@ -1779,7 +1830,14 @@ public class ContractMenu implements Listener {
                 state.contractType = me.mami.stratocraft.enums.ContractType.RESOURCE_COLLECTION;
                 state.step = 1;
                 player.closeInventory();
-                openScopeSelectionMenu(player);
+                // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), scope seçimi yapma
+                if (state.contractRequestId != null) {
+                    // Scope zaten belirlenmiş (request'ten), direkt şart belirleme adımlarına geç
+                    state.step = 2;
+                    openRewardSliderMenu(player);
+                } else {
+                    openScopeSelectionMenu(player);
+                }
                 break;
                 
             case DIAMOND_SWORD:
@@ -1787,7 +1845,13 @@ public class ContractMenu implements Listener {
                 state.contractType = me.mami.stratocraft.enums.ContractType.COMBAT;
                 state.step = 1;
                 player.closeInventory();
-                openScopeSelectionMenu(player);
+                // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), scope seçimi yapma
+                if (state.contractRequestId != null) {
+                    state.step = 2;
+                    openRewardSliderMenu(player);
+                } else {
+                    openScopeSelectionMenu(player);
+                }
                 break;
                 
             case BARRIER:
@@ -1795,7 +1859,13 @@ public class ContractMenu implements Listener {
                 state.contractType = me.mami.stratocraft.enums.ContractType.TERRITORY;
                 state.step = 1;
                 player.closeInventory();
-                openScopeSelectionMenu(player);
+                // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), scope seçimi yapma
+                if (state.contractRequestId != null) {
+                    state.step = 2;
+                    openRewardSliderMenu(player);
+                } else {
+                    openScopeSelectionMenu(player);
+                }
                 break;
                 
             case STRUCTURE_BLOCK:
@@ -1803,7 +1873,13 @@ public class ContractMenu implements Listener {
                 state.contractType = me.mami.stratocraft.enums.ContractType.CONSTRUCTION;
                 state.step = 1;
                 player.closeInventory();
-                openScopeSelectionMenu(player);
+                // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), scope seçimi yapma
+                if (state.contractRequestId != null) {
+                    state.step = 2;
+                    openRewardSliderMenu(player);
+                } else {
+                    openScopeSelectionMenu(player);
+                }
                 break;
                 
             default:
@@ -1821,10 +1897,25 @@ public class ContractMenu implements Listener {
             return;
         }
         
+        // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), scope seçimi yapma
+        // Scope zaten request'te belirlenmiş, direkt şart belirleme adımlarına geç
+        if (state.contractRequestId != null) {
+            // Scope zaten belirlenmiş, direkt şart belirleme adımlarına geç
+            state.step = 2;
+            player.closeInventory();
+            openRewardSliderMenu(player);
+            return;
+        }
+        
         // Personal Terminal kontrolü
         boolean fromPersonalTerminal = isPersonalTerminal.getOrDefault(player.getUniqueId(), false);
         
-        Inventory menu = Bukkit.createInventory(null, 27, "§6Kontrat Kapsamı Seç");
+        // ✅ İYİLEŞTİRME: Adım numarası ekle
+        int currentStep = getCurrentStepNumber(state);
+        int totalSteps = getTotalWizardSteps(state);
+        String menuTitle = "§6[Adım " + currentStep + "/" + totalSteps + "] Kontrat Kapsamı Seç";
+        
+        Inventory menu = Bukkit.createInventory(null, 27, menuTitle);
         
         if (fromPersonalTerminal) {
             // Personal Terminal'den sadece PLAYER_TO_PLAYER göster
@@ -2097,6 +2188,16 @@ public class ContractMenu implements Listener {
             return;
         }
         
+        // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), scope seçimi yapma
+        // Scope zaten request'te belirlenmiş, direkt şart belirleme adımlarına geç
+        if (state.contractRequestId != null) {
+            // Scope zaten belirlenmiş, direkt şart belirleme adımlarına geç
+            state.step = 2;
+            player.closeInventory();
+            openRewardSliderMenu(player);
+            return;
+        }
+        
         // Personal Terminal kontrolü
         boolean fromPersonalTerminal = isPersonalTerminal.getOrDefault(player.getUniqueId(), false);
         
@@ -2113,27 +2214,22 @@ public class ContractMenu implements Listener {
                 state.scope = Contract.ContractScope.PLAYER_TO_PLAYER;
                 player.closeInventory();
                 
-                // Oyuncu seçim menüsünü aç (çift taraflı kontrat için)
-                if (contractRequestManager != null) {
-                    // Önce online oyuncuları kontrol et
-                    List<org.bukkit.entity.Player> onlinePlayers = new ArrayList<>(Bukkit.getOnlinePlayers());
-                    onlinePlayers.remove(player);
-                    
-                    if (!onlinePlayers.isEmpty()) {
-                        openPlayerSelectionMenuForRequest(player);
-                    } else {
-                        // Online oyuncu yok, chat input iste
-                        state.waitingForInput = "target_player";
-                        player.sendMessage("§6═══════════════════════════════════");
-                        player.sendMessage("§eHedef Oyuncu Belirle");
-                        player.sendMessage("§7Chat'e hedef oyuncu ismini yazın");
-                        player.sendMessage("§7İptal etmek için: §c/iptal");
-                        player.sendMessage("§6═══════════════════════════════════");
-                    }
+                // ✅ DÜZELTME: Oyuncu seçimi yapılmalı ama istek hemen gönderilmemeli
+                // Önce online oyuncuları kontrol et
+                List<org.bukkit.entity.Player> onlinePlayers = new ArrayList<>(Bukkit.getOnlinePlayers());
+                onlinePlayers.remove(player);
+                
+                if (!onlinePlayers.isEmpty()) {
+                    // Oyuncu seçim menüsünü aç (istek göndermeden önce)
+                    openPlayerSelectionMenuForRequest(player);
                 } else {
-                    // Eski sistem (tek taraflı kontrat)
-                    state.step = 2;
-                    openRewardSliderMenu(player);
+                    // Online oyuncu yok, chat input iste
+                    state.waitingForInput = "target_player";
+                    player.sendMessage("§6═══════════════════════════════════");
+                    player.sendMessage("§eHedef Oyuncu Belirle");
+                    player.sendMessage("§7Chat'e hedef oyuncu ismini yazın");
+                    player.sendMessage("§7İptal etmek için: §c/iptal");
+                    player.sendMessage("§6═══════════════════════════════════");
                 }
                 break;
                 
@@ -2190,7 +2286,12 @@ public class ContractMenu implements Listener {
         
         if (state.reward == 0) state.reward = 100; // Varsayılan değer
         
-        Inventory menu = Bukkit.createInventory(null, 27, "§6Ödül Belirle");
+        // ✅ İYİLEŞTİRME: Adım numarası ekle
+        int currentStepNum = getCurrentStepNumber(state);
+        int totalStepsNum = getTotalWizardSteps(state);
+        String menuTitleStr = "§6[Adım " + currentStepNum + "/" + totalStepsNum + "] Ödül Belirle";
+        
+        Inventory menu = Bukkit.createInventory(null, 27, menuTitleStr);
         
         // Mevcut değer göster
         List<String> valueLore = new ArrayList<>();
@@ -2839,7 +2940,8 @@ public class ContractMenu implements Listener {
             return;
         }
         
-        Inventory menu = Bukkit.createInventory(null, 54, "§6Hedef Oyuncu Seç (İstek Gönder)");
+        // ✅ DÜZELTME: Başlık değiştirildi - artık "İstek Gönder" yazmıyor
+        Inventory menu = Bukkit.createInventory(null, 54, "§6Hedef Oyuncu Seç");
         
         // Online oyuncuları listele
         List<Player> onlinePlayers = new ArrayList<>(Bukkit.getOnlinePlayers());
@@ -2863,7 +2965,9 @@ public class ContractMenu implements Listener {
                 }
             }
             lore.add("§7═══════════════════════");
-            lore.add("§aSol tıkla seç ve istek gönder");
+            lore.add("§aSol tıkla seç");
+            lore.add("§7Şartları belirledikten sonra");
+            lore.add("§7istek gönderilecek");
             
             ItemStack playerHead = new ItemStack(Material.PLAYER_HEAD);
             ItemMeta meta = playerHead.getItemMeta();
@@ -2941,13 +3045,28 @@ public class ContractMenu implements Listener {
             menu.setItem(slot++, playerHead);
         }
         
-        // Chat'ten yazma seçeneği (Slot 49)
-        menu.setItem(49, createButton(Material.WRITABLE_BOOK, "§eChat'ten Yaz", 
+        // ✅ İYİLEŞTİRME: Açıklayıcı bilgi (Slot 49)
+        List<String> infoLore = new ArrayList<>();
+        infoLore.add("§7═══════════════════════");
+        infoLore.add("§7ℹ️ Oyuncu seçildikten sonra");
+        infoLore.add("§7şartları belirleyeceksiniz.");
+        infoLore.add("§7");
+        infoLore.add("§7İstek şartlar belirlendikten");
+        infoLore.add("§7sonra gönderilecek.");
+        infoLore.add("§7═══════════════════════");
+        menu.setItem(49, createButton(Material.BOOK, "§eℹ️ Bilgi", infoLore));
+        
+        // Chat'ten yazma seçeneği (Slot 48)
+        menu.setItem(48, createButton(Material.WRITABLE_BOOK, "§eChat'ten Yaz", 
             Arrays.asList("§7Online değilse chat'e oyuncu", "§7veya klan ismini yazabilirsiniz")));
         
         // Geri butonu (Slot 45)
         menu.setItem(45, createButton(Material.ARROW, "§eGeri", 
             Arrays.asList("§7Önceki adıma dön")));
+        
+        // İptal butonu (Slot 53)
+        menu.setItem(53, createButton(Material.RED_CONCRETE, "§cİptal", 
+            Arrays.asList("§7Kontrat oluşturmayı iptal et")));
         
         player.openInventory(menu);
         player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
@@ -2971,11 +3090,21 @@ public class ContractMenu implements Listener {
             return;
         }
         
+        // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), oyuncu seçimi yapma
+        // Oyuncu zaten request'te belirlenmiş, direkt şart belirleme adımlarına geç
+        if (state.contractRequestId != null) {
+            // Oyuncu zaten belirlenmiş, direkt şart belirleme adımlarına geç
+            state.step = 2;
+            player.closeInventory();
+            openRewardSliderMenu(player);
+            return;
+        }
+        
         switch (clicked.getType()) {
             case ARROW:
                 // Geri
                 String menuTitle = event.getView().getTitle();
-                if (menuTitle.equals("§6Hedef Oyuncu Seç (İstek Gönder)")) {
+                if (menuTitle.equals("§6Hedef Oyuncu Seç")) {
                     // Çift taraflı kontrat için geri
                     player.closeInventory();
                     openScopeSelectionMenu(player);
@@ -3009,48 +3138,27 @@ public class ContractMenu implements Listener {
                             try {
                                 UUID targetUUID = UUID.fromString(uuidStr);
                                 
-                                // Çift taraflı kontrat için istek gönder
                                 String currentMenuTitle = event.getView().getTitle();
-                                if (currentMenuTitle.equals("§6Hedef Oyuncu Seç (İstek Gönder)")) {
-                                    if (contractRequestManager != null && state.scope == Contract.ContractScope.PLAYER_TO_PLAYER) {
-                                        // İstek gönder
-                                        me.mami.stratocraft.model.ContractRequest request = 
-                                            contractRequestManager.sendRequest(player.getUniqueId(), targetUUID, state.scope);
-                                        
-                                        if (request != null) {
-                                            // İlk gönderenin şartlarını kaydet (tek taraflı kontrat için)
-                                            // Wizard state'deki şartları ContractTerms olarak kaydet
-                                            if (contractTermsManager != null && state.contractType != null) {
-                                                // Request ID'yi state'e ekle
-                                                state.contractRequestId = request.getId();
-                                                // Şartları kaydet
-                                                me.mami.stratocraft.model.ContractTerms senderTerms = 
-                                                    contractTermsManager.createTerms(request.getId(), player.getUniqueId(), state);
-                                                if (senderTerms != null) {
-                                                    // Şartları onayla (ilk gönderen kendi şartlarını onaylamış sayılır)
-                                                    contractTermsManager.approveTerms(senderTerms.getId(), player.getUniqueId());
-                                                }
-                                            }
-                                            
-                                            player.sendMessage("§6═══════════════════════════════════");
-                                            player.sendMessage("§a§lKONTRAT İSTEĞİ GÖNDERİLDİ!");
-                                            player.sendMessage("§7" + Bukkit.getOfflinePlayer(targetUUID).getName() + " size kontrat isteği gönderdi");
-                                            player.sendMessage("§7İstek kabul edildiğinde bildirim alacaksınız");
-                                            player.sendMessage("§6═══════════════════════════════════");
-                                            
-                                            // HUD'a bildirim gönder
-                                            sendContractNotification(player, "İstek gönderildi: " + 
-                                                Bukkit.getOfflinePlayer(targetUUID).getName(), 
-                                                me.mami.stratocraft.manager.HUDManager.ContractNotificationType.SUCCESS);
-                                            
-                                            wizardStates.remove(player.getUniqueId());
-                                            player.closeInventory();
-                                        } else {
-                                            player.sendMessage("§cİstek gönderilemedi! Zaten bekleyen bir istek olabilir.");
-                                        }
-                                    } else {
-                                        player.sendMessage("§cİstek gönderilemedi!");
-                                    }
+                                
+                                // ✅ DÜZELTME: PLAYER_TO_PLAYER için oyuncu seçildiğinde sadece state'e kaydet, istek gönderme
+                                if (currentMenuTitle.equals("§6Hedef Oyuncu Seç") && 
+                                    state.scope == Contract.ContractScope.PLAYER_TO_PLAYER) {
+                                    // Oyuncuyu state'e kaydet (istek gönderilmeden önce)
+                                    state.targetPlayerForRequest = targetUUID;
+                                    state.waitingForInput = null;
+                                    
+                                    // Şart belirleme adımlarına geç
+                                    state.step = 2;
+                                    player.closeInventory();
+                                    openRewardSliderMenu(player);
+                                    
+                                    player.sendMessage("§6═══════════════════════════════════");
+                                    player.sendMessage("§a§lOYUNCU SEÇİLDİ!");
+                                    player.sendMessage("§7Hedef: §e" + Bukkit.getOfflinePlayer(targetUUID).getName());
+                                    player.sendMessage("§7Şimdi şartları belirleyin");
+                                    player.sendMessage("§7Şartlar belirlendikten sonra istek gönderilecek");
+                                    player.sendMessage("§6═══════════════════════════════════");
+                                    return;
                                 } else {
                                     // Eski sistem (COMBAT için)
                                     state.targetPlayer = targetUUID;
@@ -3076,6 +3184,15 @@ public class ContractMenu implements Listener {
     private void requestPlayerInput(Player player) {
         ContractWizardState state = wizardStates.get(player.getUniqueId());
         if (state == null) return;
+        
+        // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), oyuncu seçimi yapma
+        // Oyuncu zaten request'te belirlenmiş, direkt şart belirleme adımlarına geç
+        if (state.contractRequestId != null) {
+            // Oyuncu zaten belirlenmiş, direkt şart belirleme adımlarına geç
+            state.step = 2;
+            openRewardSliderMenu(player);
+            return;
+        }
         
         // Önce menüyü aç, eğer online oyuncu yoksa chat input iste
         List<Player> onlinePlayers = new ArrayList<>(Bukkit.getOnlinePlayers());
@@ -3225,30 +3342,36 @@ public class ContractMenu implements Listener {
                 break;
                 
             case "target_player":
-                // Çift taraflı kontrat için oyuncu seçimi
+                // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), oyuncu seçimi yapma
+                if (state.contractRequestId != null) {
+                    // Oyuncu zaten belirlenmiş, direkt şart belirleme adımlarına geç
+                    state.waitingForInput = null;
+                    state.step = 2;
+                    openRewardSliderMenu(player);
+                    return;
+                }
+                
+                // ✅ DÜZELTME: Çift taraflı kontrat için oyuncu seçimi - sadece state'e kaydet, istek gönderme
                 Player targetPlayerForRequest = Bukkit.getPlayer(message);
                 if (targetPlayerForRequest != null && targetPlayerForRequest.isOnline()) {
-                    if (contractRequestManager != null && state.scope == Contract.ContractScope.PLAYER_TO_PLAYER) {
-                        // İstek gönder
-                        me.mami.stratocraft.model.ContractRequest request = 
-                            contractRequestManager.sendRequest(player.getUniqueId(), 
-                                targetPlayerForRequest.getUniqueId(), state.scope);
+                    if (state.scope == Contract.ContractScope.PLAYER_TO_PLAYER) {
+                        // Oyuncuyu state'e kaydet (istek gönderilmeden önce)
+                        state.targetPlayerForRequest = targetPlayerForRequest.getUniqueId();
+                        state.waitingForInput = null;
                         
-                        if (request != null) {
-                            player.sendMessage("§6═══════════════════════════════════");
-                            player.sendMessage("§a§lKONTRAT İSTEĞİ GÖNDERİLDİ!");
-                            player.sendMessage("§7" + targetPlayerForRequest.getName() + " size kontrat isteği gönderdi");
-                            player.sendMessage("§7İstek kabul edildiğinde bildirim alacaksınız");
-                            player.sendMessage("§6═══════════════════════════════════");
-                            
-                            wizardStates.remove(player.getUniqueId());
-                        } else {
-                            player.sendMessage("§cİstek gönderilemedi! Zaten bekleyen bir istek olabilir.");
-                        }
+                        // Şart belirleme adımlarına geç
+                        state.step = 2;
+                        openRewardSliderMenu(player);
+                        
+                        player.sendMessage("§6═══════════════════════════════════");
+                        player.sendMessage("§a§lOYUNCU SEÇİLDİ!");
+                        player.sendMessage("§7Hedef: §e" + targetPlayerForRequest.getName());
+                        player.sendMessage("§7Şimdi şartları belirleyin");
+                        player.sendMessage("§7Şartlar belirlendikten sonra istek gönderilecek");
+                        player.sendMessage("§6═══════════════════════════════════");
                     } else {
-                        player.sendMessage("§cİstek gönderilemedi!");
+                        player.sendMessage("§cGeçersiz kapsam!");
                     }
-                    state.waitingForInput = null;
                 } else {
                     player.sendMessage("§cOyuncu bulunamadı veya online değil!");
                 }
@@ -3357,6 +3480,16 @@ public class ContractMenu implements Listener {
         ContractWizardState state = wizardStates.get(player.getUniqueId());
         if (state == null) {
             player.closeInventory();
+            return;
+        }
+        
+        // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), oyuncu seçimi yapma
+        // Oyuncu zaten request'te belirlenmiş, direkt şart belirleme adımlarına geç
+        if (state.contractRequestId != null) {
+            // Oyuncu zaten belirlenmiş, direkt şart belirleme adımlarına geç
+            state.step = 2;
+            player.closeInventory();
+            openRewardSliderMenu(player);
             return;
         }
         
@@ -3502,16 +3635,45 @@ public class ContractMenu implements Listener {
             return;
         }
         
-        Inventory menu = Bukkit.createInventory(null, 27, "§6Kontrat Özeti");
+        // ✅ İYİLEŞTİRME: Adım numarası ekle
+        int currentStep = getCurrentStepNumber(state);
+        int totalSteps = getTotalWizardSteps(state);
+        String menuTitle = "§6[Adım " + currentStep + "/" + totalSteps + "] Kontrat Özeti";
         
-        // Özet bilgileri
+        Inventory menu = Bukkit.createInventory(null, 54, menuTitle); // 54 slot (6x9) - daha fazla yer için
+        
+        // ✅ İYİLEŞTİRME: Sizin şartlarınız bölümü
         List<String> summaryLore = new ArrayList<>();
+        summaryLore.add("§7═══════════════════════");
+        summaryLore.add("§e§lSİZİN ŞARTLARINIZ:");
         summaryLore.add("§7═══════════════════════");
         summaryLore.add("§7Tip: §e" + (state.contractType != null ? getContractTypeName(state.contractType) : "Bilinmeyen"));
         summaryLore.add("§7Kapsam: §e" + getContractScopeName(state.scope));
         summaryLore.add("§7Ödül: §a" + state.reward + " Altın");
         summaryLore.add("§7Ceza: §c" + state.penalty + " Altın");
         summaryLore.add("§7Süre: §e" + state.deadlineDays + " Gün");
+        
+        // ✅ İYİLEŞTİRME: Eğer contractRequestId varsa (şart ekleme durumu), karşı tarafın şartlarını göster
+        if (state.contractRequestId != null && contractRequestManager != null && contractTermsManager != null) {
+            me.mami.stratocraft.model.ContractRequest request = contractRequestManager.getRequest(state.contractRequestId);
+            if (request != null) {
+                UUID otherPlayerId = request.getSender().equals(player.getUniqueId()) ? 
+                    request.getTarget() : request.getSender();
+                me.mami.stratocraft.model.ContractTerms otherTerms = 
+                    contractTermsManager.getTermsByRequest(state.contractRequestId, otherPlayerId);
+                
+                if (otherTerms != null) {
+                    org.bukkit.OfflinePlayer otherPlayer = Bukkit.getOfflinePlayer(otherPlayerId);
+                    String otherName = otherPlayer.getName() != null ? otherPlayer.getName() : "Bilinmeyen";
+                    
+                    summaryLore.add("§7═══════════════════════");
+                    summaryLore.add("§7§lKARŞI TARAFIN ŞARTLARI:");
+                    summaryLore.add("§7═══════════════════════");
+                    summaryLore.addAll(createTermsLore(otherTerms, otherName, false));
+                }
+            }
+        }
+        
         summaryLore.add("§7═══════════════════════");
         
         // Kontrat mantığı açıklaması
@@ -3580,19 +3742,44 @@ public class ContractMenu implements Listener {
         
         summaryLore.add("§7═══════════════════════");
         
+        // ✅ İYİLEŞTİRME: Açıklayıcı mesaj ekle
+        if (state.contractRequestId != null) {
+            summaryLore.add("§7");
+            summaryLore.add("§7ℹ️ Şartlarınız kaydedilecek.");
+            summaryLore.add("§7İlk gönderen oyuncu onayladığında");
+            summaryLore.add("§7kontrat aktif olacak.");
+        } else if (state.scope == Contract.ContractScope.PLAYER_TO_PLAYER) {
+            summaryLore.add("§7");
+            summaryLore.add("§7ℹ️ Bu şartlar karşı tarafa gönderilecek.");
+            summaryLore.add("§7Karşı taraf kabul ederse kontrat");
+            summaryLore.add("§7aktif olacak.");
+        }
+        
         menu.setItem(13, createButton(Material.PAPER, "§eKontrat Özeti", summaryLore));
         
         // Onay butonu
-        menu.setItem(11, createButton(Material.GREEN_CONCRETE, "§a§lONAYLA", 
-            Arrays.asList("§7Kontratı oluştur")));
+        String approveText = state.contractRequestId != null ? "§a§lONAYLA" : "§a§lONAYLA VE GÖNDER";
+        List<String> approveLore = new ArrayList<>();
+        if (state.contractRequestId != null) {
+            approveLore.add("§7Şartlarınızı kaydet");
+        } else {
+            approveLore.add("§7Kontratı oluştur ve istek gönder");
+        }
+        menu.setItem(11, createButton(Material.GREEN_CONCRETE, approveText, approveLore));
         
-        // Şablon olarak kaydet butonu
-        menu.setItem(12, createButton(Material.BOOK, "§eŞablon Olarak Kaydet", 
-            Arrays.asList("§7Bu kontratı şablon olarak kaydet", "§7Daha sonra hızlıca kullanabilirsiniz")));
+        // Şablon olarak kaydet butonu (sadece yeni kontrat için)
+        if (state.contractRequestId == null) {
+            menu.setItem(12, createButton(Material.BOOK, "§eŞablon Olarak Kaydet", 
+                Arrays.asList("§7Bu kontratı şablon olarak kaydet", "§7Daha sonra hızlıca kullanabilirsiniz")));
+        }
         
         // İptal butonu
         menu.setItem(15, createButton(Material.RED_CONCRETE, "§c§lİPTAL", 
             Arrays.asList("§7Kontrat oluşturmayı iptal et")));
+        
+        // Geri butonu
+        menu.setItem(0, createButton(Material.ARROW, "§7Geri", 
+            Arrays.asList("§7Önceki adıma dön")));
         
         player.openInventory(menu);
         player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
@@ -3657,7 +3844,50 @@ public class ContractMenu implements Listener {
     private void createContractFromState(Player player, ContractWizardState state) {
         if (contractManager == null) return;
         
-        // Çift taraflı kontrat için şart kaydetme
+        // ✅ DÜZELTME: PLAYER_TO_PLAYER için önce istek gönder, sonra şartları kaydet
+        if (state.scope == Contract.ContractScope.PLAYER_TO_PLAYER && 
+            state.targetPlayerForRequest != null && 
+            contractRequestManager != null) {
+            
+            // İstek gönder
+            me.mami.stratocraft.model.ContractRequest request = 
+                contractRequestManager.sendRequest(player.getUniqueId(), 
+                    state.targetPlayerForRequest, state.scope);
+            
+            if (request == null) {
+                player.sendMessage("§cİstek gönderilemedi! Zaten bekleyen bir istek olabilir.");
+                return;
+            }
+            
+            // Request ID'yi state'e ekle
+            state.contractRequestId = request.getId();
+            
+            // Şartları kaydet
+            if (contractTermsManager != null && state.contractType != null) {
+                me.mami.stratocraft.model.ContractTerms senderTerms = 
+                    contractTermsManager.createTerms(request.getId(), player.getUniqueId(), state);
+                
+                if (senderTerms != null) {
+                    // İlk gönderen kendi şartlarını onaylamış sayılır
+                    contractTermsManager.approveTerms(senderTerms.getId(), player.getUniqueId());
+                }
+            }
+            
+            player.sendMessage("§6═══════════════════════════════════");
+            player.sendMessage("§a§lKONTRAT İSTEĞİ GÖNDERİLDİ!");
+            player.sendMessage("§7Hedef: §e" + Bukkit.getOfflinePlayer(state.targetPlayerForRequest).getName());
+            player.sendMessage("§7İstek kabul edildiğinde bildirim alacaksınız");
+            player.sendMessage("§6═══════════════════════════════════");
+            
+            // HUD'a bildirim gönder
+            sendContractNotification(player, "İstek gönderildi: " + 
+                Bukkit.getOfflinePlayer(state.targetPlayerForRequest).getName(), 
+                me.mami.stratocraft.manager.HUDManager.ContractNotificationType.SUCCESS);
+            
+            return; // Çift taraflı kontrat için burada bitir
+        }
+        
+        // Çift taraflı kontrat için şart kaydetme (kabul edilmiş istek için)
         if (state.contractRequestId != null && contractTermsManager != null) {
             // Şartları kaydet
             me.mami.stratocraft.model.ContractTerms terms = 
@@ -4450,13 +4680,30 @@ public class ContractMenu implements Listener {
                 long timeAgo = System.currentTimeMillis() - request.getCreatedAt();
                 String timeStr = formatTimeAgo(timeAgo);
                 
+                // ✅ DÜZELTME: Gönderenin şartlarını göster
+                me.mami.stratocraft.model.ContractTerms senderTerms = null;
+                if (contractTermsManager != null) {
+                    senderTerms = contractTermsManager.getTermsByRequest(request.getId(), request.getSender());
+                }
+                
                 List<String> lore = new ArrayList<>();
                 lore.add("§7═══════════════════════");
                 lore.add("§7Gönderen: §e" + senderName);
                 lore.add("§7Kapsam: §e" + getContractScopeName(request.getScope()));
                 lore.add("§7Tarih: §7" + timeStr);
                 lore.add("§7═══════════════════════");
-                lore.add("§aSol Tık: §7Kabul Et");
+                
+                // ✅ DÜZELTME: Şartları göster (3 parametreli versiyon kullan - daha detaylı)
+                if (senderTerms != null) {
+                    lore.add("§7§lGönderenin Şartları:");
+                    lore.addAll(createTermsLore(senderTerms, senderName, false));
+                } else {
+                    lore.add("§7§lŞartlar: §cHenüz belirlenmedi");
+                }
+                
+                lore.add("§7═══════════════════════");
+                lore.add("§aSol Tık: §7Kabul Et (Şartları Direkt Kabul)");
+                lore.add("§eOrta Tık: §7Şart Ekle (Kendi Şartlarını Belirle)");
                 lore.add("§cSağ Tık: §7Reddet");
                 
                 ItemStack item = new ItemStack(Material.PLAYER_HEAD);
@@ -4526,18 +4773,62 @@ public class ContractMenu implements Listener {
         me.mami.stratocraft.model.ContractRequest request = contractRequestManager.getRequest(requestId);
         if (request == null) return;
         
-        // Sol tık = Kabul, Sağ tık = Reddet
+        // ✅ DÜZELTME: Sol tık = Direkt kabul (şartları kabul et), Orta tık = Şart ekle, Sağ tık = Reddet
         if (event.getClick() == org.bukkit.event.inventory.ClickType.LEFT) {
-            // Kabul et
+            // Direkt kabul - karşı tarafın şartlarını kabul et
             if (contractRequestManager.acceptRequest(requestId, player.getUniqueId())) {
-                player.sendMessage("§aKontrat isteği kabul edildi!");
+                // Gönderenin şartlarını kontrol et
+                me.mami.stratocraft.model.ContractTerms senderTerms = null;
+                if (contractTermsManager != null) {
+                    senderTerms = contractTermsManager.getTermsByRequest(requestId, request.getSender());
+                }
+                
+                if (senderTerms != null) {
+                    // ✅ DÜZELTME: Şartları direkt kabul et (kendi şartlarını eklemeden)
+                    // Bu durumda sadece gönderenin şartları geçerli olacak
+                    player.sendMessage("§6═══════════════════════════════════");
+                    player.sendMessage("§a§lKONTRAT KABUL EDİLDİ!");
+                    player.sendMessage("§7Karşı tarafın şartlarını kabul ettiniz");
+                    player.sendMessage("§7İlk gönderen oyuncu onayladığında kontrat aktif olacak");
+                    player.sendMessage("§6═══════════════════════════════════");
+                    
+                    // ✅ DÜZELTME: İlk gönderen oyuncuya son onay mesajı gönder
+                    org.bukkit.entity.Player senderPlayer = Bukkit.getPlayer(request.getSender());
+                    if (senderPlayer != null && senderPlayer.isOnline()) {
+                        senderPlayer.sendMessage("§6═══════════════════════════════════");
+                        senderPlayer.sendMessage("§e§lSON ONAY GEREKİYOR!");
+                        senderPlayer.sendMessage("§7" + player.getName() + " şartlarınızı kabul etti");
+                        senderPlayer.sendMessage("§7Şimdi kontratı son kez onaylamanız gerekiyor");
+                        senderPlayer.sendMessage("§7Kabul ederseniz kontrat aktif olacak");
+                        senderPlayer.sendMessage("§7Reddederseniz kontrat iptal olacak");
+                        senderPlayer.sendMessage("§6═══════════════════════════════════");
+                        
+                        // HUD'a bildirim gönder
+                        sendContractNotification(senderPlayer, "Son onay gerekiyor: " + player.getName(), 
+                            me.mami.stratocraft.manager.HUDManager.ContractNotificationType.WARNING);
+                        
+                        // İlk gönderen oyuncuya son onay menüsü aç
+                        openFinalApprovalMenu(senderPlayer, requestId);
+                    }
+                    
+                    player.closeInventory();
+                } else {
+                    // Şartlar henüz belirlenmemiş, normal kabul akışı
+                    player.sendMessage("§aKontrat isteği kabul edildi!");
+                    player.closeInventory();
+                    openContractDecisionMenu(player, requestId);
+                }
                 
                 // HUD'a bildirim gönder
                 sendContractNotification(player, "İstek kabul edildi", 
                     me.mami.stratocraft.manager.HUDManager.ContractNotificationType.SUCCESS);
-                
+            } else {
+                player.sendMessage("§cİstek kabul edilemedi!");
+            }
+        } else if (event.getClick() == org.bukkit.event.inventory.ClickType.MIDDLE) {
+            // Şart Ekle - Şart belirleme wizard'ı başlat
+            if (contractRequestManager.acceptRequest(requestId, player.getUniqueId())) {
                 player.closeInventory();
-                // YENİ: Şart ekle veya kontratı bitir seçim menüsü
                 openContractDecisionMenu(player, requestId);
             } else {
                 player.sendMessage("§cİstek kabul edilemedi!");
@@ -4772,16 +5063,25 @@ public class ContractMenu implements Listener {
     
     /**
      * Şart belirleme wizard'ı başlat (çift taraflı kontrat için)
+     * ✅ DÜZELTME: Oyuncu seçimi yapılmamalı, scope zaten PLAYER_TO_PLAYER
      */
     private void startTermsWizard(Player player, UUID requestId) {
-        if (player == null || requestId == null) return;
+        if (player == null || requestId == null || contractRequestManager == null) return;
+        
+        me.mami.stratocraft.model.ContractRequest request = contractRequestManager.getRequest(requestId);
+        if (request == null) {
+            player.sendMessage("§cİstek bulunamadı!");
+            return;
+        }
         
         // Wizard state oluştur
         ContractWizardState state = new ContractWizardState();
         state.contractRequestId = requestId; // Request ID'yi sakla
+        state.scope = request.getScope(); // ✅ Scope'u request'ten al (zaten PLAYER_TO_PLAYER)
+        // ✅ Oyuncu seçimi yapılmamalı - request'te zaten var
         wizardStates.put(player.getUniqueId(), state);
         
-        // Tip seçim menüsünü aç
+        // ✅ DÜZELTME: Tip seçim menüsünü aç (scope seçimi yapılmayacak)
         openTypeSelectionMenu(player);
     }
     
@@ -4811,35 +5111,52 @@ public class ContractMenu implements Listener {
             return;
         }
         
-        Inventory menu = Bukkit.createInventory(null, 27, "§6Şartları Onayla");
+        // ✅ İYİLEŞTİRME: Daha açıklayıcı başlık
+        Inventory menu = Bukkit.createInventory(null, 54, "§6⚠️ SON ONAY GEREKİYOR!");
         
-        // Senin şartların (Slot 11)
-        List<String> myLore = createTermsLore(myTerms, otherName, true);
-        myLore.add("§7");
-        myLore.add("§7§lSENİN ŞARTLARIN");
-        menu.setItem(11, createButton(Material.BOOK, "§e§lSENİN ŞARTLARIN", myLore));
+        // ✅ İYİLEŞTİRME: Başlık açıklaması (Slot 4)
+        List<String> headerLore = new ArrayList<>();
+        headerLore.add("§7═══════════════════════");
+        headerLore.add("§e" + otherName + " şartlarınızı kabul etti");
+        headerLore.add("§7(veya şartlarını belirledi).");
+        headerLore.add("§7");
+        headerLore.add("§7ℹ️ Her iki tarafın şartlarını onaylarsanız");
+        headerLore.add("§7kontrat aktif olacak.");
+        headerLore.add("§7═══════════════════════");
+        menu.setItem(4, createButton(Material.BOOK, "§e§lSON ONAY GEREKİYOR", headerLore));
         
-        // Karşı tarafın şartları (Slot 15)
-        List<String> otherLore = createTermsLore(otherTerms, otherName, false);
+        // ✅ İYİLEŞTİRME: Senin şartların (Slot 20 - sol taraf)
+        List<String> myLore = new ArrayList<>();
+        myLore.add("§7═══════════════════════");
+        myLore.add("§e§lSİZİN ŞARTLARINIZ:");
+        myLore.add("§7═══════════════════════");
+        myLore.addAll(createTermsLore(myTerms, otherName, true));
+        menu.setItem(20, createButton(Material.BOOK, "§e§lSİZİN ŞARTLARINIZ", myLore));
+        
+        // ✅ İYİLEŞTİRME: Karşı tarafın şartları (Slot 24 - sağ taraf)
+        List<String> otherLore = new ArrayList<>();
+        otherLore.add("§7═══════════════════════");
+        otherLore.add("§7§l" + otherName.toUpperCase() + "'NİN ŞARTLARI:");
+        otherLore.add("§7═══════════════════════");
+        otherLore.addAll(createTermsLore(otherTerms, otherName, false));
         otherLore.add("§7");
-        otherLore.add("§7§l" + otherName.toUpperCase() + "'NİN ŞARTLARI");
-        otherLore.add("§7");
-        otherLore.add("§7Bu şartları onaylamanız gerekiyor");
-        menu.setItem(15, createButton(Material.WRITABLE_BOOK, "§7§l" + otherName.toUpperCase() + "'NİN ŞARTLARI", otherLore));
+        otherLore.add("§7⚠️ Bu şartları onaylamanız gerekiyor");
+        menu.setItem(24, createButton(Material.WRITABLE_BOOK, "§7§l" + otherName.toUpperCase() + "'NİN ŞARTLARI", otherLore));
         
-        // Onay butonu (Slot 13)
+        // ✅ İYİLEŞTİRME: Onay butonu (Slot 22 - ortada)
+        List<String> approveLore = new ArrayList<>();
         if (!myTerms.isApproved()) {
-            menu.setItem(13, createButton(Material.GREEN_CONCRETE, "§a§lKONTRA TI ONAYLA", 
-                Arrays.asList("§7Her iki tarafın şartlarını onayla",
-                    "§7Kontrat aktif hale gelecek")));
+            approveLore.add("§7Her iki tarafın şartlarını onayla");
+            approveLore.add("§7Kontrat aktif hale gelecek");
+            menu.setItem(22, createButton(Material.GREEN_CONCRETE, "§a§l✅ ONAYLA", approveLore));
         } else {
-            menu.setItem(13, createButton(Material.EMERALD, "§aOnaylandı", 
-                Arrays.asList("§7Kontratı onayladınız",
-                    "§7Karşı taraf onayladığında aktif olacak")));
+            approveLore.add("§7Kontratı onayladınız");
+            approveLore.add("§7Karşı taraf onayladığında aktif olacak");
+            menu.setItem(22, createButton(Material.EMERALD, "§aOnaylandı", approveLore));
         }
         
         // Request ID'yi NBT'ye ekle
-        ItemStack approveItem = menu.getItem(13);
+        ItemStack approveItem = menu.getItem(22);
         if (approveItem != null) {
             ItemMeta meta = approveItem.getItemMeta();
             if (meta != null) {
@@ -4847,12 +5164,29 @@ public class ContractMenu implements Listener {
                 meta.getPersistentDataContainer().set(requestKey, 
                     org.bukkit.persistence.PersistentDataType.STRING, requestId.toString());
                 approveItem.setItemMeta(meta);
-                menu.setItem(13, approveItem);
+                menu.setItem(22, approveItem);
             }
         }
         
-        // Geri butonu (Slot 18)
-        menu.setItem(18, createButton(Material.ARROW, "§7Geri", 
+        // ✅ İYİLEŞTİRME: Reddet butonu (Slot 40)
+        menu.setItem(40, createButton(Material.RED_CONCRETE, "§c§l❌ REDDET", 
+            Arrays.asList("§7Kontratı reddet ve iptal et")));
+        
+        // Request ID'yi reddet butonuna da ekle
+        ItemStack rejectItem = menu.getItem(40);
+        if (rejectItem != null) {
+            ItemMeta meta = rejectItem.getItemMeta();
+            if (meta != null) {
+                org.bukkit.NamespacedKey requestKey = new org.bukkit.NamespacedKey(plugin, "request_id");
+                meta.getPersistentDataContainer().set(requestKey, 
+                    org.bukkit.persistence.PersistentDataType.STRING, requestId.toString());
+                rejectItem.setItemMeta(meta);
+                menu.setItem(40, rejectItem);
+            }
+        }
+        
+        // Geri butonu (Slot 0)
+        menu.setItem(0, createButton(Material.ARROW, "§7Geri", 
             Arrays.asList("§7Önceki menüye dön")));
         
         player.openInventory(menu);
@@ -4871,6 +5205,15 @@ public class ContractMenu implements Listener {
         
         if (clicked == null || clicked.getType() == Material.AIR) return;
         
+        int slot = event.getSlot();
+        
+        // ✅ İYİLEŞTİRME: Geri butonu (Slot 0)
+        if (slot == 0 && clicked.getType() == Material.ARROW) {
+            player.closeInventory();
+            openMainMenu(player, 1);
+            return;
+        }
+        
         // Request ID'yi NBT'den al
         UUID requestId = getRequestIdFromItem(clicked);
         if (requestId == null || contractRequestManager == null || contractTermsManager == null) return;
@@ -4886,7 +5229,8 @@ public class ContractMenu implements Listener {
         me.mami.stratocraft.model.ContractTerms otherTerms = 
             contractTermsManager.getTermsByRequest(requestId, otherPlayerId);
         
-        if (clicked.getType() == Material.GREEN_CONCRETE) {
+        // ✅ İYİLEŞTİRME: Onay butonu (Slot 22)
+        if (slot == 22 && (clicked.getType() == Material.GREEN_CONCRETE || clicked.getType() == Material.EMERALD)) {
             // Onayla
             if (myTerms != null && !myTerms.isApproved()) {
                 contractTermsManager.approveTerms(myTerms.getId(), player.getUniqueId());
@@ -4911,9 +5255,29 @@ public class ContractMenu implements Listener {
             } else {
                 player.sendMessage("§cŞartlar zaten onaylanmış!");
             }
-        } else if (clicked.getType() == Material.ARROW) {
-            // Geri
-            openAcceptedRequestsMenu(player, 1);
+        } 
+        // ✅ İYİLEŞTİRME: Reddet butonu (Slot 40)
+        else if (slot == 40 && clicked.getType() == Material.RED_CONCRETE) {
+            // Reddet
+            if (contractRequestManager.rejectRequest(requestId, player.getUniqueId())) {
+                player.sendMessage("§6═══════════════════════════════════");
+                player.sendMessage("§c§lKONTRAT REDDEDİLDİ!");
+                player.sendMessage("§7Kontrat iptal edildi.");
+                player.sendMessage("§6═══════════════════════════════════");
+                
+                // Karşı tarafa bildirim
+                org.bukkit.entity.Player otherPlayer = Bukkit.getPlayer(otherPlayerId);
+                if (otherPlayer != null && otherPlayer.isOnline()) {
+                    otherPlayer.sendMessage("§6═══════════════════════════════════");
+                    otherPlayer.sendMessage("§c" + player.getName() + " kontratı reddetti.");
+                    otherPlayer.sendMessage("§7Kontrat iptal edildi.");
+                    otherPlayer.sendMessage("§6═══════════════════════════════════");
+                }
+                
+                player.closeInventory();
+            } else {
+                player.sendMessage("§cKontrat reddedilemedi!");
+            }
         }
         
         player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
@@ -5143,16 +5507,17 @@ public class ContractMenu implements Listener {
         addTermsLore.add("§7═══════════════════════");
         menu.setItem(11, createButton(Material.WRITABLE_BOOK, "§a§lŞart Ekle", addTermsLore));
         
-        // Kontratı Bitir butonu (Slot 15)
+        // ✅ DÜZELTME: Kontratı Bitir butonu (Slot 15) - Direkt karşı tarafın şartlarını kabul et
         List<String> finishLore = new ArrayList<>();
         finishLore.add("§7═══════════════════════");
-        finishLore.add("§7Tek Taraflı Kontrat");
+        finishLore.add("§7Direkt Kabul");
         finishLore.add("§7");
-        finishLore.add("§7Sadece ilk gönderenin şartları");
-        finishLore.add("§7geçerli olacak");
+        finishLore.add("§7Karşı tarafın şartlarını");
+        finishLore.add("§7direkt kabul edersiniz");
+        finishLore.add("§7Kendi şartlarınız olmayacak");
         finishLore.add("§7Kontrat direkt aktif olacak");
         finishLore.add("§7═══════════════════════");
-        menu.setItem(15, createButton(Material.GREEN_CONCRETE, "§a§lKontratı Bitir", finishLore));
+        menu.setItem(15, createButton(Material.GREEN_CONCRETE, "§a§lKabul Et (Direkt)", finishLore));
         
         // Request ID'yi NBT'ye ekle (her iki butona da)
         ItemStack addTermsItem = menu.getItem(11);

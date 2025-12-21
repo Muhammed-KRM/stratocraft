@@ -12,6 +12,12 @@ Felaketler **oyuncuları merkezden çok uzaklaşmamasını ve merkeze çok yakı
 - Klan kristallerini öncelikli hedef almak
 - **2 dakikada bir** yakındaki oyunculara saldırmak (felaket bossları için)
 
+**Son Güncellemeler** ⭐:
+- ✅ **İki Katmanlı Seviye Sistemi**: Kategori seviyeleri (otomatik spawn sıklığı) ve iç seviyeler (felaketin gücü)
+- ✅ **Dinamik Güç Hesaplama**: Stratocraft Güç Sistemi (SGP) entegrasyonu
+- ✅ **Handler Registry Sistemi**: Her felaket tipi için özel handler
+- ✅ **4 Fazlı Felaket Sistemi**: Keşif, Saldırı, Öfke, Çaresizlik fazları
+
 ---
 
 ## 📋 İÇİNDEKİLER
@@ -97,6 +103,51 @@ disaster:
         10: 1.5
         20: 2.0
 ```
+
+---
+
+## 🔧 SON GÜNCELLEMELER (Son 3 Gün) ⭐
+
+### İki Katmanlı Seviye Sistemi
+
+**Yeni Özellikler:**
+- ✅ **Kategori Seviyeleri**: Otomatik spawn sıklığı (1: Her gün, 2: 3 günde bir, 3: 7 günde bir)
+- ✅ **İç Seviyeler**: Admin komutunda belirtilen, felaketin gücünü belirler (1: Zayıf, 2: Orta, 3: Güçlü)
+- ✅ **Dinamik Güç Hesaplama**: Stratocraft Güç Sistemi (SGP) entegrasyonu
+- ✅ **Handler Registry Sistemi**: Her felaket tipi için özel handler
+
+**Algoritma:**
+```java
+// triggerDisaster() - Felaket başlat
+public void triggerDisaster(DisasterType type, int categoryLevel, int internalLevel, Location spawnLoc) {
+    // Kategori ve güç hesaplama
+    DisasterCategory category = Disaster.getCategory(type);
+    DisasterPower power = calculateDisasterPower(internalLevel);
+    long duration = Disaster.getDefaultDuration(type, categoryLevel);
+    
+    // Entity oluştur (canlı felaketler için)
+    Entity entity = null;
+    if (category == DisasterCategory.CREATURE) {
+        entity = spawnDisasterEntity(type, spawnLoc, power);
+    }
+    
+    // Felaket oluştur
+    activeDisaster = new Disaster(type, category, internalLevel, entity, spawnLoc, power, duration);
+    
+    // Handler'ı çağır
+    DisasterHandler handler = handlerRegistry.getHandler(type);
+    if (handler != null) {
+        handler.onDisasterStart(activeDisaster);
+    }
+}
+```
+
+**Güç Hesaplama:**
+- Oyuncu gücü ve sunucu gücü hesaplanır
+- Seviyeye göre çarpan uygulanır
+- Felaket can ve hasarı hesaplanır
+
+Detaylı bilgi için: `SON_3_GUN_DEGISIKLIKLER_VE_SISTEM_DOKUMANI.md` dosyasına bakın.
 
 ---
 

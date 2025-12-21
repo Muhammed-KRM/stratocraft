@@ -249,23 +249,23 @@ public class TerritoryData extends BaseModel {
             int currentRadius = getRadius();
             if (currentRadius > 0) {
                 // ✅ DÜZELTME: Radius varsa, çitler olmasa bile sınır çizgisi hesapla
-                // Daire çevresi boyunca partikül noktaları oluştur
-                // Her 2 blokta bir partikül (daha yoğun görünüm için)
+            // Daire çevresi boyunca partikül noktaları oluştur
+            // Her 2 blokta bir partikül (daha yoğun görünüm için)
                 int particleCount = (int) (currentRadius * 2 * Math.PI / 2.0); // Her 2 blokta bir partikül
                 // Minimum partikül sayısı (küçük radius'lar için)
                 if (particleCount < 8) {
                     particleCount = 8; // En az 8 nokta (düzgün daire için)
                 }
-                for (int i = 0; i < particleCount; i++) {
-                    double angle = (2 * Math.PI * i) / particleCount;
+            for (int i = 0; i < particleCount; i++) {
+                double angle = (2 * Math.PI * i) / particleCount;
                     double x = center.getX() + currentRadius * Math.cos(angle);
                     double z = center.getZ() + currentRadius * Math.sin(angle);
-                    // ✅ DÜZELTME: Y koordinatını center'dan al (sınır çizgisi için)
-                    // TerritoryBoundaryParticleTask'ta oyuncunun Y seviyesine göre ayarlanacak
-                    Location boundaryLoc = new Location(center.getWorld(), x, center.getY(), z);
-                    boundaryCoordinates.add(boundaryLoc);
-                }
+                // ✅ DÜZELTME: Y koordinatını center'dan al (sınır çizgisi için)
+                // TerritoryBoundaryParticleTask'ta oyuncunun Y seviyesine göre ayarlanacak
+                Location boundaryLoc = new Location(center.getWorld(), x, center.getY(), z);
+                boundaryCoordinates.add(boundaryLoc);
             }
+        }
         }
         // ✅ YENİ: Hem radius yok hem çit yoksa, boş liste döner (sınır gösterilmez)
         

@@ -324,10 +324,10 @@ public class TerritoryListener implements Listener {
             me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] hasBypass: " + hasBypass);
             if (!hasBypass) {
                 Block block = event.getBlock();
-                // Material kontrolü - Sadece OAK_FENCE kontrol et (klan çiti OAK_FENCE)
+        // Material kontrolü - Sadece OAK_FENCE kontrol et (klan çiti OAK_FENCE)
                 if (block.getType() == Material.OAK_FENCE) {
                     me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] Normal çit engellendi");
-                    event.setCancelled(true);
+            event.setCancelled(true);
                     event.getPlayer().sendMessage("§cKlan alanında sadece §6Klan Çiti §cyerleştirilebilir!");
                     event.getPlayer().sendMessage("§7Normal çitler kabul edilmez. Klan Çiti craft edin.");
                 }
@@ -1384,28 +1384,28 @@ public class TerritoryListener implements Listener {
         java.util.Set<Long> visited = new java.util.HashSet<>();
         java.util.Queue<Block> queue = new java.util.LinkedList<>();
         boolean foundClanFence = false;
-
+        
         queue.add(start);
         visited.add(packCoords(start));
-
+        
         int iterations = 0;
-
+        
         BlockFace[] faces = { BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST };
-
+        
         while (!queue.isEmpty()) {
             Block current = queue.poll();
             iterations++;
-
+            
             if (iterations > maxIterations) {
                 me.mami.stratocraft.Main.getInstance().getLogger().info(
                     "[isSurroundedByClanFences3D] maxIterations aşıldı (alan açık ya da çok büyük). iterations=" + iterations);
                 return false;
             }
-
+            
             for (BlockFace face : faces) {
                 int nx = current.getX() + face.getModX();
                 int nz = current.getZ() + face.getModZ();
-
+                
                 // Yarıçap sınırı (çitle çevrili değilse dışarı sızmayı hızlı yakalar)
                 if (Math.abs(nx - centerX) > maxRadius || Math.abs(nz - centerZ) > maxRadius) {
                     me.mami.stratocraft.Main.getInstance().getLogger().info(
@@ -1437,8 +1437,8 @@ public class TerritoryListener implements Listener {
                         // Normal çit varsa alan geçersiz
                         me.mami.stratocraft.Main.getInstance().getLogger().info(
                             "[isSurroundedByClanFences3D] Normal çit bulundu -> geçersiz alan: " + fenceAtY.getLocation());
-                        return false;
-                    }
+                                    return false;
+                                }
 
                     foundClanFence = true;
                     visited.add(neighborKey); // Bariyer olarak işaretle
@@ -1452,13 +1452,13 @@ public class TerritoryListener implements Listener {
                     visited.add(neighborKey);
                     continue;
                 }
-
+                
                 // Geçilebilir alan
                 visited.add(neighborKey);
                 queue.add(neighbor);
             }
         }
-
+        
         boolean result = visited.size() >= minArea && foundClanFence;
         me.mami.stratocraft.Main.getInstance().getLogger().info(
             "[isSurroundedByClanFences3D] Bitiş (2.5D) - visited.size=" + visited.size() +

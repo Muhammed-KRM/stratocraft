@@ -6,6 +6,11 @@ Klan, Stratocraft'ta hayatta kalmanın temeli. Kendi bölgenizi oluşturun, yap�
 
 **Önemli**: Hiçbir `/komut` kullanılmaz. Her şey **fiziksel etkileşimle** yapılır.
 
+**Son Güncellemeler** ⭐:
+- ✅ **Klan Kristali Persistence Sistemi**: Sunucu restart sonrası kristaller otomatik restore edilir
+- ✅ **Veri Tutarlılığı Düzeltmeleri**: `crystalLocation` ve `hasCrystal` senkronizasyonu
+- ✅ **Kristal Kırma Sistemi**: Kristal kırıldığında klan otomatik dağıtılır ve özel item drop edilir
+
 ---
 
 ## 📋 İÇİNDEKİLER
@@ -91,6 +96,11 @@ DİKKAT: Çitler birbirine değmeli!
    - Şimşek efekti + TOTEM partikülleri
    - "§a[Klan Adı] klanı kuruldu!" mesajı
    - Çitlerin çevrelediği alan → **Klan Bölgesi**
+
+**Önemli Notlar** ⭐ YENİ:
+- ✅ **Persistence**: Kristal konumu veritabanında saklanır, sunucu restart sonrası otomatik restore edilir
+- ✅ **Veri Tutarlılığı**: `crystalLocation` ve `hasCrystal` otomatik senkronize edilir
+- ✅ **Metadata**: Kristal entity'sine metadata eklenir (klan kristali olduğunu belirtmek için)
 
 ---
 
@@ -858,6 +868,136 @@ clan-power-system:
     combat: 0.6
     progression: 0.4
 ```
+
+---
+
+---
+
+## 🔧 SON GÜNCELLEMELER (Son 3 Gün) ⭐
+
+### Klan Kristali Persistence ve Restore Sistemi
+
+**Sorun:** Sunucu restart sonrası klan kristalleri kayboluyordu ve klanlar "kristalsiz klan" durumuna düşüyordu.
+
+**Çözüm:** Kapsamlı persistence ve restore sistemi eklendi.
+
+#### Veri Tutarlılığı Düzeltmeleri
+
+**Dosya:** `Clan.java`
+
+**Değişiklikler:**
+- `setCrystalLocation()`: `crystalLocation` ve `hasCrystal` otomatik senkronize edilir
+- `setCrystalEntity()`: `crystalEntity` null olsa bile `crystalLocation` varsa `hasCrystal` true
+- `hasCrystal()`: Tutarsızlık kontrolü ve otomatik düzeltme
+- `setHasCrystal()`: `hasCrystal` false yapılırsa `crystalLocation` ve `crystalEntity` null yapılır
+
+**Algoritma:**
+1. `crystalLocation` varsa → `hasCrystal` otomatik `true`
+2. `hasCrystal` `false` yapılırsa → `crystalLocation` ve `crystalEntity` `null` yapılır
+3. `hasCrystal()` çağrıldığında tutarsızlık tespit edilirse otomatik düzeltilir
+
+#### Kristal Restore Sistemi
+
+**Dosya:** `Main.java` - `restoreClanCrystals()`
+
+**Çalışma Süreci:**
+1. Sunucu açıldığında `onEnable()` içinde `restoreClanCrystals()` çağrılır
+2. Her klan için `crystalLocation` kontrol edilir
+3. `hasCrystal` tutarsızlığı düzeltilir
+4. Chunk yüklenir (gerekirse)
+5. Aynı konumda mevcut entity aranır
+6. Mevcut entity varsa bağlanır ve metadata eklenir
+7. Yoksa yeni entity oluşturulur ve bağlanır
+
+#### Kristal Kırma ve Klan Dağıtma Sistemi
+
+**Dosya:** `TerritoryListener.java`
+
+**Çalışma Süreci:**
+1. Kristal hasar alır → `onCrystalBreak()` tetiklenir
+2. `findClanByCrystal()` ile klan bulunur (entity referansı veya location kontrolü)
+3. Final damage >= 1.0 ise kristal kırılır
+4. Klan dağıtılır (`disbandClan()`)
+5. Tüm üyelere mesaj gönderilir
+6. Patlama efekti gösterilir
+7. `onCrystalDeath()` tetiklenir
+8. Özel item oluşturulur (PDC verisi ile)
+9. Item drop edilir
+
+**Özellikler:**
+- Entity referansı kaybolsa bile location kontrolü ile klan bulunur
+- Sunucu restart sonrası entity referansı otomatik güncellenir
+- Metadata otomatik eklenir (yoksa)
+- Özel item drop edilir (PDC verisi ile, tekrar yerleştirilebilir)
+
+**Debug Logları:**
+- Tüm kritik noktalara debug logları eklendi:
+  - `[CLAN_CRYSTAL_RESTORE]` - Restore süreci
+  - `[KRISTAL KIRMA]` - Kırma süreci
+  - `[KRISTAL ÖLÜM]` - Item drop süreci
+  - `[KRISTAL BULMA]` - Klan bulma süreci
+  - `[CLAN]` - Clan model değişiklikleri
+
+Detaylı bilgi için: `SON_3_GUN_DEGISIKLIKLER_VE_SISTEM_DOKUMANI.md` dosyasına bakın.
+
+### İttifak Sistemi Güncellemeleri
+
+**Dosya:** `AllianceManager.java`, `Alliance.java`
+
+**İttifak Tipleri:**
+- **DEFENSIVE:** Savunma İttifakı (birine saldırılırsa diğeri yardım eder)
+- **OFFENSIVE:** Saldırı İttifakı (birlikte saldırı yapılır)
+- **TRADE:** Ticaret İttifakı (ticaret bonusları)
+- **FULL:** Tam İttifak (en güçlü)
+
+**Özellikler:**
+- ✅ Cooldown kontrolü (spam önleme - 5 dakika)
+- ✅ İttifak ihlal cezası (klan bakiyesinin %20'si)
+- ✅ Persistence sistemi (`alliances.json`)
+- ✅ Otomatik restore (sunucu açılırken)
+
+**İttifak İhlal Cezaları:**
+- Klan bakiyesinin %20'si kesilir
+- İhlal eden klan üyelerine "Hain" etiketi verilir
+- Broadcast mesajı gönderilir
+
+### Klan Bankası Sistemi
+
+**Dosya:** `ClanBankSystem.java`
+
+**Özellikler:**
+- ✅ Para yatırma/çekme
+- ✅ Item yatırma/çekme (transaction mantığı)
+- ✅ Otomatik maaş dağıtımı (24 saatte bir)
+- ✅ Transfer kontratları
+- ✅ Yetki kontrolü (Leader, General, Elite)
+
+**Transaction Mantığı:**
+1. Önce envanterden al (transaction başlat)
+2. Sonra bankaya ekle
+3. Hata durumunda rollback (item geri ver)
+
+**Otomatik Maaş Sistemi:**
+- Her 24 saatte bir otomatik dağıtılır
+- Rate limiting ile lag önlenir (5 klan/tick, 10 üye/klan)
+- Rütbeye göre maaş item'i (config'den)
+
+### Klan Sanal Envanter Sistemi
+
+**Dosya:** `VirtualStorageListener.java`
+
+**Özellikler:**
+- ✅ Her klan için 54 slot sanal envanter
+- ✅ Cache ile optimize edilmiş
+- ✅ Persistence ile kaydedilir
+- ✅ Envanter overflow kontrolü
+
+**Algoritma:**
+- Virtual inventory oluşturma (cache kontrolü ile)
+- Item ekleme (overflow kontrolü ile)
+- Cache temizleme (periyodik)
+
+Detaylı bilgi için: `SON_3_GUN_DEGISIKLIKLER_VE_SISTEM_DOKUMANI.md` dosyasına bakın.
 
 ---
 

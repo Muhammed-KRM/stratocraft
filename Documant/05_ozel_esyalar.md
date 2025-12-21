@@ -1555,4 +1555,41 @@ clan-power-system:
 
 ---
 
+## 📝 SON GÜNCELLEMELER (Son 3 Gün) ⭐
+
+### CustomBlockData Utility Sistemi
+
+**Dosya:** `CustomBlockData.java`
+
+**Amaç:** Özel blokların verilerini PersistentDataContainer (PDC) ile saklamak.
+
+**Desteklenen Bloklar:**
+- **Klan Çiti (Clan Fence):** `OAK_FENCE` + PDC (`clan_fence`)
+- **Tuzak Çekirdeği (Trap Core):** `LODESTONE` + PDC (`trap_core`)
+- **Yapı Çekirdeği (Structure Core):** `OAK_LOG` + PDC (`structure_core`)
+- **Klan Kristali (Clan Crystal):** `END_CRYSTAL` (entity) + PDC (`clan_crystal`)
+
+**Runtime Fallback Sistemi:**
+- Bazı bloklar (ör. `OAK_FENCE`) TileState değildir
+- Bu durumda `clanFenceRuntime` Map kullanılır
+- Map: `Map<Location, UUID>` - Blok konumu → Klan ID
+
+**Çalışma Süreci:**
+1. Blok yerleştirilir → `BlockPlaceEvent` tetiklenir
+2. Item PDC kontrolü yapılır (`isClanItem()`)
+3. Blok PDC'ye veri yazılır (`setClanFenceData()`)
+4. Blok kırılır → `BlockBreakEvent` tetiklenir
+5. Blok PDC'den veri okunur (`getClanFenceData()`)
+6. Özel item drop edilir (normal item değil)
+
+**Özel Blok Ekleme:**
+Detaylı rehber için `OZEL_BLOK_EKLEME_REHBERI.md` dosyasına bakın.
+
+**Karşılaşılabilecek Sorunlar:**
+1. **Blok TileState değilse:** Runtime fallback kullan
+2. **Item kırıldığında normal item düşüyorsa:** `event.setDropItems(false)` kullan
+3. **PDC verisi kayboluyorsa:** Chunk yükleme kontrolü yap
+
+---
+
 **🎮 Eğerleri craft et, eğitilmiş moblara bin, dünyayı fethet!**
