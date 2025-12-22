@@ -1,6 +1,6 @@
 # KONTRAT SİSTEMİ AKIŞ ŞEMASI
 
-## MEVCUT AKIŞ (Kod Analizi Sonrası)
+## ✅ GÜNCEL AKIŞ (Düzeltilmiş Sıralama)
 
 ### 1. İLK GÖNDEREN OYUNCU (SENDER) AKIŞI
 
@@ -9,45 +9,122 @@
     ↓
 [Yeni Kontrat Oluştur] tıkla
     ↓
-[Tip Seçimi]
-    ├─ RESOURCE_COLLECTION
-    ├─ COMBAT
-    ├─ TERRITORY
-    └─ CONSTRUCTION
+┌─────────────────────────────────────────┐
+│ [Adım 1/9] Kontrat Kapsamı Seç        │
+│                                         │
+│ PLAYER_TO_PLAYER - Oyuncu → Oyuncu    │
+│ CLAN_TO_CLAN - Klan → Klan            │
+│ PLAYER_TO_CLAN - Oyuncu → Klan        │
+│ CLAN_TO_PLAYER - Klan → Oyuncu        │
+│                                         │
+│ [GERİ] [İPTAL]                         │
+└─────────────────────────────────────────┘
     ↓
-[Kapsam Seçimi]
-    ├─ PLAYER_TO_PLAYER (Personal Terminal'den sadece bu)
-    ├─ CLAN_TO_CLAN
-    ├─ PLAYER_TO_CLAN
-    └─ CLAN_TO_PLAYER
+┌─────────────────────────────────────────┐
+│ [Adım 2/9] Hedef Oyuncu Seç            │
+│ (Sadece PLAYER_TO_PLAYER için)         │
+│                                         │
+│ ℹ️ Oyuncu seçildikten sonra tip        │
+│    seçimi yapılacak. Şartlar            │
+│    belirlendikten sonra istek           │
+│    gönderilecek.                       │
+│                                         │
+│ [Oyuncu Listesi]                       │
+│ [GERİ] [İPTAL]                         │
+└─────────────────────────────────────────┘
     ↓
-[Oyuncu Seçimi] (Sadece state'e kaydedilir, istek gönderilmez)
-    ├─ Online oyuncular listesi
-    └─ Chat input (oyuncu adı yaz)
+┌─────────────────────────────────────────┐
+│ [Adım 3/9] Kontrat Tipi Seç            │
+│                                         │
+│ RESOURCE_COLLECTION - Kaynak Toplama    │
+│ COMBAT - Savaş                          │
+│ TERRITORY - Bölge                       │
+│ CONSTRUCTION - İnşaat                   │
+│                                         │
+│ [GERİ] [İPTAL]                         │
+└─────────────────────────────────────────┘
     ↓
-[Ödül Belirleme] (Slider menü)
+┌─────────────────────────────────────────┐
+│ [Adım 4/9] Ödül Belirle                │
+│                                         │
+│ ℹ️ Direkt onaylarsanız ödül            │
+│    belirlenmeyecek. Ama ceza            │
+│    belirlemek zorundasınız.            │
+│                                         │
+│ Mevcut: [Değer veya "Yok"]             │
+│ [Slider] [Hızlı Değerler]              │
+│ [Direkt Onayla (Ödül Yok)]             │
+│                                         │
+│ [GERİ] [İPTAL] [ONAYLA]               │
+└─────────────────────────────────────────┘
     ↓
-[Ceza Tipi Seçimi]
-    ├─ CASH
-    ├─ HEALTH
-    └─ ITEM
+┌─────────────────────────────────────────┐
+│ [Adım 5/9] Ceza Tipi Seç               │
+│                                         │
+│ HEALTH_PENALTY - Can Kaybı             │
+│ BANK_PENALTY - Para Kaybı              │
+│ MORTGAGE - İpotek                       │
+│                                         │
+│ [GERİ] [İPTAL]                         │
+└─────────────────────────────────────────┘
     ↓
-[Ceza Miktarı Belirleme] (Slider menü)
+┌─────────────────────────────────────────┐
+│ [Adım 6/9] Ceza Miktarı Belirle        │
+│                                         │
+│ ℹ️ Direkt onaylarsanız ceza             │
+│    belirlenmeyecek. Ama ödül            │
+│    belirlemediyseniz devam edemezsiniz.│
+│                                         │
+│ Mevcut: [Değer veya "Yok"]             │
+│ [Slider] [Hızlı Değerler]              │
+│ [Direkt Onayla (Ceza Yok)]             │
+│                                         │
+│ ⚠️ Kontrol: En az birini belirlemek    │
+│    zorundasınız (Ödül VEYA Ceza)       │
+│                                         │
+│ [GERİ] [İPTAL] [ONAYLA]               │
+└─────────────────────────────────────────┘
     ↓
-[Süre Belirleme] (Gün/Hafta/Ay seçimi)
+┌─────────────────────────────────────────┐
+│ [Adım 7/9] Süre Belirle                │
+│                                         │
+│ [Gün/Hafta/Ay seçimi]                  │
+│                                         │
+│ [GERİ] [İPTAL]                         │
+└─────────────────────────────────────────┘
     ↓
-[Tip'e Özel Parametreler]
-    ├─ RESOURCE_COLLECTION → Malzeme + Miktar
-    ├─ COMBAT → Hedef oyuncu/klan
-    ├─ TERRITORY → Lokasyon + Yarıçap
-    └─ CONSTRUCTION → Yapı tipi
+┌─────────────────────────────────────────┐
+│ [Adım 8/9] Tip'e Özel Parametreler     │
+│                                         │
+│ RESOURCE_COLLECTION → Malzeme + Miktar │
+│ COMBAT → Hedef oyuncu/klan             │
+│ TERRITORY → Lokasyon + Yarıçap         │
+│ CONSTRUCTION → Yapı tipi                │
+│                                         │
+│ [GERİ] [İPTAL]                         │
+└─────────────────────────────────────────┘
     ↓
-[Özet Menüsü]
-    ├─ Tüm şartları göster
-    ├─ [ONAYLA] butonu
-    └─ [İPTAL] butonu
-    ↓
-[ONAYLA] tıkla
+┌─────────────────────────────────────────┐
+│ [Adım 9/9] Kontrat Özeti               │
+│                                         │
+│ 📋 SİZİN ŞARTLARINIZ:                  │
+│    Kapsam: PLAYER_TO_PLAYER            │
+│    Hedef: PlayerName                   │
+│    Tip: RESOURCE_COLLECTION            │
+│    Ödül: 1000 Altın (veya Yok)         │
+│    Ceza: 500 Altın (veya Yok)          │
+│    Süre: 7 Gün                         │
+│    Malzeme: Elmas x64                  │
+│                                         │
+│ ⚠️ Kontrol: En az birini belirlemek    │
+│    zorundasınız (Ödül VEYA Ceza)       │
+│                                         │
+│ ℹ️ Bu şartlar karşı tarafa gönderilecek│
+│    Karşı taraf kabul ederse kontrat    │
+│    aktif olacak.                       │
+│                                         │
+│ [GERİ] [İPTAL] [ONAYLA VE GÖNDER]      │
+└─────────────────────────────────────────┘
     ↓
 ✅ İstek gönderilir (ContractRequest oluşturulur)
 ✅ Sender'ın şartları kaydedilir (ContractTerms)
@@ -60,236 +137,6 @@
 ```
 [Ana Menü]
     ↓
-[Gelen İstekler] tıkla
-    ↓
-[Gelen İstekler Listesi]
-    ├─ Her istek için:
-    │   ├─ Gönderen adı
-    │   ├─ Gönderenin şartları (gösterilir)
-    │   ├─ [Sol Tık: Kabul Et (Direkt)]
-    │   ├─ [Orta Tık: Şart Ekle]
-    │   └─ [Sağ Tık: Reddet]
-    ↓
-┌─────────────────────────────────────┐
-│   SEÇENEK 1: SOL TIK (Direkt Kabul) │
-└─────────────────────────────────────┘
-    ↓
-✅ İstek kabul edilir
-✅ Sender'ın şartları direkt kabul edilir
-✅ Sender'a "Son Onay Gerekiyor" mesajı gider
-✅ Sender'a Final Onay Menüsü açılır
-    ↓
-[SON DURUM: Sender'ın onayı bekleniyor]
-
-┌─────────────────────────────────────┐
-│   SEÇENEK 2: ORTA TIK (Şart Ekle)   │
-└─────────────────────────────────────┘
-    ↓
-✅ İstek kabul edilir
-✅ Şart belirleme wizard'ı başlar
-    ↓
-[Tip Seçimi] (Target kendi tipini seçer)
-    ↓
-[Ödül Belirleme] (Target kendi ödülünü belirler)
-    ↓
-[Ceza Tipi Seçimi]
-    ↓
-[Ceza Miktarı Belirleme]
-    ↓
-[Süre Belirleme]
-    ↓
-[Tip'e Özel Parametreler]
-    ↓
-[Özet Menüsü]
-    ├─ Target'ın şartlarını göster
-    ├─ [ONAYLA] butonu
-    └─ [İPTAL] butonu
-    ↓
-[ONAYLA] tıkla
-    ↓
-✅ Target'ın şartları kaydedilir
-✅ Target'ın şartları otomatik onaylanır
-✅ Sender'a "Son Onay Gerekiyor" mesajı gider
-✅ Sender'a Final Onay Menüsü açılır
-    ↓
-[SON DURUM: Sender'ın onayı bekleniyor]
-```
-
-### 3. SENDER'IN SON ONAY AKIŞI
-
-```
-[Final Onay Menüsü] (Otomatik açılır)
-    ├─ Target'ın şartlarını göster
-    ├─ [ONAYLA] butonu
-    └─ [REDDET] butonu
-    ↓
-┌─────────────────────────────────────┐
-│   SEÇENEK 1: ONAYLA                  │
-└─────────────────────────────────────┘
-    ↓
-✅ Her iki tarafın şartları onaylanmış
-✅ Bilateral Contract oluşturulur
-✅ Her iki oyuncuya bildirim gönderilir
-✅ Kontrat aktif olur
-
-┌─────────────────────────────────────┐
-│   SEÇENEK 2: REDDET                  │
-└─────────────────────────────────────┘
-    ↓
-❌ İstek iptal edilir
-❌ Tüm şartlar silinir
-❌ Target'a bildirim gönderilir
-```
-
-## SORUNLAR VE İYİLEŞTİRME ÖNERİLERİ
-
-### 🔴 SORUN 1: Target Tip Seçimi
-**Problem:** Target şart eklerken kendi tipini seçiyor. Bu mantıklı mı?
-- Sender RESOURCE_COLLECTION seçmiş
-- Target COMBAT seçebilir mi? Bu mantıklı mı?
-
-**Çözüm:** Target'ın tip seçmesi mantıklı. Her iki taraf farklı kontrat tiplerinde anlaşabilir.
-- Örnek: Sender "Bana 64 elmas getir" (RESOURCE_COLLECTION)
-- Target "Sen bana 1000 altın öde" (COMBAT veya başka bir tip)
-
-**Ancak:** Menüde daha açıklayıcı olmalı:
-- "Sender RESOURCE_COLLECTION seçti, siz farklı bir tip seçebilirsiniz"
-
-### 🔴 SORUN 2: Menü Başlıkları ve Açıklamalar
-**Problem:** Oyuncu hangi adımda olduğunu anlamıyor.
-
-**Çözüm:** Her menüde:
-- Adım numarası göster (örn: "Adım 2/8: Ödül Belirle")
-- Ne yapması gerektiğini açıkla
-- Geri butonu her zaman olsun
-- İptal butonu her zaman olsun
-
-### 🔴 SORUN 3: Özet Menüsünde Her İki Tarafın Şartları
-**Problem:** Target şartlarını belirledikten sonra özet menüsünde sadece kendi şartlarını görüyor.
-Sender'ın şartlarını da görmeli.
-
-**Çözüm:** Özet menüsünde:
-- "Sizin Şartlarınız" bölümü
-- "Karşı Tarafın Şartları" bölümü (eğer varsa)
-- Her iki tarafın şartları yan yana karşılaştırılabilir şekilde
-
-### 🔴 SORUN 4: Final Onay Menüsü
-**Problem:** Sender final onay menüsünde sadece target'ın şartlarını görüyor.
-Kendi şartlarını da görmeli.
-
-**Çözüm:** Final onay menüsünde:
-- "Sizin Şartlarınız" bölümü
-- "Karşı Tarafın Şartları" bölümü
-- Her iki tarafın şartları yan yana
-
-### 🔴 SORUN 5: İptal Mekanizması
-**Problem:** Wizard sırasında iptal etmek zor.
-
-**Çözüm:** Her menüde:
-- [İPTAL] butonu (kırmızı)
-- İptal edildiğinde state temizlensin
-- Oyuncuya bilgi mesajı gönderilsin
-
-### 🔴 SORUN 6: Geri Butonu
-**Problem:** Geri butonu her menüde yok veya tutarsız.
-
-**Çözüm:** Her menüde:
-- [GERİ] butonu (ok ikonu)
-- Geri gidildiğinde önceki adıma dönülsün
-- State korunsun (sadece adım değişsin)
-
-### 🔴 SORUN 7: Chat Input İptal
-**Problem:** Chat input beklerken iptal etmek zor.
-
-**Çözüm:** 
-- `/iptal` komutu her zaman çalışsın
-- Chat input beklerken menüyü açabilme (eğer mümkünse)
-
-### 🔴 SORUN 8: Bildirimler
-**Problem:** Oyuncu ne olduğunu anlamıyor.
-
-**Çözüm:**
-- Her adımda açıklayıcı mesajlar
-- HUD bildirimleri daha açıklayıcı
-- Başarı/hata mesajları net
-
-## İYİLEŞTİRİLMİŞ AKIŞ ŞEMASI
-
-### 1. İLK GÖNDEREN OYUNCU (SENDER) - İYİLEŞTİRİLMİŞ
-
-```
-[Ana Menü]
-    ↓
-[Yeni Kontrat Oluştur] tıkla
-    ↓
-┌─────────────────────────────────────────┐
-│ [Adım 1/8] Kontrat Tipi Seç            │
-│                                         │
-│ RESOURCE_COLLECTION - Kaynak Toplama    │
-│ COMBAT - Savaş                          │
-│ TERRITORY - Bölge                       │
-│ CONSTRUCTION - İnşaat                   │
-│                                         │
-│ [GERİ] [İPTAL]                         │
-└─────────────────────────────────────────┘
-    ↓
-┌─────────────────────────────────────────┐
-│ [Adım 2/8] Kapsam Seç                   │
-│                                         │
-│ PLAYER_TO_PLAYER - Oyuncu → Oyuncu     │
-│ (Diğer seçenekler...)                    │
-│                                         │
-│ [GERİ] [İPTAL]                         │
-└─────────────────────────────────────────┘
-    ↓
-┌─────────────────────────────────────────┐
-│ [Adım 3/8] Hedef Oyuncu Seç            │
-│                                         │
-│ ℹ️ Oyuncu seçildikten sonra şartları   │
-│    belirleyeceksiniz. İstek şartlar     │
-│    belirlendikten sonra gönderilecek.  │
-│                                         │
-│ [Oyuncu Listesi]                       │
-│ [GERİ] [İPTAL]                         │
-└─────────────────────────────────────────┘
-    ↓
-┌─────────────────────────────────────────┐
-│ [Adım 4/8] Ödül Belirle                │
-│                                         │
-│ Mevcut: 100 Altın                       │
-│ [Slider] [Hızlı Değerler]              │
-│                                         │
-│ [GERİ] [İPTAL] [İLERİ]                 │
-└─────────────────────────────────────────┘
-    ↓
-[Ceza Tipi] → [Ceza Miktarı] → [Süre] → [Tip'e Özel]
-    ↓
-┌─────────────────────────────────────────┐
-│ [Adım 8/8] Özet ve Onay                 │
-│                                         │
-│ 📋 SİZİN ŞARTLARINIZ:                  │
-│    Tip: RESOURCE_COLLECTION            │
-│    Ödül: 1000 Altın                    │
-│    Ceza: 500 Altın                     │
-│    Süre: 7 Gün                         │
-│    Malzeme: Elmas x64                  │
-│                                         │
-│ ℹ️ Bu şartlar karşı tarafa gönderilecek │
-│    Karşı taraf kabul ederse kontrat     │
-│    aktif olacak.                       │
-│                                         │
-│ [GERİ] [İPTAL] [ONAYLA VE GÖNDER]      │
-└─────────────────────────────────────────┘
-    ↓
-✅ İstek gönderilir
-✅ Bildirim: "İstek gönderildi! Karşı taraf kabul ettiğinde bildirim alacaksınız."
-```
-
-### 2. HEDEF OYUNCU (TARGET) - İYİLEŞTİRİLMİŞ
-
-```
-[Ana Menü]
-    ↓
 [Gelen İstekler] tıkla (Bildirim: "3 yeni istek var!")
     ↓
 ┌─────────────────────────────────────────┐
@@ -298,6 +145,7 @@ Kendi şartlarını da görmeli.
 │ [İstek 1]                               │
 │   Gönderen: PlayerName                 │
 │   📋 GÖNDERENİN ŞARTLARI:              │
+│      Kapsam: PLAYER_TO_PLAYER          │
 │      Tip: RESOURCE_COLLECTION          │
 │      Ödül: 1000 Altın                  │
 │      Ceza: 500 Altın                   │
@@ -314,7 +162,7 @@ Kendi şartlarını da görmeli.
 └─────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────┐
-│ ✅ KONTrat KABUL EDİLDİ!                │
+│ ✅ KONTRAT KABUL EDİLDİ!                │
 │                                         │
 │ Karşı tarafın şartlarını kabul ettiniz.│
 │ İlk gönderen oyuncu son onayı verdiğinde│
@@ -332,22 +180,39 @@ Kendi şartlarını da görmeli.
 ┌─────────────────────────────────────────┐
 │ [Adım 1/7] Kontrat Tipi Seç            │
 │                                         │
-│ ℹ️ Gönderen RESOURCE_COLLECTION seçti. │
-│    Siz farklı bir tip seçebilirsiniz.   │
+│ ℹ️ Scope ve oyuncu zaten belirlenmiş.   │
+│    Sadece tip ve şartları belirleyin.  │
 │                                         │
-│ [Tip Seçenekleri]                      │
+│ RESOURCE_COLLECTION - Kaynak Toplama    │
+│ COMBAT - Savaş                          │
+│ TERRITORY - Bölge                       │
+│ CONSTRUCTION - İnşaat                   │
+│                                         │
 │ [GERİ] [İPTAL]                         │
 └─────────────────────────────────────────┘
     ↓
-[Ödül] → [Ceza Tipi] → [Ceza] → [Süre] → [Tip'e Özel]
+┌─────────────────────────────────────────┐
+│ [Adım 2/7] Ödül Belirle                │
+│                                         │
+│ ℹ️ Direkt onaylarsanız ödül            │
+│    belirlenmeyecek. Ama ceza            │
+│    belirlemek zorundasınız.            │
+│                                         │
+│ [Slider] [Hızlı Değerler]              │
+│ [Direkt Onayla (Ödül Yok)]             │
+│                                         │
+│ [GERİ] [İPTAL] [ONAYLA]               │
+└─────────────────────────────────────────┘
+    ↓
+[Ceza Tipi] → [Ceza Miktarı] → [Süre] → [Tip'e Özel]
     ↓
 ┌─────────────────────────────────────────┐
 │ [Adım 7/7] Özet ve Onay                 │
 │                                         │
 │ 📋 SİZİN ŞARTLARINIZ:                  │
 │    Tip: COMBAT                         │
-│    Ödül: 2000 Altın                    │
-│    Ceza: 1000 Altın                    │
+│    Ödül: 2000 Altın (veya Yok)         │
+│    Ceza: 1000 Altın (veya Yok)          │
 │    Süre: 14 Gün                        │
 │                                         │
 │ 📋 KARŞI TARAFIN ŞARTLARI:             │
@@ -356,6 +221,9 @@ Kendi şartlarını da görmeli.
 │    Ceza: 500 Altın                     │
 │    Süre: 7 Gün                         │
 │    Malzeme: Elmas x64                  │
+│                                         │
+│ ⚠️ Kontrol: En az birini belirlemek    │
+│    zorundasınız (Ödül VEYA Ceza)       │
 │                                         │
 │ ℹ️ Şartlarınız kaydedilecek. İlk        │
 │    gönderen oyuncu onayladığında        │
@@ -368,7 +236,7 @@ Kendi şartlarını da görmeli.
 ✅ Sender'a bildirim: "PlayerName şartlarını belirledi! Son onay gerekiyor."
 ```
 
-### 3. SENDER'IN SON ONAY - İYİLEŞTİRİLMİŞ
+### 3. SENDER'IN SON ONAY AKIŞI
 
 ```
 [Final Onay Menüsü] (Otomatik açılır)
@@ -381,15 +249,15 @@ Kendi şartlarını da görmeli.
 │                                         │
 │ 📋 SİZİN ŞARTLARINIZ:                   │
 │    Tip: RESOURCE_COLLECTION            │
-│    Ödül: 1000 Altın                    │
-│    Ceza: 500 Altın                     │
+│    Ödül: 1000 Altın (veya Yok)         │
+│    Ceza: 500 Altın (veya Yok)          │
 │    Süre: 7 Gün                         │
 │    Malzeme: Elmas x64                  │
 │                                         │
 │ 📋 KARŞI TARAFIN ŞARTLARI:              │
 │    Tip: COMBAT                         │
-│    Ödül: 2000 Altın                    │
-│    Ceza: 1000 Altın                    │
+│    Ödül: 2000 Altın (veya Yok)         │
+│    Ceza: 1000 Altın (veya Yok)         │
 │    Süre: 14 Gün                        │
 │                                         │
 │ ℹ️ Her iki tarafın şartlarını onaylarsanız│
@@ -411,22 +279,130 @@ Kendi şartlarını da görmeli.
 └─────────────────────────────────────────┘
     ↓
 ❌ İstek iptal edilir
+❌ Tüm şartlar silinir
 ❌ Target'a bildirim: "Kontrat reddedildi."
 ```
+
+## ✅ YAPILAN DÜZELTMELER
+
+### 1. ✅ Akış Sıralaması Düzeltildi
+**ÖNCEKİ (YANLIŞ):**
+```
+[Yeni Kontrat Oluştur] → [Tip Seçimi] → [Kapsam Seçimi] → [Oyuncu Seçimi]
+```
+
+**YENİ (DOĞRU):**
+```
+[Yeni Kontrat Oluştur] → [Kapsam Seçimi] → [Oyuncu Seçimi] → [Tip Seçimi]
+```
+
+**Neden?**
+- Kapsam seçilmeden oyuncu seçilemez (hangi kapsamda olduğunu bilmek gerekir)
+- Oyuncu seçilmeden tip seçilemez (hangi oyuncuya gönderileceğini bilmek gerekir)
+- Bu sıralama daha mantıklı ve döngüye girmez
+
+### 2. ✅ Şart Ekleme Durumunda Scope ve Oyuncu Seçimi Atlandı
+**ÖNCEKİ SORUN:**
+- Target şart eklerken tekrar scope ve oyuncu seçimi yapılıyordu
+- Bu gereksizdi çünkü zaten kontrat var, sadece şart ekleniyor
+
+**YENİ ÇÖZÜM:**
+- `contractRequestId` varsa (şart ekleme durumu)
+- Scope ve oyuncu seçimi **ATLANIR**
+- Direkt **Tip Seçimi** menüsüne gidilir
+- Scope ve oyuncu zaten request'te belirlenmiş
+
+**Kod:**
+```java
+// startTermsWizard() içinde
+state.contractRequestId = requestId;
+state.scope = request.getScope(); // Scope zaten request'te var
+// Oyuncu seçimi yapılmaz - request'te zaten var
+openTypeSelectionMenu(player); // Direkt tip seçimine git
+```
+
+### 3. ✅ Ödül/Ceza Mantığı Güncellendi
+**ÖNCEKİ SORUN:**
+- Her ikisi de zorunluydu
+- Direkt onaylanamıyordu
+
+**YENİ ÇÖZÜM:**
+- **En az birini belirlemek zorunda** (Ödül VEYA Ceza)
+- Ödül menüsünde direkt onaylarsa → Ödül `null` olur
+- Ceza menüsünde direkt onaylarsa → Ceza `null` olur
+- Ama **en az birini belirlemek zorunda**
+- Özet menüsünde kontrol yapılır
+
+**Kod:**
+```java
+// openRewardSliderMenu() içinde
+if (state.reward > 0) {
+    valueLore.add("§eMevcut Ödül: §a" + String.format("%.0f", state.reward) + " Altın");
+} else {
+    valueLore.add("§eMevcut Ödül: §7Yok (Direkt onaylarsanız ödül olmayacak)");
+}
+valueLore.add("§7ℹ️ Direkt onaylarsanız ödül");
+valueLore.add("§7belirlenmeyecek. Ama ceza");
+valueLore.add("§7belirlemek zorundasınız.");
+
+// handlePenaltySliderClick() içinde
+if (state.reward <= 0 && state.penalty <= 0) {
+    player.sendMessage("§c§lHATA!");
+    player.sendMessage("§7En az birini belirlemek zorundasınız:");
+    player.sendMessage("§7- Ödül veya");
+    player.sendMessage("§7- Ceza");
+    return;
+}
+
+// handleSummaryMenuClick() içinde
+if (state.reward <= 0 && state.penalty <= 0) {
+    player.sendMessage("§c§lHATA!");
+    player.sendMessage("§7En az birini belirlemek zorundasınız:");
+    player.sendMessage("§7- Ödül veya");
+    player.sendMessage("§7- Ceza");
+    return;
+}
+```
+
+### 4. ✅ Adım Numaraları Güncellendi
+**Yeni Sıralama:**
+1. Kapsam Seçimi
+2. Oyuncu Seçimi (sadece PLAYER_TO_PLAYER için)
+3. Tip Seçimi
+4. Ödül Belirle
+5. Ceza Tipi Seçimi
+6. Ceza Miktarı Belirle
+7. Süre Belirle
+8. Tip'e Özel Parametreler
+9. Özet ve Onay
+
+**Şart Ekleme Durumu (7 adım):**
+1. Tip Seçimi
+2. Ödül Belirle
+3. Ceza Tipi Seçimi
+4. Ceza Miktarı Belirle
+5. Süre Belirle
+6. Tip'e Özel Parametreler
+7. Özet ve Onay
 
 ## YAPILAN İYİLEŞTİRMELER ✅
 
 ### 1. ✅ Menü Başlıklarına Adım Numarası Eklendi
-   - `openRewardSliderMenu` → `"§6[Adım 4/8] Ödül Belirle"`
-   - `openTypeSelectionMenu` → `"§6[Adım 1/9] Kontrat Tipi Seç"`
-   - `openScopeSelectionMenu` → `"§6[Adım 2/9] Kontrat Kapsamı Seç"`
-   - `openPlayerSelectionMenuForRequest` → `"§6[Adım 3/9] Hedef Oyuncu Seç"`
+   - `openScopeSelectionMenu` → `"§6[Adım 1/9] Kontrat Kapsamı Seç"`
+   - `openPlayerSelectionMenuForRequest` → `"§6[Adım 2/9] Hedef Oyuncu Seç"`
+   - `openTypeSelectionMenu` → `"§6[Adım 3/9] Kontrat Tipi Seç"`
+   - `openRewardSliderMenu` → `"§6[Adım 4/9] Ödül Belirle"`
+   - `openPenaltyTypeSelectionMenu` → `"§6[Adım 5/9] Ceza Tipi Seç"`
+   - `openPenaltySliderMenu` → `"§6[Adım 6/9] Ceza Miktarı Belirle"`
+   - `openTimeSelectionMenu` → `"§6[Adım 7/9] Süre Belirle"`
+   - `openTypeSpecificMenu` → `"§6[Adım 8/9] Tip'e Özel Parametreler"`
    - `openSummaryMenu` → `"§6[Adım 9/9] Kontrat Özeti"`
    - Her menüde adım numarası gösteriliyor
 
 ### 2. ✅ Özet Menüsünde Her İki Tarafın Şartlarını Göster
    - `openSummaryMenu` metodunda `contractRequestId` varsa karşı tarafın şartlarını da gösteriyor
    - "SİZİN ŞARTLARINIZ" ve "KARŞI TARAFIN ŞARTLARI" bölümleri eklendi
+   - Ödül/Ceza null ise "Yok" gösteriliyor
 
 ### 3. ✅ Final Onay Menüsünde Her İki Tarafın Şartlarını Göster
    - `openTermsApprovalMenu` metodunda her iki tarafın şartlarını yan yana gösteriyor
@@ -441,10 +417,12 @@ Kendi şartlarını da görmeli.
 ### 5. ✅ Her Menüde Geri Butonu
    - Tüm menülerde [GERİ] butonu var
    - Geri gidildiğinde önceki adıma dönülüyor
+   - State korunsun (sadece adım değişsin)
 
 ### 6. ✅ Açıklayıcı Mesajlar
    - Özet menüsünde açıklayıcı bilgi mesajları eklendi
    - Oyuncu seçim menüsünde bilgi butonu eklendi
+   - Ödül/Ceza menülerinde direkt onaylama açıklaması eklendi
    - Her adımda oyuncuya ne yapması gerektiği açıklanıyor
 
 ### 7. ✅ Final Onay Menüsü İyileştirildi
@@ -453,11 +431,41 @@ Kendi şartlarını da görmeli.
    - Açıklayıcı başlık ve bilgi mesajları
    - [ONAYLA] ve [REDDET] butonları net bir şekilde yerleştirildi
 
+### 8. ✅ Ödül/Ceza Null Desteği
+   - Ödül menüsünde direkt onaylarsa ödül null olur
+   - Ceza menüsünde direkt onaylarsa ceza null olur
+   - En az birini belirlemek zorunda kontrolü eklendi
+   - Özet menüsünde null değerler "Yok" olarak gösteriliyor
+
 ## KOD DURUMU
 
-✅ Tüm iyileştirmeler uygulandı
+✅ Tüm düzeltmeler uygulandı
 ✅ Akış şeması güncellendi
 ✅ Menüler daha kullanıcı dostu hale getirildi
-✅ Adım numaraları eklendi
+✅ Adım numaraları güncellendi
 ✅ Açıklayıcı mesajlar eklendi
 ✅ Her iki tarafın şartları gösteriliyor
+✅ Ödül/Ceza null desteği eklendi
+✅ Şart ekleme durumunda scope ve oyuncu seçimi atlanıyor
+
+## ÖNEMLİ NOTLAR
+
+### ⚠️ Ödül/Ceza Kontrolü
+- **En az birini belirlemek zorunda** (Ödül VEYA Ceza)
+- İkisi de null olamaz
+- Biri null olabilir, ama ikisi birden null olamaz
+- Özet menüsünde kontrol yapılır
+- Ceza menüsünde de kontrol yapılır (ödül null ise ceza zorunlu)
+
+### ⚠️ Şart Ekleme Durumu
+- `contractRequestId` varsa → Şart ekleme durumu
+- Scope ve oyuncu seçimi **YAPILMAZ**
+- Direkt **Tip Seçimi** menüsüne gidilir
+- Scope ve oyuncu zaten request'te belirlenmiş
+
+### ⚠️ Akış Sıralaması
+- **DOĞRU:** [Kapsam] → [Oyuncu] → [Tip] → [Ödül] → [Ceza] → [Süre] → [Tip'e Özel] → [Özet]
+- **YANLIŞ:** [Tip] → [Kapsam] → [Oyuncu] (Döngüye girer)
+
+**Son Güncelleme:** Son 3 Gün (Son Commit'ler)  
+**Döküman Versiyonu:** 2.0

@@ -831,7 +831,18 @@ public class ContractMenu implements Listener {
      * Kontrat kategori seçim menüsü (YENİ: ContractType enum kullanır)
      */
     private void openTypeSelectionMenu(Player player) {
-        Inventory menu = Bukkit.createInventory(null, 27, "§6Kontrat Kategorisi Seç");
+        ContractWizardState state = wizardStates.get(player.getUniqueId());
+        if (state == null) {
+            player.closeInventory();
+            return;
+        }
+        
+        // ✅ İYİLEŞTİRME: Adım numarası ekle
+        int currentStep = getCurrentStepNumber(state);
+        int totalSteps = getTotalWizardSteps(state);
+        String menuTitle = "§6[Adım " + currentStep + "/" + totalSteps + "] Kontrat Tipi Seç";
+        
+        Inventory menu = Bukkit.createInventory(null, 27, menuTitle);
         
         // Yeni kontrat kategorileri
         me.mami.stratocraft.enums.ContractType[] types = {
@@ -1702,9 +1713,10 @@ public class ContractMenu implements Listener {
     
     /**
      * Wizard adım sayısını hesapla (iyileştirme için)
+     * ✅ DÜZELTME: Yeni sıralama [Kapsam]>[Oyuncu]>[Tip]>[Ödül]>[Ceza Tipi]>[Ceza]>[Süre]>[Tip'e Özel]>[Özet]
      */
     private int getTotalWizardSteps(ContractWizardState state) {
-        if (state == null) return 8;
+        if (state == null) return 9;
         
         // Eğer contractRequestId varsa (şart ekleme durumu), scope ve oyuncu seçimi yok
         if (state.contractRequestId != null) {
@@ -1712,17 +1724,18 @@ public class ContractMenu implements Listener {
             return 7;
         }
         
-        // Normal akış: Tip (1) + Scope (2) + Oyuncu (3) + Ödül (4) + Ceza Tipi (5) + Ceza (6) + Süre (7) + Tip'e özel (8) + Özet (9) = 9 adım
+        // Normal akış: Kapsam (1) + Oyuncu (2, sadece PLAYER_TO_PLAYER) + Tip (3) + Ödül (4) + Ceza Tipi (5) + Ceza (6) + Süre (7) + Tip'e özel (8) + Özet (9) = 9 adım
         // Ancak scope PLAYER_TO_PLAYER ise oyuncu seçimi var, diğerlerinde yok
         if (state.scope == Contract.ContractScope.PLAYER_TO_PLAYER) {
-            return 9;
+            return 9; // Kapsam, Oyuncu, Tip, Ödül, Ceza Tipi, Ceza, Süre, Tip'e özel, Özet
         } else {
-            return 8; // Oyuncu seçimi yok
+            return 8; // Kapsam, Tip, Ödül, Ceza Tipi, Ceza, Süre, Tip'e özel, Özet (Oyuncu seçimi yok)
         }
     }
     
     /**
      * Mevcut adım numarasını hesapla (iyileştirme için)
+     * ✅ DÜZELTME: Yeni sıralama [Kapsam]>[Oyuncu]>[Tip]>[Ödül]>[Ceza Tipi]>[Ceza]>[Süre]>[Tip'e Özel]>[Özet]
      */
     private int getCurrentStepNumber(ContractWizardState state) {
         if (state == null) return 1;
@@ -1738,10 +1751,10 @@ public class ContractMenu implements Listener {
             return 7; // Özet
         }
         
-        // Normal akış
-        if (state.contractType == null) return 1; // Tip seçimi
-        if (state.scope == null) return 2; // Scope seçimi
-        if (state.scope == Contract.ContractScope.PLAYER_TO_PLAYER && state.targetPlayerForRequest == null) return 3; // Oyuncu seçimi
+        // Normal akış: [Kapsam]>[Oyuncu]>[Tip]>[Ödül]>[Ceza Tipi]>[Ceza]>[Süre]>[Tip'e Özel]>[Özet]
+        if (state.scope == null) return 1; // Kapsam seçimi
+        if (state.scope == Contract.ContractScope.PLAYER_TO_PLAYER && state.targetPlayerForRequest == null) return 2; // Oyuncu seçimi
+        if (state.contractType == null) return 3; // Tip seçimi
         if (state.step < 2) return 4; // Ödül
         if (state.step < 3) return 5; // Ceza Tipi
         if (state.step < 4) return 6; // Ceza
@@ -1820,65 +1833,75 @@ public class ContractMenu implements Listener {
         switch (clicked.getType()) {
             case ARROW:
                 // Geri
-                wizardStates.remove(player.getUniqueId());
-                int page = currentPages.getOrDefault(player.getUniqueId(), 1);
-                openMainMenu(player, page);
+                // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), ana menüye dön
+                if (state.contractRequestId != null) {
+                    wizardStates.remove(player.getUniqueId());
+                    player.closeInventory();
+                    return;
+                }
+                // Normal akış: Scope seçimine dön
+                state.step = 0;
+                player.closeInventory();
+                openScopeSelectionMenu(player);
                 break;
                 
             case CHEST:
                 // RESOURCE_COLLECTION
                 state.contractType = me.mami.stratocraft.enums.ContractType.RESOURCE_COLLECTION;
-                state.step = 1;
+                state.step = 2; // Tip seçildi, ödül adımına geç
                 player.closeInventory();
-                // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), scope seçimi yapma
+                // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), direkt şart belirleme adımlarına geç
                 if (state.contractRequestId != null) {
-                    // Scope zaten belirlenmiş (request'ten), direkt şart belirleme adımlarına geç
-                    state.step = 2;
+                    // Scope ve oyuncu zaten belirlenmiş (request'ten), direkt şart belirleme adımlarına geç
                     openRewardSliderMenu(player);
                 } else {
-                    openScopeSelectionMenu(player);
+                    // Normal akış: Ödül belirleme adımına geç
+                    openRewardSliderMenu(player);
                 }
                 break;
                 
             case DIAMOND_SWORD:
                 // COMBAT
                 state.contractType = me.mami.stratocraft.enums.ContractType.COMBAT;
-                state.step = 1;
+                state.step = 2; // Tip seçildi, ödül adımına geç
                 player.closeInventory();
-                // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), scope seçimi yapma
+                // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), direkt şart belirleme adımlarına geç
                 if (state.contractRequestId != null) {
-                    state.step = 2;
+                    // Scope ve oyuncu zaten belirlenmiş (request'ten), direkt şart belirleme adımlarına geç
                     openRewardSliderMenu(player);
                 } else {
-                    openScopeSelectionMenu(player);
+                    // Normal akış: Ödül belirleme adımına geç
+                    openRewardSliderMenu(player);
                 }
                 break;
                 
             case BARRIER:
                 // TERRITORY
                 state.contractType = me.mami.stratocraft.enums.ContractType.TERRITORY;
-                state.step = 1;
+                state.step = 2; // Tip seçildi, ödül adımına geç
                 player.closeInventory();
-                // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), scope seçimi yapma
+                // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), direkt şart belirleme adımlarına geç
                 if (state.contractRequestId != null) {
-                    state.step = 2;
+                    // Scope ve oyuncu zaten belirlenmiş (request'ten), direkt şart belirleme adımlarına geç
                     openRewardSliderMenu(player);
                 } else {
-                    openScopeSelectionMenu(player);
+                    // Normal akış: Ödül belirleme adımına geç
+                    openRewardSliderMenu(player);
                 }
                 break;
                 
             case STRUCTURE_BLOCK:
                 // CONSTRUCTION
                 state.contractType = me.mami.stratocraft.enums.ContractType.CONSTRUCTION;
-                state.step = 1;
+                state.step = 2; // Tip seçildi, ödül adımına geç
                 player.closeInventory();
-                // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), scope seçimi yapma
+                // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), direkt şart belirleme adımlarına geç
                 if (state.contractRequestId != null) {
-                    state.step = 2;
+                    // Scope ve oyuncu zaten belirlenmiş (request'ten), direkt şart belirleme adımlarına geç
                     openRewardSliderMenu(player);
                 } else {
-                    openScopeSelectionMenu(player);
+                    // Normal akış: Ödül belirleme adımına geç
+                    openRewardSliderMenu(player);
                 }
                 break;
                 
@@ -2203,15 +2226,23 @@ public class ContractMenu implements Listener {
         
         switch (clicked.getType()) {
             case ARROW:
-                // Geri - Tip seçimine dön
-                state.step = 0;
-                player.closeInventory();
-                openTypeSelectionMenu(player);
+                // Geri
+                // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), ana menüye dön
+                if (state.contractRequestId != null) {
+                    wizardStates.remove(player.getUniqueId());
+                    player.closeInventory();
+                    return;
+                }
+                // Normal akış: Ana menüye dön
+                wizardStates.remove(player.getUniqueId());
+                int page = currentPages.getOrDefault(player.getUniqueId(), 1);
+                openMainMenu(player, page);
                 break;
                 
             case PLAYER_HEAD:
                 // ÇİFT TARAFLI KONTRAT SİSTEMİ
                 state.scope = Contract.ContractScope.PLAYER_TO_PLAYER;
+                state.step = 1; // Scope seçildi, oyuncu seçimine geç
                 player.closeInventory();
                 
                 // ✅ DÜZELTME: Oyuncu seçimi yapılmalı ama istek hemen gönderilmemeli
@@ -2241,9 +2272,9 @@ public class ContractMenu implements Listener {
                     return;
                 }
                 state.scope = Contract.ContractScope.CLAN_TO_CLAN;
-                state.step = 2;
+                state.step = 1; // Scope seçildi, tip seçimine geç
                 player.closeInventory();
-                openRewardSliderMenu(player);
+                openTypeSelectionMenu(player);
                 break;
                 
             case EMERALD:
@@ -2254,9 +2285,9 @@ public class ContractMenu implements Listener {
                     return;
                 }
                 state.scope = Contract.ContractScope.PLAYER_TO_CLAN;
-                state.step = 2;
+                state.step = 1; // Scope seçildi, tip seçimine geç
                 player.closeInventory();
-                openRewardSliderMenu(player);
+                openTypeSelectionMenu(player);
                 break;
                 
             case GOLD_INGOT:
@@ -2267,9 +2298,9 @@ public class ContractMenu implements Listener {
                     return;
                 }
                 state.scope = Contract.ContractScope.CLAN_TO_PLAYER;
-                state.step = 2;
+                state.step = 1; // Scope seçildi, tip seçimine geç
                 player.closeInventory();
-                openRewardSliderMenu(player);
+                openTypeSelectionMenu(player);
                 break;
         }
     }
@@ -2284,7 +2315,8 @@ public class ContractMenu implements Listener {
             return;
         }
         
-        if (state.reward == 0) state.reward = 100; // Varsayılan değer
+        // ✅ DÜZELTME: Ödül null olabilir, direkt onaylanabilir
+        // if (state.reward == 0) state.reward = 100; // Varsayılan değer kaldırıldı
         
         // ✅ İYİLEŞTİRME: Adım numarası ekle
         int currentStepNum = getCurrentStepNumber(state);
@@ -2296,9 +2328,20 @@ public class ContractMenu implements Listener {
         // Mevcut değer göster
         List<String> valueLore = new ArrayList<>();
         valueLore.add("§7═══════════════════════");
-        valueLore.add("§eMevcut Ödül: §a" + String.format("%.0f", state.reward) + " Altın");
+        if (state.reward > 0) {
+            valueLore.add("§eMevcut Ödül: §a" + String.format("%.0f", state.reward) + " Altın");
+        } else {
+            valueLore.add("§eMevcut Ödül: §7Yok (Direkt onaylarsanız ödül olmayacak)");
+        }
+        valueLore.add("§7");
+        valueLore.add("§7ℹ️ Direkt onaylarsanız ödül");
+        valueLore.add("§7belirlenmeyecek. Ama ceza");
+        valueLore.add("§7belirlemek zorundasınız.");
         valueLore.add("§7═══════════════════════");
-        menu.setItem(13, createButton(Material.GOLD_INGOT, "§e§l" + String.format("%.0f", state.reward) + " Altın", valueLore));
+        String displayText = state.reward > 0 ? 
+            "§e§l" + String.format("%.0f", state.reward) + " Altın" : 
+            "§7§lÖdül Yok";
+        menu.setItem(13, createButton(Material.GOLD_INGOT, displayText, valueLore));
         
         // Hızlı değerler
         menu.setItem(9, createButton(Material.EMERALD, "§a100", Arrays.asList("§7Hızlı seçim")));
@@ -2348,9 +2391,17 @@ public class ContractMenu implements Listener {
         switch (clicked.getType()) {
             case ARROW:
                 // Geri
-                state.step = 1;
-                player.closeInventory();
-                openScopeSelectionMenu(player);
+                // ✅ DÜZELTME: Eğer contractRequestId varsa (şart ekleme durumu), tip seçimine dön
+                if (state.contractRequestId != null) {
+                    state.step = 0;
+                    player.closeInventory();
+                    openTypeSelectionMenu(player);
+                } else {
+                    // Normal akış: Tip seçimine dön
+                    state.step = 2; // Tip seçimine dön
+                    player.closeInventory();
+                    openTypeSelectionMenu(player);
+                }
                 break;
                 
             case EMERALD:
@@ -2394,7 +2445,11 @@ public class ContractMenu implements Listener {
                 else if (slot == 19) state.reward += 10;
                 else if (slot == 20) state.reward += 1;
                 else if (slot == 15) {
-                    // Onay - Ceza tipi seçimine geç
+                    // ✅ DÜZELTME: Onay - Ödül null olabilir, direkt ceza tipi seçimine geç
+                    // Ödül belirlenmemişse null yap
+                    if (state.reward <= 0) {
+                        state.reward = 0; // Null olarak işaretle
+                    }
                     state.step = 3;
                     player.closeInventory();
                     openPenaltyTypeSelectionMenu(player);
@@ -2427,17 +2482,33 @@ public class ContractMenu implements Listener {
             return;
         }
         
-        if (state.penalty == 0) state.penalty = state.reward * 0.5; // Varsayılan: ödülün yarısı
+        // ✅ DÜZELTME: Ceza null olabilir, direkt onaylanabilir
+        // if (state.penalty == 0) state.penalty = state.reward * 0.5; // Varsayılan kaldırıldı
         
         Inventory menu = Bukkit.createInventory(null, 27, "§6Ceza Belirle");
         
         // Mevcut değer göster
         List<String> valueLore = new ArrayList<>();
         valueLore.add("§7═══════════════════════");
-        valueLore.add("§eMevcut Ceza: §c" + String.format("%.0f", state.penalty) + " Altın");
-        valueLore.add("§7Ödül: §a" + String.format("%.0f", state.reward) + " Altın");
+        if (state.penalty > 0) {
+            valueLore.add("§eMevcut Ceza: §c" + String.format("%.0f", state.penalty) + " Altın");
+        } else {
+            valueLore.add("§eMevcut Ceza: §7Yok (Direkt onaylarsanız ceza olmayacak)");
+        }
+        if (state.reward > 0) {
+            valueLore.add("§7Ödül: §a" + String.format("%.0f", state.reward) + " Altın");
+        } else {
+            valueLore.add("§7Ödül: §7Yok");
+        }
+        valueLore.add("§7");
+        valueLore.add("§7ℹ️ Direkt onaylarsanız ceza");
+        valueLore.add("§7belirlenmeyecek. Ama ödül");
+        valueLore.add("§7belirlemediyseniz devam edemezsiniz.");
         valueLore.add("§7═══════════════════════");
-        menu.setItem(13, createButton(Material.REDSTONE_BLOCK, "§c§l" + String.format("%.0f", state.penalty) + " Altın", valueLore));
+        String displayText = state.penalty > 0 ? 
+            "§c§l" + String.format("%.0f", state.penalty) + " Altın" : 
+            "§7§lCeza Yok";
+        menu.setItem(13, createButton(Material.REDSTONE_BLOCK, displayText, valueLore));
         
         // Hızlı değerler (ödülün yüzdesi)
         menu.setItem(9, createButton(Material.EMERALD, "§a%25", Arrays.asList("§7Ödülün %25'i")));
@@ -2487,6 +2558,8 @@ public class ContractMenu implements Listener {
         switch (clicked.getType()) {
             case ARROW:
                 // Geri
+                // ✅ DÜZELTME: Eğer ödül null ise, ödül menüsüne dön
+                // Eğer ödül varsa, ödül menüsüne dön
                 state.step = 2;
                 player.closeInventory();
                 openRewardSliderMenu(player);
@@ -2530,7 +2603,23 @@ public class ContractMenu implements Listener {
                 else if (slot == 19) state.penalty += 10;
                 else if (slot == 20) state.penalty += 1;
                 else if (slot == 15) {
-                    // Onay - Ceza miktarı belirlendi, süre seçimine geç
+                    // ✅ DÜZELTME: Onay - Ceza null olabilir, ama ödül kontrolü yap
+                    // Ceza belirlenmemişse null yap
+                    if (state.penalty <= 0) {
+                        state.penalty = 0; // Null olarak işaretle
+                    }
+                    
+                    // ✅ Ödül kontrolü: Eğer ödül de null ise devam edemez
+                    if (state.reward <= 0 && state.penalty <= 0) {
+                        player.sendMessage("§c§lHATA!");
+                        player.sendMessage("§7En az birini belirlemek zorundasınız:");
+                        player.sendMessage("§7- Ödül veya");
+                        player.sendMessage("§7- Ceza");
+                        player.sendMessage("§7");
+                        player.sendMessage("§7Geri gidip ödül belirleyebilirsiniz.");
+                        return;
+                    }
+                    
                     state.step = 5;
                     player.closeInventory();
                     openTimeSelectionMenu(player);
@@ -3140,22 +3229,22 @@ public class ContractMenu implements Listener {
                                 
                                 String currentMenuTitle = event.getView().getTitle();
                                 
-                                // ✅ DÜZELTME: PLAYER_TO_PLAYER için oyuncu seçildiğinde sadece state'e kaydet, istek gönderme
+                                // ✅ DÜZELTME: PLAYER_TO_PLAYER için oyuncu seçildiğinde sadece state'e kaydet, tip seçimine geç
                                 if (currentMenuTitle.equals("§6Hedef Oyuncu Seç") && 
                                     state.scope == Contract.ContractScope.PLAYER_TO_PLAYER) {
                                     // Oyuncuyu state'e kaydet (istek gönderilmeden önce)
                                     state.targetPlayerForRequest = targetUUID;
+                                    state.step = 1; // Oyuncu seçildi, tip seçimine geç
                                     state.waitingForInput = null;
                                     
-                                    // Şart belirleme adımlarına geç
-                                    state.step = 2;
+                                    // ✅ DÜZELTME: Tip seçimine geç
                                     player.closeInventory();
-                                    openRewardSliderMenu(player);
+                                    openTypeSelectionMenu(player);
                                     
                                     player.sendMessage("§6═══════════════════════════════════");
                                     player.sendMessage("§a§lOYUNCU SEÇİLDİ!");
                                     player.sendMessage("§7Hedef: §e" + Bukkit.getOfflinePlayer(targetUUID).getName());
-                                    player.sendMessage("§7Şimdi şartları belirleyin");
+                                    player.sendMessage("§7Şimdi kontrat tipini seçin");
                                     player.sendMessage("§7Şartlar belirlendikten sonra istek gönderilecek");
                                     player.sendMessage("§6═══════════════════════════════════");
                                     return;
@@ -3357,16 +3446,16 @@ public class ContractMenu implements Listener {
                     if (state.scope == Contract.ContractScope.PLAYER_TO_PLAYER) {
                         // Oyuncuyu state'e kaydet (istek gönderilmeden önce)
                         state.targetPlayerForRequest = targetPlayerForRequest.getUniqueId();
+                        state.step = 1; // Oyuncu seçildi, tip seçimine geç
                         state.waitingForInput = null;
                         
-                        // Şart belirleme adımlarına geç
-                        state.step = 2;
-                        openRewardSliderMenu(player);
+                        // ✅ DÜZELTME: Tip seçimine geç
+                        openTypeSelectionMenu(player);
                         
                         player.sendMessage("§6═══════════════════════════════════");
                         player.sendMessage("§a§lOYUNCU SEÇİLDİ!");
                         player.sendMessage("§7Hedef: §e" + targetPlayerForRequest.getName());
-                        player.sendMessage("§7Şimdi şartları belirleyin");
+                        player.sendMessage("§7Şimdi kontrat tipini seçin");
                         player.sendMessage("§7Şartlar belirlendikten sonra istek gönderilecek");
                         player.sendMessage("§6═══════════════════════════════════");
                     } else {
@@ -3649,8 +3738,16 @@ public class ContractMenu implements Listener {
         summaryLore.add("§7═══════════════════════");
         summaryLore.add("§7Tip: §e" + (state.contractType != null ? getContractTypeName(state.contractType) : "Bilinmeyen"));
         summaryLore.add("§7Kapsam: §e" + getContractScopeName(state.scope));
-        summaryLore.add("§7Ödül: §a" + state.reward + " Altın");
-        summaryLore.add("§7Ceza: §c" + state.penalty + " Altın");
+        if (state.reward > 0) {
+            summaryLore.add("§7Ödül: §a" + String.format("%.0f", state.reward) + " Altın");
+        } else {
+            summaryLore.add("§7Ödül: §7Yok");
+        }
+        if (state.penalty > 0) {
+            summaryLore.add("§7Ceza: §c" + String.format("%.0f", state.penalty) + " Altın");
+        } else {
+            summaryLore.add("§7Ceza: §7Yok");
+        }
         summaryLore.add("§7Süre: §e" + state.deadlineDays + " Gün");
         
         // ✅ İYİLEŞTİRME: Eğer contractRequestId varsa (şart ekleme durumu), karşı tarafın şartlarını göster
@@ -3742,6 +3839,17 @@ public class ContractMenu implements Listener {
         
         summaryLore.add("§7═══════════════════════");
         
+        // ✅ DÜZELTME: Ödül/Ceza kontrolü mesajı
+        if (state.reward <= 0 && state.penalty <= 0) {
+            summaryLore.add("§7");
+            summaryLore.add("§c§l⚠️ UYARI!");
+            summaryLore.add("§7En az birini belirlemek zorundasınız:");
+            summaryLore.add("§7- Ödül veya");
+            summaryLore.add("§7- Ceza");
+            summaryLore.add("§7");
+            summaryLore.add("§7Geri gidip ödül veya ceza belirleyebilirsiniz.");
+        }
+        
         // ✅ İYİLEŞTİRME: Açıklayıcı mesaj ekle
         if (state.contractRequestId != null) {
             summaryLore.add("§7");
@@ -3805,6 +3913,18 @@ public class ContractMenu implements Listener {
         
         switch (clicked.getType()) {
             case GREEN_CONCRETE:
+                // ✅ DÜZELTME: Ödül/Ceza kontrolü - En az birini belirlemek zorunda
+                if (state.reward <= 0 && state.penalty <= 0) {
+                    player.sendMessage("§c§lHATA!");
+                    player.sendMessage("§7En az birini belirlemek zorundasınız:");
+                    player.sendMessage("§7- Ödül veya");
+                    player.sendMessage("§7- Ceza");
+                    player.sendMessage("§7");
+                    player.sendMessage("§7Geri gidip ödül veya ceza belirleyebilirsiniz.");
+                    player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                    return;
+                }
+                
                 // Kontratı oluştur
                 createContractFromState(player, state);
                 wizardStates.remove(player.getUniqueId());
