@@ -61,7 +61,13 @@ public class Structure {
         CARAVAN_STATION,        // Kervan İstasyonu
         CONTRACT_OFFICE,        // Kontrat Bürosu (genel)
         MARKET_PLACE,           // Market
-        RECIPE_LIBRARY          // Tarif Kütüphanesi
+        RECIPE_LIBRARY,         // Tarif Kütüphanesi
+        
+        // --- KRISTAL SAVUNMA SİSTEMLERİ ---
+        CRYSTAL_ENHANCEMENT_STRUCTURE,    // Kristal Güçlendirme Yapısı
+        CRYSTAL_ARMOR_STRUCTURE,          // Kristal Zırh Yapısı
+        CRYSTAL_SHIELD_STRUCTURE,         // Kristal Kalkan Yapısı
+        CRYSTAL_REGENERATION_STRUCTURE    // Can Yenileme Yapısı
     }
 
     private final Type type;

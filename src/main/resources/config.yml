@@ -997,6 +997,62 @@ game-balance:
   special-weapon:
     level3-range: 20                 # Seviye 3 silah menzili (blok)
     level3-explosion-power: 3.0      # Seviye 3 patlama gücü
+
+  # Kristal Sistemi Ayarları
+  crystal-system:
+    # Temel Ayarlar
+    base-health: 100.0                # Başlangıç kristal canı
+    hp-per-power: 2.5                 # Her güç birimi için HP (klan gücüne göre)
+    power-update-interval: 6000        # Klan gücü güncelleme aralığı (tick) - 5 dakika
+    
+    # Güçlendirme Yapısı
+    enhancement:
+      max-items-per-minute-l1: 10     # Seviye 1: Dakikada maksimum item
+      max-items-per-minute-l2: 20     # Seviye 2: Dakikada maksimum item
+      max-items-per-minute-l3: 30     # Seviye 3: Dakikada maksimum item
+      level-multiplier-l1: 1.0        # Seviye 1 çarpanı
+      level-multiplier-l2: 2.0        # Seviye 2 çarpanı
+      level-multiplier-l3: 4.0        # Seviye 3 çarpanı
+    
+    # Zırh Yapısı
+    armor:
+      damage-reduction-l1: 0.10       # Seviye 1: %10 hasar azaltma
+      damage-reduction-l2: 0.25       # Seviye 2: %25 hasar azaltma
+      damage-reduction-l3: 0.50       # Seviye 3: %50 hasar azaltma
+      max-fuel-l1: 500                # Seviye 1: Maksimum yakıt
+      max-fuel-l2: 1000               # Seviye 2: Maksimum yakıt
+      max-fuel-l3: 2000               # Seviye 3: Maksimum yakıt
+      fuel-per-item: 100              # Her item başına yakıt
+      fuel-consumption-rate: 10.0      # Her 10 hasar için 1 yakıt tüketimi
+      update-interval: 20              # Güncelleme aralığı (tick) - 1 saniye
+    
+    # Kalkan Yapısı
+    shield:
+      max-blocks-l1: 5                # Seviye 1: Maksimum kalkan bloğu
+      max-blocks-l2: 15               # Seviye 2: Maksimum kalkan bloğu
+      max-blocks-l3: 30               # Seviye 3: Maksimum kalkan bloğu
+      blocks-per-fuel-l1: 1           # Seviye 1: Yakıt başına kalkan bloğu
+      blocks-per-fuel-l2: 3           # Seviye 2: Yakıt başına kalkan bloğu
+      blocks-per-fuel-l3: 5           # Seviye 3: Yakıt başına kalkan bloğu
+      warning-threshold: 3             # Kritik seviye uyarısı (kalan kalkan)
+    
+    # Can Yenileme Yapısı
+    regeneration:
+      regen-rate-l1: 1.0              # Seviye 1: HP/dakika
+      regen-rate-l2: 2.0              # Seviye 2: HP/dakika
+      regen-rate-l3: 5.0              # Seviye 3: HP/dakika
+      max-fuel-l1: 500                # Seviye 1: Maksimum yakıt
+      max-fuel-l2: 1000               # Seviye 2: Maksimum yakıt
+      max-fuel-l3: 2000               # Seviye 3: Maksimum yakıt
+      fuel-per-item: 100              # Her item başına yakıt
+      fuel-consumption-per-minute: 1  # Dakika başına yakıt tüketimi
+      update-interval: 1200            # Güncelleme aralığı (tick) - 1 dakika
+    
+    # Performans Ayarları
+    performance:
+      cache-duration: 1000             # Cache süresi (ms) - 1 saniye
+      max-particles-per-action: 30     # İşlem başına maksimum partikül
+      batch-update-size: 10            # Toplu güncelleme boyutu (klan başına)
     level3-damage: 10.0              # Seviye 3 hasar
     level3-radius: 5                 # Seviye 3 etki yarıçapı (blok)
     level4-laser-cooldown: 500       # Seviye 4 lazer cooldown (ms)
@@ -1070,4 +1126,63 @@ structure:
     enabled: true                       # İstek zaman aşımı kontrolü aktif mi?
     timeout-duration: 86400000          # Zaman aşımı süresi (ms) - 24 saat
     cleanup-interval: 3600000          # Temizleme aralığı (ms) - 1 saat
+
+# ============================================
+# ✅ YENİ: Klan Kristali Hasar ve AI Sistemi
+# ============================================
+
+# Kristal Hasar Sistemi
+crystal-damage-system:
+  # Oyuncu hasarı
+  player-damage-enabled: true           # Oyuncular kristale hasar verebilir mi?
+  player-damage-multiplier: 1.0         # Oyuncu hasar çarpanı
+  clan-member-damage-enabled: true      # Klan üyeleri kristale hasar verebilir mi?
+  clan-member-damage-multiplier: 0.5    # Klan üyesi hasar çarpanı (%50)
+  
+  # Entity hasarı
+  entity-damage-enabled: true           # Entity'ler kristale hasar verebilir mi?
+  boss-damage-multiplier: 2.0           # Boss hasar çarpanı (%200)
+  mob-damage-multiplier: 0.5            # Normal mob hasar çarpanı (%50)
+  mini-disaster-damage-multiplier: 1.5  # Mini felaket mob hasar çarpanı (%150)
+  other-damage-multiplier: 0.3          # Diğer hasar kaynakları (patlama, yangın, vb.) çarpanı (%30)
+  
+  # AI sistemi
+  ai-update-interval: 40                # AI güncelleme aralığı (tick) - 40 = 2 saniye
+  crystal-priority-distance: 50.0       # Kristal öncelik mesafesi (blok)
+  player-priority-distance: 30.0        # Oyuncu öncelik mesafesi (blok)
+
+# Mini Felaketler (Klan Kristali Saldırıları)
+mini-disasters:
+  # 1. Crystal Hunter Wave (Orta Güç)
+  crystal-hunter-wave:
+    enabled: true                       # Aktif mi?
+    spawn-interval: 1800                # Spawn aralığı (saniye) - 1800 = 30 dakika
+    mob-count: 25                       # Spawn edilecek mob sayısı
+    health-bonus: 0.5                   # Can artışı çarpanı (%50)
+    damage-bonus: 0.3                   # Hasar artışı çarpanı (%30)
+    crystal-damage-bonus: 2.0           # Kristale hasar bonusu (%200)
+    speed-level: 1                      # Hız seviyesi (Potion Effect)
+    
+  # 2. Crystal Destroyer Army (Yüksek Güç)
+  crystal-destroyer-army:
+    enabled: true                       # Aktif mi?
+    spawn-interval: 2400                # Spawn aralığı (saniye) - 2400 = 40 dakika
+    mob-count: 18                       # Spawn edilecek mob sayısı
+    health-bonus: 1.0                   # Can artışı çarpanı (%100)
+    damage-bonus: 0.5                   # Hasar artışı çarpanı (%50)
+    crystal-damage-bonus: 3.0           # Kristale hasar bonusu (%300)
+    speed-level: 2                      # Hız seviyesi (Potion Effect)
+    resistance-level: 1                 # Zırh seviyesi (Potion Effect)
+    
+  # 3. Crystal Catastrophe (Çok Yüksek Güç)
+  crystal-catastrophe:
+    enabled: true                       # Aktif mi?
+    spawn-interval: 3600                # Spawn aralığı (saniye) - 3600 = 60 dakika
+    mob-count: 12                       # Spawn edilecek mob sayısı
+    health-bonus: 1.5                   # Can artışı çarpanı (%150)
+    damage-bonus: 0.75                  # Hasar artışı çarpanı (%75)
+    crystal-damage-bonus: 4.0           # Kristale hasar bonusu (%400)
+    speed-level: 3                      # Hız seviyesi (Potion Effect)
+    resistance-level: 2                 # Zırh seviyesi (Potion Effect)
+    regeneration-level: 1                # Rejenerasyon seviyesi (Potion Effect)
 

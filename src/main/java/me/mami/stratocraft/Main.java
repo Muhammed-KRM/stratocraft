@@ -95,10 +95,20 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.SimpleRankingSystem simpleRankingSystem;
     private me.mami.stratocraft.manager.SimplePowerHistory simplePowerHistory;
     private me.mami.stratocraft.manager.HUDManager hudManager;
+    private me.mami.stratocraft.manager.CrystalBossBarManager crystalBossBarManager; // ✅ YENİ: Kristal can BossBar yöneticisi
+    private me.mami.stratocraft.listener.CrystalDamageListener crystalDamageListener; // ✅ YENİ: Kristal hasar sistemi
+    private me.mami.stratocraft.manager.CrystalTargetingAI crystalTargetingAI; // ✅ YENİ: Kristal hedef seçim AI
+    private me.mami.stratocraft.manager.MiniDisasterManager miniDisasterManager; // ✅ YENİ: Mini felaket yöneticisi
     private me.mami.stratocraft.manager.BatteryParticleManager batteryParticleManager;
     private me.mami.stratocraft.manager.DisasterArenaManager disasterArenaManager;
     private me.mami.stratocraft.manager.TaskManager taskManager;
     private me.mami.stratocraft.listener.TerritoryListener territoryListener;
+    
+    // ✅ YENİ: Kristal sistemi handler'ları
+    private me.mami.stratocraft.handler.structure.CrystalEnhancementHandler crystalEnhancementHandler;
+    private me.mami.stratocraft.handler.structure.CrystalArmorHandler crystalArmorHandler;
+    private me.mami.stratocraft.handler.structure.CrystalShieldHandler crystalShieldHandler;
+    private me.mami.stratocraft.handler.structure.CrystalRegenerationHandler crystalRegenerationHandler;
     
     // Yeni Yapı Sistemi Manager'ları
     private me.mami.stratocraft.manager.StructureCoreManager structureCoreManager;
@@ -217,6 +227,10 @@ public class Main extends JavaPlugin {
         buffManager = new BuffManager();
         buffManager.setPlugin(this);
         hudManager = new me.mami.stratocraft.manager.HUDManager(this);
+        crystalBossBarManager = new me.mami.stratocraft.manager.CrystalBossBarManager(this); // ✅ YENİ: Kristal can BossBar yöneticisi
+        crystalDamageListener = new me.mami.stratocraft.listener.CrystalDamageListener(this); // ✅ YENİ: Kristal hasar sistemi
+        crystalTargetingAI = new me.mami.stratocraft.manager.CrystalTargetingAI(this); // ✅ YENİ: Kristal hedef seçim AI
+        miniDisasterManager = new me.mami.stratocraft.manager.MiniDisasterManager(this); // ✅ YENİ: Mini felaket yöneticisi
         // TaskManager (Memory leak önleme için - diğer manager'lardan önce)
         taskManager = new me.mami.stratocraft.manager.TaskManager(this);
         
@@ -317,6 +331,10 @@ public class Main extends JavaPlugin {
         combatListener.setAllianceManager(allianceManager);
         Bukkit.getPluginManager().registerEvents(combatListener, this);
         Bukkit.getPluginManager().registerEvents(new SurvivalListener(missionManager), this);
+        // ✅ YENİ: Kristal hasar sistemi listener'ı
+        if (crystalDamageListener != null) {
+            Bukkit.getPluginManager().registerEvents(crystalDamageListener, this);
+        }
         // YENİ: TerritoryBoundaryManager ve TerritoryConfig
         me.mami.stratocraft.manager.config.TerritoryConfig territoryConfig = 
             configManager != null ? configManager.getTerritoryConfig() : null;
@@ -391,6 +409,20 @@ public class Main extends JavaPlugin {
             new StructureActivationListener(clanManager, territoryManager, 
                 clanRankSystem != null ? clanRankSystem : null,
                 structureCoreManager), this); // YAPI AKTİVASYONU
+        
+        // ✅ YENİ: Kristal sistemi handler'ları
+        crystalEnhancementHandler = new me.mami.stratocraft.handler.structure.CrystalEnhancementHandler(this);
+        crystalArmorHandler = new me.mami.stratocraft.handler.structure.CrystalArmorHandler(this);
+        crystalShieldHandler = new me.mami.stratocraft.handler.structure.CrystalShieldHandler(this);
+        crystalRegenerationHandler = new me.mami.stratocraft.handler.structure.CrystalRegenerationHandler(this);
+        
+        Bukkit.getPluginManager().registerEvents(crystalEnhancementHandler, this);
+        Bukkit.getPluginManager().registerEvents(crystalArmorHandler, this);
+        Bukkit.getPluginManager().registerEvents(crystalShieldHandler, this);
+        Bukkit.getPluginManager().registerEvents(crystalRegenerationHandler, this);
+        
+        // ✅ YENİ: Klan gücü güncelleme task'ı (her 5 dakika)
+        new me.mami.stratocraft.task.CrystalPowerUpdateTask(this).runTaskTimer(this, 0L, 6000L); // 6000 tick = 5 dakika
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.StructureMenuListener(this, clanManager, territoryManager), this); // YAPI MENÜLERİ
         // Yeni Yapı Sistemi Listener'ı
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.StructureCoreListener(
@@ -603,6 +635,18 @@ public class Main extends JavaPlugin {
             hudManager.setManagers(disasterManager, newBatteryManager, shopManager, missionManager, 
                                   contractManager, buffManager, clanManager, territoryManager);
             hudManager.start();
+            // ✅ YENİ: Kristal can BossBar sistemini başlat
+            if (crystalBossBarManager != null) {
+                crystalBossBarManager.start();
+            }
+            // ✅ YENİ: Kristal hedef seçim AI sistemini başlat
+            if (crystalTargetingAI != null) {
+                crystalTargetingAI.start();
+            }
+            // ✅ YENİ: Mini felaket sistemini başlat
+            if (miniDisasterManager != null) {
+                miniDisasterManager.start();
+            }
         }
 
         // ✅ OYUNCU ADI GÜNCELLEME: Periyodik güncelleme (config'den interval al)
@@ -711,6 +755,10 @@ public class Main extends JavaPlugin {
                     }
                     if (hudManager != null) {
                         hudManager.onPlayerQuit(player);
+                    }
+                    // ✅ YENİ: Kristal can BossBar - Oyuncu çıkışında temizle
+                    if (crystalBossBarManager != null) {
+                        crystalBossBarManager.onPlayerQuit(player);
                     }
                     // YENİ: StructureEffectManager - Oyuncu çıkışında yapı efektlerini kaldır
                     if (structureEffectManager != null) {
@@ -1238,6 +1286,21 @@ public class Main extends JavaPlugin {
             hudManager.stop();
         }
         
+        // ✅ YENİ: Kristal can BossBar sistemini durdur
+        if (crystalBossBarManager != null) {
+            crystalBossBarManager.stop();
+        }
+        
+        // ✅ YENİ: Kristal hedef seçim AI sistemini durdur
+        if (crystalTargetingAI != null) {
+            crystalTargetingAI.stop();
+        }
+        
+        // ✅ YENİ: Mini felaket sistemini durdur
+        if (miniDisasterManager != null) {
+            miniDisasterManager.stop();
+        }
+        
         // Batarya sistemini temizle (geçici barrier bloklarını kaldır)
         if (batteryManager != null) {
             batteryManager.shutdown();
@@ -1374,6 +1437,23 @@ public class Main extends JavaPlugin {
 
     public me.mami.stratocraft.manager.SupplyDropManager getSupplyDropManager() {
         return supplyDropManager;
+    }
+    
+    // ✅ YENİ: Kristal sistemi handler getter'ları
+    public me.mami.stratocraft.handler.structure.CrystalEnhancementHandler getCrystalEnhancementHandler() {
+        return crystalEnhancementHandler;
+    }
+    
+    public me.mami.stratocraft.handler.structure.CrystalArmorHandler getCrystalArmorHandler() {
+        return crystalArmorHandler;
+    }
+    
+    public me.mami.stratocraft.handler.structure.CrystalShieldHandler getCrystalShieldHandler() {
+        return crystalShieldHandler;
+    }
+    
+    public me.mami.stratocraft.handler.structure.CrystalRegenerationHandler getCrystalRegenerationHandler() {
+        return crystalRegenerationHandler;
     }
 
     public me.mami.stratocraft.manager.GhostRecipeManager getGhostRecipeManager() {
@@ -2059,13 +2139,20 @@ public class Main extends JavaPlugin {
                             getLogger().info("[CLAN_CRYSTAL_RESTORE] Mevcut kristal entity bulundu ve bağlandı: " + clan.getName());
                             clan.setCrystalEntity((org.bukkit.entity.EnderCrystal) entity);
                             
-                            // ✅ ÖNEMLİ: Metadata ekle (eğer yoksa)
+                                    // ✅ ÖNEMLİ: Metadata ekle (eğer yoksa)
                             if (territoryConfig != null) {
                                 String metadataKey = territoryConfig.getCrystalMetadataKey();
                                 if (!entity.hasMetadata(metadataKey)) {
                                     entity.setMetadata(metadataKey, new org.bukkit.metadata.FixedMetadataValue(this, true));
                                     getLogger().info("[CLAN_CRYSTAL_RESTORE] Metadata eklendi: " + clan.getName());
                                 }
+                            }
+                            
+                            // ✅ YENİ: Kristal sistemi verilerini kontrol et (eğer yüklenmemişse default değerler)
+                            if (clan.getCrystalMaxHealth() <= 0) {
+                                clan.setCrystalMaxHealth(100.0);
+                                clan.setCrystalCurrentHealth(100.0);
+                                getLogger().info("[CLAN_CRYSTAL_RESTORE] Kristal sistemi default değerleri atandı: " + clan.getName());
                             }
                             
                             crystalExists = true;
@@ -2095,7 +2182,16 @@ public class Main extends JavaPlugin {
                     newCrystalEntity.setShowingBottom(true); // Tabanı görünsün
                     newCrystalEntity.setBeamTarget(null);
                     
-                    getLogger().info("[CLAN_CRYSTAL_RESTORE] Kristal entity oluşturuldu: " + newCrystalEntity.getUniqueId());
+                    // ✅ YENİ: Kristal sistemi verilerini kontrol et (eğer yüklenmemişse default değerler)
+                    if (clan.getCrystalMaxHealth() <= 0) {
+                        clan.setCrystalMaxHealth(100.0);
+                        clan.setCrystalCurrentHealth(100.0);
+                        getLogger().info("[CLAN_CRYSTAL_RESTORE] Yeni kristal için default değerler atandı: " + clan.getName());
+                    }
+                    
+                    getLogger().info("[CLAN_CRYSTAL_RESTORE] Kristal entity oluşturuldu: " + newCrystalEntity.getUniqueId() + 
+                        ", Can: " + String.format("%.1f", clan.getCrystalCurrentHealth()) + "/" + 
+                        String.format("%.1f", clan.getCrystalMaxHealth()) + " HP");
                     
                     // Metadata ekle (TerritoryConfig'den)
                     if (territoryConfig != null) {

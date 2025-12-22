@@ -42,6 +42,12 @@ public enum StructureType {
     LIBRARY,              // Kütüphane
     WARNING_SIGN,         // Yasaklı Bölge Tabelası
     
+    // --- KRISTAL SAVUNMA SİSTEMLERİ ---
+    CRYSTAL_ENHANCEMENT_STRUCTURE,    // Kristal Güçlendirme Yapısı
+    CRYSTAL_ARMOR_STRUCTURE,          // Kristal Zırh Yapısı
+    CRYSTAL_SHIELD_STRUCTURE,         // Kristal Kalkan Yapısı
+    CRYSTAL_REGENERATION_STRUCTURE,   // Can Yenileme Yapısı
+    
     // --- YÖNETİM & MENÜ YAPILARI ---
     PERSONAL_MISSION_GUILD,  // Kişisel Görev Loncası (her yere yapılabilir)
     CLAN_MANAGEMENT_CENTER, // Klan Yönetim Merkezi (Klan menüleri)

@@ -860,6 +860,16 @@ public class DataManager {
             // ✅ YENİ: hasCrystal flag'i
             data.hasCrystal = clan.hasCrystal();
             
+            // ✅ YENİ: Kristal sistemi verileri
+            if (clan.hasCrystal()) {
+                data.crystalMaxHealth = clan.getCrystalMaxHealth();
+                data.crystalCurrentHealth = clan.getCrystalCurrentHealth();
+                data.crystalDamageReduction = clan.getCrystalDamageReduction();
+                data.crystalShieldBlocks = clan.getCrystalShieldBlocks();
+                data.crystalMaxShieldBlocks = clan.getCrystalMaxShieldBlocks();
+                data.lastCrystalRegenTime = clan.getLastCrystalRegenTime();
+            }
+            
             // Structures
             data.structures = clan.getStructures().stream()
                     .map(s -> {
@@ -1171,6 +1181,11 @@ public class DataManager {
                 data.startTime = state.startTime;
                 data.duration = state.duration;
                 data.target = state.target != null ? serializeLocation(state.target) : null;
+                // ✅ YENİ: Felaket AI durumu alanları
+                data.disasterState = state.disasterState != null ? state.disasterState.name() : null;
+                data.hasArrivedCenter = state.hasArrivedCenter;
+                data.lastClanCheckTime = state.lastClanCheckTime;
+                data.targetPlayerId = state.targetPlayerId != null ? state.targetPlayerId.toString() : null;
                 snapshot.disaster = data;
             }
         }
@@ -1890,11 +1905,42 @@ public class DataManager {
     private void loadClans(ClanManager clanManager) throws IOException {
         if (clanManager == null) return;
         
+        // ✅ ÖNCE SQLite'den yükle (eğer aktifse)
+        if (useSQLite && sqliteDataManager != null) {
+            try {
+                List<Clan> sqliteClans = sqliteDataManager.loadClans();
+                if (sqliteClans != null && !sqliteClans.isEmpty()) {
+                    plugin.getLogger().info("[DATA_LOAD] SQLite'den " + sqliteClans.size() + " klan yüklendi!");
+                    for (Clan clan : sqliteClans) {
+                        if (clan != null) {
+                            clanManager.loadClan(clan);
+                        }
+                    }
+                    return; // SQLite'den yüklendi, JSON'a gerek yok
+                } else {
+                    plugin.getLogger().info("[DATA_LOAD] SQLite'de klan bulunamadı, JSON'a geçiliyor...");
+                }
+            } catch (Exception e) {
+                plugin.getLogger().warning("[DATA_LOAD] SQLite yükleme hatası, JSON'a geçiliyor: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        
+        // JSON fallback
         File file = new File(dataFolder, "data/clans.json");
-        if (!file.exists()) return;
+        if (!file.exists()) {
+            plugin.getLogger().info("[DATA_LOAD] clans.json bulunamadı, klan yüklenmedi!");
+            plugin.getLogger().info("[DATA_LOAD] Not: Klanlar SQLite'den yüklenmeye çalışıldı, eğer SQLite'de de yoksa bu normal.");
+            return;
+        }
         
         List<ClanData> clanDataList = safeJsonParse(file, new TypeToken<List<ClanData>>(){});
-        if (clanDataList == null) return;
+        if (clanDataList == null || clanDataList.isEmpty()) {
+            plugin.getLogger().info("[DATA_LOAD] clans.json boş veya geçersiz, klan yüklenmedi!");
+            return;
+        }
+        
+        plugin.getLogger().info("[DATA_LOAD] JSON'dan " + clanDataList.size() + " klan yükleniyor...");
         
         for (ClanData data : clanDataList) {
             // Data validation (güçlendirilmiş)
@@ -1946,7 +1992,9 @@ public class DataManager {
                 // Territory
                 if (data.territory != null) {
                     Territory territory = new Territory(clanId, deserializeLocation(data.territory.center));
-                    territory.expand(data.territory.radius - 50);
+                    if (data.territory.radius != null) {
+                        territory.expand(data.territory.radius - 50);
+                    }
                     for (String outpostStr : data.territory.outposts) {
                         territory.addOutpost(deserializeLocation(outpostStr));
                     }
@@ -1962,15 +2010,21 @@ public class DataManager {
                             sd.level,
                             ownerId // YENİ: OwnerId ile oluştur
                     );
-                    for (int i = 0; i < sd.shieldFuel; i++) {
-                        structure.addFuel(1);
+                    if (sd.shieldFuel != null) {
+                        for (int i = 0; i < sd.shieldFuel; i++) {
+                            structure.addFuel(1);
+                        }
                     }
                     clan.addStructure(structure);
                 }
                 
                 // Bank balance ve XP
-                clan.deposit(data.bankBalance);
-                clan.setStoredXP(data.storedXP);
+                if (data.bankBalance != null) {
+                    clan.deposit(data.bankBalance);
+                }
+                if (data.storedXP != null) {
+                    clan.setStoredXP(data.storedXP);
+                }
                 
                 // Guests
                 for (String guestId : data.guests) {
@@ -2004,28 +2058,44 @@ public class DataManager {
                 // ✅ YENİ: Klan kristali konumu ve hasCrystal flag'i
                 if (data.crystalLocation != null) {
                     Location crystalLoc = deserializeLocation(data.crystalLocation);
-                    plugin.getLogger().info("[DATA_LOAD] Klan kristali yükleniyor: " + clan.getName() + 
-                        ", crystalLocation: " + crystalLoc.toString() + 
-                        ", hasCrystal (DB): " + data.hasCrystal);
-                    
-                    clan.setCrystalLocation(crystalLoc);
-                    // hasCrystal flag'ini set et (data.hasCrystal varsa onu kullan, yoksa crystalLocation'dan çıkar)
-                    if (data.hasCrystal != null) {
-                        clan.setHasCrystal(data.hasCrystal);
-                        plugin.getLogger().info("[DATA_LOAD] hasCrystal DB'den alındı: " + data.hasCrystal + " -> " + clan.hasCrystal());
-                    } else {
-                        // Eski veriler için: crystalLocation varsa hasCrystal = true
-                        plugin.getLogger().warning("[DATA_LOAD] hasCrystal null, crystalLocation'dan true yapılıyor: " + clan.getName());
-                        clan.setHasCrystal(true);
+                    if (crystalLoc != null) {
+                        clan.setCrystalLocation(crystalLoc);
+                        // hasCrystal flag'ini set et (data.hasCrystal varsa onu kullan, yoksa crystalLocation'dan çıkar)
+                        if (data.hasCrystal != null) {
+                            clan.setHasCrystal(data.hasCrystal);
+                        } else {
+                            // Eski veriler için: crystalLocation varsa hasCrystal = true
+                            clan.setHasCrystal(true);
+                        }
                     }
-                    
-                    plugin.getLogger().info("[DATA_LOAD] Klan kristali yüklendi: " + clan.getName() + 
-                        ", hasCrystal: " + clan.hasCrystal() + 
-                        ", crystalLocation: " + (clan.getCrystalLocation() != null ? clan.getCrystalLocation().toString() : "null"));
                 } else {
                     // Crystal location yoksa hasCrystal = false
-                    plugin.getLogger().info("[DATA_LOAD] crystalLocation null, hasCrystal false yapılıyor: " + clan.getName());
                     clan.setHasCrystal(false);
+                }
+                
+                // ✅ YENİ: Kristal sistemi verilerini yükle (sadece kristal varsa)
+                if (clan.hasCrystal()) {
+                    if (data.crystalMaxHealth != null) {
+                        clan.setCrystalMaxHealth(data.crystalMaxHealth);
+                    } else {
+                        // Default değer: 100 HP
+                        clan.setCrystalMaxHealth(100.0);
+                    }
+                    if (data.crystalCurrentHealth != null) {
+                        clan.setCrystalCurrentHealth(data.crystalCurrentHealth);
+                    } else {
+                        // Default değer: Maksimum canın %80'i
+                        clan.setCrystalCurrentHealth(clan.getCrystalMaxHealth() * 0.8);
+                    }
+                    if (data.crystalDamageReduction != null) {
+                        clan.setCrystalDamageReduction(data.crystalDamageReduction);
+                    }
+                    if (data.crystalShieldBlocks != null) {
+                        clan.setCrystalShieldBlocks(data.crystalShieldBlocks);
+                    }
+                    if (data.lastCrystalRegenTime != null) {
+                        clan.setLastCrystalRegenTime(data.lastCrystalRegenTime);
+                    }
                 }
                 
                 // ClanManager'a ekle
@@ -2322,8 +2392,19 @@ public class DataManager {
             Disaster.Category category = Disaster.Category.valueOf(data.category);
             Location target = data.target != null ? deserializeLocation(data.target) : null;
             
+            // ✅ YENİ: Felaket AI durumu alanlarını yükle
+            me.mami.stratocraft.enums.DisasterState disasterState = 
+                data.disasterState != null ? 
+                    me.mami.stratocraft.enums.DisasterState.valueOf(data.disasterState) : 
+                    me.mami.stratocraft.enums.DisasterState.GO_CENTER;
+            boolean hasArrivedCenter = data.hasArrivedCenter != null ? data.hasArrivedCenter : false;
+            long lastClanCheckTime = data.lastClanCheckTime != null ? data.lastClanCheckTime : 0L;
+            java.util.UUID targetPlayerId = data.targetPlayerId != null && isValidUUID(data.targetPlayerId) ?
+                java.util.UUID.fromString(data.targetPlayerId) : null;
+            
             DisasterManager.DisasterState state = new DisasterManager.DisasterState(
-                type, category, data.level, data.startTime, data.duration, target
+                type, category, data.level, data.startTime, data.duration, target,
+                disasterState, hasArrivedCenter, lastClanCheckTime, targetPlayerId
             );
             
             disasterManager.loadDisasterState(state);
@@ -3242,11 +3323,18 @@ public class DataManager {
         public String id;
         public String name;
         public Map<String, String> members;
-        public double bankBalance;
-        public int storedXP;
+        public Double bankBalance; // ✅ DÜZELTME: Wrapper type (null olabilir)
+        public Integer storedXP; // ✅ DÜZELTME: Wrapper type (null olabilir)
         public long createdAt; // Grace period için
         public String crystalLocation; // Ölümsüz klan önleme için
         public Boolean hasCrystal; // ✅ YENİ: Klan kristali var mı? (null olabilir - eski veriler için)
+        // ✅ YENİ: Kristal sistemi verileri
+        public Double crystalMaxHealth; // Maksimum kristal canı
+        public Double crystalCurrentHealth; // Mevcut kristal canı
+        public Double crystalDamageReduction; // Zırh hasar azaltma çarpanı (0.0-1.0)
+        public Integer crystalShieldBlocks; // Kalan kalkan blok sayısı
+        public Integer crystalMaxShieldBlocks; // Maksimum kalkan blok sayısı
+        public Long lastCrystalRegenTime; // Son can yenileme zamanı
         public List<String> guests;
         public TerritoryData territory;
         public List<StructureData> structures;
@@ -3258,7 +3346,7 @@ public class DataManager {
     
     public static class TerritoryData {
         public String center;
-        public int radius;
+        public Integer radius; // ✅ DÜZELTME: Wrapper type (null olabilir)
         public List<String> outposts;
     }
     
@@ -3280,7 +3368,7 @@ public class DataManager {
         public String type;
         public String location;
         public int level;
-        public int shieldFuel;
+        public Integer shieldFuel; // ✅ DÜZELTME: Wrapper type (null olabilir)
         public String ownerId; // YENİ: Yapı sahibi UUID (CLAN_OWNED yapılar için)
     }
     
@@ -3386,6 +3474,11 @@ public class DataManager {
         public long startTime;
         public long duration;
         public String target;
+        // ✅ YENİ: Felaket AI durumu alanları
+        public String disasterState; // DisasterState enum name
+        public Boolean hasArrivedCenter; // Merkeze ulaşma durumu
+        public Long lastClanCheckTime; // Son klan kontrolü zamanı
+        public String targetPlayerId; // Hedef oyuncu UUID (string)
     }
     
     // Location adapter for Gson

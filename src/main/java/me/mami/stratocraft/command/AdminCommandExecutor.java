@@ -99,6 +99,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "data":
                 p.sendMessage("§cData manager komutu henüz implement edilmedi.");
                 return true;
+            case "crystal":
+            case "kristal":
+                return handleCrystal(p, args);
             default:
                 showHelp(sender);
                 return true;
@@ -11128,5 +11131,228 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         } catch (NumberFormatException e) {
             return defaultValue;
         }
+    }
+    
+    /**
+     * Kristal sistemi yönetim komutları
+     */
+    private boolean handleCrystal(Player p, String[] args) {
+        if (args.length < 2) {
+            p.sendMessage("§cKullanım: /scadmin crystal <komut>");
+            p.sendMessage("§7Komutlar:");
+            p.sendMessage("§7  sethealth <klan> <miktar> - Kristal canını ayarla");
+            p.sendMessage("§7  setmaxhealth <klan> <miktar> - Maksimum kristal canını ayarla");
+            p.sendMessage("§7  addhealth <klan> <miktar> - Kristal canına ekle (kalıcı)");
+            p.sendMessage("§7  heal <klan> - Kristal canını tam doldur");
+            p.sendMessage("§7  setarmor <klan> <yüzde> - Zırh hasar azaltma ayarla (0-100)");
+            p.sendMessage("§7  setshield <klan> <blok> - Kalkan bloğu ayarla");
+            p.sendMessage("§7  info <klan> - Kristal bilgisi");
+            return true;
+        }
+        
+        me.mami.stratocraft.manager.ClanManager clanManager = plugin.getClanManager();
+        if (clanManager == null) {
+            p.sendMessage("§cClanManager bulunamadı!");
+            return true;
+        }
+        
+        String command = args[1].toLowerCase();
+        
+        switch (command) {
+            case "sethealth":
+                if (args.length < 4) {
+                    p.sendMessage("§cKullanım: /scadmin crystal sethealth <klan> <miktar>");
+                    return true;
+                }
+                return handleCrystalSetHealth(p, args[2], args[3], clanManager);
+                
+            case "setmaxhealth":
+                if (args.length < 4) {
+                    p.sendMessage("§cKullanım: /scadmin crystal setmaxhealth <klan> <miktar>");
+                    return true;
+                }
+                return handleCrystalSetMaxHealth(p, args[2], args[3], clanManager);
+                
+            case "addhealth":
+                if (args.length < 4) {
+                    p.sendMessage("§cKullanım: /scadmin crystal addhealth <klan> <miktar>");
+                    return true;
+                }
+                return handleCrystalAddHealth(p, args[2], args[3], clanManager);
+                
+            case "heal":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /scadmin crystal heal <klan>");
+                    return true;
+                }
+                return handleCrystalHeal(p, args[2], clanManager);
+                
+            case "setarmor":
+                if (args.length < 4) {
+                    p.sendMessage("§cKullanım: /scadmin crystal setarmor <klan> <yüzde>");
+                    return true;
+                }
+                return handleCrystalSetArmor(p, args[2], args[3], clanManager);
+                
+            case "setshield":
+                if (args.length < 4) {
+                    p.sendMessage("§cKullanım: /scadmin crystal setshield <klan> <blok>");
+                    return true;
+                }
+                return handleCrystalSetShield(p, args[2], args[3], clanManager);
+                
+            case "info":
+                if (args.length < 3) {
+                    p.sendMessage("§cKullanım: /scadmin crystal info <klan>");
+                    return true;
+                }
+                return handleCrystalInfo(p, args[2], clanManager);
+                
+            default:
+                p.sendMessage("§cBilinmeyen komut: " + command);
+                return true;
+        }
+    }
+    
+    private boolean handleCrystalSetHealth(Player p, String clanName, String amountStr, me.mami.stratocraft.manager.ClanManager clanManager) {
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(clanName);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clanName);
+            return true;
+        }
+        
+        if (!clan.hasCrystal()) {
+            p.sendMessage("§cBu klanın kristali yok!");
+            return true;
+        }
+        
+        double amount = parseDouble(amountStr, 0.0);
+        clan.setCrystalCurrentHealth(amount);
+        p.sendMessage("§a" + clanName + " klanının kristal canı " + String.format("%.1f", amount) + " HP olarak ayarlandı.");
+        return true;
+    }
+    
+    private boolean handleCrystalSetMaxHealth(Player p, String clanName, String amountStr, me.mami.stratocraft.manager.ClanManager clanManager) {
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(clanName);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clanName);
+            return true;
+        }
+        
+        if (!clan.hasCrystal()) {
+            p.sendMessage("§cBu klanın kristali yok!");
+            return true;
+        }
+        
+        double amount = parseDouble(amountStr, 100.0);
+        clan.setCrystalMaxHealth(amount);
+        // Mevcut canı da güncelle (maksimum canın %80'i)
+        clan.setCrystalCurrentHealth(Math.min(clan.getCrystalCurrentHealth(), amount * 0.8));
+        p.sendMessage("§a" + clanName + " klanının maksimum kristal canı " + String.format("%.1f", amount) + " HP olarak ayarlandı.");
+        return true;
+    }
+    
+    private boolean handleCrystalAddHealth(Player p, String clanName, String amountStr, me.mami.stratocraft.manager.ClanManager clanManager) {
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(clanName);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clanName);
+            return true;
+        }
+        
+        if (!clan.hasCrystal()) {
+            p.sendMessage("§cBu klanın kristali yok!");
+            return true;
+        }
+        
+        double amount = parseDouble(amountStr, 0.0);
+        clan.increaseCrystalMaxHealth(amount);
+        p.sendMessage("§a" + clanName + " klanının kristal canına " + String.format("%.1f", amount) + " HP eklendi (kalıcı).");
+        return true;
+    }
+    
+    private boolean handleCrystalHeal(Player p, String clanName, me.mami.stratocraft.manager.ClanManager clanManager) {
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(clanName);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clanName);
+            return true;
+        }
+        
+        if (!clan.hasCrystal()) {
+            p.sendMessage("§cBu klanın kristali yok!");
+            return true;
+        }
+        
+        clan.setCrystalCurrentHealth(clan.getCrystalMaxHealth());
+        p.sendMessage("§a" + clanName + " klanının kristal canı tam dolduruldu.");
+        return true;
+    }
+    
+    private boolean handleCrystalSetArmor(Player p, String clanName, String percentStr, me.mami.stratocraft.manager.ClanManager clanManager) {
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(clanName);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clanName);
+            return true;
+        }
+        
+        if (!clan.hasCrystal()) {
+            p.sendMessage("§cBu klanın kristali yok!");
+            return true;
+        }
+        
+        double percent = parseDouble(percentStr, 0.0);
+        double reduction = Math.max(0.0, Math.min(1.0, percent / 100.0)); // 0-100 -> 0.0-1.0
+        clan.setCrystalDamageReduction(reduction);
+        p.sendMessage("§a" + clanName + " klanının zırh hasar azaltması %" + String.format("%.1f", percent) + " olarak ayarlandı.");
+        return true;
+    }
+    
+    private boolean handleCrystalSetShield(Player p, String clanName, String blocksStr, me.mami.stratocraft.manager.ClanManager clanManager) {
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(clanName);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clanName);
+            return true;
+        }
+        
+        if (!clan.hasCrystal()) {
+            p.sendMessage("§cBu klanın kristali yok!");
+            return true;
+        }
+        
+        int blocks = (int) parseDouble(blocksStr, 0.0);
+        clan.setCrystalShieldBlocks(blocks);
+        p.sendMessage("§a" + clanName + " klanının kalkan bloğu " + blocks + " olarak ayarlandı.");
+        return true;
+    }
+    
+    private boolean handleCrystalInfo(Player p, String clanName, me.mami.stratocraft.manager.ClanManager clanManager) {
+        me.mami.stratocraft.model.Clan clan = clanManager.getClanByName(clanName);
+        if (clan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + clanName);
+            return true;
+        }
+        
+        if (!clan.hasCrystal()) {
+            p.sendMessage("§cBu klanın kristali yok!");
+            return true;
+        }
+        
+        double currentHealth = clan.getCrystalCurrentHealth();
+        double maxHealth = clan.getCrystalMaxHealth();
+        double healthPercent = (currentHealth / maxHealth) * 100.0;
+        double damageReduction = clan.getCrystalDamageReduction() * 100.0;
+        int shieldBlocks = clan.getCrystalShieldBlocks();
+        int maxShieldBlocks = clan.getCrystalMaxShieldBlocks();
+        
+        p.sendMessage("§6§l════════════════════════════");
+        p.sendMessage("§e§lKRISTAL BİLGİSİ: " + clanName);
+        p.sendMessage("§6§l════════════════════════════");
+        p.sendMessage("§7Can: §a" + String.format("%.1f", currentHealth) + "§7/§a" + String.format("%.1f", maxHealth) + " HP (§e" + String.format("%.1f", healthPercent) + "%§7)");
+        p.sendMessage("§7Zırh: §b%" + String.format("%.1f", damageReduction) + " hasar azaltma");
+        p.sendMessage("§7Kalkan: §b" + shieldBlocks + "§7/§b" + maxShieldBlocks + " blok");
+        if (clan.getCrystalLocation() != null) {
+            org.bukkit.Location loc = clan.getCrystalLocation();
+            p.sendMessage("§7Konum: §e" + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ());
+        }
+        return true;
     }
 }

@@ -308,20 +308,14 @@ public class TerritoryListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onFencePlace(BlockPlaceEvent event) {
-        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] Event tetiklendi - Priority: HIGH");
-        
         ItemStack item = event.getItemInHand();
-        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] Item: " + (item != null ? item.getType().name() : "NULL"));
         
         // ✅ YAPı ÇEKİRDEĞİ GİBİ: Önce item kontrolü yap (blok yerleştirilmeden önce)
         boolean isClanFenceItem = ItemManager.isCustomItem(item, "CLAN_FENCE");
-        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] isClanFenceItem: " + isClanFenceItem);
         
         if (!isClanFenceItem) {
-            me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] Normal çit kontrolü başlıyor");
             // Normal çit kontrolü - bypass kontrolü
             boolean hasBypass = me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(event.getPlayer());
-            me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] hasBypass: " + hasBypass);
             if (!hasBypass) {
                 Block block = event.getBlock();
         // Material kontrolü - Sadece OAK_FENCE kontrol et (klan çiti OAK_FENCE)
@@ -335,7 +329,6 @@ public class TerritoryListener implements Listener {
             return;
         }
         
-        me.mami.stratocraft.Main.getInstance().getLogger().info("[CLAN_FENCE_PLACE] Klan çiti item'ı tespit edildi, blok işaretleme başlıyor");
         
         // ✅ KRİTİK: Klan çiti item'ı ile yerleştirme - blok yerleştirildikten SONRA işaretle
         // YAPı ÇEKİRDEĞİ GİBİ: getBlockPlaced() kullan (blok artık dünyada)

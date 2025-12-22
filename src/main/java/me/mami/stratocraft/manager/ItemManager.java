@@ -42,6 +42,18 @@ public class ItemManager {
     public static ItemStack SPEED_ELIXIR; // Hızı arttıran
     public static ItemStack REGENERATION_ELIXIR; // Hızlı can yenileme
     public static ItemStack STRENGTH_ELIXIR; // Güç artışı
+    
+    // ========== KRISTAL SİSTEMİ İTEMLERİ ==========
+    // Kristal Güçlendirme İtemleri
+    public static ItemStack CRYSTAL_ENHANCEMENT_STONE; // Temel taş
+    public static ItemStack CRYSTAL_ENHANCEMENT_STONE_ADVANCED; // Gelişmiş taş
+    public static ItemStack CRYSTAL_ENHANCEMENT_STONE_ELITE; // Elite taş
+    public static ItemStack CRYSTAL_ENHANCEMENT_STONE_LEGENDARY; // Efsanevi taş
+    
+    // Yakıt İtemleri
+    public static ItemStack ARMOR_FUEL; // Zırh yakıtı
+    public static ItemStack SHIELD_FUEL; // Kalkan yakıtı
+    public static ItemStack REGENERATION_FUEL; // Can yenileme yakıtı
 
     // ========== TARİF KİTAPLARI - YAPILAR ==========
     // Sadece bazı yapılar tarif gerektirir (aktifleştirme için)
@@ -754,8 +766,124 @@ public class ItemManager {
         // ========== BOSS ÖZEL İTEMLERİ ==========
         // Her boss için özel itemler (tarif zorlaştırma için)
         initBossItems();
+        
+        // ========== KRISTAL SİSTEMİ İTEMLERİ ==========
+        initCrystalItems();
 
         registerRecipes();
+    }
+    
+    /**
+     * Kristal sistemi itemlerini oluştur
+     */
+    private void initCrystalItems() {
+        // Kristal Güçlendirme Taşı (Temel)
+        CRYSTAL_ENHANCEMENT_STONE = create(
+            Material.EMERALD,
+            "CRYSTAL_ENHANCEMENT_STONE",
+            "§6Kristal Güçlendirme Taşı",
+            Arrays.asList(
+                "§7Kristal Güçlendirme Yapısına",
+                "§7atılarak kristal canını",
+                "§7kalıcı olarak artırır.",
+                "",
+                "§e+25 HP (Seviye 1 yapı)",
+                "§e+50 HP (Seviye 2 yapı)",
+                "§e+100 HP (Seviye 3 yapı)"
+            )
+        );
+        
+        // Kristal Güçlendirme Taşı (Gelişmiş)
+        CRYSTAL_ENHANCEMENT_STONE_ADVANCED = create(
+            Material.EMERALD_BLOCK,
+            "CRYSTAL_ENHANCEMENT_STONE_ADVANCED",
+            "§bGelişmiş Kristal Güçlendirme Taşı",
+            Arrays.asList(
+                "§7Kristal Güçlendirme Yapısına",
+                "§7atılarak kristal canını",
+                "§7kalıcı olarak artırır.",
+                "",
+                "§e+50 HP (Seviye 1 yapı)",
+                "§e+100 HP (Seviye 2 yapı)",
+                "§e+200 HP (Seviye 3 yapı)"
+            )
+        );
+        
+        // Kristal Güçlendirme Taşı (Elite)
+        CRYSTAL_ENHANCEMENT_STONE_ELITE = create(
+            Material.DIAMOND,
+            "CRYSTAL_ENHANCEMENT_STONE_ELITE",
+            "§5Elite Kristal Güçlendirme Taşı",
+            Arrays.asList(
+                "§7Kristal Güçlendirme Yapısına",
+                "§7atılarak kristal canını",
+                "§7kalıcı olarak artırır.",
+                "",
+                "§e+100 HP (Seviye 1 yapı)",
+                "§e+200 HP (Seviye 2 yapı)",
+                "§e+400 HP (Seviye 3 yapı)"
+            )
+        );
+        
+        // Kristal Güçlendirme Taşı (Efsanevi)
+        CRYSTAL_ENHANCEMENT_STONE_LEGENDARY = create(
+            Material.NETHER_STAR,
+            "CRYSTAL_ENHANCEMENT_STONE_LEGENDARY",
+            "§6§lEfsanevi Kristal Güçlendirme Taşı",
+            Arrays.asList(
+                "§7Kristal Güçlendirme Yapısına",
+                "§7atılarak kristal canını",
+                "§7kalıcı olarak artırır.",
+                "",
+                "§e+200 HP (Seviye 1 yapı)",
+                "§e+400 HP (Seviye 2 yapı)",
+                "§e+800 HP (Seviye 3 yapı)"
+            )
+        );
+        
+        // Zırh Yakıtı
+        ARMOR_FUEL = create(
+            Material.IRON_INGOT,
+            "ARMOR_FUEL",
+            "§7Zırh Yakıtı",
+            Arrays.asList(
+                "§7Kristal Zırh Yapısına",
+                "§7atılarak zırh yakıtı",
+                "§7ekler.",
+                "",
+                "§e+100 Yakıt"
+            )
+        );
+        
+        // Kalkan Yakıtı
+        SHIELD_FUEL = create(
+            Material.SHIELD,
+            "SHIELD_FUEL",
+            "§bKalkan Yakıtı",
+            Arrays.asList(
+                "§7Kristal Kalkan Yapısına",
+                "§7atılarak kalkan bloğu",
+                "§7ekler.",
+                "",
+                "§e+1 Kalkan Bloğu (Seviye 1)",
+                "§e+3 Kalkan Bloğu (Seviye 2)",
+                "§e+5 Kalkan Bloğu (Seviye 3)"
+            )
+        );
+        
+        // Can Yenileme Yakıtı
+        REGENERATION_FUEL = create(
+            Material.GOLDEN_APPLE,
+            "REGENERATION_FUEL",
+            "§aCan Yenileme Yakıtı",
+            Arrays.asList(
+                "§7Can Yenileme Yapısına",
+                "§7atılarak can yenileme",
+                "§7yakıtı ekler.",
+                "",
+                "§e+100 Yakıt"
+            )
+        );
     }
 
     private void registerRecipes() {
@@ -797,6 +925,9 @@ public class ItemManager {
         
         // Kanca tarifleri (Golden Hook eksikti)
         registerGoldenHookRecipe();
+        
+        // Kristal sistemi tarifleri
+        registerCrystalSystemRecipes();
         
         // Kişisel Yönetim Terminali tarifi
         registerPersonalTerminalRecipe();
@@ -2857,6 +2988,75 @@ public class ItemManager {
         goldenHook.setIngredient('I', Material.IRON_INGOT);
         goldenHook.setIngredient('S', Material.STRING);
         Bukkit.addRecipe(goldenHook);
+    }
+    
+    /**
+     * Kristal sistemi tariflerini kaydet
+     */
+    private void registerCrystalSystemRecipes() {
+        // Kristal Güçlendirme Taşı (Temel) - Crafting Table
+        ShapedRecipe crystalEnhancementStone = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "crystal_enhancement_stone"),
+            CRYSTAL_ENHANCEMENT_STONE.clone()
+        );
+        crystalEnhancementStone.shape(" E ", "EDE", " E ");
+        crystalEnhancementStone.setIngredient('E', Material.EMERALD);
+        crystalEnhancementStone.setIngredient('D', Material.DIAMOND);
+        Bukkit.addRecipe(crystalEnhancementStone);
+        
+        // Kristal Güçlendirme Taşı (Gelişmiş) - Crafting Table
+        // Gereksinim: 4x Temel Taş + 1x Ender Pearl
+        ShapedRecipe crystalEnhancementStoneAdvanced = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "crystal_enhancement_stone_advanced"),
+            CRYSTAL_ENHANCEMENT_STONE_ADVANCED.clone()
+        );
+        crystalEnhancementStoneAdvanced.shape("SSS", "SES", "SSS");
+        crystalEnhancementStoneAdvanced.setIngredient('S', CRYSTAL_ENHANCEMENT_STONE);
+        crystalEnhancementStoneAdvanced.setIngredient('E', Material.ENDER_PEARL);
+        Bukkit.addRecipe(crystalEnhancementStoneAdvanced);
+        
+        // Kristal Güçlendirme Taşı (Elite) - Crafting Table
+        // Gereksinim: 4x Gelişmiş Taş + 1x Nether Star
+        ShapedRecipe crystalEnhancementStoneElite = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "crystal_enhancement_stone_elite"),
+            CRYSTAL_ENHANCEMENT_STONE_ELITE.clone()
+        );
+        crystalEnhancementStoneElite.shape("SSS", "SNS", "SSS");
+        crystalEnhancementStoneElite.setIngredient('S', CRYSTAL_ENHANCEMENT_STONE_ADVANCED);
+        crystalEnhancementStoneElite.setIngredient('N', Material.NETHER_STAR);
+        Bukkit.addRecipe(crystalEnhancementStoneElite);
+        
+        // Kristal Güçlendirme Taşı (Efsanevi) - Boss Drop (tarif yok)
+        
+        // Zırh Yakıtı - Crafting Table
+        ShapedRecipe armorFuel = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "armor_fuel"),
+            ARMOR_FUEL.clone()
+        );
+        armorFuel.shape("III", "ICI", "III");
+        armorFuel.setIngredient('I', Material.IRON_INGOT);
+        armorFuel.setIngredient('C', Material.COAL);
+        Bukkit.addRecipe(armorFuel);
+        
+        // Kalkan Yakıtı - Crafting Table
+        ShapedRecipe shieldFuel = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "shield_fuel"),
+            SHIELD_FUEL.clone()
+        );
+        shieldFuel.shape(" I ", "ISI", " I ");
+        shieldFuel.setIngredient('I', Material.IRON_INGOT);
+        shieldFuel.setIngredient('S', Material.SHIELD);
+        Bukkit.addRecipe(shieldFuel);
+        
+        // Can Yenileme Yakıtı - Crafting Table
+        ShapedRecipe regenerationFuel = new ShapedRecipe(
+            new NamespacedKey(Main.getInstance(), "regeneration_fuel"),
+            REGENERATION_FUEL.clone()
+        );
+        regenerationFuel.shape(" G ", "GAG", " G ");
+        regenerationFuel.setIngredient('G', Material.GOLD_INGOT);
+        regenerationFuel.setIngredient('A', Material.GOLDEN_APPLE);
+        Bukkit.addRecipe(regenerationFuel);
     }
     
     /**

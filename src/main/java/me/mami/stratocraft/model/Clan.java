@@ -1,9 +1,16 @@
 package me.mami.stratocraft.model;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
 import org.bukkit.Location;
 import org.bukkit.entity.EnderCrystal;
-
-import java.util.*;
 
 public class Clan {
     public enum Rank {
@@ -42,6 +49,16 @@ public class Clan {
     
     // ✅ YENİ: İttifaklar - Bu klanın ittifak olduğu klanlar (referans için)
     private final Set<UUID> allianceClans = Collections.synchronizedSet(new HashSet<>());
+    
+    // ✅ YENİ: Klan kristali can sistemi
+    private double crystalMaxHealth = 100.0; // Maksimum can (kalıcı artışlar buraya eklenir)
+    private double crystalCurrentHealth = 100.0; // Mevcut can (hasar aldığında azalır)
+    private long lastCrystalRegenTime = 0; // Son can yenileme zamanı
+    
+    // ✅ YENİ: Savunma sistemleri
+    private double crystalDamageReduction = 0.0; // Hasar azaltma çarpanı (0.0 = %0, 0.5 = %50)
+    private int crystalShieldBlocks = 0; // Kalan kalkan blok sayısı (saldırıları engeller)
+    private int crystalMaxShieldBlocks = 0; // Maksimum kalkan blok sayısı
 
     public Clan(String name, UUID leader) {
         this.name = name;
@@ -309,6 +326,149 @@ public class Clan {
      */
     public boolean isAlliedWith(UUID clanId) {
         return allianceClans.contains(clanId);
+    }
+    
+    // ========== KRISTAL CAN SİSTEMİ ==========
+    
+    /**
+     * Maksimum kristal canını al
+     */
+    public double getCrystalMaxHealth() { 
+        return crystalMaxHealth; 
+    }
+    
+    /**
+     * Maksimum kristal canını ayarla
+     */
+    public void setCrystalMaxHealth(double health) { 
+        this.crystalMaxHealth = Math.max(100.0, health); // Minimum 100 HP
+    }
+    
+    /**
+     * Mevcut kristal canını al
+     */
+    public double getCrystalCurrentHealth() { 
+        return crystalCurrentHealth; 
+    }
+    
+    /**
+     * Mevcut kristal canını ayarla
+     */
+    public void setCrystalCurrentHealth(double health) { 
+        this.crystalCurrentHealth = Math.max(0.0, Math.min(health, crystalMaxHealth));
+    }
+    
+    /**
+     * Can artırma (kalıcı - maksimum canı artırır)
+     */
+    public void increaseCrystalMaxHealth(double amount) {
+        this.crystalMaxHealth += amount;
+        // Mevcut canı da artır (yeni maksimum canın %80'i kadar)
+        this.crystalCurrentHealth = Math.min(crystalCurrentHealth + (amount * 0.8), crystalMaxHealth);
+    }
+    
+    /**
+     * Can yenileme (geçici - sadece mevcut canı artırır)
+     */
+    public void regenerateCrystalHealth(double amount) {
+        this.crystalCurrentHealth = Math.min(crystalCurrentHealth + amount, crystalMaxHealth);
+    }
+    
+    /**
+     * Hasar alma (zırh ve kalkan kontrolü ile)
+     */
+    public void damageCrystal(double damage) {
+        // Kalkan kontrolü: Eğer kalkan varsa, önce kalkana hasar ver
+        if (crystalShieldBlocks > 0) {
+            crystalShieldBlocks--;
+            // Kalkan hasarı tamamen engelledi
+            return;
+        }
+        
+        // Zırh kontrolü: Hasarı azalt
+        double finalDamage = damage * (1.0 - crystalDamageReduction);
+        
+        this.crystalCurrentHealth = Math.max(0.0, crystalCurrentHealth - finalDamage);
+        if (crystalCurrentHealth <= 0) {
+            destroyCrystal();
+        }
+    }
+    
+    /**
+     * Kristal yok etme
+     */
+    private void destroyCrystal() {
+        if (crystalEntity != null) {
+            crystalEntity.remove();
+        }
+        crystalEntity = null;
+        crystalLocation = null;
+        hasCrystal = false;
+        // Klanı dağıt (TerritoryManager'da yapılacak)
+    }
+    
+    /**
+     * Zırh sistemi - Hasar azaltma çarpanını al
+     */
+    public double getCrystalDamageReduction() { 
+        return crystalDamageReduction; 
+    }
+    
+    /**
+     * Zırh sistemi - Hasar azaltma çarpanını ayarla
+     */
+    public void setCrystalDamageReduction(double reduction) { 
+        this.crystalDamageReduction = Math.max(0.0, Math.min(1.0, reduction)); // 0.0 - 1.0 arası
+    }
+    
+    /**
+     * Kalkan sistemi - Kalan kalkan blok sayısını al
+     */
+    public int getCrystalShieldBlocks() { 
+        return crystalShieldBlocks; 
+    }
+    
+    /**
+     * Kalkan sistemi - Kalan kalkan blok sayısını ayarla
+     */
+    public void setCrystalShieldBlocks(int blocks) { 
+        this.crystalShieldBlocks = Math.max(0, blocks);
+        this.crystalMaxShieldBlocks = Math.max(crystalMaxShieldBlocks, blocks);
+    }
+    
+    /**
+     * Kalkan sistemi - Maksimum kalkan blok sayısını al
+     */
+    public int getCrystalMaxShieldBlocks() { 
+        return crystalMaxShieldBlocks; 
+    }
+    
+    /**
+     * Kalkan sistemi - Maksimum kalkan blok sayısını ayarla
+     */
+    public void setCrystalMaxShieldBlocks(int maxBlocks) {
+        this.crystalMaxShieldBlocks = Math.max(0, maxBlocks);
+    }
+    
+    /**
+     * Kalkan sistemi - Kalkan bloğu ekle
+     */
+    public void addCrystalShieldBlocks(int blocks) {
+        this.crystalShieldBlocks = Math.min(crystalMaxShieldBlocks, crystalShieldBlocks + blocks);
+    }
+    
+    /**
+     * Son can yenileme zamanını al
+     */
+    public long getLastCrystalRegenTime() {
+        return lastCrystalRegenTime;
+    }
+    
+    /**
+     * Son can yenileme zamanını ayarla
+     */
+    public void setLastCrystalRegenTime(long time) {
+        this.lastCrystalRegenTime = time;
     }
 }
 

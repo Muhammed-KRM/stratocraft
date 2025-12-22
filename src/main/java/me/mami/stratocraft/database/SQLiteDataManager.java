@@ -1127,5 +1127,240 @@ public class SQLiteDataManager {
             }
         }
     }
+    
+    /**
+     * ✅ YENİ: SQLite'dan klanları yükle
+     */
+    public List<me.mami.stratocraft.model.Clan> loadClans() throws SQLException {
+        List<me.mami.stratocraft.model.Clan> clans = new java.util.ArrayList<>();
+        
+        try (Connection conn = databaseManager.getConnection();
+             java.sql.Statement stmt = conn.createStatement();
+             java.sql.ResultSet rs = stmt.executeQuery("SELECT data FROM clans")) {
+            
+            while (rs.next()) {
+                try {
+                    String jsonData = rs.getString("data");
+                    if (jsonData == null || jsonData.isEmpty()) continue;
+                    
+                    // JSON'dan ClanData'ya parse et
+                    DataManager.ClanData clanData = gson.fromJson(jsonData, DataManager.ClanData.class);
+                    if (clanData == null || clanData.id == null) continue;
+                    
+                    // ClanData'dan Clan objesine dönüştür
+                    me.mami.stratocraft.model.Clan clan = convertClanDataToClan(clanData);
+                    if (clan != null) {
+                        clans.add(clan);
+                    }
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Klan yükleme hatası: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }
+        
+        return clans;
+    }
+    
+    /**
+     * ✅ YENİ: ClanData'dan Clan objesine dönüştür
+     */
+    private me.mami.stratocraft.model.Clan convertClanDataToClan(DataManager.ClanData data) {
+        if (data == null || data.id == null || data.name == null) return null;
+        
+        try {
+            UUID clanId = UUID.fromString(data.id);
+            
+            // Leader ID'yi bul
+            UUID leaderId = null;
+            if (data.members != null) {
+                for (Map.Entry<String, String> entry : data.members.entrySet()) {
+                    if ("LEADER".equalsIgnoreCase(entry.getValue())) {
+                        leaderId = UUID.fromString(entry.getKey());
+                        break;
+                    }
+                }
+            }
+            
+            if (leaderId == null) {
+                plugin.getLogger().warning("Klan yükleme hatası: Leader bulunamadı - " + data.id);
+                return null;
+            }
+            
+            // Clan oluştur
+            me.mami.stratocraft.model.Clan clan = new me.mami.stratocraft.model.Clan(data.name, leaderId);
+            clan.setId(clanId);
+            
+            // Members
+            if (data.members != null) {
+                for (Map.Entry<String, String> entry : data.members.entrySet()) {
+                    UUID memberId = UUID.fromString(entry.getKey());
+                    me.mami.stratocraft.model.Clan.Rank rank = me.mami.stratocraft.model.Clan.Rank.valueOf(entry.getValue());
+                    if (!memberId.equals(leaderId)) {
+                        clan.addMember(memberId, rank);
+                    }
+                }
+            }
+            
+            // Territory
+            if (data.territory != null && data.territory.center != null) {
+                org.bukkit.Location center = deserializeLocation(data.territory.center);
+                if (center != null) {
+                    me.mami.stratocraft.model.Territory territory = 
+                        new me.mami.stratocraft.model.Territory(clanId, center);
+                    if (data.territory.radius != null) {
+                        territory.expand(data.territory.radius - 50);
+                    }
+                    if (data.territory.outposts != null) {
+                        for (String outpostStr : data.territory.outposts) {
+                            org.bukkit.Location outpost = deserializeLocation(outpostStr);
+                            if (outpost != null) {
+                                territory.addOutpost(outpost);
+                            }
+                        }
+                    }
+                    clan.setTerritory(territory);
+                }
+            }
+            
+            // Structures
+            if (data.structures != null) {
+                for (DataManager.StructureData sd : data.structures) {
+                    UUID ownerId = sd.ownerId != null ? UUID.fromString(sd.ownerId) : null;
+                    org.bukkit.Location loc = deserializeLocation(sd.location);
+                    if (loc != null) {
+                        me.mami.stratocraft.model.Structure structure = new me.mami.stratocraft.model.Structure(
+                            me.mami.stratocraft.model.Structure.Type.valueOf(sd.type),
+                            loc,
+                            sd.level,
+                            ownerId
+                        );
+                        if (sd.shieldFuel != null) {
+                            for (int i = 0; i < sd.shieldFuel; i++) {
+                                structure.addFuel(1);
+                            }
+                        }
+                        clan.addStructure(structure);
+                    }
+                }
+            }
+            
+            // Bank balance ve XP
+            if (data.bankBalance != null) {
+                clan.deposit(data.bankBalance);
+            }
+            if (data.storedXP != null) {
+                clan.setStoredXP(data.storedXP);
+            }
+            
+            // Guests
+            if (data.guests != null) {
+                for (String guestId : data.guests) {
+                    try {
+                        clan.addGuest(UUID.fromString(guestId));
+                    } catch (IllegalArgumentException e) {
+                        // Geçersiz UUID, atla
+                    }
+                }
+            }
+            
+            // Warring clans
+            if (data.warringClans != null) {
+                for (String warringClanId : data.warringClans) {
+                    try {
+                        clan.addWarringClan(UUID.fromString(warringClanId));
+                    } catch (IllegalArgumentException e) {
+                        // Geçersiz UUID, atla
+                    }
+                }
+            }
+            
+            // Alliance clans
+            if (data.allianceClans != null) {
+                for (String allianceClanId : data.allianceClans) {
+                    try {
+                        clan.addAllianceClan(UUID.fromString(allianceClanId));
+                    } catch (IllegalArgumentException e) {
+                        // Geçersiz UUID, atla
+                    }
+                }
+            }
+            
+            // ✅ YENİ: Klan kristali konumu ve hasCrystal flag'i
+            if (data.crystalLocation != null) {
+                org.bukkit.Location crystalLoc = deserializeLocation(data.crystalLocation);
+                if (crystalLoc != null) {
+                    clan.setCrystalLocation(crystalLoc);
+                    if (data.hasCrystal != null) {
+                        clan.setHasCrystal(data.hasCrystal);
+                    } else {
+                        clan.setHasCrystal(true); // Eski veriler için
+                    }
+                    
+                    // ✅ YENİ: Kristal sistemi verilerini yükle
+                    if (clan.hasCrystal()) {
+                        if (data.crystalMaxHealth != null) {
+                            clan.setCrystalMaxHealth(data.crystalMaxHealth);
+                        } else {
+                            clan.setCrystalMaxHealth(100.0);
+                        }
+                        if (data.crystalCurrentHealth != null) {
+                            clan.setCrystalCurrentHealth(data.crystalCurrentHealth);
+                        } else {
+                            clan.setCrystalCurrentHealth(clan.getCrystalMaxHealth());
+                        }
+                        if (data.crystalDamageReduction != null) {
+                            clan.setCrystalDamageReduction(data.crystalDamageReduction);
+                        }
+                        if (data.crystalShieldBlocks != null) {
+                            clan.setCrystalShieldBlocks(data.crystalShieldBlocks);
+                        }
+                        if (data.crystalMaxShieldBlocks != null) {
+                            clan.setCrystalMaxShieldBlocks(data.crystalMaxShieldBlocks);
+                        }
+                        if (data.lastCrystalRegenTime != null) {
+                            clan.setLastCrystalRegenTime(data.lastCrystalRegenTime);
+                        }
+                    }
+                }
+            }
+            
+            return clan;
+        } catch (Exception e) {
+            plugin.getLogger().warning("Klan dönüştürme hatası: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
+    /**
+     * ✅ YENİ: Location string'den Location objesine dönüştür
+     */
+    private org.bukkit.Location deserializeLocation(String locationStr) {
+        if (locationStr == null || locationStr.isEmpty()) return null;
+        
+        try {
+            // Format: "world:x:y:z" veya JSON
+            if (locationStr.contains(":")) {
+                String[] parts = locationStr.split(":");
+                if (parts.length >= 4) {
+                    org.bukkit.World world = org.bukkit.Bukkit.getWorld(parts[0]);
+                    if (world == null) return null;
+                    double x = Double.parseDouble(parts[1]);
+                    double y = Double.parseDouble(parts[2]);
+                    double z = Double.parseDouble(parts[3]);
+                    float yaw = parts.length >= 5 ? Float.parseFloat(parts[4]) : 0f;
+                    float pitch = parts.length >= 6 ? Float.parseFloat(parts[5]) : 0f;
+                    return new org.bukkit.Location(world, x, y, z, yaw, pitch);
+                }
+            }
+            
+            // JSON formatı denemesi
+            return gson.fromJson(locationStr, org.bukkit.Location.class);
+        } catch (Exception e) {
+            plugin.getLogger().warning("Location deserialize hatası: " + locationStr + " - " + e.getMessage());
+            return null;
+        }
+    }
 }
 

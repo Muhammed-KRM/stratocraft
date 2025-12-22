@@ -1,20 +1,26 @@
 package me.mami.stratocraft.manager;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.scoreboard.DisplaySlot;
+import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
+
 import me.mami.stratocraft.Main;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Contract;
 import me.mami.stratocraft.model.Disaster;
 import me.mami.stratocraft.model.Mission;
 import me.mami.stratocraft.model.Shop;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-import org.bukkit.scoreboard.DisplaySlot;
-import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
-import org.bukkit.scheduler.BukkitTask;
-
-import java.util.*;
 
 /**
  * Sağ Üst Köşe Bilgi Barı (HUD) Yöneticisi
@@ -308,14 +314,21 @@ public class HUDManager {
             lines.add(buff);
         }
         
-        // 8. ✅ GÜÇ BİLGİSİ (her zaman göster)
+        // 8. ✅ KLAN KRISTALİ CAN BİLGİSİ (klan üyesi ise ve kristal varsa)
+        List<HUDLine> crystalHealthInfo = getCrystalHealthInfo(player);
+        if (crystalHealthInfo != null && !crystalHealthInfo.isEmpty()) {
+            lines.add(new HUDLine("§7")); // Boş satır
+            lines.addAll(crystalHealthInfo);
+        }
+        
+        // 9. ✅ GÜÇ BİLGİSİ (her zaman göster)
         HUDLine power = getPowerInfo(player);
         if (power != null) {
             lines.add(new HUDLine("§7")); // Boş satır
             lines.add(power);
         }
         
-        // 9. ✅ KİŞİSEL TERMİNAL KONTROLÜ (item yoksa bilgilendirme)
+        // 10. ✅ KİŞİSEL TERMİNAL KONTROLÜ (item yoksa bilgilendirme)
         HUDLine terminalHint = getPersonalTerminalHint(player);
         if (terminalHint != null) {
             lines.add(new HUDLine("§7")); // Boş satır
@@ -336,6 +349,66 @@ public class HUDManager {
     private final java.util.Map<java.util.UUID, Long> powerCacheTime = 
         new java.util.concurrent.ConcurrentHashMap<>();
     private static final long POWER_CACHE_DURATION = 5000L; // 5 saniye cache
+    
+    /**
+     * ✅ YENİ: Klan kristali can bilgisi (HUD için)
+     * Oyuncu klan üyesi ise ve klanın kristali varsa göster
+     */
+    private List<HUDLine> getCrystalHealthInfo(Player player) {
+        if (clanManager == null || territoryManager == null) return null;
+        
+        UUID playerId = player.getUniqueId();
+        Clan playerClan = clanManager.getClanByPlayer(playerId);
+        if (playerClan == null || !playerClan.hasCrystal()) return null;
+        
+        double currentHealth = playerClan.getCrystalCurrentHealth();
+        double maxHealth = playerClan.getCrystalMaxHealth();
+        
+        // ✅ DÜZELTME: maxHealth 0 ise hata önleme
+        if (maxHealth <= 0) {
+            maxHealth = 100.0; // Varsayılan değer
+            playerClan.setCrystalMaxHealth(maxHealth);
+            if (currentHealth <= 0) {
+                currentHealth = maxHealth;
+                playerClan.setCrystalCurrentHealth(currentHealth);
+            }
+        }
+        
+        double healthPercent = (currentHealth / maxHealth) * 100.0;
+        
+        // Renk belirleme (can yüzdesine göre)
+        String healthColor;
+        if (healthPercent >= 75) {
+            healthColor = "§a"; // Yeşil (sağlıklı)
+        } else if (healthPercent >= 50) {
+            healthColor = "§e"; // Sarı (orta)
+        } else if (healthPercent >= 25) {
+            healthColor = "§6"; // Turuncu (düşük)
+        } else {
+            healthColor = "§c"; // Kırmızı (kritik)
+        }
+        
+        List<HUDLine> lines = new ArrayList<>();
+        
+        // Ana can bilgisi
+        String healthText = "§6💎 Kristal: " + healthColor + 
+            String.format("%.1f", currentHealth) + "§7/§f" + 
+            String.format("%.1f", maxHealth) + " §7(" + 
+            String.format("%.0f", healthPercent) + "%)";
+        lines.add(new HUDLine(healthText));
+        
+        // Savunma sistemleri bilgisi (varsa)
+        if (playerClan.getCrystalDamageReduction() > 0) {
+            double armorPercent = playerClan.getCrystalDamageReduction() * 100.0;
+            lines.add(new HUDLine("§7  Zırh: §b" + String.format("%.0f", armorPercent) + "%"));
+        }
+        
+        if (playerClan.getCrystalShieldBlocks() > 0) {
+            lines.add(new HUDLine("§7  Kalkan: §d" + playerClan.getCrystalShieldBlocks() + " blok"));
+        }
+        
+        return lines;
+    }
     
     /**
      * Oyuncu güç bilgisi (HUD için)

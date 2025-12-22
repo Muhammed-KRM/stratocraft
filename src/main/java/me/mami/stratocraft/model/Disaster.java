@@ -3,6 +3,7 @@ package me.mami.stratocraft.model;
 import me.mami.stratocraft.enums.CreatureDisasterType;
 import me.mami.stratocraft.enums.DisasterCategory;
 import me.mami.stratocraft.enums.DisasterType;
+import me.mami.stratocraft.enums.DisasterState;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 
@@ -112,6 +113,12 @@ public class Disaster {
     // Merkeze ulaşma zamanı (3 saat kuralı için)
     private long centerReachedTime = 0;
     
+    // Felaket durumu ve merkeze ulaşma kontrolü
+    private DisasterState disasterState = DisasterState.GO_CENTER; // Başlangıç durumu: merkeze git
+    private boolean hasArrivedCenter = false; // Merkeze ulaştı mı?
+    private long lastClanCheckTime = 0; // Son klan kontrolü zamanı (20 saniye kontrolü için)
+    private org.bukkit.entity.Player targetPlayer; // Hedef oyuncu (ATTACK_PLAYER durumunda)
+    
     // Hasar takibi (hasar bazlı ödül dağıtımı için)
     private final java.util.Map<java.util.UUID, Double> playerDamage = new java.util.concurrent.ConcurrentHashMap<>();
     
@@ -138,6 +145,12 @@ public class Disaster {
         // Faz sistemi: Başlangıçta EXPLORATION fazında
         this.currentPhase = DisasterPhase.EXPLORATION;
         this.lastPhaseTransitionTime = System.currentTimeMillis();
+        
+        // Felaket durumu: Başlangıçta merkeze git
+        this.disasterState = DisasterState.GO_CENTER;
+        this.hasArrivedCenter = false;
+        this.lastClanCheckTime = System.currentTimeMillis();
+        this.targetPlayer = null;
         
         // Canavar felaket tipini belirle
         if (category == Category.CREATURE) {
@@ -277,6 +290,24 @@ public class Disaster {
     // Merkeze ulaşma zamanı getter/setter
     public long getCenterReachedTime() { return centerReachedTime; }
     public void setCenterReachedTime(long time) { this.centerReachedTime = time; }
+    
+    // Felaket durumu getters/setters
+    public DisasterState getDisasterState() { return disasterState; }
+    public void setDisasterState(DisasterState state) { this.disasterState = state; }
+    
+    public boolean hasArrivedCenter() { return hasArrivedCenter; }
+    public void setHasArrivedCenter(boolean arrived) { 
+        this.hasArrivedCenter = arrived;
+        if (arrived) {
+            this.centerReachedTime = System.currentTimeMillis();
+        }
+    }
+    
+    public long getLastClanCheckTime() { return lastClanCheckTime; }
+    public void setLastClanCheckTime(long time) { this.lastClanCheckTime = time; }
+    
+    public org.bukkit.entity.Player getTargetPlayer() { return targetPlayer; }
+    public void setTargetPlayer(org.bukkit.entity.Player player) { this.targetPlayer = player; }
     
     // Hasar takibi metodları
     public void addPlayerDamage(java.util.UUID playerId, double damage) {

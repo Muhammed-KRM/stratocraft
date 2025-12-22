@@ -67,79 +67,40 @@ public class RitualInteractionListener implements Listener {
 
     // ========== KLAN ÜYE ALMA: "Ateş Ritüeli" (3x3 Soyulmuş Odun) ==========
     
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onRecruitmentRitual(PlayerInteractEvent event) {
-        // ✅ DEBUG: Event tetiklendi - her zaman log
-        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
-        Player player = event.getPlayer();
-        if (plugin != null) {
-            plugin.getLogger().info("[RITÜEL] Event tetiklendi - Oyuncu: " + player.getName() + 
-                ", Action: " + event.getAction() + ", Hand: " + event.getHand() + 
-                ", Sneaking: " + player.isSneaking() + ", Cancelled: " + event.isCancelled());
-        }
-        
-        // Event zaten cancel edilmişse işleme alma
-        if (event.isCancelled()) {
-            if (plugin != null) {
-                plugin.getLogger().info("[RITÜEL] Event zaten cancel edilmiş, işlem yapılmıyor");
-            }
-            return;
-        }
-        
-        // Şartlar: Shift + Sağ Tık + Elde Çakmak
+        // ✅ DÜZELTME: Sadece RIGHT_CLICK_BLOCK işle (LEFT_CLICK_AIR, RIGHT_CLICK_AIR vb. işleme)
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
-            if (plugin != null) {
-                plugin.getLogger().info("[RITÜEL] Action kontrolü başarısız: " + event.getAction() + " (beklenen: RIGHT_CLICK_BLOCK)");
-            }
             return;
         }
         
+        // ✅ DÜZELTME: Event zaten cancel edilmişse işleme alma (ignoreCancelled=true olsa bile ekstra kontrol)
+        if (event.isCancelled()) {
+            return;
+        }
+        
+        Player player = event.getPlayer();
         if (!player.isSneaking()) {
-            if (plugin != null) {
-                plugin.getLogger().info("[RITÜEL] Shift kontrolü başarısız - Oyuncu shift'e basmıyor");
-            }
             return;
         }
         
         if (event.getHand() != EquipmentSlot.HAND) {
-            if (plugin != null) {
-                plugin.getLogger().info("[RITÜEL] El kontrolü başarısız: " + event.getHand() + " (beklenen: HAND)");
-            }
             return;
         }
         
         ItemStack handItem = event.getItem();
-        if (plugin != null) {
-            plugin.getLogger().info("[RITÜEL] Elindeki item: " + 
-                (handItem != null ? handItem.getType() : "null"));
-        }
         
         if (handItem == null || handItem.getType() != Material.FLINT_AND_STEEL) {
-            if (plugin != null) {
-                plugin.getLogger().info("[RITÜEL] Çakmak kontrolü başarısız - Elinde: " + 
-                    (handItem != null ? handItem.getType() : "null") + " (beklenen: FLINT_AND_STEEL)");
-            }
             return;
         }
         
         Block centerBlock = event.getClickedBlock();
         if (centerBlock == null) {
-            if (plugin != null) {
-                plugin.getLogger().info("[RITÜEL] Blok kontrolü başarısız - centerBlock null");
-            }
             return;
-        }
-        
-        if (plugin != null) {
-            plugin.getLogger().info("[RITÜEL] Tıklanan blok: " + centerBlock.getType() + 
-                " @ " + centerBlock.getLocation());
         }
         
         // Tıklanan blok "Soyulmuş Odun" (Stripped Log) olmalı
         if (!isStrippedLog(centerBlock.getType())) {
-            if (plugin != null) {
-                plugin.getLogger().info("[RITÜEL] Soyulmuş odun kontrolü başarısız - Blok tipi: " + centerBlock.getType());
-            }
             return;
         }
         
@@ -148,9 +109,6 @@ public class RitualInteractionListener implements Listener {
         
         // Yetki Kontrolü
         if (clan == null) {
-            if (plugin != null) {
-                plugin.getLogger().info("[RITÜEL] Klan kontrolü başarısız - Oyuncunun klanı yok");
-            }
             return;
         }
         
@@ -160,48 +118,25 @@ public class RitualInteractionListener implements Listener {
             (playerRank != Clan.Rank.LEADER && 
              playerRank != Clan.Rank.GENERAL && 
              playerRank != Clan.Rank.ELITE)) {
-            if (plugin != null) {
-                plugin.getLogger().info("[RITÜEL] Yetki kontrolü başarısız - Oyuncu rütbesi: " + 
-                    (playerRank != null ? playerRank.name() : "null"));
-            }
             leader.sendMessage("§cBu ritüeli sadece Elit, General veya Lider yapabilir!");
             event.setCancelled(true); // Ateş yakmasını engelle
             return;
-        }
-        
-        if (plugin != null) {
-            plugin.getLogger().info("[RITÜEL] 5x5 çerçeve yapı kontrolü başlatılıyor...");
         }
         
         // ✅ DÜZELTME: 5x5 çerçeve kontrolü (end portalı gibi - kenarlar dolu, içi boş)
         // Tıklanan blok kenarda olmalı, çerçeveyi bul
         RitualFrame frame = findRitualFrame(centerBlock);
         if (frame == null) {
-            if (plugin != null) {
-                plugin.getLogger().info("[RITÜEL] Çerçeve bulunamadı - Tıklanan blok kenarda değil veya yapı bozuk");
-            }
             leader.sendMessage("§cRitüel yapısı eksik! End portalı gibi 5x5 çerçeve gerekli (kenarlar soyulmuş odun, içi boş).");
             return;
-        }
-        
-        if (plugin != null) {
-            plugin.getLogger().info("[RITÜEL] Çerçeve bulundu! Merkez: " + frame.center + ", İç alan: " + 
-                frame.innerMinX + "," + frame.innerMinZ + " -> " + frame.innerMaxX + "," + frame.innerMaxZ);
         }
         
         // Çerçeve kontrolü
         String structureError = checkRitualFrameStructure(frame);
         if (structureError != null) {
-            if (plugin != null) {
-                plugin.getLogger().info("[RITÜEL] Çerçeve kontrolü başarısız - " + structureError);
-            }
             leader.sendMessage("§cRitüel yapısı eksik! " + structureError);
             leader.sendMessage("§7End portalı gibi 5x5 çerçeve gerekli (kenarlar soyulmuş odun, içi boş).");
             return;
-        }
-        
-        if (plugin != null) {
-            plugin.getLogger().info("[RITÜEL] Çerçeve kontrolü başarılı! Ritüel tetikleniyor...");
         }
         
         event.setCancelled(true); // Normal ateş yakmayı engelle, büyülü ateş yakıcaz
@@ -233,22 +168,12 @@ public class RitualInteractionListener implements Listener {
         
         // ✅ DÜZELTME: Ritüel başarılı olduğunda oyuncu olmasa bile ses ve partikül çıkar
         // Ateş efekti (her zaman göster) - çerçevenin merkezinde
-        if (plugin != null) {
-            plugin.getLogger().info("[RITÜEL] Ritüel başarılı! Partikül ve ses gösteriliyor...");
-        }
         Location effectLoc = frame.center.getLocation().add(0.5, 1, 0.5);
         world.spawnParticle(Particle.FLAME, effectLoc, 100, 1, 0.5, 1, 0.1);
         world.playSound(effectLoc, Sound.BLOCK_BEACON_ACTIVATE, 1f, 0.5f);
         
-        if (plugin != null) {
-            plugin.getLogger().info("[RITÜEL] Ritüel alanında bulunan klansız oyuncu sayısı: " + recruitedPlayers.size());
-        }
-        
         if (recruitedPlayers.isEmpty()) {
             leader.sendMessage("§eRitüel tamamlandı, ancak alanında klansız kimse yok.");
-            if (plugin != null) {
-                plugin.getLogger().info("[RITÜEL] Ritüel tamamlandı ama oyuncu yok");
-        }
             // Oyuncu olmasa bile ritüel başarılı sayılır, sadece kimse eklenmedi
         } else {
         // Oyuncuları Klana Ekle
@@ -264,6 +189,7 @@ public class RitualInteractionListener implements Listener {
         }
         
         // ✅ GÜÇ SİSTEMİ ENTEGRASYONU: Ritüel başarılı oldu (oyuncu olmasa bile)
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
         if (plugin != null) {
             if (plugin.getStratocraftPowerSystem() != null) {
                 java.util.Map<String, Integer> usedResources = new java.util.HashMap<>();
@@ -415,15 +341,12 @@ public class RitualInteractionListener implements Listener {
                 // Çerçeve bulundu! Merkez bloğu hesapla (kenardan 2 blok içeride)
                 Block centerBlock = world.getBlockAt(minX + 2, clickedY, minZ + 2);
                 if (plugin != null) {
-                    plugin.getLogger().info("[RITÜEL] Çerçeve bulundu: " + minX + "," + minZ + " -> " + maxX + "," + maxZ + 
-                        " (Tıklanan: " + clickedX + "," + clickedZ + ")");
                 }
                 return new RitualFrame(centerBlock, minX, maxX, minZ, maxZ);
             }
         }
         
         if (plugin != null) {
-            plugin.getLogger().info("[RITÜEL] Çerçeve bulunamadı - Tıklanan blok: " + clickedX + "," + clickedZ);
         }
         return null; // Çerçeve bulunamadı
     }
@@ -510,7 +433,6 @@ public class RitualInteractionListener implements Listener {
         
         if (errors.isEmpty()) {
             if (plugin != null) {
-                plugin.getLogger().info("[RITÜEL] Çerçeve kontrolü başarılı - Kenarlar dolu, içi boş");
             }
             return null; // Başarılı
         } else {
@@ -688,16 +610,15 @@ public class RitualInteractionListener implements Listener {
     // ========== KLANDAN ÇIKMA RİTÜELİ: "Yemin Kırma Ritüeli" (5x5 Taş Tuğla Çerçeve) ==========
     // Kurucu hariç herkes klandan çıkabilir, 5x5 taş tuğla çerçeveye shift+sağ tık+çakmak yapar
     
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onLeaveRitual(PlayerInteractEvent event) {
+        // ✅ DÜZELTME: Sadece RIGHT_CLICK_BLOCK işle
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
+        
         me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
         Player player = event.getPlayer();
-        
-        // Event zaten cancel edilmişse işleme alma
-        if (event.isCancelled()) return;
-        
-        // Şartlar: Shift + Sağ Tık + Elde Çakmak
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         if (!player.isSneaking()) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
         
@@ -839,16 +760,15 @@ public class RitualInteractionListener implements Listener {
     // General veya Lider elinde Altın/Demir ile 5x5 çerçeveye shift+sağ tık+çakmak yapar
     // İç alandaki oyuncular terfi edilir
     
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPromotionRitual(PlayerInteractEvent event) {
+        // ✅ DÜZELTME: Sadece RIGHT_CLICK_BLOCK işle
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
+        
         me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
         Player player = event.getPlayer();
-        
-        // Event zaten cancel edilmişse işleme alma
-        if (event.isCancelled()) return;
-        
-        // Şartlar: Shift + Sağ Tık + Elde Çakmak
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         if (!player.isSneaking()) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
         
@@ -1400,9 +1320,12 @@ public class RitualInteractionListener implements Listener {
     // ========== RÜTBE DÜŞÜRME: "Geri Alma" (ORTA) ==========
     // Lider elinde Kömür ile terfi ritüeli yapısında hedef oyuncuya shift+sağ tık yapar
     
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onDemotionRitual(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        // ✅ DÜZELTME: Sadece RIGHT_CLICK_BLOCK işle
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
         if (event.getHand() != EquipmentSlot.HAND) return;
         if (!event.getPlayer().isSneaking()) return;
         
@@ -1487,9 +1410,12 @@ public class RitualInteractionListener implements Listener {
     // Lider/General elinde Altın ile Chest'e shift+sağ tık yaparak para yatırır
     // Lider/General elinde Boş el ile Chest'e shift+sağ tık yaparak para çeker
     
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onClanBankAccess(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        // ✅ DÜZELTME: Sadece RIGHT_CLICK_BLOCK işle
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
         if (event.getHand() != EquipmentSlot.HAND) return;
         if (!event.getPlayer().isSneaking()) return;
         
@@ -1605,10 +1531,12 @@ public class RitualInteractionListener implements Listener {
     
     // Oyuncu elinde Kompas ile herhangi bir yerde shift+sağ tık yapar (Kristal yakınında olmasına gerek yok)
     
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onClanStatsView(PlayerInteractEvent event) {
         // ✅ DÜZELTME: Hem RIGHT_CLICK_BLOCK hem RIGHT_CLICK_AIR kontrol et
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.RIGHT_CLICK_AIR) return;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.RIGHT_CLICK_AIR) {
+            return;
+        }
         if (event.getHand() != EquipmentSlot.HAND) return;
         if (!event.getPlayer().isSneaking()) return;
         

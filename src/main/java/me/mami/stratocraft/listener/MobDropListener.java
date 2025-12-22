@@ -256,6 +256,16 @@ public class MobDropListener implements Listener {
                 scale.setAmount(2 + random.nextInt(2)); // 2-3 adet
                 event.getDrops().add(scale);
             }
+            
+            // ✅ YENİ: Kristal sistemi item drop'ları
+            // %5 şans ile Efsanevi Kristal Güçlendirme Taşı
+            if (random.nextDouble() < 0.05 && ItemManager.CRYSTAL_ENHANCEMENT_STONE_LEGENDARY != null) {
+                event.getDrops().add(ItemManager.CRYSTAL_ENHANCEMENT_STONE_LEGENDARY.clone());
+            }
+            // %20 şans ile Elite Taş
+            if (random.nextDouble() < 0.20 && ItemManager.CRYSTAL_ENHANCEMENT_STONE_ELITE != null) {
+                event.getDrops().add(ItemManager.CRYSTAL_ENHANCEMENT_STONE_ELITE.clone());
+            }
         }
         
         if (mobName.contains("Cehennem Şeytanı")) {
@@ -281,6 +291,40 @@ public class MobDropListener implements Listener {
                 ItemStack scale = ItemManager.LEGENDARY_DRAGON_SCALE.clone();
                 scale.setAmount(3 + random.nextInt(2)); // 3-4 adet
                 event.getDrops().add(scale);
+            }
+            
+            // ✅ YENİ: Kristal sistemi item drop'ları
+            // %10 şans ile Efsanevi Taş
+            if (random.nextDouble() < 0.10 && ItemManager.CRYSTAL_ENHANCEMENT_STONE_LEGENDARY != null) {
+                event.getDrops().add(ItemManager.CRYSTAL_ENHANCEMENT_STONE_LEGENDARY.clone());
+            }
+            // %30 şans ile Elite Taş
+            if (random.nextDouble() < 0.30 && ItemManager.CRYSTAL_ENHANCEMENT_STONE_ELITE != null) {
+                event.getDrops().add(ItemManager.CRYSTAL_ENHANCEMENT_STONE_ELITE.clone());
+            }
+        }
+        
+        // ✅ YENİ: Void Dragon / Hiçlik Ejderi drop'ları
+        if (mobName.contains("Void Dragon") || mobName.contains("Hiçlik Ejderi")) {
+            // %10 şans ile Efsanevi Taş
+            if (random.nextDouble() < 0.10 && ItemManager.CRYSTAL_ENHANCEMENT_STONE_LEGENDARY != null) {
+                event.getDrops().add(ItemManager.CRYSTAL_ENHANCEMENT_STONE_LEGENDARY.clone());
+            }
+            // %30 şans ile Elite Taş
+            if (random.nextDouble() < 0.30 && ItemManager.CRYSTAL_ENHANCEMENT_STONE_ELITE != null) {
+                event.getDrops().add(ItemManager.CRYSTAL_ENHANCEMENT_STONE_ELITE.clone());
+            }
+        }
+        
+        // ✅ YENİ: Titan Golem drop'ları
+        if (mobName.contains("Titan Golem")) {
+            // %15 şans ile Elite Taş
+            if (random.nextDouble() < 0.15 && ItemManager.CRYSTAL_ENHANCEMENT_STONE_ELITE != null) {
+                event.getDrops().add(ItemManager.CRYSTAL_ENHANCEMENT_STONE_ELITE.clone());
+            }
+            // %40 şans ile Gelişmiş Taş
+            if (random.nextDouble() < 0.40 && ItemManager.CRYSTAL_ENHANCEMENT_STONE_ADVANCED != null) {
+                event.getDrops().add(ItemManager.CRYSTAL_ENHANCEMENT_STONE_ADVANCED.clone());
             }
         }
         

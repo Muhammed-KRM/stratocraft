@@ -84,7 +84,11 @@ public class DisasterManager {
             activeDisaster.getLevel(),
             activeDisaster.getStartTime(),
             activeDisaster.getDuration(),
-            activeDisaster.getTarget() != null ? activeDisaster.getTarget() : null
+            activeDisaster.getTarget() != null ? activeDisaster.getTarget() : null,
+            activeDisaster.getDisasterState(), // ✅ YENİ: DisasterState enum
+            activeDisaster.hasArrivedCenter(), // ✅ YENİ: Merkeze ulaşma durumu
+            activeDisaster.getLastClanCheckTime(), // ✅ YENİ: Son klan kontrolü zamanı
+            activeDisaster.getTargetPlayer() != null ? activeDisaster.getTargetPlayer().getUniqueId() : null // ✅ YENİ: Hedef oyuncu UUID
         );
     }
     
@@ -113,6 +117,15 @@ public class DisasterManager {
         plugin.getLogger().info("Aktif felaket tespit edildi ancak entity'ler kaydedilemediği için devam edemiyor: " + 
             state.type.name() + " (Kalan süre: " + (remaining / 1000) + " saniye)");
         
+        // ✅ YENİ: Felaket AI durumu bilgilerini log'a ekle
+        if (state.disasterState != null) {
+            plugin.getLogger().info("Felaket durumu: " + state.disasterState.name() + 
+                ", Merkeze ulaştı: " + state.hasArrivedCenter + 
+                ", Son klan kontrolü: " + (state.lastClanCheckTime > 0 ? 
+                    ((System.currentTimeMillis() - state.lastClanCheckTime) / 1000) + " saniye önce" : "Henüz yapılmadı") +
+                (state.targetPlayerId != null ? ", Hedef oyuncu: " + state.targetPlayerId : ""));
+        }
+        
         // lastDisasterTime'ı güncelle (felaket başladığı zaman)
         lastDisasterTime = state.startTime;
     }
@@ -127,15 +140,33 @@ public class DisasterManager {
         public final long startTime;
         public final long duration;
         public final Location target;
+        // ✅ YENİ: Felaket AI durumu alanları
+        public final me.mami.stratocraft.enums.DisasterState disasterState;
+        public final boolean hasArrivedCenter;
+        public final long lastClanCheckTime;
+        public final java.util.UUID targetPlayerId;
         
         public DisasterState(Disaster.Type type, Disaster.Category category, int level,
-                           long startTime, long duration, Location target) {
+                           long startTime, long duration, Location target,
+                           me.mami.stratocraft.enums.DisasterState disasterState,
+                           boolean hasArrivedCenter, long lastClanCheckTime, java.util.UUID targetPlayerId) {
             this.type = type;
             this.category = category;
             this.level = level;
             this.startTime = startTime;
             this.duration = duration;
             this.target = target;
+            this.disasterState = disasterState;
+            this.hasArrivedCenter = hasArrivedCenter;
+            this.lastClanCheckTime = lastClanCheckTime;
+            this.targetPlayerId = targetPlayerId;
+        }
+        
+        // ✅ GERİYE UYUMLULUK: Eski constructor (yeni alanlar null/false olacak)
+        public DisasterState(Disaster.Type type, Disaster.Category category, int level,
+                           long startTime, long duration, Location target) {
+            this(type, category, level, startTime, duration, target,
+                 me.mami.stratocraft.enums.DisasterState.GO_CENTER, false, 0L, null);
         }
     }
     

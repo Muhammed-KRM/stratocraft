@@ -40,7 +40,7 @@ public class StructureMenuListener implements Listener {
         this.territoryManager = territoryManager;
     }
     
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onStructureInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK)
             return;
@@ -51,6 +51,17 @@ public class StructureMenuListener implements Listener {
         
         Player player = event.getPlayer();
         Block clicked = event.getClickedBlock();
+        
+        // ✅ DÜZELTME: Beacon blokları için özel kontrol (Minecraft'ın kendi menüsünü engellemek için)
+        if (clicked != null && clicked.getType() == org.bukkit.Material.BEACON) {
+            // Beacon yapı kontrolü yap, eğer yapı değilse normal beacon menüsüne izin ver
+            Structure structure = findStructureAt(clicked.getLocation());
+            if (structure == null) {
+                return; // Yapı değil, normal beacon menüsüne izin ver
+            }
+            // Yapı ise event'i cancel et (aşağıda özel menü açılacak)
+            event.setCancelled(true);
+        }
         if (clicked == null)
             return;
         

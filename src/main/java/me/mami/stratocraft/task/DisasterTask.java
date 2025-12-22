@@ -193,9 +193,12 @@ public class DisasterTask extends BukkitRunnable {
         boolean useCustomAI = disaster.getCreatureDisasterType() == Disaster.CreatureDisasterType.SINGLE_BOSS;
         if (useCustomAI) {
             me.mami.stratocraft.util.CustomBossAI.updateBossAI(entity, disaster, config);
-            // CustomBossAI zaten tüm hareket ve saldırıları yönetiyor, bu yüzden handler'ı atla
-            // Ancak faz sistemi ve diğer kontrolleri yapmaya devam et
-            // Handler çağrısını atla (aşağıda)
+            // ✅ DÜZELTME: CustomBossAI ile birlikte handler'ı da çağır (state-based AI için)
+            // Özellikle ChaosDragonHandler'ın state-based AI'sı için gerekli
+            DisasterHandler handler = handlerRegistry.getHandler(disaster.getType());
+            if (handler != null) {
+                handler.handle(disaster, entity, config);
+            }
         }
         
         // FAZ SİSTEMİ: Faz kontrolü ve geçişi

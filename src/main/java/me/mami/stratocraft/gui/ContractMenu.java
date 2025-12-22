@@ -1268,8 +1268,15 @@ public class ContractMenu implements Listener {
         return null;
     }
     
-    @EventHandler
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGH)
     public void onMenuClick(InventoryClickEvent event) {
+        // ✅ ÖNEMLİ: Sadece GUI'ye tıklanırsa işle, oyuncu envanterine tıklanırsa atla
+        if (event.getClickedInventory() != null && 
+            event.getClickedInventory().equals(event.getView().getBottomInventory())) {
+            // Oyuncu envanterine tıklandı - bu event'i işleme (item taşıma için izin ver)
+            return;
+        }
+        
         String title = event.getView().getTitle();
         
         // Ana kontrat listesi
@@ -1375,10 +1382,25 @@ public class ContractMenu implements Listener {
     }
     
     /**
+     * ✅ YARDIMCI: GUI'ye tıklanıp tıklanmadığını kontrol et ve event'i iptal et
+     * Oyuncu envanterine tıklanırsa false döner (item taşıma için izin ver)
+     */
+    private boolean cancelIfGUIClick(InventoryClickEvent event) {
+        if (event.getClickedInventory() != null && 
+            event.getClickedInventory().equals(event.getView().getTopInventory())) {
+            // GUI'ye tıklandı - iptal et
+            event.setCancelled(true);
+            return true;
+        }
+        // Oyuncu envanterine tıklandı - izin ver (item taşıma için)
+        return false;
+    }
+    
+    /**
      * Ana menü tıklama
      */
     private void handleMainMenuClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -1484,7 +1506,7 @@ public class ContractMenu implements Listener {
      * Detay menüsü tıklama
      */
     private void handleDetailMenuClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -1566,7 +1588,7 @@ public class ContractMenu implements Listener {
      * Çift taraflı kontrat detay menüsü tıklama
      */
     private void handleBilateralContractDetailClick(InventoryClickEvent event, Contract contract, Player player) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         ItemStack clicked = event.getCurrentItem();
         if (clicked == null || clicked.getType() == Material.AIR) return;
@@ -1816,7 +1838,7 @@ public class ContractMenu implements Listener {
      * Tip seçim menüsü tıklama
      */
     private void handleTypeSelectionClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -2006,7 +2028,7 @@ public class ContractMenu implements Listener {
      * Malzeme seçim menüsü tıklama
      */
     private void handleMaterialSelectionClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -2059,7 +2081,7 @@ public class ContractMenu implements Listener {
      * Yapı tipi seçim menüsü tıklama
      */
     private void handleStructureTypeSelectionClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -2146,7 +2168,7 @@ public class ContractMenu implements Listener {
      * Ceza tipi seçim menüsü tıklama
      */
     private void handlePenaltyTypeSelectionClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -2197,7 +2219,7 @@ public class ContractMenu implements Listener {
      * Kapsam seçim menüsü tıklama
      */
     private void handleScopeSelectionClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -2372,7 +2394,7 @@ public class ContractMenu implements Listener {
      * Ödül slider menüsü tıklama
      */
     private void handleRewardSliderClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -2539,7 +2561,7 @@ public class ContractMenu implements Listener {
      * Ceza slider menüsü tıklama
      */
     private void handlePenaltySliderClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -2732,7 +2754,7 @@ public class ContractMenu implements Listener {
      * Süre seçim menüsü tıklama
      */
     private void handleTimeSelectionClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -2906,7 +2928,7 @@ public class ContractMenu implements Listener {
      * Zaman ayarlama menüsü tıklama (Gün/Saat/Dakika)
      */
     private void handleTimeAdjustmentClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -3165,7 +3187,7 @@ public class ContractMenu implements Listener {
      * Oyuncu seçim menüsü tıklama
      */
     private void handlePlayerSelectionClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -3897,7 +3919,7 @@ public class ContractMenu implements Listener {
      * Özet menüsü tıklama
      */
     private void handleSummaryMenuClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -4341,7 +4363,7 @@ public class ContractMenu implements Listener {
      * Şablon menüsü tıklama
      */
     private void handleTemplateMenuClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -4520,7 +4542,7 @@ public class ContractMenu implements Listener {
      * Benim Kontratlarım menüsü tıklama
      */
     private void handleMyContractsMenuClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -4640,7 +4662,7 @@ public class ContractMenu implements Listener {
      * Kabul Edilen Kontratlarım menüsü tıklama
      */
     private void handleAcceptedContractsMenuClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -4730,7 +4752,7 @@ public class ContractMenu implements Listener {
      * Kontrat geçmişi menüsü tıklama
      */
     private void handleContractHistoryClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -4863,7 +4885,7 @@ public class ContractMenu implements Listener {
      * Gelen İstekler menüsü tıklama
      */
     private void handleIncomingRequestsClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -5076,7 +5098,7 @@ public class ContractMenu implements Listener {
      * Kabul Edilen İstekler menüsü tıklama
      */
     private void handleAcceptedRequestsClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -5317,7 +5339,7 @@ public class ContractMenu implements Listener {
      * Şartları Onayla menüsü tıklama (İlk gönderen oyuncu için)
      */
     private void handleTermsApprovalClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -5498,7 +5520,7 @@ public class ContractMenu implements Listener {
      * Şart görüntüleme menüsü tıklama
      */
     private void handleTermsViewClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -5671,7 +5693,7 @@ public class ContractMenu implements Listener {
      * Kontrat Karar Menüsü tıklama
      */
     private void handleContractDecisionClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -5860,7 +5882,7 @@ public class ContractMenu implements Listener {
      * Son Onay Menüsü tıklama (İlk gönderen oyuncu için)
      */
     private void handleFinalApprovalClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -6036,7 +6058,7 @@ public class ContractMenu implements Listener {
      * Atılan İstekler menüsü tıklama (YENİ)
      */
     private void handleSentRequestsClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -6160,7 +6182,7 @@ public class ContractMenu implements Listener {
      * Aktif Kontratlar menüsü tıklama (YENİ)
      */
     private void handleActiveContractsClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
@@ -6287,7 +6309,7 @@ public class ContractMenu implements Listener {
      * Eski Kontratlar menüsü tıklama (YENİ)
      */
     private void handleOldContractsClick(InventoryClickEvent event) {
-        event.setCancelled(true);
+        if (!cancelIfGUIClick(event)) return; // Oyuncu envanterine tıklandı, işleme
         
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
