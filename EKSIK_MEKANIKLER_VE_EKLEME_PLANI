@@ -1,0 +1,1970 @@
+# 🎮 STRATOCRAFT - EKSİK MEKANİKLER VE EKLEME PLANI
+
+## 📋 İÇİNDEKİLER
+
+1. [Mevcut Sistemler Analizi](#mevcut-sistemler-analizi)
+2. [Eksik Mekanikler Listesi](#eksik-mekanikler-listesi)
+3. [Benzer Oyunlardan Örnekler](#benzer-oyunlardan-örnekler)
+4. [Detaylı Mekanik Açıklamaları](#detaylı-mekanik-açıklamaları)
+5. [Teknoloji Gereksinimleri](#teknoloji-gereksinimleri)
+6. [Uygulama Planı](#uygulama-planı)
+
+---
+
+## 🔍 MEVCUT SİSTEMLER ANALİZİ
+
+### ✅ Mevcut Sistemler (8 Faz)
+
+#### FAZ 1-2: Altyapı ve Dünya Oluşumu
+- ✅ Sonsuz voxel dünya (Scrawk GPU)
+- ✅ Chunk yönetimi (LOD, caching, pooling)
+- ✅ Ağ altyapısı (FishNet)
+- ✅ Veritabanı (SQLite)
+- ✅ Kazı/yerleştirme sistemi (NetworkMining)
+
+#### FAZ 3: Doğa, Su ve Biyomlar
+- ✅ Biyom sistemi (ScriptableObject)
+- ✅ Voxel ağaç sistemi (L-System, aşamalı büyüme)
+- ✅ Voxel maden sistemi (density-based spawn)
+- ✅ Su sistemi (Minecraft benzeri akışkan su)
+- ✅ İnşa sistemi (Grid-based, Blueprint, Sculpting)
+- ✅ Variant blok sistemi (740 variant)
+
+#### FAZ 4: Oyun Mekanikleri
+- ✅ Item sistemi (ItemDefinition, ItemDatabase)
+- ✅ Ritüel sistemi (Batarya kurulumu)
+- ✅ Klan ve bölge sistemi (TerritoryManager)
+- ✅ Kontrat sistemi (ContractManager)
+- ✅ Eğitme sistemi (TamingManager)
+- ✅ Blok şekillendirme sistemi (ChiselTool)
+
+#### FAZ 5: Yapay Zeka, Savaş ve Felaketler
+- ✅ Mob AI (State Machine)
+- ✅ Boss AI (Panda BT)
+- ✅ Savaş sistemi (Health, Armor, Critical hit)
+- ✅ Felaket sistemi (DisasterManager)
+- ✅ Tuzak sistemi (TrapManager)
+
+#### FAZ 6: Arayüz, Etkileşim ve Cila
+- ✅ Etkileşim sistemi (IInteractable)
+- ✅ HUD (HUDManager)
+- ✅ Menüler (ContractUI, ClanManagementUI)
+- ✅ Ses sistemi (AudioManager)
+
+#### FAZ 7: Güç Sistemi, Binekler ve Savaş Makineleri
+- ✅ Güç sistemi (SGP - Stratocraft Global Power)
+- ✅ Binek sistemi (RideableMob)
+- ✅ Kuşatma sistemi (SiegeBeacon)
+- ✅ Yapı buffları (StructureEffectManager)
+- ✅ Offline koruma (OfflineProtectionSystem)
+
+#### FAZ 8: Eksik Sistemler, Admin Komutları
+- ✅ Kervan sistemi (CaravanManager)
+- ✅ Araştırma sistemi (ResearchManager)
+- ✅ Üreme sistemi (BreedingManager)
+- ✅ Market sistemi (ShopManager)
+- ✅ Görev sistemi (MissionManager)
+- ✅ Supply Drop sistemi (SupplyDropManager)
+- ✅ Kuşatma silahları (SiegeWeaponManager)
+- ✅ Hayalet tarif sistemi (GhostRecipeManager)
+- ✅ İttifak sistemi (AllianceManager)
+
+---
+
+## ❌ EKSİK MEKANİKLER LİSTESİ
+
+### 1. CRAFTING SİSTEMİ (Üretim Sistemi)
+
+**Durum:** ⚠️ **YARIM YAMALAK**
+- ✅ ItemDefinition var (eşya tanımları)
+- ✅ Recipe sistemi yok (crafting recipe'leri)
+- ✅ Crafting table/workbench yok
+- ✅ Crafting UI yok
+- ✅ Crafting animasyonu yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Crafting table, 3x3 grid, recipe book
+- **Rust:** Workbench (Level 1/2/3), research table
+- **Valheim:** Workbench, forge, smelter
+
+**Eksik Özellikler:**
+1. Crafting Table/Workbench (farklı seviyeler)
+2. Recipe sistemi (ScriptableObject)
+3. Crafting UI (grid-based, drag-drop)
+4. Recipe book (öğrenilen tarifler)
+5. Crafting animasyonu (oyuncu animasyonu)
+6. Crafting süresi (zaman bazlı üretim)
+7. Crafting malzeme kontrolü (envanter kontrolü)
+8. Crafting sonucu (item spawn)
+
+---
+
+### 2. KAPSAMLI ENVANTER SİSTEMİ
+
+**Durum:** ⚠️ **YARIM YAMALAK**
+- ✅ ItemDefinition var
+- ✅ PhysicalItem var (yere atılan item'lar)
+- ❌ Player inventory yok
+- ❌ Hotbar yok
+- ❌ Envanter UI yok
+- ❌ Item stacking yok
+- ❌ Item sorting yok
+- ❌ Envanter ağırlık sistemi yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** 27 slot inventory, 9 slot hotbar, creative mode
+- **Rust:** Grid-based inventory, item categories
+- **Valheim:** Weight-based inventory, item categories
+
+**Eksik Özellikler:**
+1. Player inventory (grid-based, 27-36 slot)
+2. Hotbar (9 slot, 1-9 tuşları)
+3. Envanter UI (drag-drop, shift-click)
+4. Item stacking (maxStack kontrolü)
+5. Item sorting (kategori bazlı)
+6. Envanter ağırlık sistemi (weight limit)
+7. Envanter kategorileri (Material, Weapon, Tool, vb.)
+8. Quick slot sistemi (hızlı erişim)
+
+---
+
+### 3. FURNITURE SİSTEMİ (Mobilya Yerleştirme)
+
+**Durum:** ❌ **YOK**
+- ✅ StructurePlacer var (yapı yerleştirme)
+- ❌ Furniture item'ları yok
+- ❌ Furniture yerleştirme yok
+- ❌ Furniture etkileşimi yok (oturma, yatma)
+- ❌ Furniture dekorasyonu yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Beds, chairs, tables, chests (decorative blocks)
+- **Rust:** Furniture (chairs, tables, beds, workbenches)
+- **Valheim:** Furniture crafting, placement, interaction
+
+**Eksik Özellikler:**
+1. Furniture item'ları (bed, chair, table, chest, lamp, vb.)
+2. Furniture yerleştirme (StructurePlacer entegrasyonu)
+3. Furniture etkileşimi (sit on chair, sleep on bed)
+4. Furniture dekorasyonu (aesthetic items)
+5. Furniture storage (chest inventory)
+6. Furniture crafting (recipe'ler)
+
+---
+
+### 4. İŞLEVSEL ITEM'LER (Functional Items)
+
+**Durum:** ⚠️ **YARIM YAMALAK**
+- ✅ Tool sistemi var (kazma, balta - kırma için)
+- ✅ ChiselTool var (blok şekillendirme)
+- ❌ Çok amaçlı tool'lar yok
+- ❌ Tool durability yok
+- ❌ Tool upgrade yok
+- ❌ Tool repair yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Tools (pickaxe, axe, shovel, hoe), durability, enchantments
+- **Rust:** Tools (hatchet, pickaxe), durability, repair
+- **Valheim:** Tools (axe, pickaxe, hammer), durability, upgrade
+
+**Eksik Özellikler:**
+1. Tool durability sistemi (kullanım sayısı)
+2. Tool repair sistemi (anvil, repair station)
+3. Tool upgrade sistemi (seviye bazlı)
+4. Tool enchantment sistemi (büyü)
+5. Çok amaçlı tool'lar (multi-purpose tools)
+6. Tool crafting (recipe'ler)
+
+---
+
+### 5. NPC SİSTEMİ (Non-Player Characters)
+
+**Durum:** ❌ **YOK**
+- ✅ Mob AI var (düşman moblar)
+- ✅ Boss AI var (boss moblar)
+- ❌ NPC AI yok (dost NPC'ler)
+- ❌ NPC ticaret yok
+- ❌ NPC görev yok
+- ❌ NPC köyleri yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Villagers (trading, professions, villages)
+- **Rust:** NPC'ler yok (sadece oyuncular)
+- **Valheim:** NPC'ler yok (sadece oyuncular)
+
+**Eksik Özellikler:**
+1. NPC AI (dost NPC'ler, pathfinding)
+2. NPC ticaret (villager trading)
+3. NPC görev (quest giver)
+4. NPC köyleri (village generation)
+5. NPC meslekleri (blacksmith, merchant, vb.)
+6. NPC etkileşimi (dialogue system)
+
+---
+
+### 6. GELİŞMİŞ BİNEK SİSTEMİ
+
+**Durum:** ⚠️ **YARIM YAMALAK**
+- ✅ RideableMob var (temel binme)
+- ✅ MobInputController var (WASD kontrolü)
+- ❌ Eğer sistemi yok (saddle)
+- ❌ Binek envanteri yok
+- ❌ Binek zırhı yok
+- ❌ Binek özel yetenekleri yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Horses (saddle, armor, inventory)
+- **Valheim:** Tamed animals (boar, wolf, lox)
+- **ARK:** Dinosaurs (saddle, inventory, special abilities)
+
+**Eksik Özellikler:**
+1. Eğer sistemi (saddle item, crafting)
+2. Binek envanteri (storage on mount)
+3. Binek zırhı (armor for mounts)
+4. Binek özel yetenekleri (special abilities)
+5. Binek seviye sistemi (leveling)
+6. Binek breeding (üreme)
+
+---
+
+### 7. GELİŞMİŞ BOSS SİSTEMİ
+
+**Durum:** ⚠️ **YARIM YAMALAK**
+- ✅ Boss AI var (Panda BT)
+- ✅ Boss spawn var
+- ❌ Ejderha sistemi yok
+- ❌ Boss arena sistemi yok
+- ❌ Boss loot table yok
+- ❌ Boss phase sistemi yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Ender Dragon, Wither (boss fights)
+- **Valheim:** Boss fights (5 bosses, summoning)
+- **ARK:** Boss fights (dungeon bosses)
+
+**Eksik Özellikler:**
+1. Ejderha sistemi (dragon AI, flight mechanics)
+2. Boss arena sistemi (dedicated arenas)
+3. Boss loot table (reward system)
+4. Boss phase sistemi (multi-phase fights)
+5. Boss summoning (ritual-based summoning)
+6. Boss respawn timer (cooldown system)
+
+---
+
+### 8. ÖZEL CANLI TİPLERİ
+
+**Durum:** ⚠️ **YARIM YAMALAK**
+- ✅ Mob AI var (genel moblar)
+- ✅ Mob spawn var
+- ❌ Özel goblin/ork sistemi yok
+- ❌ Canlı sınıfları yok (warrior, mage, vb.)
+- ❌ Canlı yetenekleri yok (special abilities)
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Zombies, skeletons, creepers (unique behaviors)
+- **Valheim:** Different enemy types (trolls, draugr, skeletons)
+- **ARK:** Dinosaur types (herbivore, carnivore, special abilities)
+
+**Eksik Özellikler:**
+1. Özel canlı tipleri (goblin, ork, troll, vb.)
+2. Canlı sınıfları (warrior, mage, archer, vb.)
+3. Canlı yetenekleri (special abilities)
+4. Canlı zırhı (armor system)
+5. Canlı seviye sistemi (leveling)
+6. Canlı ticaret (trading with mobs)
+
+---
+
+### 9. YEMEK VE AÇLIK SİSTEMİ
+
+**Durum:** ❌ **YOK**
+- ✅ Consumable item'lar var (ItemDefinition)
+- ❌ Açlık sistemi yok
+- ❌ Yemek pişirme yok
+- ❌ Yemek tarifleri yok
+- ❌ Yemek buffları yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Hunger bar, food items, cooking
+- **Rust:** Food items, hunger system
+- **Valheim:** Food system (3 food slots, buffs)
+
+**Eksik Özellikler:**
+1. Açlık sistemi (hunger bar, starvation)
+2. Yemek pişirme (cooking station, recipes)
+3. Yemek tarifleri (recipe system)
+4. Yemek buffları (temporary buffs)
+5. Yemek çeşitliliği (different food types)
+6. Yemek kalitesi (food quality system)
+
+---
+
+### 10. HASTALIK VE DURUM SİSTEMİ
+
+**Durum:** ❌ **YOK**
+- ✅ Health sistemi var
+- ❌ Hastalık sistemi yok
+- ❌ Durum efektleri yok (poison, burn, vb.)
+- ❌ İyileştirme sistemi yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Status effects (poison, fire, regeneration)
+- **Valheim:** Status effects (wet, cold, rested)
+- **ARK:** Status effects (disease, torpor, food/water)
+
+**Eksik Özellikler:**
+1. Hastalık sistemi (disease system)
+2. Durum efektleri (status effects: poison, burn, freeze, vb.)
+3. İyileştirme sistemi (cure items, potions)
+4. Durum efekt süresi (duration system)
+5. Durum efekt stackleme (stacking effects)
+6. Durum efekt görselleştirme (UI indicators)
+
+---
+
+### 11. ZAMAN VE HAVA SİSTEMİ
+
+**Durum:** ⚠️ **YARIM YAMALAK**
+- ✅ GameTimeManager var (gün/gece döngüsü)
+- ❌ Hava durumu yok (rain, snow, storm)
+- ❌ Mevsimler yok
+- ❌ Sıcaklık sistemi yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Weather system (rain, snow, thunder)
+- **Valheim:** Weather system (rain, fog, storms)
+- **ARK:** Weather system (rain, snow, heat/cold)
+
+**Eksik Özellikler:**
+1. Hava durumu (rain, snow, storm, fog)
+2. Mevsimler (spring, summer, autumn, winter)
+3. Sıcaklık sistemi (temperature effects)
+4. Hava durumu efektleri (visual effects)
+5. Hava durumu sesleri (audio effects)
+6. Hava durumu oyun mekaniği (gameplay effects)
+
+---
+
+### 12. ZİNDAN VE MAĞARA SİSTEMİ
+
+**Durum:** ⚠️ **YARIM YAMALAK**
+- ✅ Mağara sistemi var (3D Noise)
+- ❌ Zindan sistemi yok
+- ❌ Zindan boss'ları yok
+- ❌ Zindan ödülleri yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Dungeons, strongholds, mineshafts
+- **Valheim:** Crypts, dungeons, boss arenas
+- **ARK:** Caves, dungeons, boss arenas
+
+**Eksik Özellikler:**
+1. Zindan sistemi (dungeon generation)
+2. Zindan boss'ları (dungeon bosses)
+3. Zindan ödülleri (loot chests)
+4. Zindan zorluk seviyeleri (difficulty levels)
+5. Zindan respawn sistemi (respawn timer)
+6. Zindan giriş kontrolü (key system)
+
+---
+
+### 13. MAGIC VE BÜYÜ SİSTEMİ
+
+**Durum:** ⚠️ **YARIM YAMALAK**
+- ✅ Ritüel sistemi var (batarya kurulumu)
+- ❌ Büyü sistemi yok (spell casting)
+- ❌ Büyü kitapları yok
+- ❌ Mana sistemi yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Enchantments, potions
+- **Valheim:** Magic mods (community)
+- **ARK:** Teknoloji (tek tier)
+
+**Eksik Özellikler:**
+1. Büyü sistemi (spell casting)
+2. Büyü kitapları (spell books)
+3. Mana sistemi (mana bar, regeneration)
+4. Büyü okulları (spell schools: fire, ice, lightning)
+5. Büyü seviye sistemi (spell levels)
+6. Büyü animasyonları (casting animations)
+
+---
+
+### 14. TEKNOLOJİ AĞACI (Tech Tree)
+
+**Durum:** ❌ **YOK**
+- ✅ Research sistemi var (tarif paylaşımı)
+- ❌ Teknoloji ağacı yok
+- ❌ Teknoloji unlock sistemi yok
+- ❌ Teknoloji bağımlılıkları yok
+
+**Benzer Oyunlarda:**
+- **Rust:** Tech tree (research, unlock system)
+- **ARK:** Engram system (tech tree)
+- **Valheim:** Crafting progression (unlock system)
+
+**Eksik Özellikler:**
+1. Teknoloji ağacı (tech tree UI)
+2. Teknoloji unlock sistemi (unlock requirements)
+3. Teknoloji bağımlılıkları (prerequisites)
+4. Teknoloji puanı (research points)
+5. Teknoloji kategorileri (categories)
+6. Teknoloji görselleştirme (tree visualization)
+
+---
+
+### 15. ARAÇ VE ULAŞIM SİSTEMİ
+
+**Durum:** ❌ **YOK**
+- ✅ Binek sistemi var (hayvanlar)
+- ❌ Araç sistemi yok (cart, boat, vb.)
+- ❌ Ulaşım ağı yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Boats, minecarts, elytra
+- **Valheim:** Boats (karve, longship)
+- **ARK:** Vehicles (motorboat, tek, quetzal)
+
+**Eksik Özellikler:**
+1. Araç sistemi (cart, boat, airship)
+2. Araç kontrolü (vehicle controls)
+3. Araç envanteri (vehicle storage)
+4. Araç yakıt sistemi (fuel system)
+5. Araç tamiri (repair system)
+6. Araç crafting (vehicle recipes)
+
+---
+
+### 16. PET VE EV HAYVANI SİSTEMİ
+
+**Durum:** ⚠️ **YARIM YAMALAK**
+- ✅ Taming sistemi var (TamingManager)
+- ✅ Binek sistemi var
+- ❌ Pet sistemi yok (companion pets)
+- ❌ Pet envanteri yok
+- ❌ Pet seviye sistemi yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Tamed wolves, cats, parrots
+- **ARK:** Tamed dinosaurs (companions)
+- **Valheim:** Tamed animals (boar, wolf)
+
+**Eksik Özellikler:**
+1. Pet sistemi (companion pets)
+2. Pet envanteri (pet storage)
+3. Pet seviye sistemi (pet leveling)
+4. Pet yetenekleri (pet abilities)
+5. Pet komutları (pet commands)
+6. Pet UI (pet status UI)
+
+---
+
+### 17. TARIM VE ÇİFTÇİLİK SİSTEMİ
+
+**Durum:** ❌ **YOK**
+- ✅ Voxel ağaç sistemi var
+- ❌ Tarım sistemi yok
+- ❌ Tohum sistemi yok
+- ❌ Hasat sistemi yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Farming (crops, seeds, harvest)
+- **Valheim:** Farming (carrots, turnips, barley)
+- **Rust:** Farming (hemp, corn, pumpkins)
+
+**Eksik Özellikler:**
+1. Tarım sistemi (crop planting)
+2. Tohum sistemi (seed items)
+3. Hasat sistemi (harvest mechanics)
+4. Tarım aletleri (farming tools)
+5. Tarım buffları (fertilizer)
+6. Tarım çeşitliliği (different crops)
+
+---
+
+### 18. BALIKÇILIK SİSTEMİ
+
+**Durum:** ❌ **YOK**
+- ✅ Su sistemi var
+- ❌ Balıkçılık yok
+- ❌ Balık türleri yok
+- ❌ Olta sistemi yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Fishing (fishing rod, fish types)
+- **Valheim:** Fishing (fishing rod, fish types)
+- **ARK:** Fishing (fishing rod, fish types)
+
+**Eksik Özellikler:**
+1. Balıkçılık sistemi (fishing mechanics)
+2. Olta sistemi (fishing rod item)
+3. Balık türleri (fish types)
+4. Balıkçılık lokasyonları (fishing spots)
+5. Balıkçılık ödülleri (fish rewards)
+6. Balıkçılık animasyonu (fishing animation)
+
+---
+
+### 19. MADENCİLİK VE ERİTME SİSTEMİ
+
+**Durum:** ⚠️ **YARIM YAMALAK**
+- ✅ Maden spawn var (OreSpawner)
+- ✅ Kazı sistemi var (NetworkMining)
+- ❌ Eritme sistemi yok (smelting)
+- ❌ Fırın sistemi yok (furnace)
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Smelting (furnace, blast furnace)
+- **Valheim:** Smelting (smelter, charcoal kiln)
+- **Rust:** Smelting (furnace, large furnace)
+
+**Eksik Özellikler:**
+1. Eritme sistemi (smelting mechanics)
+2. Fırın sistemi (furnace structure)
+3. Yakıt sistemi (fuel system)
+4. Eritme tarifleri (smelting recipes)
+5. Eritme süresi (smelting time)
+6. Eritme animasyonu (smelting animation)
+
+---
+
+### 20. DEPOLAMA VE SANDIK SİSTEMİ
+
+**Durum:** ⚠️ **YARIM YAMALAK**
+- ✅ StructurePlacer var
+- ❌ Sandık sistemi yok
+- ❌ Sandık envanteri yok
+- ❌ Sandık kilitleme yok
+
+**Benzer Oyunlarda:**
+- **Minecraft:** Chests (storage, locking)
+- **Rust:** Storage boxes, tool cupboards
+- **Valheim:** Chests (storage, organization)
+
+**Eksik Özellikler:**
+1. Sandık sistemi (chest structure)
+2. Sandık envanteri (chest inventory)
+3. Sandık kilitleme (chest locking)
+4. Sandık kategorileri (chest categories)
+5. Sandık görselleştirme (chest UI)
+6. Sandık arama (search functionality)
+
+---
+
+## 🎮 BENZER OYUNLARDAN ÖRNEKLER
+
+### Minecraft Mekanikleri
+- ✅ Crafting system (3x3 grid)
+- ✅ Inventory system (27 slot + 9 hotbar)
+- ✅ Furniture (beds, chairs, chests)
+- ✅ NPC villagers (trading, professions)
+- ✅ Food system (hunger, cooking)
+- ✅ Status effects (poison, fire, regeneration)
+- ✅ Weather system (rain, snow, thunder)
+- ✅ Dungeons (strongholds, mineshafts)
+- ✅ Enchantments (magic system)
+- ✅ Farming (crops, seeds)
+- ✅ Fishing (fishing rod)
+- ✅ Smelting (furnace)
+- ✅ Chests (storage)
+
+### Rust Mekanikleri
+- ✅ Workbench system (Level 1/2/3)
+- ✅ Research table (blueprint learning)
+- ✅ Tech tree (unlock system)
+- ✅ Furniture (chairs, tables, beds)
+- ✅ Smelting (furnace)
+- ✅ Storage boxes
+- ✅ Vehicle system (motorboat, helicopter)
+
+### Valheim Mekanikleri
+- ✅ Crafting system (workbench, forge)
+- ✅ Food system (3 food slots, buffs)
+- ✅ Status effects (wet, cold, rested)
+- ✅ Weather system (rain, fog, storms)
+- ✅ Dungeons (crypts, boss arenas)
+- ✅ Farming (crops)
+- ✅ Fishing (fishing rod)
+- ✅ Smelting (smelter)
+- ✅ Chests (storage)
+
+### ARK Mekanikleri
+- ✅ Taming system (dinosaur taming)
+- ✅ Mount system (saddle, inventory)
+- ✅ Boss fights (dungeon bosses)
+- ✅ Status effects (disease, torpor)
+- ✅ Weather system (heat/cold)
+- ✅ Caves (dungeons)
+- ✅ Vehicle system (motorboat, tek)
+
+---
+
+## 📝 DETAYLI MEKANİK AÇIKLAMALARI
+
+### 1. CRAFTING SİSTEMİ (Üretim Sistemi)
+
+#### 1.1 Sistem Genel Bakış
+
+**Amaç:**
+Oyuncuların malzemeleri birleştirerek yeni item'lar üretmesini sağlamak.
+
+**Temel Özellikler:**
+1. **Crafting Table/Workbench:** Farklı seviyelerde crafting yapılabilir
+2. **Recipe Sistemi:** ScriptableObject tabanlı tarifler
+3. **Crafting UI:** Grid-based, drag-drop interface
+4. **Recipe Book:** Öğrenilen tarifler
+5. **Crafting Animasyonu:** Oyuncu animasyonu
+6. **Crafting Süresi:** Zaman bazlı üretim
+7. **Malzeme Kontrolü:** Envanter kontrolü
+8. **Crafting Sonucu:** Item spawn
+
+#### 1.2 Teknoloji Gereksinimleri
+
+- **Unity UI System:** Crafting UI (Canvas, Grid Layout)
+- **ScriptableObject:** Recipe definitions
+- **Unity Animator:** Crafting animations
+- **FishNet:** Network synchronization
+- **SQLite:** Recipe learning (persistent)
+
+#### 1.3 Uygulama Planı
+
+**Dosyalar:**
+1. `CraftingRecipe.cs` - ScriptableObject (recipe definitions)
+2. `CraftingTable.cs` - NetworkBehaviour (crafting table structure)
+3. `CraftingUI.cs` - UI Manager (crafting interface)
+4. `CraftingManager.cs` - Manager (crafting logic)
+5. `RecipeBook.cs` - ScriptableObject (learned recipes)
+
+**Kod Yapısı:**
+```csharp
+// CraftingRecipe.cs
+[CreateAssetMenu(fileName = "CraftingRecipe", menuName = "Stratocraft/Crafting Recipe")]
+public class CraftingRecipe : ScriptableObject {
+    public string recipeId;
+    public string recipeName;
+    public ItemDefinition resultItem;
+    public int resultAmount = 1;
+    public List<RecipeIngredient> ingredients;
+    public CraftingTableLevel requiredTableLevel;
+    public float craftingTime = 1.0f; // saniye
+}
+
+[System.Serializable]
+public class RecipeIngredient {
+    public ItemDefinition item;
+    public int amount;
+}
+
+public enum CraftingTableLevel {
+    None,      // El crafting
+    Basic,     // Level 1 workbench
+    Advanced,  // Level 2 workbench
+    Master     // Level 3 workbench
+}
+```
+
+---
+
+### 2. KAPSAMLI ENVANTER SİSTEMİ
+
+#### 2.1 Sistem Genel Bakış
+
+**Amaç:**
+Oyuncuların item'ları taşıması, organize etmesi ve kullanması için kapsamlı envanter sistemi.
+
+**Temel Özellikler:**
+1. **Player Inventory:** Grid-based, 27-36 slot
+2. **Hotbar:** 9 slot, 1-9 tuşları
+3. **Envanter UI:** Drag-drop, shift-click
+4. **Item Stacking:** maxStack kontrolü
+5. **Item Sorting:** Kategori bazlı
+6. **Ağırlık Sistemi:** Weight limit
+7. **Kategoriler:** Material, Weapon, Tool, vb.
+8. **Quick Slot:** Hızlı erişim
+
+#### 2.2 Teknoloji Gereksinimleri
+
+- **Unity UI System:** Inventory UI (Canvas, Grid Layout, Drag-Drop)
+- **Unity Input System:** Hotbar controls (1-9 keys)
+- **FishNet:** Network synchronization
+- **SQLite:** Inventory persistence
+- **C# Dictionary:** Item lookup (O(1))
+
+#### 2.3 Uygulama Planı
+
+**Dosyalar:**
+1. `InventorySlot.cs` - Slot data structure
+2. `PlayerInventory.cs` - NetworkBehaviour (inventory logic)
+3. `InventoryUI.cs` - UI Manager (inventory interface)
+4. `HotbarController.cs` - Hotbar management
+5. `ItemStack.cs` - Item stack data structure
+
+**Kod Yapısı:**
+```csharp
+// PlayerInventory.cs
+public class PlayerInventory : NetworkBehaviour {
+    [SyncVar] private List<InventorySlot> _slots = new List<InventorySlot>();
+    [SyncVar] private List<InventorySlot> _hotbar = new List<InventorySlot>();
+    [SyncVar] private float _currentWeight = 0f;
+    [SyncVar] private float _maxWeight = 100f;
+    
+    [ServerRpc]
+    public void CmdAddItem(string itemId, int amount) {
+        // Item ekleme logic
+    }
+    
+    [ServerRpc]
+    public void CmdRemoveItem(string itemId, int amount) {
+        // Item çıkarma logic
+    }
+    
+    [ServerRpc]
+    public void CmdMoveItem(int fromSlot, int toSlot) {
+        // Item taşıma logic
+    }
+}
+```
+
+---
+
+### 3. FURNITURE SİSTEMİ (Mobilya Yerleştirme)
+
+#### 3.1 Sistem Genel Bakış
+
+**Amaç:**
+Oyuncuların dekoratif ve işlevsel mobilyaları yerleştirmesini sağlamak.
+
+**Temel Özellikler:**
+1. **Furniture Items:** Bed, chair, table, chest, lamp, vb.
+2. **Furniture Placement:** StructurePlacer entegrasyonu
+3. **Furniture Interaction:** Sit on chair, sleep on bed
+4. **Furniture Decoration:** Aesthetic items
+5. **Furniture Storage:** Chest inventory
+6. **Furniture Crafting:** Recipe'ler
+
+#### 3.2 Teknoloji Gereksinimleri
+
+- **StructurePlacer:** Furniture placement (mevcut sistem)
+- **Unity Animator:** Furniture interactions (sit, sleep)
+- **FishNet:** Network synchronization
+- **Unity UI System:** Chest inventory UI
+
+#### 3.3 Uygulama Planı
+
+**Dosyalar:**
+1. `FurnitureDefinition.cs` - ScriptableObject (furniture definitions)
+2. `FurniturePlacer.cs` - NetworkBehaviour (furniture placement)
+3. `FurnitureInteraction.cs` - Interaction logic
+4. `ChestInventory.cs` - Chest storage system
+
+**Kod Yapısı:**
+```csharp
+// FurnitureDefinition.cs
+[CreateAssetMenu(fileName = "FurnitureDefinition", menuName = "Stratocraft/Furniture")]
+public class FurnitureDefinition : ScriptableObject {
+    public string furnitureId;
+    public string furnitureName;
+    public GameObject furniturePrefab;
+    public FurnitureType type;
+    public bool hasStorage; // Chest için
+    public int storageSlots; // Chest için
+    public bool canSit; // Chair için
+    public bool canSleep; // Bed için
+}
+
+public enum FurnitureType {
+    Bed,
+    Chair,
+    Table,
+    Chest,
+    Lamp,
+    Decoration
+}
+```
+
+---
+
+### 4. İŞLEVSEL ITEM'LER (Functional Items)
+
+#### 4.1 Sistem Genel Bakış
+
+**Amaç:**
+Tool'ların durability, repair ve upgrade sistemlerini eklemek.
+
+**Temel Özellikler:**
+1. **Tool Durability:** Kullanım sayısı
+2. **Tool Repair:** Anvil, repair station
+3. **Tool Upgrade:** Seviye bazlı
+4. **Tool Enchantment:** Büyü sistemi
+5. **Çok Amaçlı Tool'lar:** Multi-purpose tools
+6. **Tool Crafting:** Recipe'ler
+
+#### 4.2 Teknoloji Gereksinimleri
+
+- **ItemDefinition:** Tool properties (mevcut)
+- **Unity UI System:** Repair/upgrade UI
+- **FishNet:** Network synchronization
+- **SQLite:** Tool durability persistence
+
+#### 4.3 Uygulama Planı
+
+**Dosyalar:**
+1. `ToolDurability.cs` - Durability system
+2. `RepairStation.cs` - NetworkBehaviour (repair logic)
+3. `UpgradeStation.cs` - NetworkBehaviour (upgrade logic)
+4. `EnchantmentSystem.cs` - Enchantment logic
+
+**Kod Yapısı:**
+```csharp
+// ItemDefinition.cs'e eklenecek
+[Header("Tool Durability")]
+[Tooltip("Tool durability (kullanım sayısı)")]
+public int maxDurability = 100;
+
+[Tooltip("Mevcut durability")]
+public int currentDurability = 100;
+
+[Tooltip("Tool seviyesi (upgrade için)")]
+public int toolLevel = 1;
+
+[Tooltip("Tool enchantments (büyü için)")]
+public List<Enchantment> enchantments = new List<Enchantment>();
+```
+
+---
+
+### 5. NPC SİSTEMİ (Non-Player Characters)
+
+#### 5.1 Sistem Genel Bakış
+
+**Amaç:**
+Dost NPC'ler (villagers) ekleyerek ticaret, görev ve köy sistemlerini oluşturmak.
+
+**Temel Özellikler:**
+1. **NPC AI:** Dost NPC'ler, pathfinding
+2. **NPC Ticaret:** Villager trading
+3. **NPC Görev:** Quest giver
+4. **NPC Köyleri:** Village generation
+5. **NPC Meslekleri:** Blacksmith, merchant, vb.
+6. **NPC Etkileşimi:** Dialogue system
+
+#### 5.2 Teknoloji Gereksinimleri
+
+- **Unity NavMesh:** NPC pathfinding
+- **Panda BT veya State Machine:** NPC AI
+- **Unity UI System:** Trading UI, Dialogue UI
+- **FishNet:** Network synchronization
+- **SQLite:** NPC state persistence
+
+#### 5.3 Uygulama Planı
+
+**Dosyalar:**
+1. `NPCDefinition.cs` - ScriptableObject (NPC definitions)
+2. `NPCAI.cs` - NPC AI logic
+3. `VillagerTrading.cs` - Trading system
+4. `DialogueSystem.cs` - Dialogue system
+5. `VillageGenerator.cs` - Village generation
+
+**Kod Yapısı:**
+```csharp
+// NPCDefinition.cs
+[CreateAssetMenu(fileName = "NPCDefinition", menuName = "Stratocraft/NPC")]
+public class NPCDefinition : ScriptableObject {
+    public string npcId;
+    public string npcName;
+    public NPCProfession profession;
+    public List<TradeOffer> tradeOffers;
+    public List<QuestDefinition> availableQuests;
+    public DialogueTree dialogueTree;
+}
+
+public enum NPCProfession {
+    Blacksmith,
+    Merchant,
+    Farmer,
+    Guard,
+    Priest
+}
+```
+
+---
+
+### 6. GELİŞMİŞ BİNEK SİSTEMİ
+
+#### 6.1 Sistem Genel Bakış
+
+**Amaç:**
+Binek sistemini eğer, envanter, zırh ve özel yeteneklerle genişletmek.
+
+**Temel Özellikler:**
+1. **Eğer Sistemi:** Saddle item, crafting
+2. **Binek Envanteri:** Storage on mount
+3. **Binek Zırhı:** Armor for mounts
+4. **Binek Özel Yetenekleri:** Special abilities
+5. **Binek Seviye Sistemi:** Leveling
+6. **Binek Breeding:** Üreme
+
+#### 6.2 Teknoloji Gereksinimleri
+
+- **RideableMob:** Mevcut sistem (genişletilecek)
+- **Unity UI System:** Mount inventory UI
+- **FishNet:** Network synchronization
+- **SQLite:** Mount stats persistence
+
+#### 6.3 Uygulama Planı
+
+**Dosyalar:**
+1. `SaddleDefinition.cs` - ScriptableObject (saddle definitions)
+2. `MountInventory.cs` - Mount storage system
+3. `MountArmor.cs` - Mount armor system
+4. `MountAbilities.cs` - Special abilities
+5. `MountLeveling.cs` - Leveling system
+
+**Kod Yapısı:**
+```csharp
+// RideableMobDefinition.cs'e eklenecek
+[Header("Mount Features")]
+public bool hasSaddle;
+public SaddleDefinition saddleDefinition;
+public int inventorySlots = 0;
+public bool hasArmor;
+public MountArmorDefinition armorDefinition;
+public List<MountAbility> specialAbilities;
+public int mountLevel = 1;
+public int mountExperience = 0;
+```
+
+---
+
+### 7. GELİŞMİŞ BOSS SİSTEMİ
+
+#### 7.1 Sistem Genel Bakış
+
+**Amaç:**
+Boss sistemini ejderha, arena, loot table ve phase sistemiyle genişletmek.
+
+**Temel Özellikler:**
+1. **Ejderha Sistemi:** Dragon AI, flight mechanics
+2. **Boss Arena:** Dedicated arenas
+3. **Boss Loot Table:** Reward system
+4. **Boss Phase:** Multi-phase fights
+5. **Boss Summoning:** Ritual-based summoning
+6. **Boss Respawn Timer:** Cooldown system
+
+#### 7.2 Teknoloji Gereksinimleri
+
+- **BossAI:** Mevcut sistem (genişletilecek)
+- **Panda BT:** Complex boss AI
+- **Unity Physics:** Flight mechanics
+- **FishNet:** Network synchronization
+- **SQLite:** Boss state persistence
+
+#### 7.3 Uygulama Planı
+
+**Dosyalar:**
+1. `DragonAI.cs` - Dragon-specific AI
+2. `BossArena.cs` - Arena system
+3. `BossLootTable.cs` - Loot system
+4. `BossPhaseSystem.cs` - Phase management
+5. `BossSummoning.cs` - Summoning system
+
+**Kod Yapısı:**
+```csharp
+// BossDefinition.cs'e eklenecek
+[Header("Boss Features")]
+public bool isDragon;
+public DragonFlightPattern flightPattern;
+public BossArenaDefinition arenaDefinition;
+public BossLootTable lootTable;
+public List<BossPhase> phases;
+public BossSummoningRitual summoningRitual;
+public float respawnCooldown = 3600f; // 1 saat
+```
+
+---
+
+### 8. ÖZEL CANLI TİPLERİ
+
+#### 8.1 Sistem Genel Bakış
+
+**Amaç:**
+Özel canlı tipleri (goblin, ork, troll) ve sınıfları (warrior, mage) eklemek.
+
+**Temel Özellikler:**
+1. **Özel Canlı Tipleri:** Goblin, ork, troll, vb.
+2. **Canlı Sınıfları:** Warrior, mage, archer, vb.
+3. **Canlı Yetenekleri:** Special abilities
+4. **Canlı Zırhı:** Armor system
+5. **Canlı Seviye Sistemi:** Leveling
+6. **Canlı Ticaret:** Trading with mobs
+
+#### 8.2 Teknoloji Gereksinimleri
+
+- **MobAI:** Mevcut sistem (genişletilecek)
+- **State Machine:** Mob AI
+- **Unity Animator:** Mob animations
+- **FishNet:** Network synchronization
+
+#### 8.3 Uygulama Planı
+
+**Dosyalar:**
+1. `MobClassDefinition.cs` - ScriptableObject (mob class definitions)
+2. `MobAbilitySystem.cs` - Ability system
+3. `MobArmorSystem.cs` - Armor system
+4. `MobLeveling.cs` - Leveling system
+
+**Kod Yapısı:**
+```csharp
+// MobDefinition.cs'e eklenecek
+[Header("Mob Features")]
+public MobType mobType; // Goblin, Ork, Troll, vb.
+public MobClass mobClass; // Warrior, Mage, Archer, vb.
+public List<MobAbility> abilities;
+public MobArmorDefinition armorDefinition;
+public int mobLevel = 1;
+public bool canTrade;
+public List<TradeOffer> tradeOffers;
+```
+
+---
+
+### 9. YEMEK VE AÇLIK SİSTEMİ
+
+#### 9.1 Sistem Genel Bakış
+
+**Amaç:**
+Açlık, yemek pişirme ve yemek buffları sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Açlık Sistemi:** Hunger bar, starvation
+2. **Yemek Pişirme:** Cooking station, recipes
+3. **Yemek Tarifleri:** Recipe system
+4. **Yemek Buffları:** Temporary buffs
+5. **Yemek Çeşitliliği:** Different food types
+6. **Yemek Kalitesi:** Food quality system
+
+#### 9.2 Teknoloji Gereksinimleri
+
+- **ItemDefinition:** Food items (mevcut - genişletilecek)
+- **Unity UI System:** Hunger bar UI
+- **CookingStation.cs:** Cooking logic
+- **FishNet:** Network synchronization
+
+#### 9.3 Uygulama Planı
+
+**Dosyalar:**
+1. `FoodDefinition.cs` - ScriptableObject (food definitions)
+2. `HungerSystem.cs` - Hunger management
+3. `CookingStation.cs` - NetworkBehaviour (cooking logic)
+4. `CookingRecipe.cs` - ScriptableObject (cooking recipes)
+
+**Kod Yapısı:**
+```csharp
+// ItemDefinition.cs'e eklenecek (food için)
+[Header("Food Properties")]
+public bool isFood;
+public int hungerRestored = 0;
+public float foodQuality = 1.0f; // 0.5-2.0 arası
+public List<FoodBuff> foodBuffs; // Temporary buffs
+public float foodBuffDuration = 300f; // 5 dakika
+```
+
+---
+
+### 10. HASTALIK VE DURUM SİSTEMİ
+
+#### 10.1 Sistem Genel Bakış
+
+**Amaç:**
+Hastalık, durum efektleri (poison, burn) ve iyileştirme sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Hastalık Sistemi:** Disease system
+2. **Durum Efektleri:** Status effects (poison, burn, freeze)
+3. **İyileştirme Sistemi:** Cure items, potions
+4. **Durum Efekt Süresi:** Duration system
+5. **Durum Efekt Stackleme:** Stacking effects
+6. **Durum Efekt Görselleştirme:** UI indicators
+
+#### 10.2 Teknoloji Gereksinimleri
+
+- **HealthComponent:** Mevcut sistem (genişletilecek)
+- **Unity UI System:** Status effect UI
+- **Unity Particle System:** Visual effects
+- **FishNet:** Network synchronization
+
+#### 10.3 Uygulama Planı
+
+**Dosyalar:**
+1. `StatusEffectDefinition.cs` - ScriptableObject (status effect definitions)
+2. `StatusEffectManager.cs` - Status effect management
+3. `DiseaseSystem.cs` - Disease logic
+4. `CureItem.cs` - Cure items
+
+**Kod Yapısı:**
+```csharp
+// StatusEffectDefinition.cs
+[CreateAssetMenu(fileName = "StatusEffectDefinition", menuName = "Stratocraft/Status Effect")]
+public class StatusEffectDefinition : ScriptableObject {
+    public string effectId;
+    public string effectName;
+    public StatusEffectType type; // Poison, Burn, Freeze, vb.
+    public float duration = 10f;
+    public float damagePerSecond = 0f;
+    public bool canStack;
+    public int maxStacks = 1;
+    public Sprite effectIcon;
+}
+
+public enum StatusEffectType {
+    Poison,
+    Burn,
+    Freeze,
+    Slow,
+    Weakness,
+    Regeneration
+}
+```
+
+---
+
+### 11. ZAMAN VE HAVA SİSTEMİ
+
+#### 11.1 Sistem Genel Bakış
+
+**Amaç:**
+Hava durumu, mevsimler ve sıcaklık sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Hava Durumu:** Rain, snow, storm, fog
+2. **Mevsimler:** Spring, summer, autumn, winter
+3. **Sıcaklık Sistemi:** Temperature effects
+4. **Hava Durumu Efektleri:** Visual effects
+5. **Hava Durumu Sesleri:** Audio effects
+6. **Hava Durumu Oyun Mekaniği:** Gameplay effects
+
+#### 11.2 Teknoloji Gereksinimleri
+
+- **GameTimeManager:** Mevcut sistem (genişletilecek)
+- **Unity Particle System:** Weather effects
+- **Unity Audio:** Weather sounds
+- **Shader Graph:** Weather shaders
+
+#### 11.3 Uygulama Planı
+
+**Dosyalar:**
+1. `WeatherSystem.cs` - Weather management
+2. `SeasonSystem.cs` - Season management
+3. `TemperatureSystem.cs` - Temperature logic
+4. `WeatherEffects.cs` - Visual/audio effects
+
+**Kod Yapısı:**
+```csharp
+// WeatherSystem.cs
+public class WeatherSystem : MonoBehaviour {
+    public WeatherType currentWeather = WeatherType.Clear;
+    public Season currentSeason = Season.Spring;
+    public float currentTemperature = 20f; // Celsius
+    
+    [ServerRpc]
+    public void ChangeWeather(WeatherType newWeather) {
+        currentWeather = newWeather;
+        RpcUpdateWeather(newWeather);
+    }
+}
+
+public enum WeatherType {
+    Clear,
+    Rain,
+    Snow,
+    Storm,
+    Fog
+}
+
+public enum Season {
+    Spring,
+    Summer,
+    Autumn,
+    Winter
+}
+```
+
+---
+
+### 12. ZİNDAN VE MAĞARA SİSTEMİ
+
+#### 12.1 Sistem Genel Bakış
+
+**Amaç:**
+Zindan sistemi, zindan boss'ları ve ödülleri eklemek.
+
+**Temel Özellikler:**
+1. **Zindan Sistemi:** Dungeon generation
+2. **Zindan Boss'ları:** Dungeon bosses
+3. **Zindan Ödülleri:** Loot chests
+4. **Zindan Zorluk Seviyeleri:** Difficulty levels
+5. **Zindan Respawn Sistemi:** Respawn timer
+6. **Zindan Giriş Kontrolü:** Key system
+
+#### 12.2 Teknoloji Gereksinimleri
+
+- **ChunkManager:** Dungeon generation (genişletilecek)
+- **BossAI:** Dungeon bosses (mevcut sistem)
+- **Unity NavMesh:** Dungeon pathfinding
+- **FishNet:** Network synchronization
+
+#### 12.3 Uygulama Planı
+
+**Dosyalar:**
+1. `DungeonDefinition.cs` - ScriptableObject (dungeon definitions)
+2. `DungeonGenerator.cs` - Dungeon generation
+3. `DungeonBoss.cs` - Dungeon boss logic
+4. `DungeonLootChest.cs` - Loot system
+5. `DungeonKey.cs` - Key system
+
+**Kod Yapısı:**
+```csharp
+// DungeonDefinition.cs
+[CreateAssetMenu(fileName = "DungeonDefinition", menuName = "Stratocraft/Dungeon")]
+public class DungeonDefinition : ScriptableObject {
+    public string dungeonId;
+    public string dungeonName;
+    public DungeonDifficulty difficulty;
+    public Vector3Int dungeonSize;
+    public BossDefinition dungeonBoss;
+    public List<LootChestDefinition> lootChests;
+    public bool requiresKey;
+    public ItemDefinition requiredKey;
+    public float respawnCooldown = 3600f; // 1 saat
+}
+
+public enum DungeonDifficulty {
+    Easy,
+    Medium,
+    Hard,
+    Extreme
+}
+```
+
+---
+
+### 13. MAGIC VE BÜYÜ SİSTEMİ
+
+#### 13.1 Sistem Genel Bakış
+
+**Amaç:**
+Büyü sistemi, büyü kitapları ve mana sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Büyü Sistemi:** Spell casting
+2. **Büyü Kitapları:** Spell books
+3. **Mana Sistemi:** Mana bar, regeneration
+4. **Büyü Okulları:** Spell schools (fire, ice, lightning)
+5. **Büyü Seviye Sistemi:** Spell levels
+6. **Büyü Animasyonları:** Casting animations
+
+#### 13.2 Teknoloji Gereksinimleri
+
+- **Unity Animator:** Spell casting animations
+- **Unity Particle System:** Spell effects
+- **Unity UI System:** Mana bar UI
+- **FishNet:** Network synchronization
+
+#### 13.3 Uygulama Planı
+
+**Dosyalar:**
+1. `SpellDefinition.cs` - ScriptableObject (spell definitions)
+2. `SpellBook.cs` - Spell book system
+3. `ManaSystem.cs` - Mana management
+4. `SpellCasting.cs` - Spell casting logic
+5. `SpellEffect.cs` - Spell visual effects
+
+**Kod Yapısı:**
+```csharp
+// SpellDefinition.cs
+[CreateAssetMenu(fileName = "SpellDefinition", menuName = "Stratocraft/Spell")]
+public class SpellDefinition : ScriptableObject {
+    public string spellId;
+    public string spellName;
+    public SpellSchool school; // Fire, Ice, Lightning
+    public int spellLevel = 1;
+    public float manaCost = 10f;
+    public float castTime = 1.0f;
+    public float cooldown = 5.0f;
+    public GameObject spellEffectPrefab;
+    public SpellEffectType effectType;
+}
+
+public enum SpellSchool {
+    Fire,
+    Ice,
+    Lightning,
+    Nature,
+    Dark,
+    Light
+}
+```
+
+---
+
+### 14. TEKNOLOJİ AĞACI (Tech Tree)
+
+#### 14.1 Sistem Genel Bakış
+
+**Amaç:**
+Teknoloji ağacı, unlock sistemi ve bağımlılıklar eklemek.
+
+**Temel Özellikler:**
+1. **Teknoloji Ağacı:** Tech tree UI
+2. **Teknoloji Unlock Sistemi:** Unlock requirements
+3. **Teknoloji Bağımlılıkları:** Prerequisites
+4. **Teknoloji Puanı:** Research points
+5. **Teknoloji Kategorileri:** Categories
+6. **Teknoloji Görselleştirme:** Tree visualization
+
+#### 14.2 Teknoloji Gereksinimleri
+
+- **ResearchManager:** Mevcut sistem (genişletilecek)
+- **Unity UI System:** Tech tree UI
+- **SQLite:** Tech tree persistence
+- **FishNet:** Network synchronization
+
+#### 14.3 Uygulama Planı
+
+**Dosyalar:**
+1. `TechNodeDefinition.cs` - ScriptableObject (tech node definitions)
+2. `TechTreeManager.cs` - Tech tree management
+3. `TechTreeUI.cs` - Tech tree interface
+4. `ResearchPointSystem.cs` - Research points
+
+**Kod Yapısı:**
+```csharp
+// TechNodeDefinition.cs
+[CreateAssetMenu(fileName = "TechNodeDefinition", menuName = "Stratocraft/Tech Node")]
+public class TechNodeDefinition : ScriptableObject {
+    public string nodeId;
+    public string nodeName;
+    public TechCategory category;
+    public List<string> prerequisites; // Node ID'leri
+    public int researchPointCost = 100;
+    public bool isUnlocked = false;
+    public UnlockReward unlockReward; // Recipe, item, vb.
+}
+
+public enum TechCategory {
+    Crafting,
+    Combat,
+    Building,
+    Magic,
+    Exploration
+}
+```
+
+---
+
+### 15. ARAÇ VE ULAŞIM SİSTEMİ
+
+#### 15.1 Sistem Genel Bakış
+
+**Amaç:**
+Araç sistemi (cart, boat, airship) eklemek.
+
+**Temel Özellikler:**
+1. **Araç Sistemi:** Cart, boat, airship
+2. **Araç Kontrolü:** Vehicle controls
+3. **Araç Envanteri:** Vehicle storage
+4. **Araç Yakıt Sistemi:** Fuel system
+5. **Araç Tamiri:** Repair system
+6. **Araç Crafting:** Vehicle recipes
+
+#### 15.2 Teknoloji Gereksinimleri
+
+- **Unity Physics:** Vehicle physics
+- **Unity Input System:** Vehicle controls
+- **FishNet:** Network synchronization
+- **Unity UI System:** Vehicle inventory UI
+
+#### 15.3 Uygulama Planı
+
+**Dosyalar:**
+1. `VehicleDefinition.cs` - ScriptableObject (vehicle definitions)
+2. `VehicleController.cs` - Vehicle control logic
+3. `VehicleInventory.cs` - Vehicle storage
+4. `VehicleFuelSystem.cs` - Fuel management
+5. `VehicleRepairSystem.cs` - Repair logic
+
+**Kod Yapısı:**
+```csharp
+// VehicleDefinition.cs
+[CreateAssetMenu(fileName = "VehicleDefinition", menuName = "Stratocraft/Vehicle")]
+public class VehicleDefinition : ScriptableObject {
+    public string vehicleId;
+    public string vehicleName;
+    public VehicleType type; // Cart, Boat, Airship
+    public GameObject vehiclePrefab;
+    public int inventorySlots = 0;
+    public bool requiresFuel;
+    public ItemDefinition fuelType;
+    public float fuelConsumption = 1.0f; // per second
+    public float maxFuel = 100f;
+}
+
+public enum VehicleType {
+    Cart,
+    Boat,
+    Airship
+}
+```
+
+---
+
+### 16. PET VE EV HAYVANI SİSTEMİ
+
+#### 16.1 Sistem Genel Bakış
+
+**Amaç:**
+Pet sistemi (companion pets) eklemek.
+
+**Temel Özellikler:**
+1. **Pet Sistemi:** Companion pets
+2. **Pet Envanteri:** Pet storage
+3. **Pet Seviye Sistemi:** Pet leveling
+4. **Pet Yetenekleri:** Pet abilities
+5. **Pet Komutları:** Pet commands
+6. **Pet UI:** Pet status UI
+
+#### 16.2 Teknoloji Gereksinimleri
+
+- **TamingManager:** Mevcut sistem (genişletilecek)
+- **Unity UI System:** Pet UI
+- **FishNet:** Network synchronization
+- **SQLite:** Pet stats persistence
+
+#### 16.3 Uygulama Planı
+
+**Dosyalar:**
+1. `PetDefinition.cs` - ScriptableObject (pet definitions)
+2. `PetAI.cs` - Pet AI logic
+3. `PetInventory.cs` - Pet storage
+4. `PetLeveling.cs` - Pet leveling system
+5. `PetCommands.cs` - Pet command system
+
+**Kod Yapısı:**
+```csharp
+// PetDefinition.cs
+[CreateAssetMenu(fileName = "PetDefinition", menuName = "Stratocraft/Pet")]
+public class PetDefinition : ScriptableObject {
+    public string petId;
+    public string petName;
+    public GameObject petPrefab;
+    public int inventorySlots = 0;
+    public List<PetAbility> abilities;
+    public int petLevel = 1;
+    public PetCommandType[] availableCommands;
+}
+
+public enum PetCommandType {
+    Follow,
+    Stay,
+    Attack,
+    Guard,
+    Fetch
+}
+```
+
+---
+
+### 17. TARIM VE ÇİFTÇİLİK SİSTEMİ
+
+#### 17.1 Sistem Genel Bakış
+
+**Amaç:**
+Tarım sistemi, tohum ve hasat mekaniği eklemek.
+
+**Temel Özellikler:**
+1. **Tarım Sistemi:** Crop planting
+2. **Tohum Sistemi:** Seed items
+3. **Hasat Sistemi:** Harvest mechanics
+4. **Tarım Aletleri:** Farming tools
+5. **Tarım Buffları:** Fertilizer
+6. **Tarım Çeşitliliği:** Different crops
+
+#### 17.2 Teknoloji Gereksinimleri
+
+- **VoxelTreeGenerator:** Crop system (genişletilecek)
+- **ChunkManager:** Crop placement
+- **FishNet:** Network synchronization
+- **Unity Coroutines:** Crop growth
+
+#### 17.3 Uygulama Planı
+
+**Dosyalar:**
+1. `CropDefinition.cs` - ScriptableObject (crop definitions)
+2. `SeedItem.cs` - Seed items
+3. `FarmingSystem.cs` - Farming logic
+4. `CropGrowthSystem.cs` - Crop growth management
+5. `FertilizerSystem.cs` - Fertilizer logic
+
+**Kod Yapısı:**
+```csharp
+// CropDefinition.cs
+[CreateAssetMenu(fileName = "CropDefinition", menuName = "Stratocraft/Crop")]
+public class CropDefinition : ScriptableObject {
+    public string cropId;
+    public string cropName;
+    public ItemDefinition seedItem;
+    public ItemDefinition harvestItem;
+    public int harvestAmount = 1;
+    public float growthTime = 300f; // 5 dakika
+    public int growthStages = 4; // 4 büyüme aşaması
+    public bool requiresWater;
+    public bool requiresFertilizer;
+    public List<ItemDefinition> fertilizerTypes;
+    public float fertilizerBoost = 1.5f; // %50 daha hızlı büyüme
+}
+
+// FarmingSystem.cs
+public class FarmingSystem : NetworkBehaviour {
+    private ChunkManager _chunkManager;
+    private Dictionary<Vector3Int, CropData> _plantedCrops = new Dictionary<Vector3Int, CropData>();
+    
+    [ServerRpc]
+    public void CmdPlantCrop(Vector3 position, string seedItemId) {
+        // Tohum dikme logic
+        Vector3Int gridPos = WorldToGrid(position);
+        if (_plantedCrops.ContainsKey(gridPos)) return;
+        
+        CropDefinition cropDef = GetCropFromSeed(seedItemId);
+        if (cropDef == null) return;
+        
+        CropData cropData = new CropData {
+            cropDefinition = cropDef,
+            plantTime = Time.time,
+            growthStage = 0,
+            hasWater = CheckWaterNearby(gridPos),
+            hasFertilizer = CheckFertilizerNearby(gridPos)
+        };
+        
+        _plantedCrops[gridPos] = cropData;
+        RpcSpawnCropVisual(gridPos, cropDef.cropId, 0);
+    }
+    
+    [ServerRpc]
+    public void CmdHarvestCrop(Vector3 position) {
+        Vector3Int gridPos = WorldToGrid(position);
+        if (!_plantedCrops.ContainsKey(gridPos)) return;
+        
+        CropData cropData = _plantedCrops[gridPos];
+        if (cropData.growthStage < cropData.cropDefinition.growthStages) return;
+        
+        // Hasat et
+        ItemSpawner.Instance.SpawnItem(
+            cropData.cropDefinition.harvestItem.itemID,
+            cropData.cropDefinition.harvestAmount,
+            position
+        );
+        
+        _plantedCrops.Remove(gridPos);
+        RpcRemoveCropVisual(gridPos);
+    }
+}
+
+[System.Serializable]
+public class CropData {
+    public CropDefinition cropDefinition;
+    public float plantTime;
+    public int growthStage;
+    public bool hasWater;
+    public bool hasFertilizer;
+}
+```
+
+---
+
+### 18. BALIKÇILIK SİSTEMİ
+
+#### 18.1 Sistem Genel Bakış
+
+**Amaç:**
+Balıkçılık sistemi, olta ve balık türleri eklemek.
+
+**Temel Özellikler:**
+1. **Balıkçılık Sistemi:** Fishing mechanics
+2. **Olta Sistemi:** Fishing rod item
+3. **Balık Türleri:** Fish types
+4. **Balıkçılık Lokasyonları:** Fishing spots
+5. **Balıkçılık Ödülleri:** Fish rewards
+6. **Balıkçılık Animasyonu:** Fishing animation
+
+#### 18.2 Teknoloji Gereksinimleri
+
+- **WaterSimulator:** Su sistemi (mevcut)
+- **Unity Animator:** Fishing animations
+- **Unity UI System:** Fishing UI
+- **FishNet:** Network synchronization
+
+#### 18.3 Uygulama Planı
+
+**Dosyalar:**
+1. `FishDefinition.cs` - ScriptableObject (fish definitions)
+2. `FishingRod.cs` - Fishing rod item
+3. `FishingSystem.cs` - Fishing logic
+4. `FishingSpot.cs` - Fishing spot detection
+
+**Kod Yapısı:**
+```csharp
+// FishDefinition.cs
+[CreateAssetMenu(fileName = "FishDefinition", menuName = "Stratocraft/Fish")]
+public class FishDefinition : ScriptableObject {
+    public string fishId;
+    public string fishName;
+    public ItemDefinition fishItem;
+    public float catchChance = 0.1f; // %10 şans
+    public int minWaterLevel = 1; // Minimum su seviyesi
+    public int maxWaterLevel = 7; // Maksimum su seviyesi
+    public float rarity = 1.0f; // 1.0 = common, 0.1 = rare
+}
+
+// FishingSystem.cs
+public class FishingSystem : NetworkBehaviour {
+    private WaterSimulator _waterSimulator;
+    private ChunkManager _chunkManager;
+    
+    [ServerRpc]
+    public void CmdStartFishing(Vector3 fishingPosition) {
+        // Su seviyesi kontrolü
+        int waterLevel = _waterSimulator.GetWaterLevel(fishingPosition);
+        if (waterLevel < 1) return;
+        
+        // Balık yakalama şansı
+        float catchChance = CalculateCatchChance(fishingPosition, waterLevel);
+        if (Random.Range(0f, 1f) < catchChance) {
+            // Balık yakala
+            FishDefinition caughtFish = GetRandomFish(waterLevel);
+            if (caughtFish != null) {
+                ItemSpawner.Instance.SpawnItem(caughtFish.fishItem.itemID, 1, fishingPosition);
+            }
+        }
+    }
+    
+    FishDefinition GetRandomFish(int waterLevel) {
+        // Su seviyesine göre balık seç
+        List<FishDefinition> availableFish = GetAvailableFish(waterLevel);
+        if (availableFish.Count == 0) return null;
+        
+        // Rarity bazlı seçim
+        float totalRarity = 0f;
+        foreach (var fish in availableFish) {
+            totalRarity += fish.rarity;
+        }
+        
+        float random = Random.Range(0f, totalRarity);
+        float current = 0f;
+        foreach (var fish in availableFish) {
+            current += fish.rarity;
+            if (random <= current) {
+                return fish;
+            }
+        }
+        
+        return availableFish[0];
+    }
+}
+```
+
+---
+
+### 19. MADENCİLİK VE ERİTME SİSTEMİ
+
+#### 19.1 Sistem Genel Bakış
+
+**Amaç:**
+Eritme sistemi, fırın ve yakıt sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Eritme Sistemi:** Smelting mechanics
+2. **Fırın Sistemi:** Furnace structure
+3. **Yakıt Sistemi:** Fuel system
+4. **Eritme Tarifleri:** Smelting recipes
+5. **Eritme Süresi:** Smelting time
+6. **Eritme Animasyonu:** Smelting animation
+
+#### 19.2 Teknoloji Gereksinimleri
+
+- **StructurePlacer:** Furnace placement (mevcut)
+- **Unity Particle System:** Fire/smoke effects
+- **Unity UI System:** Furnace UI
+- **FishNet:** Network synchronization
+
+#### 19.3 Uygulama Planı
+
+**Dosyalar:**
+1. `SmeltingRecipe.cs` - ScriptableObject (smelting recipes)
+2. `Furnace.cs` - NetworkBehaviour (furnace logic)
+3. `FuelSystem.cs` - Fuel management
+4. `SmeltingUI.cs` - Furnace interface
+
+**Kod Yapısı:**
+```csharp
+// SmeltingRecipe.cs
+[CreateAssetMenu(fileName = "SmeltingRecipe", menuName = "Stratocraft/Smelting Recipe")]
+public class SmeltingRecipe : ScriptableObject {
+    public string recipeId;
+    public ItemDefinition inputItem;
+    public int inputAmount = 1;
+    public ItemDefinition outputItem;
+    public int outputAmount = 1;
+    public float smeltingTime = 10f; // 10 saniye
+    public float fuelRequired = 1.0f; // 1 yakıt birimi
+}
+
+// Furnace.cs
+public class Furnace : NetworkBehaviour, IInteractable {
+    [SyncVar] private SmeltingRecipe _currentRecipe;
+    [SyncVar] private float _smeltingProgress = 0f;
+    [SyncVar] private float _currentFuel = 0f;
+    [SyncVar] private float _maxFuel = 100f;
+    
+    private List<ItemStack> _inputItems = new List<ItemStack>();
+    private List<ItemStack> _outputItems = new List<ItemStack>();
+    
+    [ServerRpc]
+    public void CmdStartSmelting(string recipeId) {
+        SmeltingRecipe recipe = SmeltingRecipeDatabase.Instance.GetRecipe(recipeId);
+        if (recipe == null) return;
+        
+        // Malzeme kontrolü
+        if (!HasRequiredItems(recipe)) return;
+        
+        // Yakıt kontrolü
+        if (_currentFuel < recipe.fuelRequired) return;
+        
+        _currentRecipe = recipe;
+        _smeltingProgress = 0f;
+        StartCoroutine(SmeltingCoroutine());
+    }
+    
+    IEnumerator SmeltingCoroutine() {
+        while (_smeltingProgress < 1f && _currentFuel > 0f) {
+            _smeltingProgress += Time.deltaTime / _currentRecipe.smeltingTime;
+            _currentFuel -= _currentRecipe.fuelRequired * Time.deltaTime / _currentRecipe.smeltingTime;
+            yield return null;
+        }
+        
+        if (_smeltingProgress >= 1f) {
+            // Eritme tamamlandı
+            CompleteSmelting();
+        }
+    }
+    
+    void CompleteSmelting() {
+        // Input item'ları çıkar
+        RemoveInputItems(_currentRecipe);
+        
+        // Output item'ları ekle
+        AddOutputItem(_currentRecipe.outputItem, _currentRecipe.outputAmount);
+        
+        _currentRecipe = null;
+        _smeltingProgress = 0f;
+    }
+}
+```
+
+---
+
+### 20. DEPOLAMA VE SANDIK SİSTEMİ
+
+#### 20.1 Sistem Genel Bakış
+
+**Amaç:**
+Sandık sistemi, envanter ve kilitleme eklemek.
+
+**Temel Özellikler:**
+1. **Sandık Sistemi:** Chest structure
+2. **Sandık Envanteri:** Chest inventory
+3. **Sandık Kilitleme:** Chest locking
+4. **Sandık Kategorileri:** Chest categories
+5. **Sandık Görselleştirme:** Chest UI
+6. **Sandık Arama:** Search functionality
+
+#### 20.2 Teknoloji Gereksinimleri
+
+- **StructurePlacer:** Chest placement (mevcut)
+- **Unity UI System:** Chest inventory UI
+- **FishNet:** Network synchronization
+- **SQLite:** Chest locking persistence
+
+#### 20.3 Uygulama Planı
+
+**Dosyalar:**
+1. `ChestDefinition.cs` - ScriptableObject (chest definitions)
+2. `ChestInventory.cs` - NetworkBehaviour (chest inventory)
+3. `ChestLockSystem.cs` - Locking system
+4. `ChestUI.cs` - Chest interface
+
+**Kod Yapısı:**
+```csharp
+// ChestDefinition.cs
+[CreateAssetMenu(fileName = "ChestDefinition", menuName = "Stratocraft/Chest")]
+public class ChestDefinition : ScriptableObject {
+    public string chestId;
+    public string chestName;
+    public int inventorySlots = 27; // 3x9 grid
+    public bool canLock;
+    public bool requiresKey;
+    public ItemDefinition requiredKey;
+}
+
+// ChestInventory.cs
+public class ChestInventory : NetworkBehaviour, IInteractable {
+    [SyncVar] private List<InventorySlot> _slots = new List<InventorySlot>();
+    [SyncVar] private bool _isLocked = false;
+    [SyncVar] private string _lockOwnerId = ""; // Player ID
+    
+    private ChestDefinition _chestDefinition;
+    
+    [ServerRpc]
+    public void CmdAddItem(string itemId, int amount, int slotIndex) {
+        if (_isLocked && !IsOwner(OwnerId)) return;
+        
+        // Item ekleme logic
+        if (slotIndex >= 0 && slotIndex < _slots.Count) {
+            InventorySlot slot = _slots[slotIndex];
+            if (slot.IsEmpty()) {
+                slot.SetItem(itemId, amount);
+            } else if (slot.itemId == itemId) {
+                slot.AddAmount(amount);
+            }
+        }
+    }
+    
+    [ServerRpc]
+    public void CmdLockChest(string playerId) {
+        if (_isLocked) return;
+        
+        _isLocked = true;
+        _lockOwnerId = playerId;
+    }
+    
+    [ServerRpc]
+    public void CmdUnlockChest(string playerId, string keyItemId) {
+        if (!_isLocked) return;
+        if (_lockOwnerId != playerId) return;
+        if (_chestDefinition.requiresKey && keyItemId != _chestDefinition.requiredKey.itemID) return;
+        
+        _isLocked = false;
+        _lockOwnerId = "";
+    }
+}
+```
+
+---
+
+## 🛠️ TEKNOLOJİ GEREKSİNİMLERİ (ÖZET)
+
+### Yeni Teknolojiler
+
+1. **Unity UI System (Genişletilmiş):**
+   - Crafting UI (grid-based, drag-drop)
+   - Inventory UI (27-36 slot, hotbar)
+   - Chest UI (storage interface)
+   - Tech Tree UI (tree visualization)
+   - Pet UI (pet status)
+   - Fishing UI (fishing interface)
+   - Furnace UI (smelting interface)
+
+2. **Unity Animator (Genişletilmiş):**
+   - Crafting animations
+   - Fishing animations
+   - Furniture interactions (sit, sleep)
+   - Spell casting animations
+
+3. **Unity Particle System:**
+   - Weather effects (rain, snow, storm)
+   - Spell effects (fire, ice, lightning)
+   - Smelting effects (fire, smoke)
+   - Status effect visuals
+
+4. **Unity Physics (Genişletilmiş):**
+   - Vehicle physics (cart, boat, airship)
+   - Dragon flight mechanics
+
+5. **SQLite (Genişletilmiş):**
+   - Recipe learning (persistent)
+   - Inventory persistence
+   - Tech tree unlock state
+   - Pet stats persistence
+   - Chest locking state
+
+6. **Yeni ScriptableObject'ler:**
+   - CraftingRecipe
+   - FurnitureDefinition
+   - NPCDefinition
+   - SpellDefinition
+   - TechNodeDefinition
+   - VehicleDefinition
+   - PetDefinition
+   - CropDefinition
+   - FishDefinition
+   - SmeltingRecipe
+   - ChestDefinition
+   - StatusEffectDefinition
+   - FoodDefinition
+
+---
+
+## 📋 UYGULAMA PLANI (ÖNCELİK SIRASI)
+
+### Yüksek Öncelik (Temel Oyun Mekanikleri)
+
+1. **Crafting Sistemi** - Oyunun temel mekaniği
+2. **Kapsamlı Envanter Sistemi** - Item yönetimi için gerekli
+3. **Furniture Sistemi** - Dekorasyon ve işlevsellik
+4. **İşlevsel Item'ler** - Tool durability, repair, upgrade
+5. **Depolama ve Sandık Sistemi** - Item saklama için gerekli
+
+### Orta Öncelik (Oyun Deneyimi)
+
+6. **Yemek ve Açlık Sistemi** - Survival mekaniği
+7. **Hastalık ve Durum Sistemi** - Oyun zorluğu
+8. **Madencilik ve Eritme Sistemi** - Kaynak işleme
+9. **Tarım ve Çiftçilik Sistemi** - Kaynak üretimi
+10. **Balıkçılık Sistemi** - Alternatif kaynak
+
+### Düşük Öncelik (Gelişmiş Özellikler)
+
+11. **NPC Sistemi** - Ticaret ve görevler
+12. **Gelişmiş Binek Sistemi** - Eğer, envanter, zırh
+13. **Gelişmiş Boss Sistemi** - Ejderha, arena, loot
+14. **Özel Canlı Tipleri** - Goblin, ork, troll
+15. **Zaman ve Hava Sistemi** - Atmosfer
+16. **Zindan ve Mağara Sistemi** - İçerik
+17. **Magic ve Büyü Sistemi** - Oyun çeşitliliği
+18. **Teknoloji Ağacı** - İlerleme sistemi
+19. **Araç ve Ulaşım Sistemi** - Hareket çeşitliliği
+20. **Pet ve Ev Hayvanı Sistemi** - Companion sistemi
+
+---
+
+## 🎯 SONUÇ
+
+Bu döküman, Stratocraft oyununda eksik olan 20 mekaniği detaylı olarak açıklamaktadır. Her mekanik için:
+
+- ✅ Sistem genel bakış
+- ✅ Teknoloji gereksinimleri
+- ✅ Uygulama planı (dosyalar ve kod yapısı)
+- ✅ Benzer oyunlardan örnekler
+
+**Önerilen Uygulama Sırası:**
+1. Önce yüksek öncelikli mekanikler (Crafting, Inventory, Furniture)
+2. Sonra orta öncelikli mekanikler (Food, Status, Smelting)
+3. En son düşük öncelikli mekanikler (NPC, Magic, Vehicles)
+
+Her mekanik, mevcut sistemlerle entegre edilebilir şekilde tasarlanmıştır.
+
+
+
+
+

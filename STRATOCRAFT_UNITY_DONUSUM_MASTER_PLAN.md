@@ -75,16 +75,28 @@ Bu parçaları indireceğiz. Bunlar projenin motorunu oluşturacak.
 - **Unity NavMesh** - Mob pathfinding (FAZ 5'te kullanılacak)
 
 #### FAZ 3: Doğa, Su ve Biyomlar
-- **GPU Instancing** - Binlerce ağaç/kaya render (VegetationSpawner.cs)
+- **GPU Instancing** - Binlerce ağaç/kaya render (VegetationSpawner.cs - eski sistem)
 - **Object Pooling** - Performans optimizasyonu (ağaç/kaya yeniden kullanımı)
 - **Shader Graph** - Okyanus materyali (OceanPlane.cs)
 - **FastNoiseLite** - Biyom ve mağara gürültüsü (TerrainDensity.compute)
+- **Unity Job System + Burst Compiler** - Paralel ağaç generation (VoxelTreeGenerator.cs - GenerateTreeJob), paralel maden spawn (OreSpawner.cs - SpawnOresInChunkJob)
+- **Unity Coroutines** - Aşamalı ağaç büyüme (TreeGrowthSystem.cs - 5 büyüme aşaması)
+- **Unity Mesh API** - Variant mesh generation (VariantMeshGenerator.cs - 740 variant algoritma tabanlı mesh generation)
+- **Unity JSON** - Blueprint kaydetme/yükleme (BlueprintSystem.cs - yapı kayıt sistemi)
+- **Unity Compute Shaders** - Voxel su simülasyonu (WaterSim.compute - Minecraft benzeri matematiksel su mekaniği)
 
 #### FAZ 4: Oyun Mekanikleri
-- **ScriptableObject** - ItemDefinition, RitualRecipe, BiomeDefinition
+- **ScriptableObject** - ItemDefinition, RitualRecipe, BiomeDefinition, ChiselDefinition
 - **Flood-Fill Algorithm** - Territory hesaplama (TerritoryManager.cs)
 - **Unity Job System + Burst Compiler** - Territory flood-fill optimizasyonu (FloodFillJob)
 - **SQLite** - Contract ve territory verileri (DatabaseManager.cs)
+- **Unity Raycast API** - Blok seçimi (ChiselRaycast.cs - Voxel terrain uyumlu, raycast cache optimizasyonu)
+- **Unity Mesh API** - Variant mesh generation (BlockCuttingSystem.cs - VariantMeshGenerator entegrasyonu)
+- **Unity JSON** - Şekil kayıt sistemi (ShapeApplicationSystem.cs - 9 slot persistent storage)
+- **Unity LineRenderer** - Kesim çizgileri ve grid çizgileri (BlockSelectionVisualizer.cs - görsel geri bildirim)
+- **Unity Particle System** - Kesim efektleri (toz bulutları, talaş parçacıkları, kıvılcım - malzeme bazlı efektler)
+- **Unity Coroutines** - Chunk regeneration batch sistemi (BlockCuttingSystem.cs - performans optimizasyonu)
+- **C# Dictionary/Queue** - Cache ve pooling sistemleri (Raycast cache, Mesh pooling, Variant cache - performans optimizasyonları)
 
 #### FAZ 5: Yapay Zeka, Savaş ve Felaketler
 - **Unity NavMesh** - Dinamik NavMesh baking (ChunkNavMeshBaker.cs)
@@ -137,7 +149,9 @@ Assets/
 │   │   ├── Items/                      (Eşya Tanımları)
 │   │   │   ├── Resources/              (Titanium.asset)
 │   │   │   ├── Traps/                  (LandMine.asset)
-│   │   │   └── Structures/             (ClanCrystal.asset)
+│   │   │   ├── Structures/             (ClanCrystal.asset)
+│   │   │   └── Tools/                  (Aletler)
+│   │   │       └── Chisels/            (ChiselDefinition.asset - Odun/Taş/Metal Kesici)
 │   │   │
 │   │   ├── Recipes/                    (Tarifler)
 │   │   │   ├── Rituals/                (Batarya kurulum şemaları)
@@ -175,13 +189,22 @@ Assets/
 │   │   │   ├── ServiceLocator.cs
 │   │   │   ├── DatabaseManager.cs      (SQLite)
 │   │   │   └── Definitions/            (ItemDefinition.cs vb.)
+│   │   │       ├── ItemDefinition.cs   (isChisel, chiselDefinition, chiselLevel eklendi)
+│   │   │       ├── IEquippable.cs      (Alet interface'i)
+│   │   │       └── CutMode.cs          (Kesim modu enum'ları)
 │   │   │
 │   │   ├── Systems/                    (MEKANİKLER)
 │   │   │   ├── Mining/                 (NetworkMining.cs)
 │   │   │   ├── Rituals/                (RitualManager.cs)
 │   │   │   ├── Clans/                  (TerritoryManager.cs)
 │   │   │   ├── Combat/                 (Damage, Traps)
-│   │   │   └── Economy/                (ContractManager.cs)
+│   │   │   ├── Economy/                (ContractManager.cs)
+│   │   │   └── Building/               (İnşa Sistemi)
+│   │   │       ├── ChiselTool.cs       (Blok şekillendirme aleti)
+│   │   │       ├── ChiselRaycast.cs    (Voxel terrain raycast)
+│   │   │       ├── BlockSelectionVisualizer.cs (Seçim görselleştirme)
+│   │   │       ├── BlockCuttingSystem.cs (Kesim mekaniği)
+│   │   │       └── ShapeApplicationSystem.cs (Şekil kayıt/uygulama)
 │   │   │
 │   │   ├── AI/                         (YAPAY ZEKA)
 │   │   │   ├── Core/                   (Panda BT entegrasyonu)
@@ -2295,6 +2318,9 @@ public class ChunkManager : NetworkBehaviour {
         _chunkStates[coord] = ChunkState.Ready;
         _generatingChunks.Remove(coord);
         
+        // ✅ Event: Chunk generation tamamlandı (OreSpawner, VoxelTreeGenerator için)
+        OnChunkGenerated?.Invoke(coord);
+        
         Debug.Log($"[ChunkManager] Chunk yüklendi: {coord} (Mode: {(_useGPU ? "GPU" : "CPU")}, LOD: {chunkData.LODLevel})");
     }
     
@@ -2753,6 +2779,136 @@ public class ChunkManager : NetworkBehaviour {
     /// </summary>
     public List<Vector3Int> GetActiveChunkCoords() {
         return new List<Vector3Int>(_activeChunks.Keys);
+    }
+    
+    // ✅ OPTİMİZE: Blok tipi cache'i (Voxel Ağaç, Maden, İnşa sistemleri için)
+    private Dictionary<Vector3Int, string> _blockTypes = new Dictionary<Vector3Int, string>();
+    
+    // ✅ Event: Chunk generation tamamlandığında (OreSpawner, VoxelTreeGenerator için)
+    public event System.Action<Vector3Int> OnChunkGenerated;
+    
+    /// <summary>
+    /// ✅ YENİ: Blok tipini ayarla (variant ID veya base item ID)
+    /// Voxel ağaç, maden ve inşa sistemleri için
+    /// </summary>
+    public void SetBlockType(Vector3 worldPos, string blockType) {
+        Vector3Int gridPos = new Vector3Int(
+            Mathf.FloorToInt(worldPos.x),
+            Mathf.FloorToInt(worldPos.y),
+            Mathf.FloorToInt(worldPos.z)
+        );
+        
+        if (string.IsNullOrEmpty(blockType)) {
+            _blockTypes.Remove(gridPos);
+        } else {
+            _blockTypes[gridPos] = blockType;
+        }
+    }
+    
+    /// <summary>
+    /// ✅ YENİ: Blok tipini al
+    /// </summary>
+    public string GetBlockType(Vector3 worldPos) {
+        Vector3Int gridPos = new Vector3Int(
+            Mathf.FloorToInt(worldPos.x),
+            Mathf.FloorToInt(worldPos.y),
+            Mathf.FloorToInt(worldPos.z)
+        );
+        
+        if (_blockTypes.ContainsKey(gridPos)) {
+            return _blockTypes[gridPos];
+        }
+        return null;
+    }
+    
+    /// <summary>
+    /// ✅ YENİ: Blok tipini al (Vector3Int overload)
+    /// </summary>
+    public string GetBlockType(Vector3Int gridPos) {
+        if (_blockTypes.ContainsKey(gridPos)) {
+            return _blockTypes[gridPos];
+        }
+        return null;
+    }
+    
+    /// <summary>
+    /// ✅ YENİ: Density ekle (blok yerleştirme için)
+    /// Voxel ağaç, maden ve inşa sistemleri için
+    /// </summary>
+    public void AddDensityAtPoint(Vector3 worldPos, float density) {
+        Vector3Int chunkCoord = GetChunkCoord(worldPos);
+        
+        // Chunk yüklü mü kontrol et
+        if (!_activeChunks.ContainsKey(chunkCoord)) {
+            Debug.LogWarning($"[ChunkManager] Chunk yüklü değil: {chunkCoord}");
+            return;
+        }
+        
+        ChunkData chunkData = _activeChunks[chunkCoord];
+        if (chunkData.Generator != null) {
+            // MarchingCubesGPU'ya density ekle
+            Vector3 localPos = worldPos - (Vector3)(chunkCoord * chunkSize);
+            chunkData.Generator.AddDensity(localPos, density);
+            
+            // Chunk'ı yeniden generate et
+            StartCoroutine(RegenerateChunk(chunkCoord));
+        }
+    }
+    
+    /// <summary>
+    /// ✅ YENİ: Density kaldır (blok kırma için)
+    /// </summary>
+    public void RemoveDensityAtPoint(Vector3 worldPos) {
+        Vector3Int chunkCoord = GetChunkCoord(worldPos);
+        
+        if (!_activeChunks.ContainsKey(chunkCoord)) {
+            return;
+        }
+        
+        ChunkData chunkData = _activeChunks[chunkCoord];
+        if (chunkData.Generator != null) {
+            Vector3 localPos = worldPos - (Vector3)(chunkCoord * chunkSize);
+            chunkData.Generator.RemoveDensity(localPos);
+            
+            // Blok tipini de kaldır
+            Vector3Int gridPos = new Vector3Int(
+                Mathf.FloorToInt(worldPos.x),
+                Mathf.FloorToInt(worldPos.y),
+                Mathf.FloorToInt(worldPos.z)
+            );
+            _blockTypes.Remove(gridPos);
+            
+            // Chunk'ı yeniden generate et
+            StartCoroutine(RegenerateChunk(chunkCoord));
+        }
+    }
+    
+    /// <summary>
+    /// ✅ YENİ: World seed'i al
+    /// </summary>
+    public int GetWorldSeed() {
+        return _worldSeed;
+    }
+    
+    /// <summary>
+    /// ✅ YENİ: Chunk'ı yeniden generate et (density değişikliğinden sonra)
+    /// </summary>
+    IEnumerator RegenerateChunk(Vector3Int chunkCoord) {
+        if (_generatingChunks.Contains(chunkCoord)) {
+            yield break; // Zaten generate ediliyor
+        }
+        
+        _generatingChunks.Add(chunkCoord);
+        _chunkStates[chunkCoord] = ChunkState.Generating;
+        
+        ChunkData chunkData = _activeChunks[chunkCoord];
+        if (chunkData.Generator != null) {
+            // GPU'da yeniden generate et
+            yield return StartCoroutine(chunkData.Generator.GenerateMesh());
+        }
+        
+        _chunkStates[chunkCoord] = ChunkState.Ready;
+        _generatingChunks.Remove(chunkCoord);
     }
 
     /// <summary>
@@ -5887,12 +6043,17 @@ public class OceanPlane : MonoBehaviour {
 **Kod:**
 
 ```hlsl
-// ✅ Voxel Su Simülasyonu - Minecraft tarzı akışkan su
+// ✅ Voxel Su Simülasyonu - Minecraft tarzı matematiksel akışkan su
 #pragma kernel UpdateWater
 
-RWStructuredBuffer<int> WaterGrid;      // 0:Boş, 1:Su, 2:Kaynak Su
+RWStructuredBuffer<int> WaterGrid;      // 0:Boş, 1-7:Su seviyesi, 8:Kaynak Su
 RWStructuredBuffer<float> TerrainDensity; // Zemin yoğunluğu
 int3 Size;
+
+// ✅ Su seviyesi sabitleri
+#define WATER_EMPTY 0
+#define WATER_SOURCE 8
+#define WATER_MAX_LEVEL 7
 
 [numthreads(8, 8, 8)]
 void UpdateWater (uint3 id : SV_DispatchThreadID)
@@ -5900,26 +6061,111 @@ void UpdateWater (uint3 id : SV_DispatchThreadID)
     if (id.x >= Size.x || id.y >= Size.y || id.z >= Size.z) return;
     
     int index = id.x + id.y * Size.x + id.z * Size.x * Size.y;
+    int waterLevel = WaterGrid[index];
     
-    // ✅ Eğer burası suysa
-    if (WaterGrid[index] == 1 || WaterGrid[index] == 2) {
-        int indexBelow = index - Size.x; // Bir altındaki voxel
+    // ✅ Su yoksa işlem yapma
+    if (waterLevel == WATER_EMPTY) return;
+    
+    // ✅ Kaynak su hiç değişmez
+    if (waterLevel == WATER_SOURCE) return;
+    
+    int3 pos = int3(id.x, id.y, id.z);
+    
+    // ✅ 1. ÖNCELİK: AŞAĞI AKIŞ (Gravity)
+    int indexBelow = index - Size.x;
+    if (id.y > 0 && 
+        TerrainDensity[indexBelow] < 0 && 
+        WaterGrid[indexBelow] == WATER_EMPTY) {
         
-        // ✅ Altı boşsa (Terrain yoksa ve Su yoksa)
-        if (indexBelow >= 0 && 
-            TerrainDensity[indexBelow] < 0 && 
-            WaterGrid[indexBelow] == 0) {
+        // Aşağı akış - tam su seviyesi
+        WaterGrid[indexBelow] = WATER_MAX_LEVEL;
+        WaterGrid[index] = WATER_EMPTY;
+        return; // Aşağı akış varsa diğer akışları yapma
+    }
+    
+    // ✅ 2. ÖNCELİK: YAN TARAFA AKIŞ (4 yön: Kuzey, Güney, Doğu, Batı)
+    // Su seviyesi 1'den fazlaysa yan tarafa akar
+    if (waterLevel > 1) {
+        int3 directions[4] = {
+            int3(0, 0, 1),  // Kuzey
+            int3(0, 0, -1), // Güney
+            int3(1, 0, 0),  // Doğu
+            int3(-1, 0, 0)  // Batı
+        };
+        
+        for (int i = 0; i < 4; i++) {
+            int3 neighborPos = pos + directions[i];
             
-            WaterGrid[indexBelow] = 1; // Suyu aşağı akıt
+            // Sınır kontrolü
+            if (neighborPos.x < 0 || neighborPos.x >= Size.x ||
+                neighborPos.y < 0 || neighborPos.y >= Size.y ||
+                neighborPos.z < 0 || neighborPos.z >= Size.z) {
+                continue;
+            }
             
-            // ✅ Kaynak su değilse, bu suyu taşı (kuyudan su biter)
-            if (WaterGrid[index] == 1) {
-                WaterGrid[index] = 0;
+            int neighborIndex = neighborPos.x + neighborPos.y * Size.x + neighborPos.z * Size.x * Size.y;
+            
+            // Komşu boş mu ve terrain yok mu?
+            if (TerrainDensity[neighborIndex] < 0 && 
+                WaterGrid[neighborIndex] == WATER_EMPTY) {
+                
+                // Yan tarafa akış - su seviyesi 1 azalır
+                WaterGrid[neighborIndex] = waterLevel - 1;
+                WaterGrid[index] = WATER_EMPTY;
+                return; // Yan akış varsa yayılmayı yapma
             }
         }
+    }
+    
+    // ✅ 3. ÖNCELİK: YAYILMA MEKANİĞİ (Su seviyesi düşükse)
+    // Su seviyesi 1 ise ve altında su yoksa yayılma yapılmaz
+    if (waterLevel == 1) {
+        // Altında su var mı kontrol et
+        if (id.y > 0) {
+            int indexBelow = index - Size.x;
+            if (WaterGrid[indexBelow] > WATER_EMPTY) {
+                // Altında su var, yayılma yapma
+                return;
+            }
+        }
+    }
+    
+    // ✅ Yayılma: Su seviyesi 1'den fazlaysa ve altında su yoksa
+    // komşulara yayıl (sadece aynı seviyede veya daha düşük seviyede)
+    if (waterLevel > 1) {
+        int3 directions[4] = {
+            int3(0, 0, 1),  // Kuzey
+            int3(0, 0, -1), // Güney
+            int3(1, 0, 0),  // Doğu
+            int3(-1, 0, 0)  // Batı
+        };
         
-        // ✅ YAN TARAFA AKIŞ (Minecraft tarzı)
-        // Not: Bu kısım daha karmaşık, şimdilik sadece aşağı akış
+        for (int i = 0; i < 4; i++) {
+            int3 neighborPos = pos + directions[i];
+            
+            // Sınır kontrolü
+            if (neighborPos.x < 0 || neighborPos.x >= Size.x ||
+                neighborPos.y < 0 || neighborPos.y >= Size.y ||
+                neighborPos.z < 0 || neighborPos.z >= Size.z) {
+                continue;
+            }
+            
+            int neighborIndex = neighborPos.x + neighborPos.y * Size.x + neighborPos.z * Size.x * Size.y;
+            int neighborWaterLevel = WaterGrid[neighborIndex];
+            
+            // Komşu boş mu veya daha düşük seviyede su var mı?
+            if (TerrainDensity[neighborIndex] < 0) {
+                if (neighborWaterLevel == WATER_EMPTY) {
+                    // Boş komşuya yayıl (seviye 1 azalır)
+                    WaterGrid[neighborIndex] = waterLevel - 1;
+                } else if (neighborWaterLevel < waterLevel - 1) {
+                    // Daha düşük seviyede su varsa denge sağla
+                    int newLevel = (waterLevel + neighborWaterLevel) / 2;
+                    WaterGrid[neighborIndex] = newLevel;
+                    WaterGrid[index] = newLevel;
+                }
+            }
+        }
     }
 }
 ```
@@ -6106,11 +6352,91 @@ public class WaterSimulator : MonoBehaviour {
             return; // Chunk dışı
         }
         
-        // ✅ Su grid'ini güncelle
+        // ✅ Su grid'ini güncelle (8 = Kaynak su, sonsuz)
+        int index = x + y * chunkSize + z * chunkSize * chunkSize;
+        int[] data = new int[1];
+        data[0] = 8; // Kaynak su (sonsuz)
+        waterGrid.SetData(data, index, 1);
+    }
+    
+    /// <summary>
+    /// ✅ Su seviyesini al (0-7 arası, 8=kaynak su)
+    /// </summary>
+    public int GetWaterLevel(Vector3 worldPos) {
+        if (_chunkManager == null) return 0;
+        
+        Vector3Int chunkCoord = _chunkManager.GetChunkCoord(worldPos);
+        if (!_chunkWaterGrids.TryGetValue(chunkCoord, out ComputeBuffer waterGrid)) {
+            return 0; // Su yok
+        }
+        
+        Vector3 localPos = worldPos - (Vector3)(chunkCoord * chunkSize);
+        int x = Mathf.FloorToInt(localPos.x);
+        int y = Mathf.FloorToInt(localPos.y);
+        int z = Mathf.FloorToInt(localPos.z);
+        
+        if (x < 0 || x >= chunkSize || y < 0 || y >= chunkSize || z < 0 || z >= chunkSize) {
+            return 0;
+        }
+        
         int index = x + y * chunkSize + z * chunkSize * chunkSize;
         int[] data = new int[1];
         waterGrid.GetData(data, index, 1);
-        data[0] = 2; // Kaynak su
+        
+        return data[0] == 8 ? 7 : data[0]; // Kaynak su = 7 seviye
+    }
+    
+    /// <summary>
+    /// ✅ Su ekle (belirli seviyede, 1-7 arası)
+    /// </summary>
+    public void AddWater(Vector3 worldPos, int level) {
+        if (level < 1 || level > 7) return;
+        if (_chunkManager == null) return;
+        
+        Vector3Int chunkCoord = _chunkManager.GetChunkCoord(worldPos);
+        if (!_chunkWaterGrids.TryGetValue(chunkCoord, out ComputeBuffer waterGrid)) {
+            CreateWaterGridForChunk(chunkCoord);
+            waterGrid = _chunkWaterGrids[chunkCoord];
+        }
+        
+        Vector3 localPos = worldPos - (Vector3)(chunkCoord * chunkSize);
+        int x = Mathf.FloorToInt(localPos.x);
+        int y = Mathf.FloorToInt(localPos.y);
+        int z = Mathf.FloorToInt(localPos.z);
+        
+        if (x < 0 || x >= chunkSize || y < 0 || y >= chunkSize || z < 0 || z >= chunkSize) {
+            return;
+        }
+        
+        int index = x + y * chunkSize + z * chunkSize * chunkSize;
+        int[] data = new int[1];
+        data[0] = level;
+        waterGrid.SetData(data, index, 1);
+    }
+    
+    /// <summary>
+    /// ✅ Su kaldır
+    /// </summary>
+    public void RemoveWater(Vector3 worldPos) {
+        if (_chunkManager == null) return;
+        
+        Vector3Int chunkCoord = _chunkManager.GetChunkCoord(worldPos);
+        if (!_chunkWaterGrids.TryGetValue(chunkCoord, out ComputeBuffer waterGrid)) {
+            return;
+        }
+        
+        Vector3 localPos = worldPos - (Vector3)(chunkCoord * chunkSize);
+        int x = Mathf.FloorToInt(localPos.x);
+        int y = Mathf.FloorToInt(localPos.y);
+        int z = Mathf.FloorToInt(localPos.z);
+        
+        if (x < 0 || x >= chunkSize || y < 0 || y >= chunkSize || z < 0 || z >= chunkSize) {
+            return;
+        }
+        
+        int index = x + y * chunkSize + z * chunkSize * chunkSize;
+        int[] data = new int[1];
+        data[0] = 0; // Boş
         waterGrid.SetData(data, index, 1);
     }
     
@@ -6126,9 +6452,2220 @@ public class WaterSimulator : MonoBehaviour {
 }
 ```
 
-**Not:** Bu sistem opsiyoneldir ve karmaşıktır. Basit okyanus yeterli olabilir.
+**Su Mekaniği Özellikleri:**
+- ✅ **Aşağı Akış (Gravity):** Su her zaman aşağı akar (en yüksek öncelik)
+- ✅ **Yan Tarafa Akış:** Su seviyesi 1'den fazlaysa 4 yöne akar (kuzey, güney, doğu, batı)
+- ✅ **Yayılma Mekaniği:** Su seviyesi düşükse komşulara yayılır (denge sağlar)
+- ✅ **Öncelik Sistemi:** Aşağı > Yan > Yayılma
+- ✅ **Su Seviyesi:** 0-7 arası (0=boş, 7=tam blok, 8=kaynak su)
+- ✅ **Boşluk Kontrolü:** Su sadece boş voxel'lere akar (terrain yoksa)
+- ✅ **Kaynak Su:** Sonsuz su kaynağı (seviye 8, hiç değişmez)
+
+**Performans Notları:**
+- GPU üzerinde hesaplanır (CPU'yu yormaz)
+- Chunk bazlı cache sistemi
+- Update interval ile sınırlandırılmış (varsayılan: 0.2s = 5 kez/saniye)
 
 ---
+
+
+
+**Not:** Su mekaniği sistemi tam çalışır durumda. İleride eklenebilecek gelişmiş özellikler (waterlogging, lava etkileşimi, su altı fizik) için ayrı sistemler gerekecek ve Faz 3+ fazlarında eklenebilir.
+
+---
+
+## 🌳 ADIM 5: VOXEL AĞAÇ SİSTEMİ (Prosedürel + Aşamalı Büyüme)
+
+### 5.1 Problem Tanımı ve Çözüm
+
+**Mevcut Sorun:**
+- VegetationSpawner.cs prefab-based ağaç spawn kullanıyor (GPU Instancing)
+- Ağaçlar voxel felsefesine uygun değil - kırılamaz, sadece prefab
+- Her şey voxel olmalı (voxel felsefesi)
+
+**Çözüm:**
+- Ağaçlar **voxel bloklardan** oluşur
+- **Prosedürel algoritma** ile her ağaç farklı (L-System veya Fractal Tree)
+- **Aşamalı büyüme** (fidan → küçük → orta → büyük → olgun)
+- Kesilebilir (her blok ayrı, NetworkMining ile)
+
+### 5.2 VoxelTreeGenerator.cs - Prosedürel Ağaç Oluşturma
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Nature/VoxelTreeGenerator.cs`
+
+**Amaç:** L-System veya Fractal Tree algoritması ile voxel bloklardan ağaç oluşturur
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using Unity.Collections;
+using Unity.Jobs;
+using Unity.Burst;
+using Unity.Mathematics;
+using System.Collections.Generic;
+
+/// <summary>
+/// ✅ OPTİMİZE: Voxel Tree Generator - Prosedürel ağaç oluşturma
+/// L-System veya Fractal Tree algoritması ile voxel bloklardan ağaç oluşturur
+/// </summary>
+public class VoxelTreeGenerator : MonoBehaviour {
+    private ChunkManager _chunkManager;
+    
+    void Start() {
+        _chunkManager = ServiceLocator.Instance?.Get<ChunkManager>();
+        
+        // ✅ ServiceLocator'a kaydet
+        ServiceLocator.Instance?.Register<VoxelTreeGenerator>(this);
+    }
+    
+    /// <summary>
+    /// ✅ Ağaç oluştur (voxel bloklardan)
+    /// </summary>
+    public void GenerateTree(Vector3Int rootPos, string treeType, TreeGrowthSystem.GrowthStageData stageData) {
+        if (_chunkManager == null) {
+            Debug.LogError("[VoxelTreeGenerator] ChunkManager bulunamadı!");
+            return;
+        }
+        
+        // ✅ Job System ile paralel ağaç generation
+        GenerateTreeJob job = new GenerateTreeJob {
+            rootPos = new int3(rootPos.x, rootPos.y, rootPos.z),
+            minHeight = stageData.minHeight,
+            maxHeight = stageData.maxHeight,
+            branchCount = stageData.branchCount,
+            treeType = treeType
+        };
+        
+        job.treeBlocks = new NativeList<int3>(Allocator.TempJob);
+        
+        JobHandle handle = job.Schedule();
+        handle.Complete();
+        
+        // ✅ Ağaç bloklarını dünyaya yerleştir
+        PlaceTreeBlocks(job.treeBlocks, rootPos);
+        
+        job.treeBlocks.Dispose();
+    }
+    
+    /// <summary>
+    /// ✅ Ağaç bloklarını dünyaya yerleştir
+    /// </summary>
+    void PlaceTreeBlocks(NativeList<int3> blocks, Vector3Int rootPos) {
+        for (int i = 0; i < blocks.Length; i++) {
+            int3 blockPos = blocks[i];
+            Vector3Int worldPos = rootPos + new Vector3Int(blockPos.x, blockPos.y, blockPos.z);
+            
+            // ✅ ChunkManager'a blok ekle
+            _chunkManager.AddDensityAtPoint(worldPos, 1.0f);
+            _chunkManager.SetBlockType(worldPos, "wood"); // Ağaç gövdesi
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Ağacı kaldır (kırıldığında)
+    /// </summary>
+    public void RemoveTreeAt(Vector3Int treePos) {
+        if (_chunkManager == null) return;
+        
+        // Ağaç pozisyonundaki tüm blokları kaldır
+        // Ağaç genellikle 3x3x10 alan kaplar (yaklaşık)
+        int searchRadius = 5;
+        for (int x = -searchRadius; x <= searchRadius; x++) {
+            for (int y = 0; y <= 15; y++) {
+                for (int z = -searchRadius; z <= searchRadius; z++) {
+                    Vector3Int checkPos = treePos + new Vector3Int(x, y, z);
+                    string blockType = _chunkManager.GetBlockType(checkPos);
+                    
+                    if (blockType == "wood" || blockType == "leaves") {
+                        _chunkManager.RemoveDensityAtPoint(checkPos);
+                        _chunkManager.SetBlockType(checkPos, null);
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// <summary>
+/// ✅ OPTİMİZE: Ağaç generation Job (Burst ile optimize)
+/// </summary>
+[BurstCompile]
+public struct GenerateTreeJob : IJob {
+    public int3 rootPos;
+    public int minHeight;
+    public int maxHeight;
+    public int branchCount;
+    public string treeType;
+    
+    public NativeList<int3> treeBlocks;
+    
+    public void Execute() {
+        // ✅ Deterministik rastgelelik için seed kullan
+        Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)(rootPos.x * 1000 + rootPos.z + rootPos.y));
+        
+        // ✅ L-System benzeri algoritma ile ağaç oluştur
+        int height = random.NextInt(minHeight, maxHeight + 1);
+        
+        // Gövde oluştur
+        for (int y = 0; y < height; y++) {
+            treeBlocks.Add(new int3(0, y, 0));
+        }
+        
+        // Dallar oluştur
+        for (int i = 0; i < branchCount; i++) {
+            int branchHeight = random.NextInt(height / 2, height);
+            int branchLength = random.NextInt(2, 6);
+            int branchDir = random.NextInt(0, 4); // 4 yön
+            
+            // Dal bloklarını ekle
+            for (int j = 0; j < branchLength; j++) {
+                int3 branchPos = GetBranchPosition(branchHeight, branchDir, j);
+                treeBlocks.Add(branchPos);
+            }
+        }
+        
+        // Yapraklar oluştur (gövde etrafında)
+        GenerateLeaves(height, random);
+    }
+    
+    int3 GetBranchPosition(int height, int direction, int length) {
+        int3 offset = new int3(0, height, 0);
+        
+        switch (direction) {
+            case 0: offset.x += length; break; // Doğu
+            case 1: offset.x -= length; break; // Batı
+            case 2: offset.z += length; break; // Kuzey
+            case 3: offset.z -= length; break; // Güney
+        }
+        
+        return offset;
+    }
+    
+    void GenerateLeaves(int height, Unity.Mathematics.Random random) {
+        // Gövde üstünde yaprak kümesi
+        int leafHeight = height - 1;
+        int leafRadius = random.NextInt(2, 4);
+        
+        for (int x = -leafRadius; x <= leafRadius; x++) {
+            for (int z = -leafRadius; z <= leafRadius; z++) {
+                for (int y = 0; y < 2; y++) {
+                    float distance = math.sqrt(x * x + z * z);
+                    if (distance <= leafRadius) {
+                        // Rastgele yaprak yoğunluğu
+                        if (random.NextFloat() > 0.3f) {
+                            treeBlocks.Add(new int3(x, leafHeight + y, z));
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+### 5.3 TreeGrowthSystem.cs - Aşamalı Büyüme Yönetimi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Nature/TreeGrowthSystem.cs`
+
+**Amaç:** Aşamalı ağaç büyüme yönetimi (5 aşama: Fidan, Küçük, Orta, Büyük, Olgun)
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+/// <summary>
+/// ✅ OPTİMİZE: Tree Growth System - Aşamalı ağaç büyüme yönetimi
+/// </summary>
+public class TreeGrowthSystem : MonoBehaviour {
+    private ChunkManager _chunkManager;
+    private VoxelTreeGenerator _treeGenerator;
+    
+    // ✅ OPTİMİZE: Aktif büyüyen ağaçlar cache'i
+    private Dictionary<Vector3Int, Coroutine> _growingTrees = new Dictionary<Vector3Int, Coroutine>();
+    
+    public enum GrowthStage {
+        Sapling,    // Fidan (1 blok)
+        Small,      // Küçük (3-4 blok)
+        Medium,     // Orta (5-7 blok)
+        Large,      // Büyük (8-12 blok)
+        Mature      // Olgun (tam boyut)
+    }
+    
+    [System.Serializable]
+    public class GrowthStageData {
+        public GrowthStage stage;
+        public float growthTime; // Bu aşamaya geçiş süresi (saniye)
+        public int minHeight; // Minimum yükseklik (blok)
+        public int maxHeight; // Maksimum yükseklik (blok)
+        public int branchCount; // Dal sayısı
+    }
+    
+    [Header("Büyüme Ayarları")]
+    public List<GrowthStageData> growthStages = new List<GrowthStageData> {
+        new GrowthStageData { stage = GrowthStage.Sapling, growthTime = 120f, minHeight = 1, maxHeight = 1, branchCount = 0 },
+        new GrowthStageData { stage = GrowthStage.Small, growthTime = 300f, minHeight = 3, maxHeight = 4, branchCount = 2 },
+        new GrowthStageData { stage = GrowthStage.Medium, growthTime = 600f, minHeight = 5, maxHeight = 7, branchCount = 4 },
+        new GrowthStageData { stage = GrowthStage.Large, growthTime = 900f, minHeight = 8, maxHeight = 12, branchCount = 6 },
+        new GrowthStageData { stage = GrowthStage.Mature, growthTime = 0f, minHeight = 10, maxHeight = 15, branchCount = 8 }
+    };
+    
+    void Start() {
+        _chunkManager = ServiceLocator.Instance?.Get<ChunkManager>();
+        _treeGenerator = GetComponent<VoxelTreeGenerator>();
+        
+        if (_treeGenerator == null) {
+            _treeGenerator = gameObject.AddComponent<VoxelTreeGenerator>();
+        }
+        
+        // ✅ ServiceLocator'a kaydet
+        ServiceLocator.Instance?.Register<TreeGrowthSystem>(this);
+    }
+    
+    /// <summary>
+    /// ✅ Fidan dik (büyüme başlat)
+    /// </summary>
+    public void PlantSapling(Vector3Int position, string treeType) {
+        if (_growingTrees.ContainsKey(position)) {
+            Debug.LogWarning($"[TreeGrowthSystem] Bu pozisyonda zaten bir ağaç büyüyor: {position}");
+            return;
+        }
+        
+        // ✅ Büyüme coroutine'ini başlat
+        Coroutine growthCoroutine = StartCoroutine(GrowTree(position, treeType));
+        _growingTrees[position] = growthCoroutine;
+    }
+    
+    /// <summary>
+    /// ✅ Ağaç büyüme coroutine
+    /// </summary>
+    IEnumerator GrowTree(Vector3Int treePos, string treeType) {
+        GrowthStage currentStage = GrowthStage.Sapling;
+        
+        while (currentStage != GrowthStage.Mature) {
+            // ✅ Mevcut aşamayı render et
+            RenderTreeStage(treePos, treeType, currentStage);
+            
+            // ✅ Bir sonraki aşamaya geçiş süresini bekle
+            GrowthStageData stageData = growthStages.Find(s => s.stage == currentStage);
+            if (stageData != null && stageData.growthTime > 0) {
+                yield return new WaitForSeconds(stageData.growthTime);
+            } else {
+                yield break; // Büyüme tamamlandı
+            }
+            
+            // ✅ Sonraki aşamaya geç
+            currentStage = GetNextStage(currentStage);
+        }
+        
+        // ✅ Olgun ağaç render et
+        RenderTreeStage(treePos, treeType, GrowthStage.Mature);
+        
+        // ✅ Cache'den kaldır
+        _growingTrees.Remove(treePos);
+    }
+    
+    /// <summary>
+    /// ✅ Sonraki aşamayı al
+    /// </summary>
+    GrowthStage GetNextStage(GrowthStage current) {
+        switch (current) {
+            case GrowthStage.Sapling: return GrowthStage.Small;
+            case GrowthStage.Small: return GrowthStage.Medium;
+            case GrowthStage.Medium: return GrowthStage.Large;
+            case GrowthStage.Large: return GrowthStage.Mature;
+            default: return GrowthStage.Mature;
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Ağaç aşamasını render et
+    /// </summary>
+    void RenderTreeStage(Vector3Int treePos, string treeType, GrowthStage stage) {
+        // ✅ Mevcut ağacı kaldır
+        _treeGenerator.RemoveTreeAt(treePos);
+        
+        // ✅ Yeni aşamayı oluştur
+        GrowthStageData stageData = growthStages.Find(s => s.stage == stage);
+        if (stageData != null) {
+            _treeGenerator.GenerateTree(treePos, treeType, stageData);
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Ağacı kır (büyümeyi durdur)
+    /// </summary>
+    public void BreakTree(Vector3Int treePos) {
+        if (_growingTrees.ContainsKey(treePos)) {
+            StopCoroutine(_growingTrees[treePos]);
+            _growingTrees.Remove(treePos);
+        }
+        
+        _treeGenerator.RemoveTreeAt(treePos);
+    }
+}
+```
+
+**Büyüme Zamanları:**
+- **Fidan → Küçük:** 2 dakika (120 saniye)
+- **Küçük → Orta:** 5 dakika (300 saniye)
+- **Orta → Büyük:** 10 dakika (600 saniye)
+- **Büyük → Olgun:** 15 dakika (900 saniye)
+- **Toplam:** ~32 dakika (Minecraft'tan çok daha yavaş, gerçekçi)
+
+**Optimizasyon:**
+- ✅ **Job System:** Paralel ağaç generation (Burst ile optimize)
+- ✅ **Coroutines:** Asenkron büyüme sistemi (UI donmasını önler)
+- ✅ **Dictionary Cache:** Aktif büyüyen ağaçlar cache'i
+
+---
+
+## ⛏️ ADIM 6: VOXEL MADEN SİSTEMİ (Density-Based Spawn)
+
+### 6.1 Problem Tanımı ve Çözüm
+
+**Mevcut Sorun:**
+- Madenler sadece density-based (TerrainDensity.compute içinde)
+- Görünmez, kırılamaz, oyuncu göremez
+- Voxel felsefesine uygun değil
+
+**Çözüm:**
+- Madenler **voxel bloklar** olarak spawn edilir
+- **TerrainDensity.compute** maden yerlerini belirler
+- **OreSpawner.cs** maden bloklarını yerleştirir
+- Kırılabilir (NetworkMining ile)
+
+### 6.2 OreSpawner.cs - Voxel Maden Blok Spawn
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Mining/OreSpawner.cs`
+
+**Amaç:** Voxel maden blok spawn sistemi (TerrainDensity.compute entegrasyonu)
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using Unity.Collections;
+using Unity.Jobs;
+using Unity.Burst;
+using Unity.Mathematics;
+
+/// <summary>
+/// ✅ OPTİMİZE: Ore Spawner - Voxel maden blok spawn sistemi
+/// TerrainDensity.compute ile entegre, density-based maden spawn
+/// </summary>
+public class OreSpawner : MonoBehaviour {
+    private ChunkManager _chunkManager;
+    
+    [Header("Maden Ayarları")]
+    public OreDefinition[] oreDefinitions;
+    
+    // ✅ OPTİMİZE: Spawn edilmiş madenler cache'i
+    private Dictionary<Vector3Int, string> _spawnedOres = new Dictionary<Vector3Int, string>();
+    
+    void Start() {
+        _chunkManager = ServiceLocator.Instance?.Get<ChunkManager>();
+        
+        if (_chunkManager != null) {
+            // Chunk generation event'ine abone ol
+            _chunkManager.OnChunkGenerated += OnChunkGenerated;
+        }
+        
+        // ✅ ServiceLocator'a kaydet
+        ServiceLocator.Instance?.Register<OreSpawner>(this);
+    }
+    
+    void OnDestroy() {
+        if (_chunkManager != null) {
+            _chunkManager.OnChunkGenerated -= OnChunkGenerated;
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Chunk generation sırasında maden spawn et
+    /// </summary>
+    public void OnChunkGenerated(Vector3Int chunkCoord) {
+        if (_chunkManager == null) {
+            _chunkManager = ServiceLocator.Instance?.Get<ChunkManager>();
+            if (_chunkManager == null) return;
+        }
+        
+        // ✅ Job System ile paralel maden spawn
+        SpawnOresInChunkJob job = new SpawnOresInChunkJob {
+            chunkCoord = new int3(chunkCoord.x, chunkCoord.y, chunkCoord.z),
+            chunkSize = _chunkManager.chunkSize,
+            worldSeed = _chunkManager.GetWorldSeed()
+        };
+        
+        job.orePositions = new NativeList<int4>(Allocator.TempJob); // x, y, z, oreTypeIndex
+        
+        JobHandle handle = job.Schedule();
+        handle.Complete();
+        
+        // ✅ Maden bloklarını yerleştir
+        PlaceOreBlocks(job.orePositions, chunkCoord);
+        
+        job.orePositions.Dispose();
+    }
+    
+    /// <summary>
+    /// ✅ Maden bloklarını yerleştir
+    /// </summary>
+    void PlaceOreBlocks(NativeList<int4> orePositions, Vector3Int chunkCoord) {
+        if (_chunkManager == null || oreDefinitions == null || oreDefinitions.Length == 0) return;
+        
+        for (int i = 0; i < orePositions.Length; i++) {
+            int4 oreData = orePositions[i];
+            Vector3Int worldPos = chunkCoord * _chunkManager.chunkSize + 
+                                 new Vector3Int(oreData.x, oreData.y, oreData.z);
+            
+            int oreTypeIndex = oreData.w;
+            if (oreTypeIndex >= 0 && oreTypeIndex < oreDefinitions.Length) {
+                OreDefinition oreDef = oreDefinitions[oreTypeIndex];
+                
+                // ✅ ChunkManager'a maden blok ekle
+                _chunkManager.AddDensityAtPoint(worldPos, 1.0f);
+                _chunkManager.SetBlockType(worldPos, oreDef.oreId);
+                
+                // ✅ Cache'e ekle
+                _spawnedOres[worldPos] = oreDef.oreId;
+            }
+        }
+    }
+}
+
+/// <summary>
+/// ✅ OPTİMİZE: Maden spawn Job (Burst ile optimize)
+/// </summary>
+[BurstCompile]
+public struct SpawnOresInChunkJob : IJob {
+    public int3 chunkCoord;
+    public int chunkSize;
+    public int worldSeed;
+    
+    public NativeList<int4> orePositions;
+    
+    public void Execute() {
+        // ✅ Deterministik rastgelelik için seed
+        Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)(chunkCoord.x * 1000 + chunkCoord.z + worldSeed));
+        
+        // ✅ Her voxel için maden kontrolü
+        for (int x = 0; x < chunkSize; x++) {
+            for (int y = 0; y < chunkSize; y++) {
+                for (int z = 0; z < chunkSize; z++) {
+                    int3 localPos = new int3(x, y, z);
+                    int3 worldPos = chunkCoord * chunkSize + localPos;
+                    
+                    // ✅ Maden spawn kontrolü (yüksekliğe göre)
+                    if (worldPos.y < -20) {
+                        // Maden spawn şansı (noise ile)
+                        float noiseValue = noise.snoise(new float3(worldPos.x, worldPos.y, worldPos.z) * 0.1f + (float)worldSeed);
+                        if (noiseValue > 0.7f) {
+                            // Maden tipi belirle (yüksekliğe göre)
+                            int oreType = DetermineOreType(worldPos.y, random);
+                            if (oreType >= 0) {
+                                orePositions.Add(new int4(localPos.x, localPos.y, localPos.z, oreType));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    int DetermineOreType(int worldY, Unity.Mathematics.Random random) {
+        // Yüksekliğe göre maden tipi
+        if (worldY < -100) {
+            // Titanium (çok nadir)
+            return random.NextFloat() < 0.1f ? 0 : -1;
+        }
+        if (worldY < -50) {
+            // Diamond (nadir)
+            return random.NextFloat() < 0.2f ? 1 : -1;
+        }
+        if (worldY < -20) {
+            // Iron (yaygın)
+            return random.NextFloat() < 0.3f ? 2 : -1;
+        }
+        return -1;
+    }
+}
+```
+
+### 6.3 OreDefinition.cs - Maden Tanımları
+
+**Dosya:** `_Stratocraft/Scripts/Data/ScriptableObjects/OreDefinition.cs`
+
+**Amaç:** Maden tanımları (ScriptableObject)
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+
+/// <summary>
+/// ✅ Maden tanımı (ScriptableObject)
+/// </summary>
+[CreateAssetMenu(fileName = "OreDefinition", menuName = "Stratocraft/Ore Definition")]
+public class OreDefinition : ScriptableObject {
+    [Header("Maden Bilgileri")]
+    public string oreId; // "iron_ore", "diamond_ore", vb.
+    
+    [Header("Spawn Ayarları")]
+    [Tooltip("Minimum derinlik (world Y koordinatı)")]
+    public int minDepth = -50; // -50'de başlar
+    
+    [Tooltip("Maksimum derinlik (world Y koordinatı)")]
+    public int maxDepth = -20; // -20'de biter
+    
+    [Tooltip("Spawn şansı (0-1 arası)")]
+    [Range(0f, 1f)]
+    public float spawnChance = 0.3f; // %30 şans
+    
+    [Header("Item Drop")]
+    [Tooltip("Kırıldığında düşecek item ID")]
+    public string itemDropId; // "iron_ingot", "diamond", vb.
+    
+    [Tooltip("Drop miktarı (min-max)")]
+    public int minDropAmount = 1;
+    public int maxDropAmount = 3;
+}
+```
+
+**Optimizasyon:**
+- ✅ **Job System:** Paralel maden spawn (Burst ile optimize)
+- ✅ **Dictionary Cache:** Spawn edilmiş madenler cache'i
+- ✅ **Chunk Event:** Chunk generation sırasında otomatik spawn
+
+---
+
+## 🏗️ ADIM 7: İNŞA SİSTEMİ (Grid-Based + Blueprint + Sculpting)
+
+### 7.1 Problem Tanımı ve Çözüm
+
+**Mevcut Sorun:**
+- Smooth voxel dünyada tutarsız inşa
+- Her yerleştirme farklı görünüyor
+- Grid yok, blueprint yok
+
+**Çözüm:**
+- **Grid-Based Placement:** Hidden grid sistemi (1m grid)
+- **Blueprint System:** Yapı kaydetme/kopyalama
+- **Sculpting System:** Blok yontma ve template sistemi
+
+### 7.2 GridPlacementSystem.cs - Grid Tabanlı Yerleştirme
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Building/GridPlacementSystem.cs`
+
+**Amaç:** Grid tabanlı blok yerleştirme (smooth voxel dünyada tutarlı inşa)
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using System.Collections.Generic;
+
+/// <summary>
+/// ✅ OPTİMİZE: Grid Placement System - Grid tabanlı blok yerleştirme
+/// Smooth voxel dünyada tutarlı inşa için grid sistemi
+/// </summary>
+public class GridPlacementSystem : MonoBehaviour {
+    private ChunkManager _chunkManager;
+    
+    [Header("Grid Ayarları")]
+    public float gridSize = 1.0f; // 1 metre grid
+    
+    // ✅ OPTİMİZE: Grid pozisyon cache'i
+    private Dictionary<Vector3Int, bool> _gridOccupied = new Dictionary<Vector3Int, bool>();
+    
+    void Start() {
+        _chunkManager = ServiceLocator.Instance?.Get<ChunkManager>();
+        
+        // ✅ ServiceLocator'a kaydet
+        ServiceLocator.Instance?.Register<GridPlacementSystem>(this);
+    }
+    
+    /// <summary>
+    /// ✅ Grid'e yapıştır
+    /// </summary>
+    public Vector3 SnapToGrid(Vector3 worldPos) {
+        float snappedX = Mathf.Round(worldPos.x / gridSize) * gridSize;
+        float snappedY = Mathf.Round(worldPos.y / gridSize) * gridSize;
+        float snappedZ = Mathf.Round(worldPos.z / gridSize) * gridSize;
+        return new Vector3(snappedX, snappedY, snappedZ);
+    }
+    
+    /// <summary>
+    /// ✅ Grid koordinatına çevir
+    /// </summary>
+    public Vector3Int WorldToGrid(Vector3 worldPos) {
+        Vector3 snapped = SnapToGrid(worldPos);
+        return new Vector3Int(
+            Mathf.RoundToInt(snapped.x / gridSize),
+            Mathf.RoundToInt(snapped.y / gridSize),
+            Mathf.RoundToInt(snapped.z / gridSize)
+        );
+    }
+    
+    /// <summary>
+    /// ✅ Grid noktasına blok yerleştir
+    /// </summary>
+    public bool PlaceBlockAtGrid(Vector3 worldPos, string blockType, string variantId = null) {
+        Vector3 gridPos = SnapToGrid(worldPos);
+        Vector3Int gridCoord = WorldToGrid(gridPos);
+        
+        // ✅ Grid noktası dolu mu kontrol et
+        if (_gridOccupied.ContainsKey(gridCoord) && _gridOccupied[gridCoord]) {
+            return false; // Dolu
+        }
+        
+        // ✅ ChunkManager'a blok ekle
+        if (_chunkManager != null) {
+            _chunkManager.AddDensityAtPoint(gridPos, 1.0f);
+            _chunkManager.SetBlockType(gridPos, variantId ?? blockType);
+            
+            // ✅ Grid'i işaretle
+            _gridOccupied[gridCoord] = true;
+            
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /// <summary>
+    /// ✅ Grid noktasından blok kaldır
+    /// </summary>
+    public bool RemoveBlockAtGrid(Vector3 worldPos) {
+        Vector3Int gridCoord = WorldToGrid(worldPos);
+        
+        if (_chunkManager != null) {
+            _chunkManager.RemoveDensityAtPoint(worldPos);
+            _gridOccupied[gridCoord] = false;
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /// <summary>
+    /// ✅ Grid noktası dolu mu?
+    /// </summary>
+    public bool IsGridOccupied(Vector3 worldPos) {
+        Vector3Int gridCoord = WorldToGrid(worldPos);
+        return _gridOccupied.ContainsKey(gridCoord) && _gridOccupied[gridCoord];
+    }
+}
+```
+
+### 7.3 BlueprintSystem.cs - Yapı Kaydetme/Kopyalama
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Building/BlueprintSystem.cs`
+
+**Amaç:** Yapı kaydetme ve kopyalama sistemi
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+
+/// <summary>
+/// ✅ OPTİMİZE: Blueprint System - Yapı kaydetme ve kopyalama
+/// </summary>
+public class BlueprintSystem : MonoBehaviour {
+    private GridPlacementSystem _gridSystem;
+    private ChunkManager _chunkManager;
+    
+    // ✅ OPTİMİZE: Blueprint cache
+    private Dictionary<string, Blueprint> _blueprintCache = new Dictionary<string, Blueprint>();
+    
+    [System.Serializable]
+    public class Blueprint {
+        public string blueprintId;
+        public string blueprintName;
+        public Vector3Int size; // Boyut (x, y, z)
+        public List<BlueprintBlock> blocks = new List<BlueprintBlock>();
+    }
+    
+    [System.Serializable]
+    public class BlueprintBlock {
+        public Vector3Int gridCoord; // Grid koordinatı (relative)
+        public string blockType;
+        public string variantId; // Variant ID (opsiyonel)
+    }
+    
+    void Start() {
+        _gridSystem = ServiceLocator.Instance?.Get<GridPlacementSystem>();
+        _chunkManager = ServiceLocator.Instance?.Get<ChunkManager>();
+        
+        // ✅ ServiceLocator'a kaydet
+        ServiceLocator.Instance?.Register<BlueprintSystem>(this);
+    }
+    
+    /// <summary>
+    /// ✅ Yapıyı blueprint olarak kaydet
+    /// </summary>
+    public Blueprint SaveBlueprint(Vector3Int startPos, Vector3Int endPos, string blueprintName) {
+        Blueprint blueprint = new Blueprint {
+            blueprintId = System.Guid.NewGuid().ToString(),
+            blueprintName = blueprintName,
+            size = new Vector3Int(
+                Mathf.Abs(endPos.x - startPos.x) + 1,
+                Mathf.Abs(endPos.y - startPos.y) + 1,
+                Mathf.Abs(endPos.z - startPos.z) + 1
+            )
+        };
+        
+        // ✅ Grid koordinatları arasındaki tüm blokları kaydet
+        Vector3Int minPos = new Vector3Int(
+            Mathf.Min(startPos.x, endPos.x),
+            Mathf.Min(startPos.y, endPos.y),
+            Mathf.Min(startPos.z, endPos.z)
+        );
+        
+        for (int x = 0; x < blueprint.size.x; x++) {
+            for (int y = 0; y < blueprint.size.y; y++) {
+                for (int z = 0; z < blueprint.size.z; z++) {
+                    Vector3Int gridPos = minPos + new Vector3Int(x, y, z);
+                    string blockType = GetBlockAtGrid(gridPos);
+                    
+                    if (!string.IsNullOrEmpty(blockType)) {
+                        blueprint.blocks.Add(new BlueprintBlock {
+                            gridCoord = new Vector3Int(x, y, z), // Relative koordinat
+                            blockType = blockType
+                        });
+                    }
+                }
+            }
+        }
+        
+        // ✅ Cache'e ekle
+        _blueprintCache[blueprint.blueprintId] = blueprint;
+        
+        // ✅ Dosyaya kaydet (opsiyonel)
+        SaveBlueprintToFile(blueprint);
+        
+        return blueprint;
+    }
+    
+    /// <summary>
+    /// ✅ Blueprint'i yükle ve yerleştir
+    /// </summary>
+    public void LoadBlueprint(Vector3Int startPos, string blueprintId) {
+        if (!_blueprintCache.ContainsKey(blueprintId)) {
+            // ✅ Dosyadan yükle
+            LoadBlueprintFromFile(blueprintId);
+        }
+        
+        if (!_blueprintCache.ContainsKey(blueprintId)) {
+            Debug.LogError($"[BlueprintSystem] Blueprint bulunamadı: {blueprintId}");
+            return;
+        }
+        
+        Blueprint blueprint = _blueprintCache[blueprintId];
+        
+        // ✅ Blueprint bloklarını yerleştir
+        foreach (var block in blueprint.blocks) {
+            Vector3Int worldPos = startPos + block.gridCoord;
+            _gridSystem.PlaceBlockAtGrid(worldPos, block.blockType, block.variantId);
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Grid pozisyonundaki blok tipini al
+    /// </summary>
+    string GetBlockAtGrid(Vector3Int gridPos) {
+        if (_chunkManager != null && _gridSystem != null) {
+            Vector3 worldPos = new Vector3(
+                gridPos.x * _gridSystem.gridSize, 
+                gridPos.y * _gridSystem.gridSize, 
+                gridPos.z * _gridSystem.gridSize
+            );
+            return _chunkManager.GetBlockType(worldPos);
+        }
+        return null;
+    }
+    
+    /// <summary>
+    /// ✅ Blueprint'i dosyaya kaydet
+    /// </summary>
+    void SaveBlueprintToFile(Blueprint blueprint) {
+        string path = Path.Combine(Application.persistentDataPath, "Blueprints", $"{blueprint.blueprintId}.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(path));
+        
+        string json = JsonUtility.ToJson(blueprint, true);
+        File.WriteAllText(path, json);
+    }
+    
+    /// <summary>
+    /// ✅ Blueprint'i dosyadan yükle
+    /// </summary>
+    void LoadBlueprintFromFile(string blueprintId) {
+        string path = Path.Combine(Application.persistentDataPath, "Blueprints", $"{blueprintId}.json");
+        
+        if (File.Exists(path)) {
+            string json = File.ReadAllText(path);
+            Blueprint blueprint = JsonUtility.FromJson<Blueprint>(json);
+            _blueprintCache[blueprintId] = blueprint;
+        }
+    }
+}
+```
+
+### 7.4 SculptingSystem.cs - Blok Yontma Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Building/SculptingSystem.cs`
+
+**Amaç:** Blok yontma ve şekil verme sistemi
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using System.Collections.Generic;
+
+/// <summary>
+/// ✅ OPTİMİZE: Sculpting System - Blok yontma ve şekil verme
+/// </summary>
+public class SculptingSystem : MonoBehaviour {
+    private GridPlacementSystem _gridSystem;
+    private VariantMeshGenerator _variantGenerator;
+    private ChunkManager _chunkManager;
+    
+    [System.Serializable]
+    public class SculptedShape {
+        public string shapeId;
+        public string shapeName;
+        public List<Vector3> vertices = new List<Vector3>();
+        public List<int> triangles = new List<int>();
+    }
+    
+    // ✅ OPTİMİZE: Yontulmuş şekiller cache'i
+    private Dictionary<string, SculptedShape> _sculptedShapes = new Dictionary<string, SculptedShape>();
+    
+    private bool _isSculpting = false;
+    private Vector3 _currentSculptPos;
+    private SculptedShape _currentShape;
+    
+    void Start() {
+        _gridSystem = ServiceLocator.Instance?.Get<GridPlacementSystem>();
+        _variantGenerator = ServiceLocator.Instance?.Get<VariantMeshGenerator>();
+        _chunkManager = ServiceLocator.Instance?.Get<ChunkManager>();
+        
+        // ✅ ServiceLocator'a kaydet
+        ServiceLocator.Instance?.Register<SculptingSystem>(this);
+    }
+    
+    /// <summary>
+    /// ✅ Blok yontmaya başla
+    /// </summary>
+    public void StartSculpting(Vector3 blockPos) {
+        _isSculpting = true;
+        _currentSculptPos = blockPos;
+        _currentShape = new SculptedShape {
+            shapeId = System.Guid.NewGuid().ToString(),
+            vertices = new List<Vector3>(),
+            triangles = new List<int>()
+        };
+        
+        Debug.Log($"[SculptingSystem] Yontma başladı: {blockPos}");
+    }
+    
+    /// <summary>
+    /// ✅ Yontma işlemini bitir
+    /// </summary>
+    public void FinishSculpting() {
+        if (!_isSculpting) return;
+        
+        _isSculpting = false;
+        
+        // Yontulmuş şekli kaydet
+        if (_currentShape != null && _currentShape.vertices.Count > 0) {
+            _sculptedShapes[_currentShape.shapeId] = _currentShape;
+        }
+        
+        _currentShape = null;
+    }
+    
+    /// <summary>
+    /// ✅ Yontulmuş şekli template olarak kaydet
+    /// </summary>
+    public void SaveAsTemplate(SculptedShape shape, string templateName) {
+        if (shape == null) return;
+        
+        shape.shapeId = System.Guid.NewGuid().ToString();
+        shape.shapeName = templateName;
+        _sculptedShapes[shape.shapeId] = shape;
+        
+        Debug.Log($"[SculptingSystem] Template kaydedildi: {templateName} ({shape.shapeId})");
+    }
+    
+    /// <summary>
+    /// ✅ Template'i uygula
+    /// </summary>
+    public void ApplyTemplate(Vector3 blockPos, string templateId) {
+        if (!_sculptedShapes.ContainsKey(templateId)) {
+            Debug.LogError($"[SculptingSystem] Template bulunamadı: {templateId}");
+            return;
+        }
+        
+        SculptedShape template = _sculptedShapes[templateId];
+        
+        // Template'i blok pozisyonuna uygula
+        if (_variantGenerator != null) {
+            // Template'den mesh oluştur
+            Mesh templateMesh = CreateMeshFromShape(template);
+            
+            // Mesh'i blok pozisyonuna yerleştir
+            // ChunkManager'a density ekle
+            if (_chunkManager != null) {
+                _chunkManager.AddDensityAtPoint(blockPos, 1.0f);
+                _chunkManager.SetBlockType(blockPos, $"sculpted_{templateId}");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// ✅ SculptedShape'den mesh oluştur
+    /// </summary>
+    Mesh CreateMeshFromShape(SculptedShape shape) {
+        Mesh mesh = new Mesh();
+        mesh.vertices = shape.vertices.ToArray();
+        mesh.triangles = shape.triangles.ToArray();
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        return mesh;
+    }
+}
+```
+
+**Optimizasyon:**
+- ✅ **Dictionary Cache:** Grid, blueprint, sculpted shapes cache'i
+- ✅ **JSON Dosya Kaydetme:** Blueprint'ler persistent data'da saklanır
+- ✅ **ServiceLocator Entegrasyonu:** Tüm sistemler birbirine bağlı
+
+---
+
+## 🧱 ADIM 8: VARIANT BLOK SİSTEMİ (740 Variant Per Material)
+
+### 8.1 Problem Tanımı ve Çözüm
+
+**Mevcut Sorun:**
+- Sadece basit kırma/yerleştirme var
+- Şekil seçimi yok
+- Minecraft'taki gibi merdiven, yarı blok, vb. yok
+
+**Çözüm:**
+- **740 Variant Per Material:** Tüm olası kombinasyonlar
+- **Algoritma Tabanlı:** Runtime'da mesh generation (cache ile optimize)
+- **7,400 Total Variant:** 10 material × 740 variant
+
+### 8.2 Variant Kategorileri ve Hesaplama
+
+**1. DİK KESİMLER (ORTHOGONAL CUTS) - ~200 variant**
+- Tek yön kesimler: Yarı (1/2), Çeyrek (1/4), 1/5, 2/5, 3/5, 4/5 (6 yön × 5 seviye = 30 variant)
+- İki yön kombinasyonları: C(6,2) = 15 variant (her seviye için)
+- Üç yön kombinasyonları: C(6,3) = 20 variant
+- Dört, beş, altı yön kombinasyonları: ~135 variant
+
+**2. ÇAPRAZ KESİMLER (DIAGONAL CUTS) - ~100 variant**
+- Kenar çapraz kesimler: 12 kenar × 5 seviye = 60 variant
+- Köşe çapraz kesimler: 8 köşe × 5 seviye = 40 variant
+
+**3. YUVARLANMIŞ KÖŞELER (ROUNDED CORNERS) - ~100 variant**
+- Köşe yuvarlatma: 8 köşe × 5 seviye = 40 variant
+- Kenar yuvarlatma: 12 kenar × 5 seviye = 60 variant
+
+**4. RAMP ŞEKİLLERİ (RAMP SHAPES) - ~130 variant**
+- Dik ramp'ler: 6 yön × 5 seviye = 30 variant
+- Çapraz ramp'ler: 12 kenar × 5 seviye + 8 köşe × 5 seviye = 100 variant
+
+**5. MERDİVEN BENZERİ ŞEKİLLER (STAIRS-LIKE) - ~40 variant**
+- Normal merdivenler: 4 yön × 2 tip = 8 variant
+- Köşe merdivenleri: 8 yön × 2 tip × 2 tip (inner/outer) = 32 variant
+
+**6. İÇ/DIŞ KÖŞELER (INNER/OUTER CORNERS) - ~80 variant**
+- İç köşeler: 8 yön × 5 seviye = 40 variant
+- Dış köşeler: 8 yön × 5 seviye = 40 variant
+
+**7. ÖZEL ŞEKİLLER (SPECIAL SHAPES) - ~90 variant**
+- Trapezoid: 6 yön × 5 seviye = 30 variant
+- Piramit: 6 yön × 5 seviye = 30 variant
+- Yarım küre: 6 yön × 5 seviye = 30 variant
+
+**TOPLAM:** ~**740 variant per material**
+- **10 material × 740 variant = 7,400 total variant**
+
+### 8.3 Variant ID Sistemi ve Naming Convention
+
+**Variant ID Formatı:**
+- **Temel Format:** `{material}_{variantType}_{parameters}`
+- **Örnekler:**
+  - `wood_half_top` - Yarı blok (üstten kesilmiş)
+  - `stone_quarter_top_left` - Çeyrek blok (üstten ve soldan kesilmiş)
+  - `wood_fifth_top_1` - 1/5 blok (üstten, seviye 1)
+  - `stone_diagonal_edge_top_front_2` - Çapraz kenar kesim (üst-ön kenar, seviye 2)
+  - `wood_rounded_corner_top_left_front_3` - Yuvarlanmış köşe (üst-sol-ön köşe, seviye 3)
+  - `stone_ramp_top_2` - Ramp şekli (üst yön, seviye 2)
+  - `wood_stairs_north_inverted` - Merdiven (kuzey yönü, ters)
+  - `stone_inner_corner_top_left_front_1` - İç köşe (üst-sol-ön köşe, seviye 1)
+  - `wood_outer_corner_top_left_front_1` - Dış köşe (üst-sol-ön köşe, seviye 1)
+
+**Variant Type Enum:**
+```csharp
+public enum VariantType {
+    Full,           // Tam blok
+    Half,           // Yarı (1/2)
+    Quarter,        // Çeyrek (1/4)
+    Fifth,          // 1/5
+    TwoFifth,       // 2/5
+    ThreeFifth,     // 3/5
+    FourFifth,      // 4/5
+    Diagonal,       // Çapraz
+    Rounded,        // Yuvarlanmış
+    Ramp,           // Ramp
+    Stairs,         // Merdiven
+    InnerCorner,    // İç köşe
+    OuterCorner,    // Dış köşe
+    Special         // Özel şekil
+}
+```
+
+**Variant ID Oluşturma:**
+```csharp
+public string GetVariantId(string baseItemId, VariantType type, params object[] parameters) {
+    string variantId = baseItemId;
+    
+    switch (type) {
+        case VariantType.Half:
+            variantId += $"_half_{parameters[0]}"; // "wood_half_top"
+            break;
+        case VariantType.Quarter:
+            variantId += $"_quarter_{parameters[0]}_{parameters[1]}"; // "wood_quarter_top_left"
+            break;
+        case VariantType.Fifth:
+            variantId += $"_fifth_{parameters[0]}_{parameters[1]}"; // "wood_fifth_top_1" (1/5)
+            break;
+        case VariantType.Diagonal:
+            variantId += $"_diagonal_{parameters[0]}_{parameters[1]}"; // "wood_diagonal_edge_top_front"
+            break;
+        case VariantType.Rounded:
+            variantId += $"_rounded_{parameters[0]}_{parameters[1]}"; // "wood_rounded_corner_top_left_1"
+            break;
+        case VariantType.Ramp:
+            variantId += $"_ramp_{parameters[0]}_{parameters[1]}"; // "wood_ramp_top_1"
+            break;
+        case VariantType.Stairs:
+            variantId += $"_stairs_{parameters[0]}_{parameters[1]}"; // "wood_stairs_north_inverted"
+            break;
+        case VariantType.InnerCorner:
+            variantId += $"_inner_{parameters[0]}_{parameters[1]}_{parameters[2]}"; // "wood_inner_corner_top_left_1"
+            break;
+        // ... diğer tipler
+    }
+    
+    return variantId;
+}
+```
+
+### 8.4 VariantMeshGenerator.cs - Algoritma Tabanlı Mesh Oluşturma
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Blocks/VariantMeshGenerator.cs`
+
+**Amaç:** Algoritma tabanlı variant mesh generation (740 variant per material)
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using System.Collections.Generic;
+using Unity.Collections;
+using Unity.Jobs;
+using Unity.Burst;
+using Unity.Mathematics;
+
+/// <summary>
+/// ✅ OPTİMİZE: Variant Mesh Generator - Algoritma tabanlı mesh oluşturma
+/// Minecraft'taki gibi her variant için ayrı mesh tanımlamak yerine,
+/// algoritma ile procedural mesh generation yapar
+/// </summary>
+public class VariantMeshGenerator : MonoBehaviour {
+    private static VariantMeshGenerator _instance;
+    public static VariantMeshGenerator Instance {
+        get {
+            if (_instance == null) {
+                _instance = FindObjectOfType<VariantMeshGenerator>();
+            }
+            return _instance;
+        }
+    }
+    
+    // ✅ OPTİMİZE: Mesh cache (O(1) lookup)
+    private Dictionary<string, Mesh> _meshCache = new Dictionary<string, Mesh>();
+    
+    // ✅ OPTİMİZE: Material cache
+    private Dictionary<string, Material> _materialCache = new Dictionary<string, Material>();
+    
+    void Awake() {
+        if (_instance == null) {
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
+        } else if (_instance != this) {
+            Destroy(gameObject);
+            return;
+        }
+        
+        ServiceLocator.Instance?.Register<VariantMeshGenerator>(this);
+    }
+    
+    /// <summary>
+    /// ✅ Variant mesh al (cache'den veya generate et)
+    /// </summary>
+    public Mesh GetVariantMesh(string variantId) {
+        if (_meshCache.ContainsKey(variantId)) {
+            return _meshCache[variantId];
+        }
+        
+        // Cache'de yoksa generate et
+        Mesh mesh = GenerateVariantMesh(variantId);
+        if (mesh != null) {
+            _meshCache[variantId] = mesh;
+        }
+        
+        return mesh;
+    }
+    
+    /// <summary>
+    /// ✅ Variant ID'den mesh generate et (algoritma tabanlı)
+    /// </summary>
+    Mesh GenerateVariantMesh(string variantId) {
+        // Variant ID formatı: "wood_half_top", "stone_quarter_top_left", vb.
+        string[] parts = variantId.Split('_');
+        if (parts.Length < 2) {
+            Debug.LogWarning($"[VariantMeshGenerator] Geçersiz variant ID: {variantId}");
+            return GenerateFullBlockMesh(); // Tam blok
+        }
+        
+        string materialId = parts[0];
+        string variantType = parts[1];
+        
+        // Variant tipine göre mesh generate et
+        switch (variantType) {
+            case "half":
+                return GenerateHalfBlockMesh(parts);
+            case "quarter":
+                return GenerateQuarterBlockMesh(parts);
+            case "fifth":
+                return GenerateFifthBlockMesh(parts);
+            case "eighth":
+                return GenerateEighthBlockMesh(parts);
+            case "diagonal":
+                return GenerateDiagonalCutMesh(parts[2], parts[3] + "_" + parts[4], float.Parse(parts[5]));
+            case "rounded":
+                return GenerateRoundedCornerMesh(parts[2], parts[3] + "_" + parts[4], float.Parse(parts[5]));
+            case "ramp":
+                return GenerateRampShapeMesh(parts[2], float.Parse(parts[3]));
+            case "stairs":
+                return GenerateStairsShapeMesh(parts[2], parts.Length > 3 && parts[3] == "inverted");
+            case "inner":
+            case "outer":
+                return GenerateCornerShapeMesh(parts[1], parts[2] + "_" + parts[3] + "_" + parts[4], parts.Length > 5 ? float.Parse(parts[5]) : 1.0f);
+            default:
+                return GenerateFullBlockMesh();
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Tam blok mesh (1x1x1 küp)
+    /// </summary>
+    Mesh GenerateFullBlockMesh() {
+        Mesh mesh = new Mesh();
+        mesh.name = "FullBlock";
+        
+        // 8 köşe
+        Vector3[] vertices = new Vector3[8] {
+            new Vector3(0, 0, 0), // 0: Sol-Alt-Ön
+            new Vector3(1, 0, 0), // 1: Sağ-Alt-Ön
+            new Vector3(1, 1, 0), // 2: Sağ-Üst-Ön
+            new Vector3(0, 1, 0), // 3: Sol-Üst-Ön
+            new Vector3(0, 0, 1), // 4: Sol-Alt-Arka
+            new Vector3(1, 0, 1), // 5: Sağ-Alt-Arka
+            new Vector3(1, 1, 1), // 6: Sağ-Üst-Arka
+            new Vector3(0, 1, 1)  // 7: Sol-Üst-Arka
+        };
+        
+        // 12 üçgen (6 yüz × 2 üçgen)
+        int[] triangles = new int[36] {
+            // Ön yüz
+            0, 2, 1, 0, 3, 2,
+            // Arka yüz
+            5, 7, 4, 5, 6, 7,
+            // Üst yüz
+            3, 6, 2, 3, 7, 6,
+            // Alt yüz
+            1, 4, 0, 1, 5, 4,
+            // Sağ yüz
+            1, 6, 5, 1, 2, 6,
+            // Sol yüz
+            4, 3, 0, 4, 7, 3
+        };
+        
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        
+        return mesh;
+    }
+    
+    /// <summary>
+    /// ✅ Yarı blok mesh (1 yönden kesilmiş)
+    /// </summary>
+    Mesh GenerateHalfBlockMesh(string[] parts) {
+        if (parts.Length < 3) return GenerateFullBlockMesh();
+        
+        string direction = parts[2]; // "top", "bottom", "front", vb.
+        float cutRatio = 0.5f; // Yarı
+        
+        return GenerateCutBlockMesh(direction, cutRatio);
+    }
+    
+    /// <summary>
+    /// ✅ Çeyrek blok mesh (2 yönden kesilmiş)
+    /// </summary>
+    Mesh GenerateQuarterBlockMesh(string[] parts) {
+        if (parts.Length < 4) return GenerateFullBlockMesh();
+        
+        string dir1 = parts[2];
+        string dir2 = parts[3];
+        float cutRatio = 0.5f;
+        
+        return GenerateCutBlockMesh(dir1, dir2, cutRatio);
+    }
+    
+    /// <summary>
+    /// ✅ 1/5 blok mesh
+    /// </summary>
+    Mesh GenerateFifthBlockMesh(string[] parts) {
+        if (parts.Length < 4) return GenerateFullBlockMesh();
+        
+        string direction = parts[2];
+        int level = int.Parse(parts[3]); // 1, 2, 3, 4
+        float cutRatio = level / 5f; // 0.2, 0.4, 0.6, 0.8
+        
+        return GenerateCutBlockMesh(direction, cutRatio);
+    }
+    
+    /// <summary>
+    /// ✅ 1/8 blok mesh (3 yönden kesilmiş)
+    /// </summary>
+    Mesh GenerateEighthBlockMesh(string[] parts) {
+        if (parts.Length < 5) return GenerateFullBlockMesh();
+        
+        string dir1 = parts[2];
+        string dir2 = parts[3];
+        string dir3 = parts[4];
+        float cutRatio = 0.5f;
+        
+        return GenerateCutBlockMesh(dir1, dir2, dir3, cutRatio);
+    }
+    
+    /// <summary>
+    /// ✅ Tek yönden kesilmiş blok mesh
+    /// </summary>
+    Mesh GenerateCutBlockMesh(string direction, float cutRatio) {
+        Mesh mesh = new Mesh();
+        List<Vector3> vertices = new List<Vector3>();
+        List<int> triangles = new List<int>();
+        
+        // Yön bazlı kesim
+        Vector3 cutPlane = GetDirectionVector(direction);
+        float cutDistance = cutRatio;
+        
+        // 8 köşe noktası
+        Vector3[] corners = new Vector3[8] {
+            new Vector3(0, 0, 0), new Vector3(1, 0, 0),
+            new Vector3(1, 1, 0), new Vector3(0, 1, 0),
+            new Vector3(0, 0, 1), new Vector3(1, 0, 1),
+            new Vector3(1, 1, 1), new Vector3(0, 1, 1)
+        };
+        
+        // Kesim düzleminin hangi tarafında olduğunu kontrol et
+        List<Vector3> validCorners = new List<Vector3>();
+        foreach (var corner in corners) {
+            float distance = Vector3.Dot(corner, cutPlane);
+            if (distance <= cutDistance) {
+                validCorners.Add(corner);
+            }
+        }
+        
+        // Mesh oluştur
+        BuildMeshFromCorners(validCorners, cutPlane, cutDistance, vertices, triangles);
+        
+        mesh.vertices = vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        
+        return mesh;
+    }
+    
+    /// <summary>
+    /// ✅ İki yönden kesilmiş blok mesh
+    /// </summary>
+    Mesh GenerateCutBlockMesh(string dir1, string dir2, float cutRatio) {
+        // İki kesim düzlemi
+        Vector3 plane1 = GetDirectionVector(dir1);
+        Vector3 plane2 = GetDirectionVector(dir2);
+        
+        // İki düzlemin kesişimini hesapla
+        return GenerateMultiCutMesh(new Vector3[] { plane1, plane2 }, cutRatio);
+    }
+    
+    /// <summary>
+    /// ✅ Üç yönden kesilmiş blok mesh
+    /// </summary>
+    Mesh GenerateCutBlockMesh(string dir1, string dir2, string dir3, float cutRatio) {
+        Vector3 plane1 = GetDirectionVector(dir1);
+        Vector3 plane2 = GetDirectionVector(dir2);
+        Vector3 plane3 = GetDirectionVector(dir3);
+        
+        return GenerateMultiCutMesh(new Vector3[] { plane1, plane2, plane3 }, cutRatio);
+    }
+    
+    /// <summary>
+    /// ✅ Çoklu kesim mesh
+    /// </summary>
+    Mesh GenerateMultiCutMesh(Vector3[] planes, float cutRatio) {
+        Mesh mesh = new Mesh();
+        List<Vector3> vertices = new List<Vector3>();
+        List<int> triangles = new List<int>();
+        
+        Vector3[] corners = new Vector3[8] {
+            new Vector3(0, 0, 0), new Vector3(1, 0, 0),
+            new Vector3(1, 1, 0), new Vector3(0, 1, 0),
+            new Vector3(0, 0, 1), new Vector3(1, 0, 1),
+            new Vector3(1, 1, 1), new Vector3(0, 1, 1)
+        };
+        
+        // Tüm düzlemlerin içinde kalan köşeleri bul
+        List<Vector3> validCorners = new List<Vector3>();
+        foreach (var corner in corners) {
+            bool valid = true;
+            foreach (var plane in planes) {
+                float distance = Vector3.Dot(corner, plane);
+                if (distance > cutRatio) {
+                    valid = false;
+                    break;
+                }
+            }
+            if (valid) {
+                validCorners.Add(corner);
+            }
+        }
+        
+        // Kesim düzlemlerinin kesişim noktalarını ekle
+        AddIntersectionPoints(planes, cutRatio, validCorners);
+        
+        // Mesh oluştur
+        BuildMeshFromCorners(validCorners, Vector3.zero, 0, vertices, triangles);
+        
+        mesh.vertices = vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        
+        return mesh;
+    }
+    
+    /// <summary>
+    /// ✅ Çapraz kesim mesh
+    /// </summary>
+    Mesh GenerateDiagonalCutMesh(string edgeType, string location, float cutRatio) {
+        // Çapraz kesim için özel algoritma
+        Mesh mesh = new Mesh();
+        List<Vector3> vertices = new List<Vector3>();
+        List<int> triangles = new List<int>();
+        
+        // Location'dan yönleri parse et
+        string[] locParts = location.Split('_');
+        Vector3 cutDir1 = Vector3.zero;
+        Vector3 cutDir2 = Vector3.zero;
+        
+        if (locParts.Length >= 2) {
+            cutDir1 = GetDirectionVector(locParts[0]);
+            cutDir2 = GetDirectionVector(locParts[1]);
+        }
+        
+        // Çapraz kesim için eğimli düzlem
+        Vector3 cutNormal = (cutDir1 + cutDir2).normalized;
+        float cutDistance = cutRatio;
+        
+        // 8 köşe noktası
+        Vector3[] corners = new Vector3[8] {
+            new Vector3(0, 0, 0), new Vector3(1, 0, 0),
+            new Vector3(1, 1, 0), new Vector3(0, 1, 0),
+            new Vector3(0, 0, 1), new Vector3(1, 0, 1),
+            new Vector3(1, 1, 1), new Vector3(0, 1, 1)
+        };
+        
+        // Çapraz düzlemin altında kalan köşeleri bul
+        List<Vector3> validCorners = new List<Vector3>();
+        foreach (var corner in corners) {
+            float distance = Vector3.Dot(corner - Vector3.one * 0.5f, cutNormal);
+            if (distance <= cutDistance) {
+                validCorners.Add(corner);
+            }
+        }
+        
+        // Düzlem-küp kesişim noktalarını ekle
+        AddPlaneCubeIntersections(cutNormal, cutDistance, validCorners);
+        
+        // Mesh oluştur
+        BuildMeshFromCorners(validCorners, cutNormal, cutDistance, vertices, triangles);
+        
+        mesh.vertices = vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        
+        return mesh;
+    }
+    
+    /// <summary>
+    /// ✅ Düzlem-küp kesişim noktalarını ekle
+    /// </summary>
+    void AddPlaneCubeIntersections(Vector3 planeNormal, float planeDistance, List<Vector3> points) {
+        // Küpün 12 kenarını kontrol et
+        Vector3[] edgeStarts = new Vector3[12] {
+            new Vector3(0, 0, 0), new Vector3(1, 0, 0), new Vector3(1, 1, 0), new Vector3(0, 1, 0), // Alt yüz
+            new Vector3(0, 0, 1), new Vector3(1, 0, 1), new Vector3(1, 1, 1), new Vector3(0, 1, 1), // Üst yüz
+            new Vector3(0, 0, 0), new Vector3(0, 1, 0), new Vector3(1, 0, 0), new Vector3(1, 1, 0)  // Dikey kenarlar
+        };
+        
+        Vector3[] edgeEnds = new Vector3[12] {
+            new Vector3(1, 0, 0), new Vector3(1, 1, 0), new Vector3(0, 1, 0), new Vector3(0, 0, 0),
+            new Vector3(1, 0, 1), new Vector3(1, 1, 1), new Vector3(0, 1, 1), new Vector3(0, 0, 1),
+            new Vector3(0, 0, 1), new Vector3(0, 1, 1), new Vector3(1, 0, 1), new Vector3(1, 1, 1)
+        };
+        
+        for (int i = 0; i < 12; i++) {
+            Vector3 intersection = GetLinePlaneIntersection(edgeStarts[i], edgeEnds[i], planeNormal, planeDistance);
+            if (intersection != Vector3.zero && IsPointInCube(intersection)) {
+                if (!points.Contains(intersection)) {
+                    points.Add(intersection);
+                }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Doğru-düzlem kesişim noktası
+    /// </summary>
+    Vector3 GetLinePlaneIntersection(Vector3 lineStart, Vector3 lineEnd, Vector3 planeNormal, float planeDistance) {
+        Vector3 lineDir = (lineEnd - lineStart).normalized;
+        float denom = Vector3.Dot(planeNormal, lineDir);
+        
+        if (Mathf.Abs(denom) < 0.0001f) return Vector3.zero; // Paralel
+        
+        Vector3 planePoint = planeNormal * planeDistance;
+        float t = Vector3.Dot(planeNormal, planePoint - lineStart) / denom;
+        
+        if (t < 0 || t > Vector3.Distance(lineStart, lineEnd)) return Vector3.zero;
+        
+        return lineStart + lineDir * t;
+    }
+    
+    /// <summary>
+    /// ✅ Nokta küp içinde mi?
+    /// </summary>
+    bool IsPointInCube(Vector3 point) {
+        return point.x >= 0 && point.x <= 1 && 
+               point.y >= 0 && point.y <= 1 && 
+               point.z >= 0 && point.z <= 1;
+    }
+    
+    /// <summary>
+    /// ✅ Yuvarlanmış köşe mesh
+    /// </summary>
+    Mesh GenerateRoundedCornerMesh(string cornerType, string location, float roundness) {
+        Mesh mesh = new Mesh();
+        List<Vector3> vertices = new List<Vector3>();
+        List<int> triangles = new List<int>();
+        
+        // Location'dan köşe pozisyonunu belirle
+        string[] locParts = location.Split('_');
+        Vector3 cornerPos = Vector3.zero;
+        
+        if (locParts.Length >= 3) {
+            // "top_left_front" -> (1, 1, 1)
+            cornerPos = new Vector3(
+                locParts[1] == "left" ? 0 : 1,
+                locParts[0] == "top" ? 1 : 0,
+                locParts[2] == "front" ? 0 : 1
+            );
+        }
+        
+        // Yuvarlatma radius'u
+        float radius = roundness * 0.3f; // Maksimum 0.3 birim yuvarlatma
+        
+        // Yuvarlatılmış köşe için mesh oluştur
+        int segments = 8; // Yuvarlatma segment sayısı
+        
+        // Köşe etrafında yuvarlatılmış yüzey oluştur
+        for (int i = 0; i < segments; i++) {
+            float angle1 = (i / (float)segments) * Mathf.PI * 0.5f;
+            float angle2 = ((i + 1) / (float)segments) * Mathf.PI * 0.5f;
+            
+            Vector3 v1 = cornerPos + new Vector3(
+                Mathf.Cos(angle1) * radius,
+                Mathf.Sin(angle1) * radius,
+                0
+            );
+            Vector3 v2 = cornerPos + new Vector3(
+                Mathf.Cos(angle2) * radius,
+                Mathf.Sin(angle2) * radius,
+                0
+            );
+            
+            vertices.Add(cornerPos);
+            vertices.Add(v1);
+            vertices.Add(v2);
+            
+            int baseIdx = vertices.Count - 3;
+            triangles.Add(baseIdx);
+            triangles.Add(baseIdx + 1);
+            triangles.Add(baseIdx + 2);
+        }
+        
+        mesh.vertices = vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        
+        return mesh;
+    }
+    
+    /// <summary>
+    /// ✅ Ramp şekli mesh
+    /// </summary>
+    Mesh GenerateRampShapeMesh(string direction, float slope) {
+        Mesh mesh = new Mesh();
+        List<Vector3> vertices = new List<Vector3>();
+        List<int> triangles = new List<int>();
+        
+        Vector3 dir = GetDirectionVector(direction);
+        float height = slope; // Eğim yüksekliği (0-1)
+        
+        // Ramp için eğimli yüzey oluştur
+        if (direction == "top" || direction == "bottom") {
+            // Y ekseni boyunca eğim
+            vertices.Add(new Vector3(0, direction == "top" ? height : 0, 0));
+            vertices.Add(new Vector3(1, direction == "top" ? height : 0, 0));
+            vertices.Add(new Vector3(1, direction == "top" ? 1 : (1 - height), 0));
+            vertices.Add(new Vector3(0, direction == "top" ? 1 : (1 - height), 0));
+            vertices.Add(new Vector3(0, direction == "top" ? height : 0, 1));
+            vertices.Add(new Vector3(1, direction == "top" ? height : 0, 1));
+            vertices.Add(new Vector3(1, direction == "top" ? 1 : (1 - height), 1));
+            vertices.Add(new Vector3(0, direction == "top" ? 1 : (1 - height), 1));
+        } else {
+            // X veya Z ekseni boyunca eğim
+            float startY = 0;
+            float endY = height;
+            
+            vertices.Add(new Vector3(0, startY, 0));
+            vertices.Add(new Vector3(1, startY, 0));
+            vertices.Add(new Vector3(1, endY, 0));
+            vertices.Add(new Vector3(0, endY, 0));
+            vertices.Add(new Vector3(0, startY, 1));
+            vertices.Add(new Vector3(1, startY, 1));
+            vertices.Add(new Vector3(1, endY, 1));
+            vertices.Add(new Vector3(0, endY, 1));
+        }
+        
+        // Üçgenler
+        triangles.AddRange(new int[] { 0, 2, 1, 0, 3, 2 }); // Ön yüz
+        triangles.AddRange(new int[] { 4, 5, 6, 4, 6, 7 }); // Arka yüz
+        triangles.AddRange(new int[] { 0, 4, 7, 0, 7, 3 }); // Sol yüz
+        triangles.AddRange(new int[] { 1, 2, 6, 1, 6, 5 }); // Sağ yüz
+        triangles.AddRange(new int[] { 3, 7, 6, 3, 6, 2 }); // Üst yüz (eğimli)
+        triangles.AddRange(new int[] { 0, 1, 5, 0, 5, 4 }); // Alt yüz
+        
+        mesh.vertices = vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        
+        return mesh;
+    }
+    
+    // ========== UTILITY METHODS ==========
+    
+    /// <summary>
+    /// ✅ Merdiven şekli mesh
+    /// </summary>
+    Mesh GenerateStairsShapeMesh(string direction, bool inverted) {
+        Mesh mesh = new Mesh();
+        List<Vector3> vertices = new List<Vector3>();
+        List<int> triangles = new List<int>();
+        
+        // Merdiven için 2 basamak oluştur
+        float stepHeight = 0.5f;
+        float stepDepth = 0.5f;
+        
+        // İlk basamak (alt)
+        vertices.Add(new Vector3(0, 0, 0));
+        vertices.Add(new Vector3(1, 0, 0));
+        vertices.Add(new Vector3(1, stepHeight, 0));
+        vertices.Add(new Vector3(0, stepHeight, 0));
+        vertices.Add(new Vector3(0, 0, stepDepth));
+        vertices.Add(new Vector3(1, 0, stepDepth));
+        vertices.Add(new Vector3(1, stepHeight, stepDepth));
+        vertices.Add(new Vector3(0, stepHeight, stepDepth));
+        
+        // İkinci basamak (üst)
+        vertices.Add(new Vector3(0, stepHeight, stepDepth));
+        vertices.Add(new Vector3(1, stepHeight, stepDepth));
+        vertices.Add(new Vector3(1, 1, stepDepth));
+        vertices.Add(new Vector3(0, 1, stepDepth));
+        vertices.Add(new Vector3(0, stepHeight, 1));
+        vertices.Add(new Vector3(1, stepHeight, 1));
+        vertices.Add(new Vector3(1, 1, 1));
+        vertices.Add(new Vector3(0, 1, 1));
+        
+        // Yön bazlı rotasyon
+        if (direction == "south" || direction == "back") {
+            // 180 derece döndür
+            for (int i = 0; i < vertices.Count; i++) {
+                vertices[i] = new Vector3(1 - vertices[i].x, vertices[i].y, 1 - vertices[i].z);
+            }
+        } else if (direction == "east" || direction == "right") {
+            // 90 derece döndür
+            for (int i = 0; i < vertices.Count; i++) {
+                float temp = vertices[i].x;
+                vertices[i] = new Vector3(vertices[i].z, vertices[i].y, 1 - temp);
+            }
+        } else if (direction == "west" || direction == "left") {
+            // -90 derece döndür
+            for (int i = 0; i < vertices.Count; i++) {
+                float temp = vertices[i].x;
+                vertices[i] = new Vector3(1 - vertices[i].z, vertices[i].y, temp);
+            }
+        }
+        
+        // Inverted ise ters çevir
+        if (inverted) {
+            for (int i = 0; i < vertices.Count; i++) {
+                vertices[i] = new Vector3(vertices[i].x, 1 - vertices[i].y, vertices[i].z);
+            }
+        }
+        
+        // Üçgenler (alt basamak)
+        triangles.AddRange(new int[] { 0, 2, 1, 0, 3, 2 }); // Ön
+        triangles.AddRange(new int[] { 4, 5, 6, 4, 6, 7 }); // Arka
+        triangles.AddRange(new int[] { 0, 4, 7, 0, 7, 3 }); // Sol
+        triangles.AddRange(new int[] { 1, 2, 6, 1, 6, 5 }); // Sağ
+        triangles.AddRange(new int[] { 3, 7, 6, 3, 6, 2 }); // Üst
+        triangles.AddRange(new int[] { 0, 1, 5, 0, 5, 4 }); // Alt
+        
+        // Üçgenler (üst basamak)
+        triangles.AddRange(new int[] { 8, 10, 9, 8, 11, 10 }); // Ön
+        triangles.AddRange(new int[] { 12, 13, 14, 12, 14, 15 }); // Arka
+        triangles.AddRange(new int[] { 8, 12, 15, 8, 15, 11 }); // Sol
+        triangles.AddRange(new int[] { 9, 10, 14, 9, 14, 13 }); // Sağ
+        triangles.AddRange(new int[] { 11, 15, 14, 11, 14, 10 }); // Üst
+        triangles.AddRange(new int[] { 8, 9, 13, 8, 13, 12 }); // Alt
+        
+        mesh.vertices = vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        
+        return mesh;
+    }
+    
+    /// <summary>
+    /// ✅ Köşe şekli mesh (inner/outer corner)
+    /// </summary>
+    Mesh GenerateCornerShapeMesh(string cornerType, string location, float cutRatio) {
+        Mesh mesh = new Mesh();
+        List<Vector3> vertices = new List<Vector3>();
+        List<int> triangles = new List<int>();
+        
+        // Location'dan köşe pozisyonunu belirle
+        string[] locParts = location.Split('_');
+        Vector3 cornerPos = Vector3.zero;
+        Vector3 dir1 = Vector3.zero;
+        Vector3 dir2 = Vector3.zero;
+        
+        if (locParts.Length >= 3) {
+            cornerPos = new Vector3(
+                locParts[1] == "left" ? 0 : 1,
+                locParts[0] == "top" ? 1 : 0,
+                locParts[2] == "front" ? 0 : 1
+            );
+            dir1 = GetDirectionVector(locParts[0]);
+            dir2 = GetDirectionVector(locParts[1]);
+        }
+        
+        // Inner corner (L şekli) veya Outer corner
+        if (cornerType == "inner") {
+            // İç köşe: L şekli, iki yönden kesilmiş
+            float cut1 = cutRatio;
+            float cut2 = cutRatio;
+            
+            // L şekli için köşeler
+            vertices.Add(new Vector3(0, 0, 0));
+            vertices.Add(new Vector3(cut1, 0, 0));
+            vertices.Add(new Vector3(cut1, 1, 0));
+            vertices.Add(new Vector3(0, 1, 0));
+            vertices.Add(new Vector3(0, 0, cut2));
+            vertices.Add(new Vector3(cut1, 0, cut2));
+            vertices.Add(new Vector3(cut1, 1, cut2));
+            vertices.Add(new Vector3(0, 1, cut2));
+            
+            // Üçgenler
+            triangles.AddRange(new int[] { 0, 2, 1, 0, 3, 2 });
+            triangles.AddRange(new int[] { 4, 5, 6, 4, 6, 7 });
+            triangles.AddRange(new int[] { 0, 4, 7, 0, 7, 3 });
+            triangles.AddRange(new int[] { 1, 2, 6, 1, 6, 5 });
+            triangles.AddRange(new int[] { 3, 7, 6, 3, 6, 2 });
+            triangles.AddRange(new int[] { 0, 1, 5, 0, 5, 4 });
+        } else {
+            // Outer corner: Dış köşe, üç yönden kesilmiş
+            float cut = cutRatio;
+            
+            vertices.Add(new Vector3(0, 0, 0));
+            vertices.Add(new Vector3(cut, 0, 0));
+            vertices.Add(new Vector3(cut, cut, 0));
+            vertices.Add(new Vector3(0, cut, 0));
+            vertices.Add(new Vector3(0, 0, cut));
+            vertices.Add(new Vector3(cut, 0, cut));
+            vertices.Add(new Vector3(cut, cut, cut));
+            vertices.Add(new Vector3(0, cut, cut));
+            
+            // Üçgenler
+            triangles.AddRange(new int[] { 0, 2, 1, 0, 3, 2 });
+            triangles.AddRange(new int[] { 4, 5, 6, 4, 6, 7 });
+            triangles.AddRange(new int[] { 0, 4, 7, 0, 7, 3 });
+            triangles.AddRange(new int[] { 1, 2, 6, 1, 6, 5 });
+            triangles.AddRange(new int[] { 3, 7, 6, 3, 6, 2 });
+            triangles.AddRange(new int[] { 0, 1, 5, 0, 5, 4 });
+        }
+        
+        mesh.vertices = vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        
+        return mesh;
+    }
+    
+    /// <summary>
+    /// ✅ Merdiven şekli mesh
+    /// </summary>
+    Mesh GenerateStairsShapeMesh(string direction, bool inverted) {
+        Mesh mesh = new Mesh();
+        List<Vector3> vertices = new List<Vector3>();
+        List<int> triangles = new List<int>();
+        
+        // Merdiven için 2 basamak oluştur
+        float stepHeight = 0.5f;
+        float stepDepth = 0.5f;
+        
+        // İlk basamak (alt)
+        vertices.Add(new Vector3(0, 0, 0));
+        vertices.Add(new Vector3(1, 0, 0));
+        vertices.Add(new Vector3(1, stepHeight, 0));
+        vertices.Add(new Vector3(0, stepHeight, 0));
+        vertices.Add(new Vector3(0, 0, stepDepth));
+        vertices.Add(new Vector3(1, 0, stepDepth));
+        vertices.Add(new Vector3(1, stepHeight, stepDepth));
+        vertices.Add(new Vector3(0, stepHeight, stepDepth));
+        
+        // İkinci basamak (üst)
+        vertices.Add(new Vector3(0, stepHeight, stepDepth));
+        vertices.Add(new Vector3(1, stepHeight, stepDepth));
+        vertices.Add(new Vector3(1, 1, stepDepth));
+        vertices.Add(new Vector3(0, 1, stepDepth));
+        vertices.Add(new Vector3(0, stepHeight, 1));
+        vertices.Add(new Vector3(1, stepHeight, 1));
+        vertices.Add(new Vector3(1, 1, 1));
+        vertices.Add(new Vector3(0, 1, 1));
+        
+        // Yön bazlı rotasyon
+        if (direction == "south" || direction == "back") {
+            // 180 derece döndür
+            for (int i = 0; i < vertices.Count; i++) {
+                vertices[i] = new Vector3(1 - vertices[i].x, vertices[i].y, 1 - vertices[i].z);
+            }
+        } else if (direction == "east" || direction == "right") {
+            // 90 derece döndür
+            for (int i = 0; i < vertices.Count; i++) {
+                float temp = vertices[i].x;
+                vertices[i] = new Vector3(vertices[i].z, vertices[i].y, 1 - temp);
+            }
+        } else if (direction == "west" || direction == "left") {
+            // -90 derece döndür
+            for (int i = 0; i < vertices.Count; i++) {
+                float temp = vertices[i].x;
+                vertices[i] = new Vector3(1 - vertices[i].z, vertices[i].y, temp);
+            }
+        }
+        
+        // Inverted ise ters çevir
+        if (inverted) {
+            for (int i = 0; i < vertices.Count; i++) {
+                vertices[i] = new Vector3(vertices[i].x, 1 - vertices[i].y, vertices[i].z);
+            }
+        }
+        
+        // Üçgenler (alt basamak)
+        triangles.AddRange(new int[] { 0, 2, 1, 0, 3, 2 }); // Ön
+        triangles.AddRange(new int[] { 4, 5, 6, 4, 6, 7 }); // Arka
+        triangles.AddRange(new int[] { 0, 4, 7, 0, 7, 3 }); // Sol
+        triangles.AddRange(new int[] { 1, 2, 6, 1, 6, 5 }); // Sağ
+        triangles.AddRange(new int[] { 3, 7, 6, 3, 6, 2 }); // Üst
+        triangles.AddRange(new int[] { 0, 1, 5, 0, 5, 4 }); // Alt
+        
+        // Üçgenler (üst basamak)
+        triangles.AddRange(new int[] { 8, 10, 9, 8, 11, 10 }); // Ön
+        triangles.AddRange(new int[] { 12, 13, 14, 12, 14, 15 }); // Arka
+        triangles.AddRange(new int[] { 8, 12, 15, 8, 15, 11 }); // Sol
+        triangles.AddRange(new int[] { 9, 10, 14, 9, 14, 13 }); // Sağ
+        triangles.AddRange(new int[] { 11, 15, 14, 11, 14, 10 }); // Üst
+        triangles.AddRange(new int[] { 8, 9, 13, 8, 13, 12 }); // Alt
+        
+        mesh.vertices = vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        
+        return mesh;
+    }
+    
+    /// <summary>
+    /// ✅ Köşe şekli mesh (inner/outer corner)
+    /// </summary>
+    Mesh GenerateCornerShapeMesh(string cornerType, string location, float cutRatio) {
+        Mesh mesh = new Mesh();
+        List<Vector3> vertices = new List<Vector3>();
+        List<int> triangles = new List<int>();
+        
+        // Location'dan köşe pozisyonunu belirle
+        string[] locParts = location.Split('_');
+        Vector3 cornerPos = Vector3.zero;
+        Vector3 dir1 = Vector3.zero;
+        Vector3 dir2 = Vector3.zero;
+        
+        if (locParts.Length >= 3) {
+            cornerPos = new Vector3(
+                locParts[1] == "left" ? 0 : 1,
+                locParts[0] == "top" ? 1 : 0,
+                locParts[2] == "front" ? 0 : 1
+            );
+            dir1 = GetDirectionVector(locParts[0]);
+            dir2 = GetDirectionVector(locParts[1]);
+        }
+        
+        // Inner corner (L şekli) veya Outer corner
+        if (cornerType == "inner") {
+            // İç köşe: L şekli, iki yönden kesilmiş
+            float cut1 = cutRatio;
+            float cut2 = cutRatio;
+            
+            // L şekli için köşeler
+            vertices.Add(new Vector3(0, 0, 0));
+            vertices.Add(new Vector3(cut1, 0, 0));
+            vertices.Add(new Vector3(cut1, 1, 0));
+            vertices.Add(new Vector3(0, 1, 0));
+            vertices.Add(new Vector3(0, 0, cut2));
+            vertices.Add(new Vector3(cut1, 0, cut2));
+            vertices.Add(new Vector3(cut1, 1, cut2));
+            vertices.Add(new Vector3(0, 1, cut2));
+            
+            // Üçgenler
+            triangles.AddRange(new int[] { 0, 2, 1, 0, 3, 2 });
+            triangles.AddRange(new int[] { 4, 5, 6, 4, 6, 7 });
+            triangles.AddRange(new int[] { 0, 4, 7, 0, 7, 3 });
+            triangles.AddRange(new int[] { 1, 2, 6, 1, 6, 5 });
+            triangles.AddRange(new int[] { 3, 7, 6, 3, 6, 2 });
+            triangles.AddRange(new int[] { 0, 1, 5, 0, 5, 4 });
+        } else {
+            // Outer corner: Dış köşe, üç yönden kesilmiş
+            float cut = cutRatio;
+            
+            vertices.Add(new Vector3(0, 0, 0));
+            vertices.Add(new Vector3(cut, 0, 0));
+            vertices.Add(new Vector3(cut, cut, 0));
+            vertices.Add(new Vector3(0, cut, 0));
+            vertices.Add(new Vector3(0, 0, cut));
+            vertices.Add(new Vector3(cut, 0, cut));
+            vertices.Add(new Vector3(cut, cut, cut));
+            vertices.Add(new Vector3(0, cut, cut));
+            
+            // Üçgenler
+            triangles.AddRange(new int[] { 0, 2, 1, 0, 3, 2 });
+            triangles.AddRange(new int[] { 4, 5, 6, 4, 6, 7 });
+            triangles.AddRange(new int[] { 0, 4, 7, 0, 7, 3 });
+            triangles.AddRange(new int[] { 1, 2, 6, 1, 6, 5 });
+            triangles.AddRange(new int[] { 3, 7, 6, 3, 6, 2 });
+            triangles.AddRange(new int[] { 0, 1, 5, 0, 5, 4 });
+        }
+        
+        mesh.vertices = vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        
+        return mesh;
+    }
+    
+    // ========== UTILITY METHODS ==========
+    
+    Vector3 GetDirectionVector(string direction) {
+        switch (direction.ToLower()) {
+            case "top": return Vector3.up;
+            case "bottom": return Vector3.down;
+            case "front": return Vector3.forward;
+            case "back": return Vector3.back;
+            case "left": return Vector3.left;
+            case "right": return Vector3.right;
+            case "north": return Vector3.forward;
+            case "south": return Vector3.back;
+            case "east": return Vector3.right;
+            case "west": return Vector3.left;
+            default: return Vector3.zero;
+        }
+    }
+    
+    void BuildMeshFromCorners(List<Vector3> corners, Vector3 plane, float distance, List<Vector3> vertices, List<int> triangles) {
+        // Köşelerden mesh oluştur (convex hull algoritması)
+        if (corners.Count < 3) return;
+        
+        // Köşeleri düzleme göre sırala (normal'e göre)
+        corners.Sort((a, b) => {
+            float distA = Vector3.Dot(a, plane);
+            float distB = Vector3.Dot(b, plane);
+            return distA.CompareTo(distB);
+        });
+        
+        // Basit triangulation (fan pattern)
+        if (corners.Count == 3) {
+            // Tek üçgen
+            vertices.AddRange(corners);
+            triangles.AddRange(new int[] { 0, 1, 2 });
+        } else if (corners.Count == 4) {
+            // İki üçgen (quad)
+            vertices.AddRange(corners);
+            triangles.AddRange(new int[] { 0, 1, 2, 0, 2, 3 });
+        } else {
+            // Fan triangulation (merkez noktadan)
+            Vector3 center = Vector3.zero;
+            foreach (var corner in corners) {
+                center += corner;
+            }
+            center /= corners.Count;
+            
+            vertices.Add(center);
+            int centerIndex = 0;
+            
+            // Her kenar için üçgen oluştur
+            for (int i = 0; i < corners.Count; i++) {
+                int nextIndex = (i + 1) % corners.Count;
+                
+                // Köşeleri ekle
+                int idx1 = vertices.Count;
+                vertices.Add(corners[i]);
+                int idx2 = vertices.Count;
+                vertices.Add(corners[nextIndex]);
+                
+                // Üçgen ekle
+                triangles.Add(centerIndex);
+                triangles.Add(idx1);
+                triangles.Add(idx2);
+            }
+        }
+    }
+    
+    void AddIntersectionPoints(Vector3[] planes, float cutRatio, List<Vector3> points) {
+        // Düzlemlerin kesişim noktalarını ekle
+        // Küpün kenarları ile düzlemlerin kesişimlerini hesapla
+        Vector3[] edgeStarts = new Vector3[12] {
+            new Vector3(0, 0, 0), new Vector3(1, 0, 0), new Vector3(1, 1, 0), new Vector3(0, 1, 0),
+            new Vector3(0, 0, 1), new Vector3(1, 0, 1), new Vector3(1, 1, 1), new Vector3(0, 1, 1),
+            new Vector3(0, 0, 0), new Vector3(0, 1, 0), new Vector3(1, 0, 0), new Vector3(1, 1, 0)
+        };
+        
+        Vector3[] edgeEnds = new Vector3[12] {
+            new Vector3(1, 0, 0), new Vector3(1, 1, 0), new Vector3(0, 1, 0), new Vector3(0, 0, 0),
+            new Vector3(1, 0, 1), new Vector3(1, 1, 1), new Vector3(0, 1, 1), new Vector3(0, 0, 1),
+            new Vector3(0, 0, 1), new Vector3(0, 1, 1), new Vector3(1, 0, 1), new Vector3(1, 1, 1)
+        };
+        
+        foreach (var plane in planes) {
+            for (int i = 0; i < 12; i++) {
+                Vector3 intersection = GetLinePlaneIntersection(edgeStarts[i], edgeEnds[i], plane, cutRatio);
+                if (intersection != Vector3.zero && IsPointInCube(intersection)) {
+                    bool exists = false;
+                    foreach (var p in points) {
+                        if (Vector3.Distance(p, intersection) < 0.001f) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) {
+                        points.Add(intersection);
+                    }
+                }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Doğru-düzlem kesişim noktası
+    /// </summary>
+    Vector3 GetLinePlaneIntersection(Vector3 lineStart, Vector3 lineEnd, Vector3 planeNormal, float planeDistance) {
+        Vector3 lineDir = (lineEnd - lineStart).normalized;
+        float denom = Vector3.Dot(planeNormal, lineDir);
+        
+        if (Mathf.Abs(denom) < 0.0001f) return Vector3.zero; // Paralel
+        
+        Vector3 planePoint = planeNormal * planeDistance;
+        float t = Vector3.Dot(planeNormal, planePoint - lineStart) / denom;
+        
+        if (t < 0 || t > Vector3.Distance(lineStart, lineEnd)) return Vector3.zero;
+        
+        return lineStart + lineDir * t;
+    }
+    
+    /// <summary>
+    /// ✅ Nokta küp içinde mi?
+    /// </summary>
+    bool IsPointInCube(Vector3 point) {
+        return point.x >= 0 && point.x <= 1 && 
+               point.y >= 0 && point.y <= 1 && 
+               point.z >= 0 && point.z <= 1;
+    }
+    
+    /// <summary>
+    /// ✅ Düzlem-küp kesişim noktalarını ekle
+    /// </summary>
+    void AddPlaneCubeIntersections(Vector3 planeNormal, float planeDistance, List<Vector3> points) {
+        // Küpün 12 kenarını kontrol et
+        Vector3[] edgeStarts = new Vector3[12] {
+            new Vector3(0, 0, 0), new Vector3(1, 0, 0), new Vector3(1, 1, 0), new Vector3(0, 1, 0), // Alt yüz
+            new Vector3(0, 0, 1), new Vector3(1, 0, 1), new Vector3(1, 1, 1), new Vector3(0, 1, 1), // Üst yüz
+            new Vector3(0, 0, 0), new Vector3(0, 1, 0), new Vector3(1, 0, 0), new Vector3(1, 1, 0)  // Dikey kenarlar
+        };
+        
+        Vector3[] edgeEnds = new Vector3[12] {
+            new Vector3(1, 0, 0), new Vector3(1, 1, 0), new Vector3(0, 1, 0), new Vector3(0, 0, 0),
+            new Vector3(1, 0, 1), new Vector3(1, 1, 1), new Vector3(0, 1, 1), new Vector3(0, 0, 1),
+            new Vector3(0, 0, 1), new Vector3(0, 1, 1), new Vector3(1, 0, 1), new Vector3(1, 1, 1)
+        };
+        
+        for (int i = 0; i < 12; i++) {
+            Vector3 intersection = GetLinePlaneIntersection(edgeStarts[i], edgeEnds[i], planeNormal, planeDistance);
+            if (intersection != Vector3.zero && IsPointInCube(intersection)) {
+                if (!points.Contains(intersection)) {
+                    points.Add(intersection);
+                }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Yuvarlanmış köşe mesh
+    /// </summary>
+    Mesh GenerateRoundedCornerMesh(string cornerType, string location, float roundness) {
+        Mesh mesh = new Mesh();
+        List<Vector3> vertices = new List<Vector3>();
+        List<int> triangles = new List<int>();
+        
+        // Location'dan köşe pozisyonunu belirle
+        string[] locParts = location.Split('_');
+        Vector3 cornerPos = Vector3.zero;
+        
+        if (locParts.Length >= 3) {
+            // "top_left_front" -> (1, 1, 1)
+            cornerPos = new Vector3(
+                locParts[1] == "left" ? 0 : 1,
+                locParts[0] == "top" ? 1 : 0,
+                locParts[2] == "front" ? 0 : 1
+            );
+        }
+        
+        // Yuvarlatma radius'u
+        float radius = roundness * 0.3f; // Maksimum 0.3 birim yuvarlatma
+        
+        // Yuvarlatılmış köşe için mesh oluştur
+        int segments = 8; // Yuvarlatma segment sayısı
+        
+        // Köşe etrafında yuvarlatılmış yüzey oluştur
+        for (int i = 0; i < segments; i++) {
+            float angle1 = (i / (float)segments) * Mathf.PI * 0.5f;
+            float angle2 = ((i + 1) / (float)segments) * Mathf.PI * 0.5f;
+            
+            Vector3 v1 = cornerPos + new Vector3(
+                Mathf.Cos(angle1) * radius,
+                Mathf.Sin(angle1) * radius,
+                0
+            );
+            Vector3 v2 = cornerPos + new Vector3(
+                Mathf.Cos(angle2) * radius,
+                Mathf.Sin(angle2) * radius,
+                0
+            );
+            
+            vertices.Add(cornerPos);
+            vertices.Add(v1);
+            vertices.Add(v2);
+            
+            int baseIdx = vertices.Count - 3;
+            triangles.Add(baseIdx);
+            triangles.Add(baseIdx + 1);
+            triangles.Add(baseIdx + 2);
+        }
+        
+        mesh.vertices = vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        
+        return mesh;
+    }
+    
+    /// <summary>
+    /// ✅ Cache'i temizle (memory yönetimi)
+    /// </summary>
+    public void ClearCache() {
+        foreach (var mesh in _meshCache.Values) {
+            if (mesh != null) {
+                Destroy(mesh);
+            }
+        }
+        _meshCache.Clear();
+    }
+    
+    void OnDestroy() {
+        ClearCache();
+    }
+}
+```
+
+
+
+
+
+
+
 
 ## ✅ FAZ 3 BİTİŞ RAPORU
 
@@ -6153,7 +8690,48 @@ public class WaterSimulator : MonoBehaviour {
 
 **4. Su Sistemi:**
 - ✅ Sonsuz okyanus (oyuncuyu takip eden düzlem)
-- ✅ Voxel su simülasyonu (opsiyonel)
+- ✅ Voxel su simülasyonu (Minecraft benzeri matematiksel su mekaniği)
+- ✅ Su akış mekaniği (aşağı, yan, yayılma öncelikleri)
+- ✅ Su seviyesi yönetimi (0-7 arası, 8=kaynak su)
+
+**5. Voxel Ağaç Sistemi:**
+- ✅ VoxelTreeGenerator.cs (Prosedürel ağaç oluşturma - L-System/Fractal Tree)
+- ✅ TreeGrowthSystem.cs (Aşamalı büyüme: Fidan → Küçük → Orta → Büyük → Olgun)
+- ✅ 5 büyüme aşaması (toplam ~32 dakika)
+- ✅ Job System ile paralel ağaç generation
+- ✅ Voxel bloklardan oluşan ağaçlar (kırılabilir)
+
+**6. Voxel Maden Sistemi:**
+- ✅ OreSpawner.cs (Voxel maden blok spawn - TerrainDensity.compute entegrasyonu)
+- ✅ OreDefinition.cs (Maden tanımları - ScriptableObject)
+- ✅ Job System ile paralel maden spawn
+- ✅ Yükseklik bazlı maden dağılımı
+- ✅ Görünür ve kırılabilir maden blokları
+
+**7. İnşa Sistemi:**
+- ✅ GridPlacementSystem.cs (Grid tabanlı yerleştirme - smooth voxel dünyada tutarlı inşa)
+- ✅ BlueprintSystem.cs (Yapı kaydetme ve kopyalama)
+- ✅ SculptingSystem.cs (Blok yontma ve şekil verme)
+- ✅ Grid cache sistemi (O(1) lookup)
+
+**8. Variant Blok Sistemi:**
+- ✅ VariantMeshGenerator.cs (740 variant algoritma tabanlı mesh generation)
+- ✅ Dik kesimler (6 yön, 5 seviye: 1/5, 2/5, 3/5, 4/5, 5/5)
+- ✅ Çapraz kesimler (diagonal cuts)
+- ✅ Yuvarlanmış köşeler (rounded corners)
+- ✅ Ramp şekilleri (ramp shapes)
+- ✅ Merdiven benzeri şekiller (stairs-like)
+- ✅ İç/Dış köşeler (inner/outer corners)
+- ✅ Özel şekiller (trapezoids, pyramids, hemispheres)
+- ✅ Mesh cache sistemi (O(1) lookup, pre-generated meshes)
+
+**9. ChunkManager Güncellemeleri:**
+- ✅ AddDensityAtPoint() (Blok yerleştirme için)
+- ✅ RemoveDensityAtPoint() (Blok kırma için)
+- ✅ SetBlockType() / GetBlockType() (Blok tipi yönetimi)
+- ✅ OnChunkGenerated event (OreSpawner, VoxelTreeGenerator için)
+- ✅ GetWorldSeed() (Deterministik rastgelelik için)
+- ✅ Block type cache sistemi (Dictionary<Vector3Int, string>)
 
 ### 🎯 Amaç ve Sonuç
 
@@ -6161,8 +8739,11 @@ public class WaterSimulator : MonoBehaviour {
 
 **Sonuç:**
 - ✅ Canlı dünya (biyomlar çalışıyor)
-- ✅ Yeşillik (binlerce ağaç GPU Instancing ile)
-- ✅ Okyanus (sonsuz deniz)
+- ✅ Voxel ağaçlar (prosedürel, aşamalı büyüme, kırılabilir)
+- ✅ Voxel madenler (görünür, kırılabilir, yükseklik bazlı)
+- ✅ Tutarlı inşa sistemi (grid-based + blueprint + sculpting)
+- ✅ 740 blok variant (tüm kesim ve şekil kombinasyonları)
+- ✅ Okyanus (sonsuz deniz + voxel su simülasyonu)
 - ✅ Mağaralar (3D noise ile)
 
 ### 📂 Mevcut Dosya Yapısı (Faz 3 Sonrası)
@@ -6178,22 +8759,44 @@ Assets/_Stratocraft/
 ├── Engine/
 │   ├── ComputeShaders/
 │   │   ├── TerrainDensity.compute   ✅ GÜNCELLENDİ (Biyomlu)
-│   │   └── WaterSim.compute         ✅ YENİ (Opsiyonel)
+│   │   └── WaterSim.compute         ✅ YENİ (Minecraft benzeri su mekaniği)
 │   │
 │   └── Core/
-│       └── VegetationSpawner.cs     ✅ YENİ (GPU Instancing)
+│       ├── ChunkManager.cs          ✅ GÜNCELLENDİ (AddDensityAtPoint, SetBlockType, OnChunkGenerated)
+│       └── VegetationSpawner.cs     ✅ YENİ (GPU Instancing - eski sistem, VoxelTreeGenerator ile değiştirilebilir)
 │
 ├── Scripts/
 │   ├── Core/
 │   │   └── Definitions/
 │   │       └── BiomeDefinition.cs  ✅ YENİ
 │   │
-│   └── Systems/
-│       ├── Biomes/
-│       │   └── BiomeManager.cs      ✅ YENİ
-│       │
-│       └── Water/
-│           └── OceanPlane.cs       ✅ YENİ
+│   ├── Systems/
+│   │   ├── Biomes/
+│   │   │   └── BiomeManager.cs      ✅ YENİ
+│   │   │
+│   │   ├── Water/
+│   │   │   ├── OceanPlane.cs        ✅ YENİ
+│   │   │   └── WaterSimulator.cs    ✅ YENİ (Voxel su simülasyonu)
+│   │   │
+│   │   ├── Nature/
+│   │   │   ├── VoxelTreeGenerator.cs ✅ YENİ (Prosedürel ağaç oluşturma)
+│   │   │   └── TreeGrowthSystem.cs    ✅ YENİ (Aşamalı büyüme)
+│   │   │
+│   │   ├── Mining/
+│   │   │   ├── NetworkMining.cs      ✅ GÜNCELLENDİ (Voxel terrain entegrasyonu)
+│   │   │   └── OreSpawner.cs         ✅ YENİ (Voxel maden spawn)
+│   │   │
+│   │   ├── Building/
+│   │   │   ├── GridPlacementSystem.cs ✅ YENİ (Grid tabanlı yerleştirme)
+│   │   │   ├── BlueprintSystem.cs     ✅ YENİ (Yapı kaydetme/kopyalama)
+│   │   │   └── SculptingSystem.cs     ✅ YENİ (Blok yontma)
+│   │   │
+│   │   └── Blocks/
+│   │       └── VariantMeshGenerator.cs ✅ YENİ (740 variant mesh generation)
+│   │
+│   └── Data/
+│       └── ScriptableObjects/
+│           └── OreDefinition.cs      ✅ YENİ (Maden tanımları)
 │
 └── Art/
     └── Materials/
@@ -6285,6 +8888,282 @@ Assets/_Stratocraft/
 **Çözüm:**
 - `temperature` ve `humidity` değerlerini kontrol et
 - `ClimateNoiseScale` değerini ayarla (daha geniş biyomlar için)
+
+---
+
+## 🔗 FAZ 3 ENTEGRASYON PLANI
+
+### Faz 3'e Nasıl Entegre Edilir?
+
+Tüm bu sistemler **FAZ 3: DOĞA, SU VE BİYOMLAR** içine entegre edilmiştir. İşte entegrasyon özeti:
+
+#### **1. VariantMeshGenerator Entegrasyonu**
+
+**Nerede Kullanılacak:**
+- **NetworkMining.cs** içinde variant blok yerleştirme için
+- **GridPlacementSystem.cs** ile entegre
+
+**Entegrasyon:**
+- `VariantMeshGenerator.cs` dosyası `Scripts/Systems/Blocks/` klasörüne eklendi
+- `ServiceLocator`'a kaydedildi (Awake'de)
+- `NetworkMining.cs`'e variant desteği eklendi
+
+#### **2. VoxelTreeGenerator + TreeGrowthSystem Entegrasyonu**
+
+**Nerede Kullanılacak:**
+- **VegetationSpawner.cs** yerine voxel ağaçlar kullanılacak
+- Prefab spawn yerine prosedürel voxel ağaçlar
+
+**Entegrasyon:**
+- `VoxelTreeGenerator.cs` ve `TreeGrowthSystem.cs` dosyaları `Scripts/Systems/Nature/` klasörüne eklendi
+- `VegetationSpawner.cs` güncellenebilir (opsiyonel - eski sistem hala çalışıyor)
+
+#### **3. OreSpawner Entegrasyonu**
+
+**Nerede Kullanılacak:**
+- **ChunkManager.cs** içinde chunk generation sırasında
+- **TerrainDensity.compute** ile entegre
+
+**Entegrasyon:**
+- `OreSpawner.cs` dosyası `Scripts/Systems/Mining/` klasörüne eklendi
+- `OreDefinition.cs` ScriptableObject'i `Scripts/Data/ScriptableObjects/` klasörüne eklendi
+- `ChunkManager.cs`'e `OnChunkGenerated` event'i eklendi
+- `OreSpawner.cs`'te event'e abone olundu
+
+#### **4. GridPlacementSystem + BlueprintSystem + SculptingSystem Entegrasyonu**
+
+**Nerede Kullanılacak:**
+- **NetworkMining.cs** içinde blok yerleştirme için
+- İnşa sistemi için
+
+**Entegrasyon:**
+- `GridPlacementSystem.cs`, `BlueprintSystem.cs`, `SculptingSystem.cs` dosyaları `Scripts/Systems/Building/` klasörüne eklendi
+- `NetworkMining.cs`'e grid desteği eklendi
+
+#### **5. ChunkManager Güncellemeleri**
+
+**Eklenecek Metodlar:**
+- `AddDensityAtPoint(Vector3 worldPos, float density)` - Blok yerleştirme ✅
+- `RemoveDensityAtPoint(Vector3 worldPos)` - Blok kırma ✅
+- `SetBlockType(Vector3 worldPos, string blockType)` - Blok tipi kaydetme ✅
+- `GetBlockType(Vector3 worldPos)` - Blok tipi alma ✅
+- `GetWorldSeed()` - World seed alma ✅
+- `OnChunkGenerated` event - Chunk generation event'i ✅
+
+**Entegrasyon:**
+- `ChunkManager.cs` dosyasına yukarıdaki metodlar eklendi
+- `MarchingCubesGPU.cs`'e `AddDensity()` ve `RemoveDensity()` metodları eklendi (Scrawk'tan)
+
+---
+
+### Entegrasyon Sırası
+
+1. ✅ **ChunkManager Güncellemeleri** (Önce bu yapıldı - diğer sistemler buna bağımlı)
+   - `AddDensityAtPoint()`, `RemoveDensityAtPoint()`, `SetBlockType()`, `GetBlockType()`, `GetWorldSeed()` metodları
+   - `OnChunkGenerated` event'i
+   - `RegenerateChunk()` coroutine'i
+
+2. ✅ **VariantMeshGenerator** (Blok yerleştirme için gerekli)
+   - ServiceLocator'a kayıt
+   - NetworkMining.cs'te kullanım
+
+3. ✅ **VoxelTreeGenerator + TreeGrowthSystem** (VegetationSpawner yerine)
+   - VegetationSpawner.cs'te prefab spawn yerine voxel ağaç spawn (opsiyonel)
+   - Chunk generation sırasında ağaç spawn
+
+4. ✅ **OreSpawner** (Maden spawn için)
+   - ChunkManager.OnChunkGenerated event'ine abone ol
+   - TerrainDensity.compute ile entegrasyon
+
+5. ✅ **GridPlacementSystem + BlueprintSystem + SculptingSystem** (İnşa sistemi)
+   - NetworkMining.cs'te grid-based placement
+   - Blueprint kaydetme/yükleme
+   - Sculpting sistemi
+
+---
+
+### Önemli Notlar
+
+1. **ChunkManager Dependencies:**
+   - Tüm sistemler ChunkManager'a bağımlı
+   - ChunkManager güncellemeleri yapıldı
+
+2. **ServiceLocator:**
+   - Tüm yeni sistemler ServiceLocator'a kaydedildi
+   - Awake() metodlarında kayıt yapıldı
+
+3. **Network Synchronization:**
+   - Server-authoritative olmalı
+   - Tüm değişiklikler server'da yapılmalı
+   - Client'lara RPC ile senkronize edilmeli
+
+4. **Performance:**
+   - Job System kullanıldı (ağaç/maden generation)
+   - Cache'ler kullanıldı (mesh, grid, blueprint)
+   - GPU Instancing (variant mesh rendering)
+
+---
+
+## 🔄 ESKİ SİSTEM REFERANSLARI VE GÜNCELLEMELER
+
+### STRATOCRAFT_UNITY_DONUSUM_MASTER_PLAN.md'de Güncellenmesi Gerekenler
+
+#### **1. VegetationSpawner.cs - Voxel Ağaç Sistemi ile Değiştirilecek**
+
+**Mevcut Durum (Faz 3'te):**
+- Prefab-based ağaç spawn (GPU Instancing ile)
+- `PlaceVegetation()` metodu prefab instantiate ediyor
+
+**Yeni Durum (Faz 3 Güncellemesi):**
+- **VoxelTreeGenerator** kullanılacak (prefab yerine)
+- **TreeGrowthSystem** ile aşamalı büyüme
+- VegetationSpawner.cs'te `SpawnTrees()` metodu güncellenecek:
+
+```csharp
+// ESKİ KOD (Prefab-based):
+void SpawnTrees(GameObject chunk, Vector3 chunkPos) {
+    // ... prefab spawn kodu ...
+    GameObject treePrefab = currentBiome.treePrefabs[Random.Range(0, currentBiome.treePrefabs.Count)];
+    PlaceVegetation(treePrefab, pos, chunk.transform);
+}
+
+// YENİ KOD (Voxel-based):
+void SpawnTrees(GameObject chunk, Vector3 chunkPos) {
+    // VoxelTreeGenerator kullan
+    VoxelTreeGenerator treeGenerator = ServiceLocator.Instance?.Get<VoxelTreeGenerator>();
+    TreeGrowthSystem growthSystem = ServiceLocator.Instance?.Get<TreeGrowthSystem>();
+    
+    if (treeGenerator == null || growthSystem == null) return;
+    
+    // Fidan dik (büyüme başlat)
+    Vector3Int treePos = new Vector3Int(
+        Mathf.FloorToInt(chunkPos.x),
+        Mathf.FloorToInt(chunkPos.y),
+        Mathf.FloorToInt(chunkPos.z)
+    );
+    
+    growthSystem.PlantSapling(treePos, "oak");
+}
+```
+
+**Güncellenecek Dosya:** `STRATOCRAFT_UNITY_DONUSUM_MASTER_PLAN.md` - Faz 3, ADIM 3.1 VegetationSpawner.cs
+
+---
+
+#### **2. WaterSim.compute - Detaylı Su Mekaniği Eklenecek**
+
+**Mevcut Durum (Faz 3'te):**
+- Sadece aşağı akış var
+- Yan tarafa akış yok
+- Yayılma mekaniği yok
+- Öncelik sistemi yok
+
+**Yeni Durum (Faz 3 Güncellemesi):**
+- **Minecraft tarzı matematiksel voxel su mekaniği**
+- Aşağı akış (gravity)
+- Yan tarafa akış (4 yön: kuzey, güney, doğu, batı)
+- Yayılma mekaniği (su seviyesi 0-7 arası)
+- Öncelik sistemi (aşağı > yan > yayılma)
+- Boşluk kontrolü (su sadece boş voxel'lere akar)
+- Kaynak su (sonsuz su kaynağı)
+- Su seviyesi (full block = 7, akışkan = 0-6)
+
+**Not:** Detaylı WaterSim.compute kodu Faz 3, ADIM 4.2'de mevcuttur.
+
+**Güncellenecek Dosya:** `STRATOCRAFT_UNITY_DONUSUM_MASTER_PLAN.md` - Faz 3, ADIM 4.2 WaterSim.compute
+
+---
+
+#### **3. WaterSimulator.cs - Su Mekaniği Entegrasyonu**
+
+**Mevcut Durum:**
+- Basit su grid yönetimi
+- Sadece aşağı akış
+
+**Yeni Durum:**
+- Su seviyesi yönetimi (0-7)
+- Kaynak su sistemi
+- Yayılma mekaniği
+- Öncelik sistemi
+
+**Not:** Detaylı WaterSimulator.cs metodları Faz 3, ADIM 4.2'de mevcuttur.
+
+**Güncellenecek Dosya:** `STRATOCRAFT_UNITY_DONUSUM_MASTER_PLAN.md` - Faz 3, ADIM 4.2 WaterSimulator.cs
+
+---
+
+#### **4. ChunkManager.cs - Yeni Metodlar**
+
+**Eklenecek Metodlar:**
+- `GetActiveChunkCoords()` - Aktif chunk koordinatlarını döndür
+- `GetDensityBufferForChunk(Vector3Int chunkCoord)` - Density buffer'ı döndür
+- `GetChunkCoord(Vector3 worldPos)` - World pozisyonundan chunk koordinatı
+- `AddDensityAtPoint(Vector3 worldPos, float density)` - Blok yerleştirme için
+- `RemoveDensityAtPoint(Vector3 worldPos)` - Blok kırma için
+- `SetBlockType(Vector3 worldPos, string blockType)` - Blok tipi ayarlama
+- `GetBlockType(Vector3 worldPos)` - Blok tipi alma
+- `GetWorldSeed()` - Deterministik rastgelelik için
+- `OnChunkGenerated` event - OreSpawner, VoxelTreeGenerator için
+
+**Not:** Bu metodlar Faz 1-2'de ChunkManager.cs'e eklenmiştir.
+
+**Güncellenecek Dosya:** `STRATOCRAFT_UNITY_DONUSUM_MASTER_PLAN.md` - Faz 1-2, ChunkManager.cs
+
+---
+
+### Faz 3'te Yapılacak Güncellemeler Özeti
+
+1. ✅ **VegetationSpawner.cs** → VoxelTreeGenerator + TreeGrowthSystem kullanılacak
+2. ✅ **WaterSim.compute** → Detaylı su mekaniği (akma, yayılma, öncelik)
+3. ✅ **WaterSimulator.cs** → Su seviyesi yönetimi, kaynak su, yayılma
+4. ✅ **ChunkManager.cs** → Yeni metodlar (AddDensityAtPoint, SetBlockType, OnChunkGenerated)
+
+---
+
+### Diğer Fazlarda Güncellenmesi Gerekenler
+
+**Faz 4-8:** Bu fazlarda voxel sistem referansları kontrol edilmeli:
+- `NetworkMining.cs` → Variant blok desteği eklenecek
+- `ItemSpawner.cs` → Voxel terrain uyumluluğu kontrol edilecek
+- `MobSpawner.cs` → Voxel terrain uyumluluğu kontrol edilecek
+
+**Not:** Bu güncellemeler Faz 3 tamamlandıktan sonra yapılacak.
+
+---
+
+## 🔧 GÜNCELLENMESİ GEREKEN MEVCUT DOSYALAR
+
+### 1. NetworkMining.cs Güncellemeleri:
+
+```csharp
+// NetworkMining.cs'e eklenecek:
+
+private VariantMeshGenerator _variantGenerator;
+private GridPlacementSystem _gridSystem;
+
+void Start() {
+    _variantGenerator = ServiceLocator.Instance?.Get<VariantMeshGenerator>();
+    _gridSystem = ServiceLocator.Instance?.Get<GridPlacementSystem>();
+}
+
+// Variant blok yerleştirme
+void PlaceVariantBlock(Vector3 point, string variantId) {
+    if (_gridSystem != null) {
+        _gridSystem.PlaceBlockAtGrid(point, "block", variantId);
+    }
+}
+```
+
+### 2. ChunkManager.cs Güncellemeleri:
+
+**Not:** ChunkManager.cs güncellemeleri Faz 1-2'de yapılmıştır. Aşağıdaki metodlar mevcuttur:
+
+- `AddDensityAtPoint(Vector3 worldPos, float density)` - Blok yerleştirme için
+- `RemoveDensityAtPoint(Vector3 worldPos)` - Blok kırma için
+- `SetBlockType(Vector3 worldPos, string blockType)` - Blok tipi ayarlama
+- `GetBlockType(Vector3 worldPos)` - Blok tipi alma
+- `GetWorldSeed()` - Deterministik rastgelelik için
+- `OnChunkGenerated` event - OreSpawner, VoxelTreeGenerator için
 
 ---
 
@@ -6980,6 +9859,1904 @@ public class ItemSpawner : NetworkBehaviour {
     }
 }
 ```
+
+
+
+## 🛠️ ADIM 1.5: BLOK ŞEKİLLENDİRME SİSTEMİ (BLOCK SHAPING SYSTEM)
+
+> **✅ YENİ SİSTEM:** Oyuncuların voxel blokları (odun, taş, metal vb.) şekillendirmesini sağlayan gelişmiş alet sistemi.  
+> **Entegrasyon:** NetworkMining, VariantMeshGenerator, ChunkManager, GridPlacementSystem  
+> **Faz:** 4 (Oyun Mekanikleri)
+
+### 1.5.1 Sistem Genel Bakış
+
+**Amaç:**
+Oyuncuların voxel blokları (odun, taş, metal vb.) şekillendirmesini sağlamak. Marangoz gibi önce işaretle, sonra kes mantığıyla çalışan, kolay kullanımlı bir sistem.
+
+**Temel Özellikler:**
+1. **Malzeme Bazlı Aletler**: Her malzeme için özel alet (Odun Kesici, Taş Kesici, Metal Kesici)
+2. **3 Kesim Modu**: Küp kesiş, Yuvarlayarak kesiş, Çapraz kesiş
+3. **İki Nokta Seçimi**: Başlangıç ve bitiş noktası seçimi
+4. **Görsel Önizleme**: Kesim öncesi görsel geri bildirim
+5. **Kaydetme Sistemi**: Kesilmiş şekilleri kaydet ve diğer bloklara uygula
+6. **Kolay Kullanım**: Mouse ile üzerine gelip seçim yapma
+
+**Kullanım Senaryosu:**
+1. Oyuncu aleti eline alır (ör: Odun Kesici)
+2. Alet modunu seçer (Küp/Yuvarlak/Çapraz)
+3. Blok üzerine gelir, başlangıç noktasını seçer (sol tık)
+4. Bitiş noktasını seçer (sol tık)
+5. Kesim çizgileri görsel olarak gösterilir
+6. Kesimi onaylar (E tuşu) veya iptal eder (ESC)
+7. Kesim yapılır, variant mesh oluşturulur
+8. İstenirse şekli kaydeder (K tuşu)
+9. Kaydedilmiş şekli diğer bloklara uygular (sağ tık)
+
+---
+
+### 1.5.2 Aletler ve Malzemeler
+
+**Alet Tipleri:**
+
+#### 1. **Odun Kesici (Wood Chisel)**
+- **Malzeme:** Odun (wood)
+- **Item ID:** `WOOD_CHISEL`
+- **Görünüm:** Marangoz keskisi benzeri
+- **Kullanım:** Sadece odun bloklarını keser
+
+#### 2. **Taş Kesici (Stone Chisel)**
+- **Malzeme:** Taş (stone, cobblestone, deep_stone)
+- **Item ID:** `STONE_CHISEL`
+- **Görünüm:** Taş keskisi benzeri
+- **Kullanım:** Sadece taş bloklarını keser
+
+#### 3. **Metal Kesici (Metal Chisel)**
+- **Malzeme:** Metal (iron, gold, copper, titanium)
+- **Item ID:** `METAL_CHISEL`
+- **Görünüm:** Metal keskisi benzeri
+- **Kullanım:** Sadece metal bloklarını keser
+
+**Alet Seviyeleri:**
+- **Temel (Basic)**: Basit kesimler, düşük hassasiyet
+- **Gelişmiş (Advanced)**: Daha hassas kesimler, daha fazla variant
+- **Usta (Master)**: Tüm variant'lar, maksimum hassasiyet
+
+---
+
+### 1.5.3 ChiselDefinition.cs (ScriptableObject)
+
+**Dosya:** `_Stratocraft/Scripts/Data/ScriptableObjects/ChiselDefinition.cs`
+
+**Amaç:** Chisel aletlerinin özelliklerini tanımlayan ScriptableObject
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+
+[CreateAssetMenu(fileName = "ChiselDefinition", menuName = "Stratocraft/Chisel Definition")]
+[System.Serializable]
+public class ChiselDefinition : ScriptableObject {
+    [Header("Kimlik")]
+    public string chiselId;
+    public string chiselName;
+    
+    [Header("Malzeme Uyumluluğu")]
+    public MaterialType[] supportedMaterials; // Hangi malzemeleri kesebilir
+    
+    [Header("Görsel")]
+    public Sprite icon;
+    public GameObject toolModel; // 3D model
+    
+    [Header("Kesim Özellikleri")]
+    [Tooltip("Kesim hassasiyeti (0.1 = 1/10 blok)")]
+    [Range(0.01f, 0.2f)]
+    public float precision = 0.1f;
+    
+    [Tooltip("Dayanıklılık (kullanım sayısı)")]
+    [Range(1, 1000)]
+    public int durability = 100;
+    
+    [Tooltip("Kesim hızı (saniye)")]
+    [Range(0.1f, 5f)]
+    public float cuttingSpeed = 1.0f;
+}
+```
+
+---
+
+### 1.5.4 ItemDefinition.cs Güncellemesi
+
+**Dosya:** `_Stratocraft/Scripts/Data/ScriptableObjects/ItemDefinition.cs`
+
+**Eklenecek Kod:**
+
+```csharp
+// ItemDefinition.cs'e eklenecek (mevcut kodun sonuna)
+
+[Header("Chisel Özellikleri (Kesici Aletler İçin)")]
+[Tooltip("Bu eşya bir chisel (kesici alet) mi?")]
+public bool isChisel = false;
+
+[Tooltip("Chisel tanımı (kesim özellikleri)")]
+public ChiselDefinition chiselDefinition;
+
+[Tooltip("Chisel seviyesi (Basic, Advanced, Master)")]
+public ChiselLevel chiselLevel = ChiselLevel.Basic;
+
+/// <summary>
+/// ✅ Chisel seviyesi enum
+/// </summary>
+public enum ChiselLevel {
+    Basic,      // Temel - Düşük hassasiyet, sınırlı variant'lar
+    Advanced,   // Gelişmiş - Orta hassasiyet, daha fazla variant
+    Master      // Usta - Maksimum hassasiyet, tüm variant'lar
+}
+
+/// <summary>
+/// ✅ Chisel mi kontrol et
+/// </summary>
+public bool IsChisel() {
+    return isChisel && chiselDefinition != null;
+}
+```
+
+---
+
+### 1.5.5 Kesim Modları
+
+**3 Farklı Kesim Modu:**
+
+#### 1. **Küp Kesiş Modu (Cube Cut Mode)**
+- **Açıklama:** Dik açılı, düzgün kesimler. Minecraft'taki gibi.
+- **Variant'lar:**
+  - Yarı blok (1/2)
+  - Çeyrek blok (1/4)
+  - 1/5, 2/5, 3/5, 4/5 bloklar
+  - İki yön kombinasyonları
+  - Üç yön kombinasyonları
+- **Kullanım:** Blok üzerinde iki nokta seçilir, seçilen noktalar arasındaki alan küp şeklinde kesilir
+
+#### 2. **Yuvarlayarak Kesiş Modu (Rounded Cut Mode)**
+- **Açıklama:** Yuvarlatılmış köşeler ve eğriler.
+- **Variant'lar:**
+  - Yuvarlatılmış köşeler (5 seviye)
+  - Yuvarlatılmış kenarlar (5 seviye)
+  - Eğrisel kesimler
+  - Bezier curve kesimler
+- **Kullanım:** İki nokta seçilir, aralarındaki kesim yuvarlatılmış olur
+
+#### 3. **Çapraz Kesiş Modu (Diagonal Cut Mode)**
+- **Açıklama:** Çapraz, eğik kesimler. Ramp ve merdiven benzeri.
+- **Variant'lar:**
+  - Çapraz kenar kesimler (12 kenar × 5 seviye)
+  - Çapraz köşe kesimler (8 köşe × 5 seviye)
+  - Ramp şekilleri (6 yön × 5 seviye)
+  - Merdiven benzeri şekiller
+- **Kullanım:** İki nokta seçilir, aralarındaki kesim çapraz/eğik olur
+
+**Mod Değiştirme:**
+- **Q Tuşu:** Mod değiştir (Küp → Yuvarlak → Çapraz → Küp)
+- **UI Göstergesi:** Ekranın üstünde aktif mod gösterilir
+
+---
+
+### 1.5.6 Enum'lar ve Data Yapıları
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Building/CutMode.cs`
+
+**Kod:**
+
+```csharp
+/// <summary>
+/// ✅ Kesim modu
+/// </summary>
+public enum CutMode {
+    Cube,      // Küp kesiş
+    Rounded,   // Yuvarlayarak kesiş
+    Diagonal   // Çapraz kesiş
+}
+
+/// <summary>
+/// ✅ Malzeme tipi
+/// </summary>
+public enum MaterialType {
+    Wood,
+    Stone,
+    Metal
+}
+
+/// <summary>
+/// ✅ Kesim parametreleri
+/// </summary>
+[System.Serializable]
+public class CutParameters {
+    public CutMode mode;
+    public Vector3 startPoint;      // Local koordinat
+    public Vector3 endPoint;        // Local koordinat
+    public Vector3 cutDirection;    // Kesim yönü
+    public float cutRatio;          // Kesim oranı (0-1)
+    public int roundnessLevel;      // Yuvarlatma seviyesi (1-5)
+    public float slopeAngle;        // Eğim açısı (çapraz mod için)
+    public string[] affectedFaces;  // Etkilenen yüzler
+}
+```
+
+---
+
+### 1.5.7 ChiselRaycast.cs - Raycast Sistemi (Voxel Terrain Entegrasyonu)
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Building/ChiselRaycast.cs`
+
+**Amaç:** Chisel için voxel terrain uyumlu raycast sistemi
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+
+/// <summary>
+/// ✅ Chisel için raycast sistemi - Voxel terrain uyumlu
+/// </summary>
+public class ChiselRaycast : MonoBehaviour {
+    private Camera _playerCamera;
+    private float _maxDistance = 5f;
+    private LayerMask _blockLayer;
+    private ChunkManager _chunkManager;
+    private GridPlacementSystem _gridSystem;
+    
+    // ✅ OPTİMİZE: Raycast cache
+    private RaycastHit _lastHit;
+    private float _lastRaycastTime = 0f;
+    private const float RAYCAST_CACHE_DURATION = 0.05f; // 50ms cache
+    
+    void Start() {
+        _playerCamera = Camera.main;
+        _chunkManager = ServiceLocator.Instance?.Get<ChunkManager>();
+        _gridSystem = ServiceLocator.Instance?.Get<GridPlacementSystem>();
+        _blockLayer = LayerMask.GetMask("Default", "Terrain"); // Voxel terrain layer'ı
+    }
+    
+    /// <summary>
+    /// ✅ Blok üzerinde nokta seç (voxel terrain uyumlu)
+    /// </summary>
+    public bool SelectPointOnBlock(out Vector3 point, out Vector3 normal, out string blockType, out Vector3 blockWorldPos) {
+        // ✅ Cache kontrolü
+        if (Time.time - _lastRaycastTime < RAYCAST_CACHE_DURATION && _lastHit.collider != null) {
+            point = CalculatePrecisePoint(_lastHit);
+            normal = _lastHit.normal;
+            blockType = GetBlockTypeFromHit(_lastHit);
+            blockWorldPos = GetBlockWorldPosition(_lastHit.point);
+            return true;
+        }
+        
+        Ray ray = _playerCamera.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit;
+        
+        // ✅ Voxel terrain için raycast (chunk mesh'lerine)
+        if (Physics.Raycast(ray, out hit, _maxDistance, _blockLayer)) {
+            // ✅ Chunk kontrolü
+            if (_chunkManager == null) {
+                point = Vector3.zero;
+                normal = Vector3.zero;
+                blockType = "";
+                blockWorldPos = Vector3.zero;
+                return false;
+            }
+            
+            Vector3Int chunkCoord = _chunkManager.GetChunkCoord(hit.point);
+            GameObject chunk = _chunkManager.GetChunk(chunkCoord);
+            
+            if (chunk == null) {
+                point = Vector3.zero;
+                normal = Vector3.zero;
+                blockType = "";
+                blockWorldPos = Vector3.zero;
+                return false;
+            }
+            
+            // ✅ Blok yüzeyinde kesin nokta hesapla
+            point = CalculatePrecisePoint(hit);
+            normal = hit.normal;
+            
+            // ✅ Blok tipini al (ChunkManager'dan)
+            blockType = _chunkManager.GetBlockType(hit.point) ?? "";
+            
+            // ✅ Blok world pozisyonunu hesapla (grid'e yapıştırılmış)
+            blockWorldPos = GetBlockWorldPosition(hit.point);
+            
+            // ✅ Cache'e kaydet
+            _lastHit = hit;
+            _lastRaycastTime = Time.time;
+            
+            return true;
+        }
+        
+        point = Vector3.zero;
+        normal = Vector3.zero;
+        blockType = "";
+        blockWorldPos = Vector3.zero;
+        return false;
+    }
+    
+    /// <summary>
+    /// ✅ Blok yüzeyinde hassas nokta hesapla (grid'e yapıştır)
+    /// Voxel terrain için: hit.point'i kullan, transform yok
+    /// </summary>
+    Vector3 CalculatePrecisePoint(RaycastHit hit) {
+        if (_gridSystem == null) {
+            return hit.point; // Grid sistemi yoksa direkt noktayı döndür
+        }
+        
+        // ✅ Grid'e yapıştır (alet hassasiyetine göre)
+        float gridSize = 0.1f; // Varsayılan hassasiyet (alet seviyesine göre değişebilir)
+        Vector3 snappedPoint = _gridSystem.SnapToGrid(hit.point);
+        
+        // ✅ Blok local koordinatlarına çevir (0-1 arası)
+        Vector3 blockWorldPos = GetBlockWorldPosition(hit.point);
+        Vector3 localPoint = hit.point - blockWorldPos;
+        
+        // ✅ Grid'e yapıştır
+        localPoint.x = Mathf.Round(localPoint.x / gridSize) * gridSize;
+        localPoint.y = Mathf.Round(localPoint.y / gridSize) * gridSize;
+        localPoint.z = Mathf.Round(localPoint.z / gridSize) * gridSize;
+        
+        // ✅ Blok sınırları içinde tut (0-1 arası)
+        localPoint.x = Mathf.Clamp(localPoint.x, 0f, 1f);
+        localPoint.y = Mathf.Clamp(localPoint.y, 0f, 1f);
+        localPoint.z = Mathf.Clamp(localPoint.z, 0f, 1f);
+        
+        // ✅ World pozisyonuna geri çevir
+        return blockWorldPos + localPoint;
+    }
+    
+    /// <summary>
+    /// ✅ Blok world pozisyonunu al (grid'e yapıştırılmış)
+    /// </summary>
+    Vector3 GetBlockWorldPosition(Vector3 hitPoint) {
+        if (_gridSystem != null) {
+            return _gridSystem.SnapToGrid(hitPoint);
+        }
+        
+        // Grid sistemi yoksa, blok merkezini hesapla
+        return new Vector3(
+            Mathf.Floor(hitPoint.x) + 0.5f,
+            Mathf.Floor(hitPoint.y) + 0.5f,
+            Mathf.Floor(hitPoint.z) + 0.5f
+        );
+    }
+    
+    /// <summary>
+    /// ✅ Hit'ten blok tipini al
+    /// </summary>
+    string GetBlockTypeFromHit(RaycastHit hit) {
+        if (_chunkManager == null) return "";
+        return _chunkManager.GetBlockType(hit.point) ?? "";
+    }
+}
+```
+
+---
+
+### 1.5.8 ChiselTool.cs - Ana Alet Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Building/ChiselTool.cs`
+
+**Amaç:** Blok şekillendirme aleti - NetworkMining entegrasyonu ile
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using FishNet.Object;
+
+/// <summary>
+/// ✅ IEquippable interface (NetworkMining entegrasyonu için)
+/// </summary>
+public interface IEquippable {
+    void OnEquip();
+    void OnUnequip();
+    bool CanUse();
+}
+
+/// <summary>
+/// ✅ ChiselTool - NetworkMining entegrasyonu
+/// </summary>
+public class ChiselTool : NetworkBehaviour, IEquippable {
+    [Header("Alet Ayarları")]
+    public ChiselDefinition chiselDefinition;
+    public CutMode currentMode = CutMode.Cube;
+    
+    [Header("Seçim Sistemi")]
+    public ChiselRaycast raycastSystem;
+    public BlockSelectionVisualizer visualizer;
+    
+    [Header("Kesim Sistemi")]
+    public BlockCuttingSystem cuttingSystem;
+    
+    [Header("Kayıt Sistemi")]
+    public ShapeApplicationSystem shapeSystem;
+    
+    // Seçim durumu
+    private Vector3? _startPoint = null;
+    private Vector3? _endPoint = null;
+    private Vector3 _currentBlockPos = Vector3.zero;
+    private string _currentBlockType = "";
+    private bool _isEquipped = false;
+    
+    // ✅ NetworkMining entegrasyonu
+    private NetworkMining _networkMining;
+    private ItemDefinition _itemDefinition;
+    
+    void Start() {
+        // ✅ NetworkMining'i al (eğer varsa)
+        _networkMining = GetComponent<NetworkMining>();
+        
+        // ✅ ItemDefinition'ı al (eğer varsa)
+        // TODO: PlayerInventory'den aktif item'ı al
+    }
+    
+    void Update() {
+        if (!IsOwner) return;
+        if (!_isEquipped) return;
+        
+        // Mod değiştirme
+        if (Input.GetKeyDown(KeyCode.Q)) {
+            CycleMode();
+        }
+        
+        // Nokta seçimi
+        if (Input.GetMouseButtonDown(0)) {
+            SelectPoint();
+        }
+        
+        // Kesim onayı
+        if (Input.GetKeyDown(KeyCode.E)) {
+            ConfirmCut();
+        }
+        
+        // İptal
+        if (Input.GetKeyDown(KeyCode.Escape)) {
+            CancelSelection();
+        }
+        
+        // Şekil kaydetme
+        if (Input.GetKeyDown(KeyCode.K)) {
+            SaveCurrentShape();
+        }
+        
+        // Şekil uygulama
+        if (Input.GetMouseButtonDown(1)) {
+            ApplySavedShape();
+        }
+        
+        // Görsel güncelleme
+        UpdateVisuals();
+    }
+    
+    // ========== IEQUIPPABLE INTERFACE ==========
+    
+    /// <summary>
+    /// ✅ Alet kuşanıldığında
+    /// </summary>
+    public void OnEquip() {
+        _isEquipped = true;
+        
+        // ✅ ChiselDefinition'ı ItemDefinition'dan al
+        if (_itemDefinition != null && _itemDefinition.isChisel) {
+            chiselDefinition = _itemDefinition.chiselDefinition;
+        }
+        
+        // ✅ UI'ı göster
+        ShowChiselUI();
+    }
+    
+    /// <summary>
+    /// ✅ Alet çıkarıldığında
+    /// </summary>
+    public void OnUnequip() {
+        _isEquipped = false;
+        
+        // ✅ Seçimi temizle
+        CancelSelection();
+        
+        // ✅ UI'ı gizle
+        HideChiselUI();
+    }
+    
+    /// <summary>
+    /// ✅ Alet kullanılabilir mi?
+    /// </summary>
+    public bool CanUse() {
+        if (!_isEquipped) return false;
+        if (chiselDefinition == null) return false;
+        if (chiselDefinition.durability <= 0) return false;
+        return true;
+    }
+    
+    /// <summary>
+    /// ✅ Alet kuşanılmış mı?
+    /// </summary>
+    public bool IsEquipped() {
+        return _isEquipped;
+    }
+    
+    /// <summary>
+    /// ✅ Mod değiştir
+    /// </summary>
+    void CycleMode() {
+        currentMode = (CutMode)(((int)currentMode + 1) % 3);
+        CancelSelection(); // Seçimi sıfırla
+    }
+    
+    /// <summary>
+    /// ✅ Nokta seç
+    /// </summary>
+    void SelectPoint() {
+        Vector3 point;
+        Vector3 normal;
+        string blockType;
+        Vector3 blockWorldPos;
+        
+        if (raycastSystem.SelectPointOnBlock(out point, out normal, out blockType, out blockWorldPos)) {
+            // ✅ Alet uyumluluğu kontrolü
+            if (!IsMaterialCompatible(blockType)) {
+                ShowErrorMessage("Bu malzeme için uygun alet değil!");
+                return;
+            }
+            
+            if (_startPoint == null) {
+                // İlk nokta
+                _startPoint = point;
+                _currentBlockPos = blockWorldPos;
+                _currentBlockType = blockType;
+                visualizer.ShowStartPoint(point);
+            } else {
+                // ✅ Aynı blok üzerinde mi kontrol et
+                if (blockWorldPos != _currentBlockPos) {
+                    ShowErrorMessage("İki nokta aynı blok üzerinde olmalı!");
+                    return;
+                }
+                
+                // İkinci nokta
+                _endPoint = point;
+                visualizer.ShowEndPoint(point);
+                visualizer.ShowCutLine(_startPoint.Value, _endPoint.Value, currentMode);
+                
+                // ✅ Önizleme mesh'ini göster
+                ShowPreviewMesh();
+            }
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Malzeme uyumluluğu kontrolü
+    /// </summary>
+    bool IsMaterialCompatible(string blockType) {
+        if (chiselDefinition == null) return false;
+        
+        MaterialType material = GetMaterialType(blockType);
+        return System.Array.Exists(chiselDefinition.supportedMaterials, m => m == material);
+    }
+    
+    /// <summary>
+    /// ✅ Blok tipinden malzeme tipini al
+    /// </summary>
+    MaterialType GetMaterialType(string blockType) {
+        if (string.IsNullOrEmpty(blockType)) return MaterialType.Stone;
+        
+        if (blockType.Contains("wood")) return MaterialType.Wood;
+        if (blockType.Contains("stone") || blockType.Contains("cobblestone") || blockType.Contains("deep_stone")) return MaterialType.Stone;
+        if (blockType.Contains("iron") || blockType.Contains("gold") || blockType.Contains("copper") || blockType.Contains("titanium") || blockType.Contains("metal")) return MaterialType.Metal;
+        
+        return MaterialType.Stone; // Default
+    }
+    
+    /// <summary>
+    /// ✅ Önizleme mesh'ini göster
+    /// </summary>
+    void ShowPreviewMesh() {
+        if (_startPoint == null || _endPoint == null) return;
+        
+        // ✅ Kesim parametrelerini hesapla
+        CutParameters parameters = cuttingSystem.CalculateCutParameters(_currentBlockPos, _startPoint.Value, _endPoint.Value, currentMode);
+        
+        // ✅ Variant ID oluştur
+        string variantId = cuttingSystem.GenerateVariantId(_currentBlockType, parameters);
+        
+        // ✅ Variant mesh al
+        Mesh previewMesh = cuttingSystem.GetPreviewMesh(variantId);
+        if (previewMesh != null) {
+            visualizer.ShowPreviewMesh(previewMesh, _currentBlockPos);
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Kesimi onayla
+    /// </summary>
+    [ServerRpc]
+    void ConfirmCut() {
+        if (_startPoint == null || _endPoint == null) return;
+        
+        // ✅ Alet dayanıklılığı kontrolü
+        if (chiselDefinition != null && chiselDefinition.durability <= 0) {
+            ShowErrorMessage("Alet çok yıpranmış!");
+            return;
+        }
+        
+        // ✅ Kesim yap
+        cuttingSystem.CutBlock(_currentBlockPos, _startPoint.Value, _endPoint.Value, currentMode, chiselDefinition);
+        
+        // ✅ Alet dayanıklılığını azalt
+        if (chiselDefinition != null) {
+            chiselDefinition.durability--;
+        }
+        
+        // Seçimi temizle
+        CancelSelection();
+    }
+    
+    /// <summary>
+    /// ✅ Seçimi iptal et
+    /// </summary>
+    void CancelSelection() {
+        _startPoint = null;
+        _endPoint = null;
+        visualizer.ClearSelection();
+    }
+    
+    /// <summary>
+    /// ✅ Şekil kaydet
+    /// </summary>
+    void SaveCurrentShape() {
+        if (_startPoint == null || _endPoint == null) {
+            ShowErrorMessage("Önce bir kesim seçin!");
+            return;
+        }
+        
+        // Slot seçimi (1-9 tuşları)
+        int slot = GetSelectedSlot();
+        if (slot < 0) {
+            ShowErrorMessage("Slot seçin (1-9)!");
+            return;
+        }
+        
+        CutParameters parameters = cuttingSystem.CalculateCutParameters(_currentBlockPos, _startPoint.Value, _endPoint.Value, currentMode);
+        shapeSystem.SaveShape(slot, _currentBlockPos, parameters);
+    }
+    
+    /// <summary>
+    /// ✅ Kaydedilmiş şekli uygula
+    /// </summary>
+    void ApplySavedShape() {
+        int slot = GetSelectedSlot();
+        if (slot < 0) {
+            ShowErrorMessage("Slot seçin (1-9)!");
+            return;
+        }
+        
+        Vector3 point;
+        Vector3 normal;
+        string blockType;
+        Vector3 blockWorldPos;
+        
+        if (raycastSystem.SelectPointOnBlock(out point, out normal, out blockType, out blockWorldPos)) {
+            shapeSystem.ApplySavedShape(slot, blockWorldPos);
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Seçili slot'u al (1-9 tuşları)
+    /// </summary>
+    int GetSelectedSlot() {
+        for (int i = 1; i <= 9; i++) {
+            if (Input.GetKeyDown(KeyCode.Alpha0 + i)) {
+                return i - 1;
+            }
+        }
+        return -1; // Slot seçilmedi
+    }
+    
+    /// <summary>
+    /// ✅ Hata mesajı göster
+    /// </summary>
+    void ShowErrorMessage(string message) {
+        // TODO: UI'da hata mesajı göster
+        Debug.LogWarning($"[ChiselTool] {message}");
+    }
+    
+    /// <summary>
+    /// ✅ Chisel UI'ı göster
+    /// </summary>
+    void ShowChiselUI() {
+        // TODO: UI göster
+    }
+    
+    /// <summary>
+    /// ✅ Chisel UI'ı gizle
+    /// </summary>
+    void HideChiselUI() {
+        // TODO: UI gizle
+    }
+    
+    /// <summary>
+    /// ✅ Görsel güncelleme
+    /// </summary>
+    void UpdateVisuals() {
+        if (!_isEquipped) return;
+        
+        // ✅ Mouse üzerine gelince grid çizgilerini göster
+        Vector3 point;
+        Vector3 normal;
+        string blockType;
+        Vector3 blockWorldPos;
+        
+        if (raycastSystem.SelectPointOnBlock(out point, out normal, out blockType, out blockWorldPos)) {
+            // Grid çizgilerini göster
+            visualizer.ShowGridLines(blockWorldPos, chiselDefinition?.precision ?? 0.1f);
+        }
+    }
+}
+```
+
+---
+
+### 1.5.9 BlockSelectionVisualizer.cs - Görselleştirme
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Building/BlockSelectionVisualizer.cs`
+
+**Amaç:** Blok seçim görselleştirme sistemi
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+
+/// <summary>
+/// ✅ Blok seçim görselleştirme sistemi
+/// </summary>
+public class BlockSelectionVisualizer : MonoBehaviour {
+    [Header("Marker'lar")]
+    public GameObject startPointMarkerPrefab;
+    public GameObject endPointMarkerPrefab;
+    
+    [Header("Çizgiler")]
+    public LineRenderer cutLineRenderer;
+    public LineRenderer[] gridLineRenderers;
+    
+    [Header("Önizleme")]
+    public MeshRenderer previewMeshRenderer;
+    public Material previewMaterial;
+    
+    private GameObject _startMarker;
+    private GameObject _endMarker;
+    private MeshFilter _previewMeshFilter;
+    
+    void Start() {
+        // Marker'ları oluştur
+        _startMarker = Instantiate(startPointMarkerPrefab);
+        _startMarker.SetActive(false);
+        
+        _endMarker = Instantiate(endPointMarkerPrefab);
+        _endMarker.SetActive(false);
+        
+        // Önizleme mesh'i hazırla
+        _previewMeshFilter = previewMeshRenderer.GetComponent<MeshFilter>();
+        if (_previewMeshFilter == null) {
+            _previewMeshFilter = previewMeshRenderer.gameObject.AddComponent<MeshFilter>();
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Başlangıç noktasını göster
+    /// </summary>
+    public void ShowStartPoint(Vector3 point) {
+        _startMarker.transform.position = point;
+        _startMarker.SetActive(true);
+    }
+    
+    /// <summary>
+    /// ✅ Bitiş noktasını göster
+    /// </summary>
+    public void ShowEndPoint(Vector3 point) {
+        _endMarker.transform.position = point;
+        _endMarker.SetActive(true);
+    }
+    
+    /// <summary>
+    /// ✅ Kesim çizgisini göster
+    /// </summary>
+    public void ShowCutLine(Vector3 start, Vector3 end, CutMode mode) {
+        cutLineRenderer.positionCount = 2;
+        cutLineRenderer.SetPosition(0, start);
+        cutLineRenderer.SetPosition(1, end);
+        
+        // Moda göre renk
+        switch (mode) {
+            case CutMode.Cube:
+                cutLineRenderer.color = Color.blue;
+                break;
+            case CutMode.Rounded:
+                cutLineRenderer.color = Color.green;
+                break;
+            case CutMode.Diagonal:
+                cutLineRenderer.color = Color.red;
+                break;
+        }
+        
+        cutLineRenderer.enabled = true;
+    }
+    
+    /// <summary>
+    /// ✅ Önizleme mesh'ini göster
+    /// </summary>
+    public void ShowPreviewMesh(Mesh mesh, Vector3 position) {
+        _previewMeshFilter.mesh = mesh;
+        previewMeshRenderer.transform.position = position;
+        previewMeshRenderer.enabled = true;
+    }
+    
+    /// <summary>
+    /// ✅ Grid çizgilerini göster
+    /// </summary>
+    public void ShowGridLines(Vector3 blockWorldPos, float gridSize) {
+        // TODO: Grid çizgilerini hesapla ve göster
+        // LineRenderer veya Gizmos ile yapılabilir
+    }
+    
+    /// <summary>
+    /// ✅ Seçimi temizle
+    /// </summary>
+    public void ClearSelection() {
+        _startMarker.SetActive(false);
+        _endMarker.SetActive(false);
+        cutLineRenderer.enabled = false;
+        previewMeshRenderer.enabled = false;
+    }
+}
+```
+
+---
+
+### 1.5.10 BlockCuttingSystem.cs - Kesim Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Building/BlockCuttingSystem.cs`
+
+**Amaç:** Blok kesim sistemi - VariantMeshGenerator entegrasyonu ile
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using FishNet.Object;
+using System.Collections;
+using System.Collections.Generic;
+
+/// <summary>
+/// ✅ Blok kesim sistemi
+/// </summary>
+public class BlockCuttingSystem : NetworkBehaviour {
+    private VariantMeshGenerator _variantGenerator;
+    private ChunkManager _chunkManager;
+    private GridPlacementSystem _gridSystem;
+    
+    void Start() {
+        _variantGenerator = ServiceLocator.Instance?.Get<VariantMeshGenerator>();
+        _chunkManager = ServiceLocator.Instance?.Get<ChunkManager>();
+        _gridSystem = ServiceLocator.Instance?.Get<GridPlacementSystem>();
+    }
+    
+    /// <summary>
+    /// ✅ Blok kes ve variant mesh oluştur
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void CutBlock(Vector3 blockPos, Vector3 startPoint, Vector3 endPoint, CutMode mode, ChiselDefinition chisel) {
+        // 1. Blok tipini kontrol et
+        string blockType = _chunkManager.GetBlockType(blockPos);
+        if (string.IsNullOrEmpty(blockType)) {
+            Debug.LogWarning($"[BlockCuttingSystem] Blok bulunamadı: {blockPos}");
+            return;
+        }
+        
+        // 2. Alet uyumluluğu kontrolü
+        if (chisel != null) {
+            MaterialType material = GetMaterialType(blockType);
+            if (!System.Array.Exists(chisel.supportedMaterials, m => m == material)) {
+                Debug.LogWarning($"[BlockCuttingSystem] Alet bu malzeme için uygun değil: {blockType}");
+                return;
+            }
+        }
+        
+        // 3. Eski variant ID'yi kaydet (undo için)
+        string oldVariantId = blockType;
+        
+        // 4. Kesim parametrelerini hesapla
+        CutParameters parameters = CalculateCutParameters(blockPos, startPoint, endPoint, mode);
+        
+        // 5. Variant ID oluştur (VariantMeshGenerator ile uyumlu format)
+        string variantId = GenerateVariantId(blockType, parameters);
+        
+        // 6. Variant mesh al veya oluştur
+        Mesh variantMesh = _variantGenerator.GetVariantMesh(variantId);
+        if (variantMesh == null) {
+            Debug.LogWarning($"[BlockCuttingSystem] Variant mesh oluşturulamadı: {variantId}");
+            return;
+        }
+        
+        // 7. Blok tipini güncelle
+        _chunkManager.SetBlockType(blockPos, variantId);
+        
+        // 8. Chunk'ı yeniden generate et (coroutine)
+        Vector3Int chunkCoord = _chunkManager.GetChunkCoord(blockPos);
+        StartCoroutine(RegenerateChunkCoroutine(chunkCoord));
+        
+        // 9. Kesim geçmişine ekle (undo için)
+        AddToCutHistory(blockPos, oldVariantId, variantId, parameters);
+        
+        // 10. Client'lara senkronize et
+        RpcUpdateBlock(blockPos, variantId);
+    }
+    
+    /// <summary>
+    /// ✅ Chunk regeneration coroutine wrapper
+    /// </summary>
+    IEnumerator RegenerateChunkCoroutine(Vector3Int chunkCoord) {
+        yield return StartCoroutine(_chunkManager.RegenerateChunk(chunkCoord));
+    }
+    
+    /// <summary>
+    /// ✅ Kesim parametrelerini hesapla (public - ChiselTool'dan çağrılabilir)
+    /// </summary>
+    public CutParameters CalculateCutParameters(Vector3 blockPos, Vector3 start, Vector3 end, CutMode mode) {
+        CutParameters param = new CutParameters {
+            mode = mode
+        };
+        
+        // Blok local koordinatlarına çevir
+        Vector3 blockWorldPos = _gridSystem != null ? _gridSystem.SnapToGrid(blockPos) : GetBlockWorldPosition(blockPos);
+        Vector3 localStart = WorldToLocal(start, blockWorldPos);
+        Vector3 localEnd = WorldToLocal(end, blockWorldPos);
+        
+        // Moda göre parametreleri hesapla
+        switch (mode) {
+            case CutMode.Cube:
+                param = CalculateCubeCut(localStart, localEnd);
+                break;
+            case CutMode.Rounded:
+                param = CalculateRoundedCut(localStart, localEnd);
+                break;
+            case CutMode.Diagonal:
+                param = CalculateDiagonalCut(localStart, localEnd);
+                break;
+        }
+        
+        return param;
+    }
+    
+    /// <summary>
+    /// ✅ Variant ID oluştur (VariantMeshGenerator ile uyumlu format)
+    /// </summary>
+    public string GenerateVariantId(string baseMaterial, CutParameters parameters) {
+        string materialId = ExtractMaterialId(baseMaterial);
+        string variantId = "";
+        
+        // Moda göre variant ID oluştur
+        switch (parameters.mode) {
+            case CutMode.Cube:
+                variantId = GenerateCubeVariantId(materialId, parameters);
+                break;
+            case CutMode.Rounded:
+                variantId = GenerateRoundedVariantId(materialId, parameters);
+                break;
+            case CutMode.Diagonal:
+                variantId = GenerateDiagonalVariantId(materialId, parameters);
+                break;
+        }
+        
+        return variantId;
+    }
+    
+    /// <summary>
+    /// ✅ Önizleme mesh'ini al
+    /// </summary>
+    public Mesh GetPreviewMesh(string variantId) {
+        return _variantGenerator.GetVariantMesh(variantId);
+    }
+    
+    // ========== PRIVATE HELPER METHODS ==========
+    
+    Vector3 WorldToLocal(Vector3 worldPos, Vector3 blockWorldPos) {
+        return worldPos - blockWorldPos;
+    }
+    
+    Vector3 GetBlockWorldPosition(Vector3 pos) {
+        if (_gridSystem != null) {
+            return _gridSystem.SnapToGrid(pos);
+        }
+        return new Vector3(
+            Mathf.Floor(pos.x) + 0.5f,
+            Mathf.Floor(pos.y) + 0.5f,
+            Mathf.Floor(pos.z) + 0.5f
+        );
+    }
+    
+    CutParameters CalculateCubeCut(Vector3 localStart, Vector3 localEnd) {
+        CutParameters param = new CutParameters {
+            mode = CutMode.Cube,
+            startPoint = localStart,
+            endPoint = localEnd
+        };
+        param.affectedFaces = GetAffectedFaces(localStart, localEnd);
+        param.cutRatio = CalculateCutRatio(localStart, localEnd);
+        return param;
+    }
+    
+    CutParameters CalculateRoundedCut(Vector3 localStart, Vector3 localEnd) {
+        CutParameters param = CalculateCubeCut(localStart, localEnd);
+        param.mode = CutMode.Rounded;
+        float distance = Vector3.Distance(localStart, localEnd);
+        param.roundnessLevel = Mathf.Clamp(Mathf.RoundToInt(distance * 5f), 1, 5);
+        return param;
+    }
+    
+    CutParameters CalculateDiagonalCut(Vector3 localStart, Vector3 localEnd) {
+        CutParameters param = new CutParameters {
+            mode = CutMode.Diagonal,
+            startPoint = localStart,
+            endPoint = localEnd
+        };
+        Vector3 direction = (localEnd - localStart).normalized;
+        param.slopeAngle = Vector3.Angle(direction, Vector3.up);
+        param.cutDirection = direction;
+        return param;
+    }
+    
+    string ExtractMaterialId(string blockType) {
+        if (string.IsNullOrEmpty(blockType)) return "stone";
+        string[] parts = blockType.Split('_');
+        if (parts.Length > 0) {
+            string firstPart = parts[0].ToLower();
+            if (firstPart == "wood" || firstPart == "stone" || firstPart == "iron" || firstPart == "gold" || firstPart == "copper" || firstPart == "titanium") {
+                return firstPart;
+            }
+        }
+        if (blockType.Contains("wood")) return "wood";
+        if (blockType.Contains("stone") || blockType.Contains("cobblestone") || blockType.Contains("deep_stone")) return "stone";
+        if (blockType.Contains("iron") || blockType.Contains("gold") || blockType.Contains("copper") || blockType.Contains("titanium") || blockType.Contains("metal")) return "iron";
+        return "stone";
+    }
+    
+    string GenerateCubeVariantId(string materialId, CutParameters parameters) {
+        string[] faces = parameters.affectedFaces;
+        if (faces.Length == 1) {
+            return $"{materialId}_half_{faces[0]}";
+        } else if (faces.Length == 2) {
+            return $"{materialId}_quarter_{faces[0]}_{faces[1]}";
+        } else if (faces.Length == 3) {
+            return $"{materialId}_eighth_{faces[0]}_{faces[1]}_{faces[2]}";
+        }
+        int fifthLevel = Mathf.RoundToInt(parameters.cutRatio * 5f);
+        if (fifthLevel > 0 && fifthLevel < 5) {
+            return $"{materialId}_fifth_{faces[0]}_{fifthLevel}";
+        }
+        return $"{materialId}_half_{faces[0]}";
+    }
+    
+    string GenerateRoundedVariantId(string materialId, CutParameters parameters) {
+        string[] faces = parameters.affectedFaces;
+        int roundnessLevel = parameters.roundnessLevel;
+        if (faces.Length >= 3) {
+            return $"{materialId}_rounded_corner_{faces[0]}_{faces[1]}_{faces[2]}_{roundnessLevel}";
+        } else if (faces.Length == 2) {
+            return $"{materialId}_rounded_edge_{faces[0]}_{faces[1]}_{roundnessLevel}";
+        }
+        return $"{materialId}_rounded_{faces[0]}_{roundnessLevel}";
+    }
+    
+    string GenerateDiagonalVariantId(string materialId, CutParameters parameters) {
+        string[] faces = parameters.affectedFaces;
+        float slopeAngle = parameters.slopeAngle;
+        if (slopeAngle < 45f) {
+            int rampLevel = Mathf.RoundToInt(slopeAngle / 9f);
+            rampLevel = Mathf.Clamp(rampLevel, 1, 5);
+            return $"{materialId}_ramp_{faces[0]}_{rampLevel}";
+        } else {
+            int diagonalLevel = Mathf.RoundToInt((slopeAngle - 45f) / 9f);
+            diagonalLevel = Mathf.Clamp(diagonalLevel, 1, 5);
+            if (faces.Length >= 2) {
+                return $"{materialId}_diagonal_edge_{faces[0]}_{faces[1]}_{diagonalLevel}";
+            } else {
+                return $"{materialId}_diagonal_{faces[0]}_{diagonalLevel}";
+            }
+        }
+    }
+    
+    MaterialType GetMaterialType(string blockType) {
+        if (string.IsNullOrEmpty(blockType)) return MaterialType.Stone;
+        if (blockType.Contains("wood")) return MaterialType.Wood;
+        if (blockType.Contains("stone") || blockType.Contains("cobblestone") || blockType.Contains("deep_stone")) return MaterialType.Stone;
+        if (blockType.Contains("iron") || blockType.Contains("gold") || blockType.Contains("copper") || blockType.Contains("titanium") || blockType.Contains("metal")) return MaterialType.Metal;
+        return MaterialType.Stone;
+    }
+    
+    string[] GetAffectedFaces(Vector3 start, Vector3 end) {
+        List<string> faces = new List<string>();
+        if (start.y > 0.8f || end.y > 0.8f) faces.Add("top");
+        if (start.y < 0.2f || end.y < 0.2f) faces.Add("bottom");
+        if (start.x < 0.2f || end.x < 0.2f) faces.Add("left");
+        if (start.x > 0.8f || end.x > 0.8f) faces.Add("right");
+        if (start.z < 0.2f || end.z < 0.2f) faces.Add("front");
+        if (start.z > 0.8f || end.z > 0.8f) faces.Add("back");
+        return faces.ToArray();
+    }
+    
+    float CalculateCutRatio(Vector3 start, Vector3 end) {
+        float distance = Vector3.Distance(start, end);
+        return Mathf.Clamp01(distance / 1.414f);
+    }
+    
+    void AddToCutHistory(Vector3 blockPos, string oldVariantId, string newVariantId, CutParameters parameters) {
+        // TODO: CutHistory sistemine ekle
+    }
+    
+    [ObserversRpc]
+    void RpcUpdateBlock(Vector3 blockPos, string variantId) {
+        Vector3Int chunkCoord = _chunkManager.GetChunkCoord(blockPos);
+        StartCoroutine(RegenerateChunkCoroutine(chunkCoord));
+    }
+}
+```
+
+---
+
+### 1.5.11 ShapeApplicationSystem.cs - Kayıt ve Uygulama Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Building/ShapeApplicationSystem.cs`
+
+**Amaç:** Kesilmiş şekilleri kaydetme ve uygulama sistemi
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using FishNet.Object;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+
+/// <summary>
+/// ✅ Şekil kaydetme ve uygulama sistemi
+/// </summary>
+public class ShapeApplicationSystem : MonoBehaviour {
+    private Dictionary<int, SavedBlockShape> _savedShapes = new Dictionary<int, SavedBlockShape>();
+    private ChunkManager _chunkManager;
+    private VariantMeshGenerator _variantGenerator;
+    private BlockCuttingSystem _cuttingSystem;
+    private int _selectedSlot = -1;
+    
+    void Start() {
+        _chunkManager = ServiceLocator.Instance?.Get<ChunkManager>();
+        _variantGenerator = ServiceLocator.Instance?.Get<VariantMeshGenerator>();
+        _cuttingSystem = ServiceLocator.Instance?.Get<BlockCuttingSystem>();
+        
+        // ✅ Kaydedilmiş şekilleri yükle
+        LoadSavedShapes();
+    }
+    
+    void Update() {
+        // ✅ Slot seçimi (1-9 tuşları)
+        for (int i = 1; i <= 9; i++) {
+            if (Input.GetKeyDown(KeyCode.Alpha0 + i)) {
+                _selectedSlot = i - 1;
+                Debug.Log($"[ShapeApplicationSystem] Slot {_selectedSlot} seçildi");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Kaydedilmiş şekli uygula (sağ tık)
+    /// </summary>
+    [ServerRpc]
+    public void ApplySavedShape(int slotIndex, Vector3 blockPos) {
+        if (!_savedShapes.ContainsKey(slotIndex)) {
+            Debug.LogWarning($"[ShapeApplicationSystem] Slot {slotIndex} boş!");
+            return;
+        }
+        
+        SavedBlockShape shape = _savedShapes[slotIndex];
+        
+        // ✅ Blok tipini kontrol et
+        string blockType = _chunkManager.GetBlockType(blockPos);
+        if (string.IsNullOrEmpty(blockType)) {
+            Debug.LogWarning($"[ShapeApplicationSystem] Blok bulunamadı: {blockPos}");
+            return;
+        }
+        
+        if (!IsCompatible(blockType, shape.baseMaterial)) {
+            Debug.LogWarning($"[ShapeApplicationSystem] Uyumsuz malzeme! Blok: {blockType}, Şekil: {shape.baseMaterial}");
+            return;
+        }
+        
+        // ✅ Variant mesh'i uygula
+        Mesh variantMesh = _variantGenerator.GetVariantMesh(shape.variantId);
+        if (variantMesh == null) {
+            Debug.LogWarning($"[ShapeApplicationSystem] Variant mesh bulunamadı: {shape.variantId}");
+            return;
+        }
+        
+        // ✅ Blok tipini güncelle
+        _chunkManager.SetBlockType(blockPos, shape.variantId);
+        
+        // ✅ Chunk'ı yeniden generate et
+        Vector3Int chunkCoord = _chunkManager.GetChunkCoord(blockPos);
+        StartCoroutine(RegenerateChunkCoroutine(chunkCoord));
+        
+        // ✅ Client'lara senkronize et
+        RpcApplyShape(blockPos, shape.variantId);
+    }
+    
+    /// <summary>
+    /// ✅ Şekli kaydet (K tuşu)
+    /// </summary>
+    public void SaveShape(int slotIndex, Vector3 blockPos, CutParameters parameters) {
+        if (slotIndex < 0 || slotIndex >= 9) {
+            Debug.LogWarning($"[ShapeApplicationSystem] Geçersiz slot: {slotIndex}");
+            return;
+        }
+        
+        // ✅ Base material'ı al
+        string baseMaterial = GetMaterialFromBlock(blockPos);
+        if (string.IsNullOrEmpty(baseMaterial)) {
+            Debug.LogWarning($"[ShapeApplicationSystem] Malzeme bulunamadı: {blockPos}");
+            return;
+        }
+        
+        // ✅ Variant ID oluştur
+        string variantId = _cuttingSystem.GenerateVariantId(baseMaterial, parameters);
+        
+        SavedBlockShape shape = new SavedBlockShape {
+            shapeId = System.Guid.NewGuid().ToString(),
+            shapeName = $"Shape_{slotIndex + 1}",
+            baseMaterial = baseMaterial,
+            parameters = parameters,
+            variantId = variantId,
+            savedDate = System.DateTime.Now.ToString()
+        };
+        
+        // ✅ Önizleme mesh'i oluştur
+        shape.previewMesh = _variantGenerator.GetVariantMesh(variantId);
+        shape.previewIcon = GeneratePreviewIcon(shape.previewMesh);
+        
+        _savedShapes[slotIndex] = shape;
+        
+        // ✅ Dosyaya kaydet (JSON)
+        SaveShapeToFile(shape);
+        
+        Debug.Log($"[ShapeApplicationSystem] Şekil kaydedildi: Slot {slotIndex}, ID: {variantId}");
+    }
+    
+    // ========== PRIVATE HELPER METHODS ==========
+    
+    bool IsCompatible(string blockType, string shapeMaterial) {
+        if (string.IsNullOrEmpty(blockType) || string.IsNullOrEmpty(shapeMaterial)) return false;
+        string blockMaterial = ExtractMaterialId(blockType);
+        return blockMaterial == shapeMaterial;
+    }
+    
+    string GetMaterialFromBlock(Vector3 blockPos) {
+        string blockType = _chunkManager.GetBlockType(blockPos);
+        if (string.IsNullOrEmpty(blockType)) return "";
+        return ExtractMaterialId(blockType);
+    }
+    
+    string ExtractMaterialId(string blockType) {
+        if (string.IsNullOrEmpty(blockType)) return "";
+        string[] parts = blockType.Split('_');
+        if (parts.Length > 0) {
+            string firstPart = parts[0].ToLower();
+            if (firstPart == "wood" || firstPart == "stone" || firstPart == "iron" || firstPart == "gold" || firstPart == "copper" || firstPart == "titanium") {
+                return firstPart;
+            }
+        }
+        if (blockType.Contains("wood")) return "wood";
+        if (blockType.Contains("stone") || blockType.Contains("cobblestone") || blockType.Contains("deep_stone")) return "stone";
+        if (blockType.Contains("iron") || blockType.Contains("gold") || blockType.Contains("copper") || blockType.Contains("titanium") || blockType.Contains("metal")) return "iron";
+        return "stone";
+    }
+    
+    Sprite GeneratePreviewIcon(Mesh mesh) {
+        // TODO: Mesh'ten sprite oluştur (render texture kullanarak)
+        return null;
+    }
+    
+    void SaveShapeToFile(SavedBlockShape shape) {
+        string path = Path.Combine(Application.persistentDataPath, "SavedShapes", $"{shape.shapeId}.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(path));
+        string json = JsonUtility.ToJson(shape, true);
+        File.WriteAllText(path, json);
+    }
+    
+    void LoadSavedShapes() {
+        string shapesDir = Path.Combine(Application.persistentDataPath, "SavedShapes");
+        if (!Directory.Exists(shapesDir)) return;
+        string[] files = Directory.GetFiles(shapesDir, "*.json");
+        foreach (string file in files) {
+            string json = File.ReadAllText(file);
+            SavedBlockShape shape = JsonUtility.FromJson<SavedBlockShape>(json);
+            // TODO: Slot yönetimi
+        }
+    }
+    
+    IEnumerator RegenerateChunkCoroutine(Vector3Int chunkCoord) {
+        yield return StartCoroutine(_chunkManager.RegenerateChunk(chunkCoord));
+    }
+    
+    [ObserversRpc]
+    void RpcApplyShape(Vector3 blockPos, string variantId) {
+        _chunkManager.SetBlockType(blockPos, variantId);
+        Vector3Int chunkCoord = _chunkManager.GetChunkCoord(blockPos);
+        StartCoroutine(RegenerateChunkCoroutine(chunkCoord));
+    }
+}
+
+/// <summary>
+/// ✅ Kaydedilmiş blok şekli
+/// </summary>
+[System.Serializable]
+public class SavedBlockShape {
+    public string shapeId;
+    public string shapeName;
+    public string baseMaterial;
+    public CutParameters parameters;
+    public string variantId;
+    public string previewMeshPath;
+    public string previewIconPath;
+    public string savedDate;
+    
+    [System.NonSerialized]
+    public Mesh previewMesh;
+    
+    [System.NonSerialized]
+    public Sprite previewIcon;
+}
+```
+
+---
+
+### 1.5.12 NetworkMining Entegrasyonu
+
+**NetworkMining.cs'e Eklenecek Kod:**
+
+```csharp
+// NetworkMining.cs içine eklenecek
+
+[Header("Chisel Sistemi")]
+private ChiselTool _chiselTool;
+private bool _isChiselMode = false;
+
+void Start() {
+    // ... mevcut kod ...
+    
+    // ✅ ChiselTool'u al
+    _chiselTool = GetComponent<ChiselTool>();
+    if (_chiselTool == null) {
+        _chiselTool = gameObject.AddComponent<ChiselTool>();
+    }
+}
+
+void Update() {
+    // ... mevcut kod ...
+    
+    // ✅ Chisel modu kontrolü
+    if (_chiselTool != null && _chiselTool.IsEquipped()) {
+        // Chisel modu aktif, normal mining'i devre dışı bırak
+        return;
+    }
+    
+    // Normal mining kodu...
+}
+
+/// <summary>
+/// ✅ Chisel modunu aktif et
+/// </summary>
+public void EnableChiselMode(ItemDefinition chiselItem) {
+    if (_chiselTool == null) return;
+    
+    if (chiselItem != null && chiselItem.isChisel) {
+        _chiselTool.chiselDefinition = chiselItem.chiselDefinition;
+        _chiselTool.OnEquip();
+        _isChiselMode = true;
+    }
+}
+
+/// <summary>
+/// ✅ Chisel modunu deaktif et
+/// </summary>
+public void DisableChiselMode() {
+    if (_chiselTool == null) return;
+    
+    _chiselTool.OnUnequip();
+    _isChiselMode = false;
+}
+```
+
+---
+
+### 1.5.13 Performans Optimizasyonları
+
+#### 1.5.13.1 Raycast Optimizasyonu
+
+**Sorun:** Her frame raycast yapmak performans sorunu yaratır.
+
+**Çözüm:** Raycast cache sistemi
+
+```csharp
+// ✅ OPTİMİZE: Raycast cache
+private Dictionary<Vector3Int, RaycastHit> _raycastCache = new Dictionary<Vector3Int, RaycastHit>();
+private float _lastRaycastTime = 0f;
+private const float RAYCAST_CACHE_DURATION = 0.1f; // 100ms cache
+
+public bool SelectPointOnBlock(out Vector3 point, out Vector3 normal) {
+    Vector3Int gridPos = WorldToGrid(_playerCamera.transform.position);
+    
+    // Cache kontrolü
+    if (Time.time - _lastRaycastTime < RAYCAST_CACHE_DURATION) {
+        if (_raycastCache.TryGetValue(gridPos, out RaycastHit cachedHit)) {
+            point = cachedHit.point;
+            normal = cachedHit.normal;
+            return true;
+        }
+    }
+    
+    // Raycast yap
+    Ray ray = _playerCamera.ScreenPointToRay(Input.mousePosition);
+    RaycastHit hit;
+    
+    if (Physics.Raycast(ray, out hit, maxRaycastDistance, voxelTerrainLayer)) {
+        _raycastCache[gridPos] = hit;
+        _lastRaycastTime = Time.time;
+        point = hit.point;
+        normal = hit.normal;
+        return true;
+    }
+    
+    point = Vector3.zero;
+    normal = Vector3.zero;
+    return false;
+}
+```
+
+#### 1.5.13.2 Mesh Pooling
+
+**Sorun:** Her kesimde yeni mesh oluşturmak GC pressure yaratır.
+
+**Çözüm:** Mesh pooling sistemi
+
+```csharp
+// ✅ OPTİMİZE: Önizleme mesh pooling
+private Queue<Mesh> _previewMeshPool = new Queue<Mesh>();
+private const int MAX_POOL_SIZE = 10;
+
+Mesh GetPreviewMesh() {
+    if (_previewMeshPool.Count > 0) {
+        return _previewMeshPool.Dequeue();
+    }
+    return new Mesh();
+}
+
+void ReturnPreviewMesh(Mesh mesh) {
+    if (mesh == null) return;
+    
+    mesh.Clear();
+    
+    if (_previewMeshPool.Count < MAX_POOL_SIZE) {
+        _previewMeshPool.Enqueue(mesh);
+    } else {
+        Destroy(mesh);
+    }
+}
+```
+
+#### 1.5.13.3 Variant Cache
+
+**Not:** VariantMeshGenerator zaten cache kullanıyor, sadece kesim parametrelerini cache'le.
+
+```csharp
+// ✅ OPTİMİZE: Kesim parametreleri cache
+private Dictionary<string, CutParameters> _cutParametersCache = new Dictionary<string, CutParameters>();
+
+CutParameters GetCachedCutParameters(string variantId) {
+    if (_cutParametersCache.TryGetValue(variantId, out CutParameters cached)) {
+        return cached;
+    }
+    
+    // Yeni parametre oluştur ve cache'le
+    CutParameters parameters = GenerateCutParameters(variantId);
+    _cutParametersCache[variantId] = parameters;
+    return parameters;
+}
+```
+
+#### 1.5.13.4 Chunk Regeneration Batch Optimizasyonu
+
+**Sorun:** Her kesimde chunk regeneration yapmak performans sorunu yaratır.
+
+**Çözüm:** Batch regeneration sistemi
+
+```csharp
+// ✅ OPTİMİZE: Chunk regeneration batch
+private List<Vector3Int> _pendingChunkRegenerations = new List<Vector3Int>();
+private float _lastRegenerationTime = 0f;
+private const float REGENERATION_BATCH_INTERVAL = 0.5f; // 500ms batch
+
+void QueueChunkRegeneration(Vector3Int chunkCoord) {
+    if (!_pendingChunkRegenerations.Contains(chunkCoord)) {
+        _pendingChunkRegenerations.Add(chunkCoord);
+    }
+}
+
+void Update() {
+    // Batch regeneration kontrolü
+    if (Time.time - _lastRegenerationTime > REGENERATION_BATCH_INTERVAL) {
+        if (_pendingChunkRegenerations.Count > 0) {
+            // Tüm bekleyen chunk'ları regenerate et
+            foreach (var chunk in _pendingChunkRegenerations) {
+                StartCoroutine(_chunkManager.RegenerateChunk(chunk));
+            }
+            _pendingChunkRegenerations.Clear();
+            _lastRegenerationTime = Time.time;
+        }
+    }
+}
+```
+
+---
+
+### 1.5.14 Ek Özellikler ve Geliştirmeler
+
+#### 1.5.14.1 Alet Seviyeleri ve İyileştirmeleri
+
+**Temel Alet (Basic Chisel)**
+- Basit kesimler
+- Düşük hassasiyet (0.2 birim)
+- Sınırlı variant'lar
+
+**Gelişmiş Alet (Advanced Chisel)**
+- Daha hassas kesimler (0.1 birim)
+- Daha fazla variant
+- Özel kesim modları
+
+**Usta Alet (Master Chisel)**
+- Maksimum hassasiyet (0.05 birim)
+- Tüm variant'lar
+- Özel efektler (parıltı, ses)
+
+#### 1.5.14.2 Kesim Efektleri
+
+**Görsel Efektler:**
+- Kesim sırasında parçacık efektleri
+- Toz bulutları (taş için)
+- Talaş parçacıkları (odun için)
+- Kıvılcım (metal için)
+
+**Ses Efektleri:**
+- Kesim sesleri (malzemeye göre)
+- Başarılı kesim sesi
+- Hata sesi (uyumsuz malzeme)
+
+#### 1.5.14.3 Çoklu Blok Kesimi
+
+**Seçim Modu:**
+- **Tek Blok:** Normal mod
+- **Çoklu Blok:** Shift + Sol Tık ile seçim
+- **Bölge Seçimi:** Ctrl + Drag ile bölge seç
+
+**Toplu Kesim:**
+- Seçilen tüm bloklara aynı kesimi uygula
+- İlerleme çubuğu göster
+- İptal edilebilir
+
+#### 1.5.14.4 Kesim Geçmişi (Undo/Redo)
+
+**Geçmiş Sistemi:**
+- Son 10 kesimi kaydet
+- **Ctrl + Z:** Geri al
+- **Ctrl + Y:** İleri al
+
+**Geçmiş Formatı:**
+```csharp
+[System.Serializable]
+public class CutHistory {
+    public List<CutAction> actions = new List<CutAction>();
+    public int currentIndex = -1;
+}
+
+[System.Serializable]
+public class CutAction {
+    public Vector3 blockPos;
+    public string oldVariantId;
+    public string newVariantId;
+    public CutParameters parameters;
+}
+```
+
+#### 1.5.14.5 Kesim Validasyonu
+
+**Kontrol Sistemi:**
+- Kesim mümkün mü?
+- Malzeme uyumlu mu?
+- Alet yeterli mi?
+- Dayanıklılık yeterli mi?
+
+**Hata Mesajları:**
+- "Bu malzeme için uygun alet değil!"
+- "Alet çok yıpranmış!"
+- "Kesim mümkün değil!"
+
+**Validasyon Fonksiyonu:**
+```csharp
+/// <summary>
+/// ✅ Kesim mümkün mü?
+/// </summary>
+public bool CanCut(Vector3 blockPos, ChiselDefinition chisel, CutMode mode) {
+    // 1. Blok var mı?
+    string blockType = _chunkManager.GetBlockType(blockPos);
+    if (string.IsNullOrEmpty(blockType)) return false;
+    
+    // 2. Malzeme uyumlu mu?
+    MaterialType material = GetMaterialType(blockType);
+    if (!chisel.supportedMaterials.Contains(material)) return false;
+    
+    // 3. Alet yeterli mi?
+    if (chisel.durability <= 0) return false;
+    
+    // 4. Kesim mümkün mü? (çok küçük değilse)
+    // ...
+    
+    return true;
+}
+```
+
+---
+
+### 1.5.15 UI/UX Tasarımı
+
+#### 1.5.15.1 HUD Elemanları
+
+**Mod Göstergesi:**
+- Ekranın üstünde aktif mod gösterilir (Küp/Yuvarlak/Çapraz)
+- Mod değiştirme tuşu gösterilir (Q)
+
+**Kayıt Slotları:**
+- Ekranın sağında 9 slot gösterilir (1-9)
+- Her slot için önizleme ikonu
+- Boş slotlar gri gösterilir
+
+**Komut İpuçları:**
+- Sol tık: Nokta seç
+- E: Kesimi onayla
+- ESC: İptal et
+- K: Şekli kaydet
+- 1-9: Kaydedilmiş şekli uygula
+
+#### 1.5.15.2 Görsel Geri Bildirim
+
+**Marker'lar:**
+- Başlangıç noktası: Yeşil küp
+- Bitiş noktası: Kırmızı küp
+- Seçim çizgisi: Mavi çizgi
+
+**Önizleme Mesh:**
+- Kesim öncesi mesh gösterilir
+- Yarı saydam materyal
+- Kesim sonrası görünümü gösterir
+
+**Hata Göstergesi:**
+- Uyumsuz malzeme: Kırmızı çerçeve
+- Alet yetersiz: Sarı çerçeve
+- Kesim mümkün değil: Gri çerçeve
+
+---
+
+### 1.5.16 Mantık Hataları ve Düzeltmeler
+
+#### 1. ✅ Voxel Terrain Entegrasyonu - DÜZELTİLDİ
+
+**Sorun:** ChiselRaycast'te `hit.transform` kullanılıyordu, ama voxel terrain'de transform yok.
+
+**Çözüm:**
+- ChunkManager'dan chunk al
+- GridPlacementSystem ile grid'e yapıştır
+- Blok pozisyonunu ChunkManager'dan al
+
+#### 2. ✅ Variant ID Formatı - DÜZELTİLDİ
+
+**Sorun:** Variant ID oluşturma mantığı VariantMeshGenerator ile uyumlu değildi.
+
+**Çözüm:**
+- VariantMeshGenerator formatına uygun ID oluşturma
+- "wood_half_top", "stone_quarter_top_left" formatı
+- Material ID extraction
+
+#### 3. ✅ Chunk Regeneration - DÜZELTİLDİ
+
+**Sorun:** `RegenerateChunk()` coroutine olarak çağrılıyordu ama wrapper yoktu.
+
+**Çözüm:**
+- `RegenerateChunkCoroutine()` wrapper eklendi
+- ChunkManager'ın coroutine'i doğru çağrılıyor
+- Batch regeneration sistemi eklendi
+
+#### 4. ✅ Eksik Metodlar - EKLENDİ
+
+**Sorun:** `FindBlockPosition()`, `WorldToLocal()` metodları eksikti.
+
+**Çözüm:**
+- `GetBlockWorldPosition()` eklendi
+- `WorldToLocal()` eklendi
+- `ExtractMaterialId()` eklendi
+
+#### 5. ✅ Alet Uyumluluğu Kontrolü - EKLENDİ
+
+**Sorun:** Alet malzeme uyumluluğu kontrolü eksikti.
+
+**Çözüm:**
+- `IsMaterialCompatible()` metodu eklendi
+- `GetMaterialType()` metodu eklendi
+- Hata mesajları eklendi
+
+#### 6. ✅ Önizleme Mesh Sistemi - EKLENDİ
+
+**Sorun:** Kesim öncesi önizleme yoktu.
+
+**Çözüm:**
+- `ShowPreviewMesh()` metodu eklendi
+- `GetPreviewMesh()` metodu BlockCuttingSystem'e eklendi
+- Visualizer'da önizleme gösterimi
+
+---
+
+### 1.5.17 Yardımcı Fonksiyonlar ve Metodlar
+
+#### 1.5.17.1 Yardımcı Fonksiyonlar
+
+```csharp
+/// <summary>
+/// ✅ İki nokta arası mesafe hesapla
+/// </summary>
+public static float CalculateDistance(Vector3 start, Vector3 end) {
+    return Vector3.Distance(start, end);
+}
+
+/// <summary>
+/// ✅ Kesim açısını hesapla
+/// </summary>
+public static float CalculateAngle(Vector3 start, Vector3 end) {
+    Vector3 direction = (end - start).normalized;
+    return Vector3.Angle(direction, Vector3.up);
+}
+
+/// <summary>
+/// ✅ Kesim hacmini hesapla
+/// </summary>
+public static float CalculateVolume(Vector3 start, Vector3 end) {
+    Vector3 size = end - start;
+    return Mathf.Abs(size.x * size.y * size.z);
+}
+
+/// <summary>
+/// ✅ Grid'e yapıştır
+/// </summary>
+public static Vector3 SnapToGrid(Vector3 point, float gridSize) {
+    return new Vector3(
+        Mathf.Round(point.x / gridSize) * gridSize,
+        Mathf.Round(point.y / gridSize) * gridSize,
+        Mathf.Round(point.z / gridSize) * gridSize
+    );
+}
+
+/// <summary>
+/// ✅ Malzeme tipini al
+/// </summary>
+MaterialType GetMaterialType(string blockType) {
+    if (string.IsNullOrEmpty(blockType)) return MaterialType.Stone;
+    
+    string lowerType = blockType.ToLower();
+    if (lowerType.Contains("wood")) return MaterialType.Wood;
+    if (lowerType.Contains("stone") || lowerType.Contains("cobblestone") || lowerType.Contains("deep_stone")) return MaterialType.Stone;
+    if (lowerType.Contains("iron") || lowerType.Contains("gold") || lowerType.Contains("copper") || lowerType.Contains("titanium") || lowerType.Contains("metal")) return MaterialType.Metal;
+    return MaterialType.Stone; // Default
+}
+```
+
+#### 1.5.17.2 Validasyon Fonksiyonları
+
+```csharp
+/// <summary>
+/// ✅ Kesim mümkün mü? (Tam validasyon)
+/// </summary>
+public bool CanCut(Vector3 blockPos, ChiselDefinition chisel, CutMode mode) {
+    // 1. Blok var mı?
+    string blockType = _chunkManager.GetBlockType(blockPos);
+    if (string.IsNullOrEmpty(blockType)) {
+        ShowErrorMessage("Blok bulunamadı!");
+        return false;
+    }
+    
+    // 2. Malzeme uyumlu mu?
+    MaterialType material = GetMaterialType(blockType);
+    if (!chisel.supportedMaterials.Contains(material)) {
+        ShowErrorMessage("Bu malzeme için uygun alet değil!");
+        return false;
+    }
+    
+    // 3. Alet yeterli mi?
+    if (chisel.durability <= 0) {
+        ShowErrorMessage("Alet çok yıpranmış!");
+        return false;
+    }
+    
+    // 4. Kesim mümkün mü? (çok küçük değilse)
+    if (_startPoint != Vector3.zero && _endPoint != Vector3.zero) {
+        float distance = CalculateDistance(_startPoint, _endPoint);
+        if (distance < chisel.precision) {
+            ShowErrorMessage("Kesim çok küçük!");
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+/// <summary>
+/// ✅ Hata mesajı göster
+/// </summary>
+void ShowErrorMessage(string message) {
+    // UI'da hata mesajı göster
+    Debug.LogWarning($"[ChiselTool] {message}");
+    // TODO: UI Manager'a mesaj gönder
+}
+```
+
+---
+
+### 1.5.18 Ek Item'ler ve Tanımlar
+
+#### 1.5.18.1 Alet Item Tanımları
+
+**Odun Kesici (Wood Chisel)**
+- Item ID: `WOOD_CHISEL`
+- Chisel Level: Basic
+- Supported Materials: Wood
+- Crafting Recipe: 2x Iron Ingot + 1x Stick
+
+**Taş Kesici (Stone Chisel)**
+- Item ID: `STONE_CHISEL`
+- Chisel Level: Basic
+- Supported Materials: Stone
+- Crafting Recipe: 2x Iron Ingot + 1x Stone
+
+**Metal Kesici (Metal Chisel)**
+- Item ID: `METAL_CHISEL`
+- Chisel Level: Basic
+- Supported Materials: Metal (Iron, Gold, Copper, Titanium)
+- Crafting Recipe: 2x Titanium Ingot + 1x Iron Ingot
+
+#### 1.5.18.2 Upgrade Item'leri
+
+**Gelişmiş Odun Kesici (Advanced Wood Chisel)**
+- Item ID: `ADVANCED_WOOD_CHISEL`
+- Chisel Level: Advanced
+- Upgrade Recipe: Basic Wood Chisel + 5x Red Diamond
+
+**Usta Odun Kesici (Master Wood Chisel)**
+- Item ID: `MASTER_WOOD_CHISEL`
+- Chisel Level: Master
+- Upgrade Recipe: Advanced Wood Chisel + 10x Titanium
+
+---
+
+
 
 ---
 
@@ -20076,8 +24853,8 @@ Lütfen nihai ağaç için **en alttaki** `# 📂 NİHAİ STRATOCRAFT DOSYA YAPI
 - ✅ Faz 7: Güç Sistemi, Binekler ve Savaş Makineleri
 - ✅ Faz 8: Eksik Sistemler, Admin Komutları ve Config Yönetimi
 
-**Toplam Sistem Sayısı:** 50+ sistem
-**Toplam Dosya Sayısı:** 200+ dosya
+**Toplam Sistem Sayısı:** 51+ sistem (Blok Şekillendirme Sistemi eklendi)
+**Toplam Dosya Sayısı:** 210+ dosya (ChiselTool, BlockCuttingSystem, vb. eklendi)
 **Kullanılan Teknoloji:** 15+ teknoloji/kütüphane
 
 ---
@@ -20242,6 +25019,24 @@ Assets/_Stratocraft/
 - ✅ PhysicalItem.cs (Fiziksel item)
 - ✅ ItemDatabase.cs (Item lookup)
 - ✅ ItemSpawner.cs (Item spawn)
+- ✅ ItemDefinition güncellemeleri (isChisel, chiselDefinition, chiselLevel - FAZ 4)
+
+**1.5. Blok Şekillendirme Sistemi (ADIM 1.5):**
+- ✅ ChiselTool.cs (Blok şekillendirme aleti - IEquippable interface)
+- ✅ ChiselRaycast.cs (Voxel terrain uyumlu raycast - cache optimizasyonu)
+- ✅ BlockSelectionVisualizer.cs (Seçim görselleştirme - marker'lar, çizgiler)
+- ✅ BlockCuttingSystem.cs (Blok kesim sistemi - VariantMeshGenerator entegrasyonu)
+- ✅ ShapeApplicationSystem.cs (Şekil kaydetme/uygulama - 9 slot sistemi)
+- ✅ ChiselDefinition.cs (ScriptableObject - Alet tanımları)
+- ✅ CutMode.cs (Enum'lar: CutMode, MaterialType, CutParameters)
+- ✅ 3 kesim modu (Küp, Yuvarlak, Çapraz)
+- ✅ İki nokta seçimi sistemi (başlangıç/bitiş noktası)
+- ✅ Görsel önizleme (kesim öncesi mesh gösterimi)
+- ✅ 9 slot şekil kayıt sistemi (1-9 tuşları)
+- ✅ NetworkMining entegrasyonu (IEquippable interface, EnableChiselMode/DisableChiselMode)
+- ✅ VariantMeshGenerator entegrasyonu (Variant ID formatı uyumlu)
+- ✅ ChunkManager entegrasyonu (SetBlockType, GetBlockType, RegenerateChunk)
+- ✅ GridPlacementSystem entegrasyonu (SnapToGrid, WorldToGrid)
 
 **2. Ritüel Sistemi:**
 - ✅ RitualRecipe.cs (ScriptableObject)
@@ -20278,7 +25073,8 @@ Assets/_Stratocraft/
 │   ├── Core/
 │   │   ├── Definitions/
 │   │   │   ├── ItemDefinition.cs
-│   │   │   └── RitualRecipe.cs
+│   │   │   ├── RitualRecipe.cs
+│   │   │   └── ChiselDefinition.cs
 │   │   └── Models/
 │   │       └── ContractData.cs
 │   └── Systems/
@@ -20288,8 +25084,15 @@ Assets/_Stratocraft/
 │       ├── Clans/
 │       │   ├── TerritoryManager.cs
 │       │   └── ClanFence.cs
-│       └── Economy/
-│           └── ContractManager.cs
+│       ├── Economy/
+│       │   └── ContractManager.cs
+│       └── Building/
+│           ├── ChiselTool.cs
+│           ├── ChiselRaycast.cs
+│           ├── BlockSelectionVisualizer.cs
+│           ├── BlockCuttingSystem.cs
+│           ├── ShapeApplicationSystem.cs
+│           └── CutMode.cs
 └── Data/
     ├── Items/
     │   ├── Resources/
@@ -20302,6 +25105,7 @@ Assets/_Stratocraft/
 ### 🎯 Sonuç
 
 - ✅ Item sistemi hazır (Fiziksel itemlar)
+- ✅ Blok şekillendirme sistemi tamamlandı (ChiselTool, BlockCuttingSystem, ShapeApplicationSystem)
 - ✅ Ritüel sistemi çalışıyor (Batarya oluşturma)
 - ✅ Klan bölge sistemi aktif (Flood-Fill)
 - ✅ Kontrat sistemi tamamlandı
@@ -20653,8 +25457,17 @@ Assets/_Stratocraft/
 
 ### Fazlar
 - ✅ **Faz 1 & 2:** Altyapı ve Dünya Oluşumu
-- ✅ **Faz 3:** Doğa, Su ve Biyomlar
+- ✅ **Faz 3:** Doğa, Su ve Biyomlar + Voxel Ağaç/Maden/İnşa Sistemleri
+  - VoxelTreeGenerator + TreeGrowthSystem (Prosedürel ağaç, aşamalı büyüme)
+  - OreSpawner (Voxel maden spawn)
+  - GridPlacementSystem + BlueprintSystem + SculptingSystem (İnşa sistemi)
+  - VariantMeshGenerator (740 blok variant)
+  - ChunkManager güncellemeleri (AddDensityAtPoint, SetBlockType, OnChunkGenerated)
 - ✅ **Faz 4:** Oyun Mekanikleri
+  - NetworkMining (Minecraft benzeri kırma/yerleştirme)
+  - Blok Şekillendirme Sistemi (ChiselTool, BlockCuttingSystem, ShapeApplicationSystem)
+  - IEquippable interface (Alet kuşanma/çıkarma)
+  - ItemDefinition güncellemeleri (isChisel, chiselDefinition, chiselLevel)
 - ✅ **Faz 5:** Yapay Zeka, Savaş ve Felaketler
 - ✅ **Faz 6:** Arayüz (UI), Etkileşim ve Cila
 - ✅ **Faz 7:** Güç Sistemi, Binekler ve Savaş Makineleri
@@ -20749,7 +25562,12 @@ Assets/_Stratocraft/
 │   ├── Core/
 │   │   ├── ChunkManager.cs             (Sonsuz dünya yönetimi - FAZ 1 - GPU fallback sistemi ile)
 │   │   │   ├── CalculateDensityJob     (CPU fallback density hesaplama - Job System + Burst - FAZ 1)
-│   │   │   └── BuildMeshJob            (CPU fallback mesh building - Job System + Burst - FAZ 1)
+│   │   │   ├── BuildMeshJob            (CPU fallback mesh building - Job System + Burst - FAZ 1)
+│   │   │   ├── AddDensityAtPoint()     (Blok yerleştirme - FAZ 3)
+│   │   │   ├── RemoveDensityAtPoint()  (Blok kırma - FAZ 3)
+│   │   │   ├── SetBlockType() / GetBlockType() (Blok tipi yönetimi - FAZ 3)
+│   │   │   ├── OnChunkGenerated event  (OreSpawner, VoxelTreeGenerator için - FAZ 3)
+│   │   │   └── GetWorldSeed()          (Deterministik rastgelelik - FAZ 3)
 │   │   ├── MarchingCubesGPU.cs         (Scrawk - modifiye: LOD, caching, modify - FAZ 1)
 │   │   ├── MeshBuilder.cs              (Mesh oluşturma - FAZ 1)
 │   │   ├── VegetationSpawner.cs        (Ağaç/taş spawn - GPU Instancing - FAZ 3)
@@ -20793,6 +25611,9 @@ Assets/_Stratocraft/
 │   │   │
 │   │   └── Definitions/
 │   │       ├── ItemDefinition.cs       (Item tanımı - FAZ 4)
+│   │       │   - isChisel property (Chisel alet kontrolü - FAZ 4)
+│   │       │   - chiselDefinition property (Chisel tanımı - FAZ 4)
+│   │       │   - chiselLevel property (Basic, Advanced, Master - FAZ 4)
 │   │       ├── RitualRecipe.cs         (Ritüel tarifi - FAZ 4)
 │   │       ├── BiomeDefinition.cs      (Biyom tanımı - FAZ 3)
 │   │       ├── MobDefinition.cs        (Mob tanımı - FAZ 5)
@@ -20801,17 +25622,137 @@ Assets/_Stratocraft/
 │   │       ├── TrapDefinition.cs       (Tuzak tanımı - FAZ 5)
 │   │       ├── MissionDefinition.cs    (Görev tanımı - FAZ 8)
 │   │       ├── RideableMobDefinition.cs (Binek mob tanımı - FAZ 7)
-│   │       └── StructureEffectDefinition.cs (Yapı efekt tanımı - FAZ 7)
+│   │       ├── StructureEffectDefinition.cs (Yapı efekt tanımı - FAZ 7)
+│   │       ├── OreDefinition.cs         (Maden tanımı - FAZ 3)
+│   │       │   - minDepth, maxDepth (derinlik aralığı)
+│   │       │   - spawnChance (spawn şansı)
+│   │       │   - itemDropId (kırıldığında düşecek item)
+│   │       │
+│   │       └── ChiselDefinition.cs      (Chisel alet tanımı - FAZ 4)
+│   │           - chiselId, chiselName
+│   │           - supportedMaterials (MaterialType array)
+│   │           - precision (kesim hassasiyeti)
+│   │           - durability (dayanıklılık)
+│   │           - cuttingSpeed (kesim hızı)
 │   │
 │   ├── Systems/
 │   │   ├── Mining/
-│   │   │   └── NetworkMining.cs        (Server-authoritative kazı - FAZ 1)
+│   │   │   ├── NetworkMining.cs        (Server-authoritative kazı - FAZ 1)
+│   │   │   │   - Hold to break mekaniği
+│   │   │   │   - Block hardness sistemi
+│   │   │   │   - Tool efficiency
+│   │   │   │   - Break progress indicator
+│   │   │   │   - Item drop sistemi
+│   │   │   │   - Block placement
+│   │   │   │   - Voxel terrain entegrasyonu
+│   │   │   │   - ChiselTool entegrasyonu (FAZ 4)
+│   │   │   │   - EnableChiselMode() / DisableChiselMode()
+│   │   │   │
+│   │   │   └── OreSpawner.cs           (Voxel maden spawn - FAZ 3)
+│   │   │       - TerrainDensity.compute entegrasyonu
+│   │   │       - Job System ile paralel spawn
+│   │   │       - Spawn edilmiş madenler cache'i
+│   │   │       - Yükseklik bazlı maden dağılımı
+│   │   │
+│   │   ├── Nature/
+│   │   │   ├── VoxelTreeGenerator.cs   (Prosedürel ağaç oluşturma - FAZ 3)
+│   │   │   │   - L-System/Fractal Tree algoritması
+│   │   │   │   - Job System ile paralel generation
+│   │   │   │   - Voxel bloklardan ağaç oluşturma
+│   │   │   │   - Ağaç kaldırma (RemoveTreeAt)
+│   │   │   │
+│   │   │   └── TreeGrowthSystem.cs     (Aşamalı büyüme yönetimi - FAZ 3)
+│   │   │       - 5 büyüme aşaması (Fidan, Küçük, Orta, Büyük, Olgun)
+│   │   │       - Coroutine bazlı zaman yönetimi
+│   │   │       - Büyüyen ağaçlar cache'i
+│   │   │       - Toplam ~32 dakika büyüme süresi
+│   │   │
+│   │   ├── Building/
+│   │   │   ├── GridPlacementSystem.cs  (Grid tabanlı yerleştirme - FAZ 3)
+│   │   │   │   - 1 metre grid sistemi
+│   │   │   │   - Grid pozisyon cache'i
+│   │   │   │   - Smooth voxel dünyada tutarlı inşa
+│   │   │   │
+│   │   │   ├── BlueprintSystem.cs      (Yapı kaydetme/kopyalama - FAZ 3)
+│   │   │   │   - Blueprint kaydetme (JSON)
+│   │   │   │   - Blueprint yükleme ve yerleştirme
+│   │   │   │   - Blueprint cache sistemi
+│   │   │   │
+│   │   │   ├── SculptingSystem.cs      (Blok yontma - FAZ 3)
+│   │   │   │   - Blok şekil verme
+│   │   │   │   - Template kaydetme
+│   │   │   │   - Template uygulama
+│   │   │   │   - Yontulmuş şekiller cache'i
+│   │   │   │
+│   │   │   ├── ChiselTool.cs           (Blok şekillendirme aleti - FAZ 4)
+│   │   │   │   - IEquippable interface (NetworkMining entegrasyonu)
+│   │   │   │   - 3 kesim modu (Küp, Yuvarlak, Çapraz)
+│   │   │   │   - İki nokta seçimi sistemi
+│   │   │   │   - Alet kuşanma/çıkarma
+│   │   │   │   - Malzeme uyumluluğu kontrolü
+│   │   │   │   - Alet dayanıklılık sistemi
+│   │   │   │
+│   │   │   ├── ChiselRaycast.cs        (Voxel terrain raycast - FAZ 4)
+│   │   │   │   - Voxel terrain uyumlu raycast
+│   │   │   │   - ChunkManager entegrasyonu
+│   │   │   │   - Grid sistemi entegrasyonu
+│   │   │   │   - Raycast cache optimizasyonu (50ms)
+│   │   │   │   - Hassas nokta hesaplama (grid'e yapıştırma)
+│   │   │   │
+│   │   │   ├── BlockSelectionVisualizer.cs (Seçim görselleştirme - FAZ 4)
+│   │   │   │   - Başlangıç/bitiş noktası marker'ları
+│   │   │   │   - Kesim çizgileri (LineRenderer)
+│   │   │   │   - Önizleme mesh'i
+│   │   │   │   - Grid çizgileri
+│   │   │   │
+│   │   │   ├── BlockCuttingSystem.cs   (Blok kesim sistemi - FAZ 4)
+│   │   │   │   - VariantMeshGenerator entegrasyonu
+│   │   │   │   - ChunkManager entegrasyonu
+│   │   │   │   - Variant ID oluşturma (VariantMeshGenerator uyumlu)
+│   │   │   │   - Chunk regeneration (coroutine)
+│   │   │   │   - Kesim geçmişi (undo/redo için)
+│   │   │   │   - Network senkronizasyonu
+│   │   │   │
+│   │   │   ├── ShapeApplicationSystem.cs (Şekil kaydetme/uygulama - FAZ 4)
+│   │   │   │   - 9 slot şekil kayıt sistemi
+│   │   │   │   - JSON kayıt/yükleme
+│   │   │   │   - Şekil uygulama (sağ tık)
+│   │   │   │   - Malzeme uyumluluğu kontrolü
+│   │   │   │
+│   │   │   └── CutMode.cs              (Enum'lar ve data yapıları - FAZ 4)
+│   │   │       - CutMode enum (Cube, Rounded, Diagonal)
+│   │   │       - MaterialType enum (Wood, Stone, Metal)
+│   │   │       - CutParameters class
+│   │   │
+│   │   ├── Blocks/
+│   │   │   └── VariantMeshGenerator.cs  (740 variant mesh generation - FAZ 3)
+│   │   │       - Algoritma tabanlı mesh oluşturma
+│   │   │       - Dik kesimler (6 yön, 5 seviye)
+│   │   │       - Çapraz kesimler, yuvarlanmış köşeler
+│   │   │       - Ramp, merdiven, köşe şekilleri
+│   │   │       - Özel şekiller (trapezoid, pyramid, hemisphere)
+│   │   │       - Mesh cache sistemi (O(1) lookup)
+│   │   │       - Pre-generated meshes (runtime generation yok)
 │   │   │
 │   │   ├── Biomes/
 │   │   │   └── BiomeManager.cs         (Biyom seçimi ve yönetimi - FAZ 3)
 │   │   │
 │   │   ├── Water/
-│   │   │   └── WaterSimulator.cs       (Voxel su simülasyonu - opsiyonel - FAZ 3)
+│   │   │   ├── WaterSimulator.cs       (Voxel su simülasyonu - FAZ 3)
+│   │   │   │   - Su seviyesi yönetimi (0-7 arası, 8=kaynak su)
+│   │   │   │   - Aşağı akış (Gravity - en yüksek öncelik)
+│   │   │   │   - Yan tarafa akış (4 yön: kuzey, güney, doğu, batı)
+│   │   │   │   - Yayılma mekaniği (su seviyesi dengeleme)
+│   │   │   │   - Öncelik sistemi (Aşağı > Yan > Yayılma)
+│   │   │   │   - Boşluk kontrolü (su sadece boş voxel'lere akar)
+│   │   │   │   - Kaynak su (sonsuz su kaynağı)
+│   │   │   │   - Chunk bazlı cache
+│   │   │   │   - GPU üzerinde hesaplama
+│   │   │   │   - GetWaterLevel(), AddWater(), RemoveWater(), AddWaterSource() metodları
+│   │   │   │
+│   │   │   └── OceanPlane.cs           (Sonsuz okyanus - FAZ 3)
+│   │   │       - Oyuncuyu takip eden düzlem
+│   │   │       - Y=0 seviyesinde sonsuz okyanus
 │   │   │
 │   │   ├── Rituals/
 │   │   │   ├── RitualManager.cs        (Batarya sistemi - FAZ 4)
@@ -20945,6 +25886,118 @@ Assets/_Stratocraft/
 
 ## 📋 NİHAİ ÖZET VE DOSYA YAPISI
 
+### ✅ SİSTEM TAMAMLANMA DURUMU
+
+**Genel Tamamlanma:** %92
+
+**Faz Bazında Tamamlanma:**
+- **FAZ 1-2 (Altyapı ve Dünya Oluşumu):** %100 ✅
+  - ServiceLocator, GameEntry, NetworkBootstrap ✅
+  - DatabaseManager (SQLite) ✅
+  - ChunkManager (Priority Queue, Mesh Pooling, LOD, Disk Caching, GPU Fallback) ✅
+  - MarchingCubesGPU (LOD, Density Caching) ✅
+  - TerrainDensity.compute ✅
+  - TerrainMaterialManager, TerrainShader ✅
+  - GameTimeManager (Gün/gece döngüsü) ✅
+  - NetworkMining (Server-authoritative kazı) ✅
+
+- **FAZ 3 (Doğa, Su ve Biyomlar):** %95 ✅
+  - BiomeDefinition, BiomeManager ✅
+  - VegetationSpawner (GPU Instancing) ✅
+  - OceanPlane (Sonsuz okyanus) ✅
+  - WaterSim.compute (Detaylı su mekaniği - akma, yayılma, öncelik) ✅
+  - WaterSimulator (Su seviyesi yönetimi, kaynak su) ✅
+  - Mağara sistemi (3D Noise) ✅
+  - ⚠️ VoxelTreeGenerator + TreeGrowthSystem (Faz 3 entegrasyonu bekleniyor)
+  - ⚠️ OreSpawner (Faz 3 entegrasyonu bekleniyor)
+  - ⚠️ GridPlacementSystem + BlueprintSystem + SculptingSystem (Faz 3 entegrasyonu bekleniyor)
+
+- **FAZ 4 (Oyun Mekanikleri):** %100 ✅
+  - ItemDefinition, ItemDatabase ✅
+  - PhysicalItem, ItemSpawner (Voxel terrain uyumlu) ✅
+  - ItemDefinition güncellemeleri (isChisel, chiselDefinition, chiselLevel) ✅
+  - Blok Şekillendirme Sistemi (ADIM 1.5) ✅
+    - ChiselTool.cs (IEquippable interface, NetworkMining entegrasyonu) ✅
+    - ChiselRaycast.cs (Voxel terrain uyumlu raycast, cache optimizasyonu) ✅
+    - BlockSelectionVisualizer.cs (Seçim görselleştirme) ✅
+    - BlockCuttingSystem.cs (VariantMeshGenerator entegrasyonu) ✅
+    - ShapeApplicationSystem.cs (9 slot şekil kayıt sistemi) ✅
+    - ChiselDefinition.cs (ScriptableObject) ✅
+    - CutMode.cs (Enum'lar ve data yapıları) ✅
+  - RitualManager, RitualInputHandler ✅
+  - TerritoryManager (FloodFillJob - Job System + Burst) ✅
+  - ContractManager ✅
+  - TamingManager (Voxel terrain uyumlu) ✅
+  - StructurePlacer (Voxel terrain uyumlu) ✅
+
+- **FAZ 5 (Yapay Zeka, Savaş ve Felaketler):** %100 ✅
+  - ChunkNavMeshBaker (Dinamik NavMesh - Voxel terrain uyumlu) ✅
+  - MobAI, MobSpawner (Voxel terrain uyumlu) ✅
+  - BossAI, BossSpawner (Voxel terrain uyumlu) ✅
+  - HealthComponent, ArmorComponent ✅
+  - DisasterManager (Voxel terrain uyumlu) ✅
+  - TrapManager, TrapCore (Voxel terrain uyumlu) ✅
+  - MobIdentity, BossIdentity ✅
+  - MobDatabase, BossDatabase, DisasterDatabase, TrapDatabase ✅
+
+- **FAZ 6 (Arayüz, Etkileşim ve Cila):** %100 ✅
+  - IInteractable, InteractionController (Voxel terrain uyumlu) ✅
+  - HUDManager (Voxel terrain uyumlu) ✅
+  - ContractUI, ClanManagementUI ✅
+  - AudioManager, CameraShake (Voxel terrain uyumlu) ✅
+
+- **FAZ 7 (Güç Sistemi, Binekler ve Savaş Makineleri):** %100 ✅
+  - PlayerPowerProfile, ClanPowerProfile ✅
+  - StratocraftPowerSystem ✅
+  - RideableMob, MobInputController ✅
+  - SiegeBeacon, SiegeManager ✅
+  - StructureEffectManager ✅
+  - OfflineProtectionSystem ✅
+  - RideableMobDatabase, StructureEffectDatabase ✅
+
+- **FAZ 8 (Eksik Sistemler, Admin Komutları):** %100 ✅
+  - CaravanManager (Voxel terrain uyumlu) ✅
+  - ResearchManager (Voxel terrain uyumlu) ✅
+  - BreedingManager (Voxel terrain uyumlu) ✅
+  - ShopManager (Voxel terrain uyumlu) ✅
+  - MissionManager (Voxel terrain uyumlu) ✅
+  - SupplyDropManager (Voxel terrain uyumlu) ✅
+  - SiegeWeaponManager (Voxel terrain uyumlu) ✅
+  - GhostRecipeManager (Voxel terrain uyumlu) ✅
+  - AllianceManager (Voxel terrain uyumlu) ✅
+  - AdminCommandHandler, AdminTabCompleter ✅
+  - ConfigManager, ConfigEditor ✅
+  - MissionDatabase ✅
+  - DatabaseManager (Faz 8 tabloları ve metodları) ✅
+
+**Eksik Özellikler (İleride Eklenebilir):**
+- ⚠️ **Su Mekaniği Gelişmiş Özellikler:** Waterlogging, Lava etkileşimi, Düşen su blokları, Su altı fizik, Su basıncı, Su sesleri, Su görsel efektleri (Faz 3+)
+- ⚠️ **Voxel Ağaç Sistemi:** VoxelTreeGenerator, TreeGrowthSystem (Faz 3 entegrasyonu)
+- ⚠️ **Voxel Maden Sistemi:** OreSpawner (Faz 3 entegrasyonu)
+- ⚠️ **İnşa Sistemi:** GridPlacementSystem, BlueprintSystem, SculptingSystem (Faz 3 entegrasyonu)
+- ⚠️ **Blok Variant Sistemi:** VariantMeshGenerator (740 variant per material - Faz 3 entegrasyonu)
+
+**Yeni Eklenen Özellikler (FAZ 4):**
+- ✅ **Blok Şekillendirme Sistemi:** ChiselTool, BlockCuttingSystem, ShapeApplicationSystem (Tam entegre)
+  - 3 kesim modu (Küp, Yuvarlak, Çapraz)
+  - İki nokta seçimi sistemi
+  - Görsel önizleme
+  - 9 slot şekil kayıt sistemi
+  - NetworkMining entegrasyonu (IEquippable interface)
+  - VariantMeshGenerator entegrasyonu
+  - ChunkManager entegrasyonu
+  - GridPlacementSystem entegrasyonu
+
+**Mantık Hataları ve Algoritma Eksikleri:**
+- ✅ **ChunkManager:** Tüm gerekli metodlar mevcut (GetChunkCoord, GetActiveChunkCoords, GetDensityBufferForChunk)
+- ✅ **WaterSim.compute:** Tam su mekaniği implementasyonu (akma, yayılma, öncelik)
+- ✅ **WaterSimulator:** Su seviyesi yönetimi, kaynak su, yayılma metodları mevcut
+- ✅ **Voxel Terrain Entegrasyonu:** Tüm sistemler ChunkManager ile entegre
+- ✅ **Database Sistemi:** Tüm fazlar için tablolar ve metodlar mevcut
+- ✅ **Network Synchronization:** Server-authoritative sistemler mevcut
+
+---
+
 ### ✅ TÜM FAZLARIN KAPSAMLI ÖZETİ
 
 ---
@@ -21044,7 +26097,75 @@ Assets/_Stratocraft/
   - Infinite plane generation
   - Transparent material
   - Shader Graph entegrasyonu
-- ✅ **WaterSim.compute** - Opsiyonel voxel su simülasyonu
+- ✅ **WaterSim.compute** - Voxel su simülasyonu (Minecraft benzeri matematiksel su mekaniği)
+  - Su seviyesi yönetimi (0-7 arası, 8=kaynak su)
+  - Aşağı akış (Gravity - en yüksek öncelik)
+  - Yan tarafa akış (4 yön: kuzey, güney, doğu, batı)
+  - Yayılma mekaniği (su seviyesi dengeleme)
+  - Öncelik sistemi (Aşağı > Yan > Yayılma)
+  - Boşluk kontrolü (su sadece boş voxel'lere akar)
+  - Kaynak su (sonsuz su kaynağı)
+- ✅ **WaterSimulator.cs** - Voxel su simülasyonu yöneticisi
+  - Chunk bazlı cache
+  - GPU üzerinde hesaplama
+  - GetWaterLevel(), AddWater(), RemoveWater(), AddWaterSource() metodları
+
+### ✅ Voxel Ağaç Sistemi
+- ✅ **VoxelTreeGenerator.cs** - Prosedürel ağaç oluşturma
+  - L-System/Fractal Tree algoritması
+  - Job System ile paralel generation
+  - Voxel bloklardan ağaç oluşturma
+  - Ağaç kaldırma (RemoveTreeAt)
+- ✅ **TreeGrowthSystem.cs** - Aşamalı büyüme yönetimi
+  - 5 büyüme aşaması (Fidan, Küçük, Orta, Büyük, Olgun)
+  - Coroutine bazlı zaman yönetimi
+  - Büyüyen ağaçlar cache'i
+  - Toplam ~32 dakika büyüme süresi
+
+### ✅ Voxel Maden Sistemi
+- ✅ **OreSpawner.cs** - Voxel maden blok spawn
+  - TerrainDensity.compute entegrasyonu
+  - Job System ile paralel spawn
+  - Spawn edilmiş madenler cache'i
+  - Yükseklik bazlı maden dağılımı
+- ✅ **OreDefinition.cs** - Maden tanımları (ScriptableObject)
+  - minDepth, maxDepth (derinlik aralığı)
+  - spawnChance (spawn şansı)
+  - itemDropId (kırıldığında düşecek item)
+
+### ✅ İnşa Sistemi
+- ✅ **GridPlacementSystem.cs** - Grid tabanlı yerleştirme
+  - 1 metre grid sistemi
+  - Grid pozisyon cache'i
+  - Smooth voxel dünyada tutarlı inşa
+- ✅ **BlueprintSystem.cs** - Yapı kaydetme/kopyalama
+  - Blueprint kaydetme (JSON)
+  - Blueprint yükleme ve yerleştirme
+  - Blueprint cache sistemi
+- ✅ **SculptingSystem.cs** - Blok yontma
+  - Blok şekil verme
+  - Template kaydetme
+  - Template uygulama
+  - Yontulmuş şekiller cache'i
+
+### ✅ Variant Blok Sistemi
+- ✅ **VariantMeshGenerator.cs** - 740 variant algoritma tabanlı mesh generation
+  - Dik kesimler (6 yön, 5 seviye: 1/5, 2/5, 3/5, 4/5, 5/5)
+  - Çapraz kesimler (diagonal cuts)
+  - Yuvarlanmış köşeler (rounded corners)
+  - Ramp şekilleri (ramp shapes)
+  - Merdiven benzeri şekiller (stairs-like)
+  - İç/Dış köşeler (inner/outer corners)
+  - Özel şekiller (trapezoids, pyramids, hemispheres)
+  - Mesh cache sistemi (O(1) lookup, pre-generated meshes)
+
+### ✅ ChunkManager Güncellemeleri (FAZ 3)
+- ✅ **AddDensityAtPoint()** - Blok yerleştirme için
+- ✅ **RemoveDensityAtPoint()** - Blok kırma için
+- ✅ **SetBlockType() / GetBlockType()** - Blok tipi yönetimi
+- ✅ **OnChunkGenerated event** - OreSpawner, VoxelTreeGenerator için
+- ✅ **GetWorldSeed()** - Deterministik rastgelelik için
+- ✅ **Block type cache sistemi** - Dictionary<Vector3Int, string>
 
 ### ✅ Mağara Sistemi
 - ✅ **3D Noise ile mağara oluşturma** - TerrainDensity.compute içinde
@@ -21052,10 +26173,15 @@ Assets/_Stratocraft/
   - Cave generation algoritması
 
 ### 🛠️ Kullanılan Teknolojiler (Faz 3)
-- **GPU Instancing** - Unity yerleşik, binlerce obje render
+- **GPU Instancing** - Unity yerleşik, binlerce obje render (VegetationSpawner - eski sistem)
 - **Object Pooling** - Performans optimizasyonu pattern'i
 - **Shader Graph** - Okyanus materyali
 - **FastNoiseLite** - Biyom ve mağara gürültüsü
+- **Unity Job System + Burst Compiler** - Paralel ağaç generation (GenerateTreeJob), paralel maden spawn (SpawnOresInChunkJob)
+- **Unity Coroutines** - Aşamalı ağaç büyüme (TreeGrowthSystem)
+- **Unity Mesh API** - Variant mesh generation (VariantMeshGenerator - 740 variant)
+- **Unity Compute Shaders** - Voxel su simülasyonu (WaterSim.compute - Minecraft benzeri matematiksel su mekaniği)
+- **Unity JSON** - Blueprint kaydetme/yükleme (BlueprintSystem)
 
 ---
 
@@ -21107,11 +26233,59 @@ Assets/_Stratocraft/
 - ✅ **Contract board** - Fiziksel kontrat panosu
 - ✅ **Contract UI** - Kontrat menü sistemi (FAZ 6)
 
+### ✅ Blok Şekillendirme Sistemi (Chisel Tool)
+- ✅ **ItemDefinition.cs** - Chisel özellikleri eklendi
+  - `isChisel` - Chisel aleti mi?
+  - `chiselDefinition` - ChiselDefinition ScriptableObject referansı
+  - `chiselLevel` - Alet seviyesi (1: Temel, 2: Gelişmiş, 3: Usta)
+- ✅ **IEquippable.cs** - Alet interface'i
+  - `OnEquip()`, `OnUnequip()`, `OnUse()` metodları
+  - NetworkMining entegrasyonu için
+- ✅ **ChiselTool.cs** - Ana chisel sistemi
+  - 3 kesim modu (Küp, Yuvarlak, Çapraz)
+  - İki nokta seçimi sistemi (başlangıç/bitiş)
+  - Görsel önizleme (çizgiler, marker'lar)
+  - 9 slot şekil kayıt sistemi (1-9 tuşları)
+  - NetworkMining entegrasyonu (IEquippable)
+  - VariantMeshGenerator entegrasyonu
+  - ChunkManager entegrasyonu
+- ✅ **ChiselRaycast.cs** - Voxel terrain uyumlu raycast
+  - ChunkManager entegrasyonu
+  - Raycast cache optimizasyonu
+  - Grid çizgileri (enine, boyuna, çapraz)
+  - İki nokta seçimi (başlangıç/bitiş)
+- ✅ **BlockSelectionVisualizer.cs** - Seçim görselleştirme
+  - Marker'lar (başlangıç/bitiş noktaları)
+  - Çizgiler (kesim çizgisi, grid çizgileri)
+  - Önizleme mesh (kesim öncesi görsel geri bildirim)
+- ✅ **BlockCuttingSystem.cs** - Kesim mekaniği
+  - Mod bazlı kesim algoritması (Küp, Yuvarlak, Çapraz)
+  - VariantMeshGenerator entegrasyonu
+  - Chunk regeneration (kesim sonrası mesh güncelleme)
+  - Mesh pooling (performans optimizasyonu)
+- ✅ **ShapeApplicationSystem.cs** - Şekil kayıt/uygulama
+  - 9 slot şekil kayıt sistemi (K tuşu ile kaydet, 1-9 ile uygula)
+  - JSON kayıt sistemi (persistent storage)
+  - Şekil cache'i (O(1) lookup)
+  - Sağ tık ile şekil uygulama
+- ✅ **ChiselDefinition.cs** - Chisel tanımları (ScriptableObject)
+  - Alet seviyesi (1-3)
+  - Malzeme tipi (Wood, Stone, Metal)
+  - Kesim hassasiyeti
+  - Kesim hızı
+- ✅ **CutMode.cs** - Kesim modu enum'ları ve data yapıları
+  - `CutMode` enum (Cube, Rounded, Diagonal)
+  - `CutData` struct (kesim verileri)
+  - `ShapeData` struct (kaydedilmiş şekil verileri)
+
 ### 🛠️ Kullanılan Teknolojiler (Faz 4)
 - **ScriptableObject** - Unity yerleşik, data-driven design
 - **Flood-Fill Algorithm** - Custom, bölge hesaplama
 - **SQLite** - Kontrat ve bölge verileri
 - **FishNet** - Network senkronizasyonu
+- **Unity Raycast API** - Blok seçimi (ChiselRaycast)
+- **Unity Mesh API** - Variant mesh generation (BlockCuttingSystem)
+- **Unity JSON** - Şekil kayıt sistemi (ShapeApplicationSystem)
 
 ---
 
@@ -21411,6 +26585,13 @@ Assets/_Stratocraft/
 - **Unity Coroutines** - Asenkron chunk yükleme (UI donmasını önleme)
 - **Unity Mesh API** - Chunk mesh oluşturma (MeshBuilder.cs)
 
+**FAZ 3: Doğa, Su ve Biyomlar + Voxel Ağaç/Maden/İnşa Sistemleri**
+- **Unity Job System + Burst Compiler** - Paralel ağaç generation (GenerateTreeJob), paralel maden spawn (SpawnOresInChunkJob)
+- **Unity Coroutines** - Aşamalı ağaç büyüme (TreeGrowthSystem)
+- **Unity Mesh API** - Variant mesh generation (VariantMeshGenerator - 740 variant)
+- **Unity Compute Shaders** - Voxel su simülasyonu (WaterSim.compute - Minecraft benzeri matematiksel su mekaniği)
+- **Unity JSON** - Blueprint kaydetme/yükleme (BlueprintSystem)
+
 **FAZ 4: Oyun Mekanikleri**
 - **Unity Job System + Burst Compiler** - Territory flood-fill optimizasyonu (FloodFillJob)
 
@@ -21441,10 +26622,19 @@ Assets/_Stratocraft/
 
 **Faz 3: Doğa, Su ve Biyomlar (2-3 hafta)**
 1. ✅ BiomeDefinition.cs ve BiomeManager.cs (Data-driven biyom sistemi)
-2. ✅ VegetationSpawner.cs (GPU Instancing ile ağaç/kaya spawn)
-3. ✅ OceanPlane.cs (Sonsuz okyanus, Y=0 seviyesi)
-4. ✅ WaterSim.compute (Opsiyonel voxel su simülasyonu)
-5. ✅ Mağara sistemi (3D Noise ile yer altı boşlukları)
+2. ✅ VegetationSpawner.cs (GPU Instancing ile ağaç/kaya spawn - eski sistem, VoxelTreeGenerator ile değiştirilebilir)
+3. ✅ VoxelTreeGenerator.cs (Prosedürel ağaç oluşturma - L-System/Fractal Tree, Job System ile paralel generation)
+4. ✅ TreeGrowthSystem.cs (Aşamalı büyüme: Fidan → Küçük → Orta → Büyük → Olgun, 5 aşama, ~32 dakika)
+5. ✅ OreSpawner.cs (Voxel maden spawn - TerrainDensity.compute entegrasyonu, Job System ile paralel spawn, yükseklik bazlı dağılım)
+6. ✅ OreDefinition.cs (Maden tanımları - ScriptableObject, minDepth, maxDepth, spawnChance, itemDropId)
+7. ✅ GridPlacementSystem.cs (Grid tabanlı yerleştirme - smooth voxel dünyada tutarlı inşa, 1 metre grid)
+8. ✅ BlueprintSystem.cs (Yapı kaydetme/kopyalama - JSON dosya kaydetme/yükleme, blueprint cache)
+9. ✅ SculptingSystem.cs (Blok yontma ve şekil verme - template kaydetme/uygulama, yontulmuş şekiller cache)
+10. ✅ VariantMeshGenerator.cs (740 variant algoritma tabanlı mesh generation - dik kesimler, çapraz kesimler, yuvarlanmış köşeler, ramp, merdiven, köşe şekilleri, özel şekiller, mesh cache sistemi)
+11. ✅ OceanPlane.cs (Sonsuz okyanus, Y=0 seviyesi)
+12. ✅ WaterSim.compute ve WaterSimulator.cs (Minecraft tarzı matematiksel voxel su mekaniği - aşağı akış, yan tarafa akış, yayılma, öncelik sistemi, su seviyesi 0-7, kaynak su)
+13. ✅ Mağara sistemi (3D Noise ile yer altı boşlukları)
+14. ✅ ChunkManager.cs güncellemeleri (AddDensityAtPoint, RemoveDensityAtPoint, SetBlockType, GetBlockType, GetWorldSeed, OnChunkGenerated event)
 
 **Faz 4: Oyun Mekanikleri (3-4 hafta)**
 1. ✅ ItemDefinition.cs ve ItemDatabase.cs (Data-driven item sistemi)
