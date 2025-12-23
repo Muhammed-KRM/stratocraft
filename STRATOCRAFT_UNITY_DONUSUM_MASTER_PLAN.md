@@ -155,7 +155,63 @@ Assets/
 │   │   │
 │   │   ├── Recipes/                    (Tarifler)
 │   │   │   ├── Rituals/                (Batarya kurulum şemaları)
-│   │   │   └── Crafting/
+│   │   │   ├── Crafting/               (CraftingRecipe.cs - ADIM 1.6)
+│   │   │   ├── Cooking/                 (CookingRecipe.cs - ADIM 1.14)
+│   │   │   └── Smelting/               (SmeltingRecipe.cs - ADIM 1.24)
+│   │   │
+│   │   ├── NPCs/                       (NPC Tanımları - ADIM 1.10)
+│   │   │   └── NPCDefinition.cs
+│   │   │
+│   │   ├── Mounts/                     (Binek Tanımları - ADIM 1.11)
+│   │   │   ├── SaddleDefinition.cs
+│   │   │   └── MountArmorDefinition.cs
+│   │   │
+│   │   ├── Bosses/                     (Boss Tanımları - ADIM 1.12)
+│   │   │   ├── BossArenaDefinition.cs
+│   │   │   └── BossLootTableDefinition.cs
+│   │   │
+│   │   ├── Mobs/                       (Mob Tanımları - ADIM 1.13)
+│   │   │   ├── MobClassDefinition.cs
+│   │   │   └── MobArmorDefinition.cs
+│   │   │
+│   │   ├── Food/                       (Yemek Tanımları - ADIM 1.14)
+│   │   │   ├── FoodDefinition.cs
+│   │   │   └── CookingRecipe.cs
+│   │   │
+│   │   ├── StatusEffects/              (Durum Efekt Tanımları - ADIM 1.15)
+│   │   │   ├── StatusEffectDefinition.cs
+│   │   │   ├── DiseaseDefinition.cs
+│   │   │   └── CureItemDefinition.cs
+│   │   │
+│   │   ├── Dungeons/                   (Zindan Tanımları - ADIM 1.17)
+│   │   │   └── DungeonDefinition.cs
+│   │   │
+│   │   ├── Spells/                     (Büyü Tanımları - ADIM 1.18)
+│   │   │   └── SpellDefinition.cs
+│   │   │
+│   │   ├── Tech/                       (Teknoloji Tanımları - ADIM 1.19)
+│   │   │   └── TechNodeDefinition.cs
+│   │   │
+│   │   ├── Vehicles/                   (Araç Tanımları - ADIM 1.20)
+│   │   │   └── VehicleDefinition.cs
+│   │   │
+│   │   ├── Pets/                       (Pet Tanımları - ADIM 1.21)
+│   │   │   └── PetDefinition.cs
+│   │   │
+│   │   ├── Crops/                      (Bitki Tanımları - ADIM 1.22)
+│   │   │   └── CropDefinition.cs
+│   │   │
+│   │   ├── Fish/                       (Balık Tanımları - ADIM 1.23)
+│   │   │   └── FishDefinition.cs
+│   │   │
+│   │   ├── Chests/                     (Sandık Tanımları - ADIM 1.25)
+│   │   │   └── ChestDefinition.cs
+│   │   │
+│   │   ├── Furniture/                  (Mobilya Tanımları - ADIM 1.8)
+│   │   │   └── FurnitureDefinition.cs
+│   │   │
+│   │   ├── Enchantments/               (Büyü Tanımları - ADIM 1.9)
+│   │   │   └── EnchantmentDefinition.cs
 │   │   │
 │   │   ├── Mobs/                       (Canlı Verileri)
 │   │   │   ├── Stats/                  (TitanHP.asset)
@@ -199,12 +255,77 @@ Assets/
 │   │   │   ├── Clans/                  (TerritoryManager.cs)
 │   │   │   ├── Combat/                 (Damage, Traps)
 │   │   │   ├── Economy/                (ContractManager.cs)
-│   │   │   └── Building/               (İnşa Sistemi)
-│   │   │       ├── ChiselTool.cs       (Blok şekillendirme aleti)
-│   │   │       ├── ChiselRaycast.cs    (Voxel terrain raycast)
-│   │   │       ├── BlockSelectionVisualizer.cs (Seçim görselleştirme)
-│   │   │       ├── BlockCuttingSystem.cs (Kesim mekaniği)
-│   │   │       └── ShapeApplicationSystem.cs (Şekil kayıt/uygulama)
+│   │   │   ├── Building/               (İnşa Sistemi)
+│   │   │   │   ├── ChiselTool.cs       (Blok şekillendirme aleti)
+│   │   │   │   ├── ChiselRaycast.cs    (Voxel terrain raycast)
+│   │   │   │   ├── BlockSelectionVisualizer.cs (Seçim görselleştirme)
+│   │   │   │   ├── BlockCuttingSystem.cs (Kesim mekaniği)
+│   │   │   │   └── ShapeApplicationSystem.cs (Şekil kayıt/uygulama)
+│   │   │   ├── Crafting/               (Crafting Sistemi - ADIM 1.6)
+│   │   │   │   ├── CraftingTable.cs
+│   │   │   │   └── CraftingManager.cs
+│   │   │   ├── Inventory/              (Envanter Sistemi - ADIM 1.7)
+│   │   │   │   ├── InventorySlot.cs
+│   │   │   │   └── PlayerInventory.cs
+│   │   │   ├── Furniture/              (Furniture Sistemi - ADIM 1.8)
+│   │   │   │   ├── FurniturePlacer.cs
+│   │   │   │   └── FurnitureInteraction.cs
+│   │   │   ├── Tools/                  (İşlevsel Item'ler - ADIM 1.9)
+│   │   │   │   ├── ToolDurability.cs
+│   │   │   │   ├── RepairStation.cs
+│   │   │   │   ├── UpgradeStation.cs
+│   │   │   │   └── EnchantmentSystem.cs
+│   │   │   ├── NPCs/                   (NPC Sistemi - ADIM 1.10)
+│   │   │   │   ├── NPCAI.cs
+│   │   │   │   ├── VillagerTrading.cs
+│   │   │   │   ├── DialogueSystem.cs
+│   │   │   │   └── VillageGenerator.cs
+│   │   │   ├── Mounts/                 (Gelişmiş Binek Sistemi - ADIM 1.11)
+│   │   │   │   ├── MountInventory.cs
+│   │   │   │   ├── MountArmor.cs
+│   │   │   │   ├── MountAbilities.cs
+│   │   │   │   └── MountLeveling.cs
+│   │   │   ├── Bosses/                 (Gelişmiş Boss Sistemi - ADIM 1.12)
+│   │   │   │   ├── DragonAI.cs
+│   │   │   │   ├── BossArena.cs
+│   │   │   │   ├── BossLootTable.cs
+│   │   │   │   ├── BossPhaseSystem.cs
+│   │   │   │   └── BossSummoning.cs
+│   │   │   ├── Mobs/                   (Özel Canlı Tipleri - ADIM 1.13)
+│   │   │   │   ├── MobAbilitySystem.cs
+│   │   │   │   ├── MobArmorSystem.cs
+│   │   │   │   └── MobLeveling.cs
+│   │   │   ├── Food/                   (Yemek ve Açlık Sistemi - ADIM 1.14)
+│   │   │   │   ├── HungerSystem.cs
+│   │   │   │   └── CookingStation.cs
+│   │   │   ├── StatusEffects/          (Hastalık ve Durum Sistemi - ADIM 1.15)
+│   │   │   │   ├── StatusEffectManager.cs
+│   │   │   │   └── DiseaseSystem.cs
+│   │   │   ├── Weather/               (Zaman ve Hava Sistemi - ADIM 1.16)
+│   │   │   │   ├── WeatherSystem.cs
+│   │   │   │   ├── SeasonSystem.cs
+│   │   │   │   ├── TemperatureSystem.cs
+│   │   │   │   └── WeatherEffects.cs
+│   │   │   ├── Dungeons/               (Zindan ve Mağara Sistemi - ADIM 1.17)
+│   │   │   │   ├── DungeonGenerator.cs
+│   │   │   │   └── DungeonEntrance.cs
+│   │   │   ├── Magic/                 (Magic ve Büyü Sistemi - ADIM 1.18)
+│   │   │   │   ├── ManaSystem.cs
+│   │   │   │   └── SpellCasting.cs
+│   │   │   ├── Tech/                  (Teknoloji Ağacı - ADIM 1.19)
+│   │   │   │   └── TechTreeManager.cs
+│   │   │   ├── Vehicles/              (Araç ve Ulaşım Sistemi - ADIM 1.20)
+│   │   │   │   └── VehicleController.cs
+│   │   │   ├── Pets/                  (Pet ve Ev Hayvanı Sistemi - ADIM 1.21)
+│   │   │   │   └── PetSystem.cs
+│   │   │   ├── Farming/               (Tarım ve Çiftçilik Sistemi - ADIM 1.22)
+│   │   │   │   └── FarmingSystem.cs
+│   │   │   ├── Fishing/               (Balıkçılık Sistemi - ADIM 1.23)
+│   │   │   │   └── FishingSystem.cs
+│   │   │   ├── Smelting/              (Madencilik ve Eritme Sistemi - ADIM 1.24)
+│   │   │   │   └── SmeltingSystem.cs
+│   │   │   └── Storage/               (Depolama ve Sandık Sistemi - ADIM 1.25)
+│   │   │       └── ChestInventory.cs
 │   │   │
 │   │   ├── AI/                         (YAPAY ZEKA)
 │   │   │   ├── Core/                   (Panda BT entegrasyonu)
@@ -11757,6 +11878,2732 @@ void ShowErrorMessage(string message) {
 ---
 
 
+
+---
+
+## 🛠️ ADIM 1.6: CRAFTING SİSTEMİ (ÜRETİM SİSTEMİ)
+
+> **✅ YENİ SİSTEM:** Oyuncuların malzemeleri birleştirerek yeni item'lar üretmesini sağlayan crafting sistemi.  
+> **Entegrasyon:** PlayerInventory, ItemDatabase, ChunkManager, ServiceLocator  
+> **Faz:** 4 (Oyun Mekanikleri)
+
+### 1.6.1 Sistem Genel Bakış
+
+**Amaç:**
+Oyuncuların malzemeleri birleştirerek yeni item'lar üretmesini sağlamak.
+
+**Temel Özellikler:**
+1. **Crafting Table/Workbench:** Farklı seviyelerde crafting yapılabilir
+2. **Recipe Sistemi:** ScriptableObject tabanlı tarifler
+3. **Crafting UI:** Grid-based, drag-drop interface
+4. **Recipe Book:** Öğrenilen tarifler
+5. **Crafting Animasyonu:** Oyuncu animasyonu
+6. **Crafting Süresi:** Zaman bazlı üretim
+7. **Malzeme Kontrolü:** Envanter kontrolü
+8. **Crafting Sonucu:** Item spawn
+
+---
+
+### 1.6.2 CraftingRecipe.cs - Recipe Tanımları
+
+**Dosya:** `_Stratocraft/Data/Recipes/Crafting/CraftingRecipe.cs`
+
+**Amaç:** Crafting recipe tanımlarını ScriptableObject olarak saklamak
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+
+/// <summary>
+/// ✅ Crafting recipe tanımları (ScriptableObject)
+/// </summary>
+[CreateAssetMenu(fileName = "CraftingRecipe", menuName = "Stratocraft/Crafting Recipe")]
+public class CraftingRecipe : ScriptableObject {
+    [Header("Kimlik")]
+    public string recipeId;
+    public string recipeName;
+    
+    [Header("Sonuç")]
+    public ItemDefinition resultItem;
+    public int resultAmount = 1;
+    
+    [Header("Malzemeler")]
+    public List<RecipeIngredient> ingredients;
+    
+    [Header("Gereksinimler")]
+    public CraftingTableLevel requiredTableLevel;
+    public float craftingTime = 1.0f; // saniye
+}
+
+/// <summary>
+/// ✅ Recipe malzemesi
+/// </summary>
+[System.Serializable]
+public class RecipeIngredient {
+    public ItemDefinition item;
+    public int amount;
+}
+
+/// <summary>
+/// ✅ Crafting table seviyeleri
+/// </summary>
+public enum CraftingTableLevel {
+    None,      // El crafting
+    Basic,     // Level 1 workbench
+    Advanced,  // Level 2 workbench
+    Master     // Level 3 workbench
+}
+```
+
+---
+
+### 1.6.3 CraftingTable.cs - Crafting Table Yapısı
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Crafting/CraftingTable.cs`
+
+**Amaç:** Crafting table yapısını ve etkileşimini yönetmek
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using FishNet.Object;
+using System.Collections.Generic;
+
+/// <summary>
+/// ✅ Crafting table - OPTİMİZE: ServiceLocator, Cache, ChunkManager entegrasyonu
+/// </summary>
+public class CraftingTable : NetworkBehaviour, IInteractable {
+    [Header("Crafting Table Ayarları")]
+    public CraftingTableLevel tableLevel = CraftingTableLevel.Basic;
+    public float interactionRange = 3f;
+    
+    // ✅ OPTİMİZE: ServiceLocator entegrasyonu
+    private CraftingManager _craftingManager;
+    private ChunkManager _chunkManager;
+    
+    // ✅ OPTİMİZE: Recipe cache (O(1) lookup)
+    private Dictionary<string, CraftingRecipe> _recipeCache = new Dictionary<string, CraftingRecipe>();
+    
+    void Awake() {
+        // ✅ ServiceLocator'dan sistemleri al
+        _craftingManager = ServiceLocator.Instance?.Get<CraftingManager>();
+        _chunkManager = ServiceLocator.Instance?.Get<ChunkManager>();
+        
+        if (_craftingManager == null) {
+            Debug.LogWarning("[CraftingTable] CraftingManager bulunamadı!");
+        }
+    }
+    
+    void Start() {
+        // ✅ Recipe cache'i doldur
+        LoadRecipeCache();
+    }
+    
+    /// <summary>
+    /// ✅ OPTİMİZE: Recipe cache yükleme
+    /// </summary>
+    void LoadRecipeCache() {
+        CraftingRecipe[] allRecipes = Resources.LoadAll<CraftingRecipe>("CraftingRecipes");
+        foreach (var recipe in allRecipes) {
+            if (!string.IsNullOrEmpty(recipe.recipeId)) {
+                _recipeCache[recipe.recipeId] = recipe;
+            }
+        }
+        Debug.Log($"[CraftingTable] {_recipeCache.Count} recipe cache'lendi");
+    }
+    
+    /// <summary>
+    /// ✅ IInteractable interface
+    /// </summary>
+    public void OnInteract(NetworkObject player) {
+        if (!IsServer) return;
+        
+        // ✅ ChunkManager entegrasyonu (voxel terrain uyumlu)
+        Vector3 tablePos = transform.position;
+        Vector3Int chunkCoord = _chunkManager?.GetChunkCoord(tablePos) ?? Vector3Int.zero;
+        
+        // ✅ Crafting UI aç
+        RpcOpenCraftingUI(player.Owner, tableLevel);
+    }
+    
+    /// <summary>
+    /// ✅ Client'lara crafting UI aç
+    /// </summary>
+    [ObserversRpc]
+    void RpcOpenCraftingUI(NetworkConnection conn, CraftingTableLevel level) {
+        // ✅ UI Manager'dan crafting UI aç
+        CraftingUI craftingUI = ServiceLocator.Instance?.Get<CraftingUI>();
+        craftingUI?.OpenCraftingTable(level, _recipeCache);
+    }
+    
+    /// <summary>
+    /// ✅ OPTİMİZE: Recipe lookup (O(1) cache)
+    /// </summary>
+    public CraftingRecipe GetRecipe(string recipeId) {
+        return _recipeCache.TryGetValue(recipeId, out CraftingRecipe recipe) ? recipe : null;
+    }
+}
+```
+
+---
+
+### 1.6.4 CraftingManager.cs - Crafting Mantığı
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Crafting/CraftingManager.cs`
+
+**Amaç:** Crafting mantığını yönetmek
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using FishNet.Object;
+using System.Collections.Generic;
+using System.Linq;
+
+/// <summary>
+/// ✅ Crafting Manager - OPTİMİZE: ServiceLocator, Cache, Network optimizasyonu
+/// </summary>
+public class CraftingManager : NetworkBehaviour {
+    // ✅ OPTİMİZE: ServiceLocator entegrasyonu
+    private ItemDatabase _itemDatabase;
+    private PlayerInventory _playerInventory;
+    
+    // ✅ OPTİMİZE: Recipe database cache (O(1) lookup)
+    private Dictionary<string, CraftingRecipe> _recipeDatabase = new Dictionary<string, CraftingRecipe>();
+    
+    // ✅ OPTİMİZE: Learned recipes cache (player -> recipes)
+    private Dictionary<uint, HashSet<string>> _learnedRecipesCache = new Dictionary<uint, HashSet<string>>();
+    
+    void Awake() {
+        // ✅ ServiceLocator'a kaydet
+        ServiceLocator.Instance?.Register<CraftingManager>(this);
+    }
+    
+    void Start() {
+        // ✅ Service referanslarını al
+        _itemDatabase = ServiceLocator.Instance?.Get<ItemDatabase>();
+        LoadAllRecipes();
+    }
+    
+    /// <summary>
+    /// ✅ OPTİMİZE: Tüm recipe'leri yükle ve cache'le
+    /// </summary>
+    void LoadAllRecipes() {
+        CraftingRecipe[] allRecipes = Resources.LoadAll<CraftingRecipe>("CraftingRecipes");
+        foreach (var recipe in allRecipes) {
+            if (!string.IsNullOrEmpty(recipe.recipeId)) {
+                _recipeDatabase[recipe.recipeId] = recipe;
+            }
+        }
+        Debug.Log($"[CraftingManager] {_recipeDatabase.Count} recipe yüklendi");
+    }
+    
+    /// <summary>
+    /// ✅ Craft item (server-authoritative)
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void CmdCraftItem(NetworkObject player, string recipeId, CraftingTableLevel tableLevel) {
+        if (!IsServer) return;
+        
+        // ✅ Recipe lookup (O(1) cache)
+        if (!_recipeDatabase.TryGetValue(recipeId, out CraftingRecipe recipe)) {
+            Debug.LogWarning($"[CraftingManager] Recipe bulunamadı: {recipeId}");
+            return;
+        }
+        
+        // ✅ Table level kontrolü
+        if (tableLevel < recipe.requiredTableLevel) {
+            Debug.LogWarning($"[CraftingManager] Yetersiz crafting table seviyesi!");
+            return;
+        }
+        
+        // ✅ Player inventory kontrolü
+        _playerInventory = player.GetComponent<PlayerInventory>();
+        if (_playerInventory == null) return;
+        
+        // ✅ Malzeme kontrolü
+        if (!HasRequiredIngredients(player, recipe)) {
+            Debug.LogWarning($"[CraftingManager] Yetersiz malzeme!");
+            return;
+        }
+        
+        // ✅ Malzemeleri çıkar
+        RemoveIngredients(player, recipe);
+        
+        // ✅ Item'ı ekle
+        _playerInventory.CmdAddItem(recipe.resultItem.itemID, recipe.resultAmount);
+        
+        Debug.Log($"[CraftingManager] {recipe.recipeName} craft edildi");
+    }
+    
+    /// <summary>
+    /// ✅ OPTİMİZE: Malzeme kontrolü (cache ile)
+    /// </summary>
+    bool HasRequiredIngredients(NetworkObject player, CraftingRecipe recipe) {
+        _playerInventory = player.GetComponent<PlayerInventory>();
+        if (_playerInventory == null) return false;
+        
+        foreach (var ingredient in recipe.ingredients) {
+            int playerAmount = _playerInventory.GetItemCount(ingredient.item.itemID);
+            if (playerAmount < ingredient.amount) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /// <summary>
+    /// ✅ OPTİMİZE: Malzemeleri çıkar
+    /// </summary>
+    void RemoveIngredients(NetworkObject player, CraftingRecipe recipe) {
+        _playerInventory = player.GetComponent<PlayerInventory>();
+        if (_playerInventory == null) return;
+        
+        foreach (var ingredient in recipe.ingredients) {
+            _playerInventory.CmdRemoveItem(ingredient.item.itemID, ingredient.amount);
+        }
+    }
+    
+    /// <summary>
+    /// ✅ OPTİMİZE: Recipe lookup (O(1))
+    /// </summary>
+    public CraftingRecipe GetRecipe(string recipeId) {
+        return _recipeDatabase.TryGetValue(recipeId, out CraftingRecipe recipe) ? recipe : null;
+    }
+}
+```
+
+---
+
+### 1.6.5 CraftingUI.cs - Crafting Arayüzü
+
+**Dosya:** `_Stratocraft/Scripts/UI/CraftingUI.cs`
+
+**Amaç:** Crafting UI'ı yönetmek
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using UnityEngine.UI;
+using System.Collections.Generic;
+
+/// <summary>
+/// ✅ Crafting UI - OPTİMİZE: UI pooling, async loading
+/// </summary>
+public class CraftingUI : MonoBehaviour {
+    [Header("UI Referansları")]
+    public GameObject craftingPanel;
+    public Transform recipeListParent;
+    public GameObject recipeItemPrefab;
+    
+    // ✅ OPTİMİZE: UI element pooling
+    private Queue<GameObject> _recipeItemPool = new Queue<GameObject>();
+    private List<GameObject> _activeRecipeItems = new List<GameObject>();
+    
+    // ✅ OPTİMİZE: ServiceLocator entegrasyonu
+    private CraftingManager _craftingManager;
+    private PlayerInventory _playerInventory;
+    
+    void Awake() {
+        ServiceLocator.Instance?.Register<CraftingUI>(this);
+    }
+    
+    void Start() {
+        _craftingManager = ServiceLocator.Instance?.Get<CraftingManager>();
+        _playerInventory = ServiceLocator.Instance?.Get<PlayerInventory>();
+    }
+    
+    /// <summary>
+    /// ✅ OPTİMİZE: Crafting table aç (cache ile)
+    /// </summary>
+    public void OpenCraftingTable(CraftingTableLevel level, Dictionary<string, CraftingRecipe> availableRecipes) {
+        craftingPanel.SetActive(true);
+        RefreshRecipeList(level, availableRecipes);
+    }
+    
+    /// <summary>
+    /// ✅ OPTİMİZE: Recipe listesi yenile (pooling ile)
+    /// </summary>
+    void RefreshRecipeList(CraftingTableLevel level, Dictionary<string, CraftingRecipe> availableRecipes) {
+        // ✅ Mevcut item'ları pool'a geri gönder
+        foreach (var item in _activeRecipeItems) {
+            ReturnToPool(item);
+        }
+        _activeRecipeItems.Clear();
+        
+        // ✅ Yeni item'ları göster
+        foreach (var recipe in availableRecipes.Values) {
+            if (recipe.requiredTableLevel <= level) {
+                GameObject item = GetFromPool();
+                item.transform.SetParent(recipeListParent);
+                item.SetActive(true);
+                _activeRecipeItems.Add(item);
+                
+                // ✅ Recipe bilgilerini göster
+                RecipeItemUI itemUI = item.GetComponent<RecipeItemUI>();
+                itemUI?.Setup(recipe, _playerInventory);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// ✅ OPTİMİZE: Object pooling
+    /// </summary>
+    GameObject GetFromPool() {
+        if (_recipeItemPool.Count > 0) {
+            return _recipeItemPool.Dequeue();
+        }
+        return Instantiate(recipeItemPrefab);
+    }
+    
+    /// <summary>
+    /// ✅ Pool'a geri gönder
+    /// </summary>
+    void ReturnToPool(GameObject item) {
+        item.SetActive(false);
+        _recipeItemPool.Enqueue(item);
+    }
+}
+```
+
+---
+
+### 1.6.6 Dosya Yapısı
+
+**Yeni Dosyalar:**
+```
+_Stratocraft/
+├── Data/
+│   └── Recipes/
+│       └── Crafting/
+│           └── CraftingRecipe.cs (ScriptableObject)
+│
+├── Scripts/
+│   ├── Systems/
+│   │   └── Crafting/
+│   │       ├── CraftingTable.cs
+│   │       └── CraftingManager.cs
+│   │
+│   └── UI/
+│       └── CraftingUI.cs
+```
+
+---
+
+### 1.6.7 Entegrasyonlar
+
+**ServiceLocator:**
+- `CraftingManager` → `ServiceLocator.Instance.Register<CraftingManager>(this)`
+- `CraftingUI` → `ServiceLocator.Instance.Register<CraftingUI>(this)`
+
+**ChunkManager:**
+- Crafting table pozisyonu chunk koordinatına çevrilir
+- Voxel terrain uyumlu
+
+**PlayerInventory:**
+- Malzeme kontrolü için `GetItemCount()` kullanılır
+- Item ekleme/çıkarma için `CmdAddItem()` / `CmdRemoveItem()` kullanılır
+
+**ItemDatabase:**
+- Recipe lookup için kullanılır
+
+---
+
+### 1.6.8 Optimizasyonlar
+
+**✅ Dictionary Cache:**
+- Recipe lookup: O(1) complexity
+- Learned recipes cache: Player bazlı
+
+**✅ UI Pooling:**
+- Recipe item UI elementleri pool'lanır
+- Performans optimizasyonu
+
+**✅ Network Optimizasyonu:**
+- Server-authoritative crafting
+- `ServerRpc` ve `ObserversRpc` kullanımı
+
+---
+
+## 🛠️ ADIM 1.7: KAPSAMLI ENVANTER SİSTEMİ
+
+> **✅ YENİ SİSTEM:** Oyuncuların item'ları taşıması, organize etmesi ve kullanması için kapsamlı envanter sistemi.  
+> **Entegrasyon:** ItemDatabase, DatabaseManager, ServiceLocator, CraftingManager  
+> **Faz:** 4 (Oyun Mekanikleri)
+
+### 1.7.1 Sistem Genel Bakış
+
+**Amaç:**
+Oyuncuların item'ları taşıması, organize etmesi ve kullanması için kapsamlı envanter sistemi.
+
+**Temel Özellikler:**
+1. **Player Inventory:** Grid-based, 27-36 slot
+2. **Hotbar:** 9 slot, 1-9 tuşları
+3. **Envanter UI:** Drag-drop, shift-click
+4. **Item Stacking:** maxStack kontrolü
+5. **Item Sorting:** Kategori bazlı
+6. **Ağırlık Sistemi:** Weight limit
+7. **Kategoriler:** Material, Weapon, Tool, vb.
+8. **Quick Slot:** Hızlı erişim
+
+---
+
+### 1.7.2 InventorySlot.cs - Slot Veri Yapısı
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Inventory/InventorySlot.cs`
+
+**Amaç:** Inventory slot veri yapısı
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+
+/// <summary>
+/// ✅ Inventory slot - OPTİMİZE: Temiz kod, data structure
+/// </summary>
+[System.Serializable]
+public class InventorySlot {
+    public string itemId = "";
+    public int amount = 0;
+    public int slotIndex = -1;
+    
+    public bool IsEmpty() => string.IsNullOrEmpty(itemId) || amount <= 0;
+    
+    public void SetItem(string id, int amt) {
+        itemId = id;
+        amount = amt;
+    }
+    
+    public void Clear() {
+        itemId = "";
+        amount = 0;
+    }
+    
+    public void AddAmount(int amt) {
+        amount += amt;
+    }
+    
+    public void RemoveAmount(int amt) {
+        amount -= amt;
+        if (amount <= 0) Clear();
+    }
+}
+```
+
+---
+
+### 1.7.3 PlayerInventory.cs - Envanter Mantığı
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Inventory/PlayerInventory.cs`
+
+**Amaç:** Player envanter mantığını yönetmek
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using FishNet.Object;
+using FishNet.Object.Synchronizing;
+using System.Collections.Generic;
+using System.Linq;
+
+/// <summary>
+/// ✅ Player Inventory - OPTİMİZE: ServiceLocator, Cache, Network optimizasyonu
+/// </summary>
+public class PlayerInventory : NetworkBehaviour {
+    [Header("Envanter Ayarları")]
+    [SyncVar] private int _inventorySize = 27; // 3x9 grid
+    [SyncVar] private int _hotbarSize = 9;
+    [SyncVar] private float _currentWeight = 0f;
+    [SyncVar] private float _maxWeight = 100f;
+    
+    // ✅ OPTİMİZE: SyncList kullan (network synchronization)
+    private SyncList<InventorySlot> _slots = new SyncList<InventorySlot>();
+    private SyncList<InventorySlot> _hotbar = new SyncList<InventorySlot>();
+    
+    // ✅ OPTİMİZE: Item lookup cache (O(1) lookup)
+    private Dictionary<string, int> _itemCountCache = new Dictionary<string, int>();
+    
+    // ✅ OPTİMİZE: ServiceLocator entegrasyonu
+    private ItemDatabase _itemDatabase;
+    private DatabaseManager _databaseManager;
+    
+    // ✅ OPTİMİZE: Selected hotbar slot
+    [SyncVar] private int _selectedHotbarSlot = 0;
+    
+    void Awake() {
+        // ✅ ServiceLocator'a kaydet
+        ServiceLocator.Instance?.Register<PlayerInventory>(this);
+    }
+    
+    void Start() {
+        // ✅ Service referanslarını al
+        _itemDatabase = ServiceLocator.Instance?.Get<ItemDatabase>();
+        _databaseManager = ServiceLocator.Instance?.Get<DatabaseManager>();
+        
+        // ✅ Envanteri başlat
+        InitializeInventory();
+    }
+    
+    /// <summary>
+    /// ✅ OPTİMİZE: Envanter başlatma
+    /// </summary>
+    void InitializeInventory() {
+        if (!IsServer) return;
+        
+        // ✅ Slot'ları oluştur
+        for (int i = 0; i < _inventorySize; i++) {
+            _slots.Add(new InventorySlot { slotIndex = i });
+        }
+        
+        for (int i = 0; i < _hotbarSize; i++) {
+            _hotbar.Add(new InventorySlot { slotIndex = i });
+        }
+        
+        // ✅ Veritabanından yükle (async)
+        LoadInventoryFromDatabase();
+    }
+    
+    /// <summary>
+    /// ✅ OPTİMİZE: Veritabanından yükle (async - UI donmasını önler)
+    /// </summary>
+    async void LoadInventoryFromDatabase() {
+        if (_databaseManager == null) return;
+        
+        // ✅ Async database query
+        var inventoryData = await _databaseManager.LoadPlayerInventoryAsync(OwnerId);
+        if (inventoryData != null) {
+            // ✅ Envanteri doldur
+            foreach (var item in inventoryData.items) {
+                CmdAddItem(item.itemId, item.amount);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Item ekle (server-authoritative)
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void CmdAddItem(string itemId, int amount) {
+        if (!IsServer) return;
+        if (string.IsNullOrEmpty(itemId) || amount <= 0) return;
+        
+        ItemDefinition itemDef = _itemDatabase?.GetItem(itemId);
+        if (itemDef == null) {
+            Debug.LogWarning($"[PlayerInventory] Item bulunamadı: {itemId}");
+            return;
+        }
+        
+        // ✅ Ağırlık kontrolü
+        float itemWeight = itemDef.weight * amount;
+        if (_currentWeight + itemWeight > _maxWeight) {
+            Debug.LogWarning("[PlayerInventory] Envanter ağırlık limiti aşıldı!");
+            return;
+        }
+        
+        int remainingAmount = amount;
+        
+        // ✅ Önce mevcut stack'lere ekle
+        remainingAmount = TryStackItem(itemId, remainingAmount);
+        
+        // ✅ Yeni slot'lara ekle
+        while (remainingAmount > 0) {
+            InventorySlot emptySlot = FindEmptySlot();
+            if (emptySlot == null) {
+                Debug.LogWarning("[PlayerInventory] Envanter dolu!");
+                break;
+            }
+            
+            int stackAmount = Mathf.Min(remainingAmount, itemDef.maxStack);
+            emptySlot.SetItem(itemId, stackAmount);
+            remainingAmount -= stackAmount;
+        }
+        
+        // ✅ Cache güncelle
+        UpdateItemCountCache();
+        UpdateWeight();
+        
+        // ✅ Veritabanına kaydet (async)
+        SaveInventoryToDatabase();
+    }
+    
+    /// <summary>
+    /// ✅ Item çıkar (server-authoritative)
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void CmdRemoveItem(string itemId, int amount) {
+        if (!IsServer) return;
+        if (string.IsNullOrEmpty(itemId) || amount <= 0) return;
+        
+        int remainingAmount = amount;
+        
+        // ✅ Slot'lardan çıkar
+        foreach (var slot in _slots) {
+            if (slot.itemId == itemId && remainingAmount > 0) {
+                int removeAmount = Mathf.Min(remainingAmount, slot.amount);
+                slot.RemoveAmount(removeAmount);
+                remainingAmount -= removeAmount;
+            }
+        }
+        
+        // ✅ Hotbar'dan çıkar
+        foreach (var slot in _hotbar) {
+            if (slot.itemId == itemId && remainingAmount > 0) {
+                int removeAmount = Mathf.Min(remainingAmount, slot.amount);
+                slot.RemoveAmount(removeAmount);
+                remainingAmount -= removeAmount;
+            }
+        }
+        
+        // ✅ Cache güncelle
+        UpdateItemCountCache();
+        UpdateWeight();
+        
+        // ✅ Veritabanına kaydet (async)
+        SaveInventoryToDatabase();
+    }
+    
+    /// <summary>
+    /// ✅ Item taşı/swap (server-authoritative)
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void CmdMoveItem(int fromSlot, int toSlot, bool isHotbar) {
+        if (!IsServer) return;
+        
+        SyncList<InventorySlot> sourceList = isHotbar ? _hotbar : _slots;
+        SyncList<InventorySlot> targetList = (fromSlot < _hotbarSize && toSlot < _hotbarSize) ? _hotbar : _slots;
+        
+        if (fromSlot < 0 || fromSlot >= sourceList.Count) return;
+        if (toSlot < 0 || toSlot >= targetList.Count) return;
+        
+        InventorySlot source = sourceList[fromSlot];
+        InventorySlot target = targetList[toSlot];
+        
+        // ✅ Swap logic
+        if (target.IsEmpty() || target.itemId == source.itemId) {
+            // ✅ Boş slot veya aynı item - taşı veya stack yap
+            if (target.itemId == source.itemId) {
+                // ✅ Stack yap
+                int stackAmount = Mathf.Min(source.amount, GetItemMaxStack(target.itemId) - target.amount);
+                target.AddAmount(stackAmount);
+                source.RemoveAmount(stackAmount);
+            } else {
+                // ✅ Taşı
+                target.SetItem(source.itemId, source.amount);
+                source.Clear();
+            }
+        } else {
+            // ✅ Swap
+            string tempId = target.itemId;
+            int tempAmount = target.amount;
+            target.SetItem(source.itemId, source.amount);
+            source.SetItem(tempId, tempAmount);
+        }
+        
+        // ✅ Cache güncelle
+        UpdateItemCountCache();
+        UpdateWeight();
+    }
+    
+    /// <summary>
+    /// ✅ OPTİMİZE: Item count cache (O(1) lookup)
+    /// </summary>
+    void UpdateItemCountCache() {
+        _itemCountCache.Clear();
+        
+        foreach (var slot in _slots) {
+            if (!slot.IsEmpty()) {
+                if (_itemCountCache.ContainsKey(slot.itemId)) {
+                    _itemCountCache[slot.itemId] += slot.amount;
+                } else {
+                    _itemCountCache[slot.itemId] = slot.amount;
+                }
+            }
+        }
+        
+        foreach (var slot in _hotbar) {
+            if (!slot.IsEmpty()) {
+                if (_itemCountCache.ContainsKey(slot.itemId)) {
+                    _itemCountCache[slot.itemId] += slot.amount;
+                } else {
+                    _itemCountCache[slot.itemId] = slot.amount;
+                }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// ✅ OPTİMİZE: Ağırlık hesaplama
+    /// </summary>
+    void UpdateWeight() {
+        _currentWeight = 0f;
+        
+        foreach (var slot in _slots) {
+            if (!slot.IsEmpty()) {
+                ItemDefinition itemDef = _itemDatabase?.GetItem(slot.itemId);
+                if (itemDef != null) {
+                    _currentWeight += itemDef.weight * slot.amount;
+                }
+            }
+        }
+        
+        foreach (var slot in _hotbar) {
+            if (!slot.IsEmpty()) {
+                ItemDefinition itemDef = _itemDatabase?.GetItem(slot.itemId);
+                if (itemDef != null) {
+                    _currentWeight += itemDef.weight * slot.amount;
+                }
+            }
+        }
+    }
+    
+    // ✅ OPTİMİZE: Helper metodlar
+    int TryStackItem(string itemId, int amount) {
+        foreach (var slot in _slots) {
+            if (slot.itemId == itemId && amount > 0) {
+                ItemDefinition itemDef = _itemDatabase?.GetItem(itemId);
+                if (itemDef != null) {
+                    int availableSpace = itemDef.maxStack - slot.amount;
+                    if (availableSpace > 0) {
+                        int stackAmount = Mathf.Min(amount, availableSpace);
+                        slot.AddAmount(stackAmount);
+                        amount -= stackAmount;
+                    }
+                }
+            }
+        }
+        
+        foreach (var slot in _hotbar) {
+            if (slot.itemId == itemId && amount > 0) {
+                ItemDefinition itemDef = _itemDatabase?.GetItem(itemId);
+                if (itemDef != null) {
+                    int availableSpace = itemDef.maxStack - slot.amount;
+                    if (availableSpace > 0) {
+                        int stackAmount = Mathf.Min(amount, availableSpace);
+                        slot.AddAmount(stackAmount);
+                        amount -= stackAmount;
+                    }
+                }
+            }
+        }
+        
+        return amount;
+    }
+    
+    InventorySlot FindEmptySlot() {
+        foreach (var slot in _slots) {
+            if (slot.IsEmpty()) return slot;
+        }
+        return null;
+    }
+    
+    int GetItemMaxStack(string itemId) {
+        ItemDefinition itemDef = _itemDatabase?.GetItem(itemId);
+        return itemDef?.maxStack ?? 1;
+    }
+    
+    /// <summary>
+    /// ✅ OPTİMİZE: Item count lookup (O(1) cache)
+    /// </summary>
+    public int GetItemCount(string itemId) {
+        return _itemCountCache.TryGetValue(itemId, out int count) ? count : 0;
+    }
+    
+    /// <summary>
+    /// ✅ OPTİMİZE: Veritabanına kaydet (async)
+    /// </summary>
+    async void SaveInventoryToDatabase() {
+        if (_databaseManager == null) return;
+        
+        List<InventoryItemData> items = new List<InventoryItemData>();
+        foreach (var slot in _slots) {
+            if (!slot.IsEmpty()) {
+                items.Add(new InventoryItemData { itemId = slot.itemId, amount = slot.amount });
+            }
+        }
+        
+        await _databaseManager.SavePlayerInventoryAsync(OwnerId, items);
+    }
+}
+
+/// <summary>
+/// ✅ Inventory item data (database için)
+/// </summary>
+[System.Serializable]
+public class InventoryItemData {
+    public string itemId;
+    public int amount;
+}
+```
+
+---
+
+### 1.7.4 Dosya Yapısı
+
+**Yeni Dosyalar:**
+```
+_Stratocraft/
+├── Scripts/
+│   └── Systems/
+│       └── Inventory/
+│           ├── InventorySlot.cs
+│           └── PlayerInventory.cs
+```
+
+---
+
+### 1.7.5 Entegrasyonlar
+
+**ServiceLocator:**
+- `PlayerInventory` → `ServiceLocator.Instance.Register<PlayerInventory>(this)`
+
+**ItemDatabase:**
+- Item lookup için `GetItem()` kullanılır
+- Item weight ve maxStack bilgileri alınır
+
+**DatabaseManager:**
+- Async envanter yükleme/kaydetme
+- `LoadPlayerInventoryAsync()` / `SavePlayerInventoryAsync()`
+
+**CraftingManager:**
+- Malzeme kontrolü için `GetItemCount()` kullanılır
+- Item ekleme/çıkarma için `CmdAddItem()` / `CmdRemoveItem()` kullanılır
+
+---
+
+### 1.7.6 Optimizasyonlar
+
+**✅ Dictionary Cache:**
+- Item count lookup: O(1) complexity
+- Cache her item ekleme/çıkarma işleminde güncellenir
+
+**✅ SyncList:**
+- Network synchronization için SyncList kullanılır
+- Otomatik client synchronization
+
+**✅ Async Database Operations:**
+- UI donmasını önlemek için async/await kullanılır
+- `LoadPlayerInventoryAsync()` / `SavePlayerInventoryAsync()`
+
+**✅ Weight Calculation:**
+- Her item ekleme/çıkarma işleminde ağırlık güncellenir
+- Ağırlık limiti kontrolü
+
+---
+
+## 🛠️ ADIM 1.8: FURNITURE SİSTEMİ (Mobilya Yerleştirme)
+
+> **✅ YENİ SİSTEM:** Oyuncuların dekoratif ve işlevsel mobilyaları yerleştirmesini sağlayan sistem.  
+> **Entegrasyon:** StructurePlacer, ChunkManager, TerritoryManager, ServiceLocator  
+> **Faz:** 4 (Oyun Mekanikleri)
+
+### 1.8.1 Sistem Genel Bakış
+
+**Amaç:**
+Oyuncuların dekoratif ve işlevsel mobilyaları yerleştirmesini sağlamak.
+
+**Temel Özellikler:**
+1. **Furniture Items:** Bed, chair, table, chest, lamp, vb.
+2. **Furniture Placement:** StructurePlacer entegrasyonu
+3. **Furniture Interaction:** Sit on chair, sleep on bed
+4. **Furniture Decoration:** Aesthetic items
+5. **Furniture Storage:** Chest inventory
+6. **Furniture Crafting:** Recipe'ler
+
+---
+
+### 1.8.2 FurnitureDefinition.cs - Furniture Tanımları
+
+**Dosya:** `_Stratocraft/Data/Furniture/FurnitureDefinition.cs`
+
+**Amaç:** Furniture tanımlarını ScriptableObject olarak saklamak
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+
+/// <summary>
+/// ✅ Furniture definition - OPTİMİZE: ScriptableObject, data-driven
+/// </summary>
+[CreateAssetMenu(fileName = "FurnitureDefinition", menuName = "Stratocraft/Furniture")]
+public class FurnitureDefinition : ScriptableObject {
+    [Header("Kimlik")]
+    public string furnitureId;
+    public string furnitureName;
+    
+    [Header("Görsel")]
+    public GameObject furniturePrefab;
+    public FurnitureType type;
+    
+    [Header("Özellikler")]
+    public bool hasStorage; // Chest için
+    public int storageSlots; // Chest için (0 = storage yok)
+    public bool canSit; // Chair için
+    public bool canSleep; // Bed için
+    public bool requiresGround; // Yere yerleştirilebilir mi?
+    public bool canRotate; // Döndürülebilir mi?
+    
+    [Header("Etkileşim")]
+    public float interactionRange = 3f;
+    public bool requiresOwnership; // Sahiplik gerekiyor mu?
+}
+
+/// <summary>
+/// ✅ Furniture tipleri
+/// </summary>
+public enum FurnitureType {
+    Bed,
+    Chair,
+    Table,
+    Chest,
+    Lamp,
+    Decoration,
+    Workbench,
+    Storage
+}
+```
+
+---
+
+### 1.8.3 FurniturePlacer.cs - Furniture Yerleştirme
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Furniture/FurniturePlacer.cs`
+
+**Amaç:** Furniture yerleştirme mantığını yönetmek
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using FishNet.Object;
+using System.Collections.Generic;
+
+/// <summary>
+/// ✅ Furniture Placer - OPTİMİZE: ServiceLocator, ChunkManager, StructurePlacer entegrasyonu
+/// </summary>
+public class FurniturePlacer : NetworkBehaviour {
+    [Header("Furniture Ayarları")]
+    public FurnitureDefinition furnitureDefinition;
+    
+    // ✅ OPTİMİZE: ServiceLocator entegrasyonu
+    private StructurePlacer _structurePlacer;
+    private ChunkManager _chunkManager;
+    private TerritoryManager _territoryManager;
+    
+    // ✅ OPTİMİZE: Furniture cache (chunk bazlı)
+    private Dictionary<Vector3Int, List<FurnitureInstance>> _furnitureCache = new Dictionary<Vector3Int, List<FurnitureInstance>>();
+    
+    void Awake() {
+        // ✅ Service referanslarını al
+        _structurePlacer = ServiceLocator.Instance?.Get<StructurePlacer>();
+        _chunkManager = ServiceLocator.Instance?.Get<ChunkManager>();
+        _territoryManager = ServiceLocator.Instance?.Get<TerritoryManager>();
+        
+        if (_structurePlacer == null) {
+            Debug.LogWarning("[FurniturePlacer] StructurePlacer bulunamadı!");
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Furniture yerleştir (server-authoritative)
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void CmdPlaceFurniture(Vector3 position, FurnitureDefinition furnitureDef, NetworkObject player) {
+        if (!IsServer) return;
+        if (furnitureDef == null) return;
+        
+        // ✅ ChunkManager entegrasyonu (voxel terrain uyumlu)
+        Vector3Int chunkCoord = _chunkManager?.GetChunkCoord(position) ?? Vector3Int.zero;
+        
+        // ✅ Territory kontrolü (sahiplik gerekiyorsa)
+        if (furnitureDef.requiresOwnership) {
+            string territoryOwner = _territoryManager?.GetTerritoryOwner(position);
+            if (string.IsNullOrEmpty(territoryOwner) || territoryOwner != player.OwnerId.ToString()) {
+                Debug.LogWarning("[FurniturePlacer] Bu bölgede furniture yerleştirme yetkisi yok!");
+                return;
+            }
+        }
+        
+        // ✅ Yer kontrolü (requiresGround)
+        if (furnitureDef.requiresGround) {
+            if (!_chunkManager?.IsSolidBlock(position + Vector3.down) ?? false) {
+                Debug.LogWarning("[FurniturePlacer] Furniture yerleştirmek için zemin gerekli!");
+                return;
+            }
+        }
+        
+        // ✅ StructurePlacer ile yerleştir
+        if (_structurePlacer != null) {
+            _structurePlacer.PlaceStructure(position, furnitureDef.furniturePrefab);
+        } else {
+            // ✅ Fallback: Direkt instantiate
+            GameObject furnitureObj = Instantiate(furnitureDef.furniturePrefab, position, Quaternion.identity);
+            Spawn(furnitureObj, Owner);
+        }
+        
+        // ✅ Cache'e ekle
+        FurnitureInstance instance = new FurnitureInstance {
+            furnitureDefinition = furnitureDef,
+            position = position,
+            ownerId = player.OwnerId,
+            chunkCoord = chunkCoord
+        };
+        
+        if (!_furnitureCache.ContainsKey(chunkCoord)) {
+            _furnitureCache[chunkCoord] = new List<FurnitureInstance>();
+        }
+        _furnitureCache[chunkCoord].Add(instance);
+        
+        Debug.Log($"[FurniturePlacer] {furnitureDef.furnitureName} yerleştirildi: {position}");
+    }
+    
+    /// <summary>
+    /// ✅ Furniture kaldır (server-authoritative)
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void CmdRemoveFurniture(Vector3 position, NetworkObject player) {
+        if (!IsServer) return;
+        
+        Vector3Int chunkCoord = _chunkManager?.GetChunkCoord(position) ?? Vector3Int.zero;
+        
+        if (_furnitureCache.TryGetValue(chunkCoord, out List<FurnitureInstance> furnitureList)) {
+            FurnitureInstance furniture = furnitureList.Find(f => Vector3.Distance(f.position, position) < 0.5f);
+            if (furniture != null) {
+                // ✅ Sahiplik kontrolü
+                if (furniture.ownerId != player.OwnerId) {
+                    Debug.LogWarning("[FurniturePlacer] Bu furniture'ı kaldırma yetkiniz yok!");
+                    return;
+                }
+                
+                // ✅ Kaldır
+                furnitureList.Remove(furniture);
+                
+                // ✅ GameObject'i yok et
+                Collider[] colliders = Physics.OverlapSphere(position, 0.5f);
+                foreach (var col in colliders) {
+                    if (col.GetComponent<FurnitureInstance>() != null) {
+                        Despawn(col.gameObject);
+                        break;
+                    }
+                }
+                
+                Debug.Log($"[FurniturePlacer] Furniture kaldırıldı: {position}");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// ✅ OPTİMİZE: Chunk bazlı furniture cache temizleme
+    /// </summary>
+    public void ClearChunkCache(Vector3Int chunkCoord) {
+        _furnitureCache.Remove(chunkCoord);
+    }
+}
+
+/// <summary>
+/// ✅ Furniture instance data
+/// </summary>
+[System.Serializable]
+public class FurnitureInstance {
+    public FurnitureDefinition furnitureDefinition;
+    public Vector3 position;
+    public uint ownerId;
+    public Vector3Int chunkCoord;
+}
+```
+
+---
+
+### 1.8.4 FurnitureInteraction.cs - Furniture Etkileşimi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Furniture/FurnitureInteraction.cs`
+
+**Amaç:** Furniture etkileşim mantığını yönetmek
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using FishNet.Object;
+
+/// <summary>
+/// ✅ Furniture Interaction - OPTİMİZE: IInteractable, ServiceLocator entegrasyonu
+/// </summary>
+public class FurnitureInteraction : NetworkBehaviour, IInteractable {
+    [Header("Furniture Referansı")]
+    public FurnitureDefinition furnitureDefinition;
+    
+    // ✅ OPTİMİZE: ServiceLocator entegrasyonu
+    private PlayerInventory _playerInventory;
+    private ChestInventory _chestInventory; // Chest için
+    
+    void Awake() {
+        if (furnitureDefinition == null) {
+            furnitureDefinition = GetComponent<FurnitureDefinition>();
+        }
+    }
+    
+    void Start() {
+        _playerInventory = ServiceLocator.Instance?.Get<PlayerInventory>();
+        
+        // ✅ Chest ise ChestInventory component'i al
+        if (furnitureDefinition.hasStorage) {
+            _chestInventory = GetComponent<ChestInventory>();
+            if (_chestInventory == null) {
+                _chestInventory = gameObject.AddComponent<ChestInventory>();
+            }
+        }
+    }
+    
+    /// <summary>
+    /// ✅ IInteractable interface
+    /// </summary>
+    public void OnInteract(NetworkObject player) {
+        if (!IsServer) return;
+        
+        if (furnitureDefinition == null) return;
+        
+        // ✅ Furniture tipine göre etkileşim
+        switch (furnitureDefinition.type) {
+            case FurnitureType.Chair:
+                if (furnitureDefinition.canSit) {
+                    CmdSitOnChair(player);
+                }
+                break;
+                
+            case FurnitureType.Bed:
+                if (furnitureDefinition.canSleep) {
+                    CmdSleepOnBed(player);
+                }
+                break;
+                
+            case FurnitureType.Chest:
+                if (furnitureDefinition.hasStorage && _chestInventory != null) {
+                    RpcOpenChest(player.Owner);
+                }
+                break;
+                
+            case FurnitureType.Workbench:
+                // ✅ Crafting table gibi çalışır
+                CraftingTable craftingTable = GetComponent<CraftingTable>();
+                if (craftingTable != null) {
+                    craftingTable.OnInteract(player);
+                }
+                break;
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Sandalyeye otur
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    void CmdSitOnChair(NetworkObject player) {
+        // ✅ Oturma animasyonu
+        PlayerController playerController = player.GetComponent<PlayerController>();
+        if (playerController != null) {
+            playerController.SetSitting(true, transform.position);
+        }
+        
+        RpcPlaySitAnimation(player.Owner);
+    }
+    
+    /// <summary>
+    /// ✅ Yatakta uyu
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    void CmdSleepOnBed(NetworkObject player) {
+        // ✅ Uyuma mekaniği (GameTimeManager entegrasyonu)
+        GameTimeManager timeManager = ServiceLocator.Instance?.Get<GameTimeManager>();
+        if (timeManager != null) {
+            timeManager.SleepUntilMorning();
+        }
+        
+        RpcPlaySleepAnimation(player.Owner);
+    }
+    
+    /// <summary>
+    /// ✅ Chest aç
+    /// </summary>
+    [ObserversRpc]
+    void RpcOpenChest(NetworkConnection conn) {
+        if (_chestInventory != null) {
+            _chestInventory.OpenChest();
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Oturma animasyonu (client-side)
+    /// </summary>
+    [ObserversRpc]
+    void RpcPlaySitAnimation(NetworkConnection conn) {
+        Animator animator = GetComponent<Animator>();
+        if (animator != null) {
+            animator.SetTrigger("Sit");
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Uyuma animasyonu (client-side)
+    /// </summary>
+    [ObserversRpc]
+    void RpcPlaySleepAnimation(NetworkConnection conn) {
+        Animator animator = GetComponent<Animator>();
+        if (animator != null) {
+            animator.SetTrigger("Sleep");
+        }
+    }
+}
+```
+
+---
+
+### 1.8.5 Dosya Yapısı
+
+**Yeni Dosyalar:**
+```
+_Stratocraft/
+├── Data/
+│   └── Furniture/
+│       └── FurnitureDefinition.cs (ScriptableObject)
+│
+├── Scripts/
+│   └── Systems/
+│       └── Furniture/
+│           ├── FurniturePlacer.cs
+│           └── FurnitureInteraction.cs
+```
+
+---
+
+### 1.8.6 Entegrasyonlar
+
+**ServiceLocator:**
+- `FurniturePlacer` → ServiceLocator'dan sistemleri alır
+- `FurnitureInteraction` → ServiceLocator'dan sistemleri alır
+
+**ChunkManager:**
+- Furniture pozisyonu chunk koordinatına çevrilir
+- Voxel terrain uyumlu
+- `IsSolidBlock()` ile zemin kontrolü
+
+**StructurePlacer:**
+- Furniture yerleştirme için `PlaceStructure()` kullanılır
+
+**TerritoryManager:**
+- Sahiplik kontrolü için `GetTerritoryOwner()` kullanılır
+
+**GameTimeManager:**
+- Uyuma mekaniği için `SleepUntilMorning()` kullanılır
+
+---
+
+### 1.8.7 Optimizasyonlar
+
+**✅ Dictionary Cache:**
+- Furniture cache: Chunk bazlı (O(1) lookup)
+- Chunk unload olduğunda cache temizlenir
+
+**✅ Network Optimizasyonu:**
+- Server-authoritative furniture placement
+- `ServerRpc` ve `ObserversRpc` kullanımı
+
+**✅ Chunk-Based Caching:**
+- Furniture'lar chunk bazlı cache'lenir
+- Chunk unload olduğunda cache temizlenir
+
+---
+
+## 🛠️ ADIM 1.9: İŞLEVSEL ITEM'LER (Functional Items)
+
+> **✅ YENİ SİSTEM:** Tool'ların durability, repair ve upgrade sistemlerini ekleyen sistem.  
+> **Entegrasyon:** ItemDefinition, DatabaseManager, PlayerInventory, ServiceLocator  
+> **Faz:** 4 (Oyun Mekanikleri)
+
+### 1.9.1 Sistem Genel Bakış
+
+**Amaç:**
+Tool'ların durability, repair ve upgrade sistemlerini eklemek.
+
+**Temel Özellikler:**
+1. **Tool Durability:** Kullanım sayısı
+2. **Tool Repair:** Anvil, repair station
+3. **Tool Upgrade:** Seviye bazlı
+4. **Tool Enchantment:** Büyü sistemi
+5. **Çok Amaçlı Tool'lar:** Multi-purpose tools
+6. **Tool Crafting:** Recipe'ler
+
+---
+
+### 1.9.2 ItemDefinition.cs Güncellemeleri
+
+**Dosya:** `_Stratocraft/Scripts/Core/Definitions/ItemDefinition.cs`
+
+**Eklenen Özellikler:**
+
+```csharp
+// ItemDefinition.cs'e eklenecek - OPTİMİZE: Tool özellikleri
+[Header("Tool Durability")]
+[Tooltip("Tool durability (kullanım sayısı)")]
+[Range(1, 10000)]
+public int maxDurability = 100;
+
+[Tooltip("Mevcut durability (runtime - database'de saklanır)")]
+[System.NonSerialized]
+public int currentDurability = 100;
+
+[Tooltip("Tool seviyesi (upgrade için)")]
+[Range(1, 10)]
+public int toolLevel = 1;
+
+[Tooltip("Tool enchantments (büyü için)")]
+public List<Enchantment> enchantments = new List<Enchantment>();
+
+[Tooltip("Repair malzemeleri (repair için gerekli)")]
+public List<RepairMaterial> repairMaterials = new List<RepairMaterial>();
+
+[Tooltip("Upgrade malzemeleri (upgrade için gerekli)")]
+public List<UpgradeMaterial> upgradeMaterials = new List<UpgradeMaterial>();
+
+[System.Serializable]
+public class RepairMaterial {
+    public ItemDefinition material;
+    public int amount;
+}
+
+[System.Serializable]
+public class UpgradeMaterial {
+    public ItemDefinition material;
+    public int amount;
+    public int requiredLevel;
+}
+
+[System.Serializable]
+public class Enchantment {
+    public string enchantmentId;
+    public string enchantmentName;
+    public EnchantmentType type;
+    public int level = 1;
+    public float value = 0f; // Damage boost, speed boost, vb.
+}
+
+public enum EnchantmentType {
+    DamageBoost,
+    SpeedBoost,
+    DurabilityBoost,
+    EfficiencyBoost,
+    Fortune, // Daha fazla drop
+    Unbreaking // Daha yavaş yıpranma
+}
+```
+
+---
+
+### 1.9.3 ToolDurability.cs - Durability Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Tools/ToolDurability.cs`
+
+**Amaç:** Tool durability mantığını yönetmek
+
+**Özellikler:**
+- Durability azaltma (kullanım sonrası)
+- Unbreaking enchantment desteği
+- Tool kırıldığında envanterden çıkarma
+- Async database persistence
+
+---
+
+### 1.9.4 RepairStation.cs - Repair Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Tools/RepairStation.cs`
+
+**Amaç:** Tool repair mantığını yönetmek
+
+**Özellikler:**
+- Repair malzeme kontrolü
+- Tool durability restore
+- IInteractable interface
+
+---
+
+### 1.9.5 UpgradeStation.cs - Upgrade Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Tools/UpgradeStation.cs`
+
+**Amaç:** Tool upgrade mantığını yönetmek
+
+**Özellikler:**
+- Upgrade malzeme kontrolü
+- Tool level artışı
+- Durability ve efficiency artışı
+
+---
+
+### 1.9.6 EnchantmentSystem.cs - Enchantment Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Tools/EnchantmentSystem.cs`
+
+**Amaç:** Enchantment mantığını yönetmek
+
+**Özellikler:**
+- Enchantment database cache (O(1) lookup)
+- Enchantment ekleme/çıkarma
+- ServiceLocator entegrasyonu
+
+---
+
+### 1.9.7 Dosya Yapısı
+
+**Yeni Dosyalar:**
+```
+_Stratocraft/
+├── Scripts/
+│   ├── Core/
+│   │   └── Definitions/
+│   │       └── ItemDefinition.cs (güncellendi)
+│   │
+│   └── Systems/
+│       └── Tools/
+│           ├── ToolDurability.cs
+│           ├── RepairStation.cs
+│           ├── UpgradeStation.cs
+│           └── EnchantmentSystem.cs
+│
+└── Data/
+    └── Enchantments/
+        └── EnchantmentDefinition.cs (ScriptableObject)
+```
+
+---
+
+### 1.9.8 Entegrasyonlar
+
+**ServiceLocator:**
+- `EnchantmentSystem` → `ServiceLocator.Instance.Register<EnchantmentSystem>(this)`
+- `RepairStation` / `UpgradeStation` → ServiceLocator'dan sistemleri alır
+
+**DatabaseManager:**
+- Async durability persistence
+- `LoadToolDurabilityAsync()` / `SaveToolDurabilityAsync()`
+
+**PlayerInventory:**
+- Tool kırıldığında envanterden çıkarma
+- Repair/Upgrade malzeme kontrolü
+
+---
+
+### 1.9.9 Optimizasyonlar
+
+**✅ Dictionary Cache:**
+- Enchantment lookup: O(1) complexity
+- Durability cache: Player bazlı
+
+**✅ Async Database Operations:**
+- Durability persistence async/await ile
+- UI donmasını önler
+
+**✅ Network Optimizasyonu:**
+- Server-authoritative tool operations
+- `ServerRpc` ve `ObserversRpc` kullanımı
+
+---
+
+## 🛠️ ADIM 1.10: NPC SİSTEMİ (Non-Player Characters)
+
+> **✅ YENİ SİSTEM:** Dost NPC'ler (villagers) ekleyerek ticaret, görev ve köy sistemlerini oluşturan sistem.  
+> **Entegrasyon:** ChunkManager, ChunkNavMeshBaker, PlayerInventory, ServiceLocator  
+> **Faz:** 5 (Yapay Zeka, Savaş ve Felaketler)
+
+### 1.10.1 Sistem Genel Bakış
+
+**Amaç:**
+Dost NPC'ler (villagers) ekleyerek ticaret, görev ve köy sistemlerini oluşturmak.
+
+**Temel Özellikler:**
+1. **NPC AI:** Dost NPC'ler, pathfinding
+2. **NPC Ticaret:** Villager trading
+3. **NPC Görev:** Quest giver
+4. **NPC Köyleri:** Village generation
+5. **NPC Meslekleri:** Blacksmith, merchant, vb.
+6. **NPC Etkileşimi:** Dialogue system
+
+---
+
+### 1.10.2 NPCDefinition.cs - NPC Tanımları
+
+**Dosya:** `_Stratocraft/Data/NPCs/NPCDefinition.cs`
+
+**Kod:**
+
+```csharp
+[CreateAssetMenu(fileName = "NPCDefinition", menuName = "Stratocraft/NPC")]
+public class NPCDefinition : ScriptableObject {
+    [Header("Kimlik")]
+    public string npcId;
+    public string npcName;
+    public NPCProfession profession;
+    
+    [Header("Ticaret")]
+    public List<TradeOffer> tradeOffers = new List<TradeOffer>();
+    
+    [Header("Görevler")]
+    public List<QuestDefinition> availableQuests = new List<QuestDefinition>();
+    
+    [Header("Diyalog")]
+    public DialogueTree dialogueTree;
+    
+    [Header("AI Ayarları")]
+    public float wanderRadius = 10f;
+    public float interactionRange = 3f;
+    public bool canMove = true;
+    public float moveSpeed = 2f;
+}
+
+public enum NPCProfession {
+    Blacksmith, Merchant, Farmer, Guard, Priest, Builder, Scholar
+}
+```
+
+---
+
+### 1.10.3 NPCAI.cs - NPC AI Mantığı
+
+**Dosya:** `_Stratocraft/Scripts/Systems/NPCs/NPCAI.cs`
+
+**Özellikler:**
+- State Machine (Idle, Wandering, Talking, Working)
+- NavMesh pathfinding entegrasyonu
+- ChunkManager entegrasyonu (voxel terrain uyumlu)
+- ChunkNavMeshBaker entegrasyonu
+
+---
+
+### 1.10.4 VillagerTrading.cs - Ticaret Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/NPCs/VillagerTrading.cs`
+
+**Özellikler:**
+- Trade offer sistemi
+- Trade history cache
+- PlayerInventory entegrasyonu
+
+---
+
+### 1.10.5 DialogueSystem.cs - Diyalog Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/NPCs/DialogueSystem.cs`
+
+**Özellikler:**
+- Dialogue tree sistemi
+- Dialogue state cache
+- Network optimizasyonu
+
+---
+
+### 1.10.6 VillageGenerator.cs - Köy Oluşturma
+
+**Dosya:** `_Stratocraft/Scripts/Systems/NPCs/VillageGenerator.cs`
+
+**Özellikler:**
+- Job System + Burst ile village generation
+- Chunk bazlı village cache
+- NPC spawn sistemi
+
+---
+
+### 1.10.7 Dosya Yapısı
+
+```
+_Stratocraft/
+├── Data/
+│   └── NPCs/
+│       └── NPCDefinition.cs
+│
+├── Scripts/
+│   └── Systems/
+│       └── NPCs/
+│           ├── NPCAI.cs
+│           ├── VillagerTrading.cs
+│           ├── DialogueSystem.cs
+│           └── VillageGenerator.cs
+```
+
+---
+
+### 1.10.8 Optimizasyonlar
+
+**✅ Dictionary Cache:**
+- Trade history cache: Player bazlı
+- Dialogue state cache: Player bazlı
+- Village cache: Chunk bazlı
+
+**✅ Job System + Burst:**
+- Village generation paralel işlem
+
+**✅ NavMesh Entegrasyonu:**
+- ChunkNavMeshBaker ile dinamik NavMesh
+
+---
+
+## 🛠️ ADIM 1.11: GELİŞMİŞ BİNEK SİSTEMİ
+
+> **✅ YENİ SİSTEM:** Binek sistemini eğer, envanter, zırh ve özel yeteneklerle genişleten sistem.  
+> **Entegrasyon:** RideableMob, PlayerInventory, DatabaseManager, ServiceLocator  
+> **Faz:** 7 (Güç Sistemi, Binekler ve Savaş Makineleri)
+
+### 1.11.1 Sistem Genel Bakış
+
+**Amaç:**
+Binek sistemini eğer, envanter, zırh ve özel yeteneklerle genişletmek.
+
+**Temel Özellikler:**
+1. **Saddle System:** Eğer sistemi
+2. **Mount Inventory:** Binek envanteri
+3. **Mount Armor:** Binek zırhı
+4. **Mount Abilities:** Özel yetenekler
+5. **Mount Leveling:** Seviye sistemi
+6. **Mount Breeding:** Üreme sistemi
+
+---
+
+### 1.11.2 SaddleDefinition.cs - Eğer Tanımları
+
+**Dosya:** `_Stratocraft/Data/Mounts/SaddleDefinition.cs`
+
+**Özellikler:**
+- Envanter slot sayısı
+- Hız ve dayanıklılık çarpanları
+- Zırh takma desteği
+
+---
+
+### 1.11.3 MountInventory.cs - Binek Envanteri
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Mounts/MountInventory.cs`
+
+**Özellikler:**
+- SyncList ile network synchronization
+- Async database persistence
+- Item stacking logic
+
+---
+
+### 1.11.4 MountArmor.cs - Binek Zırhı
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Mounts/MountArmor.cs`
+
+**Özellikler:**
+- Hasar azaltma sistemi
+- Zırh yıpranma mekaniği
+
+---
+
+### 1.11.5 MountAbilities.cs - Binek Yetenekleri
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Mounts/MountAbilities.cs`
+
+**Özellikler:**
+- Cooldown sistemi
+- Dash, Jump, Charge, Heal, Shield yetenekleri
+
+---
+
+### 1.11.6 MountLeveling.cs - Binek Seviye Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Mounts/MountLeveling.cs`
+
+**Özellikler:**
+- Experience sistemi (exponential growth)
+- Level bazlı stat artışları
+- Async database persistence
+
+---
+
+### 1.11.7 Dosya Yapısı
+
+```
+_Stratocraft/
+├── Data/
+│   └── Mounts/
+│       ├── SaddleDefinition.cs
+│       └── MountArmorDefinition.cs
+│
+├── Scripts/
+│   └── Systems/
+│       └── Mounts/
+│           ├── MountInventory.cs
+│           ├── MountArmor.cs
+│           ├── MountAbilities.cs
+│           └── MountLeveling.cs
+```
+
+---
+
+## 🛠️ ADIM 1.12: GELİŞMİŞ BOSS SİSTEMİ
+
+> **✅ YENİ SİSTEM:** Ejderha AI, boss arenası, loot table ve multi-phase fight sistemi.  
+> **Entegrasyon:** BossAI, ChunkManager, StructurePlacer, ServiceLocator  
+> **Faz:** 5 (Yapay Zeka, Savaş ve Felaketler)
+
+### 1.12.1 Sistem Genel Bakış
+
+**Amaç:**
+Ejderha AI, boss arenası, loot table ve multi-phase fight sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Dragon AI:** Uçuş mekaniği
+2. **Boss Arena:** Arena sistemi
+3. **Boss Loot:** Loot table
+4. **Boss Phases:** Multi-phase fights
+5. **Boss Summoning:** Çağırma sistemi
+6. **Boss Respawn:** Respawn cooldown
+
+---
+
+### 1.12.2 DragonAI.cs - Ejderha AI
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Bosses/DragonAI.cs`
+
+**Özellikler:**
+- Flight state machine (Grounded, Flying, Hovering)
+- Unity Physics entegrasyonu
+- ChunkManager entegrasyonu (yükseklik kontrolü)
+
+---
+
+### 1.12.3 BossArena.cs - Boss Arenası
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Bosses/BossArena.cs`
+
+**Özellikler:**
+- Arena oluşturma sistemi
+- Boss spawn sistemi
+- Respawn cooldown kontrolü
+
+---
+
+### 1.12.4 BossLootTable.cs - Loot Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Bosses/BossLootTable.cs`
+
+**Özellikler:**
+- Rarity bazlı loot sistemi
+- Drop chance kontrolü
+- ItemSpawner entegrasyonu
+
+---
+
+### 1.12.5 BossPhaseSystem.cs - Faz Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Bosses/BossPhaseSystem.cs`
+
+**Özellikler:**
+- Multi-phase fight sistemi
+- Phase bazlı ability sistemi
+- Health threshold kontrolü
+
+---
+
+### 1.12.6 BossSummoning.cs - Çağırma Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Bosses/BossSummoning.cs`
+
+**Özellikler:**
+- Ritual malzeme kontrolü
+- Arena gereksinimi kontrolü
+- Boss spawn entegrasyonu
+
+---
+
+### 1.12.7 Dosya Yapısı
+
+```
+_Stratocraft/
+├── Data/
+│   └── Bosses/
+│       ├── BossArenaDefinition.cs
+│       └── BossLootTableDefinition.cs
+│
+├── Scripts/
+│   └── Systems/
+│       └── Bosses/
+│           ├── DragonAI.cs
+│           ├── BossArena.cs
+│           ├── BossLootTable.cs
+│           ├── BossPhaseSystem.cs
+│           └── BossSummoning.cs
+```
+
+---
+
+## 🛠️ ADIM 1.13: ÖZEL CANLI TİPLERİ
+
+> **✅ YENİ SİSTEM:** Goblin, ork, troll gibi özel canlı tipleri ve sınıf sistemi.  
+> **Entegrasyon:** MobAI, StatusEffectManager, ChunkManager, ServiceLocator  
+> **Faz:** 5 (Yapay Zeka, Savaş ve Felaketler)
+
+### 1.13.1 Sistem Genel Bakış
+
+**Amaç:**
+Goblin, ork, troll gibi özel canlı tipleri ve sınıf sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Mob Classes:** Warrior, Mage, Archer, vb.
+2. **Mob Abilities:** Özel yetenekler
+3. **Mob Armor:** Zırh sistemi
+4. **Mob Leveling:** Seviye sistemi
+5. **Mob Trading:** Ticaret sistemi
+
+---
+
+### 1.13.2 MobClassDefinition.cs - Mob Sınıf Tanımları
+
+**Dosya:** `_Stratocraft/Data/Mobs/MobClassDefinition.cs`
+
+**Özellikler:**
+- Stat multiplier'ları
+- Sınıf bazlı yetenekler
+- Default zırh
+
+---
+
+### 1.13.3 MobAbilitySystem.cs - Mob Yetenek Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Mobs/MobAbilitySystem.cs`
+
+**Özellikler:**
+- Cooldown sistemi
+- Melee, Ranged, Area, Heal, Buff, Debuff yetenekleri
+- Level scaling
+
+---
+
+### 1.13.4 MobArmorSystem.cs - Mob Zırh Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Mobs/MobArmorSystem.cs`
+
+**Özellikler:**
+- Hasar azaltma sistemi
+- Zırh yıpranma mekaniği
+
+---
+
+### 1.13.5 MobLeveling.cs - Mob Seviye Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Mobs/MobLeveling.cs`
+
+**Özellikler:**
+- Experience sistemi
+- Level bazlı stat artışları
+
+---
+
+### 1.13.6 Dosya Yapısı
+
+```
+_Stratocraft/
+├── Data/
+│   └── Mobs/
+│       ├── MobClassDefinition.cs
+│       └── MobArmorDefinition.cs
+│
+├── Scripts/
+│   └── Systems/
+│       └── Mobs/
+│           ├── MobAbilitySystem.cs
+│           ├── MobArmorSystem.cs
+│           └── MobLeveling.cs
+```
+
+---
+
+## 🛠️ ADIM 1.14: YEMEK VE AÇLIK SİSTEMİ
+
+> **✅ YENİ SİSTEM:** Yemek, açlık, pişirme ve yemek kalitesi sistemi.  
+> **Entegrasyon:** PlayerInventory, StatusEffectManager, DatabaseManager, ServiceLocator  
+> **Faz:** 4 (Oyun Mekanikleri)
+
+### 1.14.1 Sistem Genel Bakış
+
+**Amaç:**
+Yemek, açlık, pişirme ve yemek kalitesi sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Hunger System:** Açlık barı
+2. **Food System:** Yemek sistemi
+3. **Cooking System:** Pişirme sistemi
+4. **Food Quality:** Yemek kalitesi
+5. **Food Buffs:** Yemek buff'ları
+
+---
+
+### 1.14.2 FoodDefinition.cs - Yemek Tanımları
+
+**Dosya:** `_Stratocraft/Data/Food/FoodDefinition.cs`
+
+**Özellikler:**
+- Hunger restore değeri
+- Health restore değeri
+- Food quality sistemi
+- Food buff'ları
+
+---
+
+### 1.14.3 HungerSystem.cs - Açlık Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Food/HungerSystem.cs`
+
+**Özellikler:**
+- Coroutine ile hunger decrease
+- Async database persistence
+- Açlık durumuna göre can azaltma
+
+---
+
+### 1.14.4 CookingStation.cs - Pişirme Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Food/CookingStation.cs`
+
+**Özellikler:**
+- Cooking recipe sistemi
+- Cooking time kontrolü
+- Malzeme kontrolü
+
+---
+
+### 1.14.5 CookingRecipe.cs - Pişirme Tarifleri
+
+**Dosya:** `_Stratocraft/Data/Food/CookingRecipe.cs`
+
+**Özellikler:**
+- Malzeme listesi
+- Pişirme süresi
+- Cooking station seviye gereksinimi
+
+---
+
+### 1.14.6 Dosya Yapısı
+
+```
+_Stratocraft/
+├── Data/
+│   └── Food/
+│       ├── FoodDefinition.cs
+│       └── CookingRecipe.cs
+│
+├── Scripts/
+│   └── Systems/
+│       └── Food/
+│           ├── HungerSystem.cs
+│           └── CookingStation.cs
+```
+
+---
+
+## 🛠️ ADIM 1.15: HASTALIK VE DURUM SİSTEMİ
+
+> **✅ YENİ SİSTEM:** Hastalık, durum efektleri (poison, burn) ve iyileştirme sistemi.  
+> **Entegrasyon:** StatusEffectManager, HealthComponent, MovementController, ServiceLocator  
+> **Faz:** 4 (Oyun Mekanikleri)
+
+### 1.15.1 Sistem Genel Bakış
+
+**Amaç:**
+Hastalık, durum efektleri (poison, burn) ve iyileştirme sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Status Effects:** Poison, Burn, Freeze, Slow, vb.
+2. **Disease System:** Hastalık sistemi
+3. **Cure Items:** İyileştirme item'ları
+4. **Status Stacking:** Stack sistemi
+5. **Status UI:** Durum göstergeleri
+
+---
+
+### 1.15.2 StatusEffectDefinition.cs - Durum Efekt Tanımları
+
+**Dosya:** `_Stratocraft/Data/StatusEffects/StatusEffectDefinition.cs`
+
+**Özellikler:**
+- Stat modifikasyonları (speed, damage, defense multipliers)
+- Stack sistemi
+- Duration ve damage per second
+
+---
+
+### 1.15.3 StatusEffectManager.cs - Durum Efekt Yöneticisi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/StatusEffects/StatusEffectManager.cs`
+
+**Özellikler:**
+- Coroutine ile effect update
+- Stack sistemi
+- Particle effect entegrasyonu
+
+---
+
+### 1.15.4 DiseaseSystem.cs - Hastalık Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/StatusEffects/DiseaseSystem.cs`
+
+**Özellikler:**
+- Disease state cache
+- Cure item kontrolü
+- StatusEffectManager entegrasyonu
+
+---
+
+### 1.15.5 Dosya Yapısı
+
+```
+_Stratocraft/
+├── Data/
+│   └── StatusEffects/
+│       ├── StatusEffectDefinition.cs
+│       ├── DiseaseDefinition.cs
+│       └── CureItemDefinition.cs
+│
+├── Scripts/
+│   └── Systems/
+│       └── StatusEffects/
+│           ├── StatusEffectManager.cs
+│           └── DiseaseSystem.cs
+```
+
+---
+
+## 🛠️ ADIM 1.16: ZAMAN VE HAVA SİSTEMİ
+
+> **✅ YENİ SİSTEM:** Hava durumu, mevsimler ve sıcaklık sistemi.  
+> **Entegrasyon:** GameTimeManager, ChunkManager, StatusEffectManager, ServiceLocator  
+> **Faz:** 4 (Oyun Mekanikleri)
+
+### 1.16.1 Sistem Genel Bakış
+
+**Amaç:**
+Hava durumu, mevsimler ve sıcaklık sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Weather System:** Rain, snow, storm, fog
+2. **Season System:** Spring, summer, autumn, winter
+3. **Temperature System:** Sıcaklık sistemi
+4. **Weather Effects:** Görsel ve ses efektleri
+
+---
+
+### 1.16.2 WeatherSystem.cs - Hava Durumu Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Weather/WeatherSystem.cs`
+
+**Özellikler:**
+- Coroutine ile weather change
+- Mevsim bazlı hava durumu şansı
+- Chunk bazlı weather cache
+
+---
+
+### 1.16.3 SeasonSystem.cs - Mevsim Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Weather/SeasonSystem.cs`
+
+**Özellikler:**
+- GameTimeManager entegrasyonu
+- Mevsim süreleri
+- Mevsim geçişleri
+
+---
+
+### 1.16.4 TemperatureSystem.cs - Sıcaklık Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Weather/TemperatureSystem.cs`
+
+**Özellikler:**
+- Mevsim bazlı sıcaklık
+- Hava durumu bazlı sıcaklık
+- Yükseklik bazlı sıcaklık (ChunkManager entegrasyonu)
+- Sıcaklık bazlı status effect'ler
+
+---
+
+### 1.16.5 WeatherEffects.cs - Hava Durumu Efektleri
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Weather/WeatherEffects.cs`
+
+**Özellikler:**
+- Unity Particle System entegrasyonu
+- Unity Audio entegrasyonu
+- Weather bazlı efektler
+
+---
+
+### 1.16.6 Dosya Yapısı
+
+```
+_Stratocraft/
+├── Scripts/
+│   └── Systems/
+│       └── Weather/
+│           ├── WeatherSystem.cs
+│           ├── SeasonSystem.cs
+│           ├── TemperatureSystem.cs
+│           └── WeatherEffects.cs
+```
+
+---
+
+## 🛠️ ADIM 1.17: ZİNDAN VE MAĞARA SİSTEMİ
+
+> **✅ YENİ SİSTEM:** Zindan oluşturma, boss, loot ve key sistemi.  
+> **Entegrasyon:** ChunkManager, StructurePlacer, BossArena, ServiceLocator  
+> **Faz:** 5 (Yapay Zeka, Savaş ve Felaketler)
+
+### 1.17.1 Sistem Genel Bakış
+
+**Amaç:**
+Zindan oluşturma, boss, loot ve key sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Dungeon Generation:** Zindan oluşturma
+2. **Dungeon Boss:** Zindan boss'u
+3. **Dungeon Loot:** Loot chest'leri
+4. **Dungeon Key:** Key sistemi
+5. **Dungeon Difficulty:** Zorluk seviyeleri
+
+---
+
+### 1.17.2 DungeonDefinition.cs - Zindan Tanımları
+
+**Dosya:** `_Stratocraft/Data/Dungeons/DungeonDefinition.cs`
+
+**Özellikler:**
+- Zindan boyutu
+- Boss tanımı
+- Loot chest'leri
+- Key gereksinimi
+
+---
+
+### 1.17.3 DungeonGenerator.cs - Zindan Oluşturma
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Dungeons/DungeonGenerator.cs`
+
+**Özellikler:**
+- Job System + Burst ile dungeon generation
+- Oda ve koridor oluşturma
+- Chunk bazlı dungeon cache
+
+---
+
+### 1.17.4 DungeonEntrance.cs - Zindan Girişi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Dungeons/DungeonEntrance.cs`
+
+**Özellikler:**
+- Key kontrolü
+- DungeonGenerator entegrasyonu
+- IInteractable interface
+
+---
+
+### 1.17.5 Dosya Yapısı
+
+```
+_Stratocraft/
+├── Data/
+│   └── Dungeons/
+│       └── DungeonDefinition.cs
+│
+├── Scripts/
+│   └── Systems/
+│       └── Dungeons/
+│           ├── DungeonGenerator.cs
+│           └── DungeonEntrance.cs
+```
+
+---
+
+## 🛠️ ADIM 1.18: MAGIC VE BÜYÜ SİSTEMİ
+
+> **✅ YENİ SİSTEM:** Büyü sistemi, büyü kitapları ve mana sistemi.  
+> **Entegrasyon:** ManaSystem, ItemDatabase, ChunkManager, ServiceLocator  
+> **Faz:** 4 (Oyun Mekanikleri)
+
+### 1.18.1 Sistem Genel Bakış
+
+**Amaç:**
+Büyü sistemi, büyü kitapları ve mana sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Spell System:** Büyü sistemi
+2. **Spell Books:** Büyü kitapları
+3. **Mana System:** Mana barı
+4. **Spell Schools:** Fire, Ice, Lightning, vb.
+5. **Spell Levels:** Büyü seviyeleri
+
+---
+
+### 1.18.2 SpellDefinition.cs - Büyü Tanımları
+
+**Dosya:** `_Stratocraft/Data/Spells/SpellDefinition.cs`
+
+**Özellikler:**
+- Spell school (Fire, Ice, Lightning, vb.)
+- Mana cost
+- Cast time ve cooldown
+- Damage ve range
+
+---
+
+### 1.18.3 ManaSystem.cs - Mana Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Magic/ManaSystem.cs`
+
+**Özellikler:**
+- Coroutine ile mana regeneration
+- Async database persistence
+- Mana kullanım kontrolü
+
+---
+
+### 1.18.4 SpellCasting.cs - Büyü Kullanma
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Magic/SpellCasting.cs`
+
+**Özellikler:**
+- ManaSystem entegrasyonu
+- Spell effect spawn
+- Cast animation
+
+---
+
+### 1.18.5 Dosya Yapısı
+
+```
+_Stratocraft/
+├── Data/
+│   └── Spells/
+│       └── SpellDefinition.cs
+│
+├── Scripts/
+│   └── Systems/
+│       └── Magic/
+│           ├── ManaSystem.cs
+│           └── SpellCasting.cs
+```
+
+---
+
+## 🛠️ ADIM 1.19: TEKNOLOJİ AĞACI (Tech Tree)
+
+> **✅ YENİ SİSTEM:** Teknoloji ağacı, unlock sistemi ve bağımlılıklar.  
+> **Entegrasyon:** ResearchManager, DatabaseManager, ServiceLocator  
+> **Faz:** 8 (Eksik Sistemler, Admin Komutları)
+
+### 1.19.1 Sistem Genel Bakış
+
+**Amaç:**
+Teknoloji ağacı, unlock sistemi ve bağımlılıklar eklemek.
+
+**Temel Özellikler:**
+1. **Tech Tree UI:** Teknoloji ağacı arayüzü
+2. **Tech Unlock:** Unlock sistemi
+3. **Tech Prerequisites:** Bağımlılıklar
+4. **Research Points:** Araştırma puanları
+5. **Tech Categories:** Kategoriler
+
+---
+
+### 1.19.2 TechNodeDefinition.cs - Teknoloji Düğüm Tanımları
+
+**Dosya:** `_Stratocraft/Data/Tech/TechNodeDefinition.cs`
+
+**Özellikler:**
+- Prerequisite teknolojiler
+- Research point gereksinimi
+- Tech kategorisi
+
+---
+
+### 1.19.3 TechTreeManager.cs - Teknoloji Ağacı Yöneticisi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Tech/TechTreeManager.cs`
+
+**Özellikler:**
+- Tech unlock sistemi
+- Prerequisite kontrolü
+- Research point sistemi
+
+---
+
+### 1.19.4 Dosya Yapısı
+
+```
+_Stratocraft/
+├── Data/
+│   └── Tech/
+│       └── TechNodeDefinition.cs
+│
+├── Scripts/
+│   └── Systems/
+│       └── Tech/
+│           └── TechTreeManager.cs
+```
+
+---
+
+## 🛠️ ADIM 1.20: ARAÇ VE ULAŞIM SİSTEMİ
+
+> **✅ YENİ SİSTEM:** Carts, boats, airships gibi araçlar ve ulaşım sistemi.  
+> **Entegrasyon:** ChunkManager, PlayerInventory, ServiceLocator  
+> **Faz:** 7 (Güç Sistemi, Binekler ve Savaş Makineleri)
+
+### 1.20.1 Sistem Genel Bakış
+
+**Amaç:**
+Carts, boats, airships gibi araçlar ve ulaşım sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Vehicles:** Carts, boats, airships
+2. **Vehicle Controls:** Kontrol sistemi
+3. **Vehicle Inventory:** Araç envanteri
+4. **Vehicle Fuel:** Yakıt sistemi
+5. **Vehicle Repair:** Tamir sistemi
+
+---
+
+### 1.20.2 VehicleDefinition.cs - Araç Tanımları
+
+**Dosya:** `_Stratocraft/Data/Vehicles/VehicleDefinition.cs`
+
+**Özellikler:**
+- Araç tipi (Cart, Boat, Airship)
+- Envanter slot sayısı
+- Yakıt tüketimi
+- Hız ve dayanıklılık
+
+---
+
+### 1.20.3 VehicleController.cs - Araç Kontrolü
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Vehicles/VehicleController.cs`
+
+**Özellikler:**
+- Unity Physics entegrasyonu
+- Kontrol sistemi
+- Yakıt tüketimi
+
+---
+
+### 1.20.4 Dosya Yapısı
+
+```
+_Stratocraft/
+├── Data/
+│   └── Vehicles/
+│       └── VehicleDefinition.cs
+│
+├── Scripts/
+│   └── Systems/
+│       └── Vehicles/
+│           └── VehicleController.cs
+```
+
+---
+
+## 🛠️ ADIM 1.21: PET VE EV HAYVANI SİSTEMİ
+
+> **✅ YENİ SİSTEM:** Companion pet'ler, pet envanteri ve komut sistemi.  
+> **Entegrasyon:** MobAI, PlayerInventory, DatabaseManager, ServiceLocator  
+> **Faz:** 5 (Yapay Zeka, Savaş ve Felaketler)
+
+### 1.21.1 Sistem Genel Bakış
+
+**Amaç:**
+Companion pet'ler, pet envanteri ve komut sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Pet System:** Companion pet'ler
+2. **Pet Inventory:** Pet envanteri
+3. **Pet Leveling:** Pet seviye sistemi
+4. **Pet Commands:** Komut sistemi
+5. **Pet Abilities:** Pet yetenekleri
+
+---
+
+### 1.21.2 PetDefinition.cs - Pet Tanımları
+
+**Dosya:** `_Stratocraft/Data/Pets/PetDefinition.cs`
+
+**Özellikler:**
+- Pet tipi
+- Pet yetenekleri
+- Pet envanter slot sayısı
+
+---
+
+### 1.21.3 PetSystem.cs - Pet Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Pets/PetSystem.cs`
+
+**Özellikler:**
+- Pet spawn sistemi
+- Pet komut sistemi
+- Pet leveling sistemi
+
+---
+
+### 1.21.4 Dosya Yapısı
+
+```
+_Stratocraft/
+├── Data/
+│   └── Pets/
+│       └── PetDefinition.cs
+│
+├── Scripts/
+│   └── Systems/
+│       └── Pets/
+│           └── PetSystem.cs
+```
+
+---
+
+## 🛠️ ADIM 1.22: TARIM VE ÇİFTÇİLİK SİSTEMİ
+
+> **✅ YENİ SİSTEM:** Crop planting, seeds, harvest ve farming tools sistemi.  
+> **Entegrasyon:** ChunkManager, PlayerInventory, GameTimeManager, ServiceLocator  
+> **Faz:** 4 (Oyun Mekanikleri)
+
+### 1.22.1 Sistem Genel Bakış
+
+**Amaç:**
+Crop planting, seeds, harvest ve farming tools sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Crop System:** Bitki sistemi
+2. **Seed System:** Tohum sistemi
+3. **Growth System:** Büyüme sistemi
+4. **Harvest System:** Hasat sistemi
+5. **Fertilizer System:** Gübre sistemi
+
+---
+
+### 1.22.2 CropDefinition.cs - Bitki Tanımları
+
+**Dosya:** `_Stratocraft/Data/Crops/CropDefinition.cs`
+
+**Özellikler:**
+- Büyüme aşamaları
+- Büyüme süresi
+- Hasat sonucu
+
+---
+
+### 1.22.3 FarmingSystem.cs - Çiftçilik Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Farming/FarmingSystem.cs`
+
+**Özellikler:**
+- Crop planting
+- Growth coroutine
+- Harvest sistemi
+
+---
+
+### 1.22.4 Dosya Yapısı
+
+```
+_Stratocraft/
+├── Data/
+│   └── Crops/
+│       └── CropDefinition.cs
+│
+├── Scripts/
+│   └── Systems/
+│       └── Farming/
+│           └── FarmingSystem.cs
+```
+
+---
+
+## 🛠️ ADIM 1.23: BALIKÇILIK SİSTEMİ
+
+> **✅ YENİ SİSTEM:** Fishing mechanics, fishing rod ve fish types sistemi.  
+> **Entegrasyon:** PlayerInventory, ChunkManager, ServiceLocator  
+> **Faz:** 4 (Oyun Mekanikleri)
+
+### 1.23.1 Sistem Genel Bakış
+
+**Amaç:**
+Fishing mechanics, fishing rod ve fish types sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Fishing Mechanics:** Balık tutma mekaniği
+2. **Fishing Rod:** Olta sistemi
+3. **Fish Types:** Balık tipleri
+4. **Fishing Spots:** Balık tutma noktaları
+5. **Fishing Rewards:** Ödül sistemi
+
+---
+
+### 1.23.2 FishDefinition.cs - Balık Tanımları
+
+**Dosya:** `_Stratocraft/Data/Fish/FishDefinition.cs`
+
+**Özellikler:**
+- Balık tipi
+- Yakalanma şansı
+- Ödül item'ları
+
+---
+
+### 1.23.3 FishingSystem.cs - Balıkçılık Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Fishing/FishingSystem.cs`
+
+**Özellikler:**
+- Fishing minigame
+- Fish spawn sistemi
+- Reward sistemi
+
+---
+
+### 1.23.4 Dosya Yapısı
+
+```
+_Stratocraft/
+├── Data/
+│   └── Fish/
+│       └── FishDefinition.cs
+│
+├── Scripts/
+│   └── Systems/
+│       └── Fishing/
+│           └── FishingSystem.cs
+```
+
+---
+
+## 🛠️ ADIM 1.24: MADENCİLİK VE ERİTME SİSTEMİ
+
+> **✅ YENİ SİSTEM:** Smelting mechanics, furnaces, fuel ve smelting recipes sistemi.  
+> **Entegrasyon:** PlayerInventory, ItemDatabase, ServiceLocator  
+> **Faz:** 4 (Oyun Mekanikleri)
+
+### 1.24.1 Sistem Genel Bakış
+
+**Amaç:**
+Smelting mechanics, furnaces, fuel ve smelting recipes sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Smelting System:** Eritme sistemi
+2. **Furnace System:** Fırın sistemi
+3. **Fuel System:** Yakıt sistemi
+4. **Smelting Recipes:** Eritme tarifleri
+5. **Smelting Time:** Eritme süresi
+
+---
+
+### 1.24.2 SmeltingRecipe.cs - Eritme Tarifleri
+
+**Dosya:** `_Stratocraft/Data/Recipes/Smelting/SmeltingRecipe.cs`
+
+**Özellikler:**
+- Input item
+- Output item
+- Fuel gereksinimi
+- Smelting time
+
+---
+
+### 1.24.3 SmeltingSystem.cs - Eritme Sistemi
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Smelting/SmeltingSystem.cs`
+
+**Özellikler:**
+- Furnace entegrasyonu
+- Fuel tüketimi
+- Coroutine ile smelting time
+
+---
+
+### 1.24.4 Dosya Yapısı
+
+```
+_Stratocraft/
+├── Data/
+│   └── Recipes/
+│       └── Smelting/
+│           └── SmeltingRecipe.cs
+│
+├── Scripts/
+│   └── Systems/
+│       └── Smelting/
+│           └── SmeltingSystem.cs
+```
+
+---
+
+## 🛠️ ADIM 1.25: DEPOLAMA VE SANDIK SİSTEMİ
+
+> **✅ YENİ SİSTEM:** Chests, chest inventory, locking ve kategoriler sistemi.  
+> **Entegrasyon:** PlayerInventory, TerritoryManager, ServiceLocator  
+> **Faz:** 4 (Oyun Mekanikleri)
+
+### 1.25.1 Sistem Genel Bakış
+
+**Amaç:**
+Chests, chest inventory, locking ve kategoriler sistemi eklemek.
+
+**Temel Özellikler:**
+1. **Chest System:** Sandık sistemi
+2. **Chest Inventory:** Sandık envanteri
+3. **Chest Locking:** Kilit sistemi
+4. **Chest Categories:** Kategoriler
+5. **Chest UI:** Sandık arayüzü
+
+---
+
+### 1.25.2 ChestDefinition.cs - Sandık Tanımları
+
+**Dosya:** `_Stratocraft/Data/Chests/ChestDefinition.cs`
+
+**Özellikler:**
+- Envanter slot sayısı
+- Kilit desteği
+- Kategori sistemi
+
+---
+
+### 1.25.3 ChestInventory.cs - Sandık Envanteri
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Storage/ChestInventory.cs`
+
+**Özellikler:**
+- SyncList ile network synchronization
+- Async database persistence
+- Lock sistemi
+
+---
+
+### 1.25.4 Dosya Yapısı
+
+```
+_Stratocraft/
+├── Data/
+│   └── Chests/
+│       └── ChestDefinition.cs
+│
+├── Scripts/
+│   └── Systems/
+│       └── Storage/
+│           └── ChestInventory.cs
+```
 
 ---
 
@@ -25020,6 +27867,8 @@ Assets/_Stratocraft/
 - ✅ ItemDatabase.cs (Item lookup)
 - ✅ ItemSpawner.cs (Item spawn)
 - ✅ ItemDefinition güncellemeleri (isChisel, chiselDefinition, chiselLevel - FAZ 4)
+- ✅ ItemDefinition güncellemeleri (isFood, foodDefinition, isCureItem - ADIM 1.14, 1.15)
+- ✅ ItemDefinition güncellemeleri (isTool, maxDurability, toolLevel, enchantments - ADIM 1.9)
 
 **1.5. Blok Şekillendirme Sistemi (ADIM 1.5):**
 - ✅ ChiselTool.cs (Blok şekillendirme aleti - IEquippable interface)
@@ -25037,6 +27886,43 @@ Assets/_Stratocraft/
 - ✅ VariantMeshGenerator entegrasyonu (Variant ID formatı uyumlu)
 - ✅ ChunkManager entegrasyonu (SetBlockType, GetBlockType, RegenerateChunk)
 - ✅ GridPlacementSystem entegrasyonu (SnapToGrid, WorldToGrid)
+
+**1.6. Crafting Sistemi (ADIM 1.6):**
+- ✅ CraftingRecipe.cs (ScriptableObject - Recipe tanımları)
+- ✅ CraftingTable.cs (NetworkBehaviour - Crafting table yapısı)
+- ✅ CraftingManager.cs (Crafting mantığı - Dictionary cache, O(1) lookup)
+- ✅ CraftingUI.cs (UI Manager - UI pooling, async loading)
+- ✅ Recipe cache sistemi (O(1) recipe lookup)
+- ✅ Crafting table seviyeleri (None, Basic, Advanced, Master)
+- ✅ Malzeme kontrolü (PlayerInventory entegrasyonu)
+- ✅ ChunkManager entegrasyonu (voxel terrain uyumlu)
+
+**1.7. Kapsamlı Envanter Sistemi (ADIM 1.7):**
+- ✅ InventorySlot.cs (Slot veri yapısı)
+- ✅ PlayerInventory.cs (NetworkBehaviour - Envanter mantığı)
+- ✅ SyncList kullanımı (network synchronization)
+- ✅ Dictionary cache (O(1) item count lookup)
+- ✅ Hotbar sistemi (9 slot, 1-9 tuşları)
+- ✅ Item stacking (maxStack kontrolü)
+- ✅ Weight sistemi (ağırlık limiti)
+- ✅ Async database persistence (UI donmasını önler)
+
+**1.8. Furniture Sistemi (ADIM 1.8):**
+- ✅ FurnitureDefinition.cs (ScriptableObject - Furniture tanımları)
+- ✅ FurniturePlacer.cs (Furniture yerleştirme - StructurePlacer entegrasyonu)
+- ✅ FurnitureInteraction.cs (IInteractable - Sit, Sleep, Chest, Workbench)
+- ✅ Chunk bazlı furniture cache
+- ✅ TerritoryManager entegrasyonu (sahiplik kontrolü)
+- ✅ ChunkManager entegrasyonu (voxel terrain uyumlu)
+
+**1.9. İşlevsel Item'ler (ADIM 1.9):**
+- ✅ ToolDurability.cs (Durability sistemi - async database persistence)
+- ✅ RepairStation.cs (Tool repair - malzeme kontrolü)
+- ✅ UpgradeStation.cs (Tool upgrade - seviye artışı)
+- ✅ EnchantmentSystem.cs (Enchantment sistemi - Dictionary cache, O(1) lookup)
+- ✅ EnchantmentDefinition.cs (ScriptableObject - Enchantment tanımları)
+- ✅ Unbreaking, Fortune, DamageBoost, SpeedBoost enchantment'ları
+- ✅ Repair/Upgrade malzeme sistemi
 
 **2. Ritüel Sistemi:**
 - ✅ RitualRecipe.cs (ScriptableObject)
@@ -25056,14 +27942,102 @@ Assets/_Stratocraft/
 - ✅ Contract board (Fiziksel pano)
 - ✅ Contract signing (İmzalama sistemi)
 
+**1.14. Yemek ve Açlık Sistemi (ADIM 1.14):**
+- ✅ FoodDefinition.cs (ScriptableObject - Yemek tanımları)
+- ✅ HungerSystem.cs (Açlık sistemi - Coroutine, async database)
+- ✅ CookingStation.cs (Pişirme sistemi - IInteractable, malzeme kontrolü)
+- ✅ CookingRecipe.cs (ScriptableObject - Pişirme tarifleri)
+- ✅ Food quality sistemi (Common, Good, Excellent, Perfect)
+- ✅ Food buff sistemi (StatusEffectManager entegrasyonu)
+
+**1.15. Hastalık ve Durum Sistemi (ADIM 1.15):**
+- ✅ StatusEffectDefinition.cs (ScriptableObject - Durum efekt tanımları)
+- ✅ StatusEffectManager.cs (Durum efekt yöneticisi - Coroutine, Stack sistemi)
+- ✅ DiseaseSystem.cs (Hastalık sistemi - Disease state cache)
+- ✅ DiseaseDefinition.cs (ScriptableObject - Hastalık tanımları)
+- ✅ CureItemDefinition.cs (ScriptableObject - İyileştirme item tanımları)
+- ✅ Stat modifikasyonları (speed, damage, defense multipliers)
+- ✅ Particle effect entegrasyonu
+
+**1.16. Zaman ve Hava Sistemi (ADIM 1.16):**
+- ✅ WeatherSystem.cs (Hava durumu sistemi - Coroutine, mevsim bazlı)
+- ✅ SeasonSystem.cs (Mevsim sistemi - GameTimeManager entegrasyonu)
+- ✅ TemperatureSystem.cs (Sıcaklık sistemi - Yükseklik bazlı, status effect'ler)
+- ✅ WeatherEffects.cs (Hava durumu efektleri - Unity Particle System, Unity Audio)
+- ✅ Hava durumu tipleri (Clear, Rain, Snow, Storm, Fog)
+- ✅ Mevsimler (Spring, Summer, Autumn, Winter)
+
+**1.17. Zindan ve Mağara Sistemi (ADIM 1.17):**
+- ✅ DungeonDefinition.cs (ScriptableObject - Zindan tanımları)
+- ✅ DungeonGenerator.cs (Zindan oluşturma - Job System + Burst)
+- ✅ DungeonEntrance.cs (Zindan girişi - Key kontrolü, IInteractable)
+- ✅ Zorluk seviyeleri (Easy, Medium, Hard, Extreme)
+- ✅ Key sistemi (Dungeon key kontrolü)
+- ✅ BossArena entegrasyonu
+
+**1.18. Magic ve Büyü Sistemi (ADIM 1.18):**
+- ✅ SpellDefinition.cs (ScriptableObject - Büyü tanımları)
+- ✅ ManaSystem.cs (Mana sistemi - Coroutine, async database)
+- ✅ SpellCasting.cs (Büyü kullanma - ManaSystem entegrasyonu)
+- ✅ Spell schools (Fire, Ice, Lightning, Nature, Dark, Light)
+- ✅ Spell effect tipleri (Damage, Heal, Buff, Debuff, Teleport, Summon)
+
+**1.19. Teknoloji Ağacı (ADIM 1.19):**
+- ✅ TechNodeDefinition.cs (ScriptableObject - Teknoloji düğüm tanımları)
+- ✅ TechTreeManager.cs (Teknoloji ağacı yöneticisi - Prerequisite kontrolü)
+- ✅ Research point sistemi
+- ✅ Tech kategorileri
+
+**1.20. Araç ve Ulaşım Sistemi (ADIM 1.20):**
+- ✅ VehicleDefinition.cs (ScriptableObject - Araç tanımları)
+- ✅ VehicleController.cs (Araç kontrolü - Unity Physics)
+- ✅ Araç tipleri (Cart, Boat, Airship)
+- ✅ Yakıt ve tamir sistemi
+
+**1.21. Pet ve Ev Hayvanı Sistemi (ADIM 1.21):**
+- ✅ PetDefinition.cs (ScriptableObject - Pet tanımları)
+- ✅ PetSystem.cs (Pet sistemi - Pet spawn, komut, leveling)
+- ✅ Pet envanteri ve yetenekleri
+
+**1.22. Tarım ve Çiftçilik Sistemi (ADIM 1.22):**
+- ✅ CropDefinition.cs (ScriptableObject - Bitki tanımları)
+- ✅ FarmingSystem.cs (Çiftçilik sistemi - Crop planting, growth, harvest)
+- ✅ Growth coroutine sistemi
+- ✅ Fertilizer sistemi
+
+**1.23. Balıkçılık Sistemi (ADIM 1.23):**
+- ✅ FishDefinition.cs (ScriptableObject - Balık tanımları)
+- ✅ FishingSystem.cs (Balıkçılık sistemi - Fishing minigame, fish spawn)
+- ✅ Fishing rod sistemi
+- ✅ Fishing spots ve rewards
+
+**1.24. Madencilik ve Eritme Sistemi (ADIM 1.24):**
+- ✅ SmeltingRecipe.cs (ScriptableObject - Eritme tarifleri)
+- ✅ SmeltingSystem.cs (Eritme sistemi - Furnace entegrasyonu, fuel tüketimi)
+- ✅ Smelting time kontrolü
+- ✅ Fuel sistemi
+
+**1.25. Depolama ve Sandık Sistemi (ADIM 1.25):**
+- ✅ ChestDefinition.cs (ScriptableObject - Sandık tanımları)
+- ✅ ChestInventory.cs (Sandık envanteri - SyncList, async database, lock sistemi)
+- ✅ Kategori sistemi
+- ✅ TerritoryManager entegrasyonu (sahiplik kontrolü)
+
 ### 🛠️ Kullanılan Teknolojiler
 
 | Teknoloji | Kaynak | Açıklama |
 |-----------|--------|----------|
-| **ScriptableObject** | Unity Yerleşik | Item, Ritual, Contract tanımları |
+| **ScriptableObject** | Unity Yerleşik | Item, Ritual, Contract, CraftingRecipe, FurnitureDefinition, vb. tanımları |
 | **Flood-Fill Algorithm** | Custom | Bölge hesaplama (2D/3D) |
-| **SQLite** | NuGet | Kontrat, bölge verileri |
-| **FishNet** | GitHub | Network senkronizasyonu |
+| **SQLite** | NuGet | Kontrat, bölge, envanter, durability, vb. verileri |
+| **FishNet** | GitHub | Network senkronizasyonu (SyncList, ServerRpc, ObserversRpc) |
+| **Unity Job System + Burst** | Unity Yerleşik | Paralel işlemler (village generation, dungeon generation) |
+| **Unity Coroutines** | Unity Yerleşik | Async operations (hunger decrease, mana regen, effect update) |
+| **Unity NavMesh** | Unity Yerleşik | NPC pathfinding (ChunkNavMeshBaker entegrasyonu) |
+| **Unity Particle System** | Unity Yerleşik | Weather effects, cutting effects |
+| **Unity Audio** | Unity Yerleşik | Weather sounds |
+| **Dictionary Cache** | Custom | O(1) lookup optimizasyonları |
+| **UI Pooling** | Custom | UI element pooling (performans optimizasyonu) |
 
 ### 📂 Eklenen Dosyalar
 
@@ -25086,26 +28060,80 @@ Assets/_Stratocraft/
 │       │   └── ClanFence.cs
 │       ├── Economy/
 │       │   └── ContractManager.cs
-│       └── Building/
-│           ├── ChiselTool.cs
-│           ├── ChiselRaycast.cs
-│           ├── BlockSelectionVisualizer.cs
-│           ├── BlockCuttingSystem.cs
-│           ├── ShapeApplicationSystem.cs
-│           └── CutMode.cs
+│       ├── Building/
+│       │   ├── ChiselTool.cs
+│       │   ├── ChiselRaycast.cs
+│       │   ├── BlockSelectionVisualizer.cs
+│       │   ├── BlockCuttingSystem.cs
+│       │   ├── ShapeApplicationSystem.cs
+│       │   └── CutMode.cs
+│       ├── Crafting/
+│       │   ├── CraftingTable.cs
+│       │   └── CraftingManager.cs
+│       ├── Inventory/
+│       │   ├── InventorySlot.cs
+│       │   └── PlayerInventory.cs
+│       ├── Furniture/
+│       │   ├── FurniturePlacer.cs
+│       │   └── FurnitureInteraction.cs
+│       ├── Tools/
+│       │   ├── ToolDurability.cs
+│       │   ├── RepairStation.cs
+│       │   ├── UpgradeStation.cs
+│       │   └── EnchantmentSystem.cs
+│       ├── Food/
+│       │   ├── HungerSystem.cs
+│       │   └── CookingStation.cs
+│       ├── StatusEffects/
+│       │   ├── StatusEffectManager.cs
+│       │   └── DiseaseSystem.cs
+│       ├── Weather/
+│       │   ├── WeatherSystem.cs
+│       │   ├── SeasonSystem.cs
+│       │   ├── TemperatureSystem.cs
+│       │   └── WeatherEffects.cs
+│       ├── Smelting/
+│       │   └── SmeltingSystem.cs
+│       └── Storage/
+│           └── ChestInventory.cs
 └── Data/
     ├── Items/
     │   ├── Resources/
     │   ├── Weapons/
     │   └── Tools/
-    └── Recipes/
-        └── Rituals/
+    ├── Recipes/
+    │   ├── Rituals/
+    │   ├── Crafting/
+    │   ├── Cooking/
+    │   └── Smelting/
+    ├── Furniture/
+    │   └── FurnitureDefinition.cs
+    ├── Food/
+    │   ├── FoodDefinition.cs
+    │   └── CookingRecipe.cs
+    ├── StatusEffects/
+    │   ├── StatusEffectDefinition.cs
+    │   ├── DiseaseDefinition.cs
+    │   └── CureItemDefinition.cs
+    ├── Enchantments/
+    │   └── EnchantmentDefinition.cs
+    └── Chests/
+        └── ChestDefinition.cs
 ```
 
 ### 🎯 Sonuç
 
 - ✅ Item sistemi hazır (Fiziksel itemlar)
 - ✅ Blok şekillendirme sistemi tamamlandı (ChiselTool, BlockCuttingSystem, ShapeApplicationSystem)
+- ✅ Crafting sistemi tamamlandı (ADIM 1.6 - CraftingTable, CraftingManager, Recipe sistemi)
+- ✅ Kapsamlı envanter sistemi tamamlandı (ADIM 1.7 - PlayerInventory, Hotbar, Weight sistemi)
+- ✅ Furniture sistemi tamamlandı (ADIM 1.8 - FurniturePlacer, FurnitureInteraction)
+- ✅ İşlevsel item'ler tamamlandı (ADIM 1.9 - ToolDurability, RepairStation, UpgradeStation, EnchantmentSystem)
+- ✅ Yemek ve açlık sistemi tamamlandı (ADIM 1.14 - HungerSystem, CookingStation, FoodDefinition)
+- ✅ Hastalık ve durum sistemi tamamlandı (ADIM 1.15 - StatusEffectManager, DiseaseSystem)
+- ✅ Zaman ve hava sistemi tamamlandı (ADIM 1.16 - WeatherSystem, SeasonSystem, TemperatureSystem)
+- ✅ Madencilik ve eritme sistemi tamamlandı (ADIM 1.24 - SmeltingSystem, SmeltingRecipe)
+- ✅ Depolama ve sandık sistemi tamamlandı (ADIM 1.25 - ChestInventory, ChestDefinition)
 - ✅ Ritüel sistemi çalışıyor (Batarya oluşturma)
 - ✅ Klan bölge sistemi aktif (Flood-Fill)
 - ✅ Kontrat sistemi tamamlandı
@@ -25121,6 +28149,33 @@ Assets/_Stratocraft/
 - ✅ MobAI.cs (Normal mob AI - State Machine)
 - ✅ BossAI.cs (Boss AI - Panda BT)
 - ✅ MobSpawner.cs (Mob spawn)
+
+**1.10. NPC Sistemi (ADIM 1.10):**
+- ✅ NPCDefinition.cs (ScriptableObject - NPC tanımları)
+- ✅ NPCAI.cs (NPC AI - State Machine, NavMesh pathfinding)
+- ✅ VillagerTrading.cs (Ticaret sistemi - Trade history cache)
+- ✅ DialogueSystem.cs (Diyalog sistemi - Dialogue state cache)
+- ✅ VillageGenerator.cs (Köy oluşturma - Job System + Burst)
+- ✅ NPC meslekleri (Blacksmith, Merchant, Farmer, Guard, Priest, Builder, Scholar)
+- ✅ ChunkNavMeshBaker entegrasyonu (dinamik NavMesh)
+- ✅ ChunkManager entegrasyonu (voxel terrain uyumlu)
+
+**1.12. Gelişmiş Boss Sistemi (ADIM 1.12):**
+- ✅ DragonAI.cs (Ejderha AI - Flight state machine, Unity Physics)
+- ✅ BossArena.cs (Boss arenası - StructurePlacer entegrasyonu)
+- ✅ BossLootTable.cs (Loot sistemi - Rarity bazlı)
+- ✅ BossPhaseSystem.cs (Multi-phase fight sistemi)
+- ✅ BossSummoning.cs (Çağırma sistemi - Ritual malzeme kontrolü)
+- ✅ BossArenaDefinition.cs (ScriptableObject - Arena tanımları)
+- ✅ Respawn cooldown sistemi
+
+**1.13. Özel Canlı Tipleri (ADIM 1.13):**
+- ✅ MobClassDefinition.cs (ScriptableObject - Mob sınıf tanımları)
+- ✅ MobAbilitySystem.cs (Mob yetenek sistemi - Cooldown, Level scaling)
+- ✅ MobArmorSystem.cs (Mob zırh sistemi)
+- ✅ MobLeveling.cs (Mob seviye sistemi - Experience sistemi)
+- ✅ Mob sınıfları (Warrior, Mage, Archer, Tank, Assassin, Support)
+- ✅ Mob yetenekleri (Melee, Ranged, Area, Heal, Buff, Debuff)
 
 **2. Savaş Sistemi:**
 - ✅ IDamageable.cs (Hasar arayüzü)
@@ -25139,6 +28194,14 @@ Assets/_Stratocraft/
 - ✅ DisasterManager.cs (Felaket yönetimi)
 - ✅ Disaster types (Solar Flare, Earthquake, vb.)
 - ✅ Disaster phases (Haftalık, 3 günlük, günlük)
+
+**1.11. Gelişmiş Binek Sistemi (ADIM 1.11):**
+- ✅ SaddleDefinition.cs (ScriptableObject - Eğer tanımları)
+- ✅ MountInventory.cs (Binek envanteri - SyncList, async database)
+- ✅ MountArmor.cs (Binek zırhı - Hasar azaltma)
+- ✅ MountAbilities.cs (Binek yetenekleri - Dash, Jump, Charge, Heal, Shield)
+- ✅ MountLeveling.cs (Binek seviye sistemi - Experience sistemi, exponential growth)
+- ✅ MountArmorDefinition.cs (ScriptableObject - Zırh tanımları)
 
 **5. Tuzak Sistemi:**
 - ✅ TrapDefinition.cs (ScriptableObject)
@@ -25179,22 +28242,94 @@ Assets/_Stratocraft/
 │       ├── Disasters/
 │       │   ├── DisasterManager.cs
 │       │   └── DisasterDefinition.cs
-│       └── Traps/
-│           ├── TrapManager.cs
-│           ├── TrapCore.cs
-│           └── TrapDefinition.cs
+│       ├── Traps/
+│       │   ├── TrapManager.cs
+│       │   ├── TrapCore.cs
+│       │   └── TrapDefinition.cs
+│       ├── NPCs/
+│       │   ├── NPCAI.cs
+│       │   ├── VillagerTrading.cs
+│       │   ├── DialogueSystem.cs
+│       │   └── VillageGenerator.cs
+│       ├── Mounts/
+│       │   ├── MountInventory.cs
+│       │   ├── MountArmor.cs
+│       │   ├── MountAbilities.cs
+│       │   └── MountLeveling.cs
+│       ├── Bosses/
+│       │   ├── DragonAI.cs
+│       │   ├── BossArena.cs
+│       │   ├── BossLootTable.cs
+│       │   ├── BossPhaseSystem.cs
+│       │   └── BossSummoning.cs
+│       ├── Mobs/
+│       │   ├── MobAbilitySystem.cs
+│       │   ├── MobArmorSystem.cs
+│       │   └── MobLeveling.cs
+│       ├── Dungeons/
+│       │   ├── DungeonGenerator.cs
+│       │   └── DungeonEntrance.cs
+│       ├── Magic/
+│       │   ├── ManaSystem.cs
+│       │   └── SpellCasting.cs
+│       ├── Tech/
+│       │   └── TechTreeManager.cs
+│       ├── Vehicles/
+│       │   └── VehicleController.cs
+│       ├── Pets/
+│       │   └── PetSystem.cs
+│       ├── Farming/
+│       │   └── FarmingSystem.cs
+│       └── Fishing/
+│           └── FishingSystem.cs
 └── Data/
     ├── Mobs/
     │   ├── Normal/
     │   └── Bosses/
     ├── Disasters/
-    └── Traps/
+    ├── Traps/
+    ├── NPCs/
+    │   └── NPCDefinition.cs
+    ├── Mounts/
+    │   ├── SaddleDefinition.cs
+    │   └── MountArmorDefinition.cs
+    ├── Bosses/
+    │   ├── BossArenaDefinition.cs
+    │   └── BossLootTableDefinition.cs
+    ├── Mobs/
+    │   ├── MobClassDefinition.cs
+    │   └── MobArmorDefinition.cs
+    ├── Dungeons/
+    │   └── DungeonDefinition.cs
+    ├── Spells/
+    │   └── SpellDefinition.cs
+    ├── Tech/
+    │   └── TechNodeDefinition.cs
+    ├── Vehicles/
+    │   └── VehicleDefinition.cs
+    ├── Pets/
+    │   └── PetDefinition.cs
+    ├── Crops/
+    │   └── CropDefinition.cs
+    └── Fish/
+        └── FishDefinition.cs
 ```
 
 ### 🎯 Sonuç
 
 - ✅ Normal mob AI çalışıyor (State Machine)
 - ✅ Boss AI hazır (Panda BT)
+- ✅ NPC sistemi tamamlandı (ADIM 1.10 - NPCAI, VillagerTrading, DialogueSystem, VillageGenerator)
+- ✅ Gelişmiş binek sistemi tamamlandı (ADIM 1.11 - MountInventory, MountArmor, MountAbilities, MountLeveling)
+- ✅ Gelişmiş boss sistemi tamamlandı (ADIM 1.12 - DragonAI, BossArena, BossLootTable, BossPhaseSystem)
+- ✅ Özel canlı tipleri tamamlandı (ADIM 1.13 - MobClassDefinition, MobAbilitySystem, MobArmorSystem, MobLeveling)
+- ✅ Zindan ve mağara sistemi tamamlandı (ADIM 1.17 - DungeonGenerator, DungeonEntrance)
+- ✅ Magic ve büyü sistemi tamamlandı (ADIM 1.18 - ManaSystem, SpellCasting)
+- ✅ Teknoloji ağacı tamamlandı (ADIM 1.19 - TechTreeManager)
+- ✅ Araç ve ulaşım sistemi tamamlandı (ADIM 1.20 - VehicleController)
+- ✅ Pet ve ev hayvanı sistemi tamamlandı (ADIM 1.21 - PetSystem)
+- ✅ Tarım ve çiftçilik sistemi tamamlandı (ADIM 1.22 - FarmingSystem)
+- ✅ Balıkçılık sistemi tamamlandı (ADIM 1.23 - FishingSystem)
 - ✅ Savaş sistemi aktif (Hasar, zırh, kritik)
 - ✅ Felaket sistemi tamamlandı
 - ✅ Tuzak sistemi çalışıyor
@@ -25271,6 +28406,20 @@ Assets/_Stratocraft/
 
 ### ✅ Eklenen Özellikler
 
+**1.11. Gelişmiş Binek Sistemi (ADIM 1.11) - FAZ 7'ye taşındı:**
+- ✅ SaddleDefinition.cs (ScriptableObject - Eğer tanımları)
+- ✅ MountInventory.cs (Binek envanteri - SyncList, async database)
+- ✅ MountArmor.cs (Binek zırhı - Hasar azaltma)
+- ✅ MountAbilities.cs (Binek yetenekleri - Dash, Jump, Charge, Heal, Shield)
+- ✅ MountLeveling.cs (Binek seviye sistemi - Experience sistemi, exponential growth)
+- ✅ MountArmorDefinition.cs (ScriptableObject - Zırh tanımları)
+
+**1.20. Araç ve Ulaşım Sistemi (ADIM 1.20) - FAZ 7'ye taşındı:**
+- ✅ VehicleDefinition.cs (ScriptableObject - Araç tanımları)
+- ✅ VehicleController.cs (Araç kontrolü - Unity Physics)
+- ✅ Araç tipleri (Cart, Boat, Airship)
+- ✅ Yakıt ve tamir sistemi
+
 **1. Güç Sistemi (SGP):**
 - ✅ PlayerPowerProfile.cs (Oyuncu güç profili)
 - ✅ ClanPowerProfile.cs (Klan güç profili)
@@ -25279,7 +28428,7 @@ Assets/_Stratocraft/
 - ✅ Hysteresis system (Exploit önleme)
 - ✅ Cache system (Performans)
 
-**2. Binek Sistemi:**
+**2. Binek Sistemi (Temel):**
 - ✅ RideableMobDefinition.cs (ScriptableObject)
 - ✅ RideableMobDatabase.cs (Binilebilir mob lookup - O(1) - FAZ 7)
 - ✅ RideableMob.cs (Binek mob)
@@ -25287,6 +28436,8 @@ Assets/_Stratocraft/
 - ✅ Taming system (Eğitme)
 - ✅ Gender system (Cinsiyet)
 - ✅ Following behavior (Takip)
+
+**Gelişmiş Binek Sistemi (ADIM 1.11) - Yukarıda listelendi**
 
 **3. Kuşatma Sistemi:**
 - ✅ SiegeBeacon.cs (Kuşatma beacon'ı)
@@ -25365,6 +28516,12 @@ Assets/_Stratocraft/
 ## 🛠️ FAZ 8: EKSİK SİSTEMLER, ADMIN KOMUTLARI VE CONFIG YÖNETİMİ
 
 ### ✅ Eklenen Özellikler
+
+**1.19. Teknoloji Ağacı (ADIM 1.19) - FAZ 8'e taşındı:**
+- ✅ TechNodeDefinition.cs (ScriptableObject - Teknoloji düğüm tanımları)
+- ✅ TechTreeManager.cs (Teknoloji ağacı yöneticisi - Prerequisite kontrolü)
+- ✅ Research point sistemi
+- ✅ Tech kategorileri
 
 **1. Eksik Oyun Sistemleri (9 Sistem):**
 - ✅ **Kervan Sistemi:** Uzak mesafe ticaret, NavMesh pathfinding
@@ -25516,7 +28673,10 @@ Assets/_Stratocraft/
 │   │
 │   ├── Recipes/                        (FAZ 4)
 │   │   ├── Rituals/                    (FAZ 4 - FireballBattery.asset, LightningBattery.asset)
-│   │   └── Crafting/                   (FAZ 4 - WeaponRecipes.asset)
+│   │   ├── Crafting/                   (FAZ 4 - ADIM 1.6 - CraftingRecipe.cs ScriptableObject)
+│   │   │   └── WeaponRecipes.asset      (FAZ 4 - Örnek recipe asset'leri)
+│   │   ├── Cooking/                    (FAZ 4 - ADIM 1.14 - CookingRecipe.cs ScriptableObject)
+│   │   └── Smelting/                   (FAZ 4 - ADIM 1.24 - SmeltingRecipe.cs ScriptableObject)
 │   │
 │   ├── Mobs/                           (FAZ 5)
 │   │   ├── Normal/                     (FAZ 5 - GoblinDef.asset, OrcDef.asset)
@@ -25537,6 +28697,60 @@ Assets/_Stratocraft/
 │   │   ├── FireTrap.asset              (FAZ 5)
 │   │   ├── LightningTrap.asset         (FAZ 5)
 │   │   └── PoisonTrap.asset            (FAZ 5)
+│   │
+│   ├── Furniture/                      (FAZ 4 - ADIM 1.8 - Furniture Tanımları)
+│   │   └── FurnitureDefinition.cs       (ScriptableObject - Bed, Chair, Table, Chest, vb.)
+│   │
+│   ├── Enchantments/                   (FAZ 4 - ADIM 1.9 - Enchantment Tanımları)
+│   │   └── EnchantmentDefinition.cs     (ScriptableObject - Unbreaking, Fortune, DamageBoost, vb.)
+│   │
+│   ├── NPCs/                           (FAZ 5 - ADIM 1.10 - NPC Tanımları)
+│   │   └── NPCDefinition.cs            (ScriptableObject - Blacksmith, Merchant, Farmer, vb.)
+│   │
+│   ├── Mounts/                         (FAZ 7 - ADIM 1.11 - Binek Tanımları)
+│   │   ├── SaddleDefinition.cs         (ScriptableObject - Eğer tanımları)
+│   │   └── MountArmorDefinition.cs     (ScriptableObject - Binek zırh tanımları)
+│   │
+│   ├── Bosses/                         (FAZ 5 - ADIM 1.12 - Boss Tanımları)
+│   │   ├── BossArenaDefinition.cs      (ScriptableObject - Arena tanımları)
+│   │   └── BossLootTableDefinition.cs  (ScriptableObject - Loot table tanımları)
+│   │
+│   ├── Mobs/                           (FAZ 5 - ADIM 1.13 - Mob Tanımları)
+│   │   ├── MobClassDefinition.cs       (ScriptableObject - Warrior, Mage, Archer, vb.)
+│   │   └── MobArmorDefinition.cs      (ScriptableObject - Mob zırh tanımları)
+│   │
+│   ├── Food/                           (FAZ 4 - ADIM 1.14 - Yemek Tanımları)
+│   │   ├── FoodDefinition.cs            (ScriptableObject - Yemek tanımları)
+│   │   └── CookingRecipe.cs            (ScriptableObject - Pişirme tarifleri)
+│   │
+│   ├── StatusEffects/                  (FAZ 4 - ADIM 1.15 - Durum Efekt Tanımları)
+│   │   ├── StatusEffectDefinition.cs    (ScriptableObject - Poison, Burn, Freeze, vb.)
+│   │   ├── DiseaseDefinition.cs       (ScriptableObject - Hastalık tanımları)
+│   │   └── CureItemDefinition.cs       (ScriptableObject - İyileştirme item tanımları)
+│   │
+│   ├── Dungeons/                       (FAZ 5 - ADIM 1.17 - Zindan Tanımları)
+│   │   └── DungeonDefinition.cs        (ScriptableObject - Zindan tanımları)
+│   │
+│   ├── Spells/                         (FAZ 4 - ADIM 1.18 - Büyü Tanımları)
+│   │   └── SpellDefinition.cs          (ScriptableObject - Fire, Ice, Lightning, vb.)
+│   │
+│   ├── Tech/                           (FAZ 8 - ADIM 1.19 - Teknoloji Tanımları)
+│   │   └── TechNodeDefinition.cs       (ScriptableObject - Teknoloji düğüm tanımları)
+│   │
+│   ├── Vehicles/                       (FAZ 7 - ADIM 1.20 - Araç Tanımları)
+│   │   └── VehicleDefinition.cs        (ScriptableObject - Cart, Boat, Airship)
+│   │
+│   ├── Pets/                           (FAZ 5 - ADIM 1.21 - Pet Tanımları)
+│   │   └── PetDefinition.cs            (ScriptableObject - Pet tanımları)
+│   │
+│   ├── Crops/                          (FAZ 4 - ADIM 1.22 - Bitki Tanımları)
+│   │   └── CropDefinition.cs           (ScriptableObject - Bitki tanımları)
+│   │
+│   ├── Fish/                           (FAZ 4 - ADIM 1.23 - Balık Tanımları)
+│   │   └── FishDefinition.cs           (ScriptableObject - Balık tanımları)
+│   │
+│   └── Chests/                         (FAZ 4 - ADIM 1.25 - Sandık Tanımları)
+│       └── ChestDefinition.cs           (ScriptableObject - Sandık tanımları)
 │   │
 │   └── Config/                         (FAZ 8)
 │       ├── GameBalanceConfig.asset     (FAZ 8)
@@ -25628,12 +28842,70 @@ Assets/_Stratocraft/
 │   │       │   - spawnChance (spawn şansı)
 │   │       │   - itemDropId (kırıldığında düşecek item)
 │   │       │
-│   │       └── ChiselDefinition.cs      (Chisel alet tanımı - FAZ 4)
-│   │           - chiselId, chiselName
-│   │           - supportedMaterials (MaterialType array)
-│   │           - precision (kesim hassasiyeti)
-│   │           - durability (dayanıklılık)
-│   │           - cuttingSpeed (kesim hızı)
+│   │       ├── ChiselDefinition.cs      (Chisel alet tanımı - FAZ 4)
+│   │       │   - chiselId, chiselName
+│   │       │   - supportedMaterials (MaterialType array)
+│   │       │   - precision (kesim hassasiyeti)
+│   │       │   - durability (dayanıklılık)
+│   │       │   - cuttingSpeed (kesim hızı)
+│   │       │
+│   │       ├── CraftingRecipe.cs        (Crafting tarifi - FAZ 4 - ADIM 1.6)
+│   │       │   - recipeId, recipeName
+│   │       │   - resultItem, resultAmount
+│   │       │   - ingredients (RecipeIngredient list)
+│   │       │   - requiredTableLevel (None, Basic, Advanced, Master)
+│   │       │   - craftingTime
+│   │       │
+│   │       ├── CookingRecipe.cs          (Pişirme tarifi - FAZ 4 - ADIM 1.14)
+│   │       │   - recipeId, recipeName
+│   │       │   - resultItem, resultAmount
+│   │       │   - ingredients (RecipeIngredient list)
+│   │       │   - cookingTime
+│   │       │   - requiredCookingStationLevel
+│   │       │
+│   │       ├── SmeltingRecipe.cs        (Eritme tarifi - FAZ 4 - ADIM 1.24)
+│   │       │   - recipeId, recipeName
+│   │       │   - inputItem, inputAmount
+│   │       │   - outputItem, outputAmount
+│   │       │   - fuelRequired
+│   │       │   - smeltingTime
+│   │       │
+│   │       ├── FoodDefinition.cs         (Yemek tanımı - FAZ 4 - ADIM 1.14)
+│   │       │   - foodId, foodName
+│   │       │   - hungerRestore, healthRestore
+│   │       │   - foodQuality (Common, Good, Excellent, Perfect)
+│   │       │   - foodBuffs (StatusEffect list)
+│   │       │
+│   │       ├── StatusEffectDefinition.cs (Durum efekt tanımı - FAZ 4 - ADIM 1.15)
+│   │       │   - effectId, effectName
+│   │       │   - effectType (Poison, Burn, Freeze, Slow, vb.)
+│   │       │   - duration, damagePerSecond
+│   │       │   - statModifications (speed, damage, defense multipliers)
+│   │       │   - maxStacks
+│   │       │
+│   │       ├── SpellDefinition.cs       (Büyü tanımı - FAZ 4 - ADIM 1.18)
+│   │       │   - spellId, spellName
+│   │       │   - spellSchool (Fire, Ice, Lightning, Nature, Dark, Light)
+│   │       │   - manaCost, castTime, cooldown
+│   │       │   - damage, range
+│   │       │   - spellEffectType (Damage, Heal, Buff, Debuff, Teleport, Summon)
+│   │       │
+│   │       ├── CropDefinition.cs        (Bitki tanımı - FAZ 4 - ADIM 1.22)
+│   │       │   - cropId, cropName
+│   │       │   - growthStages (5 aşama)
+│   │       │   - growthTime (her aşama için)
+│   │       │   - harvestResult (ItemDefinition, amount)
+│   │       │
+│   │       ├── FishDefinition.cs         (Balık tanımı - FAZ 4 - ADIM 1.23)
+│   │       │   - fishId, fishName
+│   │       │   - catchChance
+│   │       │   - rewardItems (ItemDefinition list)
+│   │       │
+│   │       └── ChestDefinition.cs        (Sandık tanımı - FAZ 4 - ADIM 1.25)
+│   │           - chestId, chestName
+│   │           - inventorySlots
+│   │           - canLock
+│   │           - category (Material, Weapon, Tool, vb.)
 │   │
 │   ├── Systems/
 │   │   ├── Mining/
@@ -25758,6 +29030,109 @@ Assets/_Stratocraft/
 │   │   │   ├── RitualManager.cs        (Batarya sistemi - FAZ 4)
 │   │   │   ├── RitualInputHandler.cs   (Ritüel giriş - FAZ 4)
 │   │   │   └── GhostRecipeManager.cs    (Hayalet tarif - FAZ 8)
+│   │   │
+│   │   ├── Crafting/                   (FAZ 4 - ADIM 1.6 - Crafting Sistemi)
+│   │   │   ├── CraftingRecipe.cs        (ScriptableObject - Recipe tanımları)
+│   │   │   ├── CraftingTable.cs         (NetworkBehaviour - Crafting table yapısı, IInteractable)
+│   │   │   ├── CraftingManager.cs       (Manager - Crafting mantığı, Dictionary cache O(1) lookup)
+│   │   │   └── CraftingUI.cs            (UI Manager - Crafting interface, UI pooling)
+│   │   │
+│   │   ├── Inventory/                   (FAZ 4 - ADIM 1.7 - Kapsamlı Envanter Sistemi)
+│   │   │   ├── InventorySlot.cs           (Slot veri yapısı - item, amount, weight)
+│   │   │   └── PlayerInventory.cs       (NetworkBehaviour - Envanter mantığı, SyncList, Dictionary cache O(1) lookup)
+│   │   │
+│   │   ├── Furniture/                   (FAZ 4 - ADIM 1.8 - Furniture Sistemi)
+│   │   │   ├── FurnitureDefinition.cs     (ScriptableObject - Furniture tanımları - Data klasöründe)
+│   │   │   ├── FurniturePlacer.cs        (Furniture yerleştirme - StructurePlacer entegrasyonu)
+│   │   │   └── FurnitureInteraction.cs   (IInteractable - Sit, Sleep, Chest, Workbench)
+│   │   │
+│   │   ├── Tools/                       (FAZ 4 - ADIM 1.9 - İşlevsel Item'ler)
+│   │   │   ├── ToolDurability.cs          (Durability sistemi - async database persistence)
+│   │   │   ├── RepairStation.cs           (Tool repair - malzeme kontrolü, IInteractable)
+│   │   │   ├── UpgradeStation.cs          (Tool upgrade - seviye artışı, malzeme kontrolü)
+│   │   │   └── EnchantmentSystem.cs       (Enchantment sistemi - Dictionary cache O(1) lookup)
+│   │   │
+│   │   ├── NPCs/                        (FAZ 5 - ADIM 1.10 - NPC Sistemi)
+│   │   │   ├── NPCDefinition.cs           (ScriptableObject - NPC tanımları - Data klasöründe)
+│   │   │   ├── NPCAI.cs                  (NPC AI - State Machine, NavMesh pathfinding)
+│   │   │   ├── VillagerTrading.cs        (Ticaret sistemi - Trade history cache)
+│   │   │   ├── DialogueSystem.cs         (Diyalog sistemi - Dialogue state cache)
+│   │   │   └── VillageGenerator.cs       (Köy oluşturma - Job System + Burst)
+│   │   │
+│   │   ├── Mounts/                      (FAZ 7 - ADIM 1.11 - Gelişmiş Binek Sistemi)
+│   │   │   ├── SaddleDefinition.cs       (ScriptableObject - Eğer tanımları - Data klasöründe)
+│   │   │   ├── MountInventory.cs          (Binek envanteri - SyncList, async database)
+│   │   │   ├── MountArmor.cs              (Binek zırhı - Hasar azaltma)
+│   │   │   ├── MountAbilities.cs          (Binek yetenekleri - Dash, Jump, Charge, Heal, Shield)
+│   │   │   └── MountLeveling.cs           (Binek seviye sistemi - Experience sistemi, exponential growth)
+│   │   │
+│   │   ├── Bosses/                      (FAZ 5 - ADIM 1.12 - Gelişmiş Boss Sistemi)
+│   │   │   ├── BossArenaDefinition.cs     (ScriptableObject - Arena tanımları - Data klasöründe)
+│   │   │   ├── DragonAI.cs                (Ejderha AI - Flight state machine, Unity Physics)
+│   │   │   ├── BossArena.cs              (Boss arenası - StructurePlacer entegrasyonu)
+│   │   │   ├── BossLootTable.cs          (Loot sistemi - Rarity bazlı)
+│   │   │   ├── BossPhaseSystem.cs        (Multi-phase fight sistemi)
+│   │   │   └── BossSummoning.cs         (Çağırma sistemi - Ritual malzeme kontrolü)
+│   │   │
+│   │   ├── Mobs/                        (FAZ 5 - ADIM 1.13 - Özel Canlı Tipleri)
+│   │   │   ├── MobClassDefinition.cs      (ScriptableObject - Mob sınıf tanımları - Data klasöründe)
+│   │   │   ├── MobAbilitySystem.cs       (Mob yetenek sistemi - Cooldown, Level scaling)
+│   │   │   ├── MobArmorSystem.cs         (Mob zırh sistemi)
+│   │   │   └── MobLeveling.cs            (Mob seviye sistemi - Experience sistemi)
+│   │   │
+│   │   ├── Food/                        (FAZ 4 - ADIM 1.14 - Yemek ve Açlık Sistemi)
+│   │   │   ├── FoodDefinition.cs          (ScriptableObject - Yemek tanımları - Data klasöründe)
+│   │   │   ├── HungerSystem.cs           (Açlık sistemi - Coroutine, async database)
+│   │   │   └── CookingStation.cs         (Pişirme sistemi - IInteractable, malzeme kontrolü)
+│   │   │
+│   │   ├── StatusEffects/                (FAZ 4 - ADIM 1.15 - Hastalık ve Durum Sistemi)
+│   │   │   ├── StatusEffectDefinition.cs  (ScriptableObject - Durum efekt tanımları - Data klasöründe)
+│   │   │   ├── StatusEffectManager.cs    (Durum efekt yöneticisi - Coroutine, Stack sistemi)
+│   │   │   └── DiseaseSystem.cs          (Hastalık sistemi - Disease state cache)
+│   │   │
+│   │   ├── Weather/                     (FAZ 4 - ADIM 1.16 - Zaman ve Hava Sistemi)
+│   │   │   ├── WeatherSystem.cs          (Hava durumu sistemi - Coroutine, mevsim bazlı)
+│   │   │   ├── SeasonSystem.cs           (Mevsim sistemi - GameTimeManager entegrasyonu)
+│   │   │   ├── TemperatureSystem.cs      (Sıcaklık sistemi - Yükseklik bazlı, status effect'ler)
+│   │   │   └── WeatherEffects.cs        (Hava durumu efektleri - Unity Particle System, Unity Audio)
+│   │   │
+│   │   ├── Dungeons/                    (FAZ 5 - ADIM 1.17 - Zindan ve Mağara Sistemi)
+│   │   │   ├── DungeonDefinition.cs       (ScriptableObject - Zindan tanımları - Data klasöründe)
+│   │   │   ├── DungeonGenerator.cs       (Zindan oluşturma - Job System + Burst)
+│   │   │   └── DungeonEntrance.cs        (Zindan girişi - Key kontrolü, IInteractable)
+│   │   │
+│   │   ├── Magic/                       (FAZ 4 - ADIM 1.18 - Magic ve Büyü Sistemi)
+│   │   │   ├── SpellDefinition.cs         (ScriptableObject - Büyü tanımları - Data klasöründe)
+│   │   │   ├── ManaSystem.cs             (Mana sistemi - Coroutine, async database)
+│   │   │   └── SpellCasting.cs           (Büyü kullanma - ManaSystem entegrasyonu)
+│   │   │
+│   │   ├── Tech/                        (FAZ 8 - ADIM 1.19 - Teknoloji Ağacı)
+│   │   │   ├── TechNodeDefinition.cs     (ScriptableObject - Teknoloji düğüm tanımları - Data klasöründe)
+│   │   │   └── TechTreeManager.cs        (Teknoloji ağacı yöneticisi - Prerequisite kontrolü)
+│   │   │
+│   │   ├── Vehicles/                    (FAZ 7 - ADIM 1.20 - Araç ve Ulaşım Sistemi)
+│   │   │   ├── VehicleDefinition.cs       (ScriptableObject - Araç tanımları - Data klasöründe)
+│   │   │   └── VehicleController.cs      (Araç kontrolü - Unity Physics)
+│   │   │
+│   │   ├── Pets/                        (FAZ 5 - ADIM 1.21 - Pet ve Ev Hayvanı Sistemi)
+│   │   │   ├── PetDefinition.cs           (ScriptableObject - Pet tanımları - Data klasöründe)
+│   │   │   └── PetSystem.cs              (Pet sistemi - Pet spawn, komut, leveling)
+│   │   │
+│   │   ├── Farming/                     (FAZ 4 - ADIM 1.22 - Tarım ve Çiftçilik Sistemi)
+│   │   │   ├── CropDefinition.cs          (ScriptableObject - Bitki tanımları - Data klasöründe)
+│   │   │   └── FarmingSystem.cs          (Çiftçilik sistemi - Crop planting, growth, harvest)
+│   │   │
+│   │   ├── Fishing/                     (FAZ 4 - ADIM 1.23 - Balıkçılık Sistemi)
+│   │   │   ├── FishDefinition.cs          (ScriptableObject - Balık tanımları - Data klasöründe)
+│   │   │   └── FishingSystem.cs          (Balıkçılık sistemi - Fishing minigame, fish spawn)
+│   │   │
+│   │   ├── Smelting/                    (FAZ 4 - ADIM 1.24 - Madencilik ve Eritme Sistemi)
+│   │   │   ├── SmeltingRecipe.cs          (ScriptableObject - Eritme tarifleri - Data klasöründe)
+│   │   │   └── SmeltingSystem.cs         (Eritme sistemi - Furnace entegrasyonu, fuel tüketimi)
+│   │   │
+│   │   ├── Storage/                      (FAZ 4 - ADIM 1.25 - Depolama ve Sandık Sistemi)
+│   │   │   ├── ChestDefinition.cs         (ScriptableObject - Sandık tanımları - Data klasöründe)
+│   │   │   └── ChestInventory.cs         (Sandık envanteri - SyncList, async database, lock sistemi)
 │   │   │
 │   │   ├── Clans/
 │   │   │   ├── TerritoryManager.cs     (Flood-Fill bölge hesaplama - FAZ 4 - Job System optimizasyonu ile)
