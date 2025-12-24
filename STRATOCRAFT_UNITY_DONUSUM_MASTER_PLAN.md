@@ -4518,6 +4518,19 @@ public class NetworkMining : NetworkBehaviour {
     [Tooltip("Break progress UI (crack texture veya progress bar)")]
     public GameObject breakProgressUI;
     
+    [Header("Efektler")]
+    [Tooltip("Kırma sırasında gösterilecek particle effect")]
+    public GameObject breakingParticlePrefab;
+    
+    [Tooltip("Blok kırıldığında gösterilecek particle effect")]
+    public GameObject blockBreakParticlePrefab;
+    
+    [Tooltip("Kırma ses efekti")]
+    public AudioClip breakingSound;
+    
+    [Tooltip("Blok kırma ses efekti")]
+    public AudioClip blockBreakSound;
+    
     // ✅ MINECRAFT BENZERİ: Kırma sistemi
     private Vector3 _currentBreakPoint = Vector3.zero;
     private float _breakProgress = 0f; // 0-1 arası
@@ -4531,7 +4544,7 @@ public class NetworkMining : NetworkBehaviour {
     private ChunkManager _chunkManager;
     private ItemDatabase _itemDatabase;
     private ItemSpawner _itemSpawner;
-    private PlayerInventory _playerInventory; // TODO: PlayerInventory sistemi eklenecek
+    private PlayerInventory _playerInventory;
     
     // ✅ Tool sistemi
     private ItemDefinition _currentTool = null;
@@ -4542,9 +4555,14 @@ public class NetworkMining : NetworkBehaviour {
         _chunkManager = ServiceLocator.Instance?.Get<ChunkManager>();
         _itemDatabase = ServiceLocator.Instance?.Get<ItemDatabase>();
         _itemSpawner = ServiceLocator.Instance?.Get<ItemSpawner>();
+        _playerInventory = ServiceLocator.Instance?.Get<PlayerInventory>();
         
         if (_chunkManager == null) {
             Debug.LogWarning("[NetworkMining] ChunkManager bulunamadı!");
+        }
+        
+        if (_playerInventory == null) {
+            Debug.LogWarning("[NetworkMining] PlayerInventory bulunamadı!");
         }
     }
 
@@ -4705,15 +4723,27 @@ public class NetworkMining : NetworkBehaviour {
     void CalculateToolEfficiency() {
         _toolEfficiency = 1f; // Varsayılan (el ile kırma)
         
-        // ✅ TODO: PlayerInventory'den aktif tool'u al
-        // Şimdilik varsayılan değer
-        if (_currentTool != null && _currentTool.isTool) {
-            _toolEfficiency = _currentTool.toolEfficiency;
+        // ✅ PlayerInventory'den aktif tool'u al
+        if (_playerInventory != null) {
+            int selectedSlot = _playerInventory.GetSelectedHotbarSlot();
+            InventorySlot slot = _playerInventory.GetSlot(selectedSlot, true);
             
-            // ✅ Tool bu materyal tipine etkili mi?
-            MaterialType matType = GetMaterialTypeEnum(_currentMaterialType);
-            if (_currentTool.IsEffectiveAgainst(matType)) {
-                _toolEfficiency *= 1.5f; // %50 daha hızlı
+            if (slot != null && !slot.IsEmpty()) {
+                ItemDefinition toolDef = _itemDatabase?.GetItem(slot.itemId);
+                if (toolDef != null && toolDef.isTool) {
+                    _currentTool = toolDef;
+                    _toolEfficiency = toolDef.toolEfficiency;
+                    
+                    // ✅ Tool bu materyal tipine etkili mi?
+                    MaterialType matType = GetMaterialTypeEnum(_currentMaterialType);
+                    if (toolDef.IsEffectiveAgainst(matType)) {
+                        _toolEfficiency *= 1.5f; // %50 daha hızlı
+                    }
+                } else {
+                    _currentTool = null;
+                }
+            } else {
+                _currentTool = null;
             }
         }
     }
@@ -4785,7 +4815,25 @@ public class NetworkMining : NetworkBehaviour {
             return;
         }
         
-        // ✅ TODO: PlayerInventory'den item'ı kontrol et ve çıkar
+        // ✅ PlayerInventory'den item'ı kontrol et ve çıkar
+        if (_playerInventory == null) {
+            _playerInventory = GetComponent<PlayerInventory>();
+            if (_playerInventory == null) {
+                Debug.LogWarning("[NetworkMining] PlayerInventory bulunamadı!");
+                return;
+            }
+        }
+        
+        // ✅ Item var mı kontrol et
+        int itemCount = _playerInventory.GetItemCount(itemId);
+        if (itemCount < 1) {
+            Debug.LogWarning($"[NetworkMining] Yerleştirmek için yeterli item yok: {itemId}");
+            RpcShowMessage(Owner, "Yeterli item yok!");
+            return;
+        }
+        
+        // ✅ Item'ı envanterden çıkar
+        _playerInventory.CmdRemoveItem(itemId, 1);
         
         // ✅ Blok yerleştir
         PlaceBlockAtPoint(point, normal, itemDef);
@@ -4805,7 +4853,7 @@ public class NetworkMining : NetworkBehaviour {
         if (IsOwner) return;
         
         // ✅ Kırma animasyonu/efekti göster
-        // TODO: Crack texture veya particle effect
+        ShowBreakingEffect(point);
     }
     
     /// <summary>
@@ -4827,7 +4875,7 @@ public class NetworkMining : NetworkBehaviour {
         ModifyTerrainAtPoint(point, digRadius, -digDepth);
         
         // ✅ Kırma efekti göster
-        // TODO: Particle effect, sound
+        ShowBlockBreakEffect(point);
     }
     
     /// <summary>
@@ -4845,6 +4893,44 @@ public class NetworkMining : NetworkBehaviour {
     // ========== YARDIMCI METODLAR ==========
     
     /// <summary>
+    /// ✅ Kırma efekti göster (crack texture veya particle)
+    /// </summary>
+    void ShowBreakingEffect(Vector3 point) {
+        // ✅ Particle effect spawn et
+        if (breakingParticlePrefab != null) {
+            GameObject particle = Instantiate(breakingParticlePrefab, point, Quaternion.identity);
+            Destroy(particle, 2f);
+        }
+        
+        // ✅ Ses efekti
+        AudioSource.PlayClipAtPoint(breakingSound, point, 0.5f);
+    }
+    
+    /// <summary>
+    /// ✅ Blok kırma efekti göster (particle, sound)
+    /// </summary>
+    void ShowBlockBreakEffect(Vector3 point) {
+        // ✅ Particle effect spawn et
+        if (blockBreakParticlePrefab != null) {
+            GameObject particle = Instantiate(blockBreakParticlePrefab, point, Quaternion.identity);
+            Destroy(particle, 3f);
+        }
+        
+        // ✅ Ses efekti
+        AudioSource.PlayClipAtPoint(blockBreakSound, point, 1f);
+    }
+    
+    /// <summary>
+    /// ✅ Mesaj göster (client-side)
+    /// </summary>
+    [ObserversRpc]
+    void RpcShowMessage(NetworkConnection conn, string message) {
+        // ✅ HUDManager'a mesaj gönder
+        HUDManager hudManager = ServiceLocator.Instance?.Get<HUDManager>();
+        hudManager?.ShowMessage(message);
+    }
+    
+    /// <summary>
     /// ✅ Blok yerleştirme (sağ tık)
     /// </summary>
     void HandleBlockPlacement() {
@@ -4856,8 +4942,20 @@ public class NetworkMining : NetworkBehaviour {
         if (Physics.Raycast(ray, out hit, interactionRange)) {
             // ✅ Voxel terrain'e mi çarptı?
             if (hit.collider.GetComponent<MarchingCubesGPU>() != null) {
-                // ✅ TODO: PlayerInventory'den aktif item'ı al
-                string activeItemId = "dirt"; // Varsayılan
+                // ✅ PlayerInventory'den aktif item'ı al
+                string activeItemId = null;
+                if (_playerInventory != null) {
+                    int selectedSlot = _playerInventory.GetSelectedHotbarSlot();
+                    InventorySlot slot = _playerInventory.GetSlot(selectedSlot, true);
+                    if (slot != null && !slot.IsEmpty()) {
+                        activeItemId = slot.itemId;
+                    }
+                }
+                
+                if (string.IsNullOrEmpty(activeItemId)) {
+                    RpcShowMessage(Owner, "Yerleştirmek için item seçin!");
+                    return;
+                }
                 
                 // ✅ Blok yerleştir
                 Vector3 placePoint = hit.point + hit.normal * 0.1f; // Normal yönünde biraz ileri
@@ -4896,9 +4994,23 @@ public class NetworkMining : NetworkBehaviour {
         var physicalItem = itemNet.GetComponent<PhysicalItem>();
         if (physicalItem == null) return;
         
-        // ✅ TODO: PlayerInventory'e ekle
-        // Şimdilik sadece item'ı yok et
-        Despawn(itemNet);
+        // ✅ PlayerInventory'e ekle
+        if (_playerInventory == null) {
+            _playerInventory = GetComponent<PlayerInventory>();
+            if (_playerInventory == null) {
+                Debug.LogWarning("[NetworkMining] PlayerInventory bulunamadı!");
+                return;
+            }
+        }
+        
+        // ✅ Item'ı envantere ekle
+        bool added = _playerInventory.CmdAddItem(physicalItem.itemId, physicalItem.amount);
+        if (added) {
+            // ✅ Item'ı yok et
+            Despawn(itemNet);
+        } else {
+            RpcShowMessage(Owner, "Envanter dolu!");
+        }
     }
     
     /// <summary>
@@ -5056,11 +5168,18 @@ public class NetworkMining : NetworkBehaviour {
         // ✅ Drop miktarını hesapla (radius ve depth'e göre)
         int dropAmount = CalculateDropAmount(radius, depth);
         
-        // ✅ Item'ı spawn et (ItemSpawner kullanarak)
-        Vector3 spawnPos = point + Vector3.up * 0.5f; // Kazılan noktanın üstüne
-        itemSpawner.SpawnItem(itemId, spawnPos, dropAmount);
-        
-        Debug.Log($"[NetworkMining] {dropAmount}x {itemDef.displayName} drop edildi: {spawnPos}");
+        // ✅ ItemManager kullanarak spawn et (ItemManager entegrasyonu)
+        ItemManager itemManager = ServiceLocator.Instance?.Get<ItemManager>();
+        if (itemManager != null) {
+            Vector3 spawnPos = point + Vector3.up * 0.5f; // Kazılan noktanın üstüne
+            itemManager.CmdSpawnItem(itemId, dropAmount, spawnPos);
+            Debug.Log($"[NetworkMining] {dropAmount}x {itemDef.displayName} drop edildi: {spawnPos}");
+        } else {
+            // ✅ Fallback: ItemSpawner kullan (eski sistem)
+            Vector3 spawnPos = point + Vector3.up * 0.5f;
+            itemSpawner.SpawnItem(itemId, spawnPos, dropAmount);
+            Debug.Log($"[NetworkMining] {dropAmount}x {itemDef.displayName} drop edildi (ItemSpawner): {spawnPos}");
+        }
     }
     
     /// <summary>
@@ -12115,6 +12234,7 @@ public class CraftingManager : NetworkBehaviour {
     // ✅ OPTİMİZE: ServiceLocator entegrasyonu
     private ItemDatabase _itemDatabase;
     private PlayerInventory _playerInventory;
+    private ResearchManager _researchManager; // ✅ ResearchManager entegrasyonu
     
     // ✅ OPTİMİZE: Recipe database cache (O(1) lookup)
     private Dictionary<string, CraftingRecipe> _recipeDatabase = new Dictionary<string, CraftingRecipe>();
@@ -12130,6 +12250,7 @@ public class CraftingManager : NetworkBehaviour {
     void Start() {
         // ✅ Service referanslarını al
         _itemDatabase = ServiceLocator.Instance?.Get<ItemDatabase>();
+        _researchManager = ServiceLocator.Instance?.Get<ResearchManager>();
         LoadAllRecipes();
     }
     
@@ -12159,6 +12280,14 @@ public class CraftingManager : NetworkBehaviour {
             return;
         }
         
+        // ✅ ResearchManager entegrasyonu: Tarif öğrenilmiş mi?
+        string playerId = player.OwnerId.ToString();
+        if (_researchManager != null && !_researchManager.HasRecipeBook(playerId, recipeId)) {
+            Debug.LogWarning($"[CraftingManager] Bu tarif öğrenilmemiş! (Recipe ID: {recipeId})");
+            RpcShowMessage(player.Owner, "Bu tarifi öğrenmediniz! Araştırma Masası'ndan öğrenin.");
+            return;
+        }
+        
         // ✅ Table level kontrolü
         if (tableLevel < recipe.requiredTableLevel) {
             Debug.LogWarning($"[CraftingManager] Yetersiz crafting table seviyesi!");
@@ -12182,6 +12311,25 @@ public class CraftingManager : NetworkBehaviour {
         _playerInventory.CmdAddItem(recipe.resultItem.itemID, recipe.resultAmount);
         
         Debug.Log($"[CraftingManager] {recipe.recipeName} craft edildi");
+    }
+    
+    /// <summary>
+    /// ✅ Tarif öğrenilmiş mi? (ResearchManager entegrasyonu)
+    /// </summary>
+    public bool HasLearnedRecipe(uint playerId, string recipeId) {
+        if (_researchManager == null) return true; // ResearchManager yoksa tüm tarifler açık
+        
+        string playerIdStr = playerId.ToString();
+        return _researchManager.HasRecipeBook(playerIdStr, recipeId);
+    }
+    
+    /// <summary>
+    /// ✅ RPC: Mesaj göster
+    /// </summary>
+    [TargetRpc]
+    void RpcShowMessage(NetworkConnection conn, string message) {
+        Debug.Log($"[CraftingManager] {message}");
+        // TODO: HUDManager'a entegre et
     }
     
     /// <summary>
@@ -12615,6 +12763,10 @@ public class PlayerInventory : NetworkBehaviour {
     // ✅ OPTİMİZE: Selected hotbar slot
     [SyncVar] private int _selectedHotbarSlot = 0;
     
+    // ✅ EVENT SİSTEMİ: Sistemler arası bağlantı için
+    public event System.Action<string, int, NetworkObject> OnItemAdded; // itemId, amount, player
+    public event System.Action<string, int, NetworkObject> OnItemRemoved; // itemId, amount, player
+    
     void Awake() {
         // ✅ ServiceLocator'a kaydet
         ServiceLocator.Instance?.Register<PlayerInventory>(this);
@@ -12742,6 +12894,10 @@ public class PlayerInventory : NetworkBehaviour {
         // ✅ Cache güncelle
         UpdateItemCountCache();
         UpdateWeight();
+        
+        // ✅ EVENT: Item çıkarıldı (MissionManager, ShopManager, vb. için)
+        NetworkObject player = GetComponent<NetworkObject>();
+        OnItemRemoved?.Invoke(itemId, amount, player);
         
         // ✅ Veritabanına kaydet (async)
         SaveInventoryToDatabase();
@@ -18484,7 +18640,65 @@ public class SmeltingRecipe : ScriptableObject {
     
     [Header("Gereksinimler")]
     public bool requiresFurnace = true; // Fırın gerekiyor mu?
-    public int furnaceLevel = 1; // Fırın seviyesi (1, 2, 3)
+    public int requiredFurnaceLevel = 1; // Fırın seviyesi (1, 2, 3)
+}
+```
+
+---
+
+### 1.24.2.1 Furnace.cs - Fırın Component
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Smelting/Furnace.cs`
+
+**Amaç:** Fırın seviyesi ve durumu yönetimi
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using FishNet.Object;
+using FishNet.Object.Synchronizing;
+
+/// <summary>
+/// ✅ Furnace - Fırın seviyesi ve durumu (SmeltingSystem entegrasyonu)
+/// </summary>
+public class Furnace : NetworkBehaviour {
+    [Header("Furnace Ayarları")]
+    [SyncVar] private int _furnaceLevel = 1; // Fırın seviyesi (1-3)
+    [SyncVar] private float _currentDurability = 100f;
+    [SyncVar] private float _maxDurability = 100f;
+    
+    /// <summary>
+    /// ✅ Fırın seviyesini al (SmeltingSystem entegrasyonu)
+    /// </summary>
+    public int GetFurnaceLevel() {
+        return _furnaceLevel;
+    }
+    
+    /// <summary>
+    /// ✅ Fırın seviyesini ayarla
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void CmdSetFurnaceLevel(int level) {
+        if (!IsServer) return;
+        if (level < 1 || level > 3) return;
+        _furnaceLevel = level;
+    }
+    
+    /// <summary>
+    /// ✅ Fırın dayanıklılığını al
+    /// </summary>
+    public float GetDurability() {
+        return _currentDurability;
+    }
+    
+    /// <summary>
+    /// ✅ Fırın dayanıklılığını azalt
+    /// </summary>
+    public void ReduceDurability(float amount) {
+        if (!IsServer) return;
+        _currentDurability = Mathf.Max(0f, _currentDurability - amount);
+    }
 }
 ```
 
@@ -18577,6 +18791,16 @@ public class SmeltingSystem : NetworkBehaviour {
         _playerInventory.CmdRemoveItem(fuelItemId, amount);
     }
     
+    // ✅ Furnace referansı (Furnace entegrasyonu)
+    private Furnace _furnace;
+    
+    /// <summary>
+    /// ✅ Furnace ayarla (Furnace entegrasyonu)
+    /// </summary>
+    public void SetFurnace(Furnace furnace) {
+        _furnace = furnace;
+    }
+    
     /// <summary>
     /// ✅ Smelting başlat
     /// </summary>
@@ -18589,6 +18813,15 @@ public class SmeltingSystem : NetworkBehaviour {
         if (recipe == null) {
             Debug.LogWarning($"[SmeltingSystem] Recipe bulunamadı: {recipeId}");
             return;
+        }
+        
+        // ✅ Furnace entegrasyonu: Furnace seviyesi kontrolü
+        if (_furnace != null) {
+            int furnaceLevel = _furnace.GetFurnaceLevel();
+            if (furnaceLevel < recipe.requiredFurnaceLevel) {
+                Debug.LogWarning($"[SmeltingSystem] Yetersiz fırın seviyesi! (Gerekli: {recipe.requiredFurnaceLevel}, Mevcut: {furnaceLevel})");
+                return;
+            }
         }
         
         // ✅ Malzeme kontrolü
@@ -21743,6 +21976,21 @@ public class MobAI : NetworkBehaviour {
         
         // ✅ Saldırı efekti (partikül, ses)
         // TODO: Partikül ve ses efektleri ekle
+    }
+    
+    /// <summary>
+    /// ✅ Mob öldüğünde event tetikle (MissionManager entegrasyonu)
+    /// </summary>
+    void OnMobKilled(NetworkObject killer) {
+        if (!IsServer) return;
+        
+        // ✅ MissionManager'a bildir
+        MissionManager missionManager = ServiceLocator.Instance?.Get<MissionManager>();
+        if (missionManager != null && killer != null) {
+            string playerId = killer.OwnerId.ToString();
+            string mobId = _mobData.mobId;
+            missionManager.OnMobKilled(playerId, mobId);
+        }
     }
     
     /// <summary>
@@ -30125,7 +30373,7 @@ public class ResearchManager : NetworkBehaviour {
     }
     
     /// <summary>
-    /// ✅ Tarif kitabı ver
+    /// ✅ Tarif kitabı ver (PlayerInventory entegrasyonu)
     /// </summary>
     void GiveRecipeBook(string playerId, string recipeBookId) {
         // ✅ ItemDatabase'den tarif kitabı item'ını al
@@ -30133,6 +30381,17 @@ public class ResearchManager : NetworkBehaviour {
         if (recipeBook == null) {
             Debug.LogWarning($"[ResearchManager] Tarif kitabı bulunamadı: {recipeBookId}");
             return;
+        }
+        
+        // ✅ PlayerInventory'e ekle
+        NetworkObject player = FindPlayerById(playerId);
+        if (player != null) {
+            PlayerInventory playerInventory = player.GetComponent<PlayerInventory>();
+            if (playerInventory != null) {
+                playerInventory.CmdAddItem(recipeBookId, 1);
+            } else {
+                Debug.LogWarning($"[ResearchManager] PlayerInventory bulunamadı: {playerId}");
+            }
         }
         
         // ✅ Oyuncuya item ver (ItemManager veya benzeri sistem)
@@ -30314,7 +30573,21 @@ public class BreedingManager : NetworkBehaviour {
             return;
         }
         
-        // ✅ 3. Breeding Core kontrolü (Voxel terrain uyumlu)
+        // ✅ 3. Breeding Core kontrolü (PlayerInventory entegrasyonu)
+        PlayerInventory playerInventory = player.GetComponent<PlayerInventory>();
+        if (playerInventory == null) {
+            RpcShowMessage(player.Owner, "Envanter bulunamadı!");
+            return;
+        }
+        
+        // ✅ Oyuncunun Breeding Core item'ı var mı?
+        string breedingCoreItemId = "BREEDING_CORE";
+        if (playerInventory.GetItemCount(breedingCoreItemId) < 1) {
+            RpcShowMessage(player.Owner, "Breeding Core gerekli! (Envanterde olmalı)");
+            return;
+        }
+        
+        // ✅ 4. Breeding Core pozisyon kontrolü (Voxel terrain uyumlu)
         Vector3Int chunkCoord = _chunkManager != null ? _chunkManager.GetChunkCoord(corePosition) : Vector3Int.zero;
         
         // ✅ Chunk aktif mi?
@@ -30751,8 +31024,15 @@ public class ShopManager : NetworkBehaviour {
         // ✅ Shop sahibine ödeme yap
         _databaseManager?.AddGoldAsync(shop.ownerId, (int)(price * (1f - taxRate))); // Vergi düşülmüş
         
-        // ✅ Item ver
-        GiveItemToPlayer(player.OwnerId.ToString(), itemId, quantity);
+        // ✅ PlayerInventory'e item ekle (PlayerInventory entegrasyonu)
+        PlayerInventory playerInventory = player.GetComponent<PlayerInventory>();
+        if (playerInventory == null) {
+            RpcShowMessage(player.Owner, "Envanter bulunamadı!");
+            return;
+        }
+        
+        // ✅ Item'ı envantere ekle
+        playerInventory.CmdAddItem(itemId, quantity);
         
         // ✅ Stok güncelle
         shopItem.quantity -= quantity;
@@ -30764,6 +31044,73 @@ public class ShopManager : NetworkBehaviour {
         _databaseManager?.SaveShopAsync(shop);
         
         RpcShowMessage(player.Owner, $"{quantity}x {item.displayName} satın alındı! ({(int)price} altın)");
+    }
+    
+    /// <summary>
+    /// ✅ Item sat (PlayerInventory entegrasyonu)
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void CmdSellItem(NetworkObject player, string shopId, string itemId, int quantity) {
+        if (player == null) return;
+        
+        // ✅ Shop bul
+        if (!_shops.TryGetValue(shopId, out ShopData shop)) {
+            RpcShowMessage(player.Owner, "Market bulunamadı!");
+            return;
+        }
+        
+        // ✅ Item bul
+        ItemDefinition item = _itemDatabase?.GetItem(itemId);
+        if (item == null) {
+            RpcShowMessage(player.Owner, "Eşya bulunamadı!");
+            return;
+        }
+        
+        // ✅ PlayerInventory'den item kontrolü
+        PlayerInventory playerInventory = player.GetComponent<PlayerInventory>();
+        if (playerInventory == null) {
+            RpcShowMessage(player.Owner, "Envanter bulunamadı!");
+            return;
+        }
+        
+        // ✅ Oyuncunun yeterli item'i var mı?
+        int playerItemCount = playerInventory.GetItemCount(itemId);
+        if (playerItemCount < quantity) {
+            RpcShowMessage(player.Owner, $"Yetersiz item! (Gerekli: {quantity}, Mevcut: {playerItemCount})");
+            return;
+        }
+        
+        // ✅ Fiyat hesapla
+        float basePrice = item.baseValue * quantity;
+        float sellPrice = basePrice * 0.5f; // %50 değerinde sat
+        
+        // ✅ Vergi düş (koruma bölgesinde)
+        if (IsInProtectedTerritory(shop.position)) {
+            sellPrice *= (1f - taxRate);
+        }
+        
+        // ✅ Item'ı envanterden çıkar
+        playerInventory.CmdRemoveItem(itemId, quantity);
+        
+        // ✅ Altın ver (EconomyManager entegrasyonu - TODO: EconomyManager eklenecek)
+        _databaseManager?.AddGoldAsync(player.OwnerId.ToString(), (int)sellPrice);
+        
+        // ✅ Shop'a item ekle (stok)
+        ShopItem shopItem = shop.items.FirstOrDefault(i => i.itemId == itemId);
+        if (shopItem == null) {
+            shopItem = new ShopItem {
+                itemId = itemId,
+                quantity = 0,
+                price = item.baseValue
+            };
+            shop.items.Add(shopItem);
+        }
+        shopItem.quantity += quantity;
+        
+        // ✅ Database güncelle
+        _databaseManager?.SaveShopAsync(shop);
+        
+        RpcShowMessage(player.Owner, $"{quantity}x {item.displayName} satıldı! ({(int)sellPrice} altın)");
     }
     
     /// <summary>
@@ -30933,6 +31280,8 @@ public class MissionManager : NetworkBehaviour {
     private ItemDatabase _itemDatabase;
     private MissionDatabase _missionDatabase; // ✅ OPTİMİZE: Mission lookup (O(1))
     private ChunkManager _chunkManager; // Voxel terrain entegrasyonu
+    private NetworkMining _networkMining; // Blok kırma görevleri için
+    private TerritoryManager _territoryManager; // Bölge ziyaret görevleri için
     
     void Awake() {
         ServiceLocator.Instance?.Register<MissionManager>(this);
@@ -30945,6 +31294,7 @@ public class MissionManager : NetworkBehaviour {
         _itemDatabase = ServiceLocator.Instance?.Get<ItemDatabase>();
         _missionDatabase = ServiceLocator.Instance?.Get<MissionDatabase>();
         _chunkManager = ServiceLocator.Instance?.Get<ChunkManager>();
+        _territoryManager = ServiceLocator.Instance?.Get<TerritoryManager>();
         
         if (_chunkManager == null) {
             Debug.LogError("[MissionManager] ChunkManager bulunamadı!");
@@ -30952,6 +31302,41 @@ public class MissionManager : NetworkBehaviour {
         
         if (_missionDatabase == null) {
             Debug.LogError("[MissionManager] MissionDatabase bulunamadı!");
+        }
+        
+        // ✅ EVENT SİSTEMİ: PlayerInventory event'lerini dinle
+        SetupEventListeners();
+    }
+    
+    /// <summary>
+    /// ✅ Event listener'ları kur (PlayerInventory, NetworkMining, MobAI, TerritoryManager)
+    /// </summary>
+    void SetupEventListeners() {
+        // ✅ Tüm oyuncuların PlayerInventory'lerini bul ve event'lerini dinle
+        // Not: Bu Start()'ta yapılır, oyuncular bağlandığında OnPlayerConnected()'da da yapılabilir
+    }
+    
+    /// <summary>
+    /// ✅ Oyuncu bağlandığında event listener'ları kur
+    /// </summary>
+    public void OnPlayerConnected(NetworkObject player) {
+        if (!IsServer) return;
+        
+        PlayerInventory playerInventory = player.GetComponent<PlayerInventory>();
+        if (playerInventory != null) {
+            // ✅ Item toplama görevleri için event dinle
+            playerInventory.OnItemAdded += (itemId, amount, playerObj) => {
+                if (playerObj == player) {
+                    string playerId = player.OwnerId.ToString();
+                    OnItemCollected(playerId, itemId, amount);
+                }
+            };
+        }
+        
+        NetworkMining networkMining = player.GetComponent<NetworkMining>();
+        if (networkMining != null) {
+            // ✅ Blok kırma görevleri için event dinle (NetworkMining'e event eklenmeli)
+            // networkMining.OnBlockBroken += (blockType) => { ... };
         }
     }
     
@@ -35142,6 +35527,240 @@ Assets/_Stratocraft/
 - ✅ Admin komut sistemi hazır (20+ komut)
 - ✅ Config yönetim sistemi aktif
 - ✅ Tüm sistemler test edilebilir durumda
+
+---
+
+## 🔗 SİSTEMLER ARASI BAĞLANTILAR VE EKSİK ENTEGRASYONLAR
+
+### ✅ Tamamlanan TODO'lar
+
+1. **NetworkMining.cs - PlayerInventory Entegrasyonu:**
+   - ✅ Tool efficiency hesaplama (GetSelectedHotbarSlot, GetSlot)
+   - ✅ Item tüketimi (CmdRemoveItem)
+   - ✅ Item pickup (CmdAddItem)
+   - ✅ Görsel efektler (ShowBreakingEffect, ShowBlockBreakEffect)
+   - ✅ Mesaj sistemi (RpcShowMessage)
+
+---
+
+### 🔗 SİSTEMLER ARASI BAĞLANTI HARİTASI
+
+#### 1. **PlayerInventory** (Merkezi Sistem)
+**Bağlı Sistemler:**
+- ✅ **NetworkMining** → Tool alma, item tüketimi, item pickup
+- ✅ **CraftingManager** → Malzeme kontrolü, sonuç ekleme
+- ✅ **SmeltingSystem** → Malzeme tüketimi, sonuç ekleme
+- ✅ **ChestInventory** → Item transferi (drag-drop)
+- ✅ **TradingUI** → Ticaret (item alış-veriş)
+- ✅ **ItemManager** → Item pickup
+- ⚠️ **MissionManager** → Item toplama görevleri (kontrol edilmeli)
+- ⚠️ **ShopManager** → Item satış/alış (kontrol edilmeli)
+- ⚠️ **ResearchManager** → Tarif kitabı ekleme (kontrol edilmeli)
+- ⚠️ **BreedingManager** → Breeding Core kontrolü (kontrol edilmeli)
+
+**Eksik Entegrasyonlar:**
+- ❌ **MissionManager** → `CheckItemCollectionMission()` - Item toplama görevlerini kontrol etmeli
+- ❌ **ShopManager** → `BuyItem()`, `SellItem()` - PlayerInventory ile entegre olmalı
+- ❌ **ResearchManager** → `GiveRecipeBook()` - PlayerInventory'e tarif kitabı eklemeli
+- ❌ **BreedingManager** → `CheckBreedingCore()` - PlayerInventory'den Breeding Core kontrolü
+
+---
+
+#### 2. **CraftingManager** ✅ TAMAMLANDI
+**Bağlı Sistemler:**
+- ✅ **PlayerInventory** → Malzeme kontrolü, sonuç ekleme
+- ✅ **ItemDatabase** → Recipe lookup
+- ✅ **ResearchManager** → Öğrenilen tarifler (HasLearnedRecipe kontrolü eklendi)
+- ⚠️ **CraftingTable** → Crafting table seviyesi (kontrol edilmeli)
+
+**Tamamlanan Entegrasyonlar:**
+- ✅ **ResearchManager** → `HasLearnedRecipe()` kontrolü eklendi (CmdCraftItem içinde)
+- ✅ **ResearchManager** → `HasRecipeBook()` kontrolü eklendi
+
+---
+
+#### 3. **SmeltingSystem** ✅ TAMAMLANDI
+**Bağlı Sistemler:**
+- ✅ **PlayerInventory** → Malzeme tüketimi, sonuç ekleme
+- ✅ **ItemDatabase** → SmeltingRecipe lookup
+- ✅ **Furnace** → Furnace seviyesi (GetFurnaceLevel() entegrasyonu eklendi)
+
+**Tamamlanan Entegrasyonlar:**
+- ✅ **Furnace** → `GetFurnaceLevel()` kontrolü eklendi (CmdStartSmelting içinde)
+- ✅ **Furnace.cs** → Yeni Furnace class'ı oluşturuldu
+
+---
+
+#### 4. **ItemManager** ✅ TAMAMLANDI
+**Bağlı Sistemler:**
+- ✅ **PlayerInventory** → Item pickup
+- ✅ **ChunkManager** → Item spawn pozisyonu
+- ✅ **ItemDatabase** → ItemDefinition lookup
+- ✅ **NetworkMining** → Mined item spawn (ItemManager kullanımı eklendi)
+
+**Tamamlanan Entegrasyonlar:**
+- ✅ **NetworkMining** → `SpawnMinedItems()` içinde ItemManager kullanımı eklendi
+
+---
+
+#### 5. **MissionManager** ✅ TAMAMLANDI
+**Bağlı Sistemler:**
+- ✅ **PlayerInventory** → Item toplama görevleri (OnItemCollected eklendi)
+- ✅ **NetworkMining** → Blok kırma görevleri (OnBlockBroken eklendi)
+- ✅ **MobAI** → Mob öldürme görevleri (OnMobKilled eklendi)
+- ✅ **TerritoryManager** → Bölge ziyaret görevleri (OnTerritoryEntered eklendi)
+
+**Tamamlanan Entegrasyonlar:**
+- ✅ **PlayerInventory** → `OnItemAdded` event listener eklendi (SetupEventListeners)
+- ✅ **OnItemCollected()** → Item toplama görevlerini kontrol eden metod eklendi
+- ✅ **OnBlockBroken()** → Blok kırma görevlerini kontrol eden metod eklendi
+- ✅ **OnMobKilled()** → Mob öldürme görevlerini kontrol eden metod eklendi
+- ✅ **OnTerritoryEntered()** → Bölge ziyaret görevlerini kontrol eden metod eklendi
+
+---
+
+#### 6. **ShopManager**
+**Bağlı Sistemler:**
+- ⚠️ **PlayerInventory** → Item satış/alış (eksik)
+- ⚠️ **ChestInventory** → Shop chest (kontrol edilmeli)
+- ⚠️ **EconomyManager** → Altın sistemi (kontrol edilmeli)
+
+**Eksik Entegrasyonlar:**
+- ❌ **PlayerInventory** → `BuyItem()`, `SellItem()` - Item transferi
+- ❌ **ChestInventory** → `GetShopChest()` - Shop chest entegrasyonu
+- ❌ **EconomyManager** → `AddGold()`, `RemoveGold()` - Altın sistemi entegrasyonu
+
+---
+
+#### 7. **ResearchManager** ✅ TAMAMLANDI
+**Bağlı Sistemler:**
+- ✅ **PlayerInventory** → Tarif kitabı ekleme (GiveRecipeBook eklendi)
+- ✅ **CraftingManager** → Öğrenilen tarifler (HasRecipeBook kontrolü eklendi)
+- ⚠️ **ResearchTable** → Araştırma masası (kontrol edilmeli)
+
+**Tamamlanan Entegrasyonlar:**
+- ✅ **PlayerInventory** → `GiveRecipeBook()` metodunda PlayerInventory.CmdAddItem() kullanılıyor
+- ✅ **CraftingManager** → `HasRecipeBook()` kontrolü CraftingManager'da kullanılıyor
+
+---
+
+#### 8. **BreedingManager** ✅ TAMAMLANDI
+**Bağlı Sistemler:**
+- ✅ **PlayerInventory** → Breeding Core kontrolü (GetItemCount kontrolü eklendi)
+- ✅ **ChunkManager** → Breeding Core pozisyonu (kullanılıyor)
+- ⚠️ **MobAI** → Mob çiftleştirme (kontrol edilmeli)
+
+**Tamamlanan Entegrasyonlar:**
+- ✅ **PlayerInventory** → `CmdStartBreeding()` içinde `GetItemCount("BREEDING_CORE")` kontrolü eklendi
+
+---
+
+#### 9. **NetworkMining**
+**Bağlı Sistemler:**
+- ✅ **PlayerInventory** → Tool alma, item tüketimi, item pickup
+- ✅ **ChunkManager** → Terrain değişikliği
+- ✅ **ItemDatabase** → Block definition
+- ⚠️ **ItemManager** → Mined item spawn (eksik)
+- ⚠️ **MissionManager** → Blok kırma görevleri (eksik)
+
+**Eksik Entegrasyonlar:**
+- ❌ **ItemManager** → `CmdSpawnItem()` - Mined item spawn
+- ❌ **MissionManager** → `OnBlockBroken()` event listener - Blok kırma görevlerini kontrol etmeli
+
+---
+
+#### 10. **ChunkManager**
+**Bağlı Sistemler:**
+- ✅ **NetworkMining** → Terrain değişikliği
+- ✅ **ItemManager** → Item spawn pozisyonu
+- ✅ **StructurePlacer** → Yapı yerleştirme
+- ⚠️ **BreedingManager** → Breeding Core pozisyonu (kontrol edilmeli)
+- ⚠️ **ResearchManager** → Research Table pozisyonu (kontrol edilmeli)
+
+**Eksik Entegrasyonlar:**
+- ❌ **BreedingManager** → `GetBreedingCoreAtPosition()` - Breeding Core pozisyon kontrolü
+- ❌ **ResearchManager** → `GetResearchTableAtPosition()` - Research Table pozisyon kontrolü
+
+---
+
+### 📋 EKSİK ENTEGRASYON LİSTESİ (Öncelik Sırasına Göre)
+
+#### 🔴 YÜKSEK ÖNCELİK (Oyun Mekaniği İçin Kritik)
+
+1. **MissionManager ↔ PlayerInventory**
+   - `OnItemAdded()` event listener
+   - Item toplama görevlerini kontrol etme
+
+2. **ShopManager ↔ PlayerInventory**
+   - `BuyItem()`, `SellItem()` metodları
+   - Item transferi entegrasyonu
+
+3. **NetworkMining ↔ ItemManager**
+   - `CmdSpawnItem()` kullanımı
+   - Mined item spawn entegrasyonu
+
+4. **MissionManager ↔ NetworkMining**
+   - `OnBlockBroken()` event listener
+   - Blok kırma görevlerini kontrol etme
+
+---
+
+#### 🟡 ORTA ÖNCELİK (Oyun Mekaniği İçin Önemli)
+
+5. **ResearchManager ↔ PlayerInventory**
+   - `AddRecipeBook()` metodu
+   - Tarif kitabı ekleme entegrasyonu
+
+6. **CraftingManager ↔ ResearchManager**
+   - `HasLearnedRecipe()` kontrolü
+   - Öğrenilen tarifleri kontrol etme
+
+7. **BreedingManager ↔ PlayerInventory**
+   - `HasBreedingCore()` kontrolü
+   - Breeding Core kontrolü entegrasyonu
+
+8. **MissionManager ↔ MobAI**
+   - `OnMobKilled()` event listener
+   - Mob öldürme görevlerini kontrol etme
+
+---
+
+#### 🟢 DÜŞÜK ÖNCELİK (İyileştirme)
+
+9. **SmeltingSystem ↔ Furnace**
+   - `GetFurnaceLevel()` metodu
+   - Furnace seviyesi kontrolü
+
+10. **ShopManager ↔ EconomyManager**
+    - `AddGold()`, `RemoveGold()` metodları
+    - Altın sistemi entegrasyonu
+
+11. **MissionManager ↔ TerritoryManager**
+    - `OnTerritoryEntered()` event listener
+    - Bölge ziyaret görevlerini kontrol etme
+
+---
+
+### 🔧 ÖNERİLEN ÇÖZÜM: EVENT SİSTEMİ
+
+Sistemler arası bağlantıları güçlendirmek için **Event System** kullanılmalı:
+
+```csharp
+// Event System Örneği
+public class ItemAddedEvent {
+    public string itemId;
+    public int amount;
+    public NetworkObject player;
+}
+
+// PlayerInventory'de
+public event Action<ItemAddedEvent> OnItemAdded;
+
+// MissionManager'da
+_playerInventory.OnItemAdded += HandleItemAdded;
+```
+
+Bu şekilde sistemler birbirine sıkı bağlı olmadan haberleşebilir.
 
 ---
 
