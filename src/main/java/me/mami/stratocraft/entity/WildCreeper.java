@@ -168,7 +168,7 @@ public class WildCreeper {
             " -> Klan: " + targetClan.getName());
         
         // Patlama efekti (3 kat güçlü)
-        float explosionPower = (float) (4.0 * EXPLOSION_POWER_MULTIPLIER); // Normal creeper: 3.0
+        float explosionPower = (float) (3.0 * EXPLOSION_POWER_MULTIPLIER); // Normal creeper: 3.0
         
         // Patlama oluştur
         loc.getWorld().createExplosion(loc, explosionPower, true, true, creeper);
