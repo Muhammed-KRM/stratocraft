@@ -1335,17 +1335,21 @@ public class SQLiteDataManager {
     
     /**
      * ✅ YENİ: Location string'den Location objesine dönüştür
+     * Format desteği: "world;x;y;z;yaw;pitch" (noktalı virgül) veya "world:x:y:z:yaw:pitch" (iki nokta)
      */
     private org.bukkit.Location deserializeLocation(String locationStr) {
         if (locationStr == null || locationStr.isEmpty()) return null;
         
         try {
-            // Format: "world:x:y:z" veya JSON
-            if (locationStr.contains(":")) {
-                String[] parts = locationStr.split(":");
+            // ✅ DÜZELTME: Önce noktalı virgül formatını kontrol et (DataManager formatı)
+            if (locationStr.contains(";")) {
+                String[] parts = locationStr.split(";");
                 if (parts.length >= 4) {
                     org.bukkit.World world = org.bukkit.Bukkit.getWorld(parts[0]);
-                    if (world == null) return null;
+                    if (world == null) {
+                        plugin.getLogger().warning("Location deserialize: World bulunamadı: " + parts[0]);
+                        return null;
+                    }
                     double x = Double.parseDouble(parts[1]);
                     double y = Double.parseDouble(parts[2]);
                     double z = Double.parseDouble(parts[3]);
@@ -1355,10 +1359,35 @@ public class SQLiteDataManager {
                 }
             }
             
-            // JSON formatı denemesi
-            return gson.fromJson(locationStr, org.bukkit.Location.class);
+            // İki nokta formatı (eski format)
+            if (locationStr.contains(":")) {
+                String[] parts = locationStr.split(":");
+                if (parts.length >= 4) {
+                    org.bukkit.World world = org.bukkit.Bukkit.getWorld(parts[0]);
+                    if (world == null) {
+                        plugin.getLogger().warning("Location deserialize: World bulunamadı: " + parts[0]);
+                        return null;
+                    }
+                    double x = Double.parseDouble(parts[1]);
+                    double y = Double.parseDouble(parts[2]);
+                    double z = Double.parseDouble(parts[3]);
+                    float yaw = parts.length >= 5 ? Float.parseFloat(parts[4]) : 0f;
+                    float pitch = parts.length >= 6 ? Float.parseFloat(parts[5]) : 0f;
+                    return new org.bukkit.Location(world, x, y, z, yaw, pitch);
+                }
+            }
+            
+            // JSON formatı denemesi (son çare)
+            try {
+                return gson.fromJson(locationStr, org.bukkit.Location.class);
+            } catch (Exception jsonEx) {
+                // JSON başarısız, format hatası
+                plugin.getLogger().warning("Location deserialize hatası: " + locationStr + " - Geçersiz format (ne ; ne : ne JSON)");
+                return null;
+            }
         } catch (Exception e) {
             plugin.getLogger().warning("Location deserialize hatası: " + locationStr + " - " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }

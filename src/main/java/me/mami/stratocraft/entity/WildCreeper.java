@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Random;
 
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Player;
@@ -184,6 +183,7 @@ public class WildCreeper {
     
     /**
      * Kristale doğru hareket et
+     * ✅ DÜZELTME: Zıplama mantığı düzeltildi - sürekli uçma sorunu çözüldü
      */
     private static void moveTowardsCrystal(Creeper creeper, Location current, Location target) {
         if (target == null || !current.getWorld().equals(target.getWorld())) {
@@ -194,14 +194,28 @@ public class WildCreeper {
         double speed = 0.25;
         Vector velocity = direction.multiply(speed);
         
-        // Zıplama kontrolü (önünde engel varsa)
+        // ✅ DÜZELTME: Zıplama kontrolü - sadece gerektiğinde zıpla
         Block frontBlock = current.clone().add(direction).getBlock();
         Block belowBlock = current.clone().add(0, -1, 0).getBlock();
         
-        if (frontBlock.getType() != Material.AIR || belowBlock.getType() == Material.AIR) {
-            // Zıpla
-            velocity.setY(0.5);
+        // Yerde mi kontrol et
+        boolean isOnGround = belowBlock.getType().isSolid();
+        
+        // Önünde engel var mı?
+        boolean hasObstacle = frontBlock.getType().isSolid();
+        
+        // ✅ DÜZELTME: Sadece yerdeyse ve önünde engel varsa zıpla
+        // Y eksenini sıfırla (yerçekimi etkisini dikkate al)
+        if (isOnGround && hasObstacle) {
+            // Zıpla (sadece bir kez, yerçekimi düşürecek)
+            velocity.setY(0.4); // 0.5 yerine 0.4 (daha kontrollü)
+        } else if (!isOnGround) {
+            // Havadaysa, yerçekimi etkisini koru (Y eksenini değiştirme)
+            // Mevcut velocity'yi koru, sadece yatay hızı ayarla
+            Vector currentVel = creeper.getVelocity();
+            velocity.setY(currentVel.getY()); // Mevcut Y hızını koru
         } else {
+            // Yerde ve engel yok, Y eksenini sıfırla
             velocity.setY(0);
         }
         
@@ -210,6 +224,7 @@ public class WildCreeper {
     
     /**
      * Oyuncuya doğru hareket et
+     * ✅ DÜZELTME: Zıplama mantığı düzeltildi - sürekli uçma sorunu çözüldü
      */
     private static void moveTowardsPlayer(Creeper creeper, Location current, Location target) {
         if (target == null || !current.getWorld().equals(target.getWorld())) {
@@ -220,11 +235,22 @@ public class WildCreeper {
         double speed = 0.3; // Oyuncuya doğru biraz daha hızlı
         Vector velocity = direction.multiply(speed);
         
-        // Zıplama kontrolü
+        // ✅ DÜZELTME: Zıplama kontrolü - sadece gerektiğinde zıpla
         Block frontBlock = current.clone().add(direction).getBlock();
-        if (frontBlock.getType() != Material.AIR) {
-            velocity.setY(0.5);
+        Block belowBlock = current.clone().add(0, -1, 0).getBlock();
+        
+        boolean isOnGround = belowBlock.getType().isSolid();
+        boolean hasObstacle = frontBlock.getType().isSolid();
+        
+        if (isOnGround && hasObstacle) {
+            // Zıpla (sadece bir kez)
+            velocity.setY(0.4);
+        } else if (!isOnGround) {
+            // Havadaysa, mevcut Y hızını koru
+            Vector currentVel = creeper.getVelocity();
+            velocity.setY(currentVel.getY());
         } else {
+            // Yerde ve engel yok
             velocity.setY(0);
         }
         
@@ -233,21 +259,23 @@ public class WildCreeper {
     
     /**
      * Takılma durumunu çöz
+     * ✅ DÜZELTME: Zıplama mantığı düzeltildi - tek seferlik zıplama
      */
     private static void handleStuck(Creeper creeper, Location current, Location target) {
-        // Yüksek zıplama
-        Vector jumpVector = new Vector(0, 0.8, 0);
+        // ✅ DÜZELTME: Tek seferlik zıplama (yerçekimi düşürecek)
+        Vector jumpVector = new Vector(0, 0.6, 0); // 0.8 yerine 0.6 (daha kontrollü)
         creeper.setVelocity(jumpVector);
         
-        // Rastgele yön dene
+        // Rastgele yön dene (yatay)
         Random random = new Random();
         double angle = random.nextDouble() * 2 * Math.PI;
         Vector randomDirection = new Vector(
-            Math.cos(angle) * 0.4,
-            0.3,
-            Math.sin(angle) * 0.4
+            Math.cos(angle) * 0.3,
+            0, // Y eksenini 0 yap (sadece yatay hareket)
+            Math.sin(angle) * 0.3
         );
-        creeper.setVelocity(randomDirection);
+        // Zıplama ve yatay hareketi birleştir
+        creeper.setVelocity(jumpVector.add(randomDirection));
     }
     
     /**

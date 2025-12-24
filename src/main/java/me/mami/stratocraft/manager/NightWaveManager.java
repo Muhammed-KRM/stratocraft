@@ -282,6 +282,7 @@ public class NightWaveManager {
     
     /**
      * Bir klan için mob spawn et
+     * ✅ DÜZELTME: Her dalgada en az bir boss garantisi ve klan yaşına göre güç
      */
     private void spawnMobsForClan(Clan clan) {
         Location crystalLoc = clan.getCrystalLocation();
@@ -297,19 +298,42 @@ public class NightWaveManager {
             return;
         }
         
-        // ✅ CONFIG: Config'den spawn şanslarını kullan
-        Random random = new Random();
-        double chance = random.nextDouble();
+        // ✅ YENİ: Klan yaşına göre spawn sayısı artır
+        long clanAge = System.currentTimeMillis() - clan.getCreatedAt();
+        long daysSinceCreation = clanAge / (24 * 60 * 60 * 1000L);
         
-        if (chance < bossSpawnChance) {
-            // Boss spawn
+        // Her 7 günde bir ekstra spawn (max 3 ekstra)
+        int extraSpawns = Math.min(3, (int)(daysSinceCreation / 7));
+        int totalSpawns = 1 + extraSpawns; // En az 1 spawn
+        
+        Random random = new Random();
+        
+        // ✅ YENİ: İlk spawn her zaman boss (garanti)
+        boolean bossSpawned = false;
+        if (bossManager != null) {
             spawnBossForClan(clan, spawnLoc);
-        } else if (chance < (bossSpawnChance + wildCreeperSpawnChance)) {
-            // Vahşi creeper spawn
-            spawnWildCreeperForClan(clan, spawnLoc);
-        } else {
-            // Özel mob spawn
-            spawnSpecialMobForClan(clan, spawnLoc);
+            bossSpawned = true;
+        }
+        
+        // ✅ YENİ: Ekstra spawnlar (klan yaşına göre)
+        for (int i = 0; i < extraSpawns; i++) {
+            double chance = random.nextDouble();
+            
+            if (chance < bossSpawnChance && bossManager != null) {
+                // Boss spawn
+                spawnBossForClan(clan, spawnLoc);
+            } else if (chance < (bossSpawnChance + wildCreeperSpawnChance)) {
+                // Vahşi creeper spawn
+                spawnWildCreeperForClan(clan, spawnLoc);
+            } else {
+                // Özel mob spawn
+                spawnSpecialMobForClan(clan, spawnLoc);
+            }
+        }
+        
+        // ✅ YENİ: Eğer boss spawn edilmediyse ve bossManager varsa, bir tane daha dene
+        if (!bossSpawned && bossManager != null && random.nextDouble() < 0.5) {
+            spawnBossForClan(clan, spawnLoc);
         }
     }
     
@@ -354,19 +378,49 @@ public class NightWaveManager {
     
     /**
      * Boss spawn et
+     * ✅ DÜZELTME: bossManager null kontrolü ve klan yaşına göre güç sistemi
      */
     private void spawnBossForClan(Clan clan, Location spawnLoc) {
+        // ✅ DÜZELTME: bossManager null kontrolü
+        if (bossManager == null) {
+            plugin.getLogger().warning("[NightWaveManager] BossManager null! Boss spawn edilemedi: " + clan.getName());
+            return;
+        }
+        
         Random random = new Random();
         
-        // Rastgele boss seviyesi (1-3 arası, gece dalgası için)
-        int bossLevel = 1 + random.nextInt(3);
+        // ✅ YENİ: Klan yaşına göre boss seviyesi hesapla
+        long clanAge = System.currentTimeMillis() - clan.getCreatedAt();
+        long daysSinceCreation = clanAge / (24 * 60 * 60 * 1000L); // Gün cinsinden
         
-        // Rastgele boss tipi
-        me.mami.stratocraft.manager.BossManager.BossType[] bossTypes = {
-            me.mami.stratocraft.manager.BossManager.BossType.ORC_CHIEF,
-            me.mami.stratocraft.manager.BossManager.BossType.TROLL_KING,
-            me.mami.stratocraft.manager.BossManager.BossType.GOBLIN_KING
-        };
+        // Klan yaşına göre boss seviyesi: Her 7 günde bir seviye artar (max 5)
+        int baseBossLevel = Math.min(5, 1 + (int)(daysSinceCreation / 7));
+        
+        // Rastgele boss seviyesi (baseLevel ± 1, min 1, max 5)
+        int bossLevel = Math.max(1, Math.min(5, baseBossLevel + random.nextInt(3) - 1));
+        
+        // ✅ YENİ: Klan yaşına göre boss tipi seçimi
+        me.mami.stratocraft.manager.BossManager.BossType[] bossTypes;
+        if (daysSinceCreation < 7) {
+            // İlk hafta: Sadece basit bosslar
+            bossTypes = new me.mami.stratocraft.manager.BossManager.BossType[]{
+                me.mami.stratocraft.manager.BossManager.BossType.GOBLIN_KING,
+                me.mami.stratocraft.manager.BossManager.BossType.ORC_CHIEF
+            };
+        } else if (daysSinceCreation < 14) {
+            // İkinci hafta: Orta seviye bosslar
+            bossTypes = new me.mami.stratocraft.manager.BossManager.BossType[]{
+                me.mami.stratocraft.manager.BossManager.BossType.ORC_CHIEF,
+                me.mami.stratocraft.manager.BossManager.BossType.TROLL_KING
+            };
+        } else {
+            // 2 haftadan sonra: Tüm bosslar
+            bossTypes = new me.mami.stratocraft.manager.BossManager.BossType[]{
+                me.mami.stratocraft.manager.BossManager.BossType.ORC_CHIEF,
+                me.mami.stratocraft.manager.BossManager.BossType.TROLL_KING,
+                me.mami.stratocraft.manager.BossManager.BossType.GOBLIN_KING
+            };
+        }
         
         me.mami.stratocraft.manager.BossManager.BossType bossType = 
             bossTypes[random.nextInt(bossTypes.length)];
@@ -387,25 +441,32 @@ public class NightWaveManager {
                 }
                 
                 plugin.getLogger().info("[NightWaveManager] Boss spawn edildi: " + bossType.name() + 
-                    " - Klan: " + clan.getName());
+                    " (Level: " + bossLevel + ", Klan Yaşı: " + daysSinceCreation + " gün) - Klan: " + clan.getName());
             }
         }
     }
     
     /**
      * Vahşi Creeper spawn et
+     * ✅ DÜZELTME: Spawn mesafesi artırıldı - birbirlerini patlatmayı önlemek için
      */
     private void spawnWildCreeperForClan(Clan clan, Location spawnLoc) {
         // ✅ CONFIG: Config'den count değerlerini kullan
         Random random = new Random();
         int count = wildCreeperCountMin + random.nextInt(wildCreeperCountMax - wildCreeperCountMin + 1);
         
+        // ✅ DÜZELTME: Spawn mesafesi artırıldı (10 -> 20 blok) - birbirlerini patlatmayı önlemek için
+        double spawnRadius = 20.0; // 20 blok yarıçap
+        
         for (int i = 0; i < count; i++) {
-            // Rastgele konum (spawnLoc etrafında 5 blok)
+            // Rastgele açı ve mesafe (daha dağınık spawn)
+            double angle = random.nextDouble() * 2 * Math.PI;
+            double distance = 5.0 + random.nextDouble() * spawnRadius; // 5-25 blok arası
+            
             Location creeperLoc = spawnLoc.clone().add(
-                (random.nextDouble() - 0.5) * 10,
+                Math.cos(angle) * distance,
                 0,
-                (random.nextDouble() - 0.5) * 10
+                Math.sin(angle) * distance
             );
             creeperLoc.setY(spawnLoc.getWorld().getHighestBlockYAt(
                 creeperLoc.getBlockX(), creeperLoc.getBlockZ()) + 1);

@@ -297,6 +297,9 @@ public class MiniDisasterManager {
                 // Mob'u güçlendir
                 enhanceMob(living, config, name);
                 
+                // ✅ YENİ: AI ekle - mobların klan kristaline saldırması için
+                me.mami.stratocraft.util.MobClanAttackAI.attachAI(living, targetClan, plugin);
+                
                 spawnedCount++;
             }
         }

@@ -2,12 +2,9 @@ package me.mami.stratocraft.util;
 
 import me.mami.stratocraft.Main;
 import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.manager.TerritoryManager;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.EnderCrystal;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
@@ -27,6 +24,7 @@ public class MobClanAttackAI {
     
     /**
      * AI'yı entity'ye ekle
+     * ✅ DÜZELTME: Vanilla AI'yı devre dışı bırak ve kristal hedefini set et
      */
     public static void attachAI(LivingEntity entity, Clan targetClan, Main plugin) {
         if (entity == null || targetClan == null || plugin == null) {
@@ -39,6 +37,29 @@ public class MobClanAttackAI {
         }
         
         targetClans.put(entity, targetClan);
+        
+        // ✅ YENİ: Vanilla AI'yı devre dışı bırak (mob'ların kendi AI'sı ile çakışmasını önle)
+        try {
+            if (entity instanceof org.bukkit.entity.Mob) {
+                org.bukkit.entity.Mob mob = (org.bukkit.entity.Mob) entity;
+                mob.setAI(false); // Vanilla AI'yı devre dışı bırak
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("[MobClanAttackAI] AI devre dışı bırakılamadı: " + e.getMessage());
+        }
+        
+        // ✅ YENİ: Kristal entity'sini hedef olarak set et (eğer varsa)
+        org.bukkit.entity.EnderCrystal crystal = targetClan.getCrystalEntity();
+        if (crystal != null && !crystal.isDead() && entity instanceof org.bukkit.entity.Mob) {
+            try {
+                // EnderCrystal LivingEntity değil, bu yüzden manuel hedefleme yapılacak
+                // Metadata ile hedefi işaretle
+                entity.setMetadata("crystal_target_clan", new org.bukkit.metadata.FixedMetadataValue(
+                    plugin, targetClan.getId().toString()));
+            } catch (Exception e) {
+                plugin.getLogger().warning("[MobClanAttackAI] Hedef set edilemedi: " + e.getMessage());
+            }
+        }
         
         // AI task'ı başlat
         BukkitRunnable aiTask = new BukkitRunnable() {
@@ -97,16 +118,17 @@ public class MobClanAttackAI {
             }
         };
         
-        // ✅ OPTİMİZE: Her 2 tick'te bir çalıştır (performans için)
-        aiTask.runTaskTimer(plugin, 0L, 2L); // Her 2 tick (0.1 saniye)
+        // ✅ OPTİMİZE: Her tick çalıştır (daha responsive hareket için)
+        aiTask.runTaskTimer(plugin, 0L, 1L); // Her tick (0.05 saniye)
         aiTasks.put(entity, aiTask);
         
         plugin.getLogger().info("[MobClanAttackAI] AI eklendi: " + entity.getType() + 
-            " -> Klan: " + targetClan.getName());
+            " -> Klan: " + targetClan.getName() + " @ " + targetClan.getCrystalLocation());
     }
     
     /**
      * AI'yı entity'den kaldır
+     * ✅ DÜZELTME: Vanilla AI'yı tekrar aktif et
      */
     public static void detachAI(LivingEntity entity) {
         if (entity == null) return;
@@ -117,6 +139,19 @@ public class MobClanAttackAI {
         }
         
         targetClans.remove(entity);
+        
+        // ✅ YENİ: Vanilla AI'yı tekrar aktif et
+        try {
+            if (entity instanceof org.bukkit.entity.Mob) {
+                org.bukkit.entity.Mob mob = (org.bukkit.entity.Mob) entity;
+                mob.setAI(true); // Vanilla AI'yı tekrar aktif et
+            }
+        } catch (Exception e) {
+            // Hata durumunda devam et
+        }
+        
+        // Metadata'yı temizle
+        entity.removeMetadata("crystal_target_clan", Main.getInstance());
     }
     
     /**
@@ -146,6 +181,7 @@ public class MobClanAttackAI {
     
     /**
      * Hedefe doğru hareket et
+     * ✅ DÜZELTME: Yerdeki moblar için yerçekimi etkisini dikkate al
      */
     private static void moveTowardsTarget(LivingEntity entity, Location current, Location target) {
         if (target == null || !current.getWorld().equals(target.getWorld())) {
@@ -164,8 +200,25 @@ public class MobClanAttackAI {
             double yDiff = target.getY() - current.getY();
             velocity.setY(yDiff * 0.1);
         } else {
-            // Yerdeki moblar için Y eksenini sıfırla
-            velocity.setY(0);
+            // ✅ DÜZELTME: Yerdeki moblar için - mevcut Y hızını koru (yerçekimi için)
+            // Sadece yerdeyse ve önünde engel varsa zıpla
+            org.bukkit.block.Block belowBlock = current.clone().add(0, -1, 0).getBlock();
+            org.bukkit.block.Block frontBlock = current.clone().add(direction).getBlock();
+            
+            boolean isOnGround = belowBlock.getType().isSolid();
+            boolean hasObstacle = frontBlock.getType().isSolid();
+            
+            if (isOnGround && hasObstacle) {
+                // Zıpla
+                velocity.setY(0.4);
+            } else if (!isOnGround) {
+                // Havadaysa, mevcut Y hızını koru (yerçekimi etkisi)
+                Vector currentVel = entity.getVelocity();
+                velocity.setY(currentVel.getY());
+            } else {
+                // Yerde ve engel yok, Y eksenini sıfırla
+                velocity.setY(0);
+            }
         }
         
         entity.setVelocity(velocity);

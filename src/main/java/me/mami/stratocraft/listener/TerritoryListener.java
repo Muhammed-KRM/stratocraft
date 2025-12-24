@@ -1172,13 +1172,23 @@ public class TerritoryListener implements Listener {
                     territoryData.setSkyHeight(territoryConfig.getSkyHeight());
                     territoryData.setGroundDepth(territoryConfig.getGroundDepth());
                     
-                    // Çit lokasyonlarını bul ve ekle (ASYNC - büyük alanlar için)
-                    // Async olarak çit lokasyonlarını bul
+                    // ✅ DÜZELTME: Çit lokasyonlarını bul ve ekle (ASYNC - büyük alanlar için)
+                    // "Yeniden Hesapla" metodundaki gibi collectFenceLocations mantığını kullan
                     final me.mami.stratocraft.model.Clan finalNewClan = newClan;
                     org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(
                         me.mami.stratocraft.Main.getInstance(),
                         () -> {
-                            findAndAddFenceLocations(pending.placeLocation.getLocation(), territoryData);
+                            // ✅ YENİ: collectFenceLocations benzeri mantık - kristal etrafındaki çitleri topla
+                            java.util.List<org.bukkit.Location> fenceLocations = collectFenceLocationsFromCrystal(
+                                pending.crystalLoc, finalNewClan);
+                            
+                            // ✅ YENİ: Eski çit lokasyonlarını temizle (eğer varsa)
+                            territoryData.clearFenceLocations();
+                            
+                            // ✅ YENİ: Yeni çit lokasyonlarını ekle
+                            for (org.bukkit.Location fenceLoc : fenceLocations) {
+                                territoryData.addFenceLocation(fenceLoc);
+                            }
                             
                             // ✅ YENİ: Y ekseni sınırlarını güncelle
                             territoryData.updateYBounds();
@@ -1189,8 +1199,11 @@ public class TerritoryListener implements Listener {
                                 () -> {
                                     if (boundaryManager != null) {
                                         boundaryManager.setTerritoryData(finalNewClan, territoryData);
-                                        // ✅ YENİ: Sınır koordinatlarını hesapla
+                                        // ✅ YENİ: Sınır koordinatlarını hesapla (çitler tam sınır olacak)
                                         territoryData.calculateBoundaries();
+                                        
+                                        // Cache'i güncelle
+                                        territoryManager.setCacheDirty();
                                     }
                                 }
                             );
@@ -2407,22 +2420,42 @@ public class TerritoryListener implements Listener {
      * Çit lokasyonlarını bul ve TerritoryData'ya ekle
      * Flood fill algoritması ile çitleri tespit eder
      */
-    private void findAndAddFenceLocations(Location centerLocation, me.mami.stratocraft.model.territory.TerritoryData territoryData) {
-        if (centerLocation == null || centerLocation.getWorld() == null || territoryData == null) {
-            return;
+    /**
+     * ✅ YENİ: Klan kristali etrafındaki çit lokasyonlarını topla
+     * ClanTerritoryMenu'daki collectFenceLocations() metoduna benzer mantık
+     * Çitler tam sınır olacak şekilde toplar
+     */
+    private java.util.List<org.bukkit.Location> collectFenceLocationsFromCrystal(
+            org.bukkit.Location crystalLoc, me.mami.stratocraft.model.Clan clan) {
+        java.util.List<org.bukkit.Location> fenceLocations = new java.util.ArrayList<>();
+        
+        if (crystalLoc == null || crystalLoc.getWorld() == null || clan == null) {
+            return fenceLocations;
         }
         
-        org.bukkit.World world = centerLocation.getWorld();
-        int centerX = centerLocation.getBlockX();
-        int centerY = centerLocation.getBlockY();
-        int centerZ = centerLocation.getBlockZ();
+        org.bukkit.World world = crystalLoc.getWorld();
+        int centerX = crystalLoc.getBlockX();
+        int centerY = crystalLoc.getBlockY();
+        int centerZ = crystalLoc.getBlockZ();
         
-        // Flood fill ile çitleri bul
+        // ✅ YENİ: 2D flood-fill ile çitleri bul (ClanTerritoryMenu'daki gibi)
         java.util.Set<org.bukkit.Location> visited = new java.util.HashSet<>();
         java.util.Queue<org.bukkit.block.Block> queue = new java.util.LinkedList<>();
         
-        // Başlangıç noktası
+        // ✅ YENİ: Başlangıç noktası - kristal bloğu
         org.bukkit.block.Block startBlock = world.getBlockAt(centerX, centerY, centerZ);
+        
+        // ✅ YENİ: Chunk yükleme kontrolü
+        org.bukkit.Chunk chunk = startBlock.getChunk();
+        if (!chunk.isLoaded()) {
+            try {
+                chunk.load(false);
+            } catch (Exception e) {
+                // Chunk yüklenemiyorsa boş liste döner
+                return fenceLocations;
+            }
+        }
+        
         queue.add(startBlock);
         visited.add(startBlock.getLocation());
         
@@ -2433,7 +2466,7 @@ public class TerritoryListener implements Listener {
             org.bukkit.block.Block current = queue.poll();
             iterations++;
             
-            // 4 yöne bak
+            // ✅ YENİ: 4 yöne bak (2D flood-fill - ClanTerritoryMenu'daki gibi)
             org.bukkit.block.Block[] neighbors = {
                 current.getRelative(org.bukkit.block.BlockFace.NORTH),
                 current.getRelative(org.bukkit.block.BlockFace.SOUTH),
@@ -2447,43 +2480,64 @@ public class TerritoryListener implements Listener {
                 org.bukkit.Location neighborLoc = neighbor.getLocation();
                 if (visited.contains(neighborLoc)) continue;
                 
-                // Çit kontrolü - Metadata ile klan çiti kontrolü
-                if (neighbor.getType() == Material.OAK_FENCE) {
-                    boolean isClanFence = false;
-                    if (territoryConfig != null) {
-                        String metadataKey = territoryConfig.getFenceMetadataKey();
-                        isClanFence = neighbor.hasMetadata(metadataKey);
-                    }
-                    
-                    // Metadata yoksa TerritoryData'dan kontrol et
-                    if (!isClanFence) {
-                        for (org.bukkit.Location fenceLoc : territoryData.getFenceLocations()) {
-                            if (fenceLoc.getWorld().equals(neighbor.getWorld()) &&
-                                fenceLoc.getBlockX() == neighbor.getX() &&
-                                fenceLoc.getBlockY() == neighbor.getY() &&
-                                fenceLoc.getBlockZ() == neighbor.getZ()) {
-                                isClanFence = true;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if (isClanFence) {
-                        // Klan çiti bulundu, TerritoryData'ya ekle (eğer yoksa)
-                        territoryData.addFenceLocation(neighborLoc);
-                        visited.add(neighborLoc);
-                        continue; // Sınır, devam etme
-                    } else {
-                        // Normal çit, sınır sayılmaz - engel olarak kabul et
+                // ✅ YENİ: Chunk yükleme kontrolü
+                org.bukkit.Chunk neighborChunk = neighbor.getChunk();
+                if (!neighborChunk.isLoaded()) {
+                    try {
+                        neighborChunk.load(false);
+                    } catch (Exception e) {
+                        // Chunk yüklenemiyorsa atla
                         continue;
                     }
                 }
                 
-                // Hava veya geçilebilir blok
+                // ✅ YENİ: Çit kontrolü - CustomBlockData.isClanFence() kullan (ClanTerritoryMenu'daki gibi)
+                if (neighbor.getType() == Material.OAK_FENCE) {
+                    boolean isClanFence = me.mami.stratocraft.util.CustomBlockData.isClanFence(neighbor);
+                    
+                    if (isClanFence) {
+                        // Klan çiti bulundu, listeye ekle
+                        fenceLocations.add(neighborLoc);
+                        visited.add(neighborLoc);
+                        continue; // Sınır, devam etme
+                    } else {
+                        // Normal çit, sınır sayılmaz - engel olarak kabul et
+                        visited.add(neighborLoc);
+                        continue;
+                    }
+                }
+                
+                // ✅ YENİ: Hava veya geçilebilir blok
                 if (neighbor.getType().isAir() || !neighbor.getType().isSolid()) {
                     visited.add(neighborLoc);
                     queue.add(neighbor);
+                } else {
+                    // Solid blok - engel
+                    visited.add(neighborLoc);
                 }
+            }
+        }
+        
+        return fenceLocations;
+    }
+    
+    /**
+     * ✅ ESKİ: findAndAddFenceLocations - Geriye uyumluluk için tutuluyor
+     * YENİ: collectFenceLocationsFromCrystal() kullanılmalı
+     */
+    @Deprecated
+    private void findAndAddFenceLocations(Location centerLocation, me.mami.stratocraft.model.territory.TerritoryData territoryData) {
+        if (centerLocation == null || centerLocation.getWorld() == null || territoryData == null) {
+            return;
+        }
+        
+        // ✅ YENİ: collectFenceLocationsFromCrystal() kullan
+        me.mami.stratocraft.model.Clan clan = territoryManager.getClanManager().getClanById(territoryData.getClanId());
+        if (clan != null) {
+            java.util.List<org.bukkit.Location> fenceLocations = collectFenceLocationsFromCrystal(
+                clan.getCrystalLocation(), clan);
+            for (org.bukkit.Location fenceLoc : fenceLocations) {
+                territoryData.addFenceLocation(fenceLoc);
             }
         }
         
