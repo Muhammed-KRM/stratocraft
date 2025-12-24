@@ -1,21 +1,20 @@
 package me.mami.stratocraft.entity;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.model.Clan;
-import me.mami.stratocraft.manager.TerritoryManager;
-import me.mami.stratocraft.util.CrystalAttackHelper;
-import org.bukkit.Bukkit;
+import java.util.List;
+import java.util.Random;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Creeper;
-import org.bukkit.entity.EnderCrystal;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.util.Random;
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.manager.TerritoryManager;
+import me.mami.stratocraft.model.Clan;
+import me.mami.stratocraft.util.CrystalAttackHelper;
 
 /**
  * Vahşi Creeper

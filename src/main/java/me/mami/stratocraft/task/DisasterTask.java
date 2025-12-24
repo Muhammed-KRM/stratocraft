@@ -13,8 +13,6 @@ import me.mami.stratocraft.model.Disaster;
 import me.mami.stratocraft.model.DisasterConfig;
 import me.mami.stratocraft.model.Structure;
 import me.mami.stratocraft.util.DisasterBehavior;
-import me.mami.stratocraft.util.DisasterEntityAI;
-import me.mami.stratocraft.util.DisasterUtils;
 import me.mami.stratocraft.util.EffectUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -477,7 +475,7 @@ public class DisasterTask extends BukkitRunnable {
         }
         
         // Handler sistemi kullan - hedef kristale hareket etmesi için
-        DisasterHandler handler = handlerRegistry.getHandler(disaster.getType());
+        // Not: handler zaten yukarıda tanımlanmış (satır 196), burada tekrar tanımlamaya gerek yok
         
         // ✅ Hedef kristal ayarlandıysa, disaster'a bildir (HANDLER ÇAĞRISINDAN ÖNCE)
         Location targetCrystal = disaster.getTargetCrystal();

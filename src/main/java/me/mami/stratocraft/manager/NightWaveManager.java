@@ -1,15 +1,19 @@
 package me.mami.stratocraft.manager;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.model.Clan;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.*;
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.model.Clan;
 
 /**
  * Gece Saldırı Dalgası Yöneticisi
@@ -368,19 +372,23 @@ public class NightWaveManager {
             bossTypes[random.nextInt(bossTypes.length)];
         
         // Boss spawn et
-        org.bukkit.entity.LivingEntity boss = bossManager.spawnBossFromRitual(spawnLoc, bossType, null);
-        if (boss != null) {
-            // AI'yı klan saldırısına ayarla
-            me.mami.stratocraft.util.MobClanAttackAI.attachAI(boss, clan, plugin);
-            
-            // Listeye ekle
-            World world = spawnLoc.getWorld();
-            if (world != null) {
-                waveEntities.get(world).add(boss);
+        boolean spawned = bossManager.spawnBossFromRitual(spawnLoc, bossType, null);
+        if (spawned) {
+            // Spawn edilen boss entity'sini bul (spawn location'ına yakın)
+            org.bukkit.entity.LivingEntity boss = findSpawnedBoss(spawnLoc, bossType);
+            if (boss != null) {
+                // AI'yı klan saldırısına ayarla
+                me.mami.stratocraft.util.MobClanAttackAI.attachAI(boss, clan, plugin);
+                
+                // Listeye ekle
+                World world = spawnLoc.getWorld();
+                if (world != null) {
+                    waveEntities.get(world).add(boss);
+                }
+                
+                plugin.getLogger().info("[NightWaveManager] Boss spawn edildi: " + bossType.name() + 
+                    " - Klan: " + clan.getName());
             }
-            
-            plugin.getLogger().info("[NightWaveManager] Boss spawn edildi: " + bossType.name() + 
-                " - Klan: " + clan.getName());
         }
     }
     
@@ -478,6 +486,84 @@ public class NightWaveManager {
                 " - Klan: " + clan.getName());
         } else {
             plugin.getLogger().warning("[NightWaveManager] Spawn edilen mob bulunamadı: " + mobType);
+        }
+    }
+    
+    /**
+     * Spawn edilen boss entity'sini bul
+     */
+    private org.bukkit.entity.LivingEntity findSpawnedBoss(Location spawnLoc, 
+                                                           me.mami.stratocraft.manager.BossManager.BossType bossType) {
+        if (spawnLoc == null || spawnLoc.getWorld() == null) {
+            return null;
+        }
+        
+        // Boss tipine göre beklenen entity type ve name
+        org.bukkit.entity.EntityType expectedType = getBossEntityType(bossType);
+        String expectedName = getBossExpectedName(bossType);
+        
+        if (expectedType == null || expectedName == null) {
+            return null;
+        }
+        
+        // Spawn location'ına yakın entity'leri kontrol et (10 blok yarıçap - spawn gecikmesi için)
+        org.bukkit.entity.LivingEntity foundBoss = null;
+        double minDistance = Double.MAX_VALUE;
+        
+        for (org.bukkit.entity.Entity nearby : spawnLoc.getWorld().getNearbyEntities(spawnLoc, 10, 10, 10)) {
+            if (nearby instanceof org.bukkit.entity.LivingEntity) {
+                org.bukkit.entity.LivingEntity living = (org.bukkit.entity.LivingEntity) nearby;
+                
+                // Entity type kontrolü
+                if (living.getType() != expectedType) {
+                    continue;
+                }
+                
+                // Custom name kontrolü (boss name'ini içermeli)
+                String customName = living.getCustomName();
+                if (customName != null && customName.contains(expectedName)) {
+                    // En yakın boss'u bul
+                    double distance = spawnLoc.distance(living.getLocation());
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        foundBoss = living;
+                    }
+                }
+            }
+        }
+        
+        return foundBoss;
+    }
+    
+    /**
+     * Boss tipine göre entity type'ı döndür
+     */
+    private org.bukkit.entity.EntityType getBossEntityType(me.mami.stratocraft.manager.BossManager.BossType bossType) {
+        switch (bossType) {
+            case ORC_CHIEF:
+                return org.bukkit.entity.EntityType.ZOMBIE;
+            case TROLL_KING:
+                return org.bukkit.entity.EntityType.ZOMBIE;
+            case GOBLIN_KING:
+                return org.bukkit.entity.EntityType.ZOMBIE;
+            default:
+                return null;
+        }
+    }
+    
+    /**
+     * Boss tipine göre beklenen custom name'i döndür (renk kodları olmadan)
+     */
+    private String getBossExpectedName(me.mami.stratocraft.manager.BossManager.BossType bossType) {
+        switch (bossType) {
+            case GOBLIN_KING:
+                return "GOBLIN KRALI";
+            case ORC_CHIEF:
+                return "ORK ŞEFİ";
+            case TROLL_KING:
+                return "TROLL KRALI";
+            default:
+                return null;
         }
     }
     
