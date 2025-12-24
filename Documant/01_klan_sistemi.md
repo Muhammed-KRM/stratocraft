@@ -940,6 +940,80 @@ clan-power-system:
 
 Detaylı bilgi için: `SON_3_GUN_DEGISIKLIKLER_VE_SISTEM_DOKUMANI.md` dosyasına bakın.
 
+---
+
+## 💎 KLAN KRISTALİ SALDIRI SİSTEMİ ⭐ YENİ
+
+### Saldırı Mekaniği
+
+Klan kristalleri artık çeşitli kaynaklardan saldırı alabilir:
+
+**Saldırı Tipleri:**
+1. **Felaket Bossları**: Merkeze ulaştıktan sonra klan kristallerine saldırır
+2. **Normal Bosslar**: Gece dalgasında klan kristallerine saldırır
+3. **Özel Moblar**: Gece dalgasında klan kristallerine saldırır
+4. **Vahşi Creeper**: Klan sınırında patlayarak kristale hasar verir
+
+### Hasar Hesaplama Sistemi
+
+**CrystalAttackHelper:**
+- Tüm saldırı tipleri için ortak hasar hesaplama
+- Kalkan (shield) kontrolü
+- Zırh (armor) kontrolü
+- Hasar azaltma çarpanı
+
+**Hasar Değerleri:**
+- **Felaket Bossları**: 10.0 × damageMultiplier
+- **Normal Bosslar**: 5.0 × bossLevel
+- **Özel Moblar**: 3.0 × mobType
+- **Vahşi Creeper**: 15.0 (3x normal creeper)
+
+### Kalkan ve Zırh Sistemi
+
+**Kalkan (Shield):**
+- Hasarı tamamen bloklar
+- Partikül efekti gösterir
+- Kalkan sayısı azalır
+
+**Zırh (Armor):**
+- Hasarı azaltır (damage reduction)
+- Yakıt tüketir
+- Zırh seviyesine göre hasar azaltma
+
+**Hasar Azaltma Formülü:**
+```
+Final Hasar = Base Hasar × (1.0 - damageReduction)
+```
+
+### Gece Saldırı Dalgası
+
+**Özellikler:**
+- Her gün gece yarısında (18000 tick) otomatik başlar
+- Güneş doğuşuna kadar (0 tick) devam eder
+- Klan sınırından 50 blok ötede spawn
+- En yakın klan kristaline otomatik yönelme
+
+**Spawn Tipleri:**
+- Boss (%20 şans)
+- Vahşi Creeper (%30 şans, 3-7 adet)
+- Özel Mob (%50 şans)
+
+**Detaylı bilgi için:** `10_felaketler.md` dosyasına bakın.
+
+### Oyuncu Bildirimleri
+
+**Kristal Hasar Aldığında:**
+- Tüm klan üyelerine mesaj gönderilir
+- Hasar miktarı, kalan can, yüzde gösterilir
+- Partikül efektleri (can yüzdesine göre)
+
+**Kristal Yok Edildiğinde:**
+- Sunucu genelinde broadcast mesajı
+- Klan otomatik dağıtılır
+- Özel item drop edilir
+
+---
+
 ### İttifak Sistemi Güncellemeleri
 
 **Dosya:** `AllianceManager.java`, `Alliance.java`

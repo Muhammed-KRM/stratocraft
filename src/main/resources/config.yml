@@ -1186,3 +1186,19 @@ mini-disasters:
     resistance-level: 2                 # Zırh seviyesi (Potion Effect)
     regeneration-level: 1                # Rejenerasyon seviyesi (Potion Effect)
 
+# Gece Saldırı Dalgası Sistemi
+night-wave:
+  enabled: true                          # Gece dalgası aktif mi?
+  start-time: 18000                      # Başlangıç zamanı (tick) - 18000 = gece yarısı
+  end-time: 0                            # Bitiş zamanı (tick) - 0 = güneş doğuşu
+  spawn-interval-initial: 200            # İlk spawn aralığı (tick) - 200 = 10 saniye
+  spawn-interval-fast: 100               # Hızlanmış spawn aralığı (tick) - 100 = 5 saniye
+  speed-increase-time: 1200              # Hızlanma zamanı (tick) - 1200 = 1 dakika
+  spawn-distance: 50.0                   # Klan sınırından spawn mesafesi (blok)
+  boss-spawn-chance: 0.2                 # Boss spawn şansı (%20)
+  wild-creeper-spawn-chance: 0.3         # Vahşi Creeper spawn şansı (%30)
+  special-mob-spawn-chance: 0.5          # Özel mob spawn şansı (%50)
+  wild-creeper-count-min: 3              # Vahşi Creeper minimum sayısı
+  wild-creeper-count-max: 7              # Vahşi Creeper maksimum sayısı
+  check-interval: 100                    # Gece kontrol aralığı (tick) - 100 = 5 saniye
+

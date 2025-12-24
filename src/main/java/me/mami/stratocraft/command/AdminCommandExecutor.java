@@ -938,6 +938,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§7  /stratocraft disaster start 1 SOLAR_FLARE 2 ben");
             p.sendMessage("§7  /stratocraft disaster stop");
             p.sendMessage("§7  /stratocraft disaster info");
+            p.sendMessage("§7  /stratocraft disaster wave start - Gece dalgasını başlat");
+            p.sendMessage("§7  /stratocraft disaster wave stop - Gece dalgasını durdur");
+            p.sendMessage("§7  /stratocraft disaster wave status - Gece dalgası durumu");
             return true;
         }
 
@@ -966,8 +969,11 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 return handleDisasterClear(p, disasterManager);
             case "test":
                 return handleDisasterTest(p, args, disasterManager);
+            case "wave":
+            case "dalga":
+                return handleNightWave(p, args);
             default:
-                p.sendMessage("§cGeçersiz komut! /stratocraft disaster <start|stop|info|list|clear|test>");
+                p.sendMessage("§cGeçersiz komut! /stratocraft disaster <start|stop|info|list|clear|test|wave>");
                 return true;
         }
     }
@@ -1493,6 +1499,83 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      */
     private boolean handleDisasterClear(Player p, DisasterManager disasterManager) {
         return handleDisasterStop(p, disasterManager);
+    }
+    
+    /**
+     * Gece dalgası komutları
+     */
+    private boolean handleNightWave(Player p, String[] args) {
+        if (args.length < 3) {
+            p.sendMessage("§cKullanım: /stratocraft disaster wave <start|stop|status>");
+            p.sendMessage("§7  start - Gece dalgasını başlat");
+            p.sendMessage("§7  stop - Gece dalgasını durdur");
+            p.sendMessage("§7  status - Gece dalgası durumu");
+            return true;
+        }
+        
+        Main plugin = Main.getInstance();
+        if (plugin == null) {
+            p.sendMessage("§cPlugin bulunamadı!");
+            return true;
+        }
+        
+        me.mami.stratocraft.manager.NightWaveManager waveManager = plugin.getNightWaveManager();
+        if (waveManager == null) {
+            p.sendMessage("§cNightWaveManager bulunamadı!");
+            return true;
+        }
+        
+        String subCommand = args[2].toLowerCase();
+        org.bukkit.World world = p.getWorld();
+        
+        switch (subCommand) {
+            case "start":
+            case "başlat":
+                if (waveManager.isWaveActive(world)) {
+                    p.sendMessage("§cGece dalgası zaten aktif!");
+                    return true;
+                }
+                // Manuel başlatma için world time'ı gece yarısına ayarla
+                world.setTime(18000L);
+                p.sendMessage("§aGece dalgası başlatıldı! (Dünya zamanı gece yarısına ayarlandı)");
+                p.sendMessage("§7Dalga otomatik olarak başlayacak...");
+                return true;
+                
+            case "stop":
+            case "durdur":
+                if (!waveManager.isWaveActive(world)) {
+                    p.sendMessage("§cGece dalgası zaten aktif değil!");
+                    return true;
+                }
+                // Manuel durdurma için world time'ı güneş doğuşuna ayarla
+                world.setTime(0L);
+                p.sendMessage("§aGece dalgası durduruldu! (Dünya zamanı güneş doğuşuna ayarlandı)");
+                p.sendMessage("§7Dalga otomatik olarak duracak...");
+                return true;
+                
+            case "status":
+            case "durum":
+                boolean isActive = waveManager.isWaveActive(world);
+                long currentTime = world.getTime();
+                boolean isNight = currentTime >= 18000 || currentTime < 0;
+                
+                p.sendMessage("§6=== Gece Dalgası Durumu ===");
+                p.sendMessage("§7Dünya: §e" + world.getName());
+                p.sendMessage("§7Durum: " + (isActive ? "§aAktif" : "§cPasif"));
+                p.sendMessage("§7Zaman: §e" + currentTime + " tick");
+                p.sendMessage("§7Gece: " + (isNight ? "§aEvet" : "§cHayır"));
+                if (isNight) {
+                    p.sendMessage("§7Gece yarısına kalan: §e" + 
+                        (currentTime >= 18000 ? (24000 - currentTime) : (18000 - currentTime)) + " tick");
+                } else {
+                    p.sendMessage("§7Gece yarısına kalan: §e" + (18000 - currentTime) + " tick");
+                }
+                return true;
+                
+            default:
+                p.sendMessage("§cGeçersiz komut! /stratocraft disaster wave <start|stop|status>");
+                return true;
+        }
     }
 
     /**
@@ -4559,7 +4642,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
                 case "disaster":
                     // Disaster alt komutları
-                    List<String> disasterCommands = Arrays.asList("start", "stop", "info", "list", "clear");
+                    List<String> disasterCommands = Arrays.asList("start", "stop", "info", "list", "clear", "test", "wave");
                     if (input.isEmpty()) {
                         return disasterCommands;
                     }
@@ -4847,6 +4930,16 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 case "tame":
                     return getTameTabComplete(args, input);
                 case "disaster":
+                    // ✅ YENİ: Gece dalgası komutları için tab completion
+                    if (category.equals("wave")) {
+                        List<String> waveCommands = Arrays.asList("start", "stop", "status");
+                        if (input.isEmpty()) {
+                            return waveCommands;
+                        }
+                        return waveCommands.stream()
+                                .filter(s -> s.toLowerCase().startsWith(input))
+                                .collect(Collectors.toList());
+                    }
                     // Disaster start için yeni format: [Kategori seviyesi] [Felaket ismi] [İç seviye] [Koordinat]
                     if (category.equalsIgnoreCase("start")) {
                         if (args.length == 3) {

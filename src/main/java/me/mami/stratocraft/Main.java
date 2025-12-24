@@ -103,6 +103,7 @@ public class Main extends JavaPlugin {
     private me.mami.stratocraft.manager.DisasterArenaManager disasterArenaManager;
     private me.mami.stratocraft.manager.TaskManager taskManager;
     private me.mami.stratocraft.listener.TerritoryListener territoryListener;
+    private me.mami.stratocraft.manager.NightWaveManager nightWaveManager; // ✅ YENİ: Gece saldırı dalgası yöneticisi
     
     // ✅ YENİ: Kristal sistemi handler'ları
     private me.mami.stratocraft.handler.structure.CrystalEnhancementHandler crystalEnhancementHandler;
@@ -231,6 +232,11 @@ public class Main extends JavaPlugin {
         crystalDamageListener = new me.mami.stratocraft.listener.CrystalDamageListener(this); // ✅ YENİ: Kristal hasar sistemi
         crystalTargetingAI = new me.mami.stratocraft.manager.CrystalTargetingAI(this); // ✅ YENİ: Kristal hedef seçim AI
         miniDisasterManager = new me.mami.stratocraft.manager.MiniDisasterManager(this); // ✅ YENİ: Mini felaket yöneticisi
+        
+        // ✅ YENİ: Gece saldırı dalgası yöneticisi
+        nightWaveManager = new me.mami.stratocraft.manager.NightWaveManager(
+            this, territoryManager, mobManager, bossManager);
+        nightWaveManager.start();
         // TaskManager (Memory leak önleme için - diğer manager'lardan önce)
         taskManager = new me.mami.stratocraft.manager.TaskManager(this);
         
@@ -1299,6 +1305,9 @@ public class Main extends JavaPlugin {
         // ✅ YENİ: Mini felaket sistemini durdur
         if (miniDisasterManager != null) {
             miniDisasterManager.stop();
+            if (nightWaveManager != null) {
+                nightWaveManager.stop();
+            }
         }
         
         // Batarya sistemini temizle (geçici barrier bloklarını kaldır)
@@ -1631,6 +1640,10 @@ public class Main extends JavaPlugin {
     
     public me.mami.stratocraft.manager.HUDManager getHUDManager() {
         return hudManager;
+    }
+    
+    public me.mami.stratocraft.manager.NightWaveManager getNightWaveManager() {
+        return nightWaveManager;
     }
     
     /**

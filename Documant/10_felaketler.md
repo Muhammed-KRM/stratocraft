@@ -717,4 +717,123 @@ AMAÇ: İntikam almak için güçlenirler!
 
 ---
 
+## 🌙 GECE SALDIRI DALGASI SİSTEMİ ⭐ YENİ
+
+### Gece Dalgası Nedir?
+
+Her gün **gece yarısında** (18000 tick) otomatik olarak başlayan ve **güneş doğuşuna kadar** (0 tick) devam eden bir saldırı dalgasıdır. Normal bosslar, özel moblar ve vahşi creeperlar klan kristallerine saldırır.
+
+**Özellikler:**
+- ✅ Otomatik başlatma/durdurma (gece yarısı/güneş doğuşu)
+- ✅ Klan sınırından 50 blok ötede spawn
+- ✅ En yakın klan kristaline otomatik yönelme
+- ✅ Spawn hızı artışı (ilk 1 dakika normal, sonra hızlanır)
+- ✅ Boss, özel mob ve vahşi creeper spawn şansları
+
+### Saldırı Mekaniği
+
+**Spawn Konumu:**
+- Klan sınırından **50 blok ötede** rastgele konum
+- Yüksek bloklar üzerinde spawn (y = 100+)
+- Kristale doğru yönelme
+
+**Spawn Tipleri:**
+- **Boss (%20 şans)**: Orc Knight, Skeleton Knight, vb.
+- **Vahşi Creeper (%30 şans)**: 3-7 adet, 3x güçlü patlama
+- **Özel Mob (%50 şans)**: Ork, Troll, Goblin, Werewolf, Skeleton Knight
+
+**Spawn Hızı:**
+- İlk 1 dakika: Her 10 saniyede bir
+- Sonrası: Her 5 saniyede bir
+
+### Vahşi Creeper Özellikleri
+
+**Özel Özellikler:**
+- ✅ **3x güçlü patlama** (normal creeper'dan 3 kat daha güçlü)
+- ✅ **Zıplama yeteneği** (hendeklerin üzerinden atlayabilir)
+- ✅ **Klan sınırına 3 blok yaklaştığında patlama**
+- ✅ **Oyuncu tepkisi** (yakındaki oyunculara saldırır)
+- ✅ **Stuck önleme** (takılıp kalmayı önler)
+
+**Patlama Mekaniği:**
+- Klan sınırına 3 blok yaklaştığında patlar
+- Veya sınıra yaklaşamıyorsa en yakın noktada patlar
+- Patlama kristale hasar verir (CrystalAttackHelper üzerinden)
+
+### Admin Komutları
+
+**Gece Dalgası Komutları:**
+```
+/stratocraft disaster wave start    # Gece dalgasını başlat
+/stratocraft disaster wave stop     # Gece dalgasını durdur
+/stratocraft disaster wave status   # Gece dalgası durumu
+```
+
+**Detaylı bilgi için:** `20_admin_komutlari.md` dosyasına bakın.
+
+---
+
+## 💎 KLAN KRISTALİ SALDIRI SİSTEMİ ⭐ YENİ
+
+### Saldırı Mekaniği
+
+**Saldırı Tipleri:**
+1. **Felaket Bossları**: Merkeze ulaştıktan sonra klan kristallerine saldırır
+2. **Normal Bosslar**: Gece dalgasında klan kristallerine saldırır
+3. **Özel Moblar**: Gece dalgasında klan kristallerine saldırır
+4. **Vahşi Creeper**: Klan sınırında patlayarak kristale hasar verir
+
+### Hasar Hesaplama
+
+**CrystalAttackHelper Sistemi:**
+- Tüm saldırı tipleri için ortak hasar hesaplama
+- Kalkan (shield) kontrolü
+- Zırh (armor) kontrolü
+- Hasar azaltma çarpanı
+
+**Felaket Bossları:**
+- Base hasar: **10.0 × damageMultiplier**
+- Örnek: damageMultiplier = 2.0 → 20.0 hasar
+
+**Normal Bosslar:**
+- Base hasar: **5.0 × bossLevel**
+- Örnek: bossLevel = 2 → 10.0 hasar
+
+**Özel Moblar:**
+- Base hasar: **3.0 × mobType**
+- Örnek: Ork → 3.0 hasar
+
+**Vahşi Creeper:**
+- Base hasar: **15.0** (3x normal creeper)
+
+### Kalkan ve Zırh Sistemi
+
+**Kalkan (Shield):**
+- Hasarı tamamen bloklar
+- Partikül efekti gösterir
+- Kalkan sayısı azalır
+
+**Zırh (Armor):**
+- Hasarı azaltır (damage reduction)
+- Yakıt tüketir
+- Zırh seviyesine göre hasar azaltma
+
+**Hasar Azaltma:**
+- Final hasar = Base hasar × (1.0 - damageReduction)
+- Örnek: %50 zırh → hasar yarıya iner
+
+### Oyuncu Bildirimleri
+
+**Kristal Hasar Aldığında:**
+- Tüm klan üyelerine mesaj gönderilir
+- Hasar miktarı, kalan can, yüzde gösterilir
+- Partikül efektleri (can yüzdesine göre)
+
+**Kristal Yok Edildiğinde:**
+- Sunucu genelinde broadcast mesajı
+- Klan otomatik dağıtılır
+- Özel item drop edilir
+
+---
+
 **🎮 Felaketlere karşı takımla birleş, kristalleri koru, Kahraman ol!**

@@ -1447,6 +1447,97 @@ Progression Power: 250.00
 **Güç bilgisi otomatik olarak HUD'da görünür:**
 - Sağ taraftaki bilgi panosunda
 - Her saniye güncellenir (cache ile optimize)
+
+---
+
+## 🌙 GECE SALDIRI DALGASI KOMUTLARI ⭐ YENİ
+
+### `/stratocraft disaster wave start`
+
+**Açıklama**: Gece dalgasını manuel olarak başlatır (dünya zamanını gece yarısına ayarlar)
+
+**Kullanım**:
+```
+/stratocraft disaster wave start
+/stratocraft disaster wave başlat
+```
+
+**Özellikler**:
+- Dünya zamanını 18000 tick'e (gece yarısı) ayarlar
+- Dalga otomatik olarak başlayacak
+- Eğer dalga zaten aktifse hata mesajı gösterir
+
+**Çıktı**:
+```
+§aGece dalgası başlatıldı! (Dünya zamanı gece yarısına ayarlandı)
+§7Dalga otomatik olarak başlayacak...
+```
+
+---
+
+### `/stratocraft disaster wave stop`
+
+**Açıklama**: Gece dalgasını manuel olarak durdurur (dünya zamanını güneş doğuşuna ayarlar)
+
+**Kullanım**:
+```
+/stratocraft disaster wave stop
+/stratocraft disaster wave durdur
+```
+
+**Özellikler**:
+- Dünya zamanını 0 tick'e (güneş doğuşu) ayarlar
+- Dalga otomatik olarak duracak
+- Eğer dalga zaten aktif değilse hata mesajı gösterir
+
+**Çıktı**:
+```
+§aGece dalgası durduruldu! (Dünya zamanı güneş doğuşuna ayarlandı)
+§7Dalga otomatik olarak duracak...
+```
+
+---
+
+### `/stratocraft disaster wave status`
+
+**Açıklama**: Gece dalgası durumunu gösterir
+
+**Kullanım**:
+```
+/stratocraft disaster wave status
+/stratocraft disaster wave durum
+```
+
+**Çıktı**:
+```
+§6=== Gece Dalgası Durumu ===
+§7Dünya: §eworld
+§7Durum: §aAktif
+§7Zaman: §e18500 tick
+§7Gece: §aEvet
+§7Gece yarısına kalan: §e5500 tick
+```
+
+**Bilgiler**:
+- Dünya adı
+- Dalga durumu (Aktif/Pasif)
+- Mevcut zaman (tick)
+- Gece durumu (Evet/Hayır)
+- Gece yarısına kalan süre (tick)
+
+---
+
+### Tab Completion
+
+**Otomatik Tamamlama:**
+- `/stratocraft disaster ` → `wave` seçeneği gösterilir
+- `/stratocraft disaster wave ` → `start`, `stop`, `status` seçenekleri gösterilir
+
+**Kullanım**:
+```
+/stratocraft disaster [TAB] → wave
+/stratocraft disaster wave [TAB] → start, stop, status
+```
 - Format: `💪 Güç: 1234 SGP (Seviye 5)`
 
 ---

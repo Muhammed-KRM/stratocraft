@@ -702,4 +702,158 @@ Kontrat İhlal Edilince: -2 kalp kalıcı (ceza, geri verilmez)
 
 ---
 
+## 🔧 BUGÜN YAPILAN DÜZELTMELER ⭐ YENİ
+
+### GUI Tıklama Sorunu Düzeltildi
+
+**Sorun:**
+- Kontrat menülerinde butonlar tıklanmıyordu
+- Oyuncular item'ları envanterlerine alabiliyordu
+- PersonalTerminalListener'daki gibi çalışmıyordu
+
+**Çözüm:**
+- `onMenuClick()` metodunda `title.contains()` kullanılarak dinamik başlıklar desteklendi
+- `event.setCancelled(true)` eklendi GUI tıklamaları için
+- `cancelIfGUIClick()` helper metodu eklendi
+- PersonalTerminalListener'daki mantık uygulandı
+
+**Kod Değişiklikleri:**
+```java
+@EventHandler(priority = EventPriority.HIGH)
+public void onMenuClick(InventoryClickEvent event) {
+    // ✅ ÖNEMLİ: Sadece GUI'ye tıklanırsa işle, oyuncu envanterine tıklanırsa atla
+    if (event.getClickedInventory() != null && 
+        event.getClickedInventory().equals(event.getView().getBottomInventory())) {
+        // Oyuncu envanterine tıklandı - bu event'i işleme (item taşıma için izin ver)
+        return;
+    }
+    
+    String title = event.getView().getTitle();
+    
+    // ✅ ÖNEMLİ: Kontrat menülerinde GUI tıklamalarını iptal et (item alınmasını önle)
+    // PersonalTerminalListener'daki gibi çalışır
+    if (event.getClickedInventory() != null && 
+        event.getClickedInventory().equals(event.getView().getTopInventory())) {
+        // GUI'ye tıklandı - event'i iptal et
+        event.setCancelled(true);
+    }
+    
+    // Dinamik başlık kontrolü (title.contains() kullanılıyor)
+    if (title.contains("Kontrat Tipi Seç") || title.contains("Kontrat Kategorisi Seç")) {
+        handleTypeSelectionClick(event);
+    }
+    else if (title.contains("Ceza Tipi Seç")) {
+        handlePenaltyTypeSelectionClick(event);
+    }
+    // ... diğer menüler
+}
+
+/**
+ * ✅ YARDIMCI: GUI'ye tıklanıp tıklanmadığını kontrol et ve event'i iptal et
+ * Oyuncu envanterine tıklanırsa false döner (item taşıma için izin ver)
+ */
+private boolean cancelIfGUIClick(InventoryClickEvent event) {
+    if (event.getClickedInventory() != null && 
+        event.getClickedInventory().equals(event.getView().getTopInventory())) {
+        // GUI'ye tıklandı - iptal et
+        event.setCancelled(true);
+        return true;
+    }
+    // Oyuncu envanterine tıklandı - izin ver (item taşıma için)
+    return false;
+}
+```
+
+**Sonuç:**
+- ✅ Butonlar artık tıklanabilir
+- ✅ Item'lar envantere alınamaz
+- ✅ PersonalTerminalListener ile aynı mantık
+- ✅ Dinamik başlıklar destekleniyor
+
+---
+
+## 📊 GÜNCEL AKIŞ ŞEMASI ⭐ YENİ
+
+Detaylı akış şeması için: `KONTRAT_SISTEMI_AKIS_SEMASI.md` dosyasına bakın.
+
+### Özet Akış
+
+**1. İlk Gönderen (Sender) Akışı:**
+```
+[Ana Menü] → [Yeni Kontrat Oluştur]
+    ↓
+[Adım 1/9] Kapsam Seç (PLAYER_TO_PLAYER, CLAN_TO_CLAN, vb.)
+    ↓
+[Adım 2/9] Hedef Oyuncu Seç (sadece PLAYER_TO_PLAYER için)
+    ↓
+[Adım 3/9] Kontrat Tipi Seç (RESOURCE_COLLECTION, COMBAT, TERRITORY, CONSTRUCTION)
+    ↓
+[Adım 4/9] Ödül Belirle (veya direkt onayla - ödül yok)
+    ↓
+[Adım 5/9] Ceza Tipi Seç (HEALTH_PENALTY, BANK_PENALTY, MORTGAGE)
+    ↓
+[Adım 6/9] Ceza Miktarı Belirle (veya direkt onayla - ceza yok)
+    ↓
+[Adım 7/9] Süre Belirle (Gün/Hafta/Ay)
+    ↓
+[Adım 8/9] Tip'e Özel Parametreler (Malzeme, Hedef, Lokasyon, Yapı Tipi)
+    ↓
+[Adım 9/9] Kontrat Özeti → [ONAYLA VE GÖNDER]
+    ↓
+✅ İstek gönderilir (ContractRequest oluşturulur)
+✅ Sender'ın şartları kaydedilir (ContractTerms)
+✅ Target oyuncuya bildirim gönderilir
+```
+
+**2. Hedef Oyuncu (Target) Akışı:**
+```
+[Ana Menü] → [Gelen İstekler] (Bildirim: "Yeni istek var!")
+    ↓
+[Gelen İstekler Menüsü]
+    ↓
+İki Seçenek:
+    ├─ [✅ Kabul Et] → Sender'a bildirim: "Son onay gerekiyor"
+    └─ [➕ Şart Ekle] → [Tip Seçimi] → [Şartlar] → [Özet] → [ONAYLA]
+        ↓
+    ✅ Target'ın şartları kaydedilir
+    ✅ Sender'a bildirim: "Şartlar belirlendi! Son onay gerekiyor"
+```
+
+**3. Sender'ın Son Onay Akışı:**
+```
+[Final Onay Menüsü] (Otomatik açılır)
+    ↓
+Her iki tarafın şartları gösterilir:
+    ├─ 📋 SİZİN ŞARTLARINIZ
+    └─ 📋 KARŞI TARAFIN ŞARTLARI
+    ↓
+İki Seçenek:
+    ├─ [✅ ONAYLA] → ✅ Bilateral Contract oluşturulur
+    └─ [❌ REDDET] → ❌ İstek iptal edilir
+```
+
+### Önemli Özellikler
+
+**✅ Dinamik Başlık Desteği:**
+- Menü başlıkları `title.contains()` ile kontrol ediliyor
+- Adım numaraları dinamik olarak gösteriliyor: `[Adım X/Y]`
+- Örnek: `"§6[Adım 3/9] Kontrat Tipi Seç"`
+
+**✅ GUI Tıklama Koruması:**
+- GUI'ye tıklandığında `event.setCancelled(true)` ile iptal ediliyor
+- Oyuncu envanterine tıklandığında izin veriliyor (item taşıma için)
+- `cancelIfGUIClick()` helper metodu ile kontrol ediliyor
+
+**✅ Ödül/Ceza Mantığı:**
+- En az birini belirlemek zorunda (Ödül VEYA Ceza)
+- Direkt onaylarsa null olur (ama en az biri zorunlu)
+- Özet menüsünde kontrol yapılır
+
+**✅ Şart Ekleme Durumu:**
+- `contractRequestId` varsa → Şart ekleme durumu
+- Scope ve oyuncu seçimi **ATLANIR**
+- Direkt **Tip Seçimi** menüsüne gidilir
+
+---
+
 **🎮 Kontratlarla ticaret yap, güvenilir ol, zengin ol!**

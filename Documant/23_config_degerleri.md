@@ -746,6 +746,100 @@ game-balance:
 
 ---
 
+## 🌙 Gece Saldırı Dalgası Sistemi ⭐ YENİ
+
+### Temel Ayarlar
+
+```yaml
+night-wave:
+  enabled: true                          # Gece dalgası aktif mi?
+  start-time: 18000                      # Başlangıç zamanı (tick) - 18000 = gece yarısı
+  end-time: 0                            # Bitiş zamanı (tick) - 0 = güneş doğuşu
+  check-interval: 100                    # Gece kontrol aralığı (tick) - 100 = 5 saniye
+```
+
+**Açıklama:** Gece dalgası sisteminin temel ayarları.
+
+**Etkisi:**
+- **enabled**: Sistemin aktif/pasif durumu
+- **start-time**: Dalganın başlayacağı zaman (Minecraft tick)
+- **end-time**: Dalganın biteceği zaman (Minecraft tick)
+- **check-interval**: Gece kontrol aralığı (ne sıklıkla kontrol edileceği)
+
+**Önerilen Aralık:**
+- enabled: true/false
+- start-time: 18000 (gece yarısı)
+- end-time: 0 (güneş doğuşu)
+- check-interval: 50 - 200 (2.5 - 10 saniye)
+
+### Spawn Ayarları
+
+```yaml
+night-wave:
+  spawn-interval-initial: 200            # İlk spawn aralığı (tick) - 200 = 10 saniye
+  spawn-interval-fast: 100              # Hızlanmış spawn aralığı (tick) - 100 = 5 saniye
+  speed-increase-time: 1200             # Hızlanma zamanı (tick) - 1200 = 1 dakika
+  spawn-distance: 50.0                   # Klan sınırından spawn mesafesi (blok)
+```
+
+**Açıklama:** Spawn mekaniği ayarları.
+
+**Etkisi:**
+- **spawn-interval-initial**: İlk spawn aralığı (dalga başladığında)
+- **spawn-interval-fast**: Hızlanmış spawn aralığı (1 dakika sonra)
+- **speed-increase-time**: Hızlanma zamanı (ne zaman hızlanacak)
+- **spawn-distance**: Klan sınırından spawn mesafesi
+
+**Önerilen Aralık:**
+- spawn-interval-initial: 150 - 300 (7.5 - 15 saniye)
+- spawn-interval-fast: 50 - 150 (2.5 - 7.5 saniye)
+- speed-increase-time: 600 - 1800 (30 saniye - 1.5 dakika)
+- spawn-distance: 30.0 - 100.0 (blok)
+
+### Spawn Şansları
+
+```yaml
+night-wave:
+  boss-spawn-chance: 0.2                 # Boss spawn şansı (%20)
+  wild-creeper-spawn-chance: 0.3         # Vahşi Creeper spawn şansı (%30)
+  special-mob-spawn-chance: 0.5          # Özel mob spawn şansı (%50)
+```
+
+**Açıklama:** Her spawn tipinin şansı (0.0-1.0 arası).
+
+**Etkisi:**
+- **Artırılırsa:** O tip mob daha sık spawn olur
+- **Azaltılırsa:** O tip mob daha az spawn olur
+
+**Önerilen Aralık:**
+- boss-spawn-chance: 0.1 - 0.3 (10% - 30%)
+- wild-creeper-spawn-chance: 0.2 - 0.4 (20% - 40%)
+- special-mob-spawn-chance: 0.3 - 0.6 (30% - 60%)
+
+**Denge Notu:** Toplam şanslar 1.0'ı geçmemelidir (normalize edilir).
+
+### Vahşi Creeper Ayarları
+
+```yaml
+night-wave:
+  wild-creeper-count-min: 3              # Vahşi Creeper minimum sayısı
+  wild-creeper-count-max: 7              # Vahşi Creeper maksimum sayısı
+```
+
+**Açıklama:** Vahşi Creeper spawn sayısı aralığı.
+
+**Etkisi:**
+- **Artırılırsa:** Daha fazla creeper spawn olur, daha zorlu olur
+- **Azaltılırsa:** Daha az creeper spawn olur, daha kolay olur
+
+**Önerilen Aralık:**
+- wild-creeper-count-min: 2 - 5
+- wild-creeper-count-max: 5 - 10
+
+**Denge Notu:** Vahşi Creeper 3x güçlü patlama yapar, bu yüzden sayıları dengeli olmalıdır.
+
+---
+
 ## 🐉 Mob Sistemi (Canavar)
 
 ### Özel Mob Can ve Hasar Değerleri

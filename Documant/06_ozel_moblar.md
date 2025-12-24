@@ -335,4 +335,190 @@ Stratocraft'ta 30+ özel mob var. Bazıları **sık**, bazıları **nadir**, baz
 
 ---
 
+## 🌙 GECE SALDIRI DALGASI SİSTEMİ ⭐ YENİ
+
+### Gece Dalgası Nedir?
+
+Her gün **gece yarısında** (18000 tick) otomatik olarak başlayan ve **güneş doğuşuna kadar** (0 tick) devam eden bir saldırı dalgasıdır. Normal bosslar, özel moblar ve vahşi creeperlar klan kristallerine saldırır.
+
+**Özellikler:**
+- ✅ Otomatik başlatma/durdurma (gece yarısı/güneş doğuşu)
+- ✅ Klan sınırından 50 blok ötede spawn
+- ✅ En yakın klan kristaline otomatik yönelme
+- ✅ Spawn hızı artışı (ilk 1 dakika normal, sonra hızlanır)
+
+### Gece Dalgasında Spawn Olan Moblar
+
+**Boss Moblar (%20 şans):**
+- Orc Knight
+- Skeleton Knight
+- Diğer normal bosslar
+
+**Özel Moblar (%50 şans):**
+- Ork
+- Troll
+- Goblin
+- Werewolf
+- Skeleton Knight
+
+**Vahşi Creeper (%30 şans, 3-7 adet):**
+- Özel creeper tipi
+- 3x güçlü patlama
+- Zıplama yeteneği
+- Klan sınırında patlama
+
+### Saldırı Mekaniği
+
+**Spawn Konumu:**
+- Klan sınırından **50 blok ötede** rastgele konum
+- Yüksek bloklar üzerinde spawn (y = 100+)
+- Kristale doğru yönelme
+
+**Spawn Hızı:**
+- İlk 1 dakika: Her 10 saniyede bir
+- Sonrası: Her 5 saniyede bir
+
+**Hedefleme:**
+- Tüm moblar en yakın klan kristaline otomatik yönelir
+- Pathfinding ile kristale ulaşmaya çalışır
+- Stuck önleme mekanizması var
+
+---
+
+## 💣 VAHSİ CREEPER ⭐ YENİ
+
+### Vahşi Creeper Nedir?
+
+Gece dalgasında spawn olan özel bir creeper tipidir. Normal creeper'dan **3 kat daha güçlü** patlama yapar ve klan sınırlarında patlamak için tasarlanmıştır.
+
+**Özellikler:**
+- ✅ **3x güçlü patlama** (normal creeper'dan 3 kat daha güçlü)
+- ✅ **Zıplama yeteneği** (hendeklerin üzerinden atlayabilir)
+- ✅ **Klan sınırına 3 blok yaklaştığında patlama**
+- ✅ **Oyuncu tepkisi** (yakındaki oyunculara saldırır)
+- ✅ **Stuck önleme** (takılıp kalmayı önler)
+
+### Patlama Mekaniği
+
+**Patlama Tetikleme:**
+1. Klan sınırına 3 blok yaklaştığında patlar
+2. Veya sınıra yaklaşamıyorsa en yakın noktada patlar
+3. Patlama kristale hasar verir (CrystalAttackHelper üzerinden)
+
+**Hasar Değeri:**
+- Base hasar: **15.0** (normal creeper: 5.0)
+- Kristale hasar: CrystalAttackHelper üzerinden hesaplanır
+- Kalkan ve zırh kontrolü yapılır
+
+### Zıplama Mekaniği
+
+**Özellikler:**
+- Hendeklerin üzerinden atlayabilir
+- Oyuncu-dug çukurları geçebilir
+- Yüksek blokların üzerine çıkabilir
+
+**Stuck Önleme:**
+- Takılıp kaldığında alternatif yol arar
+- 5 saniye hareket edemezse patlar
+- Oyuncu yakınsa oyuncuya yönelir
+
+### Spawn Bilgileri
+
+**Spawn Şansı:**
+- Gece dalgasında %30 şans
+- Her spawn'da 3-7 adet spawn olur
+
+**Spawn Konumu:**
+- Klan sınırından 50 blok ötede
+- Yüksek bloklar üzerinde (y = 100+)
+
+---
+
+## 💎 KLAN KRISTALİ SALDIRI SİSTEMİ ⭐ YENİ
+
+### Saldırı Mekaniği
+
+Klan kristalleri artık çeşitli kaynaklardan saldırı alabilir:
+
+**Saldırı Tipleri:**
+1. **Felaket Bossları**: Merkeze ulaştıktan sonra klan kristallerine saldırır
+2. **Normal Bosslar**: Gece dalgasında klan kristallerine saldırır
+3. **Özel Moblar**: Gece dalgasında klan kristallerine saldırır
+4. **Vahşi Creeper**: Klan sınırında patlayarak kristale hasar verir
+
+### Hasar Hesaplama
+
+**CrystalAttackHelper Sistemi:**
+- Tüm saldırı tipleri için ortak hasar hesaplama
+- Kalkan (shield) kontrolü
+- Zırh (armor) kontrolü
+- Hasar azaltma çarpanı
+
+**Hasar Değerleri:**
+- **Felaket Bossları**: 10.0 × damageMultiplier
+- **Normal Bosslar**: 5.0 × bossLevel
+- **Özel Moblar**: 3.0 × mobType
+- **Vahşi Creeper**: 15.0 (3x normal creeper)
+
+### Kalkan ve Zırh Sistemi
+
+**Kalkan (Shield):**
+- Hasarı tamamen bloklar
+- Partikül efekti gösterir
+- Kalkan sayısı azalır
+
+**Zırh (Armor):**
+- Hasarı azaltır (damage reduction)
+- Yakıt tüketir
+- Zırh seviyesine göre hasar azaltma
+
+**Hasar Azaltma Formülü:**
+```
+Final Hasar = Base Hasar × (1.0 - damageReduction)
+```
+
+### Oyuncu Bildirimleri
+
+**Kristal Hasar Aldığında:**
+- Tüm klan üyelerine mesaj gönderilir
+- Hasar miktarı, kalan can, yüzde gösterilir
+- Partikül efektleri (can yüzdesine göre)
+
+**Kristal Yok Edildiğinde:**
+- Sunucu genelinde broadcast mesajı
+- Klan otomatik dağıtılır
+- Özel item drop edilir
+
+---
+
+## 🎯 STRATEJİ ÖNERİLERİ
+
+### Gece Dalgasına Karşı Savunma
+
+**Hazırlık:**
+1. Klan sınırlarını güçlendir (duvarlar, tuzaklar)
+2. Kalkan ve zırh sistemlerini aktif et
+3. Gece yarısından önce hazır ol
+
+**Savunma:**
+1. Mobların spawn konumlarını kontrol et
+2. Vahşi Creeper'ları uzaktan öldür (patlamadan önce)
+3. Boss mobları öncelikli hedef al
+4. Klan üyeleriyle koordinasyon yap
+
+### Vahşi Creeper'a Karşı
+
+**Tehlike:**
+- 3x güçlü patlama çok tehlikeli
+- Klan sınırında patlaması kristale hasar verir
+- Zıplama yeteneği hendekleri geçer
+
+**Strateji:**
+1. Uzaktan ok/yay ile öldür
+2. Patlamadan önce durdur
+3. Klan sınırına yaklaşmasını engelle
+4. Kalkan kullan (patlama hasarını azaltır)
+
+---
+
 **🎮 Mobları eğit, savaşta kullan, dropları topla!**

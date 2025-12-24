@@ -1279,6 +1279,14 @@ public class ContractMenu implements Listener {
         
         String title = event.getView().getTitle();
         
+        // ✅ ÖNEMLİ: Kontrat menülerinde GUI tıklamalarını iptal et (item alınmasını önle)
+        // PersonalTerminalListener'daki gibi çalışır
+        if (event.getClickedInventory() != null && 
+            event.getClickedInventory().equals(event.getView().getTopInventory())) {
+            // GUI'ye tıklandı - event'i iptal et
+            event.setCancelled(true);
+        }
+        
         // Ana kontrat listesi
         if (title.startsWith("§6Aktif Kontratlar")) {
             handleMainMenuClick(event);
@@ -1287,16 +1295,16 @@ public class ContractMenu implements Listener {
         else if (title.equals("§6Kontrat Detayları")) {
             handleDetailMenuClick(event);
         }
-        // Kontrat kategori seçim menüsü
-        else if (title.equals("§6Kontrat Kategorisi Seç") || title.equals("§6Kontrat Tipi Seç")) {
+        // Kontrat kategori seçim menüsü (dinamik başlık: [Adım X/Y] Kontrat Tipi Seç)
+        else if (title.contains("Kontrat Tipi Seç") || title.contains("Kontrat Kategorisi Seç")) {
             handleTypeSelectionClick(event);
         }
-        // Ceza tipi seçim menüsü
-        else if (title.equals("§6Ceza Tipi Seç")) {
+        // Ceza tipi seçim menüsü (dinamik başlık olabilir)
+        else if (title.contains("Ceza Tipi Seç")) {
             handlePenaltyTypeSelectionClick(event);
         }
-        // Kapsam seçim menüsü
-        else if (title.equals("§6Kontrat Kapsamı Seç")) {
+        // Kapsam seçim menüsü (dinamik başlık: [Adım X/Y] Kontrat Kapsamı Seç)
+        else if (title.contains("Kontrat Kapsamı Seç")) {
             handleScopeSelectionClick(event);
         }
         // Malzeme seçim menüsü
@@ -1307,24 +1315,24 @@ public class ContractMenu implements Listener {
         else if (title.equals("§6Yapı Tipi Seç")) {
             handleStructureTypeSelectionClick(event);
         }
-        // Ödül slider menüsü
-        else if (title.equals("§6Ödül Belirle")) {
+        // Ödül slider menüsü (dinamik başlık: [Adım X/Y] Ödül Belirle)
+        else if (title.contains("Ödül Belirle")) {
             handleRewardSliderClick(event);
         }
-        // Ceza slider menüsü
-        else if (title.equals("§6Ceza Belirle")) {
+        // Ceza slider menüsü (dinamik başlık olabilir)
+        else if (title.contains("Ceza Belirle")) {
             handlePenaltySliderClick(event);
         }
-        // Süre seçim menüsü
-        else if (title.equals("§6Süre Belirle")) {
+        // Süre seçim menüsü (dinamik başlık olabilir)
+        else if (title.contains("Süre Belirle")) {
             handleTimeSelectionClick(event);
         }
         // Gün/Saat/Dakika ayarlama menüleri
-        else if (title.equals("§6Gün Ayarla") || title.equals("§6Saat Ayarla") || title.equals("§6Dakika Ayarla")) {
+        else if (title.contains("Gün Ayarla") || title.contains("Saat Ayarla") || title.contains("Dakika Ayarla")) {
             handleTimeAdjustmentClick(event);
         }
-        // Özet menüsü
-        else if (title.equals("§6Kontrat Özeti")) {
+        // Özet menüsü (dinamik başlık: [Adım X/Y] Kontrat Özeti)
+        else if (title.contains("Kontrat Özeti")) {
             handleSummaryMenuClick(event);
         }
         // Şablon menüsü
