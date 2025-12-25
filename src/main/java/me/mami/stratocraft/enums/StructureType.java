@@ -57,6 +57,9 @@ public enum StructureType {
     CARAVAN_STATION,        // Kervan İstasyonu
     CONTRACT_OFFICE,        // Kontrat Bürosu (genel)
     MARKET_PLACE,           // Market
-    RECIPE_LIBRARY          // Tarif Kütüphanesi
+    RECIPE_LIBRARY,         // Tarif Kütüphanesi
+    
+    // --- SAVAŞ YAPILARI ---
+    WAR_TOTEM               // Savaş Totemi (klan dışına yapılabilen, herkesin kullanabildiği)
 }
 

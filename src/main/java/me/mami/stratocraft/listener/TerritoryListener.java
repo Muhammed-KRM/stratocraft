@@ -1143,6 +1143,43 @@ public class TerritoryListener implements Listener {
                 return;
             }
             
+            // ✅ YENİ: 50 Blok Yakınına Alan Kontrolü ve Seviye Kontrolü
+            me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+            Clan nearbyClan = null;
+            double minDistance = Double.MAX_VALUE;
+            
+            // 50 blok yakınında klan var mı kontrol et
+            for (Clan existingClan : territoryManager.getClanManager().getAllClans()) {
+                if (existingClan == null || !existingClan.hasCrystal()) continue;
+                
+                Location existingCrystalLoc = existingClan.getCrystalLocation();
+                if (existingCrystalLoc == null || !existingCrystalLoc.getWorld().equals(pending.crystalLoc.getWorld())) {
+                    continue;
+                }
+                
+                double distance = pending.crystalLoc.distance(existingCrystalLoc);
+                if (distance <= 50.0 && distance < minDistance) {
+                    nearbyClan = existingClan;
+                    minDistance = distance;
+                }
+            }
+            
+            // ✅ YENİ: Seviye Kontrolü (Klan kurulmadan önce)
+            if (nearbyClan != null && plugin != null && plugin.getStratocraftPowerSystem() != null) {
+                // Yeni klanın seviyesini hesapla (henüz klan oluşturulmadı, oyuncu seviyesi kullan)
+                int playerLevel = plugin.getStratocraftPowerSystem().calculatePlayerLevel(player);
+                int newClanLevel = Math.max(1, playerLevel / 2); // Yeni klan başlangıç seviyesi (oyuncu seviyesinin yarısı, min 1)
+                int nearbyClanLevel = plugin.getStratocraftPowerSystem().calculateClanLevel(nearbyClan);
+                
+                // Kendinden 3 seviye altı bir klanın 50 blok yakınına klan kurulamaz
+                if (newClanLevel < nearbyClanLevel - 3) {
+                    player.sendMessage("§cKendinden 3 seviye altı bir klanın 50 blok yakınına klan kuramazsın! (Yakındaki klan: " + 
+                        nearbyClan.getName() + ", Seviye: " + nearbyClanLevel + ", Senin tahmini seviye: " + newClanLevel + ")");
+                    waitingForClanName.remove(player.getUniqueId());
+                    return;
+                }
+            }
+            
             Clan newClan = territoryManager.getClanManager().createClan(message, player.getUniqueId());
             if (newClan != null) {
                 newClan.setCrystalLocation(pending.crystalLoc);
@@ -1163,6 +1200,38 @@ public class TerritoryListener implements Listener {
                 }
                 newClan.setTerritory(territory);
                 newClan.setHasCrystal(true); // Kristal var
+                
+                // ✅ YENİ: 50 Blok Yakınına Alan Kontrolü - Otomatik Savaş
+                if (nearbyClan != null && plugin != null && plugin.getStratocraftPowerSystem() != null) {
+                    int newClanLevel = plugin.getStratocraftPowerSystem().calculateClanLevel(newClan);
+                    int nearbyClanLevel = plugin.getStratocraftPowerSystem().calculateClanLevel(nearbyClan);
+                    
+                    // ✅ YENİ: Zaten savaşta mı kontrolü
+                    if (newClan.isAtWarWith(nearbyClan.getId()) || nearbyClan.isAtWarWith(newClan.getId())) {
+                        // Zaten savaşta - otomatik savaş başlatmaya gerek yok
+                        return;
+                    }
+                    
+                    // Otomatik savaş başlat (50 blok yakınında klan varsa)
+                    if (plugin.getSiegeManager() != null) {
+                        // ✅ DÜZELTME: Seviye kontrolü mantığı
+                        // Eğer yeni klan yakındaki klandan 3 seviye üstse, otomatik savaş başlat
+                        // (startSiege içinde zaten 3 seviye kontrolü var, burada sadece otomatik savaş başlatıyoruz)
+                        if (newClanLevel > nearbyClanLevel + 3) {
+                            // Yeni klan yakındaki klandan 3 seviye üst - otomatik savaş başlar
+                            plugin.getSiegeManager().startSiege(newClan, nearbyClan, player);
+                            org.bukkit.Bukkit.broadcastMessage("§c§lOTOMATİK SAVAŞ! §e" + newClan.getName() + 
+                                " ve " + nearbyClan.getName() + " klanları 50 blok yakınında! Savaş başladı.");
+                        } else if (nearbyClanLevel <= newClanLevel + 2) {
+                            // Seviye farkı 3'ten az veya eşit - normal otomatik savaş (50 blok yakınında)
+                            // Not: nearbyClanLevel > newClanLevel + 3 durumunda startSiege içinde engellenecek
+                            plugin.getSiegeManager().startSiege(newClan, nearbyClan, player);
+                            org.bukkit.Bukkit.broadcastMessage("§c§lOTOMATİK SAVAŞ! §e" + newClan.getName() + 
+                                " ve " + nearbyClan.getName() + " klanları 50 blok yakınında! Savaş başladı.");
+                        }
+                        // else: nearbyClanLevel > newClanLevel + 3 durumunda startSiege içinde engellenecek
+                    }
+                }
                 
                 // YENİ: TerritoryData oluştur ve çit lokasyonlarını ekle
                 if (boundaryManager != null && territoryConfig != null) {

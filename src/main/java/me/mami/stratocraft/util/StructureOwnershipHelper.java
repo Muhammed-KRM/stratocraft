@@ -66,6 +66,7 @@ public class StructureOwnershipHelper {
             case CONTRACT_OFFICE:
             case MARKET_PLACE:
             case RECIPE_LIBRARY:
+            case WAR_TOTEM:  // ✅ YENİ: Savaş Totemi - Klan dışına yapılabilen, herkesin kullanabildiği
                 return StructureOwnershipType.PUBLIC;
             
             default:

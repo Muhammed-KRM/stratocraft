@@ -18,6 +18,15 @@ clan:
     clan-threshold: 0.50             # Klan içi koruma eşiği (%50)
     damage-reduction-min: 0.05       # Minimum hasar (%5)
     damage-reduction-max: 0.50       # Maksimum hasar (%50)
+    # ✅ YENİ: Oyuncu Koruma Sistemi (Bugün Eklenen)
+    player-protection:
+      level-diff-threshold: 3        # Seviye farkı eşiği (3 seviye)
+      damage-reduction-percent: 0.95  # Hasar azaltma yüzdesi (%95)
+      min-damage: 0.5                # Minimum hasar (tamamen sıfırlanmaz)
+    # ✅ YENİ: Klan Koruma Sistemi (Bugün Eklenen)
+    clan-protection:
+      level-diff-threshold: 3        # Seviye farkı eşiği (3 seviye)
+      auto-war-distance: 50.0        # Otomatik savaş mesafesi (blok)
   
   # Seviye Bonusları
   level-bonuses:
@@ -1201,4 +1210,30 @@ night-wave:
   wild-creeper-count-min: 3              # Vahşi Creeper minimum sayısı
   wild-creeper-count-max: 7              # Vahşi Creeper maksimum sayısı
   check-interval: 100                    # Gece kontrol aralığı (tick) - 100 = 5 saniye
+
+# ✅ YENİ: Eğitme Sistemi (Bugün Eklenen)
+training-system:
+  # Eğitme başarı ihtimalleri (normal moblar)
+  normal-mob-success-chance:
+    power-1: 0.70  # Güç 1: %70 (Goblin, Wild Boar)
+    power-2: 0.50  # Güç 2: %50 (Ork, Skeleton Knight)
+    power-3: 0.30  # Güç 3: %30 (Troll, Minotaur)
+    power-4: 0.20  # Güç 4: %20 (Basilisk, Griffin)
+    power-5: 0.10  # Güç 5: %10 (Dragon, Wyvern)
+    power-6: 0.05  # Güç 6: %5 (Titan, Hydra)
+  # Eğitme başarı ihtimalleri (bosslar)
+  boss-success-chance:
+    power-3: 0.10   # Güç 3: %10 (Goblin King)
+    power-4: 0.08   # Güç 4: %8 (Orc Chief, Troll King)
+    power-5: 0.05   # Güç 5: %5 (T-Rex, Cyclops)
+    power-6: 0.03   # Güç 6: %3 (Dragon)
+    power-7: 0.02   # Güç 7: %2 (Hell Dragon)
+    power-8: 0.01   # Güç 8: %1 (Titan Golem, Hydra)
+    power-9: 0.005  # Güç 9: %0.5 (Chaos God)
+    power-10: 0.005 # Güç 10: %0.5 (Chaos God)
+  # Yapı seviyesi etkisi
+  arena-level-effect:
+    penalty-per-level: 0.5    # Her seviye farkı için ihtimal yarıya iner
+    bonus-per-level: 0.1       # Her seviye farkı için %10 bonus
+    max-bonus: 1.0            # Maksimum bonus (%100)
 

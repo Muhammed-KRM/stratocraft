@@ -941,6 +941,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§7  /stratocraft disaster wave start - Gece dalgasını başlat");
             p.sendMessage("§7  /stratocraft disaster wave stop - Gece dalgasını durdur");
             p.sendMessage("§7  /stratocraft disaster wave status - Gece dalgası durumu");
+            p.sendMessage("§7  /stratocraft disaster wave setnight - Gün saatini gece yarısına getir");
+            p.sendMessage("§7  /stratocraft disaster wave setday - Gün saatini güneş doğuşuna getir");
+            p.sendMessage("§7  /stratocraft disaster wave spawncreeper [klan] [sayı] - Vahşi Creeper spawn et");
             return true;
         }
 
@@ -1506,10 +1509,14 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
      */
     private boolean handleNightWave(Player p, String[] args) {
         if (args.length < 3) {
-            p.sendMessage("§cKullanım: /stratocraft disaster wave <start|stop|status>");
+            p.sendMessage("§cKullanım: /stratocraft disaster wave <komut>");
+            p.sendMessage("§7Komutlar:");
             p.sendMessage("§7  start - Gece dalgasını başlat");
             p.sendMessage("§7  stop - Gece dalgasını durdur");
             p.sendMessage("§7  status - Gece dalgası durumu");
+            p.sendMessage("§7  setnight - Gün saatini gece yarısına getir");
+            p.sendMessage("§7  setday - Gün saatini güneş doğuşuna getir");
+            p.sendMessage("§7  spawncreeper [klan] [sayı] - Vahşi Creeper spawn et");
             return true;
         }
         
@@ -1536,8 +1543,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 // Manuel başlatma için world time'ı gece yarısına ayarla
-                world.setTime(18000L);
-                p.sendMessage("§aGece dalgası başlatıldı! (Dünya zamanı gece yarısına ayarlandı)");
+                long startTime = plugin.getConfig().getLong("night-wave.start-time", 18000L);
+                world.setTime(startTime);
+                p.sendMessage("§aGece dalgası başlatıldı! (Dünya zamanı gece yarısına ayarlandı: " + startTime + " tick)");
                 p.sendMessage("§7Dalga otomatik olarak başlayacak...");
                 return true;
                 
@@ -1548,34 +1556,137 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 // Manuel durdurma için world time'ı güneş doğuşuna ayarla
-                world.setTime(0L);
-                p.sendMessage("§aGece dalgası durduruldu! (Dünya zamanı güneş doğuşuna ayarlandı)");
+                long endTime = plugin.getConfig().getLong("night-wave.end-time", 0L);
+                world.setTime(endTime);
+                p.sendMessage("§aGece dalgası durduruldu! (Dünya zamanı güneş doğuşuna ayarlandı: " + endTime + " tick)");
                 p.sendMessage("§7Dalga otomatik olarak duracak...");
                 return true;
+                
+            case "setnight":
+            case "gece":
+                long nightTime = plugin.getConfig().getLong("night-wave.start-time", 18000L);
+                world.setTime(nightTime);
+                p.sendMessage("§aDünya zamanı gece yarısına ayarlandı: §e" + nightTime + " tick");
+                return true;
+                
+            case "setday":
+            case "gunduz":
+            case "gündüz":
+                long dayTime = plugin.getConfig().getLong("night-wave.end-time", 0L);
+                world.setTime(dayTime);
+                p.sendMessage("§aDünya zamanı güneş doğuşuna ayarlandı: §e" + dayTime + " tick");
+                return true;
+                
+            case "spawncreeper":
+            case "creeper":
+                return handleWildCreeperSpawn(p, args, plugin);
                 
             case "status":
             case "durum":
                 boolean isActive = waveManager.isWaveActive(world);
                 long currentTime = world.getTime();
-                boolean isNight = currentTime >= 18000 || currentTime < 0;
+                long configStartTime = plugin.getConfig().getLong("night-wave.start-time", 18000L);
+                long configEndTime = plugin.getConfig().getLong("night-wave.end-time", 0L);
+                boolean isNight = currentTime >= configStartTime || currentTime < configEndTime;
                 
                 p.sendMessage("§6=== Gece Dalgası Durumu ===");
                 p.sendMessage("§7Dünya: §e" + world.getName());
                 p.sendMessage("§7Durum: " + (isActive ? "§aAktif" : "§cPasif"));
                 p.sendMessage("§7Zaman: §e" + currentTime + " tick");
                 p.sendMessage("§7Gece: " + (isNight ? "§aEvet" : "§cHayır"));
+                p.sendMessage("§7Config Başlangıç: §e" + configStartTime + " tick");
+                p.sendMessage("§7Config Bitiş: §e" + configEndTime + " tick");
                 if (isNight) {
                     p.sendMessage("§7Gece yarısına kalan: §e" + 
-                        (currentTime >= 18000 ? (24000 - currentTime) : (18000 - currentTime)) + " tick");
+                        (currentTime >= configStartTime ? (24000 - currentTime) : (configStartTime - currentTime)) + " tick");
                 } else {
-                    p.sendMessage("§7Gece yarısına kalan: §e" + (18000 - currentTime) + " tick");
+                    p.sendMessage("§7Gece yarısına kalan: §e" + (configStartTime - currentTime) + " tick");
                 }
                 return true;
                 
             default:
-                p.sendMessage("§cGeçersiz komut! /stratocraft disaster wave <start|stop|status>");
+                p.sendMessage("§cGeçersiz komut! /stratocraft disaster wave <start|stop|status|setnight|setday|spawncreeper>");
                 return true;
         }
+    }
+    
+    /**
+     * ✅ YENİ: Vahşi Creeper spawn komutu
+     */
+    private boolean handleWildCreeperSpawn(Player p, String[] args, Main plugin) {
+        me.mami.stratocraft.manager.ClanManager clanManager = plugin.getClanManager();
+        if (clanManager == null) {
+            p.sendMessage("§cClanManager bulunamadı!");
+            return true;
+        }
+        
+        me.mami.stratocraft.model.Clan targetClan = null;
+        int count = 1;
+        
+        // Klan belirtilmişse bul
+        if (args.length >= 4) {
+            String clanName = args[3];
+            targetClan = clanManager.getClanByName(clanName);
+            if (targetClan == null) {
+                p.sendMessage("§cKlan bulunamadı: " + clanName);
+                return true;
+            }
+            
+            // Sayı belirtilmişse al
+            if (args.length >= 5) {
+                try {
+                    count = Integer.parseInt(args[4]);
+                    if (count < 1 || count > 20) {
+                        p.sendMessage("§cSayı 1-20 arasında olmalı!");
+                        return true;
+                    }
+                } catch (NumberFormatException e) {
+                    p.sendMessage("§cGeçersiz sayı: " + args[4]);
+                    return true;
+                }
+            }
+        } else {
+            // Oyuncunun klanını bul
+            targetClan = clanManager.getClanByPlayer(p.getUniqueId());
+            if (targetClan == null) {
+                p.sendMessage("§cKlan belirtilmedi ve sen bir klana üye değilsin!");
+                p.sendMessage("§7Kullanım: /stratocraft disaster wave spawncreeper <klan> [sayı]");
+                return true;
+            }
+        }
+        
+        if (targetClan == null || !targetClan.hasCrystal()) {
+            p.sendMessage("§cHedef klanın kristali yok!");
+            return true;
+        }
+        
+        org.bukkit.Location crystalLoc = targetClan.getCrystalLocation();
+        if (crystalLoc == null) {
+            p.sendMessage("§cKlan kristali konumu bulunamadı!");
+            return true;
+        }
+        
+        // Spawn mesafesi config'den al
+        double spawnDistance = plugin.getConfig().getDouble("night-wave.spawn-distance", 50.0);
+        
+        // Spawn et
+        int spawned = 0;
+        for (int i = 0; i < count; i++) {
+            // Rastgele açı ve mesafe
+            double angle = Math.random() * 2 * Math.PI;
+            double distance = spawnDistance + (Math.random() * 10 - 5); // 50 ± 5 blok
+            double x = crystalLoc.getX() + Math.cos(angle) * distance;
+            double z = crystalLoc.getZ() + Math.sin(angle) * distance;
+            double y = crystalLoc.getWorld().getHighestBlockYAt((int)x, (int)z) + 1;
+            
+            org.bukkit.Location spawnLoc = new org.bukkit.Location(crystalLoc.getWorld(), x, y, z);
+            me.mami.stratocraft.entity.WildCreeper.spawnWildCreeper(spawnLoc, targetClan, plugin);
+            spawned++;
+        }
+        
+        p.sendMessage("§a" + spawned + " adet Vahşi Creeper spawn edildi!");
+        p.sendMessage("§7Hedef Klan: §e" + targetClan.getName());
+        return true;
     }
 
     /**
@@ -1629,6 +1740,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             p.sendMessage("§7  create <klan1> <klan2> <tip> [süre_gün] - İttifak oluştur");
             p.sendMessage("§7  break <ittifak_id> - İttifakı boz (admin)");
             p.sendMessage("§7  info <klan> - Klanın ittifaklarını göster");
+            p.sendMessage("§7  request <gönderen_klan> <hedef_klan> <tip> [süre_gün] - İttifak isteği gönder (admin)");
             p.sendMessage("§eİttifak Tipleri:");
             p.sendMessage("§7  defensive - Savunma İttifakı");
             p.sendMessage("§7  offensive - Saldırı İttifakı");
@@ -1662,8 +1774,11 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
             case "info":
             case "bilgi":
                 return handleAllianceInfo(p, args, allianceManager);
+            case "request":
+            case "istek":
+                return handleAllianceRequest(p, args, allianceManager);
             default:
-                p.sendMessage("§cGeçersiz komut! /stratocraft alliance <list|create|break|info>");
+                p.sendMessage("§cGeçersiz komut! /stratocraft alliance <list|create|break|info|request>");
                 return true;
         }
     }
@@ -1779,6 +1894,83 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         // Admin olarak ittifakı boz
         allianceManager.breakAlliance(allianceId, alliance.getClan1Id());
         p.sendMessage("§aİttifak bozuldu!");
+        return true;
+    }
+    
+    /**
+     * ✅ YENİ: İttifak isteği gönderme (admin komutu)
+     */
+    private boolean handleAllianceRequest(Player p, String[] args, me.mami.stratocraft.manager.AllianceManager allianceManager) {
+        if (args.length < 4) {
+            p.sendMessage("§cKullanım: /stratocraft alliance request <gönderen_klan> <hedef_klan> <tip> [süre_gün]");
+            p.sendMessage("§7İttifak Tipleri:");
+            p.sendMessage("§7  defensive - Savunma İttifakı");
+            p.sendMessage("§7  offensive - Saldırı İttifakı");
+            p.sendMessage("§7  trade - Ticaret İttifakı");
+            p.sendMessage("§7  full - Tam İttifak");
+            p.sendMessage("§eÖrnek:");
+            p.sendMessage("§7  /stratocraft alliance request KlanA KlanB defensive 7");
+            return true;
+        }
+        
+        me.mami.stratocraft.manager.ClanManager clanManager = plugin.getClanManager();
+        if (clanManager == null) {
+            p.sendMessage("§cClanManager bulunamadı!");
+            return true;
+        }
+        
+        String senderClanName = args[2];
+        String targetClanName = args[3];
+        
+        me.mami.stratocraft.model.Clan senderClan = clanManager.getClanByName(senderClanName);
+        me.mami.stratocraft.model.Clan targetClan = clanManager.getClanByName(targetClanName);
+        
+        if (senderClan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + senderClanName);
+            return true;
+        }
+        if (targetClan == null) {
+            p.sendMessage("§cKlan bulunamadı: " + targetClanName);
+            return true;
+        }
+        
+        if (senderClan.equals(targetClan)) {
+            p.sendMessage("§cBir klan kendisiyle ittifak kuramaz!");
+            return true;
+        }
+        
+        // İttifak tipi
+        String typeStr = args.length >= 5 ? args[4].toUpperCase() : "DEFENSIVE";
+        me.mami.stratocraft.model.Alliance.Type type;
+        try {
+            type = me.mami.stratocraft.model.Alliance.Type.valueOf(typeStr);
+        } catch (IllegalArgumentException e) {
+            p.sendMessage("§cGeçersiz ittifak tipi: " + typeStr);
+            p.sendMessage("§7Geçerli tipler: DEFENSIVE, OFFENSIVE, TRADE, FULL");
+            return true;
+        }
+        
+        // Süre (gün)
+        long durationDays = args.length >= 6 ? Long.parseLong(args[5]) : 7L;
+        if (durationDays < 1) {
+            p.sendMessage("§cSüre en az 1 gün olmalı!");
+            return true;
+        }
+        
+        // İttifak oluştur
+        me.mami.stratocraft.model.Alliance alliance = allianceManager.createAlliance(
+            senderClan.getId(), targetClan.getId(), type, durationDays);
+        
+        if (alliance != null) {
+            p.sendMessage("§aİttifak oluşturuldu: " + senderClan.getName() + " ↔ " + targetClan.getName());
+            p.sendMessage("§7Tip: §e" + type.name());
+            p.sendMessage("§7Süre: §e" + durationDays + " gün");
+            org.bukkit.Bukkit.broadcastMessage("§e" + senderClan.getName() + " ve " + targetClan.getName() + 
+                " klanları arasında ittifak kuruldu!");
+        } else {
+            p.sendMessage("§cİttifak oluşturulamadı! (Zaten var olabilir)");
+        }
+        
         return true;
     }
 
@@ -4596,7 +4788,8 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         // İlk argüman (komut seçimi)
         if (args.length == 1) {
             List<String> commands = Arrays.asList("give", "spawn", "disaster", "list", "help", "siege", "clan",
-                    "contract", "build", "trap", "dungeon", "biome", "mine", "recipe", "boss", "tame", "arena", "data");
+                    "contract", "build", "trap", "dungeon", "biome", "mine", "recipe", "boss", "tame", "arena", "data",
+                    "alliance", "ittifak", "structure");
             String input = args[0].toLowerCase();
 
             // Eğer boşsa veya başlangıç eşleşiyorsa filtrele
@@ -4649,6 +4842,20 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                     return disasterCommands.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
+                
+                case "wave":
+                case "dalga":
+                    // Wave alt komutları (disaster wave için)
+                    if (args.length >= 2 && args[0].equalsIgnoreCase("disaster")) {
+                        List<String> waveCommands = Arrays.asList("start", "stop", "status", "setnight", "setday", "spawncreeper");
+                        if (input.isEmpty()) {
+                            return waveCommands;
+                        }
+                        return waveCommands.stream()
+                                .filter(s -> s.toLowerCase().startsWith(input))
+                                .collect(Collectors.toList());
+                    }
+                    break;
                 
                 case "clan":
                     // Clan alt komutları (ikinci seviye)
@@ -4748,11 +4955,33 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
 
                 case "siege":
                     // Siege komutları
-                    List<String> siegeCommands = Arrays.asList("clear", "list", "start", "surrender");
+                    List<String> siegeCommands = Arrays.asList("clear", "list", "start", "end", "status", "surrender");
                     if (input.isEmpty()) {
                         return siegeCommands;
                     }
                     return siegeCommands.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
+                            .collect(Collectors.toList());
+                
+                case "alliance":
+                case "ittifak":
+                    // Alliance komutları
+                    List<String> allianceCommands = Arrays.asList("list", "create", "break", "info", "request");
+                    if (input.isEmpty()) {
+                        return allianceCommands;
+                    }
+                    return allianceCommands.stream()
+                            .filter(s -> s.toLowerCase().startsWith(input))
+                            .collect(Collectors.toList());
+                
+                case "structure":
+                    // Structure komutları
+                    List<String> structureCommands = Arrays.asList("build", "list", "info", "activate", "deactivate", 
+                        "setlevel", "setowner", "check");
+                    if (input.isEmpty()) {
+                        return structureCommands;
+                    }
+                    return structureCommands.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
 
@@ -4932,13 +5161,35 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                 case "disaster":
                     // ✅ YENİ: Gece dalgası komutları için tab completion
                     if (category.equals("wave")) {
-                        List<String> waveCommands = Arrays.asList("start", "stop", "status");
-                        if (input.isEmpty()) {
-                            return waveCommands;
+                        if (args.length == 3) {
+                            // Wave alt komutları
+                            List<String> waveCommands = Arrays.asList("start", "stop", "status", "setnight", "setday", "spawncreeper");
+                            if (input.isEmpty()) {
+                                return waveCommands;
+                            }
+                            return waveCommands.stream()
+                                    .filter(s -> s.toLowerCase().startsWith(input))
+                                    .collect(Collectors.toList());
+                        } else if (args.length == 4 && args[2].equalsIgnoreCase("spawncreeper")) {
+                            // Spawncreeper için klan isimlerini öner
+                            if (plugin != null && plugin.getClanManager() != null) {
+                                java.util.Collection<me.mami.stratocraft.model.Clan> clans = 
+                                    plugin.getClanManager().getAllClans();
+                                return clans.stream()
+                                    .map(c -> c.getName())
+                                    .filter(name -> name.toLowerCase().startsWith(input.toLowerCase()))
+                                    .collect(Collectors.toList());
+                            }
+                        } else if (args.length == 5 && args[2].equalsIgnoreCase("spawncreeper")) {
+                            // Spawncreeper için sayı öner (1-20)
+                            List<String> counts = new ArrayList<>();
+                            for (int i = 1; i <= 20; i++) {
+                                counts.add(String.valueOf(i));
+                            }
+                            return counts.stream()
+                                    .filter(s -> s.startsWith(input))
+                                    .collect(Collectors.toList());
                         }
-                        return waveCommands.stream()
-                                .filter(s -> s.toLowerCase().startsWith(input))
-                                .collect(Collectors.toList());
                     }
                     // Disaster start için yeni format: [Kategori seviyesi] [Felaket ismi] [İç seviye] [Koordinat]
                     if (category.equalsIgnoreCase("start")) {
@@ -5227,6 +5478,28 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         // Build komutu için seviye argümanı (kategorize edilmiş veya eski format)
         if (args.length >= 3 && args[0].equalsIgnoreCase("build")) {
             String category = args[1].toLowerCase();
+            
+            // ✅ YENİ: Structure build için seviye öner
+            if (category.equals("structure") && args.length == 4) {
+                // Yapı tipi belirtilmiş, seviye öner
+                String structureType = args[2].toLowerCase();
+                String input = args[3].toLowerCase();
+                
+                // War Totem seviye gerektirmez (her zaman seviye 1)
+                if (structureType.equals("war_totem") || structureType.equals("savas_totemi") || 
+                    structureType.equals("savaş_totemi")) {
+                    return new ArrayList<>(); // Seviye gerektirmez
+                }
+                
+                // Diğer yapılar için seviye öner
+                List<String> levels = Arrays.asList("1", "2", "3", "4", "5");
+                if (input.isEmpty()) {
+                    return levels;
+                }
+                return levels.stream()
+                        .filter(s -> s.startsWith(input))
+                        .collect(Collectors.toList());
+            }
             // Eğer kategori weapon, battery, structure ise 4. argüman seviye
             if (category.equals("weapon") || category.equals("battery") || category.equals("structure")) {
                 if (args.length == 4) {
@@ -5504,7 +5777,7 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         "fortress_wall",
                         // Yeni yönetim yapıları
                         "personal_mission_guild", "clan_management_center", "clan_bank", "clan_mission_guild",
-                        "training_arena", "caravan_station", "contract_office", "market_place", "recipe_library");
+                        "training_arena", "war_totem", "caravan_station", "contract_office", "market_place", "recipe_library");
                 return filterList(structures, input);
             default:
                 return new ArrayList<>();
@@ -8773,6 +9046,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         } else if (typeLower.equals("training_arena") || typeLower.equals("egitim_alani")) {
             buildTrainingArena(p, loc, level);
             return true;
+        } else if (typeLower.equals("war_totem") || typeLower.equals("savas_totemi") || typeLower.equals("savaş_totemi")) {
+            buildWarTotem(p, loc);
+            return true;
         } else if (typeLower.equals("caravan_station") || typeLower.equals("kervan_istasyonu")) {
             buildCaravanStation(p, loc, level);
             return true;
@@ -9037,6 +9313,58 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
         
         // Partikül efekti (yapı oluşturulduğunda)
         org.bukkit.Location effectLoc = crystalLoc.clone().add(0, 1, 0);
+        p.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, effectLoc, 50, 1.0, 1.0, 1.0, 0.3);
+        p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, effectLoc, 30, 0.8, 0.8, 0.8, 0.1);
+        p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.2f);
+    }
+    
+    /**
+     * ✅ YENİ: Savaş Totemi yapısını oluştur
+     */
+    private void buildWarTotem(Player p, org.bukkit.Location loc) {
+        // Merkez Oak Log (Yapı Çekirdeği)
+        org.bukkit.Location coreLoc = loc.clone().add(0.5, 0, 0.5);
+        coreLoc.getBlock().setType(Material.OAK_LOG);
+        
+        // YENİ: Yapı çekirdeğini StructureCoreManager'a ekle
+        me.mami.stratocraft.manager.StructureCoreManager coreManager = plugin.getStructureCoreManager();
+        if (coreManager != null) {
+            coreManager.addInactiveCore(coreLoc, p.getUniqueId());
+        }
+        
+        // Alt katman: 2x2 GOLD_BLOCK (center'ın altında)
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                org.bukkit.Location goldLoc = coreLoc.clone().add(x - 0.5, -1, z - 0.5);
+                goldLoc.getBlock().setType(Material.GOLD_BLOCK);
+            }
+        }
+        
+        // Üst katman: 2x2 IRON_BLOCK (altın blokların üstünde)
+        for (int x = 0; x <= 1; x++) {
+            for (int z = 0; z <= 1; z++) {
+                org.bukkit.Location ironLoc = coreLoc.clone().add(x - 0.5, 0, z - 0.5);
+                ironLoc.getBlock().setType(Material.IRON_BLOCK);
+            }
+        }
+        
+        // Başarı mesajı ve aktifleştirme bilgisi
+        p.sendMessage("§6═══════════════════════════════════");
+        p.sendMessage("§a§lSavaş Totemi OLUŞTURULDU!");
+        p.sendMessage("§6═══════════════════════════════════");
+        p.sendMessage("");
+        p.sendMessage("§e§lAktifleştirme:");
+        p.sendMessage("§71. Klan üyesi olmalısın (General veya Lider)");
+        p.sendMessage("§72. Klanın %35'i aktif olmalı");
+        p.sendMessage("§73. En az bir General aktif olmalı");
+        p.sendMessage("§74. 50 blok yakınında düşman klan olmalı");
+        p.sendMessage("§75. Yapı çekirdeğine (Oak Log) yaklaş");
+        p.sendMessage("§76. §eShift + Sağ Tık §7yaparak yapıyı aktifleştir");
+        p.sendMessage("§77. Savaş başladığında totem işlevini kaybeder");
+        p.sendMessage("");
+        
+        // Partikül efekti (yapı oluşturulduğunda)
+        org.bukkit.Location effectLoc = coreLoc.clone().add(0, 1, 0);
         p.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, effectLoc, 50, 1.0, 1.0, 1.0, 0.3);
         p.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, effectLoc, 30, 0.8, 0.8, 0.8, 0.1);
         p.getWorld().playSound(effectLoc, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.2f);

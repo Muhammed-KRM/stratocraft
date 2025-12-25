@@ -76,8 +76,49 @@ public class CombatListener implements Listener {
                 return;
             }
             
-            // Hasar azaltma hesapla (sadece saldırı yapılabilir durumda)
-            // Not: canAttackPlayer true döndüyse, güç farkına göre hasar azaltma yapılabilir
+            // ✅ YENİ: 3 Seviye Farkı Kontrolü ve %95 Hasar Azaltma
+            // Öncelik: Savaş durumu kontrolü (savaşta koruma kalkar)
+            Clan attackerClan = clanManager.getClanByPlayer(attacker.getUniqueId());
+            Clan defenderClan = clanManager.getClanByPlayer(defender.getUniqueId());
+            boolean isAtWar = false;
+            
+            if (attackerClan != null && defenderClan != null && !attackerClan.equals(defenderClan)) {
+                // İki klan savaşta mı kontrol et
+                isAtWar = attackerClan.isAtWarWith(defenderClan.getId());
+            }
+            
+            // Savaş durumunda koruma kalkar
+            if (!isAtWar) {
+                // ✅ DÜZELTME: Config'den seviye farkı ve hasar azaltma değerlerini oku
+                if (plugin.getStratocraftPowerSystem() != null && protectionSystem.getConfig() != null) {
+                    int attackerLevel = plugin.getStratocraftPowerSystem().calculatePlayerLevel(attacker);
+                    int defenderLevel = plugin.getStratocraftPowerSystem().calculatePlayerLevel(defender);
+                    
+                    // Config'den seviye farkı eşiğini al
+                    int levelDiffThreshold = protectionSystem.getConfig().getPlayerLevelDiffThreshold();
+                    
+                    // Seviye farkı kontrolü (config'den)
+                    if (attackerLevel >= defenderLevel + levelDiffThreshold) {
+                        // Config'den hasar azaltma yüzdesini al
+                        double damageReductionPercent = protectionSystem.getConfig().getPlayerDamageReductionPercent();
+                        double damageMultiplier = 1.0 - damageReductionPercent; // %95 azaltma = 0.05 çarpanı
+                        double minDamage = protectionSystem.getConfig().getPlayerMinDamage();
+                        
+                        double originalDamage = event.getDamage();
+                        double reducedDamage = originalDamage * damageMultiplier;
+                        event.setDamage(Math.max(minDamage, reducedDamage)); // Minimum hasar (config'den)
+                        
+                        // Mesaj gönder (ilk vuruşta)
+                        if (originalDamage > minDamage) {
+                            int percentReduction = (int) (damageReductionPercent * 100);
+                            attacker.sendMessage("§e§lKORUMA AKTİF! §7Hedef senden " + levelDiffThreshold + 
+                                " seviye aşağıda. Hasar %" + percentReduction + " azaltıldı.");
+                        }
+                    }
+                }
+            }
+            
+            // Güç bazlı hasar azaltma (mevcut sistem)
             double damageReduction = protectionSystem.calculateDamageReduction(attacker, defender);
             if (damageReduction < 1.0 && damageReduction > 0) {
                 double originalDamage = event.getDamage();

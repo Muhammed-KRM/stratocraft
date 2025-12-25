@@ -54,11 +54,28 @@ public class SiegeManager {
     /**
      * ✅ YENİ: İki taraflı savaş başlatma
      * Her iki klan da birbirine saldırabilir
+     * ✅ YENİ: 3 seviye farkı kontrolü eklendi
      */
     public void startSiege(Clan attacker, Clan defender, Player attackerPlayer) {
         // Null check
         if (attacker == null || defender == null || attacker.getId().equals(defender.getId())) {
             return;
+        }
+        
+        // ✅ YENİ: 3 Seviye Farkı Kontrolü
+        me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+        if (plugin != null && plugin.getStratocraftPowerSystem() != null) {
+            int attackerLevel = plugin.getStratocraftPowerSystem().calculateClanLevel(attacker);
+            int defenderLevel = plugin.getStratocraftPowerSystem().calculateClanLevel(defender);
+            
+            // Saldıran klan, savunan klandan 3 veya daha fazla seviye yüksekse savaş açamaz
+            if (attackerLevel >= defenderLevel + 3) {
+                if (attackerPlayer != null) {
+                    attackerPlayer.sendMessage("§cKendinden 3 seviye aşağıdaki bir klana savaş açamazsın! (Sen: " + 
+                        attackerLevel + ", Hedef: " + defenderLevel + ")");
+                }
+                return;
+            }
         }
         
         // Offline baskın önleme: Her iki klandan da en az 1 kişi online olmalı
@@ -88,10 +105,35 @@ public class SiegeManager {
             return;
         }
         
-        // ✅ YENİ: İki taraflı savaş kaydı
         UUID attackerId = attacker.getId();
         UUID defenderId = defender.getId();
         
+        // ✅ YENİ: Zaten savaşta mı kontrolü
+        if (attacker.isAtWarWith(defenderId) || defender.isAtWarWith(attackerId)) {
+            if (attackerPlayer != null) {
+                attackerPlayer.sendMessage("§eBu klanla zaten savaş halindesiniz!");
+            }
+            return;
+        }
+        
+        // ✅ YENİ: İttifak kontrolü - Eğer iki klan arasında ittifak varsa, ittifakı kır
+        if (allianceManager != null && allianceManager.hasAlliance(attackerId, defenderId)) {
+            // İttifakı bul ve kır
+            List<me.mami.stratocraft.model.Alliance> alliances = allianceManager.getAlliances(attackerId);
+            for (me.mami.stratocraft.model.Alliance alliance : alliances) {
+                if (alliance.involvesClan(defenderId) && alliance.isActive()) {
+                    // İttifakı kır (saldıran klan ihlal ediyor)
+                    // Not: breakAlliance zaten allianceClans listelerinden kaldırıyor
+                    allianceManager.breakAlliance(alliance.getId(), attackerId);
+                    
+                    Bukkit.broadcastMessage("§4§lİTTİFAK İHLALİ! §c" + attacker.getName() + 
+                        " klanı " + defender.getName() + " ile olan ittifakı bozdu ve savaş ilan etti!");
+                    break;
+                }
+            }
+        }
+        
+        // ✅ YENİ: İki taraflı savaş kaydı
         // Saldıran klanın savaş listesine ekle
         activeWars.computeIfAbsent(attackerId, k -> new HashSet<>()).add(defenderId);
         attacker.addWarringClan(defenderId);

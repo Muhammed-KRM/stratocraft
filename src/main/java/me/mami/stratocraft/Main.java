@@ -411,10 +411,15 @@ public class Main extends JavaPlugin {
         }
         */
         // YENİ: StructureActivationListener'a ClanRankSystem ve StructureCoreManager ekle
-        Bukkit.getPluginManager().registerEvents(
+        StructureActivationListener structureActivationListenerEarly = 
             new StructureActivationListener(clanManager, territoryManager, 
                 clanRankSystem != null ? clanRankSystem : null,
-                structureCoreManager), this); // YAPI AKTİVASYONU
+                structureCoreManager);
+        // ✅ YENİ: SiegeManager'ı set et (savaş totemi için)
+        if (siegeManager != null) {
+            structureActivationListenerEarly.setSiegeManager(siegeManager);
+        }
+        Bukkit.getPluginManager().registerEvents(structureActivationListenerEarly, this); // YAPI AKTİVASYONU
         
         // ✅ YENİ: Kristal sistemi handler'ları
         crystalEnhancementHandler = new me.mami.stratocraft.handler.structure.CrystalEnhancementHandler(this);
@@ -479,6 +484,8 @@ public class Main extends JavaPlugin {
         
         // Canlı eğitme sistemi
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.TamingListener(tamingManager, difficultyManager, bossManager), this);
+        // ✅ YENİ: Eğitme Çekirdeği Listener (Training Arena sistemi)
+        Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.TrainingCoreListener(this, tamingManager), this);
         
         // Çiftleştirme sistemi
         Bukkit.getPluginManager().registerEvents(new me.mami.stratocraft.listener.BreedingListener(breedingManager, tamingManager, this), this);
@@ -1805,6 +1812,9 @@ public class Main extends JavaPlugin {
             this, clanManager, stratocraftPowerSystem, siegeManager, clanActivitySystem);
         clanProtectionSystem.loadConfig(configManager.getConfig());
         
+        // ✅ YENİ: TrainingSuccessCalculator config yükleme
+        me.mami.stratocraft.util.TrainingSuccessCalculator.loadConfig(configManager.getConfig());
+        
         // 5. ClanBankSystem (ClanRankSystem gerekli)
         clanBankSystem = new me.mami.stratocraft.manager.clan.ClanBankSystem(
             this, clanManager, clanRankSystem);
@@ -1822,9 +1832,14 @@ public class Main extends JavaPlugin {
         
         // YENİ: StructureActivationListener - ClanRankSystem artık hazır, tekrar kaydet
         // Not: onEnable() içinde zaten null ile kaydedilmiş, burada clanRankSystem ile tekrar kaydediyoruz
-        Bukkit.getPluginManager().registerEvents(
+        me.mami.stratocraft.listener.StructureActivationListener structureActivationListener = 
             new me.mami.stratocraft.listener.StructureActivationListener(
-                clanManager, territoryManager, clanRankSystem, structureCoreManager), this);
+                clanManager, territoryManager, clanRankSystem, structureCoreManager);
+        // ✅ YENİ: SiegeManager'ı set et (savaş totemi için)
+        if (siegeManager != null) {
+            structureActivationListener.setSiegeManager(siegeManager);
+        }
+        Bukkit.getPluginManager().registerEvents(structureActivationListener, this);
         
         // 8. ClanStatsMenu (GUI menüsü)
         clanStatsMenu = new me.mami.stratocraft.gui.ClanStatsMenu(this, clanManager);

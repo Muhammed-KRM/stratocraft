@@ -28,6 +28,15 @@ public class ClanProtectionConfig {
     private double damageReductionMin = 0.05; // Minimum hasar (%5)
     private double damageReductionMax = 0.50; // Maksimum hasar (%50)
     
+    // ✅ YENİ: Oyuncu koruma sistemi
+    private int playerLevelDiffThreshold = 3; // Seviye farkı eşiği
+    private double playerDamageReductionPercent = 0.95; // Hasar azaltma yüzdesi (%95)
+    private double playerMinDamage = 0.5; // Minimum hasar
+    
+    // ✅ YENİ: Klan koruma sistemi
+    private int clanLevelDiffThreshold = 3; // Seviye farkı eşiği
+    private double clanAutoWarDistance = 50.0; // Otomatik savaş mesafesi (blok)
+    
     /**
      * Config'den yükle
      */
@@ -48,6 +57,17 @@ public class ClanProtectionConfig {
         clanThreshold = config.getDouble(path + "clan-threshold", 0.50);
         damageReductionMin = config.getDouble(path + "damage-reduction-min", 0.05);
         damageReductionMax = config.getDouble(path + "damage-reduction-max", 0.50);
+        
+        // ✅ YENİ: Oyuncu koruma sistemi config okuma
+        String playerProtectionPath = "clan-power-system.player-protection.";
+        playerLevelDiffThreshold = config.getInt(playerProtectionPath + "level-diff-threshold", 3);
+        playerDamageReductionPercent = config.getDouble(playerProtectionPath + "damage-reduction-percent", 0.95);
+        playerMinDamage = config.getDouble(playerProtectionPath + "min-damage", 0.5);
+        
+        // ✅ YENİ: Klan koruma sistemi config okuma
+        String clanProtectionPath = "clan-power-system.clan-protection.";
+        clanLevelDiffThreshold = config.getInt(clanProtectionPath + "level-diff-threshold", 3);
+        clanAutoWarDistance = config.getDouble(clanProtectionPath + "auto-war-distance", 50.0);
         
         // Geçersiz değer kontrolü
         if (powerThreshold < 0 || powerThreshold > 1) {
@@ -83,6 +103,25 @@ public class ClanProtectionConfig {
             damageReductionMin = damageReductionMax;
             damageReductionMax = temp;
         }
+        
+        // ✅ YENİ: Oyuncu koruma sistemi geçersiz değer kontrolü
+        if (playerLevelDiffThreshold < 1) {
+            playerLevelDiffThreshold = 3; // Varsayılan
+        }
+        if (playerDamageReductionPercent < 0 || playerDamageReductionPercent > 1) {
+            playerDamageReductionPercent = 0.95; // Varsayılan
+        }
+        if (playerMinDamage < 0) {
+            playerMinDamage = 0.5; // Varsayılan
+        }
+        
+        // ✅ YENİ: Klan koruma sistemi geçersiz değer kontrolü
+        if (clanLevelDiffThreshold < 1) {
+            clanLevelDiffThreshold = 3; // Varsayılan
+        }
+        if (clanAutoWarDistance < 0) {
+            clanAutoWarDistance = 50.0; // Varsayılan
+        }
     }
     
     // Getters
@@ -95,5 +134,14 @@ public class ClanProtectionConfig {
     public double getClanThreshold() { return clanThreshold; }
     public double getDamageReductionMin() { return damageReductionMin; }
     public double getDamageReductionMax() { return damageReductionMax; }
+    
+    // ✅ YENİ: Oyuncu koruma sistemi getters
+    public int getPlayerLevelDiffThreshold() { return playerLevelDiffThreshold; }
+    public double getPlayerDamageReductionPercent() { return playerDamageReductionPercent; }
+    public double getPlayerMinDamage() { return playerMinDamage; }
+    
+    // ✅ YENİ: Klan koruma sistemi getters
+    public int getClanLevelDiffThreshold() { return clanLevelDiffThreshold; }
+    public double getClanAutoWarDistance() { return clanAutoWarDistance; }
 }
 

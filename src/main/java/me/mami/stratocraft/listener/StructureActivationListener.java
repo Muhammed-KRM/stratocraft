@@ -46,6 +46,7 @@ public class StructureActivationListener implements Listener {
     private final TerritoryManager territoryManager;
     private final ClanRankSystem rankSystem;
     private final me.mami.stratocraft.manager.StructureCoreManager coreManager; // YENİ: Yapı çekirdeği yöneticisi
+    private me.mami.stratocraft.manager.SiegeManager siegeManager; // ✅ YENİ: Savaş totemi için
 
     // Cooldown: Oyuncu UUID -> Son aktivasyon zamanı
     private final Map<UUID, Long> activationCooldowns = new HashMap<>();
@@ -74,6 +75,11 @@ public class StructureActivationListener implements Listener {
         this.territoryManager = tm;
         this.rankSystem = rankSystem;
         this.coreManager = coreManager; // YENİ: Yapı çekirdeği yöneticisi
+    }
+    
+    // ✅ YENİ: SiegeManager setter (bağımlılık enjeksiyonu)
+    public void setSiegeManager(me.mami.stratocraft.manager.SiegeManager siegeManager) {
+        this.siegeManager = siegeManager;
     }
 
     @EventHandler(priority = EventPriority.NORMAL) // ✅ OPTİMİZE: HIGH → NORMAL (diğer listener'lar önce çalışsın)
@@ -120,6 +126,13 @@ public class StructureActivationListener implements Listener {
         // Kişisel yapılar (klan zorunlu değil)
         // Geriye uyumluluk için Structure.Type'dan StructureType'a çevir
         StructureType detectedType = StructureType.valueOf(detectedStructure.getType().name());
+        
+        // ✅ YENİ: Savaş Totemi - Özel aktivasyon mantığı
+        if (detectedType == StructureType.WAR_TOTEM) {
+            handleWarTotemActivation(player, clickedLoc, detectedStructure);
+            return;
+        }
+        
         if (detectedType == StructureType.PERSONAL_MISSION_GUILD ||
             detectedType == StructureType.CONTRACT_OFFICE ||
             detectedType == StructureType.MARKET_PLACE ||
@@ -196,6 +209,28 @@ public class StructureActivationListener implements Listener {
         // YENİ: OwnerId set et (CLAN_OWNED yapılar için)
         // Şimdilik tüm yapılar için oyuncu UUID'si ownerId olarak kaydedilir
         detectedStructure.setOwnerId(player.getUniqueId());
+        
+        // ✅ YENİ: Training Arena için eğitme çekirdeği otomatik yerleştir
+        StructureType detectedType = StructureType.valueOf(detectedStructure.getType().name());
+        if (detectedType == StructureType.TRAINING_ARENA) {
+            // Eğitme çekirdeğini Enchanting Table'ın üstüne yerleştir
+            Block enchantingTable = clicked.getRelative(BlockFace.UP);
+            if (enchantingTable.getType() == Material.ENCHANTING_TABLE) {
+                Block coreBlock = enchantingTable.getRelative(BlockFace.UP);
+                // ✅ DÜZELTME: Zaten BEACON varsa ve TamingCore metadata'sı yoksa ekle
+                if (coreBlock.getType() == Material.AIR || coreBlock.getType() == Material.CAVE_AIR) {
+                    coreBlock.setType(Material.BEACON);
+                    coreBlock.setMetadata("TamingCore", new org.bukkit.metadata.FixedMetadataValue(
+                        me.mami.stratocraft.Main.getInstance(), true));
+                    player.sendMessage("§a§lEğitme Çekirdeği otomatik yerleştirildi!");
+                } else if (coreBlock.getType() == Material.BEACON && !coreBlock.hasMetadata("TamingCore")) {
+                    // Zaten BEACON var ama metadata yok, ekle
+                    coreBlock.setMetadata("TamingCore", new org.bukkit.metadata.FixedMetadataValue(
+                        me.mami.stratocraft.Main.getInstance(), true));
+                    player.sendMessage("§a§lEğitme Çekirdeği etkinleştirildi!");
+                }
+            }
+        }
         
         // Yapıyı klana ekle
         clan.addStructure(detectedStructure);
@@ -290,6 +325,11 @@ public class StructureActivationListener implements Listener {
         Structure recipeLibrary = checkRecipeLibrary(center);
         if (recipeLibrary != null)
             return recipeLibrary;
+
+        // 15. SAVAŞ TOTEMİ (War Totem) - 2x2 GOLD_BLOCK (alt) + IRON_BLOCK (üst)
+        Structure warTotem = checkWarTotemStructure(center);
+        if (warTotem != null)
+            return warTotem;
 
         return null;
     }
@@ -941,6 +981,187 @@ public class StructureActivationListener implements Listener {
         // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
         // YENİ: OwnerId null (PUBLIC yapı, ownerId gerekmez)
         return new Structure(Structure.Type.valueOf(StructureType.RECIPE_LIBRARY.name()), center.getLocation(), level, null);
+    }
+    
+    /**
+     * ✅ YENİ: Savaş Totemi yapısı kontrolü
+     * Yapı: 2 Altın Blok (alt) + 2 Demir Blok (üst)
+     * Yapı çekirdeği: OAK_LOG (merkez)
+     * 
+     * Yapı:
+     *   [IRON_BLOCK] [IRON_BLOCK]  (Y: +1)
+     *   [GOLD_BLOCK] [GOLD_BLOCK]  (Y: 0)
+     *   [OAK_LOG] (merkez, yapı çekirdeği)
+     */
+    private Structure checkWarTotemStructure(Block center) {
+        // Yapı çekirdeği kontrolü - OAK_LOG olmalı
+        if (center.getType() != Material.OAK_LOG)
+            return null;
+        
+        // Yapı çekirdeği kontrolü (metadata ile)
+        if (!coreManager.isStructureCore(center))
+            return null;
+        
+        // Yapı çekirdeği aktif mi kontrol et
+        if (!coreManager.isInactiveCore(center.getLocation()))
+            return null;
+        
+        // Alt katman: 2x2 GOLD_BLOCK (center'ın altında)
+        Block below = center.getRelative(BlockFace.DOWN);
+        Block belowEast = below.getRelative(BlockFace.EAST);
+        
+        if (below.getType() != Material.GOLD_BLOCK || belowEast.getType() != Material.GOLD_BLOCK) {
+            return null;
+        }
+        
+        // Üst katman: 2x2 IRON_BLOCK (altın blokların üstünde)
+        Block iron1 = below.getRelative(BlockFace.UP);
+        Block iron2 = belowEast.getRelative(BlockFace.UP);
+        
+        if (iron1.getType() != Material.IRON_BLOCK || iron2.getType() != Material.IRON_BLOCK) {
+            return null;
+        }
+        
+        int level = 1; // Varsayılan seviye
+        // Geriye uyumluluk için StructureType'dan Structure.Type'a çevir
+        // OwnerId null (PUBLIC yapı, herkesin kullanabildiği)
+        return new Structure(Structure.Type.valueOf(StructureType.WAR_TOTEM.name()), center.getLocation(), level, null);
+    }
+    
+    /**
+     * ✅ YENİ: Savaş Totemi aktivasyon mantığı
+     * - Klan kontrolü yapılır (sadece klan üyesi aktif edebilir)
+     * - Yetki kontrolü (General veya Lider)
+     * - Aktif üye kontrolü (%35)
+     * - En az bir General aktif olmalı
+     * - 50 blok yakınında düşman klan bulunmalı
+     * - Savaş başlatılır
+     * - Totem bir kere aktif edildikten sonra işlevini kaybeder (yapı çekirdeği aktif olur)
+     */
+    private void handleWarTotemActivation(Player player, Location totemLoc, Structure detectedStructure) {
+        // Admin bypass kontrolü
+        if (me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(player)) {
+            player.sendMessage("§cAdmin bypass aktif - Savaş totemi aktivasyonu atlandı.");
+            return;
+        }
+        
+        // Klan kontrolü
+        Clan attacker = clanManager.getClanByPlayer(player.getUniqueId());
+        if (attacker == null) {
+            player.sendMessage("§cSavaş açmak için klan üyesi olmalısın!");
+            return;
+        }
+        
+        // Yetki kontrolü: Sadece General veya Lider
+        Clan.Rank rank = attacker.getRank(player.getUniqueId());
+        if (rank != Clan.Rank.GENERAL && rank != Clan.Rank.LEADER) {
+            player.sendMessage("§cSadece General veya Lider savaş açabilir!");
+            return;
+        }
+        
+        // Aktif üye kontrolü: %35 aktif olmalı
+        if (!checkActiveMembers(attacker, 0.35)) {
+            player.sendMessage("§cKlanın %35'i aktif olmalı! (En az " + 
+                (int)Math.ceil(attacker.getMembers().size() * 0.35) + " üye)");
+            return;
+        }
+        
+        // En az bir general aktif olmalı
+        if (!hasActiveGeneral(attacker)) {
+            player.sendMessage("§cEn az bir General aktif olmalı!");
+            return;
+        }
+        
+        // 50 blok yakınında düşman klan bul
+        Clan defender = null;
+        double minDistance = Double.MAX_VALUE;
+        
+        for (Clan existingClan : clanManager.getAllClans()) {
+            if (existingClan == null || existingClan.equals(attacker) || !existingClan.hasCrystal()) continue;
+            
+            Location crystalLoc = existingClan.getCrystalLocation();
+            if (crystalLoc == null || !crystalLoc.getWorld().equals(totemLoc.getWorld())) continue;
+            
+            double distance = totemLoc.distance(crystalLoc);
+            if (distance <= 50.0 && distance < minDistance) {
+                defender = existingClan;
+                minDistance = distance;
+            }
+        }
+        
+        if (defender == null) {
+            player.sendMessage("§c50 blok yakınında düşman klan bulunamadı!");
+            return;
+        }
+        
+        // ✅ YENİ: Zaten savaşta mı kontrolü
+        if (attacker.isAtWarWith(defender.getId()) || defender.isAtWarWith(attacker.getId())) {
+            player.sendMessage("§eBu klanla zaten savaş halindesiniz!");
+            return;
+        }
+        
+        // Savaş başlat
+        if (siegeManager == null) {
+            me.mami.stratocraft.Main plugin = me.mami.stratocraft.Main.getInstance();
+            if (plugin != null) {
+                siegeManager = plugin.getSiegeManager();
+            }
+        }
+        
+        if (siegeManager == null) {
+            player.sendMessage("§cSavaş yöneticisi bulunamadı! Lütfen yöneticiye bildirin.");
+            return;
+        }
+        
+        // Savaş başlat
+        siegeManager.startSiege(attacker, defender, player);
+        
+        // Yapı çekirdeğini aktif yapıya dönüştür (totem bir kere aktif edildikten sonra işlevini kaybeder)
+        coreManager.activateCore(totemLoc, detectedStructure);
+        
+        // Cooldown ekle
+        setCooldown(player.getUniqueId());
+        
+        // Başarı mesajı ve efektler
+        activateStructureEffects(player, detectedStructure);
+        player.sendMessage("§a§lSAVAŞ TOTEMİ AKTİVE EDİLDİ!");
+        player.sendMessage("§c§lSavaş başladı: " + attacker.getName() + " vs " + defender.getName());
+        player.playSound(totemLoc, Sound.BLOCK_BEACON_ACTIVATE, 1f, 1f);
+    }
+    
+    /**
+     * ✅ YENİ: Aktif üye kontrolü
+     */
+    private boolean checkActiveMembers(Clan clan, double percentage) {
+        if (clan == null || clan.getMembers().isEmpty()) return false;
+        
+        int totalMembers = clan.getMembers().size();
+        int requiredActive = (int) Math.ceil(totalMembers * percentage);
+        
+        long activeCount = clan.getMembers().keySet().stream()
+            .mapToLong(uuid -> {
+                org.bukkit.entity.Player p = org.bukkit.Bukkit.getPlayer(uuid);
+                return (p != null && p.isOnline()) ? 1 : 0;
+            })
+            .sum();
+        
+        return activeCount >= requiredActive;
+    }
+    
+    /**
+     * ✅ YENİ: Aktif General kontrolü
+     */
+    private boolean hasActiveGeneral(Clan clan) {
+        if (clan == null) return false;
+        
+        return clan.getMembers().entrySet().stream()
+            .anyMatch(entry -> {
+                if (entry.getValue() == Clan.Rank.GENERAL || entry.getValue() == Clan.Rank.LEADER) {
+                    org.bukkit.entity.Player p = org.bukkit.Bukkit.getPlayer(entry.getKey());
+                    return p != null && p.isOnline();
+                }
+                return false;
+            });
     }
 
     // ========== YARDIMCI METODLAR ==========

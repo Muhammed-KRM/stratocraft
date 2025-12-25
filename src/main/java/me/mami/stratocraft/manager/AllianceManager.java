@@ -32,6 +32,17 @@ public class AllianceManager {
         
         Alliance alliance = new Alliance(clan1Id, clan2Id, type, durationDays);
         activeAlliances.add(alliance);
+        
+        // ✅ YENİ: allianceClans listelerine ekle
+        Clan clan1 = clanManager.getClanById(clan1Id);
+        Clan clan2 = clanManager.getClanById(clan2Id);
+        if (clan1 != null) {
+            clan1.addAllianceClan(clan2Id);
+        }
+        if (clan2 != null) {
+            clan2.addAllianceClan(clan1Id);
+        }
+        
         return alliance;
     }
     
@@ -65,17 +76,21 @@ public class AllianceManager {
         Alliance alliance = getAlliance(allianceId);
         if (alliance == null || !alliance.isActive()) return;
         
+        UUID otherClanId = alliance.getOtherClan(breakerClanId);
+        
         alliance.breakAlliance(breakerClanId);
         
+        // ✅ YENİ: allianceClans listelerinden kaldır
+        Clan breakerClan = clanManager.getClanById(breakerClanId);
+        Clan otherClan = clanManager.getClanById(otherClanId);
+        if (breakerClan != null) {
+            breakerClan.removeAllianceClan(otherClanId);
+        }
+        if (otherClan != null) {
+            otherClan.removeAllianceClan(breakerClanId);
+        }
+        
         // Cezalar
-        Clan breakerClan = clanManager.getAllClans().stream()
-            .filter(c -> c.getId().equals(breakerClanId))
-            .findFirst().orElse(null);
-        
-        Clan otherClan = clanManager.getAllClans().stream()
-            .filter(c -> c.getId().equals(alliance.getOtherClan(breakerClanId)))
-            .findFirst().orElse(null);
-        
         if (breakerClan != null) {
             // İhlal cezası: Klan bakiyesinin %20'si
             double penalty = breakerClan.getBalance() * 0.2;
@@ -120,15 +135,21 @@ public class AllianceManager {
         Alliance alliance = getAlliance(allianceId);
         if (alliance == null || !alliance.isActive()) return;
         
+        UUID clan1Id = alliance.getClan1Id();
+        UUID clan2Id = alliance.getClan2Id();
+        
         // Karşılıklı sonlandırma - ceza yok
         alliance.setActive(false);
         
-        Clan clan1 = clanManager.getAllClans().stream()
-            .filter(c -> c.getId().equals(alliance.getClan1Id()))
-            .findFirst().orElse(null);
-        Clan clan2 = clanManager.getAllClans().stream()
-            .filter(c -> c.getId().equals(alliance.getClan2Id()))
-            .findFirst().orElse(null);
+        // ✅ YENİ: allianceClans listelerinden kaldır
+        Clan clan1 = clanManager.getClanById(clan1Id);
+        Clan clan2 = clanManager.getClanById(clan2Id);
+        if (clan1 != null) {
+            clan1.removeAllianceClan(clan2Id);
+        }
+        if (clan2 != null) {
+            clan2.removeAllianceClan(clan1Id);
+        }
         
         if (clan1 != null && clan2 != null) {
             Bukkit.broadcastMessage("§e" + clan1.getName() + " ve " + clan2.getName() + 
@@ -142,14 +163,20 @@ public class AllianceManager {
     public void checkExpiredAlliances() {
         for (Alliance alliance : new ArrayList<>(activeAlliances)) {
             if (alliance.isExpired() && alliance.isActive()) {
+                UUID clan1Id = alliance.getClan1Id();
+                UUID clan2Id = alliance.getClan2Id();
+                
                 alliance.setActive(false);
                 
-                Clan clan1 = clanManager.getAllClans().stream()
-                    .filter(c -> c.getId().equals(alliance.getClan1Id()))
-                    .findFirst().orElse(null);
-                Clan clan2 = clanManager.getAllClans().stream()
-                    .filter(c -> c.getId().equals(alliance.getClan2Id()))
-                    .findFirst().orElse(null);
+                // ✅ YENİ: allianceClans listelerinden kaldır
+                Clan clan1 = clanManager.getClanById(clan1Id);
+                Clan clan2 = clanManager.getClanById(clan2Id);
+                if (clan1 != null) {
+                    clan1.removeAllianceClan(clan2Id);
+                }
+                if (clan2 != null) {
+                    clan2.removeAllianceClan(clan1Id);
+                }
                 
                 if (clan1 != null && clan2 != null) {
                     Bukkit.broadcastMessage("§7" + clan1.getName() + " ve " + clan2.getName() + 

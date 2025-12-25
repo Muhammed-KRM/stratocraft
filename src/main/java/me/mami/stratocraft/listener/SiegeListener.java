@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -37,8 +38,12 @@ public class SiegeListener implements Listener {
 
     @EventHandler
     public void onSiegeAnitPlace(BlockPlaceEvent event) {
-        // Kuşatma Anıtı - Beacon
-        if (event.getBlock().getType() != Material.BEACON) return;
+        // ✅ ESKİ SİSTEM: Beacon kontrolü (geriye uyumluluk)
+        // YENİ SİSTEM: Savaş Totemi artık StructureActivationListener'da yapı çekirdeği ile aktif ediliyor
+        Material placedType = event.getBlock().getType();
+        if (placedType != Material.BEACON) {
+            return; // Sadece eski beacon sistemi için bu listener çalışır
+        }
 
         // Admin bypass kontrolü
         if (me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(event.getPlayer())) {
@@ -79,7 +84,29 @@ public class SiegeListener implements Listener {
         Block totemBlock = event.getBlock();
         
         // Düşman bölgesine yakın mı? (50 blok)
-        Clan defender = territoryManager.getTerritoryOwner(totemBlock.getLocation());
+        Clan defender = null;
+        
+        // ✅ YENİ: 50 blok yarıçapında tüm klanları kontrol et
+        Location totemLoc = totemBlock.getLocation();
+        double minDistance = Double.MAX_VALUE;
+        
+        for (Clan existingClan : territoryManager.getClanManager().getAllClans()) {
+            if (existingClan == null || existingClan.equals(attacker) || !existingClan.hasCrystal()) continue;
+            
+            Location crystalLoc = existingClan.getCrystalLocation();
+            if (crystalLoc == null || !crystalLoc.getWorld().equals(totemLoc.getWorld())) continue;
+            
+            double distance = totemLoc.distance(crystalLoc);
+            if (distance <= 50.0 && distance < minDistance) {
+                defender = existingClan;
+                minDistance = distance;
+            }
+        }
+        
+        // Eğer 50 blok yakınında klan bulunamadıysa, eski yöntemi kullan
+        if (defender == null) {
+            defender = territoryManager.getTerritoryOwner(totemBlock.getLocation());
+        }
         
         if (defender != null && !defender.equals(attacker)) {
             // Grace Period kontrolü: Yeni kurulan klanlar 24 saat korunur
@@ -93,14 +120,12 @@ public class SiegeListener implements Listener {
                 return;
             }
             
-            // Mesafe kontrolü (50 blok)
-            if (defender.getTerritory() != null && defender.getTerritory().getCenter() != null) {
-                double distance = totemBlock.getLocation().distance(defender.getTerritory().getCenter());
-                if (distance > 50) {
-                    player.sendMessage("§cSavaş Totemi düşman bölgesinin 50 blok yakınında olmalı!");
-                    event.setCancelled(true);
-                    return;
-                }
+            // ✅ YENİ: Mesafe kontrolü zaten yukarıda yapıldı (50 blok yarıçapında klan bulundu)
+            // Eğer defender null ise, 50 blok yakınında klan yok demektir
+            if (defender == null) {
+                player.sendMessage("§cSavaş Totemi düşman bölgesinin 50 blok yakınında olmalı!");
+                event.setCancelled(true);
+                return;
             }
             
             if (!siegeManager.isUnderSiege(defender)) {
@@ -156,47 +181,8 @@ public class SiegeListener implements Listener {
         }
     }
     
-    /**
-     * ✅ YENİ: Savaş Totemi yapısı kontrolü
-     * Yapı: 2 Altın Blok (alt) + 2 Demir Blok (üst)
-     * 
-     * Yapı:
-     *   [IRON_BLOCK] [IRON_BLOCK]  (Y: +1)
-     *   [GOLD_BLOCK] [GOLD_BLOCK]  (Y: 0)
-     */
-    private boolean checkWarTotemStructure(Block center) {
-        Material centerType = center.getType();
-        
-        // Merkez blok Altın veya Demir olmalı
-        if (centerType != Material.GOLD_BLOCK && centerType != Material.IRON_BLOCK) {
-            return false;
-        }
-        
-        // İki senaryo: Altın blok yerleştirildi (alt) veya Demir blok yerleştirildi (üst)
-        Block gold1, gold2, iron1, iron2;
-        
-        if (centerType == Material.GOLD_BLOCK) {
-            // Altın blok yerleştirildi (alt katman)
-            gold1 = center;
-            gold2 = center.getRelative(org.bukkit.block.BlockFace.EAST);
-            iron1 = center.getRelative(org.bukkit.block.BlockFace.UP);
-            iron2 = center.getRelative(org.bukkit.block.BlockFace.UP).getRelative(org.bukkit.block.BlockFace.EAST);
-        } else {
-            // Demir blok yerleştirildi (üst katman)
-            iron1 = center;
-            iron2 = center.getRelative(org.bukkit.block.BlockFace.EAST);
-            gold1 = center.getRelative(org.bukkit.block.BlockFace.DOWN);
-            gold2 = center.getRelative(org.bukkit.block.BlockFace.DOWN).getRelative(org.bukkit.block.BlockFace.EAST);
-        }
-        
-        // Kontrol: 2 Altın + 2 Demir
-        boolean hasGold1 = gold1 != null && gold1.getType() == Material.GOLD_BLOCK;
-        boolean hasGold2 = gold2 != null && gold2.getType() == Material.GOLD_BLOCK;
-        boolean hasIron1 = iron1 != null && iron1.getType() == Material.IRON_BLOCK;
-        boolean hasIron2 = iron2 != null && iron2.getType() == Material.IRON_BLOCK;
-        
-        return hasGold1 && hasGold2 && hasIron1 && hasIron2;
-    }
+    // ✅ KALDIRILDI: Savaş Totemi kontrolü artık StructureActivationListener'da yapılıyor
+    // (Yapı çekirdeği ile aktif ediliyor)
 
     /**
      * ✅ YENİ: Beyaz Bayrak - Pes Etme Sistemi (Çoklu savaş desteği)

@@ -328,6 +328,53 @@ public class ClanManager {
             // YENİ: Klan kristalini temizle
             clan.setCrystalLocation(null);
             
+            // ✅ YENİ: Savaşları temizle - Tüm savaşta olduğu klanlarla savaşı bitir
+            if (plugin != null && plugin.getSiegeManager() != null) {
+                Set<UUID> warringClans = new HashSet<>(clan.getWarringClans());
+                for (UUID warringClanId : warringClans) {
+                    Clan warringClan = getClanById(warringClanId);
+                    if (warringClan != null) {
+                        // Her iki klanın da savaş listesinden kaldır
+                        plugin.getSiegeManager().endWar(clan, warringClan);
+                    }
+                }
+            }
+            
+            // ✅ YENİ: İttifakları temizle - Tüm ittifakları sonlandır
+            if (plugin != null && plugin.getAllianceManager() != null) {
+                Set<UUID> allianceClans = new HashSet<>(clan.getAllianceClans());
+                for (UUID allianceClanId : allianceClans) {
+                    Clan allianceClan = getClanById(allianceClanId);
+                    if (allianceClan != null) {
+                        // İttifakı bul ve sonlandır
+                        List<me.mami.stratocraft.model.Alliance> alliances = 
+                            plugin.getAllianceManager().getAlliances(clan.getId());
+                        for (me.mami.stratocraft.model.Alliance alliance : alliances) {
+                            if (alliance.involvesClan(allianceClanId) && alliance.isActive()) {
+                                // İttifakı sonlandır (karşılıklı, ceza yok)
+                                plugin.getAllianceManager().dissolveAlliance(alliance.getId(), clan.getId());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // ✅ YENİ: Diğer klanların savaş ve ittifak listelerinden bu klanı kaldır
+            UUID disbandedClanId = clan.getId();
+            for (Clan otherClan : getAllClans()) {
+                if (otherClan != null && !otherClan.getId().equals(disbandedClanId)) {
+                    // Savaş listesinden kaldır
+                    if (otherClan.isAtWarWith(disbandedClanId)) {
+                        otherClan.removeWarringClan(disbandedClanId);
+                    }
+                    // İttifak listesinden kaldır
+                    if (otherClan.getAllianceClans().contains(disbandedClanId)) {
+                        otherClan.removeAllianceClan(disbandedClanId);
+                    }
+                }
+            }
+            
             // Klanı listeden çıkar
             clans.remove(clan.getId());
             
