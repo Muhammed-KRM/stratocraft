@@ -1,6 +1,7 @@
 package me.mami.stratocraft.listener;
 
 import me.mami.stratocraft.Main;
+import me.mami.stratocraft.manager.ItemManager;
 import me.mami.stratocraft.manager.TamingManager;
 import me.mami.stratocraft.model.Clan;
 import me.mami.stratocraft.model.Structure;
@@ -17,8 +18,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 
@@ -296,6 +299,58 @@ public class TrainingCoreListener implements Listener {
         }
         
         return null;
+    }
+    
+    /**
+     * ✅ YENİ: Eğitim çekirdeği kırılma event'i
+     * TamingCore (BEACON) kırıldığında TAMING_CORE item'ını drop et
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onTrainingCoreBreak(BlockBreakEvent event) {
+        Block block = event.getBlock();
+        Player player = event.getPlayer();
+        
+        // BEACON bloğu kontrolü
+        if (block.getType() != Material.BEACON) {
+            return;
+        }
+        
+        // TamingCore metadata kontrolü
+        if (!block.hasMetadata("TamingCore")) {
+            return; // Normal BEACON, işlem yok
+        }
+        
+        // ✅ Normal drop'ları iptal et
+        event.setDropItems(false);
+        
+        // ✅ Özel item oluştur (TAMING_CORE item'ı)
+        ItemStack tamingCoreItem = ItemManager.TAMING_CORE != null ? ItemManager.TAMING_CORE.clone() : null;
+        
+        if (tamingCoreItem == null) {
+            // Fallback: Eğer ItemManager.TAMING_CORE null ise, basit bir BEACON item'ı oluştur
+            tamingCoreItem = new ItemStack(Material.HEART_OF_THE_SEA); // TAMING_CORE Material.HEART_OF_THE_SEA kullanıyor
+            org.bukkit.inventory.meta.ItemMeta meta = tamingCoreItem.getItemMeta();
+            if (meta != null) {
+                meta.setDisplayName("§a§lEğitim Çekirdeği");
+                java.util.List<String> lore = new java.util.ArrayList<>();
+                lore.add("§7Mobları eğitmek için çekirdek.");
+                meta.setLore(lore);
+                
+                org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
+                org.bukkit.NamespacedKey customIdKey = new org.bukkit.NamespacedKey(Main.getInstance(), "custom_id");
+                container.set(customIdKey, org.bukkit.persistence.PersistentDataType.STRING, "TAMING_CORE");
+                
+                tamingCoreItem.setItemMeta(meta);
+            }
+        }
+        
+        // ✅ Özel item'ı drop et
+        if (tamingCoreItem != null) {
+            block.getWorld().dropItemNaturally(block.getLocation(), tamingCoreItem);
+        }
+        
+        // ✅ Metadata'yı temizle
+        block.removeMetadata("TamingCore", Main.getInstance());
     }
 }
 

@@ -612,62 +612,15 @@ public class TerritoryListener implements Listener {
      * Tüm özel bloklar için PersistentDataContainer verisini ItemStack'e kopyala
      */
     @EventHandler(priority = EventPriority.HIGH)
+    /**
+     * ✅ DÜZELTME: Yaratıcılık modunda özel bloklara sağ tık yapınca item kaybolma sorunu
+     * Bu özellik tamamen kaldırıldı - artık hiçbir özel blokta bu özellik çalışmayacak
+     */
     public void onCreativeCopy(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        if (event.getPlayer().getGameMode() != org.bukkit.GameMode.CREATIVE) return;
-        
-        Block block = event.getClickedBlock();
-        if (block == null) return;
-        
-        Material type = block.getType();
-        ItemStack item = new ItemStack(type);
-        org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
-        if (meta == null) return;
-        
-        org.bukkit.persistence.PersistentDataContainer container = meta.getPersistentDataContainer();
-        boolean hasCustomData = false;
-        
-        // ✅ Klan çiti kontrolü
-        // ✅ DÜZELTME: Sadece boolean bayrak tutuluyor (clanId yok)
-        if (type == Material.OAK_FENCE) {
-            if (me.mami.stratocraft.util.CustomBlockData.isClanFence(block)) {
-                org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "clan_fence");
-                container.set(key, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
-                hasCustomData = true;
-            }
-        }
-        
-        // ✅ Yapı çekirdeği kontrolü - KALDIRILDI (kullanıcı isteği)
-        // Yapı çekirdeğine sağ tıklayınca item verilmesi özelliği kaldırıldı
-        
-        // ✅ Tuzak çekirdeği kontrolü
-        if (type == Material.LODESTONE) {
-            UUID ownerId = me.mami.stratocraft.util.CustomBlockData.getTrapCoreOwner(block);
-            if (ownerId != null) {
-                org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "trap_core");
-                container.set(key, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
-                org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey("stratocraft", "trap_core_owner");
-                container.set(ownerKey, org.bukkit.persistence.PersistentDataType.STRING, ownerId.toString());
-                hasCustomData = true;
-            }
-        }
-        
-        // ✅ Klan bankası kontrolü
-        if (type == Material.ENDER_CHEST) {
-            UUID clanId = me.mami.stratocraft.util.CustomBlockData.getClanBankData(block);
-            if (clanId != null) {
-                org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("stratocraft", "clan_bank");
-                container.set(key, org.bukkit.persistence.PersistentDataType.STRING, clanId.toString());
-                hasCustomData = true;
-            }
-        }
-        
-        // ✅ Özel blok verisi varsa ItemStack'e ekle
-        if (hasCustomData) {
-            item.setItemMeta(meta);
-            event.getPlayer().getInventory().setItemInMainHand(item);
-            event.setCancelled(true);
-        }
+        // ✅ ÖZELLİK KALDIRILDI: Yaratıcılık modunda özel bloklara sağ tık yapınca item verme özelliği kaldırıldı
+        // Artık hiçbir özel blokta (klan çiti, yapı çekirdeği, tuzak çekirdeği, klan bankası, eğitim çekirdeği)
+        // yaratıcılık modunda sağ tık yapınca elindeki item değişmeyecek
+        return; // Metod devre dışı bırakıldı
     }
     
     /**
@@ -795,6 +748,19 @@ public class TerritoryListener implements Listener {
         // Çit ve End Crystal için özel kontroller var, burada kontrol etme
         if (block.getType() == Material.OAK_FENCE || block.getType() == Material.END_CRYSTAL) {
             return; // Özel metodlar zaten kontrol ediyor
+        }
+        
+        // ✅ YENİ: BEACON yerleştirme kontrolü - Training Arena yapısı için izin ver
+        if (block.getType() == Material.BEACON) {
+            // Training Arena yapısı içinde BEACON yerleştirmeye izin ver
+            // StructureActivationListener zaten kontrol ediyor, burada engelleme
+            Block below = block.getRelative(org.bukkit.block.BlockFace.DOWN);
+            if (below.getType() == Material.ENCHANTING_TABLE) {
+                // Enchanting Table'ın üstüne BEACON yerleştiriliyor (Training Arena)
+                // Bu durumda izin ver
+                return;
+            }
+            // Diğer BEACON yerleştirmeleri için normal kontrol devam eder
         }
         
         // ✅ YENİ: TNT yerleştirme kontrolü (grief protection)

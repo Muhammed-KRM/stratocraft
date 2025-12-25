@@ -45,6 +45,16 @@ public class SiegeListener implements Listener {
             return; // Sadece eski beacon sistemi için bu listener çalışır
         }
 
+        // ✅ DÜZELTME: Training Arena için BEACON yerleştirmeye izin ver
+        // Training Arena yapısı içinde BEACON (TamingCore) otomatik yerleştiriliyor
+        // veya manuel yerleştirilebilir
+        Block below = event.getBlock().getRelative(org.bukkit.block.BlockFace.DOWN);
+        if (below.getType() == Material.ENCHANTING_TABLE) {
+            // Enchanting Table'ın üstüne BEACON yerleştiriliyor (Training Arena)
+            // Bu durumda izin ver, eski savaş totemi kontrolünü atla
+            return;
+        }
+
         // Admin bypass kontrolü
         if (me.mami.stratocraft.util.ListenerUtil.hasAdminBypass(event.getPlayer())) {
             return; // Admin bypass yetkisi varsa korumaları atla
