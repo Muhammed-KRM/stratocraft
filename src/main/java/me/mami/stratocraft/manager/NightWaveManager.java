@@ -142,6 +142,7 @@ public class NightWaveManager {
     
     /**
      * Gece kontrolü yap ve dalga başlat
+     * ✅ DÜZELTME: Gece/güneş kontrolü mantığı düzeltildi
      */
     private void checkAndStartWaves() {
         for (World world : Bukkit.getWorlds()) {
@@ -150,8 +151,11 @@ public class NightWaveManager {
             }
             
             long time = world.getTime();
-            // ✅ CONFIG: Config'den zamanları kullan
-            boolean isNight = time >= startTime || time < endTime;
+            
+            // ✅ DÜZELTME: Gece kontrolü
+            // Gece: time >= 18000 (gece yarısından sonra, 18000-24000 arası)
+            // endTime = 0 olduğu için time < 0 hiçbir zaman true olmaz
+            boolean isNight = time >= startTime; // 18000-24000 arası gece
             
             // Gece yarısı kontrolü (startTime ± 100 tick tolerans)
             if (isNight && !activeWaves.getOrDefault(world, false)) {
@@ -161,10 +165,12 @@ public class NightWaveManager {
                 }
             }
             
-            // Güneş doğuşu kontrolü (endTime ± 100 tick tolerans)
-            if (!isNight && activeWaves.getOrDefault(world, false)) {
-                // Güneş doğdu mu? (endTime ± 100)
-                if (time >= (endTime - 100) && time <= (endTime + 100)) {
+            // ✅ DÜZELTME: Güneş doğuşu kontrolü
+            // Güneş doğuşu: time = 0 (veya 0'a yakın, 0-100 arası)
+            // Gece bitti: time < startTime (18000'den küçük) ve time <= 100
+            if (activeWaves.getOrDefault(world, false)) {
+                // Gece bitti mi? (güneş doğdu mu?)
+                if (time < startTime && time <= 100) {
                     stopWave(world);
                 }
             }
@@ -233,6 +239,7 @@ public class NightWaveManager {
         }
         
         // ✅ CONFIG: Config'den spawn interval'ları kullan
+        // ✅ DÜZELTME: Spawn interval mantığı basitleştirildi
         BukkitRunnable spawnTask = new BukkitRunnable() {
             private long waveTick = 0;
             
@@ -244,21 +251,24 @@ public class NightWaveManager {
                     return;
                 }
                 
-                waveTick += spawnIntervalInitial; // İlk interval
+                // ✅ DÜZELTME: waveTick'i task interval'ına göre artır
+                waveTick += spawnIntervalInitial;
                 
-                // ✅ OPTİMİZE: Her seferinde güncel klan listesini al (thread-safe)
-                List<Clan> currentClans = new ArrayList<>(territoryManager.getClanManager().getAllClans());
+                // ✅ DÜZELTME: Spawn interval hesapla
+                // İlk speedIncreaseTime normal interval, sonra hızlanır
+                long spawnInterval = waveTick < speedIncreaseTime ? spawnIntervalInitial : spawnIntervalFast;
                 
-                // Her spawn interval'da yeni spawn
-                for (Clan clan : currentClans) {
-                    if (clan.getCrystalLocation() == null || 
-                        !clan.getCrystalLocation().getWorld().equals(world)) {
-                        continue;
-                    }
+                // ✅ DÜZELTME: Her spawn interval'da spawn yap
+                if (waveTick % spawnInterval == 0) {
+                    // ✅ OPTİMİZE: Her seferinde güncel klan listesini al (thread-safe)
+                    List<Clan> currentClans = new ArrayList<>(territoryManager.getClanManager().getAllClans());
                     
-                    // ✅ CONFIG: Spawn hızı artışı: İlk speedIncreaseTime normal, sonra hızlanır
-                    long spawnInterval = waveTick < speedIncreaseTime ? spawnIntervalInitial : spawnIntervalFast;
-                    if (waveTick % spawnInterval == 0) {
+                    for (Clan clan : currentClans) {
+                        if (clan.getCrystalLocation() == null || 
+                            !clan.getCrystalLocation().getWorld().equals(world)) {
+                            continue;
+                        }
+                        
                         spawnMobsForClan(clan);
                     }
                 }
@@ -308,11 +318,13 @@ public class NightWaveManager {
         
         Random random = new Random();
         
-        // ✅ YENİ: İlk spawn her zaman boss (garanti)
+        // ✅ YENİ: İlk spawn her zaman boss (garanti) - bossManager null kontrolü
         boolean bossSpawned = false;
         if (bossManager != null) {
             spawnBossForClan(clan, spawnLoc);
             bossSpawned = true;
+        } else {
+            plugin.getLogger().warning("[NightWaveManager] BossManager null, boss spawn edilemedi: " + clan.getName());
         }
         
         // ✅ YENİ: Ekstra spawnlar (klan yaşına göre)
@@ -331,7 +343,8 @@ public class NightWaveManager {
             }
         }
         
-        // ✅ YENİ: Eğer boss spawn edilmediyse ve bossManager varsa, bir tane daha dene
+        // ✅ DÜZELTME: Eğer boss spawn edilmediyse ve bossManager varsa, bir tane daha dene
+        // Ama bossManager null ise uyarı ver (zaten yukarıda verildi)
         if (!bossSpawned && bossManager != null && random.nextDouble() < 0.5) {
             spawnBossForClan(clan, spawnLoc);
         }

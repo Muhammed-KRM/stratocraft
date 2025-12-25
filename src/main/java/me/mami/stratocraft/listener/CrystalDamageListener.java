@@ -81,22 +81,82 @@ public class CrystalDamageListener implements Listener {
     
     /**
      * Kristal entity'sinden klanı bul
+     * ✅ DÜZELTME: TerritoryListener'daki mantık kullanıldı - PDC, metadata, location kontrolü eklendi
      */
     private Clan findClanByCrystal(EnderCrystal crystal) {
         if (plugin.getTerritoryManager() == null || plugin.getClanManager() == null) {
             return null;
         }
         
-        // Tüm klanları kontrol et
-        for (Clan clan : plugin.getClanManager().getAllClans()) {
-            if (clan == null || !clan.hasCrystal()) continue;
-            
-            if (clan.getCrystalEntity() != null && 
-                clan.getCrystalEntity().getUniqueId().equals(crystal.getUniqueId())) {
+        Location crystalLoc = crystal.getLocation();
+        if (crystalLoc == null) return null;
+        
+        // ✅ YENİ: 1. PDC kontrolü (CustomBlockData - kristal altındaki blok)
+        org.bukkit.block.Block blockBelow = crystalLoc.clone().add(0, -1, 0).getBlock();
+        UUID clanIdFromPDC = me.mami.stratocraft.util.CustomBlockData.getClanCrystalData(blockBelow);
+        if (clanIdFromPDC != null) {
+            Clan clan = plugin.getClanManager().getClan(clanIdFromPDC);
+            if (clan != null) {
+                plugin.getLogger().info("[CrystalDamageListener] PDC'den klan bulundu: " + clan.getName());
+                // ✅ ÖNEMLİ: Entity referansını güncelle (sunucu restart sonrası)
+                if (clan.getCrystalEntity() == null || !clan.getCrystalEntity().equals(crystal)) {
+                    clan.setCrystalEntity(crystal);
+                }
                 return clan;
             }
         }
         
+        // ✅ YENİ: 2. Metadata kontrolü
+        me.mami.stratocraft.config.TerritoryConfig territoryConfig = plugin.getTerritoryConfig();
+        if (territoryConfig != null) {
+            String metadataKey = territoryConfig.getCrystalMetadataKey();
+            if (crystal.hasMetadata(metadataKey)) {
+                // Metadata var, tüm klanları kontrol et
+                for (Clan clan : plugin.getClanManager().getAllClans()) {
+                    if (clan == null || !clan.hasCrystal()) continue;
+                    
+                    Location clanCrystalLoc = clan.getCrystalLocation();
+                    if (clanCrystalLoc != null &&
+                        clanCrystalLoc.getBlockX() == crystalLoc.getBlockX() &&
+                        clanCrystalLoc.getBlockY() == crystalLoc.getBlockY() &&
+                        clanCrystalLoc.getBlockZ() == crystalLoc.getBlockZ()) {
+                        plugin.getLogger().info("[CrystalDamageListener] Metadata + Location ile klan bulundu: " + clan.getName());
+                        // ✅ ÖNEMLİ: Entity referansını güncelle
+                        if (clan.getCrystalEntity() == null || !clan.getCrystalEntity().equals(crystal)) {
+                            clan.setCrystalEntity(crystal);
+                        }
+                        return clan;
+                    }
+                }
+            }
+        }
+        
+        // ✅ YENİ: 3. Entity UUID kontrolü (tüm klanlar)
+        for (Clan clan : plugin.getClanManager().getAllClans()) {
+            if (clan == null || !clan.hasCrystal()) continue;
+            
+            // UUID eşleşmesi
+            if (clan.getCrystalEntity() != null && 
+                clan.getCrystalEntity().getUniqueId().equals(crystal.getUniqueId())) {
+                plugin.getLogger().info("[CrystalDamageListener] UUID eşleşmesi ile klan bulundu: " + clan.getName());
+                return clan;
+            }
+            
+            // ✅ YENİ: 4. Location eşleşmesi (entity referansı null olabilir)
+            Location clanCrystalLoc = clan.getCrystalLocation();
+            if (clanCrystalLoc != null &&
+                clanCrystalLoc.getBlockX() == crystalLoc.getBlockX() &&
+                clanCrystalLoc.getBlockY() == crystalLoc.getBlockY() &&
+                clanCrystalLoc.getBlockZ() == crystalLoc.getBlockZ() &&
+                clanCrystalLoc.getWorld().equals(crystalLoc.getWorld())) {
+                plugin.getLogger().info("[CrystalDamageListener] Location eşleşmesi ile klan bulundu: " + clan.getName());
+                // ✅ ÖNEMLİ: Entity referansını güncelle (sunucu restart sonrası)
+                clan.setCrystalEntity(crystal);
+                return clan;
+            }
+        }
+        
+        plugin.getLogger().info("[CrystalDamageListener] Klan bulunamadı - Normal end crystal olabilir");
         return null;
     }
     

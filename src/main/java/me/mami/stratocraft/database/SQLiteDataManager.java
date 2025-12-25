@@ -1377,14 +1377,11 @@ public class SQLiteDataManager {
                 }
             }
             
-            // JSON formatı denemesi (son çare)
-            try {
-                return gson.fromJson(locationStr, org.bukkit.Location.class);
-            } catch (Exception jsonEx) {
-                // JSON başarısız, format hatası
-                plugin.getLogger().warning("Location deserialize hatası: " + locationStr + " - Geçersiz format (ne ; ne : ne JSON)");
-                return null;
-            }
+            // ✅ DÜZELTME: JSON formatı kaldırıldı - Gson Location deserialize hatası veriyor
+            // (Reference#referent field'ına erişemiyor)
+            // Sadece string formatı kullan (; veya : ile ayrılmış)
+            plugin.getLogger().warning("Location deserialize hatası: " + locationStr + " - Geçersiz format (ne ; ne : formatı)");
+            return null;
         } catch (Exception e) {
             plugin.getLogger().warning("Location deserialize hatası: " + locationStr + " - " + e.getMessage());
             e.printStackTrace();

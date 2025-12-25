@@ -1193,6 +1193,32 @@ public class TerritoryListener implements Listener {
                             // ✅ YENİ: Y ekseni sınırlarını güncelle
                             territoryData.updateYBounds();
                             
+                            // ✅ DÜZELTME: Çitlerden merkez hesapla (yanlış yere çizme sorunu)
+                            if (!fenceLocations.isEmpty()) {
+                                double sumX = 0, sumY = 0, sumZ = 0;
+                                for (org.bukkit.Location fenceLoc : fenceLocations) {
+                                    sumX += fenceLoc.getX();
+                                    sumY += fenceLoc.getY();
+                                    sumZ += fenceLoc.getZ();
+                                }
+                                
+                                org.bukkit.Location calculatedCenter = new org.bukkit.Location(
+                                    pending.crystalLoc.getWorld(),
+                                    sumX / fenceLocations.size(),
+                                    sumY / fenceLocations.size(),
+                                    sumZ / fenceLocations.size()
+                                );
+                                
+                                // Territory center'ı güncelle
+                                territoryData.setCenter(calculatedCenter);
+                                
+                                // Territory center'ı da güncelle (geriye uyumluluk için)
+                                me.mami.stratocraft.model.Territory territory = finalNewClan.getTerritory();
+                                if (territory != null) {
+                                    territory.setCenter(calculatedCenter);
+                                }
+                            }
+                            
                             // Main thread'e geri dön ve TerritoryData'yı kaydet
                             org.bukkit.Bukkit.getScheduler().runTask(
                                 me.mami.stratocraft.Main.getInstance(),
@@ -1981,6 +2007,25 @@ public class TerritoryListener implements Listener {
                 " @ " + crystalLoc.getBlockX() + "," + crystalLoc.getBlockY() + "," + crystalLoc.getBlockZ());
         }
         
+        // ✅ YENİ: 1. PDC kontrolü (CustomBlockData - kristal altındaki blok)
+        if (crystalLoc != null) {
+            org.bukkit.block.Block blockBelow = crystalLoc.clone().add(0, -1, 0).getBlock();
+            UUID clanIdFromPDC = me.mami.stratocraft.util.CustomBlockData.getClanCrystalData(blockBelow);
+            if (clanIdFromPDC != null) {
+                Clan clan = territoryManager.getClanManager().getClan(clanIdFromPDC);
+                if (clan != null) {
+                    if (plugin != null) {
+                        plugin.getLogger().info("[KRISTAL BULMA] PDC'den klan bulundu: " + clan.getName());
+                    }
+                    // ✅ ÖNEMLİ: Entity referansını güncelle (sunucu restart sonrası)
+                    if (clan.getCrystalEntity() == null || !clan.getCrystalEntity().equals(crystal)) {
+                        clan.setCrystalEntity(crystal);
+                    }
+                    return clan;
+                }
+            }
+        }
+        
         // ✅ DÜZELTME: Metadata kontrolü opsiyonel - metadata yoksa location kontrolü yeterli
         boolean hasMetadata = false;
         if (territoryConfig != null) {
@@ -2000,7 +2045,7 @@ public class TerritoryListener implements Listener {
                     ", crystalEntity: " + (clan.getCrystalEntity() != null ? clan.getCrystalEntity().getUniqueId() : "null"));
             }
             
-            // Önce entity referansına bak
+            // ✅ YENİ: 2. Entity referansına bak
             if (clan.getCrystalEntity() != null && clan.getCrystalEntity().equals(crystal)) {
                 if (plugin != null) {
                     plugin.getLogger().info("[KRISTAL BULMA] Entity referansı ile bulundu: " + clan.getName());
@@ -2008,9 +2053,16 @@ public class TerritoryListener implements Listener {
                 return clan;
             }
             
-            // Entity referansı null ise location kontrolü yap
-            // ✅ DÜZELTME: hasCrystal() kontrolü gereksiz - crystalLocation varsa yeterli
-            // (hasCrystal() metodu zaten crystalLocation kontrolü yapıyor)
+            // ✅ YENİ: 3. UUID eşleşmesi
+            if (clan.getCrystalEntity() != null && 
+                clan.getCrystalEntity().getUniqueId().equals(crystal.getUniqueId())) {
+                if (plugin != null) {
+                    plugin.getLogger().info("[KRISTAL BULMA] UUID eşleşmesi ile bulundu: " + clan.getName());
+                }
+                return clan;
+            }
+            
+            // ✅ YENİ: 4. Location kontrolü (entity referansı null olabilir)
             Location clanCrystalLoc = clan.getCrystalLocation();
             if (clanCrystalLoc != null) {
                 // Location'ları karşılaştır (blok seviyesinde)
