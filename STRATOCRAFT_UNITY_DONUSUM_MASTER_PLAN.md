@@ -133,719 +133,8 @@ Bu parçaları indireceğiz. Bunlar projenin motorunu oluşturacak.
 
 Eski "Özellik Odaklı" yapı ile yeni "Motor Odaklı" yapının birleşimi.
 
-```text
-Assets/_Stratocraft/
-├── _Bootstrap/
-│   ├── GameEntry.cs                    (Oyun başlatıcı - FAZ 1)
-│   ├── NetworkBootstrap.cs             (FishNet ayarları - FAZ 1)
-│   └── ServerConfig.json               (Port, Seed, MaxPlayers - FAZ 1)
-│
-├── Data/                               (ScriptableObjects - Data-Driven Design)
-│   ├── Biomes/                         (FAZ 3)
-│   │   ├── DesertDef.asset             (Çöl biyomu - FAZ 3)
-│   │   ├── ForestDef.asset             (Orman biyomu - FAZ 3)
-│   │   └── MountainDef.asset            (Dağ biyomu - FAZ 3)
-│   │
-│   ├── Items/                          (FAZ 4)
-│   │   ├── Resources/                  (FAZ 4 - Titanium.asset, RedDiamond.asset)
-│   │   ├── Weapons/                    (FAZ 4 - Sword_L1.asset, Sword_L5.asset)
-│   │   ├── Armors/                     (FAZ 4 - ArmorSet_L1.asset)
-│   │   ├── Tools/                      (FAZ 4 - TrapCore.asset, TamingCore.asset)
-│   │   └── Structures/                 (FAZ 4 - ClanCrystal.asset, StructureCore.asset)
-│   │
-│   ├── Recipes/                        (FAZ 4)
-│   │   ├── Rituals/                    (FAZ 4 - FireballBattery.asset, LightningBattery.asset)
-│   │   ├── Crafting/                   (FAZ 4 - ADIM 1.6 - CraftingRecipe.cs ScriptableObject)
-│   │   │   └── WeaponRecipes.asset      (FAZ 4 - Örnek recipe asset'leri)
-│   │   ├── Cooking/                    (FAZ 4 - ADIM 1.14 - CookingRecipe.cs ScriptableObject)
-│   │   └── Smelting/                   (FAZ 4 - ADIM 1.24 - SmeltingRecipe.cs ScriptableObject)
-│   │
-│   ├── Mobs/                           (FAZ 5)
-│   │   ├── Normal/                     (FAZ 5 - GoblinDef.asset, OrcDef.asset)
-│   │   ├── Bosses/                     (FAZ 5 - TitanGolemDef.asset, DragonDef.asset)
-│   │   └── Rideable/                   (FAZ 7 - DragonRideable.asset, TRexRideable.asset)
-│   │
-│   ├── Missions/                       (FAZ 8)
-│   │   ├── KillMob_Easy.asset          (FAZ 8)
-│   │   ├── CollectItem_Medium.asset    (FAZ 8)
-│   │   └── VisitLocation_Hard.asset    (FAZ 8)
-│   │
-│   ├── Disasters/                      (FAZ 5)
-│   │   ├── CatastrophicTitan.asset     (FAZ 5)
-│   │   ├── SolarFlare.asset            (FAZ 5)
-│   │   └── Earthquake.asset             (FAZ 5)
-│   │
-│   ├── Traps/                          (FAZ 5)
-│   │   ├── FireTrap.asset              (FAZ 5)
-│   │   ├── LightningTrap.asset         (FAZ 5)
-│   │   └── PoisonTrap.asset            (FAZ 5)
-│   │
-│   ├── Furniture/                      (FAZ 4 - ADIM 1.8 - Furniture Tanımları)
-│   │   └── FurnitureDefinition.cs       (ScriptableObject - Bed, Chair, Table, Chest, vb.)
-│   │
-│   ├── Enchantments/                   (FAZ 4 - ADIM 1.9 - Enchantment Tanımları)
-│   │   └── EnchantmentDefinition.cs     (ScriptableObject - Unbreaking, Fortune, DamageBoost, vb.)
-│   │
-│   ├── NPCs/                           (FAZ 5 - ADIM 1.10 - NPC Tanımları)
-│   │   └── NPCDefinition.cs            (ScriptableObject - Blacksmith, Merchant, Farmer, vb.)
-│   │
-│   ├── Mounts/                         (FAZ 7 - ADIM 1.11 - Binek Tanımları)
-│   │   ├── SaddleDefinition.cs         (ScriptableObject - Eğer tanımları)
-│   │   └── MountArmorDefinition.cs     (ScriptableObject - Binek zırh tanımları)
-│   │
-│   ├── Bosses/                         (FAZ 5 - ADIM 1.12 - Boss Tanımları)
-│   │   ├── BossArenaDefinition.cs      (ScriptableObject - Arena tanımları)
-│   │   └── BossLootTableDefinition.cs  (ScriptableObject - Loot table tanımları)
-│   │
-│   ├── Mobs/                           (FAZ 5 - ADIM 1.13 - Mob Tanımları)
-│   │   ├── MobClassDefinition.cs       (ScriptableObject - Warrior, Mage, Archer, vb.)
-│   │   └── MobArmorDefinition.cs      (ScriptableObject - Mob zırh tanımları)
-│   │
-│   ├── Food/                           (FAZ 4 - ADIM 1.14 - Yemek Tanımları)
-│   │   ├── FoodDefinition.cs            (ScriptableObject - Yemek tanımları)
-│   │   └── CookingRecipe.cs            (ScriptableObject - Pişirme tarifleri)
-│   │
-│   ├── StatusEffects/                  (FAZ 4 - ADIM 1.15 - Durum Efekt Tanımları)
-│   │   ├── StatusEffectDefinition.cs    (ScriptableObject - Poison, Burn, Freeze, vb.)
-│   │   ├── DiseaseDefinition.cs       (ScriptableObject - Hastalık tanımları)
-│   │   └── CureItemDefinition.cs       (ScriptableObject - İyileştirme item tanımları)
-│   │
-│   ├── Dungeons/                       (FAZ 5 - ADIM 1.17 - Zindan Tanımları)
-│   │   └── DungeonDefinition.cs        (ScriptableObject - Zindan tanımları)
-│   │
-│   ├── Spells/                         (FAZ 4 - ADIM 1.18 - Büyü Tanımları)
-│   │   └── SpellDefinition.cs          (ScriptableObject - Fire, Ice, Lightning, vb.)
-│   │
-│   ├── Tech/                           (FAZ 8 - ADIM 1.19 - Teknoloji Tanımları)
-│   │   └── TechNodeDefinition.cs       (ScriptableObject - Teknoloji düğüm tanımları)
-│   │
-│   ├── Vehicles/                       (FAZ 7 - ADIM 1.20 - Araç Tanımları)
-│   │   └── VehicleDefinition.cs        (ScriptableObject - Cart, Boat, Airship)
-│   │
-│   ├── Pets/                           (FAZ 5 - ADIM 1.21 - Pet Tanımları)
-│   │   └── PetDefinition.cs            (ScriptableObject - Pet tanımları)
-│   │
-│   ├── Crops/                          (FAZ 4 - ADIM 1.22 - Bitki Tanımları)
-│   │   └── CropDefinition.cs           (ScriptableObject - Bitki tanımları)
-│   │
-│   ├── Fish/                           (FAZ 4 - ADIM 1.23 - Balık Tanımları)
-│   │   └── FishDefinition.cs           (ScriptableObject - Balık tanımları)
-│   │
-│   ├── Chests/                         (FAZ 4 - ADIM 1.25 - Sandık Tanımları)
-│   │   └── ChestDefinition.cs           (ScriptableObject - Sandık tanımları)
-│   │
-│   ├── Blocks/                         ✅ YENİ (FAZ 1-2 GÜNCELLEME)
-│   │   ├── BlockType.cs                 ✅ YENİ (50+ blok tipi enum)
-│   │   ├── BlockDefinition.cs           ✅ YENİ (ScriptableObject - blok özellikleri)
-│   │   └── BlockDatabase.cs             ✅ YENİ (Merkezi blok veritabanı - Singleton)
-│   │
-│   └── Config/                         (FAZ 8)
-│       ├── GameBalanceConfig.asset     (FAZ 8)
-│       ├── DisasterConfig.asset        (FAZ 8)
-│       ├── TerritoryConfig.asset       (FAZ 8)
-│       ├── ClanProtectionConfig.asset  (FAZ 8)
-│       ├── SiegeConfig.asset           (FAZ 8)
-│       ├── BossConfig.asset            (FAZ 8)
-│       ├── MobConfig.asset              (FAZ 8)
-│       └── EconomyConfig.asset         (FAZ 8)
-│
-├── 3rdParty/                           ✅ YENİ (FAZ 1-2 GÜNCELLEME)
-│   └── ScrawkMarchingCubes/            ✅ YENİ (Scrawk'ın orijinal kodu - GitHub'dan indirilecek)
-│       ├── MarchingCubesGPU/           ✅ YENİ (Scrawk'ın ana klasörü)
-│       │   ├── Scripts/
-│       │   │   ├── MarchingCubesGPU.cs          ✅ YENİ (Scrawk'ın orijinal kodu - değiştirilmedi)
-│       │   │   ├── MarchingCubesGPU_4DNoise.cs ✅ YENİ (4D noise animasyonlu versiyon - değiştirilmedi)
-│       │   │   ├── MarchingCubesTables.cs      ✅ YENİ (Marching Cubes tabloları - CubeEdgeFlags, TriangleConnectionTable)
-│       │   │   └── MarchingCubesClassic.cs     ⚠️ (Opsiyonel - referans için)
-│       │   └── Shaders/
-│       │       ├── DrawStructuredBuffer.shader ✅ YENİ (Graphics.DrawProcedural için shader)
-│       │       ├── MarchingCubes.compute       ✅ YENİ (Ana marching cubes algoritması)
-│       │       ├── Normals.compute             ✅ YENİ (Normal hesaplama)
-│       │       ├── ClearBuffer.compute         ✅ YENİ (Buffer temizleme)
-│       │       ├── ImprovedPerlinNoise2D.compute ✅ YENİ (2D Perlin noise)
-│       │       ├── ImprovedPerlinNoise3D.compute ✅ YENİ (3D Perlin noise)
-│       │       └── ImprovedPerlinNoise4D.compute ✅ YENİ (4D Perlin noise - animasyon için)
-│       └── ImprovedPerlinNoise/        ✅ YENİ (Perlin noise compute shader ve helper class)
-│           ├── Scripts/
-│           │   └── GPUPerlinNoise.cs   ✅ YENİ (ZORUNLU - Perlin noise texture'larını oluşturan class - ImprovedPerlinNoiseProject namespace)
-│           ├── ImprovedPerlinNoise.compute ✅ YENİ (Eğer varsa - Perlin noise compute shader - 2D/3D/4D)
-│           └── ImprovedPerlinNoise.cs      ✅ YENİ (Eğer varsa - Perlin noise helper class - texture oluşturma)
-│
-├── Engine/                             (GPU Voxel Motoru - Scrawk Entegrasyonu)
-│   ├── ComputeShaders/
-│   │   ├── TerrainDensity.compute      (Zemin & Biyomlar & Mağaralar - FAZ 1 - GÜNCELLENDİ: Offset + Seed desteği eklendi)
-│   │   ├── WaterSim.compute            (Su akışı - opsiyonel - FAZ 3)
-│   │   ├── NoiseLib.compute            (FastNoiseLite - FAZ 1)
-│   │   ├── DualContouring.compute      (Dual Contouring - opsiyonel - FAZ 1)
-│   │   └── TriplanarTexture.compute    (Triplanar texturing - FAZ 1)
-│   │
-│   ├── Shaders/
-│   │   └── TerrainShader.shader        (Triplanar + material blending - FAZ 1)
-│   │
-│   ├── Core/
-│   │   ├── ScrawkBridge.cs             ✅ YENİ (Sonsuz dünya entegrasyon katmanı - FAZ 1-2 GÜNCELLEME)
-│   │   │   ├── GenerateChunkMesh()      ✅ YENİ (Offset + LOD desteği ile chunk mesh oluşturma)
-│   │   │   ├── SetChunkOffset()        ✅ YENİ (Sonsuz dünya için offset ayarlama)
-│   │   │   ├── SetDensityData()        ✅ YENİ (Density data'yı GPU'ya yükleme)
-│   │   │   ├── InitializeMarchingCubesTables() ✅ YENİ (MarchingCubesTables buffer'larını oluşturma)
-│   │   │   ├── SetMarchingCubesTables() ✅ YENİ (MarchingCubesTables buffer'larını compute shader'a gönderme)
-│   │   │   ├── SetLODLevel()           ✅ YENİ (LOD seviyesini ayarlama)
-│   │   │   ├── ReadbackMeshData()      ✅ YENİ (GPU Readback - fizik için mesh verilerini CPU'ya çekme)
-│   │   │   ├── ReadbackMeshAsync()     ✅ YENİ (Async GPU Readback - performanslı)
-│   │   │   └── ReadbackMeshSync()      ✅ YENİ (Sync GPU Readback - fallback)
-│   │   ├── ChunkManager.cs             (Sonsuz dünya yönetimi - FAZ 1 - GPU fallback sistemi ile - GÜNCELLENDİ: ScrawkBridge entegrasyonu, CalculateDensityGPU, ReadbackMeshFromGPU)
-│   │   │   ├── CalculateDensityJob     (CPU fallback density hesaplama - Job System + Burst - FAZ 1)
-│   │   │   ├── BuildMeshJob            (CPU fallback mesh building - Job System + Burst - FAZ 1)
-│   │   │   ├── GenerateChunkGPU()      ✅ GÜNCELLENDİ (ScrawkBridge kullanarak sonsuz dünya entegrasyonu - FAZ 1-2 GÜNCELLEME)
-│   │   │   ├── CalculateDensityGPU()  ✅ YENİ (GPU'da density hesaplama - offset desteği ile - FAZ 1-2 GÜNCELLEME)
-│   │   │   ├── ReadbackMeshFromGPU()   ✅ YENİ (GPU Readback - mesh verilerini CPU'ya çekme, MeshCollider oluşturma - FAZ 1-2 GÜNCELLEME)
-│   │   │   ├── AddDensityAtPoint()     (Blok yerleştirme - FAZ 3)
-│   │   │   ├── RemoveDensityAtPoint()  (Blok kırma - FAZ 3)
-│   │   │   ├── SetBlockType() / GetBlockType() (Blok tipi yönetimi - FAZ 3 - GÜNCELLENDİ: BlockDatabase entegrasyonu)
-│   │   │   ├── OnChunkGenerated event  (OreSpawner, VoxelTreeGenerator için - FAZ 3)
-│   │   │   ├── GetWorldSeed()          (Deterministik rastgelelik - FAZ 3)
-│   │   │   ├── GetActiveChunkCoords()  ✅ YENİ (Material-Based Batching için - FAZ 1-2 GÜNCELLEME)
-│   │   │   ├── GetChunkWorldPosition() ✅ YENİ (FlowFieldSystem ve VirtualEntitySystem için - FAZ 5)
-│   │   │   ├── GetHeightAtPosition() ✅ YENİ (VirtualEntitySystem için - ScrawkBridge entegrasyonu ile uyumlu - FAZ 5)
-│   │   │   ├── IsChunkLoaded() ✅ YENİ (VirtualEntitySystem için - FAZ 5)
-│   │   │   ├── CalculateHeightFromNoise() ✅ YENİ (Chunk yüklü değilse yükseklik hesaplama - FAZ 5)
-│   │   │   ├── CalculateHeightFromDensityData() ✅ YENİ (Density data'dan yükseklik hesaplama - FAZ 5)
-│   │   │   ├── CalculateChunkAverageHeight() ✅ YENİ (BlockDatabase için - FAZ 1-2 GÜNCELLEME)
-│   │   │   ├── CalculateChunkAverageSlope() ✅ YENİ (BlockDatabase için - FAZ 1-2 GÜNCELLEME)
-│   │   │   ├── GetDensityDataForChunk() ✅ GÜNCELLENDİ (Cache'den density data alma - GPU modunda Generator null olabilir - FAZ 1-2 GÜNCELLEME)
-│   │   │   ├── ✅ Frustum + Occlusion Culling (görünmeyen chunk'ları filtrele - FAZ 1-2 GÜNCELLEME)
-│   │   │   ├── ✅ SVO/SVDAG (voxel verilerini sıkıştır - %80-90 bellek azalması - FAZ 1-2 GÜNCELLEME)
-│   │   │   └── ✅ Material-Based Batching (aynı materyalli chunk'ları birleştir - FAZ 1-2 GÜNCELLEME)
-│   │   ├── MarchingCubesGPU.cs         ✅ NOT: Scrawk'ın orijinal kodu (3rdParty/ScrawkMarchingCubes/Scripts/ altında - değiştirilmedi)
-│   │   │   └── ✅ Scrawk'ın orijinal özellikleri korunuyor: Graphics.DrawProcedural, Smooth Normals, Perlin Noise
-│   │   ├── MarchingCubesGPUExtension.cs ✅ YENİ (Scrawk API extension metodları - FAZ 1-2 GÜNCELLEME)
-│   │   │   ├── GetRenderTexture()      ✅ YENİ (GPU Readback için render texture alma)
-│   │   │   ├── SetGenerationParams()   ✅ YENİ (Offset + seed parametrelerini ayarlama)
-│   │   │   └── SetLODLevel()           ✅ YENİ (LOD seviyesini ayarlama)
-│   │   ├── MeshBuilder.cs              (Mesh oluşturma - FAZ 1 - GÜNCELLENDİ: Greedy Meshing, BlockDatabase entegrasyonu)
-│   │   │   └── ✅ Greedy Meshing (Minecraft stili - bitişik blokları birleştir - %50-90 üçgen azaltma - FAZ 1-2 GÜNCELLEME)
-│   │   ├── VegetationSpawner.cs        (Ağaç/taş spawn - GPU Instancing - FAZ 3)
-│   │   ├── OceanPlane.cs               (Sonsuz okyanus - FAZ 3)
-│   │   ├── VoxelGrid.cs                (Veri yapısı - opsiyonel - FAZ 1 - GÜNCELLENDİ: BlockDatabase entegrasyonu)
-│   │   ├── TerrainMaterialManager.cs   (Materyal seçimi: yükseklik/eğim - FAZ 1 - GÜNCELLENDİ: Texture Atlas, Material-Based Batching, BlockDatabase entegrasyonu)
-│   │   │   ├── ✅ Texture Atlas Sistemi (Minecraft stili - tüm blok texture'ları tek atlas'ta - 1000+ → 1 draw call - FAZ 1-2 GÜNCELLEME)
-│   │   │   ├── ✅ Material-Based Batching (aynı materyalli chunk'ları birleştir - FAZ 1-2 GÜNCELLEME)
-│   │   │   └── ✅ BlockDatabase entegrasyonu (tüm blok texture'ları BlockDatabase'den yüklenir - FAZ 1-2 GÜNCELLEME)
-│   │   ├── TerrainPoint.cs             (Materyal ağırlıkları + nokta verisi - FAZ 1)
-│   │   ├── TerrainEditor.cs            (Voxel terrain düzenleme - GPU - FAZ 1)
-│   │   └── GameTimeManager.cs          (Gün/gece döngüsü - FAZ 1)
-│
-├── Scripts/
-│   ├── Core/
-│   │   ├── ServiceLocator.cs           (Sistem yöneticisi - FAZ 1)
-│   │   ├── DatabaseManager.cs          (SQLite - FAZ 1)
-│   │   ├── ConfigManager.cs            (Config yönetimi - FAZ 8)
-│   │   │
-│   │   ├── Models/
-│   │   │   ├── PlayerPowerProfile.cs   (Oyuncu güç profili - FAZ 7)
-│   │   │   ├── ClanPowerProfile.cs     (Klan güç profili - FAZ 7)
-│   │   │   ├── TerritoryData.cs       (Bölge verisi - FAZ 4)
-│   │   │   ├── ContractData.cs         (Kontrat verisi - FAZ 4)
-│   │   │   └── AllianceData.cs         (İttifak verisi - FAZ 8)
-│   │   │
-│   │   ├── Databases/
-│   │   │   ├── ItemDatabase.cs          (Eşya lookup - FAZ 4)
-│   │   │   ├── MobDatabase.cs           (Mob lookup - FAZ 5 - GetMobPrefab metodu VirtualEntitySystem için eklendi)
-│   │   │   ├── BossDatabase.cs          (Boss lookup - FAZ 5)
-│   │   │   ├── DisasterDatabase.cs      (Felaket lookup - FAZ 5)
-│   │   │   ├── TrapDatabase.cs          (Tuzak lookup - FAZ 5)
-│   │   │   ├── RideableMobDatabase.cs   (Binilebilir mob lookup - FAZ 7)
-│   │   │   ├── StructureEffectDatabase.cs (Yapı efekt lookup - FAZ 7)
-│   │   │   └── MissionDatabase.cs       (Görev lookup - FAZ 8)
-│   │   │
-│   │   │   Not: DatabaseManager.cs içinde FAZ 8 için yeni tablolar ve metodlar eklendi:
-│   │   │   - caravans tablosu (CaravanManager için)
-│   │   │   - researches tablosu (ResearchManager için)
-│   │   │   - breedings tablosu (BreedingManager için)
-│   │   │   - shops ve shop_items tabloları (ShopManager için)
-│   │   │   - missions tablosu (MissionManager için)
-│   │   │   - supply_drops tablosu (SupplyDropManager için)
-│   │   │
-│   │   └── Definitions/
-│   │       ├── ItemDefinition.cs       (Item tanımı - FAZ 4)
-│   │       │   - isChisel property (Chisel alet kontrolü - FAZ 4)
-│   │       │   - chiselDefinition property (Chisel tanımı - FAZ 4)
-│   │       │   - chiselLevel property (Basic, Advanced, Master - FAZ 4)
-│   │       ├── RitualRecipe.cs         (Ritüel tarifi - FAZ 4)
-│   │       ├── BiomeDefinition.cs      (Biyom tanımı - FAZ 3)
-│   │       ├── MobDefinition.cs        (Mob tanımı - FAZ 5)
-│   │       ├── BossDefinition.cs       (Boss tanımı - FAZ 5)
-│   │       ├── DisasterDefinition.cs    (Felaket tanımı - FAZ 5)
-│   │       ├── TrapDefinition.cs       (Tuzak tanımı - FAZ 5)
-│   │       ├── MissionDefinition.cs    (Görev tanımı - FAZ 8)
-│   │       ├── RideableMobDefinition.cs (Binek mob tanımı - FAZ 7)
-│   │       ├── StructureEffectDefinition.cs (Yapı efekt tanımı - FAZ 7)
-│   │       ├── OreDefinition.cs         (Maden tanımı - FAZ 3)
-│   │       │   - minDepth, maxDepth (derinlik aralığı)
-│   │       │   - spawnChance (spawn şansı)
-│   │       │   - itemDropId (kırıldığında düşecek item)
-│   │       │
-│   │       ├── ChiselDefinition.cs      (Chisel alet tanımı - FAZ 4)
-│   │       │   - chiselId, chiselName
-│   │       │   - supportedMaterials (MaterialType array)
-│   │       │   - precision (kesim hassasiyeti)
-│   │       │   - durability (dayanıklılık)
-│   │       │   - cuttingSpeed (kesim hızı)
-│   │       │
-│   │       ├── CraftingRecipe.cs        (Crafting tarifi - FAZ 4 - ADIM 1.6)
-│   │       │   - recipeId, recipeName
-│   │       │   - resultItem, resultAmount
-│   │       │   - ingredients (RecipeIngredient list)
-│   │       │   - requiredTableLevel (None, Basic, Advanced, Master)
-│   │       │   - craftingTime
-│   │       │
-│   │       ├── CookingRecipe.cs          (Pişirme tarifi - FAZ 4 - ADIM 1.14)
-│   │       │   - recipeId, recipeName
-│   │       │   - resultItem, resultAmount
-│   │       │   - ingredients (RecipeIngredient list)
-│   │       │   - cookingTime
-│   │       │   - requiredCookingStationLevel
-│   │       │
-│   │       ├── SmeltingRecipe.cs        (Eritme tarifi - FAZ 4 - ADIM 1.24)
-│   │       │   - recipeId, recipeName
-│   │       │   - inputItem, inputAmount
-│   │       │   - outputItem, outputAmount
-│   │       │   - fuelRequired
-│   │       │   - smeltingTime
-│   │       │
-│   │       ├── FoodDefinition.cs         (Yemek tanımı - FAZ 4 - ADIM 1.14)
-│   │       │   - foodId, foodName
-│   │       │   - hungerRestore, healthRestore
-│   │       │   - foodQuality (Common, Good, Excellent, Perfect)
-│   │       │   - foodBuffs (StatusEffect list)
-│   │       │
-│   │       ├── StatusEffectDefinition.cs (Durum efekt tanımı - FAZ 4 - ADIM 1.15)
-│   │       │   - effectId, effectName
-│   │       │   - effectType (Poison, Burn, Freeze, Slow, vb.)
-│   │       │   - duration, damagePerSecond
-│   │       │   - statModifications (speed, damage, defense multipliers)
-│   │       │   - maxStacks
-│   │       │
-│   │       ├── SpellDefinition.cs       (Büyü tanımı - FAZ 4 - ADIM 1.18)
-│   │       │   - spellId, spellName
-│   │       │   - spellSchool (Fire, Ice, Lightning, Nature, Dark, Light)
-│   │       │   - manaCost, castTime, cooldown
-│   │       │   - damage, range
-│   │       │   - spellEffectType (Damage, Heal, Buff, Debuff, Teleport, Summon)
-│   │       │
-│   │       ├── CropDefinition.cs        (Bitki tanımı - FAZ 4 - ADIM 1.22)
-│   │       │   - cropId, cropName
-│   │       │   - growthStages (5 aşama)
-│   │       │   - growthTime (her aşama için)
-│   │       │   - harvestResult (ItemDefinition, amount)
-│   │       │
-│   │       ├── FishDefinition.cs         (Balık tanımı - FAZ 4 - ADIM 1.23)
-│   │       │   - fishId, fishName
-│   │       │   - catchChance
-│   │       │   - rewardItems (ItemDefinition list)
-│   │       │
-│   │       └── ChestDefinition.cs        (Sandık tanımı - FAZ 4 - ADIM 1.25)
-│   │           - chestId, chestName
-│   │           - inventorySlots
-│   │           - canLock
-│   │           - category (Material, Weapon, Tool, vb.)
-│   │
-│   ├── Systems/
-│   │   ├── Mining/
-│   │   │   ├── NetworkMining.cs        (Server-authoritative kazı - FAZ 1)
-│   │   │   │   - Hold to break mekaniği
-│   │   │   │   - Block hardness sistemi
-│   │   │   │   - Tool efficiency
-│   │   │   │   - Break progress indicator
-│   │   │   │   - Item drop sistemi
-│   │   │   │   - Block placement
-│   │   │   │   - Voxel terrain entegrasyonu
-│   │   │   │   - ChiselTool entegrasyonu (FAZ 4)
-│   │   │   │   - EnableChiselMode() / DisableChiselMode()
-│   │   │   │
-│   │   │   └── OreSpawner.cs           (Voxel maden spawn - FAZ 3)
-│   │   │       - TerrainDensity.compute entegrasyonu
-│   │   │       - Job System ile paralel spawn
-│   │   │       - Spawn edilmiş madenler cache'i
-│   │   │       - Yükseklik bazlı maden dağılımı
-│   │   │
-│   │   ├── Nature/
-│   │   │   ├── VoxelTreeGenerator.cs   (Prosedürel ağaç oluşturma - FAZ 3)
-│   │   │   │   - L-System/Fractal Tree algoritması
-│   │   │   │   - Job System ile paralel generation
-│   │   │   │   - Voxel bloklardan ağaç oluşturma
-│   │   │   │   - Ağaç kaldırma (RemoveTreeAt)
-│   │   │   │
-│   │   │   └── TreeGrowthSystem.cs     (Aşamalı büyüme yönetimi - FAZ 3)
-│   │   │       - 5 büyüme aşaması (Fidan, Küçük, Orta, Büyük, Olgun)
-│   │   │       - Coroutine bazlı zaman yönetimi
-│   │   │       - Büyüyen ağaçlar cache'i
-│   │   │       - Toplam ~32 dakika büyüme süresi
-│   │   │
-│   │   ├── Building/
-│   │   │   ├── GridPlacementSystem.cs  (Grid tabanlı yerleştirme - FAZ 3)
-│   │   │   │   - 1 metre grid sistemi
-│   │   │   │   - Grid pozisyon cache'i
-│   │   │   │   - Smooth voxel dünyada tutarlı inşa
-│   │   │   │
-│   │   │   ├── BlueprintSystem.cs      (Yapı kaydetme/kopyalama - FAZ 3)
-│   │   │   │   - Blueprint kaydetme (JSON)
-│   │   │   │   - Blueprint yükleme ve yerleştirme
-│   │   │   │   - Blueprint cache sistemi
-│   │   │   │
-│   │   │   ├── SculptingSystem.cs      (Blok yontma - FAZ 3 - GÜNCELLENDİ: 5x5x5 sub-voxel grid, bitmask, simetrik oyma, stencil, talaş, greedy meshing)
-│   │   │   │   - ✅ 5x5x5 Sub-Voxel Grid (125 sub-voxel per block)
-│   │   │   │   - ✅ Bitmask Sistemi (blok şekli bitmask ile saklanır - performanslı)
-│   │   │   │   - ✅ Simetrik Oyma Modu (Mirror Mode - sol oyulunca sağ da otomatik oyulur)
-│   │   │   │   - ✅ Stencil/Şablon Sistemi (önceden tanımlı şekiller: merdiven, yarı blok, vb.)
-│   │   │   │   - ✅ Materyal Kaybı (Talaş - oyulduğunda yere çakıl taşı düşer)
-│   │   │   │   - ✅ Greedy Meshing Entegrasyonu (oyulmuş bloklar birleştirilir - draw call optimizasyonu)
-│   │   │   │   - ✅ Batch Regeneration (performans için toplu chunk yenileme)
-│   │   │   │   - Blok şekil verme
-│   │   │   │   - Template kaydetme
-│   │   │   │   - Template uygulama
-│   │   │   │   - Yontulmuş şekiller cache'i
-│   │   │   │
-│   │   │   ├── ChiselTool.cs           (Blok şekillendirme aleti - FAZ 4)
-│   │   │   │   - IEquippable interface (NetworkMining entegrasyonu)
-│   │   │   │   - 3 kesim modu (Küp, Yuvarlak, Çapraz)
-│   │   │   │   - İki nokta seçimi sistemi
-│   │   │   │   - Alet kuşanma/çıkarma
-│   │   │   │   - Malzeme uyumluluğu kontrolü
-│   │   │   │   - Alet dayanıklılık sistemi
-│   │   │   │
-│   │   │   ├── ChiselRaycast.cs        (Voxel terrain raycast - FAZ 4)
-│   │   │   │   - Voxel terrain uyumlu raycast
-│   │   │   │   - ChunkManager entegrasyonu
-│   │   │   │   - Grid sistemi entegrasyonu
-│   │   │   │   - Raycast cache optimizasyonu (50ms)
-│   │   │   │   - Hassas nokta hesaplama (grid'e yapıştırma)
-│   │   │   │
-│   │   │   ├── BlockSelectionVisualizer.cs (Seçim görselleştirme - FAZ 4)
-│   │   │   │   - Başlangıç/bitiş noktası marker'ları
-│   │   │   │   - Kesim çizgileri (LineRenderer)
-│   │   │   │   - Önizleme mesh'i
-│   │   │   │   - Grid çizgileri
-│   │   │   │
-│   │   │   ├── BlockCuttingSystem.cs   (Blok kesim sistemi - FAZ 4)
-│   │   │   │   - VariantMeshGenerator entegrasyonu
-│   │   │   │   - ChunkManager entegrasyonu
-│   │   │   │   - Variant ID oluşturma (VariantMeshGenerator uyumlu)
-│   │   │   │   - Chunk regeneration (coroutine)
-│   │   │   │   - Kesim geçmişi (undo/redo için)
-│   │   │   │   - Network senkronizasyonu
-│   │   │   │
-│   │   │   ├── ShapeApplicationSystem.cs (Şekil kaydetme/uygulama - FAZ 4)
-│   │   │   │   - 9 slot şekil kayıt sistemi
-│   │   │   │   - JSON kayıt/yükleme
-│   │   │   │   - Şekil uygulama (sağ tık)
-│   │   │   │   - Malzeme uyumluluğu kontrolü
-│   │   │   │
-│   │   │   └── CutMode.cs              (Enum'lar ve data yapıları - FAZ 4)
-│   │   │       - CutMode enum (Cube, Rounded, Diagonal)
-│   │   │       - MaterialType enum (Wood, Stone, Metal)
-│   │   │       - CutParameters class
-│   │   │
-│   │   ├── Blocks/
-│   │   │   └── VariantMeshGenerator.cs  (740 variant mesh generation - FAZ 3 - GÜNCELLENDİ: BlockDatabase entegrasyonu)
-│   │   │       - Algoritma tabanlı mesh oluşturma
-│   │   │       - Dik kesimler (6 yön, 5 seviye)
-│   │   │       - Çapraz kesimler, yuvarlanmış köşeler
-│   │   │       - Ramp, merdiven, köşe şekilleri
-│   │   │       - Özel şekiller (trapezoid, pyramid, hemisphere)
-│   │   │       - Mesh cache sistemi (O(1) lookup)
-│   │   │       - Pre-generated meshes (runtime generation yok)
-│   │   │       - ✅ BlockDatabase entegrasyonu (blok tipleri BlockDatabase'den alınır)
-│   │   │
-│   │   ├── Biomes/
-│   │   │   └── BiomeManager.cs         (Biyom seçimi ve yönetimi - FAZ 3)
-│   │   │
-│   │   ├── Water/
-│   │   │   ├── WaterSimulator.cs       (Voxel su simülasyonu - FAZ 3)
-│   │   │   │   - Su seviyesi yönetimi (0-7 arası, 8=kaynak su)
-│   │   │   │   - Aşağı akış (Gravity - en yüksek öncelik)
-│   │   │   │   - Yan tarafa akış (4 yön: kuzey, güney, doğu, batı)
-│   │   │   │   - Yayılma mekaniği (su seviyesi dengeleme)
-│   │   │   │   - Öncelik sistemi (Aşağı > Yan > Yayılma)
-│   │   │   │   - Boşluk kontrolü (su sadece boş voxel'lere akar)
-│   │   │   │   - Kaynak su (sonsuz su kaynağı)
-│   │   │   │   - Chunk bazlı cache
-│   │   │   │   - GPU üzerinde hesaplama
-│   │   │   │   - GetWaterLevel(), AddWater(), RemoveWater(), AddWaterSource() metodları
-│   │   │   │
-│   │   │   └── OceanPlane.cs           (Sonsuz okyanus - FAZ 3)
-│   │   │       - Oyuncuyu takip eden düzlem
-│   │   │       - Y=0 seviyesinde sonsuz okyanus
-│   │   │
-│   │   ├── Rituals/
-│   │   │   ├── RitualManager.cs        (Batarya sistemi - FAZ 4)
-│   │   │   ├── RitualInputHandler.cs   (Ritüel giriş - FAZ 4)
-│   │   │   ├── PatternRecognitionSystem.cs (SORUN 12 - Ritüel Pattern Algılama - Multiblock structure detection - FAZ 4)
-│   │   │   ├── RitualLockSystem.cs     (SORUN 16 - Ritüel Anti-Spam - Exploit koruması - FAZ 4)
-│   │   │   └── GhostRecipeManager.cs    (Hayalet tarif - FAZ 8)
-│   │   │
-│   │   ├── Crafting/                   (FAZ 4 - ADIM 1.6 - Crafting Sistemi)
-│   │   │   ├── CraftingRecipe.cs        (ScriptableObject - Recipe tanımları)
-│   │   │   ├── CraftingTable.cs         (NetworkBehaviour - Crafting table yapısı, IInteractable)
-│   │   │   ├── CraftingManager.cs       (Manager - Crafting mantığı, Dictionary cache O(1) lookup)
-│   │   │   ├── CustomWeaponSerialization.cs (SORUN 15 - Özel Silah Serialization - Bitmask optimizasyonu 15MB→160KB - FAZ 4)
-│   │   │   └── CraftingUI.cs            (UI Manager - Crafting interface, UI pooling)
-│   │   │
-│   │   ├── Inventory/                   (FAZ 4 - ADIM 1.7 - Kapsamlı Envanter Sistemi)
-│   │   │   ├── InventorySlot.cs           (Slot veri yapısı - item, amount, weight)
-│   │   │   └── PlayerInventory.cs       (NetworkBehaviour - Envanter mantığı, SyncList, Dictionary cache O(1) lookup)
-│   │   │
-│   │   ├── Furniture/                   (FAZ 4 - ADIM 1.8 - Furniture Sistemi)
-│   │   │   ├── FurnitureDefinition.cs     (ScriptableObject - Furniture tanımları - Data klasöründe)
-│   │   │   ├── FurniturePlacer.cs        (Furniture yerleştirme - StructurePlacer entegrasyonu)
-│   │   │   └── FurnitureInteraction.cs   (IInteractable - Sit, Sleep, Chest, Workbench)
-│   │   │
-│   │   ├── Tools/                       (FAZ 4 - ADIM 1.9 - İşlevsel Item'ler)
-│   │   │   ├── ToolDurability.cs          (Durability sistemi - async database persistence)
-│   │   │   ├── RepairStation.cs           (Tool repair - malzeme kontrolü, IInteractable)
-│   │   │   ├── UpgradeStation.cs          (Tool upgrade - seviye artışı, malzeme kontrolü)
-│   │   │   └── EnchantmentSystem.cs       (Enchantment sistemi - Dictionary cache O(1) lookup)
-│   │   │
-│   │   ├── NPCs/                        (FAZ 5 - ADIM 1.10 - NPC Sistemi)
-│   │   │   ├── NPCDefinition.cs           (ScriptableObject - NPC tanımları - Data klasöründe)
-│   │   │   ├── NPCAI.cs                  (NPC AI - State Machine, NavMesh pathfinding)
-│   │   │   ├── VillagerTrading.cs        (Ticaret sistemi - Trade history cache)
-│   │   │   ├── DialogueSystem.cs         (Diyalog sistemi - Dialogue state cache)
-│   │   │   └── VillageGenerator.cs       (Köy oluşturma - Job System + Burst)
-│   │   │
-│   │   ├── Mounts/                      (FAZ 7 - ADIM 1.11 - Gelişmiş Binek Sistemi)
-│   │   │   ├── SaddleDefinition.cs       (ScriptableObject - Eğer tanımları - Data klasöründe)
-│   │   │   ├── MountInventory.cs          (Binek envanteri - SyncList, async database)
-│   │   │   ├── MountArmor.cs              (Binek zırhı - Hasar azaltma)
-│   │   │   ├── MountAbilities.cs          (Binek yetenekleri - Dash, Jump, Charge, Heal, Shield)
-│   │   │   └── MountLeveling.cs           (Binek seviye sistemi - Experience sistemi, exponential growth)
-│   │   │
-│   │   ├── Bosses/                      (FAZ 5 - ADIM 1.12 - Gelişmiş Boss Sistemi)
-│   │   │   ├── BossArenaDefinition.cs     (ScriptableObject - Arena tanımları - Data klasöründe)
-│   │   │   ├── DragonAI.cs                (Ejderha AI - Flight state machine, Unity Physics)
-│   │   │   ├── BossArena.cs              (Boss arenası - StructurePlacer entegrasyonu)
-│   │   │   ├── BossLootTable.cs          (Loot sistemi - Rarity bazlı)
-│   │   │   ├── BossPhaseSystem.cs        (Multi-phase fight sistemi)
-│   │   │   └── BossSummoning.cs         (Çağırma sistemi - Ritual malzeme kontrolü)
-│   │   │
-│   │   ├── Mobs/                        (FAZ 5 - ADIM 1.13 - Özel Canlı Tipleri)
-│   │   │   ├── MobClassDefinition.cs      (ScriptableObject - Mob sınıf tanımları - Data klasöründe)
-│   │   │   ├── MobAbilitySystem.cs       (Mob yetenek sistemi - Cooldown, Level scaling)
-│   │   │   ├── MobArmorSystem.cs         (Mob zırh sistemi)
-│   │   │   └── MobLeveling.cs            (Mob seviye sistemi - Experience sistemi)
-│   │   │
-│   │   ├── Food/                        (FAZ 4 - ADIM 1.14 - Yemek ve Açlık Sistemi)
-│   │   │   ├── FoodDefinition.cs          (ScriptableObject - Yemek tanımları - Data klasöründe)
-│   │   │   ├── HungerSystem.cs           (Açlık sistemi - Coroutine, async database)
-│   │   │   └── CookingStation.cs         (Pişirme sistemi - IInteractable, malzeme kontrolü)
-│   │   │
-│   │   ├── StatusEffects/                (FAZ 4 - ADIM 1.15 - Hastalık ve Durum Sistemi)
-│   │   │   ├── StatusEffectDefinition.cs  (ScriptableObject - Durum efekt tanımları - Data klasöründe)
-│   │   │   ├── StatusEffectManager.cs    (Durum efekt yöneticisi - Coroutine, Stack sistemi)
-│   │   │   └── DiseaseSystem.cs          (Hastalık sistemi - Disease state cache)
-│   │   │
-│   │   ├── Weather/                     (FAZ 4 - ADIM 1.16 - Zaman ve Hava Sistemi)
-│   │   │   ├── WeatherSystem.cs          (Hava durumu sistemi - Coroutine, mevsim bazlı)
-│   │   │   ├── SeasonSystem.cs           (Mevsim sistemi - GameTimeManager entegrasyonu)
-│   │   │   ├── TemperatureSystem.cs      (Sıcaklık sistemi - Yükseklik bazlı, status effect'ler)
-│   │   │   └── WeatherEffects.cs        (Hava durumu efektleri - Unity Particle System, Unity Audio)
-│   │   │
-│   │   ├── Dungeons/                    (FAZ 5 - ADIM 1.17 - Zindan ve Mağara Sistemi)
-│   │   │   ├── DungeonDefinition.cs       (ScriptableObject - Zindan tanımları - Data klasöründe)
-│   │   │   ├── DungeonGenerator.cs       (Zindan oluşturma - Job System + Burst)
-│   │   │   └── DungeonEntrance.cs        (Zindan girişi - Key kontrolü, IInteractable)
-│   │   │
-│   │   ├── Magic/                       (FAZ 4 - ADIM 1.18 - Magic ve Büyü Sistemi)
-│   │   │   ├── SpellDefinition.cs         (ScriptableObject - Büyü tanımları - Data klasöründe)
-│   │   │   ├── ManaSystem.cs             (Mana sistemi - Coroutine, async database)
-│   │   │   └── SpellCasting.cs           (Büyü kullanma - ManaSystem entegrasyonu)
-│   │   │
-│   │   ├── Tech/                        (FAZ 8 - ADIM 1.19 - Teknoloji Ağacı)
-│   │   │   ├── TechNodeDefinition.cs     (ScriptableObject - Teknoloji düğüm tanımları - Data klasöründe)
-│   │   │   └── TechTreeManager.cs        (Teknoloji ağacı yöneticisi - Prerequisite kontrolü)
-│   │   │
-│   │   ├── Vehicles/                    (FAZ 7 - ADIM 1.20 - Araç ve Ulaşım Sistemi)
-│   │   │   ├── VehicleDefinition.cs       (ScriptableObject - Araç tanımları - Data klasöründe)
-│   │   │   └── VehicleController.cs      (Araç kontrolü - Unity Physics)
-│   │   │
-│   │   ├── Pets/                        (FAZ 5 - ADIM 1.21 - Pet ve Ev Hayvanı Sistemi)
-│   │   │   ├── PetDefinition.cs           (ScriptableObject - Pet tanımları - Data klasöründe)
-│   │   │   └── PetSystem.cs              (Pet sistemi - Pet spawn, komut, leveling)
-│   │   │
-│   │   ├── Farming/                     (FAZ 4 - ADIM 1.22 - Tarım ve Çiftçilik Sistemi)
-│   │   │   ├── CropDefinition.cs          (ScriptableObject - Bitki tanımları - Data klasöründe)
-│   │   │   └── FarmingSystem.cs          (Çiftçilik sistemi - Crop planting, growth, harvest)
-│   │   │
-│   │   ├── Fishing/                     (FAZ 4 - ADIM 1.23 - Balıkçılık Sistemi)
-│   │   │   ├── FishDefinition.cs          (ScriptableObject - Balık tanımları - Data klasöründe)
-│   │   │   └── FishingSystem.cs          (Balıkçılık sistemi - Fishing minigame, fish spawn)
-│   │   │
-│   │   ├── Smelting/                    (FAZ 4 - ADIM 1.24 - Madencilik ve Eritme Sistemi)
-│   │   │   ├── SmeltingRecipe.cs          (ScriptableObject - Eritme tarifleri - Data klasöründe)
-│   │   │   └── SmeltingSystem.cs         (Eritme sistemi - Furnace entegrasyonu, fuel tüketimi)
-│   │   │
-│   │   ├── Storage/                      (FAZ 4 - ADIM 1.25 - Depolama ve Sandık Sistemi)
-│   │   │   ├── ChestDefinition.cs         (ScriptableObject - Sandık tanımları - Data klasöründe)
-│   │   │   └── ChestInventory.cs         (Sandık envanteri - SyncList, async database, lock sistemi)
-│   │   │
-│   │   ├── Clans/
-│   │   │   ├── TerritoryManager.cs     (Flood-Fill bölge hesaplama - FAZ 4 - Job System optimizasyonu ile)
-│   │   │   │   └── FloodFillJob        (CPU paralel flood-fill - Job System + Burst - FAZ 4)
-│   │   │   ├── ClanPowerManager.cs     (Güç hesaplama - FAZ 7)
-│   │   │   ├── OfflineProtectionSystem.cs (Offline koruma - FAZ 7)
-│   │   │   └── AllianceManager.cs      (İttifak - FAZ 8)
-│   │   │
-│   │   ├── Economy/
-│   │   │   ├── ContractManager.cs      (Kontrat sistemi - FAZ 4)
-│   │   │   ├── CaravanManager.cs       (Kervan - FAZ 8)
-│   │   │   └── ShopManager.cs          (Market - FAZ 8)
-│   │   │
-│   │   ├── Research/
-│   │   │   └── ResearchManager.cs      (Araştırma - FAZ 8)
-│   │   │
-│   │   ├── Taming/
-│   │   │   ├── TamingManager.cs        (Eğitme - FAZ 4 - Voxel terrain uyumlu - VirtualEntitySystem entegrasyonu ile)
-│   │   │   └── BreedingManager.cs      (Üreme - FAZ 8)
-│   │   │
-│   │   ├── Entity/                      ✅ YENİ (FAZ 5 - Entity Virtualization Sistemi)
-│   │   │   └── VirtualEntitySystem.cs   ✅ YENİ (Varlık Sanallaştırma - Voxel blokların aynı mantığında matematiksel simülasyon - FAZ 5)
-│   │   │       - Active Zone (render edilen - oyuncu görüyorsa)
-│   │   │       - Virtual Zone (matematiksel simülasyon - oyuncu görmediğinde)
-│   │   │       - Flow Field algoritması entegrasyonu (10.000 canavar için 1 flow field)
-│   │   │       - ChunkManager entegrasyonu (GetHeightAtPosition, GetChunkWorldPosition, GetActiveChunkCoords)
-│   │   │       - DatabaseManager entegrasyonu (SaveEntity, LoadAllTamedEntities, CreateEntitiesTable)
-│   │   │       - MobDatabase entegrasyonu (GetMobPrefab)
-│   │   │       - PlayerController entegrasyonu (UpdatePlayerPosition, RemovePlayerPosition)
-│   │   │       - TamingManager entegrasyonu (AddTamedEntity)
-│   │   │       - ScrawkBridge uyumlu (voxel dünya mantığıyla uyumlu)
-│   │   │
-│   │   ├── Simulation/                  ✅ YENİ (FAZ 5 - Ghost Simulation Sistemi)
-│   │   │   └── SimulationManager.cs     ✅ YENİ (SORUN 13 - Yüklü olmayan chunk'larda felaket simülasyonu - FAZ 5)
-│   │   │       - Matematiksel felaket simülasyonu (GameObject yok, render yok)
-│   │   │       - Chunk yüklü değilse simülasyon yapılır
-│   │   │       - Chunk yüklüyse gerçek felaket entity'sine pozisyon bildirilir
-│   │   │       - Veritabanı entegrasyonu (yapı kontrolü)
-│   │   │       - ChunkManager entegrasyonu (IsChunkLoaded, GetChunkCoord)
-│   │   │       - ServiceLocator entegrasyonu
-│   │   │
-│   │   ├── Missions/
-│   │   │   └── MissionManager.cs       (Görev - FAZ 8)
-│   │   │
-│   │   ├── Events/
-│   │   │   └── SupplyDropManager.cs    (Supply Drop - FAZ 8)
-│   │   │
-│   │   ├── Combat/
-│   │   │   ├── HealthComponent.cs      (Can sistemi - FAZ 5)
-│   │   │   ├── ArmorComponent.cs       (Zırh sistemi - FAZ 5)
-│   │   │   ├── SiegeBeacon.cs          (Kuşatma işareti - FAZ 7)
-│   │   │   ├── SiegeManager.cs         (Kuşatma yöneticisi - FAZ 7)
-│   │   │   └── SiegeWeaponManager.cs    (Balista/Mancınık - FAZ 8)
-│   │   │
-│   │   ├── Buildings/
-│   │   │   ├── StructureEffectManager.cs (Yapı buffları - FAZ 7)
-│   │   │   └── StructurePlacer.cs        (Voxel terrain üzerine yapı yerleştirme - ChunkManager entegrasyonu - FAZ 4)
-│   │   │
-│   │   ├── Power/
-│   │   │   └── StratocraftPowerSystem.cs (SGP sistemi - FAZ 7)
-│   │   │
-│   │   ├── Interaction/
-│   │   │   ├── IInteractable.cs         (Etkileşim arayüzü - FAZ 6)
-│   │   │   ├── InteractionController.cs (Etkileşim kontrolü - FAZ 6)
-│   │   │   ├── PhysicalItem.cs          (Fiziksel item - FAZ 4 - Voxel terrain uyumlu)
-│   │   │   └── ItemSpawner.cs           (Item spawn - FAZ 4 - Voxel terrain uyumlu)
-│   │   │
-│   │   └── Admin/
-│   │       ├── AdminCommandHandler.cs   (Admin komutları - FAZ 8)
-│   │       └── AdminTabCompleter.cs    (Tab completion - FAZ 8)
-│   │
-│   ├── AI/
-│   │   ├── Core/
-│   │   │   └── ChunkNavMeshBaker.cs    (Dinamik NavMesh - FAZ 5)
-│   │   │
-│   │   ├── FlowField/                  ✅ YENİ (FAZ 5 - Flow Field Sistemi)
-│   │   │   └── FlowFieldSystem.cs      ✅ YENİ (Akış Alanı - 10.000 canavar için 1 flow field hesapla - FAZ 5)
-│   │   │       - Chunk bazlı grid sistemi
-│   │   │       - Merkeze doğru yön hesaplama
-│   │   │       - ChunkManager entegrasyonu (GetActiveChunkCoords, GetChunkWorldPosition, GetChunkCoord)
-│   │   │       - VirtualEntitySystem entegrasyonu
-│   │   │       - ServiceLocator entegrasyonu
-│   │   │
-│   │   ├── VoxelPathfinder.cs         (SORUN 11 - A* Pathfinding - Chunk tabanlı pathfinding - FAZ 5)
-│   │   │   - Chunk bazlı A* algoritması
-│   │   │   - Path cache sistemi
-│   │   │   - Density data'dan geçilebilirlik kontrolü
-│   │   │   - ChunkManager entegrasyonu
-│   │   │   - ServiceLocator entegrasyonu
-│   │   │
-│   │   ├── Mobs/
-│   │   │   ├── MobAI.cs                 (Normal mob AI - FAZ 5)
-│   │   │   ├── MobSpawner.cs            (Mob spawn - FAZ 5)
-│   │   │   ├── MobIdentity.cs           (Mob kimlik - FAZ 5)
-│   │   │   ├── RideableMob.cs           (Binek sistemi - FAZ 7)
-│   │   │   └── MobInputController.cs    (Binek kontrolü - FAZ 7)
-│   │   │
-│   │   └── Bosses/
-│   │       ├── BossAI.cs                (Panda BT - FAZ 5)
-│   │       ├── BossIdentity.cs          (Boss kimlik - FAZ 5)
-│   │       └── BossSpawner.cs           (Boss spawn - FAZ 5)
-│   │
-│   ├── Player/
-│   │   ├── PlayerController.cs          (Hareket - FAZ 1 - VirtualEntitySystem entegrasyonu: UpdatePlayerPosition, RemovePlayerPosition - FAZ 5)
-│   │   └── InteractionController.cs     (Raycast etkileşim - FAZ 6)
-│   │
-│   ├── Network/
-│   │   ├── PlayerController.cs          (FishNet Player - FAZ 1)
-│   │   └── SyncWorld.cs                 (Seed senkronizasyonu - FAZ 1)
-│   │
-│   └── UI/
-│       ├── HUDManager.cs                (Can barı, bölge ismi - FAZ 6)
-│       ├── Menus/
-│       │   ├── ContractUI.cs           (Kontrat menüsü - FAZ 6)
-│       │   └── ClanManagementUI.cs     (Klan yönetim menüsü - FAZ 6)
-│       └── Effects/
-│           ├── AudioManager.cs          (Ses yöneticisi - FAZ 6)
-│           └── CameraShake.cs          (Kamera sarsıntısı - FAZ 6)
-│
-├── Editor/                             (Editor-only scripts)
-│   ├── ConfigEditor.cs                 (Config editor window - FAZ 8)
-│   └── AdminCommandEditor.cs           (Admin komut testi - FAZ 8)
-│
-└── Art/                                (Görsel varlıklar - Model, Material, Texture, Prefab)
-    ├── _External/                      (Dış kütüphaneler - FAZ 1'de kurulur)
-    │   ├── FishNet/                    (Ağ motoru - FAZ 1)
-    │   ├── Scrawk/                     (GPU voxel motoru - FAZ 1)
-    │   ├── FastNoiseLite/              (Biyom matematiği - FAZ 1)
-    │   ├── PandaBT/                    (AI behavior tree - FAZ 5)
-    │   ├── DoTween/                    (UI animasyonları - FAZ 6)
-    │   └── KenneyAssets/               (Low-poly modeller - FAZ 1)
-    │
-    ├── Models/                         (3D Modeller - FAZ 1'den başlar, fazlara göre eklenir)
-    │   ├── Mobs/                       (FAZ 5 - Goblin, Orc, Troll)
-    │   ├── Bosses/                     (FAZ 5 - Titan Golem, Dragon)
-    │   ├── Structures/                 (FAZ 4 - Alchemy Tower, Clan Bank)
-    │   └── Items/                      (FAZ 4 - Weapons, Tools)
-    │
-    ├── Materials/                      (Materyaller - FAZ 1'den başlar)
-    │   ├── OceanMat.mat                (Okyanus materyali - FAZ 3)
-    │   ├── VoxelMat.mat                (Voxel materyali - FAZ 1)
-    │   ├── Terrain/                    (Terrain materyalleri - FAZ 1)
-    │   │   ├── Grass.mat               (FAZ 1)
-    │   │   ├── Dirt.mat                (FAZ 1)
-    │   │   ├── Stone.mat               (FAZ 1)
-    │   │   ├── Sand.mat                (FAZ 1)
-    │   │   └── Snow.mat                (FAZ 1)
-    │   └── Triplanar/                  (Triplanar texture setleri - FAZ 1)
-    │
-    ├── Textures/                       (Terrain texture'ları - FAZ 1)
-    │
-    └── Prefabs/                        (Prefab'lar - Fazlara göre eklenir)
-        ├── Mule.prefab                 (Kervan - FAZ 8)
-        ├── SupplyDrop.prefab           (Supply Drop - FAZ 8)
-        ├── Ballista.prefab             (Balista - FAZ 8)
-        ├── Catapult.prefab             (Mancınık - FAZ 8)
-        ├── ResearchTable.prefab        (Araştırma Masası - FAZ 8)
-        └── BreedingCore.prefab         (Üreme Çekirdeği - FAZ 8)
 ```
+
 
 
 ---
@@ -2826,6 +2115,18 @@ public class DatabaseManager {
                 )";
             cmd.ExecuteNonQuery();
             
+            // ✅ Keşfedilen Ritüel Tarifleri tablosu (Grimoire UI için)
+            cmd.CommandText = @"
+                CREATE TABLE IF NOT EXISTS discovered_recipes (
+                    id TEXT PRIMARY KEY,
+                    player_id TEXT NOT NULL,
+                    recipe_id TEXT NOT NULL,
+                    discovered_at INTEGER NOT NULL,
+                    FOREIGN KEY (player_id) REFERENCES players(id),
+                    UNIQUE(player_id, recipe_id)
+                )";
+            cmd.ExecuteNonQuery();
+            
             Debug.Log("[DatabaseManager] Tablolar oluşturuldu");
         }
     }
@@ -3168,6 +2469,37 @@ public class DatabaseManager {
         };
         
         await ExecuteNonQueryAsync(query, parameters);
+    }
+    
+    // ========== GRIMOIRE UI: KEŞFEDİLEN RİTÜEL TARİFLERİ ==========
+    
+    /// <summary>
+    /// ✅ Keşfedilen ritüel tarifini kaydet (Grimoire UI için)
+    /// </summary>
+    public async Task SaveDiscoveredRecipeAsync(string playerId, string recipeId) {
+        string query = @"
+            INSERT OR IGNORE INTO discovered_recipes (id, player_id, recipe_id, discovered_at)
+            VALUES (@id, @playerId, @recipeId, @discoveredAt)";
+        
+        var parameters = new Dictionary<string, object> {
+            { "@id", System.Guid.NewGuid().ToString() },
+            { "@playerId", playerId },
+            { "@recipeId", recipeId },
+            { "@discoveredAt", (long)(System.DateTime.UtcNow - new System.DateTime(1970, 1, 1)).TotalSeconds) }
+        };
+        
+        await ExecuteNonQueryAsync(query, parameters);
+    }
+    
+    /// <summary>
+    /// ✅ Oyuncunun keşfettiği ritüel tariflerini yükle (Grimoire UI için)
+    /// </summary>
+    public async Task<List<string>> LoadDiscoveredRecipesAsync(string playerId) {
+        string query = "SELECT recipe_id FROM discovered_recipes WHERE player_id = @playerId";
+        var parameters = new Dictionary<string, object> { { "@playerId", playerId } };
+        
+        var results = await ExecuteQueryAsync(query, parameters);
+        return results.Select(r => r["recipe_id"].ToString()).ToList();
     }
     
     /// <summary>
@@ -9314,7 +8646,356 @@ Kırma Süresi = Block Hardness / Tool Efficiency
 
 ---
 
-### 4.2 SyncWorld.cs
+### 4.2 BlockOutlineSystem.cs (Blok Seçim Görselleştirme - Minecraft Stili)
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Interaction/BlockOutlineSystem.cs`
+
+**Amaç:** Oyuncunun baktığı voxel poligonunu siyah şeritlerle göstermek (Minecraft stili block outline)
+
+**⚠️ KRİTİK NOT:** Minecraft'ta bir bloğun üzerine gelince baktığımız blok kareye alınıyor, kenarları siyah şeritlerle kaplanıyor. Bedrock'ta daha belirgin ve blok koymadan önce hayalet blok gösteriyor. Bu sistem:
+1. Oyuncunun baktığı voxel poligonunu tespit eder (raycast ile)
+2. Poligonun kenarlarını siyah şeritlerle gösterir (LineRenderer veya GL.Lines ile)
+3. Ritüel, craft ve build işlemlerini kolaylaştırır
+4. Mining işlemlerinde nereyi kazacağını tam anlar
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using System.Collections.Generic;
+using _Stratocraft.Engine.Core;
+
+/// <summary>
+/// ✅ Block Outline System - Minecraft stili blok seçim görselleştirme
+/// 
+/// MANTIK:
+/// - Oyuncu bir voxel poligonuna baktığında, o poligonun kenarlarını siyah şeritlerle gösterir
+/// - Raycast ile baktığı poligonu tespit eder
+/// - LineRenderer veya GL.Lines ile outline çizer
+/// - Ritüel, craft ve build işlemlerini kolaylaştırır
+/// </summary>
+public class BlockOutlineSystem : MonoBehaviour {
+    [Header("Raycast Ayarları")]
+    [Tooltip("Raycast mesafesi (blok seçim için)")]
+    [Range(1f, 20f)]
+    public float raycastDistance = 10f;
+    
+    [Tooltip("Raycast layer mask (voxel terrain için)")]
+    public LayerMask terrainLayerMask = -1;
+    
+    [Header("Outline Görselleştirme")]
+    [Tooltip("Outline rengi (Minecraft'ta siyah)")]
+    public Color outlineColor = Color.black;
+    
+    [Tooltip("Outline kalınlığı")]
+    [Range(0.01f, 0.1f)]
+    public float outlineWidth = 0.02f;
+    
+    [Tooltip("Outline render metodu (LineRenderer veya GL.Lines)")]
+    public OutlineRenderMethod renderMethod = OutlineRenderMethod.LineRenderer;
+    
+    [Header("Hayalet Blok (Bedrock Stili)")]
+    [Tooltip("Hayalet blok gösterilsin mi? (blok koymadan önce)")]
+    public bool showGhostBlock = true;
+    
+    [Tooltip("Hayalet blok materyali (yarı saydam)")]
+    public Material ghostBlockMaterial;
+    
+    [Tooltip("Hayalet blok rengi")]
+    public Color ghostBlockColor = new Color(1f, 1, 1f, 0.3f);
+    
+    private ChunkManager _chunkManager;
+    private Camera _playerCamera;
+    private LineRenderer _outlineRenderer;
+    private GameObject _ghostBlockObject;
+    private Vector3 _currentBlockPosition = Vector3.zero;
+    private bool _isBlockSelected = false;
+    
+    public enum OutlineRenderMethod {
+        LineRenderer,  // Unity LineRenderer (daha kolay)
+        GLLines       // GL.Lines (daha performanslı, shader gerekir)
+    }
+    
+    void Start() {
+        _chunkManager = ServiceLocator.Instance?.Get<ChunkManager>();
+        _playerCamera = Camera.main;
+        
+        if (_playerCamera == null) {
+            _playerCamera = FindObjectOfType<Camera>();
+        }
+        
+        // ✅ LineRenderer oluştur (outline için)
+        if (renderMethod == OutlineRenderMethod.LineRenderer) {
+            CreateOutlineRenderer();
+        }
+        
+        // ✅ Hayalet blok GameObject'i oluştur
+        if (showGhostBlock) {
+            CreateGhostBlock();
+        }
+        
+        // ✅ ServiceLocator'a kaydet
+        ServiceLocator.Instance?.Register<BlockOutlineSystem>(this);
+    }
+    
+    void Update() {
+        if (_playerCamera == null || _chunkManager == null) return;
+        
+        // ✅ Raycast ile baktığı poligonu tespit et
+        Ray ray = new Ray(_playerCamera.transform.position, _playerCamera.transform.forward);
+        RaycastHit hit;
+        
+        if (Physics.Raycast(ray, out hit, raycastDistance, terrainLayerMask)) {
+            // ✅ Voxel poligon pozisyonunu hesapla (hit point'ten)
+            Vector3 blockPos = CalculateBlockPosition(hit.point, hit.normal);
+            
+            // ✅ Poligon değişti mi?
+            if (Vector3.Distance(blockPos, _currentBlockPosition) > 0.1f) {
+                _currentBlockPosition = blockPos;
+                _isBlockSelected = true;
+                
+                // ✅ Outline güncelle
+                UpdateOutline(blockPos);
+                
+                // ✅ Hayalet blok güncelle
+                if (showGhostBlock) {
+                    UpdateGhostBlock(blockPos, hit.normal);
+                }
+            }
+        } else {
+            // ✅ Hiçbir şeye bakmıyor, outline'ı gizle
+            if (_isBlockSelected) {
+                HideOutline();
+                HideGhostBlock();
+                _isBlockSelected = false;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Voxel poligon pozisyonunu hesapla (hit point'ten)
+    /// Minecraft'ta her blok 1x1x1, bizde voxel poligonları var
+    /// </summary>
+    Vector3 CalculateBlockPosition(Vector3 hitPoint, Vector3 hitNormal) {
+        // ✅ Hit point'i grid'e yuvarla (voxel poligon boyutuna göre)
+        // Voxel poligon boyutu genellikle 1 birim (chunk grid'i)
+        float gridSize = 1f; // Voxel poligon boyutu
+        
+        Vector3 gridPos = new Vector3(
+            Mathf.Floor(hitPoint.x / gridSize) * gridSize,
+            Mathf.Floor(hitPoint.y / gridSize) * gridSize,
+            Mathf.Floor(hitPoint.z / gridSize) * gridSize
+        );
+        
+        // ✅ Normal yönüne göre offset ekle (blok içindeyse dışına çıkar)
+        if (hitNormal.y > 0.5f) {
+            // Yukarı bakıyor, blok altında
+            gridPos.y -= gridSize;
+        } else if (hitNormal.y < -0.5f) {
+            // Aşağı bakıyor, blok üstünde
+            gridPos.y += gridSize;
+        } else if (hitNormal.x > 0.5f) {
+            // Doğu bakıyor, blok batısında
+            gridPos.x -= gridSize;
+        } else if (hitNormal.x < -0.5f) {
+            // Batı bakıyor, blok doğusunda
+            gridPos.x += gridSize;
+        } else if (hitNormal.z > 0.5f) {
+            // Kuzey bakıyor, blok güneyinde
+            gridPos.z -= gridSize;
+        } else if (hitNormal.z < -0.5f) {
+            // Güney bakıyor, blok kuzeyinde
+            gridPos.z += gridSize;
+        }
+        
+        return gridPos;
+    }
+    
+    /// <summary>
+    /// ✅ LineRenderer oluştur (outline için)
+    /// </summary>
+    void CreateOutlineRenderer() {
+        GameObject outlineObj = new GameObject("BlockOutline");
+        outlineObj.transform.SetParent(transform);
+        
+        _outlineRenderer = outlineObj.AddComponent<LineRenderer>();
+        _outlineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        _outlineRenderer.color = outlineColor;
+        _outlineRenderer.startWidth = outlineWidth;
+        _outlineRenderer.endWidth = outlineWidth;
+        _outlineRenderer.useWorldSpace = true;
+        // ⚠️ Not: Küp outline çizimi 12 kenardır → 24 nokta (her kenar 2 nokta).
+        // LineRenderer.loop=true kullanırsak tek bir kapalı polyline bekler; burada 12 ayrı segment çiziyoruz.
+        _outlineRenderer.loop = false;
+        _outlineRenderer.positionCount = 24; // 12 edge * 2 point
+        
+        // ✅ Başlangıçta gizle
+        _outlineRenderer.enabled = false;
+    }
+    
+    /// <summary>
+    /// ✅ Outline güncelle (küp kenarlarını çiz)
+    /// </summary>
+    void UpdateOutline(Vector3 blockPos) {
+        if (_outlineRenderer == null) return;
+        
+        float size = 1f; // Voxel poligon boyutu
+        float halfSize = size * 0.5f;
+        
+        // ✅ Küp köşeleri (8 köşe)
+        Vector3[] corners = new Vector3[8] {
+            blockPos + new Vector3(-halfSize, -halfSize, -halfSize), // 0: Sol-Alt-Arka
+            blockPos + new Vector3(halfSize, -halfSize, -halfSize),  // 1: Sağ-Alt-Arka
+            blockPos + new Vector3(halfSize, -halfSize, halfSize),   // 2: Sağ-Alt-Ön
+            blockPos + new Vector3(-halfSize, -halfSize, halfSize),  // 3: Sol-Alt-Ön
+            blockPos + new Vector3(-halfSize, halfSize, -halfSize),  // 4: Sol-Üst-Arka
+            blockPos + new Vector3(halfSize, halfSize, -halfSize),   // 5: Sağ-Üst-Arka
+            blockPos + new Vector3(halfSize, halfSize, halfSize),     // 6: Sağ-Üst-Ön
+            blockPos + new Vector3(-halfSize, halfSize, halfSize)    // 7: Sol-Üst-Ön
+        };
+        
+        // ✅ Küp kenarları (12 kenar, her kenar 2 nokta = 24 nokta)
+        Vector3[] outlinePoints = new Vector3[24] {
+            // Alt yüz (0-1-2-3)
+            corners[0], corners[1],
+            corners[1], corners[2],
+            corners[2], corners[3],
+            corners[3], corners[0],
+
+            // Üst yüz (4-5-6-7)
+            corners[4], corners[5],
+            corners[5], corners[6],
+            corners[6], corners[7],
+            corners[7], corners[4],
+
+            // Dikey kenarlar
+            corners[0], corners[4],
+            corners[1], corners[5],
+            corners[2], corners[6],
+            corners[3], corners[7]
+        };
+        
+        _outlineRenderer.SetPositions(outlinePoints);
+        _outlineRenderer.enabled = true;
+    }
+    
+    /// <summary>
+    /// ✅ Outline'ı gizle
+    /// </summary>
+    void HideOutline() {
+        if (_outlineRenderer != null) {
+            _outlineRenderer.enabled = false;
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Hayalet blok GameObject'i oluştur
+    /// </summary>
+    void CreateGhostBlock() {
+        _ghostBlockObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        _ghostBlockObject.name = "GhostBlock";
+        _ghostBlockObject.transform.SetParent(transform);
+        
+        // ✅ Collider'ı kaldır (hayalet blok çarpışmaz)
+        Collider collider = _ghostBlockObject.GetComponent<Collider>();
+        if (collider != null) {
+            Destroy(collider);
+        }
+        
+        // ✅ Materyal ayarla (yarı saydam)
+        Renderer renderer = _ghostBlockObject.GetComponent<Renderer>();
+        if (renderer != null) {
+            if (ghostBlockMaterial != null) {
+                renderer.material = ghostBlockMaterial;
+            } else {
+                // ✅ Varsayılan yarı saydam materyal oluştur
+                Material mat = new Material(Shader.Find("Standard"));
+                mat.SetFloat("_Mode", 3); // Transparent mode
+                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                mat.SetInt("_ZWrite", 0);
+                mat.DisableKeyword("_ALPHATEST_ON");
+                mat.EnableKeyword("_ALPHABLEND_ON");
+                mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                mat.renderQueue = 3000;
+                mat.color = ghostBlockColor;
+                renderer.material = mat;
+            }
+        }
+        
+        // ✅ Başlangıçta gizle
+        _ghostBlockObject.SetActive(false);
+    }
+    
+    /// <summary>
+    /// ✅ Hayalet blok güncelle (blok koymadan önce göster)
+    /// </summary>
+    void UpdateGhostBlock(Vector3 blockPos, Vector3 normal) {
+        if (_ghostBlockObject == null) return;
+        
+        // ✅ Hayalet blok pozisyonunu ayarla
+        _ghostBlockObject.transform.position = blockPos;
+        _ghostBlockObject.transform.localScale = Vector3.one; // 1x1x1 voxel poligon
+        
+        // ✅ Hayalet blok göster
+        _ghostBlockObject.SetActive(true);
+    }
+    
+    /// <summary>
+    /// ✅ Hayalet blok gizle
+    /// </summary>
+    void HideGhostBlock() {
+        if (_ghostBlockObject != null) {
+            _ghostBlockObject.SetActive(false);
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Seçili blok pozisyonunu al (ritüel ve build sistemleri için)
+    /// </summary>
+    public Vector3 GetSelectedBlockPosition() {
+        return _isBlockSelected ? _currentBlockPosition : Vector3.zero;
+    }
+    
+    /// <summary>
+    /// ✅ Blok seçili mi?
+    /// </summary>
+    public bool IsBlockSelected() {
+        return _isBlockSelected;
+    }
+    
+    void OnDestroy() {
+        // ✅ Temizlik
+        if (_outlineRenderer != null) {
+            Destroy(_outlineRenderer.gameObject);
+        }
+        
+        if (_ghostBlockObject != null) {
+            Destroy(_ghostBlockObject);
+        }
+    }
+}
+```
+
+**Kullanım:**
+1. `BlockOutlineSystem` component'ini PlayerController veya Camera'ya ekle
+2. Oyuncu bir voxel poligonuna baktığında otomatik olarak outline gösterilir
+3. Ritüel, craft ve build işlemlerinde `GetSelectedBlockPosition()` kullanılır
+4. Mining işlemlerinde nereyi kazacağını tam anlar
+
+**Entegrasyon:**
+- `NetworkMining`: Blok kırma/yerleştirme için seçili blok pozisyonunu kullanır
+- `RitualManager`: Ritüel malzemelerini yerleştirirken seçili blok pozisyonunu kullanır
+- `BlueprintSystem`: Yapı yerleştirirken seçili blok pozisyonunu kullanır
+
+**Performans:**
+- LineRenderer kullanımı: Her frame'de güncellenir (düşük overhead)
+- GL.Lines alternatifi: Daha performanslı ama shader gerekir
+- Hayalet blok: Sadece blok seçiliyken gösterilir (minimal overhead)
+
+---
+
+### 4.3 SyncWorld.cs
 
 **Dosya:** `_Stratocraft/Scripts/Network/SyncWorld.cs`
 
@@ -19986,6 +19667,10 @@ public class NetworkItemSerializer : NetworkBehaviour {
     
     /// <summary>
     /// ✅ LAZY LOADING: Oyuncu item'a yaklaştığında mesh'i yükle
+    /// 
+    /// ⚠️ KRİTİK NOT: Pazara girdiğinde etrafta 50 oyuncu varsa, sunucu o an 50 kişinin 
+    /// özel kılıç verisini anında göndermeye çalışmamalı. Sadece oyuncu, başka bir oyuncunun 
+    /// kılıcına çok yaklaştığında (meshLoadDistance içinde) veya tıkladığında o detaylı veri indirilsin.
     /// </summary>
     [Client]
     public void OnPlayerNearItem(string itemId, Vector3 playerPos, Vector3 itemPos) {
@@ -19993,6 +19678,18 @@ public class NetworkItemSerializer : NetworkBehaviour {
         if (distance <= meshLoadDistance) {
             RequestItemMesh(itemId);
         }
+    }
+    
+    /// <summary>
+    /// ✅ LAZY LOADING: Oyuncu başka bir oyuncunun kılıcına tıkladığında mesh'i yükle
+    /// 
+    /// ⚠️ KRİTİK NOT: Raycast ile tıklama tespiti yapılmalı. Oyuncu başka bir oyuncunun 
+    /// kılıcına tıkladığında (OnItemClicked) bu metod çağrılmalı.
+    /// </summary>
+    [Client]
+    public void OnItemClicked(string itemId, NetworkObject player) {
+        // ✅ Tıklama tespiti - detaylı veri indir
+        RequestItemMesh(itemId);
     }
     
     /// <summary>
@@ -25685,6 +25382,14 @@ public class RitualManager : NetworkBehaviour {
         // ✅ Tamamlanma efektleri
         RpcShowRitualComplete(pos, recipe.ritualColor);
         
+        // ✅ GrimoireUI'ya tarifi keşfet bildirimi gönder
+        GrimoireUI grimoireUI = ServiceLocator.Instance?.Get<GrimoireUI>();
+        if (grimoireUI != null) {
+            // ✅ Oyuncu ID'sini al (NetworkObject'ten)
+            string playerId = player != null ? player.ObjectId.ToString() : "";
+            grimoireUI.DiscoverRecipe(recipe, playerId);
+        }
+        
         // ✅ Ritüel kaydını temizle
         _activeRituals.Remove(gridPos);
     }
@@ -25738,7 +25443,286 @@ public class RitualProcess {
 
 ---
 
-### 2.3 RitualInputHandler.cs
+### 2.3 GrimoireUI.cs (Kadim Kitap - Büyü Kitabı Arayüzü)
+
+**Dosya:** `_Stratocraft/Scripts/Systems/Rituals/GrimoireUI.cs`
+
+**Amaç:** Ritüel tariflerini gösteren Kadim Kitap (Grimoire) arayüzü
+
+**⚠️ KRİTİK NOT:** Ritüelleri yere materyal koyarak yapıyoruz, bu çok atmosferik. Ancak oyuncular 
+hangi materyalin hangi sırayla konulacağını nereden bilecek? Bu UI, oyuncuların keşfettikleri 
+ritüel tariflerini otomatik olarak kaydeder ve gösterir.
+
+**Kod:**
+
+```csharp
+using UnityEngine;
+using UnityEngine.UI;
+using System.Collections.Generic;
+using System.Linq;
+using FishNet.Object;
+
+/// <summary>
+/// ✅ Grimoire UI - Kadim Kitap (Büyü Kitabı) Arayüzü
+/// 
+/// MANTIK:
+/// - Oyuncu ritüel tariflerini dünyayı keşfettikçe bu kitaba otomatik kaydolur
+/// - BlueprintSystem yapılar için, bu sistem büyüler için
+/// - Ritüel tariflerini görsel olarak gösterir (hangi materyal, hangi sırayla)
+/// </summary>
+public class GrimoireUI : MonoBehaviour {
+    [Header("UI Referansları")]
+    public GameObject grimoirePanel;
+    public Transform recipeListParent;
+    public GameObject recipeItemPrefab;
+    public Text grimoireTitle;
+    public Button closeButton;
+    
+    [Header("Ritüel Tarifleri")]
+    [Tooltip("Keşfedilen ritüel tarifleri (oyuncu bazlı)")]
+    public List<RitualRecipe> discoveredRecipes = new List<RitualRecipe>();
+    
+    private RitualManager _ritualManager;
+    private DatabaseManager _databaseManager;
+    private string _playerId;
+    
+    void Start() {
+        _ritualManager = ServiceLocator.Instance?.Get<RitualManager>();
+        _databaseManager = ServiceLocator.Instance?.Get<DatabaseManager>();
+        
+        // ✅ UI'ı başlangıçta gizle
+        if (grimoirePanel != null) {
+            grimoirePanel.SetActive(false);
+        }
+        
+        // ✅ Close butonu
+        if (closeButton != null) {
+            closeButton.onClick.AddListener(CloseGrimoire);
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Grimoire'u aç (oyuncu tarafından çağrılır)
+    /// </summary>
+    public void OpenGrimoire(string playerId) {
+        _playerId = playerId;
+        
+        // ✅ Veritabanından keşfedilen tarifleri yükle
+        LoadDiscoveredRecipes(playerId);
+        
+        // ✅ UI'ı göster
+        if (grimoirePanel != null) {
+            grimoirePanel.SetActive(true);
+        }
+        
+        // ✅ Tarif listesini güncelle
+        UpdateRecipeList();
+    }
+    
+    /// <summary>
+    /// ✅ Grimoire'u kapat
+    /// </summary>
+    public void CloseGrimoire() {
+        if (grimoirePanel != null) {
+            grimoirePanel.SetActive(false);
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Yeni ritüel tarifi keşfedildiğinde çağrılır
+    /// </summary>
+    public void DiscoverRecipe(RitualRecipe recipe, string playerId) {
+        if (recipe == null || string.IsNullOrEmpty(playerId)) return;
+        
+        // ✅ Zaten keşfedilmiş mi?
+        if (discoveredRecipes.Any(r => r != null && r.ritualName == recipe.ritualName)) {
+            return; // Zaten keşfedilmiş
+        }
+        
+        // ✅ Keşfedilen tarifleri listeye ekle
+        discoveredRecipes.Add(recipe);
+        
+        // ✅ Veritabanına kaydet (async)
+        SaveDiscoveredRecipe(recipe, playerId);
+        
+        // ✅ UI güncelle (eğer açıksa)
+        if (grimoirePanel != null && grimoirePanel.activeSelf) {
+            UpdateRecipeList();
+        }
+        
+        // ✅ Bildirim göster
+        ShowDiscoveryNotification(recipe.ritualName);
+    }
+    
+    /// <summary>
+    /// ✅ Tarif listesini güncelle
+    /// </summary>
+    void UpdateRecipeList() {
+        if (recipeListParent == null || recipeItemPrefab == null) return;
+        
+        // ✅ Eski tarif item'larını temizle
+        foreach (Transform child in recipeListParent) {
+            Destroy(child.gameObject);
+        }
+        
+        // ✅ Her keşfedilen tarif için UI item oluştur
+        foreach (var recipe in discoveredRecipes) {
+            if (recipe == null) continue;
+            
+            GameObject recipeItem = Instantiate(recipeItemPrefab, recipeListParent);
+            
+            // ✅ Tarif bilgilerini doldur
+            RecipeItemUI itemUI = recipeItem.GetComponent<RecipeItemUI>();
+            if (itemUI != null) {
+                itemUI.SetRecipe(recipe);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Veritabanından keşfedilen tarifleri yükle
+    /// </summary>
+    async void LoadDiscoveredRecipes(string playerId) {
+        if (_databaseManager == null) return;
+        
+        List<string> recipeIds = await _databaseManager.LoadDiscoveredRecipesAsync(playerId);
+        
+        if (recipeIds == null || recipeIds.Count == 0) return;
+        
+        // ✅ RitualManager'dan tarifleri al
+        if (_ritualManager != null) {
+            foreach (string recipeId in recipeIds) {
+                RitualRecipe recipe = _ritualManager.allRecipes.FirstOrDefault(r => 
+                    r != null && r.name == recipeId);
+                
+                if (recipe != null && !discoveredRecipes.Contains(recipe)) {
+                    discoveredRecipes.Add(recipe);
+                }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// ✅ Keşfedilen tarifi veritabanına kaydet
+    /// </summary>
+    async void SaveDiscoveredRecipe(RitualRecipe recipe, string playerId) {
+        if (_databaseManager == null || recipe == null) return;
+        
+        await _databaseManager.SaveDiscoveredRecipeAsync(playerId, recipe.name);
+    }
+    
+    /// <summary>
+    /// ✅ Keşif bildirimi göster
+    /// </summary>
+    void ShowDiscoveryNotification(string recipeName) {
+        // ✅ UI bildirimi (örn: "Yeni Ritüel Keşfedildi: Fireball Battery")
+        Debug.Log($"[GrimoireUI] ✅ Yeni Ritüel Keşfedildi: {recipeName}");
+        // TODO: UI notification system entegrasyonu
+    }
+}
+
+/// <summary>
+/// ✅ Tarif item UI component'i
+/// </summary>
+public class RecipeItemUI : MonoBehaviour {
+    public Text recipeNameText;
+    public Text recipeDescriptionText;
+    public Image recipeIcon;
+    public Transform ingredientListParent;
+    public GameObject ingredientItemPrefab;
+    
+    private RitualRecipe _recipe;
+    
+    /// <summary>
+    /// ✅ Tarif bilgilerini ayarla
+    /// </summary>
+    public void SetRecipe(RitualRecipe recipe) {
+        _recipe = recipe;
+        
+        if (recipe == null) return;
+        
+        // ✅ Tarif adı ve açıklaması
+        if (recipeNameText != null) {
+            recipeNameText.text = recipe.ritualName;
+        }
+        
+        if (recipeDescriptionText != null) {
+            recipeDescriptionText.text = recipe.description;
+        }
+        
+        // ✅ Malzemeleri göster
+        UpdateIngredientList();
+    }
+    
+    /// <summary>
+    /// ✅ Malzeme listesini güncelle
+    /// </summary>
+    void UpdateIngredientList() {
+        if (_recipe == null || ingredientListParent == null || ingredientItemPrefab == null) return;
+        
+        // ✅ Eski malzeme item'larını temizle
+        foreach (Transform child in ingredientListParent) {
+            Destroy(child.gameObject);
+        }
+        
+        // ✅ Her malzeme için UI item oluştur
+        foreach (var ingredient in _recipe.ingredients) {
+            if (ingredient == null || ingredient.item == null) continue;
+            
+            GameObject ingredientItem = Instantiate(ingredientItemPrefab, ingredientListParent);
+            
+            // ✅ Malzeme bilgilerini doldur
+            IngredientItemUI itemUI = ingredientItem.GetComponent<IngredientItemUI>();
+            if (itemUI != null) {
+                itemUI.SetIngredient(ingredient.item, ingredient.amount);
+            }
+        }
+    }
+}
+
+/// <summary>
+/// ✅ Malzeme item UI component'i
+/// </summary>
+public class IngredientItemUI : MonoBehaviour {
+    public Text ingredientNameText;
+    public Text ingredientAmountText;
+    public Image ingredientIcon;
+    
+    /// <summary>
+    /// ✅ Malzeme bilgilerini ayarla
+    /// </summary>
+    public void SetIngredient(ItemDefinition item, int amount) {
+        if (item == null) return;
+        
+        if (ingredientNameText != null) {
+            ingredientNameText.text = item.itemName;
+        }
+        
+        if (ingredientAmountText != null) {
+            ingredientAmountText.text = $"x{amount}";
+        }
+        
+        // ✅ Item ikonu (opsiyonel)
+        if (ingredientIcon != null && item.itemIcon != null) {
+            ingredientIcon.sprite = item.itemIcon;
+        }
+    }
+}
+```
+
+**Kullanım:**
+1. Oyuncu bir ritüel tarifini keşfettiğinde (ritüel başarılı olduğunda), `GrimoireUI.DiscoverRecipe()` çağrılır
+2. Tarif otomatik olarak veritabanına kaydedilir
+3. Oyuncu Grimoire'u açtığında (UI tuşu ile), keşfedilen tüm tarifler gösterilir
+4. Her tarif için malzemeler ve sıralama görsel olarak gösterilir
+
+**Entegrasyon:**
+- `RitualManager`: Ritüel başarılı olduğunda `GrimoireUI.DiscoverRecipe()` çağrılmalı
+- `DatabaseManager`: Keşfedilen tarifleri kaydetmek/yüklemek için metodlar eklenmeli
+
+---
+
+### 2.4 RitualInputHandler.cs
 
 **Dosya:** `_Stratocraft/Scripts/Systems/Rituals/RitualInputHandler.cs`
 
@@ -28215,6 +28199,14 @@ public class PatternRecognitionSystem : NetworkBehaviour {
     [Tooltip("Kontrol aralığı (saniye)")]
     public float checkInterval = 1f;
     
+    [Tooltip("⚠️ KRİTİK: Pozisyon toleransı (voxel poligonları için - oyuncu poligonları göremediği için)")]
+    [Range(0.1f, 2f)]
+    public float positionTolerance = 1.0f; // Voxel poligonları için daha geniş tolerans
+    
+    [Tooltip("Minimum eşleşme yüzdesi (tüm bloklar olmasa bile, %80 eşleşirse kabul et)")]
+    [Range(0.5f, 1f)]
+    public float minMatchPercentage = 0.8f; // %80 eşleşme yeterli
+    
     private Dictionary<Vector3, RitualCheck> _activeRitualChecks = new Dictionary<Vector3, RitualCheck>();
     private ChunkManager _chunkManager;
     
@@ -28252,31 +28244,47 @@ public class PatternRecognitionSystem : NetworkBehaviour {
     }
     
     /// <summary>
-    /// ✅ Yarıçap içindeki blokları al
+    /// ✅ Yarıçap içindeki blokları al (Voxel Dünya Poligonları ile Uyumlu)
+    /// 
+    /// ⚠️ KRİTİK NOT: Batarya ritüelleri çok karmaşık olabilir - üç dört materyalden çok fazla 
+    /// ve değişik şekillerde olabilir. Açı hesabı ile yapılan tespit yetersiz kalır.
+    /// 
+    /// ÇÖZÜM: Minecraft plugin'imizdeki blok tabanlı desen tespit koduna benzer bir sistem.
+    /// Voxel dünya poligonlarını kullanarak, oyuncuların yerleştirdiği nesnelerin çizdiği 
+    /// deseni tespit eder. Bu sistem:
+    /// 1. Voxel terrain üzerindeki blok pozisyonlarını alır
+    /// 2. Blok tiplerini ve pozisyonlarını normalize eder (merkeze göre)
+    /// 3. Pattern matching algoritması ile deseni tanır (rotation invariant, scale invariant)
     /// </summary>
     List<BlockData> GetBlocksInRange(Vector3 center, float radius) {
         List<BlockData> blocks = new List<BlockData>();
         
         if (_chunkManager == null) return blocks;
         
-        // Yarıçap içindeki tüm chunk'ları kontrol et
+        // ✅ Voxel terrain üzerindeki blokları topla
+        // ChunkManager'dan voxel poligonlarını al
         int chunkRadius = Mathf.CeilToInt(radius / 32f); // 32 = chunk boyutu
         Vector3Int centerChunk = _chunkManager.GetChunkCoord(center);
         
-        for (int x = -chunkRadius; x <= chunkRadius; x++) {
-            for (int z = -chunkRadius; z <= chunkRadius; z++) {
-                Vector3Int chunkCoord = centerChunk + new Vector3Int(x, 0, z);
-                
-                // ChunkManager'dan blok verilerini al
-                // NOT: ChunkManager'da GetBlockType() metodu olmalı
-                Vector3 blockPos = center + new Vector3(x * 32, 0, z * 32);
-                string blockType = _chunkManager.GetBlockType(blockPos);
-                
-                if (!string.IsNullOrEmpty(blockType)) {
-                    blocks.Add(new BlockData {
-                        position = blockPos,
-                        blockType = blockType
-                    });
+        // ✅ Yarıçap içindeki tüm voxel pozisyonlarını tara
+        int searchRadius = Mathf.CeilToInt(radius);
+        for (int x = -searchRadius; x <= searchRadius; x++) {
+            for (int y = -searchRadius; y <= searchRadius; y++) {
+                for (int z = -searchRadius; z <= searchRadius; z++) {
+                    Vector3 checkPos = center + new Vector3(x, y, z);
+                    
+                    // ✅ Mesafe kontrolü (küre şeklinde)
+                    if (Vector3.Distance(center, checkPos) > radius) continue;
+                    
+                    // ✅ ChunkManager'dan blok tipini al (voxel terrain entegrasyonu)
+                    string blockType = _chunkManager.GetBlockType(checkPos);
+                    
+                    if (!string.IsNullOrEmpty(blockType)) {
+                        blocks.Add(new BlockData {
+                            position = checkPos,
+                            blockType = blockType
+                        });
+                    }
                 }
             }
         }
@@ -28285,25 +28293,113 @@ public class PatternRecognitionSystem : NetworkBehaviour {
     }
     
     /// <summary>
-    /// ✅ Pattern eşleşiyor mu?
+    /// ✅ Pattern eşleşiyor mu? (Geliştirilmiş - Rotation Invariant, Scale Invariant, Toleranslı)
+    /// 
+    /// ⚠️ KRİTİK NOT: Basit pozisyon eşleştirmesi yetersiz. Karmaşık batarya ritüelleri için:
+    /// 1. Rotation Invariant: Pattern döndürülmüş olabilir (0°, 90°, 180°, 270°)
+    /// 2. Scale Invariant: Pattern biraz büyük/küçük olabilir (tolerans)
+    /// 3. Partial Match: Tüm bloklar olmasa bile, kritik bloklar varsa eşleşebilir
+    /// 4. ⚠️ TOLERANS: Voxel poligonlarına göre hesaplıyoruz, oyuncu poligonları göremediği için 
+    ///    tam ne kadar uzağa koyabileceğini bilemeyebilir. Bu yüzden positionTolerance kullanıyoruz.
     /// </summary>
     bool MatchesPattern(List<BlockData> blocks, RitualPattern pattern, Vector3 center) {
-        // Pattern'in gerektirdiği blokları kontrol et
+        if (blocks.Count == 0 || pattern.requiredBlocks.Count == 0) return false;
+        
+        // ✅ 1. Basit pozisyon eşleştirmesi (hızlı kontrol - toleranslı)
+        int matchCount = 0;
         foreach (var requiredBlock in pattern.requiredBlocks) {
             Vector3 expectedPosition = center + requiredBlock.relativePosition;
             
-            // Bu pozisyonda doğru blok var mı?
             bool found = blocks.Any(b => 
-                Vector3.Distance(b.position, expectedPosition) < 0.5f &&
+                Vector3.Distance(b.position, expectedPosition) < positionTolerance &&
                 b.blockType == requiredBlock.blockType
             );
             
-            if (!found) {
-                return false; // Pattern eşleşmedi
+            if (found) {
+                matchCount++;
             }
         }
         
-        return true; // Tüm bloklar eşleşti
+        // ✅ Minimum eşleşme yüzdesi kontrolü
+        float matchPercentage = (float)matchCount / pattern.requiredBlocks.Count;
+        if (matchPercentage >= minMatchPercentage) {
+            return true; // Yeterli eşleşme var
+        }
+        
+        // ✅ 2. Rotation Invariant Matching (döndürülmüş pattern kontrolü - toleranslı)
+        for (int rotation = 0; rotation < 4; rotation++) {
+            float angle = rotation * 90f;
+            if (MatchesPatternRotated(blocks, pattern, center, angle)) {
+                return true;
+            }
+        }
+        
+        // ✅ 3. Scale Invariant Matching (ölçeklenmiş pattern kontrolü - toleranslı)
+        for (float scale = 0.8f; scale <= 1.2f; scale += 0.1f) {
+            if (MatchesPatternScaled(blocks, pattern, center, scale)) {
+                return true;
+            }
+        }
+        
+        return false; // Pattern eşleşmedi
+    }
+    
+    /// <summary>
+    /// ✅ Döndürülmüş pattern eşleşiyor mu? (Toleranslı)
+    /// </summary>
+    bool MatchesPatternRotated(List<BlockData> blocks, RitualPattern pattern, Vector3 center, float angle) {
+        int matchCount = 0;
+        foreach (var requiredBlock in pattern.requiredBlocks) {
+            // ✅ Pozisyonu döndür
+            Vector3 rotatedPos = RotatePointAroundPivot(requiredBlock.relativePosition, Vector3.zero, angle);
+            Vector3 expectedPosition = center + rotatedPos;
+            
+            bool found = blocks.Any(b => 
+                Vector3.Distance(b.position, expectedPosition) < positionTolerance &&
+                b.blockType == requiredBlock.blockType
+            );
+            
+            if (found) {
+                matchCount++;
+            }
+        }
+        
+        // ✅ Minimum eşleşme yüzdesi kontrolü
+        float matchPercentage = (float)matchCount / pattern.requiredBlocks.Count;
+        return matchPercentage >= minMatchPercentage;
+    }
+    
+    /// <summary>
+    /// ✅ Ölçeklenmiş pattern eşleşiyor mu? (Toleranslı)
+    /// </summary>
+    bool MatchesPatternScaled(List<BlockData> blocks, RitualPattern pattern, Vector3 center, float scale) {
+        int matchCount = 0;
+        foreach (var requiredBlock in pattern.requiredBlocks) {
+            Vector3 scaledPos = requiredBlock.relativePosition * scale;
+            Vector3 expectedPosition = center + scaledPos;
+            
+            bool found = blocks.Any(b => 
+                Vector3.Distance(b.position, expectedPosition) < positionTolerance &&
+                b.blockType == requiredBlock.blockType
+            );
+            
+            if (found) {
+                matchCount++;
+            }
+        }
+        
+        // ✅ Minimum eşleşme yüzdesi kontrolü
+        float matchPercentage = (float)matchCount / pattern.requiredBlocks.Count;
+        return matchPercentage >= minMatchPercentage;
+    }
+    
+    /// <summary>
+    /// ✅ Noktayı pivot etrafında döndür
+    /// </summary>
+    Vector3 RotatePointAroundPivot(Vector3 point, Vector3 pivot, float angle) {
+        Vector3 dir = point - pivot;
+        dir = Quaternion.Euler(0, angle, 0) * dir;
+        return dir + pivot;
     }
     
     /// <summary>
@@ -43870,6 +43966,9 @@ Stratocraft Unity dönüşümü **tamamlandı**. Tüm fazlar başarıyla tamamla
 18. ✅ 🔒 SculptingSystem Server-Side Validation eklendi (Anti-cheat - 4 katmanlı doğrulama: voxel sayısı limiti max 50, uzunluk limiti max 2m, bitmask geçerlilik, pozisyon kontrolü)
 19. ✅ 🔒 VirtualEntitySystem Binary Serialization iyileştirildi (BinaryFormatter yerine BinaryWriter/BinaryReader - daha güvenli ve hızlı, deprecated uyarısı yok)
 20. ✅ 🌐 NetworkItemSerializer eklendi (Lazy Loading - Özel silahların network senkronizasyonu, mesh verisi sadece gerektiğinde indirilir, client-side validation eklendi)
+21. ✅ 🎯 PatternRecognitionSystem güncellendi (Toleranslı pattern matching - voxel poligonları için geniş tolerans, rotation/scale invariant, minimum eşleşme yüzdesi %80)
+22. ✅ 📖 GrimoireUI eklendi (Kadim Kitap - Büyü Kitabı Arayüzü - Ritüel tariflerini gösterir, otomatik keşif kaydı, DatabaseManager entegrasyonu)
+23. ✅ 🎨 BlockOutlineSystem eklendi (Minecraft stili blok seçim görselleştirme - FAZ 1 - Raycast ile baktığı poligonu siyah şeritlerle gösterir, hayalet blok gösterimi, ritüel/craft/build işlemlerini kolaylaştırır)
 
 **🔒 GÜVENLİK İYİLEŞTİRMELERİ (2024):**
 - ✅ **Server-Side Validation:** SculptingSystem'de 4 katmanlı doğrulama (voxel sayısı, uzunluk, bitmask geçerlilik, pozisyon kontrolü)
@@ -44124,6 +44223,9 @@ Assets/_Stratocraft/
 │   │   │   - shops ve shop_items tabloları (ShopManager için)
 │   │   │   - missions tablosu (MissionManager için)
 │   │   │   - supply_drops tablosu (SupplyDropManager için)
+│   │   │   - ✅ discovered_recipes tablosu (GrimoireUI için - FAZ 4)
+│   │   │   - ✅ SaveDiscoveredRecipeAsync() metodu (GrimoireUI için - FAZ 4)
+│   │   │   - ✅ LoadDiscoveredRecipesAsync() metodu (GrimoireUI için - FAZ 4)
 │   │   │
 │   │   └── Definitions/
 │   │       ├── ItemDefinition.cs       (Item tanımı - FAZ 4)
@@ -44227,6 +44329,15 @@ Assets/_Stratocraft/
 │   │   │       - Job System ile paralel spawn
 │   │   │       - Spawn edilmiş madenler cache'i
 │   │   │       - Yükseklik bazlı maden dağılımı
+│   │   │
+│   │   ├── Interaction/
+│   │   │   ├── BlockOutlineSystem.cs   ✅ YENİ (Minecraft stili blok seçim görselleştirme - FAZ 1)
+│   │   │   │   - Raycast ile baktığı poligonu tespit eder
+│   │   │   │   - Poligonun kenarlarını siyah şeritlerle gösterir (LineRenderer)
+│   │   │   │   - Hayalet blok gösterimi (Bedrock stili - blok koymadan önce)
+│   │   │   │   - Ritüel, craft ve build işlemlerini kolaylaştırır
+│   │   │   │   - Mining işlemlerinde nereyi kazacağını tam anlar
+│   │   │   │   - GetSelectedBlockPosition() metodu (ritüel ve build sistemleri için)
 │   │   │
 │   │   ├── Nature/
 │   │   │   ├── VoxelTreeGenerator.cs   (Prosedürel ağaç oluşturma - FAZ 3)
@@ -44337,10 +44448,15 @@ Assets/_Stratocraft/
 │   │   │       - Y=0 seviyesinde sonsuz okyanus
 │   │   │
 │   │   ├── Rituals/
-│   │   │   ├── RitualManager.cs        (Batarya sistemi - FAZ 4)
+│   │   │   ├── RitualManager.cs        (Batarya sistemi - FAZ 4 - GÜNCELLENDİ: GrimoireUI entegrasyonu)
 │   │   │   ├── RitualInputHandler.cs   (Ritüel giriş - FAZ 4)
-│   │   │   ├── PatternRecognitionSystem.cs (SORUN 12 - Ritüel Pattern Algılama - Multiblock structure detection - FAZ 4)
+│   │   │   ├── PatternRecognitionSystem.cs (SORUN 12 - Ritüel Pattern Algılama - Multiblock structure detection - FAZ 4 - GÜNCELLENDİ: Toleranslı pattern matching, rotation/scale invariant, minimum eşleşme yüzdesi %80)
 │   │   │   ├── RitualLockSystem.cs     (SORUN 16 - Ritüel Anti-Spam - Exploit koruması - FAZ 4)
+│   │   │   ├── GrimoireUI.cs          ✅ YENİ (Kadim Kitap - Büyü Kitabı Arayüzü - FAZ 4)
+│   │   │   │   - Ritüel tariflerini gösterir (keşfedilen tarifler)
+│   │   │   │   - Otomatik keşif kaydı (ritüel başarılı olduğunda)
+│   │   │   │   - DatabaseManager entegrasyonu (SaveDiscoveredRecipeAsync, LoadDiscoveredRecipesAsync)
+│   │   │   │   - Malzemeler ve sıralama görsel olarak gösterilir
 │   │   │   └── GhostRecipeManager.cs    (Hayalet tarif - FAZ 8)
 │   │   │
 │   │   ├── Crafting/                   (FAZ 4 - ADIM 1.6 - Crafting Sistemi)
@@ -44627,6 +44743,7 @@ Assets/_Stratocraft/
   - TerrainMaterialManager, TerrainShader ✅
   - GameTimeManager (Gün/gece döngüsü) ✅
   - NetworkMining (Server-authoritative kazı) ✅
+  - ✅ BlockOutlineSystem (Minecraft stili blok seçim görselleştirme) ✅
 
 - **FAZ 3 (Doğa, Su ve Biyomlar):** %100 ✅
   - BiomeDefinition, BiomeManager ✅
@@ -44653,6 +44770,8 @@ Assets/_Stratocraft/
     - ChiselDefinition.cs (ScriptableObject) ✅
     - CutMode.cs (Enum'lar ve data yapıları) ✅
   - RitualManager, RitualInputHandler ✅
+  - ✅ PatternRecognitionSystem (Toleranslı pattern matching, rotation/scale invariant, minimum eşleşme yüzdesi %80) ✅
+  - ✅ GrimoireUI (Kadim Kitap - Büyü Kitabı Arayüzü, otomatik keşif kaydı, DatabaseManager entegrasyonu) ✅
   - TerritoryManager (FloodFillJob - Job System + Burst) ✅
   - ContractManager ✅
   - TamingManager (Voxel terrain uyumlu) ✅
@@ -44728,6 +44847,11 @@ Assets/_Stratocraft/
 - ✅ **Ritüel Pattern Algılama (SORUN 12 Çözümü):** PatternRecognitionSystem.cs - Multiblock structure detection, periyodik pattern kontrolü
 - ✅ **Ritüel Anti-Spam (SORUN 16 Çözümü):** RitualLockSystem.cs - Ritüel çakışmaları ve exploit koruması, blok değişikliği engelleme
 - ✅ **Özel Silah Serialization (SORUN 15 Çözümü):** CustomWeaponSerialization.cs - Bitmask optimizasyonu (15MB → 160KB, %99 veri azaltma)
+- ✅ **Block Outline System (FAZ 1):** BlockOutlineSystem.cs - Minecraft stili blok seçim görselleştirme, raycast ile baktığı poligonu tespit eder, siyah şeritlerle gösterir, hayalet blok gösterimi (Bedrock stili), ritüel/craft/build işlemlerini kolaylaştırır, GetSelectedBlockPosition() metodu
+- ✅ **Grimoire UI (Kadim Kitap - FAZ 4):** GrimoireUI.cs - Ritüel tariflerini gösterir (keşfedilen tarifler), otomatik keşif kaydı (ritüel başarılı olduğunda), DatabaseManager entegrasyonu (SaveDiscoveredRecipeAsync, LoadDiscoveredRecipesAsync), malzemeler ve sıralama görsel olarak gösterilir
+- ✅ **Pattern Recognition System Güncellemesi (FAZ 4):** PatternRecognitionSystem.cs - Toleranslı pattern matching (positionTolerance = 1.0f), rotation/scale invariant, minimum eşleşme yüzdesi %80, voxel poligonları için geniş tolerans desteği
+- ✅ **RitualManager GrimoireUI Entegrasyonu (FAZ 4):** RitualManager.cs - Ritüel başarılı olduğunda GrimoireUI'ya tarif keşfi bildirimi gönderir
+- ✅ **DatabaseManager GrimoireUI Desteği (FAZ 4):** DatabaseManager.cs - discovered_recipes tablosu, SaveDiscoveredRecipeAsync() ve LoadDiscoveredRecipesAsync() metodları eklendi
 
 **İleride Eklenebilir Özellikler:**
 - ⚠️ **Su Mekaniği Gelişmiş Özellikler:** Waterlogging, Lava etkileşimi, Düşen su blokları, Su altı fizik, Su basıncı, Su sesleri, Su görsel efektleri (Faz 3+)
@@ -44742,6 +44866,11 @@ Assets/_Stratocraft/
   - VariantMeshGenerator entegrasyonu
   - ChunkManager entegrasyonu
   - GridPlacementSystem entegrasyonu
+- ✅ **Grimoire UI (Kadim Kitap):** GrimoireUI.cs - Ritüel tariflerini gösterir (keşfedilen tarifler), otomatik keşif kaydı (ritüel başarılı olduğunda), DatabaseManager entegrasyonu (SaveDiscoveredRecipeAsync, LoadDiscoveredRecipesAsync), malzemeler ve sıralama görsel olarak gösterilir
+- ✅ **Pattern Recognition System Güncellemesi:** PatternRecognitionSystem.cs - Toleranslı pattern matching (positionTolerance = 1.0f), rotation/scale invariant, minimum eşleşme yüzdesi %80, voxel poligonları için geniş tolerans desteği
+
+**Yeni Eklenen Özellikler (FAZ 1):**
+- ✅ **Block Outline System:** BlockOutlineSystem.cs - Minecraft stili blok seçim görselleştirme, raycast ile baktığı poligonu tespit eder, siyah şeritlerle gösterir (LineRenderer), hayalet blok gösterimi (Bedrock stili), ritüel/craft/build işlemlerini kolaylaştırır, GetSelectedBlockPosition() metodu
 
 **Mantık Hataları ve Algoritma Eksikleri:**
 - ✅ **ChunkManager:** Tüm gerekli metodlar mevcut (GetChunkCoord, GetActiveChunkCoords, GetDensityBufferForChunk)
