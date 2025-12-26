@@ -1,7 +1,8 @@
 package me.mami.stratocraft.listener;
 
-import me.mami.stratocraft.Main;
-import me.mami.stratocraft.model.Clan;
+import java.util.UUID;
+
+import org.bukkit.Location;
 import org.bukkit.entity.EnderCrystal;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -12,7 +13,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
-import java.util.UUID;
+import me.mami.stratocraft.Main;
+import me.mami.stratocraft.model.Clan;
 
 /**
  * ✅ YENİ: Klan Kristali Hasar Sistemi
@@ -107,7 +109,7 @@ public class CrystalDamageListener implements Listener {
         }
         
         // ✅ YENİ: 2. Metadata kontrolü
-        me.mami.stratocraft.config.TerritoryConfig territoryConfig = plugin.getTerritoryConfig();
+        me.mami.stratocraft.manager.config.TerritoryConfig territoryConfig = plugin.getTerritoryConfig();
         if (territoryConfig != null) {
             String metadataKey = territoryConfig.getCrystalMetadataKey();
             if (crystal.hasMetadata(metadataKey)) {

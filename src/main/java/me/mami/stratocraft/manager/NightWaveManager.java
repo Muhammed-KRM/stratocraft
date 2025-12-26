@@ -501,11 +501,8 @@ public class NightWaveManager {
         String[] mobTypes = {"ork", "skeleton_knight", "troll", "goblin", "werewolf"};
         String mobType = mobTypes[random.nextInt(mobTypes.length)];
         
-        org.bukkit.entity.LivingEntity mob = null;
-        String expectedName = null;
-        
-        // Spawn öncesi entity sayısını al (yeni spawn edileni bulmak için)
-        int entityCountBefore = spawnLoc.getWorld().getEntities().size();
+        // ✅ DÜZELTME: expectedName'i final yap (lambda için gerekli)
+        final String expectedName;
         
         switch (mobType) {
             case "ork":
@@ -528,39 +525,66 @@ public class NightWaveManager {
                 expectedName = "Kurt";
                 mobManager.spawnWerewolf(spawnLoc);
                 break;
+            default:
+                expectedName = null;
+                break;
         }
         
         // ✅ OPTİMİZE: Spawn edilen entity'yi bul (spawnLoc etrafında, custom name'e göre)
         // SpawnLoc'a en yakın, beklenen isme sahip entity'yi bul
-        double minDistance = Double.MAX_VALUE;
-        for (org.bukkit.entity.Entity nearby : spawnLoc.getWorld().getNearbyEntities(spawnLoc, 5, 5, 5)) {
-            if (nearby instanceof org.bukkit.entity.LivingEntity) {
-                String customName = nearby.getCustomName();
-                if (customName != null && expectedName != null && customName.contains(expectedName)) {
-                    double distance = spawnLoc.distance(nearby.getLocation());
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        mob = (org.bukkit.entity.LivingEntity) nearby;
+        // ✅ DÜZELTME: Daha geniş arama yarıçapı ve bekleme süresi ekle
+        plugin.getLogger().info("[NightWaveManager] Mob spawn edildi, entity aranıyor: " + mobType + 
+            " @ " + spawnLoc.getBlockX() + "," + spawnLoc.getBlockY() + "," + spawnLoc.getBlockZ());
+        
+        // Spawn işlemi asenkron olabilir, kısa bir bekleme ekle
+        final String finalExpectedName = expectedName; // Lambda için final copy
+        org.bukkit.Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            double minDistance = Double.MAX_VALUE;
+            org.bukkit.entity.LivingEntity foundMob = null;
+            
+            // ✅ DÜZELTME: Arama yarıçapını artır (10 blok) ve tüm nearby entity'leri kontrol et
+            for (org.bukkit.entity.Entity nearby : spawnLoc.getWorld().getNearbyEntities(spawnLoc, 10, 10, 10)) {
+                if (nearby instanceof org.bukkit.entity.LivingEntity) {
+                    org.bukkit.entity.LivingEntity living = (org.bukkit.entity.LivingEntity) nearby;
+                    String customName = living.getCustomName();
+                    
+                    plugin.getLogger().info("[NightWaveManager] Nearby entity bulundu: " + living.getType() + 
+                        ", CustomName: " + (customName != null ? customName : "null") + 
+                        ", Expected: " + finalExpectedName + 
+                        ", Distance: " + spawnLoc.distance(living.getLocation()));
+                    
+                    if (customName != null && finalExpectedName != null && customName.contains(finalExpectedName)) {
+                        double distance = spawnLoc.distance(living.getLocation());
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            foundMob = living;
+                        }
                     }
                 }
             }
-        }
-        
-        if (mob != null) {
-            // AI'yı klan saldırısına ayarla
-            me.mami.stratocraft.util.MobClanAttackAI.attachAI(mob, clan, plugin);
             
-            // Listeye ekle
-            World world = spawnLoc.getWorld();
-            if (world != null) {
-                waveEntities.get(world).add(mob);
+            if (foundMob != null) {
+                plugin.getLogger().info("[NightWaveManager] Mob bulundu: " + foundMob.getType() + 
+                    " (" + foundMob.getCustomName() + ") @ Distance: " + minDistance);
+                
+                // AI'yı klan saldırısına ayarla
+                me.mami.stratocraft.util.MobClanAttackAI.attachAI(foundMob, clan, plugin);
+                
+                // Listeye ekle
+                World world = spawnLoc.getWorld();
+                if (world != null) {
+                    waveEntities.get(world).add(foundMob);
+                }
+                
+                plugin.getLogger().info("[NightWaveManager] Özel mob spawn edildi ve AI eklendi: " + mobType + 
+                    " - Klan: " + clan.getName() + 
+                    ", Crystal Location: " + (clan.getCrystalLocation() != null ? clan.getCrystalLocation().toString() : "null"));
+            } else {
+                plugin.getLogger().warning("[NightWaveManager] Spawn edilen mob bulunamadı: " + mobType + 
+                    " @ " + spawnLoc.getBlockX() + "," + spawnLoc.getBlockY() + "," + spawnLoc.getBlockZ() + 
+                    " (Expected name: " + finalExpectedName + ")");
             }
-            
-            plugin.getLogger().info("[NightWaveManager] Özel mob spawn edildi: " + mobType + 
-                " - Klan: " + clan.getName());
-        } else {
-            plugin.getLogger().warning("[NightWaveManager] Spawn edilen mob bulunamadı: " + mobType);
-        }
+        }, 5L); // 5 tick (0.25 saniye) bekle
     }
     
     /**

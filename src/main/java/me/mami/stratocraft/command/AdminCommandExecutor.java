@@ -4975,9 +4975,9 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                             .collect(Collectors.toList());
                 
                 case "structure":
-                    // Structure komutları
+                    // Structure komutları (tüm komutlar birleştirildi)
                     List<String> structureCommands = Arrays.asList("build", "list", "info", "activate", "deactivate", 
-                        "setlevel", "setowner", "check");
+                        "setlevel", "setpower", "teleport", "remove", "validate", "recipe", "test", "setowner", "check");
                     if (input.isEmpty()) {
                         return structureCommands;
                     }
@@ -5039,17 +5039,6 @@ public class AdminCommandExecutor implements CommandExecutor, TabCompleter {
                         return buildCategories;
                     }
                     return buildCategories.stream()
-                            .filter(s -> s.toLowerCase().startsWith(input))
-                            .collect(Collectors.toList());
-                            
-                case "structure":
-                    // YENİ: Yapı yönetim komutları
-                    List<String> structureCommands = Arrays.asList("list", "info", "activate", "deactivate", 
-                        "setlevel", "setpower", "teleport", "remove", "validate", "recipe", "test", "setowner");
-                    if (input.isEmpty()) {
-                        return structureCommands;
-                    }
-                    return structureCommands.stream()
                             .filter(s -> s.toLowerCase().startsWith(input))
                             .collect(Collectors.toList());
 

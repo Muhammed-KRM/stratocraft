@@ -1247,11 +1247,8 @@ public class TerritoryListener implements Listener {
                                 // Territory center'ı güncelle
                                 territoryData.setCenter(calculatedCenter);
                                 
-                                // Territory center'ı da güncelle (geriye uyumluluk için)
-                                me.mami.stratocraft.model.Territory territory = finalNewClan.getTerritory();
-                                if (territory != null) {
-                                    territory.setCenter(calculatedCenter);
-                                }
+                                // Not: Territory sınıfı immutable olduğu için setCenter metodu yok
+                                // TerritoryData zaten center'ı doğru şekilde güncelliyor
                             }
                             
                             // Main thread'e geri dön ve TerritoryData'yı kaydet
@@ -1776,7 +1773,15 @@ public class TerritoryListener implements Listener {
             }
             
             // ✅ YENİ: Lider kendi kristalini kırıyor mu?
-            if (breaker != null && owner.getRank(breaker.getUniqueId()) == Clan.Rank.LEADER) {
+            Clan.Rank breakerRank = breaker != null ? owner.getRank(breaker.getUniqueId()) : null;
+            if (plugin != null) {
+                plugin.getLogger().info("[KRISTAL KIRMA] Breaker: " + (breaker != null ? breaker.getName() : "null") + 
+                    ", Breaker UUID: " + (breaker != null ? breaker.getUniqueId() : "null") + 
+                    ", Breaker Rank: " + (breakerRank != null ? breakerRank.name() : "null") + 
+                    ", LEADER ile karşılaştırma: " + (breakerRank == Clan.Rank.LEADER));
+            }
+            
+            if (breaker != null && breakerRank == Clan.Rank.LEADER) {
                 if (plugin != null) {
                     plugin.getLogger().info("[KRISTAL KIRMA] Lider kendi kristalini kırıyor - Klan dağıtılıyor: " + owner.getName());
                 }
@@ -2156,42 +2161,85 @@ public class TerritoryListener implements Listener {
         Player player = event.getPlayer();
         UUID playerId = player.getUniqueId();
         
+        Main plugin = Main.getInstance();
+        if (plugin != null) {
+            plugin.getLogger().info("[CRYSTAL_PICKUP] Event tetiklendi - Player: " + player.getName() + 
+                " (" + playerId + "), Sneaking: " + player.isSneaking());
+        }
+        
         // Shift basılı olmalı
-        if (!player.isSneaking()) return;
+        if (!player.isSneaking()) {
+            if (plugin != null) {
+                plugin.getLogger().info("[CRYSTAL_PICKUP] Shift basılı değil, return");
+            }
+            return;
+        }
         
         // Zaten kristal taşıyor mu?
         if (carryingCrystalPlayers.containsKey(playerId)) {
             player.sendMessage("§cZaten bir kristal taşıyorsunuz!");
             event.setCancelled(true);
+            if (plugin != null) {
+                plugin.getLogger().info("[CRYSTAL_PICKUP] Oyuncu zaten kristal taşıyor");
+            }
             return;
         }
         
         EnderCrystal crystal = (EnderCrystal) event.getRightClicked();
+        
+        if (plugin != null) {
+            plugin.getLogger().info("[CRYSTAL_PICKUP] Kristal entity: " + crystal.getUniqueId() + 
+                " @ " + crystal.getLocation().getBlockX() + "," + crystal.getLocation().getBlockY() + "," + crystal.getLocation().getBlockZ());
+        }
         
         // Bu kristal bir klanın kristali mi?
         Clan ownerClan = null;
         for (Clan clan : territoryManager.getClanManager().getAllClans()) {
             if (clan.getCrystalEntity() != null && clan.getCrystalEntity().equals(crystal)) {
                 ownerClan = clan;
+                if (plugin != null) {
+                    plugin.getLogger().info("[CRYSTAL_PICKUP] Klan kristali bulundu: " + clan.getName());
+                }
                 break;
             }
         }
         
         if (ownerClan == null) {
+            if (plugin != null) {
+                plugin.getLogger().info("[CRYSTAL_PICKUP] Normal kristal, return");
+            }
             return; // Normal kristal, devam etme
         }
         
         // Oyuncu bu klanın lideri mi?
         Clan playerClan = territoryManager.getClanManager().getClanByPlayer(playerId);
+        if (plugin != null) {
+            plugin.getLogger().info("[CRYSTAL_PICKUP] Player clan: " + (playerClan != null ? playerClan.getName() : "null") + 
+                ", Owner clan: " + ownerClan.getName() + 
+                ", Eşit mi: " + (playerClan != null && playerClan.equals(ownerClan)));
+        }
+        
         if (playerClan == null || !playerClan.equals(ownerClan)) {
             player.sendMessage("§cBu kristal sizin klanınıza ait değil!");
             event.setCancelled(true);
+            if (plugin != null) {
+                plugin.getLogger().info("[CRYSTAL_PICKUP] Oyuncu bu klanın üyesi değil");
+            }
             return;
         }
         
-        if (playerClan.getRank(playerId) != Clan.Rank.LEADER) {
+        Clan.Rank playerRank = playerClan.getRank(playerId);
+        if (plugin != null) {
+            plugin.getLogger().info("[CRYSTAL_PICKUP] Player rank: " + (playerRank != null ? playerRank.name() : "null") + 
+                ", LEADER ile karşılaştırma: " + (playerRank == Clan.Rank.LEADER));
+        }
+        
+        if (playerRank == null || playerRank != Clan.Rank.LEADER) {
             player.sendMessage("§cSadece klan lideri kristali taşıyabilir!");
             event.setCancelled(true);
+            if (plugin != null) {
+                plugin.getLogger().info("[CRYSTAL_PICKUP] Oyuncu lider değil - Rank: " + (playerRank != null ? playerRank.name() : "null"));
+            }
             return;
         }
         

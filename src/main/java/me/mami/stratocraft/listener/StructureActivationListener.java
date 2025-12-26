@@ -211,7 +211,7 @@ public class StructureActivationListener implements Listener {
         detectedStructure.setOwnerId(player.getUniqueId());
         
         // ✅ YENİ: Training Arena için eğitme çekirdeği otomatik yerleştir
-        StructureType detectedType = StructureType.valueOf(detectedStructure.getType().name());
+        // detectedType zaten yukarıda tanımlı, tekrar tanımlamaya gerek yok
         if (detectedType == StructureType.TRAINING_ARENA) {
             // Eğitme çekirdeğini Enchanting Table'ın üstüne yerleştir
             Block enchantingTable = clicked.getRelative(BlockFace.UP);

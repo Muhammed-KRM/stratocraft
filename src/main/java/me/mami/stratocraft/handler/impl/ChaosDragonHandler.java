@@ -2,7 +2,6 @@ package me.mami.stratocraft.handler.impl;
 
 import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 
 import org.bukkit.Location;
 import org.bukkit.entity.EnderCrystal;
@@ -143,8 +142,11 @@ public class ChaosDragonHandler extends BaseCreatureHandler {
             targetCrystal.getBlockX() + "," + targetCrystal.getBlockY() + "," + targetCrystal.getBlockZ() : "null"));
         
         // Hedef kristal yoksa veya kırıldıysa yeni hedef bul
-        if (targetCrystal == null || isCrystalDestroyed(targetCrystal)) {
-            plugin.getLogger().info("[ChaosDragonHandler] Target crystal is null or destroyed, finding new target");
+        boolean isDestroyed = targetCrystal != null && isCrystalDestroyed(targetCrystal);
+        if (targetCrystal == null || isDestroyed) {
+            plugin.getLogger().info("[ChaosDragonHandler] Target crystal is null or destroyed, finding new target. " + 
+                "targetCrystal: " + (targetCrystal != null ? targetCrystal.toString() : "null") + 
+                ", isDestroyed: " + isDestroyed);
             // ✅ DÜZELTME: Merkeze ulaştıysa merkeze göre, değilse current'a göre kontrol
             Location searchLocation;
             double searchRadius;
@@ -184,10 +186,13 @@ public class ChaosDragonHandler extends BaseCreatureHandler {
         // Kristale doğru hareket et
         if (targetCrystal != null && current.getWorld().equals(targetCrystal.getWorld())) {
             double distanceToCrystal = current.distance(targetCrystal);
-            plugin.getLogger().fine("[ChaosDragonHandler] Distance to crystal: " + String.format("%.2f", distanceToCrystal));
+            plugin.getLogger().info("[ChaosDragonHandler] Distance to crystal: " + String.format("%.2f", distanceToCrystal) + 
+                " (Current: " + current.getBlockX() + "," + current.getBlockY() + "," + current.getBlockZ() + 
+                ", Target: " + targetCrystal.getBlockX() + "," + targetCrystal.getBlockY() + "," + targetCrystal.getBlockZ() + ")");
             
-            // Kristale yakınsa (5 blok), vur
-            if (distanceToCrystal <= 5.0) {
+            // ✅ DÜZELTME: Mesafe kontrolünü artır (EnderDragon için 15 blok - uçan entity için daha geniş)
+            // Kristale yakınsa (15 blok - uçan entity için), vur
+            if (distanceToCrystal <= 15.0) {
                 plugin.getLogger().info("[ChaosDragonHandler] Attacking crystal at distance: " + String.format("%.2f", distanceToCrystal));
                 boolean crystalDestroyed = attackCrystal(disaster, targetCrystal, plugin);
                 
@@ -203,15 +208,18 @@ public class ChaosDragonHandler extends BaseCreatureHandler {
                     // 3. Yoksa en yakın klana → ATTACK_CLAN
                     findNewTargetAfterCrystalDestroyed(disaster, current, plugin);
                 } else {
-                    plugin.getLogger().fine("[ChaosDragonHandler] Crystal still alive");
+                    plugin.getLogger().info("[ChaosDragonHandler] Crystal still alive, continuing attack");
                 }
             } else {
                 // Kristale doğru hareket et
-                plugin.getLogger().fine("[ChaosDragonHandler] Moving towards crystal");
+                plugin.getLogger().info("[ChaosDragonHandler] Moving towards crystal (distance: " + String.format("%.2f", distanceToCrystal) + ")");
                 moveToTarget(dragon, current, targetCrystal, config);
             }
         } else {
-            plugin.getLogger().warning("[ChaosDragonHandler] Target crystal is null or different world!");
+            plugin.getLogger().warning("[ChaosDragonHandler] Target crystal is null or different world! " + 
+                "targetCrystal: " + (targetCrystal != null ? "not null" : "null") + 
+                ", current world: " + (current != null && current.getWorld() != null ? current.getWorld().getName() : "null") +
+                ", target world: " + (targetCrystal != null && targetCrystal.getWorld() != null ? targetCrystal.getWorld().getName() : "null"));
         }
     }
     
@@ -548,17 +556,89 @@ public class ChaosDragonHandler extends BaseCreatureHandler {
     
     /**
      * Kristal yok edildi mi kontrol et
+     * ✅ DÜZELTME: Tüm klanları kontrol ederek kristal lokasyonunu eşleştir (daha güvenilir)
      */
     private boolean isCrystalDestroyed(Location crystalLoc) {
-        if (crystalLoc == null || crystalLoc.getWorld() == null) return true;
+        Main plugin = Main.getInstance();
+        if (crystalLoc == null || crystalLoc.getWorld() == null) {
+            if (plugin != null) {
+                plugin.getLogger().warning("[ChaosDragonHandler] isCrystalDestroyed() - crystalLoc is null or world is null");
+            }
+            return true;
+        }
         
-        // EnderCrystal entity'si var mı kontrol et
-        for (Entity entity : crystalLoc.getWorld().getNearbyEntities(crystalLoc, 2, 2, 2)) {
-            if (entity instanceof EnderCrystal) {
-                return false; // Kristal hala var
+        if (plugin == null || plugin.getTerritoryManager() == null) {
+            if (plugin != null) {
+                plugin.getLogger().warning("[ChaosDragonHandler] isCrystalDestroyed() - Plugin or TerritoryManager is null");
+            }
+            return true;
+        }
+        
+        plugin.getLogger().info("[ChaosDragonHandler] isCrystalDestroyed() - Checking crystal at: " + 
+            crystalLoc.getBlockX() + "," + crystalLoc.getBlockY() + "," + crystalLoc.getBlockZ());
+        
+        // ✅ YENİ: Tüm klanları kontrol et ve kristal lokasyonunu eşleştir (getTerritoryOwner yerine)
+        // Bu daha güvenilir çünkü kristal lokasyonunu doğrudan kontrol ediyoruz
+        Clan matchingClan = null;
+        double minDistance = Double.MAX_VALUE;
+        
+        for (Clan clan : plugin.getTerritoryManager().getClanManager().getAllClans()) {
+            if (!clan.hasCrystal()) continue;
+            
+            Location clanCrystalLoc = clan.getCrystalLocation();
+            if (clanCrystalLoc == null) continue;
+            
+            // Aynı dünyada mı?
+            if (!clanCrystalLoc.getWorld().equals(crystalLoc.getWorld())) continue;
+            
+            // Lokasyon eşleşiyor mu? (2 blok tolerans)
+            double distance = crystalLoc.distance(clanCrystalLoc);
+            if (distance <= 2.0 && distance < minDistance) {
+                minDistance = distance;
+                matchingClan = clan;
             }
         }
         
-        return true; // Kristal yok
+        if (matchingClan == null) {
+            plugin.getLogger().info("[ChaosDragonHandler] isCrystalDestroyed() - No matching crystal found at location " + 
+                crystalLoc.getBlockX() + "," + crystalLoc.getBlockY() + "," + crystalLoc.getBlockZ() + 
+                ", crystal may be destroyed");
+            
+            // ✅ DEBUG: Tüm klanları kontrol et ve kristal lokasyonlarını logla
+            plugin.getLogger().info("[ChaosDragonHandler] isCrystalDestroyed() - DEBUG: Checking all clans for crystal match...");
+            for (Clan c : plugin.getTerritoryManager().getClanManager().getAllClans()) {
+                if (c.hasCrystal()) {
+                    Location clanCrystalLoc = c.getCrystalLocation();
+                    if (clanCrystalLoc != null && clanCrystalLoc.getWorld().equals(crystalLoc.getWorld())) {
+                        double dist = crystalLoc.distance(clanCrystalLoc);
+                        plugin.getLogger().info("[ChaosDragonHandler] isCrystalDestroyed() - DEBUG: Clan " + c.getName() + 
+                            " has crystal at " + clanCrystalLoc.getBlockX() + "," + clanCrystalLoc.getBlockY() + "," + clanCrystalLoc.getBlockZ() + 
+                            ", distance: " + String.format("%.2f", dist));
+                    }
+                }
+            }
+            
+            return true;
+        }
+        
+        plugin.getLogger().info("[ChaosDragonHandler] isCrystalDestroyed() - Found matching clan: " + matchingClan.getName() + 
+            " (distance: " + String.format("%.2f", minDistance) + ")");
+        
+        // Klanın kristali var mı ve entity hala var mı?
+        if (!matchingClan.hasCrystal()) {
+            plugin.getLogger().info("[ChaosDragonHandler] isCrystalDestroyed() - Clan has no crystal: " + matchingClan.getName());
+            return true;
+        }
+        
+        EnderCrystal crystal = matchingClan.getCrystalEntity();
+        if (crystal == null || crystal.isDead() || !crystal.isValid()) {
+            plugin.getLogger().info("[ChaosDragonHandler] isCrystalDestroyed() - Crystal entity is null/dead/invalid: " + 
+                (crystal == null ? "null" : "dead=" + crystal.isDead() + ", valid=" + crystal.isValid()));
+            return true;
+        }
+        
+        plugin.getLogger().info("[ChaosDragonHandler] isCrystalDestroyed() - Crystal is ALIVE: " + matchingClan.getName() + 
+            " @ " + crystalLoc.getBlockX() + "," + crystalLoc.getBlockY() + "," + crystalLoc.getBlockZ());
+        return false; // Kristal hala var
     }
 }

@@ -233,10 +233,6 @@ public class Main extends JavaPlugin {
         crystalTargetingAI = new me.mami.stratocraft.manager.CrystalTargetingAI(this); // ✅ YENİ: Kristal hedef seçim AI
         miniDisasterManager = new me.mami.stratocraft.manager.MiniDisasterManager(this); // ✅ YENİ: Mini felaket yöneticisi
         
-        // ✅ YENİ: Gece saldırı dalgası yöneticisi
-        nightWaveManager = new me.mami.stratocraft.manager.NightWaveManager(
-            this, territoryManager, mobManager, bossManager);
-        nightWaveManager.start();
         // TaskManager (Memory leak önleme için - diğer manager'lardan önce)
         taskManager = new me.mami.stratocraft.manager.TaskManager(this);
         
@@ -262,6 +258,11 @@ public class Main extends JavaPlugin {
         biomeManager = new me.mami.stratocraft.manager.BiomeManager(this);
         bossArenaManager = new me.mami.stratocraft.manager.BossArenaManager(this); // Eski, devre dışı arena (gerekirse)
         bossManager = new me.mami.stratocraft.manager.BossManager(this);           // Yeni, birleşik Boss sistemi
+        
+        // ✅ YENİ: Gece saldırı dalgası yöneticisi (BossManager oluşturulduktan SONRA)
+        nightWaveManager = new me.mami.stratocraft.manager.NightWaveManager(
+            this, territoryManager, mobManager, bossManager);
+        nightWaveManager.start();
         tamingManager = new me.mami.stratocraft.manager.TamingManager(this);
         
         // Yeni Boss Arena Sistemi - Sadece çevre dönüşümü için
